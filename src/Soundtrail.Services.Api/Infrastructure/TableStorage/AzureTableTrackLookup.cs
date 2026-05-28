@@ -1,4 +1,4 @@
-using Soundtrail.Services.Application.Ports;
+using Soundtrail.Services.Features.Resolve.Contracts;
 
 namespace Soundtrail.Services.Api.Infrastructure.TableStorage;
 

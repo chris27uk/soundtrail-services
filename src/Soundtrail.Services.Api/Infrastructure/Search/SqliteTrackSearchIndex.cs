@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
-using Soundtrail.Services.Application.Ports;
-using Soundtrail.Services.Domain.Tracks;
-using Soundtrail.Services.Domain.ValueTypes;
+using Soundtrail.Services.Features.Search.Contracts;
+using Soundtrail.Services.Features.Search.Models;
 
 namespace Soundtrail.Services.Api.Infrastructure.Search;
 

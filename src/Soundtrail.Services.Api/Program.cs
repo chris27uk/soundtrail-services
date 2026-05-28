@@ -1,11 +1,15 @@
-using Soundtrail.Services.Api.Endpoints;
+using Soundtrail.Services.Api.Features.Health;
+using Soundtrail.Services.Api.Features.Resolve;
+using Soundtrail.Services.Api.Features.Search;
 using Soundtrail.Services.Api.Infrastructure.Search;
 using Soundtrail.Services.Api.Infrastructure.TableStorage;
 using Soundtrail.Services.Api.Infrastructure.Time;
-using Soundtrail.Services.Application.Ports;
-using Soundtrail.Services.Application.Search;
-using Soundtrail.Services.Domain.Tracks;
-using Soundtrail.Services.Domain.ValueTypes;
+using Soundtrail.Services.Features.Resolve.Contracts;
+using Soundtrail.Services.Features.Search;
+using Soundtrail.Services.Features.Search.Contracts;
+using Soundtrail.Services.Features.Search.Models;
+using Soundtrail.Services.Features.Tracks;
+using Soundtrail.Services.Shared;
 
 var builder = WebApplication.CreateBuilder(args);
 
