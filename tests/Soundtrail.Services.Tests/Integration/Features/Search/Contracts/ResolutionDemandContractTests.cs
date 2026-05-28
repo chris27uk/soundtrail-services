@@ -13,17 +13,14 @@ public sealed class ResolutionDemandContractTests
 
     [Theory]
     [MemberData(nameof(Modes))]
-    public async Task Recording_The_Same_Query_Twice_Is_Deduplicated(StorageMode mode)
+    public async Task Given_The_Same_Query_Is_Recorded_Twice_When_Demand_Is_Stored_Then_It_Is_Deduplicated(StorageMode mode)
     {
-        // Given
         var env = ResolutionDemandTestEnvironment.Create(mode);
         var query = NormalizedSearchQuery.From(SearchQuery.From("rare unknown song"));
 
-        // When
         var first = await env.Store.RecordDemandAsync(query, CancellationToken.None);
         var second = await env.Store.RecordDemandAsync(query, CancellationToken.None);
 
-        // Then
         second.Should().Be(first);
     }
 }

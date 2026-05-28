@@ -4,28 +4,19 @@ using FluentAssertions;
 
 namespace Soundtrail.Services.Tests.Integration.Features.Search;
 
-public sealed class SearchEndpointsTests : IClassFixture<SoundtrailServicesApiFactory>
+public sealed class SearchEndpointsTests(SoundtrailServicesApiFactory factory)
+    : IClassFixture<SoundtrailServicesApiFactory>
 {
-    private readonly HttpClient _client;
-    private readonly SoundtrailServicesApiFactory _factory;
-
-    public SearchEndpointsTests(SoundtrailServicesApiFactory factory)
-    {
-        _factory = factory;
-        _client = factory.CreateClient();
-    }
+    private readonly HttpClient client = factory.CreateClient();
 
     [Fact]
-    public async Task Known_Query_Returns_Local_Resolved_Result()
+    public async Task Given_A_Known_Query_When_The_Search_Endpoint_Is_Called_Then_It_Returns_A_Local_Resolved_Result()
     {
-        // Given
-        _factory.TrackSearch.Seed(ApiKnownTracks.MrBrightside());
-
-        // When
-        var response = await _client.GetAsync("/search?q=mr%20brightside");
+        factory.TrackSearch.Seed(ApiKnownTracks.MrBrightside());
+        var response = await this.client.GetAsync("/search?q=mr%20brightside");
+        
         var content = await response.Content.ReadFromJsonAsync<SearchResponseContract>();
 
-        // Then
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         content.Should().NotBeNull();
         content!.Status.Should().Be("resolved");
@@ -34,21 +25,17 @@ public sealed class SearchEndpointsTests : IClassFixture<SoundtrailServicesApiFa
     }
 
     [Fact]
-    public async Task Unknown_Query_Returns_Pending_And_Records_Demand()
+    public async Task Given_An_Unknown_Query_When_The_Search_Endpoint_Is_Called_Then_It_Returns_Pending_And_Records_Demand()
     {
-        // Given
-        _factory.TrackSearch.Seed();
-
-        // When
-        var response = await _client.GetAsync("/search?q=rare%20unknown%20song");
+        factory.TrackSearch.Seed();
+        var response = await this.client.GetAsync("/search?q=rare%20unknown%20song");
         var content = await response.Content.ReadFromJsonAsync<SearchResponseContract>();
 
-        // Then
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         content.Should().NotBeNull();
         content!.Status.Should().Be("pending");
         content.QueryId.Should().StartWith("q_");
-        _factory.DemandStore.RecordedQueries.Should().Contain("rare unknown song");
+        factory.DemandStore.RecordedQueries.Should().Contain("rare unknown song");
     }
 
     private sealed class SearchResponseContract

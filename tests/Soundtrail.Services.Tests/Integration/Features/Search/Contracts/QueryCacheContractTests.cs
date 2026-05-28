@@ -14,10 +14,10 @@ public sealed class QueryCacheContractTests
 
     [Theory]
     [MemberData(nameof(Modes))]
-    public async Task Stored_Response_Can_Be_Read_Back(StorageMode mode)
+    public async Task Given_A_Stored_Response_When_It_Is_Read_Back_Then_The_Same_Response_Is_Returned(StorageMode mode)
     {
-        // Given
         var env = QueryCacheTestEnvironment.Create(mode);
+
         var query = SearchQuery.From("mr brightside");
         var normalizedQuery = NormalizedSearchQuery.From(query);
         var response = SearchMusicResponse.Resolved(query, new[] { ContractKnownTracks.MrBrightside() });
@@ -28,10 +28,8 @@ public sealed class QueryCacheContractTests
             TimeSpan.FromHours(1),
             CancellationToken.None);
 
-        // When
         var actual = await env.Cache.GetAsync(normalizedQuery, CancellationToken.None);
 
-        // Then
         actual.Should().BeEquivalentTo(response);
     }
 }

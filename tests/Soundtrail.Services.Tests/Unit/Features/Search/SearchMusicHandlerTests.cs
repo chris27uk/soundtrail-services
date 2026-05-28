@@ -7,48 +7,41 @@ namespace Soundtrail.Services.Tests.Unit.Features.Search;
 public sealed class SearchMusicHandlerTests
 {
     [Fact]
-    public async Task Cached_Response_Is_Returned_Immediately()
+    public async Task Given_A_Cached_Response_When_Searching_For_A_Known_Track_Then_The_Cached_Response_Is_Returned()
     {
-        // Given
         var env = SearchMusicTestEnvironment.WithCachedResolvedResponse();
         var sut = env.CreateHandler();
 
-        // When
         var result = await sut.Handle(env.SearchForKnownTrack());
 
-        // Then
         result.Status.Should().Be(ResolutionStatus.Resolved);
         result.Results.Should().ContainSingle();
         env.DemandStore.RecordedQueries.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task Known_Local_Track_Is_Returned_As_Resolved()
+    public async Task Given_A_Known_Local_Track_When_Searching_For_That_Track_Then_A_Resolved_Response_Is_Returned()
     {
-        // Given
         var env = SearchMusicTestEnvironment.WithKnownTrack();
+
         var sut = env.CreateHandler();
 
-        // When
         var result = await sut.Handle(env.SearchForKnownTrack());
 
-        // Then
         result.Status.Should().Be(ResolutionStatus.Resolved);
         result.Results.Should().ContainSingle();
         result.Results[0].Title.Value.Should().Be("Mr. Brightside");
     }
 
     [Fact]
-    public async Task Unknown_Query_Creates_Demand_And_Returns_Pending()
+    public async Task Given_An_Unknown_Query_When_Searching_For_That_Query_Then_Demand_Is_Recorded_And_A_Pending_Response_Is_Returned()
     {
-        // Given
         var env = SearchMusicTestEnvironment.WithNoKnownTracks();
+
         var sut = env.CreateHandler();
 
-        // When
         var result = await sut.Handle(env.SearchForUnknownTrack());
 
-        // Then
         result.Status.Should().Be(ResolutionStatus.Pending);
         result.QueryId.Should().NotBeNull();
         env.DemandStore.RecordedQueries.Should().ContainSingle("rare unknown song");
