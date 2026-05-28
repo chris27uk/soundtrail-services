@@ -4,7 +4,7 @@ using Soundtrail.Services.Api.Infrastructure.TableStorage;
 using Soundtrail.Services.Features.Search.Models;
 using Soundtrail.Services.Features.Tracks;
 
-namespace Soundtrail.Services.Tests.Features.Search.Contracts;
+namespace Soundtrail.Services.Tests.Integration.Features.Search.Contracts;
 
 internal sealed class QueryCacheTestEnvironment
 {

@@ -2,18 +2,18 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Soundtrail.Services.Features.Resolve.Contracts;
+using Soundtrail.Services.Features.CatalogLookup.Contracts;
 using Soundtrail.Services.Features.Search.Contracts;
 using Soundtrail.Services.Features.Search.Models;
 using Soundtrail.Services.Features.Tracks;
 
-namespace Soundtrail.Services.Tests.Features.Search;
+namespace Soundtrail.Services.Tests.Integration.Features.Search;
 
 public sealed class SoundtrailServicesApiFactory : WebApplicationFactory<Program>
 {
     public ApiFakeQueryCachePort QueryCache { get; } = new();
 
-    public ApiFakeTrackLookupPort TrackLookup { get; } = new();
+    public ApiFakeCatalogLookupPort TrackLookup { get; } = new();
 
     public ApiFakeTrackSearchPort TrackSearch { get; } = new();
 
@@ -24,12 +24,12 @@ public sealed class SoundtrailServicesApiFactory : WebApplicationFactory<Program
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<IQueryCachePort>();
-            services.RemoveAll<ITrackLookupPort>();
+            services.RemoveAll<ICatalogLookupPort>();
             services.RemoveAll<ITrackSearchPort>();
             services.RemoveAll<IResolutionDemandPort>();
 
             services.AddSingleton<IQueryCachePort>(QueryCache);
-            services.AddSingleton<ITrackLookupPort>(TrackLookup);
+            services.AddSingleton<ICatalogLookupPort>(TrackLookup);
             services.AddSingleton<ITrackSearchPort>(TrackSearch);
             services.AddSingleton<IResolutionDemandPort>(DemandStore);
         });
@@ -61,7 +61,7 @@ public sealed class ApiFakeQueryCachePort : IQueryCachePort
     public Task<bool> IsReadyAsync(CancellationToken cancellationToken) => Task.FromResult(true);
 }
 
-public sealed class ApiFakeTrackLookupPort : ITrackLookupPort
+public sealed class ApiFakeCatalogLookupPort : ICatalogLookupPort
 {
     public bool Ready { get; set; } = true;
 

@@ -1,7 +1,7 @@
 using FluentAssertions;
 using Soundtrail.Services.Features.Search.Models;
 
-namespace Soundtrail.Services.Tests.Features.Search.Contracts;
+namespace Soundtrail.Services.Tests.Integration.Features.Search.Contracts;
 
 public sealed class ResolutionDemandContractTests
 {
@@ -15,12 +15,15 @@ public sealed class ResolutionDemandContractTests
     [MemberData(nameof(Modes))]
     public async Task Recording_The_Same_Query_Twice_Is_Deduplicated(StorageMode mode)
     {
+        // Given
         var env = ResolutionDemandTestEnvironment.Create(mode);
         var query = NormalizedSearchQuery.From(SearchQuery.From("rare unknown song"));
 
+        // When
         var first = await env.Store.RecordDemandAsync(query, CancellationToken.None);
         var second = await env.Store.RecordDemandAsync(query, CancellationToken.None);
 
+        // Then
         second.Should().Be(first);
     }
 }

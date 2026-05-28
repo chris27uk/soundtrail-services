@@ -2,7 +2,7 @@ using Soundtrail.Services.Api.Infrastructure.TableStorage;
 using Soundtrail.Services.Features.Search.Contracts;
 using Soundtrail.Services.Features.Search.Models;
 
-namespace Soundtrail.Services.Tests.Features.Search.Contracts;
+namespace Soundtrail.Services.Tests.Integration.Features.Search.Contracts;
 
 internal sealed class ResolutionDemandTestEnvironment
 {

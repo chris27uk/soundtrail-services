@@ -1,4 +1,4 @@
-using Soundtrail.Services.Features.Resolve.Contracts;
+using Soundtrail.Services.Features.CatalogLookup.Contracts;
 using Soundtrail.Services.Features.Search.Contracts;
 
 namespace Soundtrail.Services.Api.Features.Health;
@@ -13,7 +13,7 @@ public static class HealthEndpoints
             "/health/ready",
             async (
                 IQueryCachePort queryCache,
-                ITrackLookupPort trackLookup,
+                ICatalogLookupPort trackLookup,
                 ITrackSearchPort trackSearch,
                 CancellationToken cancellationToken) =>
             {

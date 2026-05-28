@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
 
-namespace Soundtrail.Services.Tests.Features.Search;
+namespace Soundtrail.Services.Tests.Integration.Features.Search;
 
 public sealed class SearchEndpointsTests : IClassFixture<SoundtrailServicesApiFactory>
 {
@@ -18,11 +18,14 @@ public sealed class SearchEndpointsTests : IClassFixture<SoundtrailServicesApiFa
     [Fact]
     public async Task Known_Query_Returns_Local_Resolved_Result()
     {
+        // Given
         _factory.TrackSearch.Seed(ApiKnownTracks.MrBrightside());
 
+        // When
         var response = await _client.GetAsync("/search?q=mr%20brightside");
         var content = await response.Content.ReadFromJsonAsync<SearchResponseContract>();
 
+        // Then
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         content.Should().NotBeNull();
         content!.Status.Should().Be("resolved");
@@ -33,11 +36,14 @@ public sealed class SearchEndpointsTests : IClassFixture<SoundtrailServicesApiFa
     [Fact]
     public async Task Unknown_Query_Returns_Pending_And_Records_Demand()
     {
+        // Given
         _factory.TrackSearch.Seed();
 
+        // When
         var response = await _client.GetAsync("/search?q=rare%20unknown%20song");
         var content = await response.Content.ReadFromJsonAsync<SearchResponseContract>();
 
+        // Then
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         content.Should().NotBeNull();
         content!.Status.Should().Be("pending");

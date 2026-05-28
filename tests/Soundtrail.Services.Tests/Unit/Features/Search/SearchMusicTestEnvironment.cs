@@ -3,7 +3,7 @@ using Soundtrail.Services.Features.Search;
 using Soundtrail.Services.Features.Search.Models;
 using Soundtrail.Services.Features.Tracks;
 
-namespace Soundtrail.Services.Tests.Features.Search;
+namespace Soundtrail.Services.Tests.Unit.Features.Search;
 
 internal sealed class SearchMusicTestEnvironment
 {

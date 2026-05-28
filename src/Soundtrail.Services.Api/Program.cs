@@ -1,10 +1,10 @@
 using Soundtrail.Services.Api.Features.Health;
-using Soundtrail.Services.Api.Features.Resolve;
+using Soundtrail.Services.Api.Features.CatalogLookup;
 using Soundtrail.Services.Api.Features.Search;
 using Soundtrail.Services.Api.Infrastructure.Search;
 using Soundtrail.Services.Api.Infrastructure.TableStorage;
 using Soundtrail.Services.Api.Infrastructure.Time;
-using Soundtrail.Services.Features.Resolve.Contracts;
+using Soundtrail.Services.Features.CatalogLookup.Contracts;
 using Soundtrail.Services.Features.Search;
 using Soundtrail.Services.Features.Search.Contracts;
 using Soundtrail.Services.Features.Search.Models;
@@ -14,7 +14,7 @@ using Soundtrail.Services.Shared;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<IQueryCachePort, AzureTableQueryCache>();
-builder.Services.AddSingleton<ITrackLookupPort, AzureTableTrackLookup>();
+builder.Services.AddSingleton<ICatalogLookupPort, AzureTableTrackLookup>();
 builder.Services.AddSingleton<IResolutionDemandPort, AzureTableResolutionDemandStore>();
 builder.Services.AddSingleton<IClockPort, SystemClock>();
 builder.Services.AddSingleton<SqliteTrackSearchIndex>(sp =>
@@ -39,10 +39,6 @@ var app = builder.Build();
 
 app.MapHealthEndpoints();
 app.MapSearchEndpoints();
-app.MapResolveEndpoints();
+app.MapCatalogLookupEndpoints();
 
 app.Run();
-
-public partial class Program
-{
-}
