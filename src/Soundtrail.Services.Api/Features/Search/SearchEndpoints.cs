@@ -12,23 +12,21 @@ public static class SearchEndpoints
             async (
                 string? q,
                 int? limit,
+                double? minConfidence,
                 SearchMusicHandler handler,
                 CancellationToken cancellationToken) =>
             {
-                if (string.IsNullOrWhiteSpace(q))
-                {
-                    return Results.BadRequest(new { error = "Query parameter 'q' is required." });
-                }
-
                 SearchMusicRequest request;
 
                 try
                 {
                     request = new SearchMusicRequest(
                         SearchQuery.From(q),
-                        Limit.From(limit));
+                        Limit.From(limit),
+                        minConfidence is null ? null : ConfidenceScore.From(minConfidence.Value));
                 }
-                catch (ArgumentOutOfRangeException ex)
+                catch (Exception ex) when (
+                    ex is ArgumentException or ArgumentOutOfRangeException)
                 {
                     return Results.BadRequest(new { error = ex.Message });
                 }

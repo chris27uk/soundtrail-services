@@ -63,6 +63,8 @@ internal sealed class FakeQueryCachePort : IQueryCachePort
 {
     private readonly Dictionary<string, SearchMusicResponse> _responses = new();
 
+    public int StoreCallCount { get; private set; }
+
     public Task<SearchMusicResponse?> GetAsync(NormalizedSearchQuery query, CancellationToken cancellationToken)
     {
         _responses.TryGetValue(query.Value, out var response);
@@ -75,6 +77,7 @@ internal sealed class FakeQueryCachePort : IQueryCachePort
         TimeSpan timeToLive,
         CancellationToken cancellationToken)
     {
+        StoreCallCount++;
         _responses[query.Value] = response;
         return Task.CompletedTask;
     }

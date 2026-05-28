@@ -9,7 +9,7 @@ public sealed record SearchQuery
 
     public string Value { get; }
 
-    public static SearchQuery From(string value)
+    public static SearchQuery From(string? value)
     {
         var trimmed = value?.Trim() ?? string.Empty;
 
@@ -20,6 +20,4 @@ public sealed record SearchQuery
 
         return new SearchQuery(trimmed);
     }
-
-    public override string ToString() => Value;
 }

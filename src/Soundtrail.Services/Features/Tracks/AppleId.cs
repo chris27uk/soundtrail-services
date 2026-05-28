@@ -10,6 +10,4 @@ public sealed record AppleId
     public string Value { get; }
 
     public static AppleId From(string value) => new(value.Trim());
-
-    public override string ToString() => Value;
 }

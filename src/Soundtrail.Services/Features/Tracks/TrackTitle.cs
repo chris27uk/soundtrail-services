@@ -10,6 +10,4 @@ public sealed record TrackTitle
     public string Value { get; }
 
     public static TrackTitle From(string value) => new(value.Trim());
-
-    public override string ToString() => Value;
 }

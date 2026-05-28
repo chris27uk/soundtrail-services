@@ -4,4 +4,5 @@ namespace Soundtrail.Services.Features.Search;
 
 public sealed record SearchMusicRequest(
     SearchQuery Query,
-    Limit Limit);
+    Limit Limit,
+    ConfidenceScore? MinConfidence = null);

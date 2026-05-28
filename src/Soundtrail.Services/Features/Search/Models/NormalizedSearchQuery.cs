@@ -30,6 +30,4 @@ public sealed record NormalizedSearchQuery
 
         return new NormalizedSearchQuery(normalized);
     }
-
-    public override string ToString() => Value;
 }

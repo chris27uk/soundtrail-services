@@ -23,6 +23,4 @@ public readonly record struct Limit
 
         return new Limit(resolved);
     }
-
-    public override string ToString() => Value.ToString();
 }

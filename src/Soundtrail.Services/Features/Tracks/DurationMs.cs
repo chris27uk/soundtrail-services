@@ -18,6 +18,4 @@ public readonly record struct DurationMs
 
         return new DurationMs(value);
     }
-
-    public override string ToString() => Value.ToString();
 }

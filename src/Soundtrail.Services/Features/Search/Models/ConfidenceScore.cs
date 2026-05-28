@@ -2,10 +2,7 @@ namespace Soundtrail.Services.Features.Search.Models;
 
 public readonly record struct ConfidenceScore
 {
-    private ConfidenceScore(double value)
-    {
-        Value = value;
-    }
+    private ConfidenceScore(double value) => Value = value;
 
     public double Value { get; }
 
@@ -18,6 +15,4 @@ public readonly record struct ConfidenceScore
 
         return new ConfidenceScore(value);
     }
-
-    public override string ToString() => Value.ToString("0.00");
 }

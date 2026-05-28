@@ -6,7 +6,7 @@ namespace Soundtrail.Services.Api.Infrastructure.Search;
 
 public sealed class SqliteTrackSearchIndex : ITrackSearchPort
 {
-    private readonly ConcurrentBag<SearchResult> _tracks = new();
+    private readonly ConcurrentBag<SearchResult> tracks = new();
 
     public SqliteTrackSearchIndex()
     {
@@ -16,7 +16,7 @@ public sealed class SqliteTrackSearchIndex : ITrackSearchPort
     {
         foreach (var track in seedTracks)
         {
-            _tracks.Add(track);
+            this.tracks.Add(track);
         }
     }
 
@@ -25,7 +25,7 @@ public sealed class SqliteTrackSearchIndex : ITrackSearchPort
         Limit limit,
         CancellationToken cancellationToken)
     {
-        var results = _tracks
+        var results = this.tracks
             .Where(track => Matches(query, track))
             .OrderByDescending(track => track.Confidence.Value)
             .Take(limit.Value)
@@ -40,7 +40,7 @@ public sealed class SqliteTrackSearchIndex : ITrackSearchPort
     {
         foreach (var track in tracks)
         {
-            _tracks.Add(track);
+            this.tracks.Add(track);
         }
     }
 

@@ -10,6 +10,4 @@ public sealed record Isrc
     public string Value { get; }
 
     public static Isrc From(string value) => new(value.Trim().ToUpperInvariant());
-
-    public override string ToString() => Value;
 }

@@ -12,11 +12,15 @@ public sealed class SearchMusicHandler(IQueryCachePort queryCache, ITrackSearchP
         CancellationToken cancellationToken = default)
     {
         var normalizedQuery = NormalizedSearchQuery.From(request.Query);
+        var shouldUseCache = request.MinConfidence is null;
 
-        var cached = await queryCache.GetAsync(normalizedQuery, cancellationToken);
-        if (cached is not null)
+        if (shouldUseCache)
         {
-            return cached;
+            var cached = await queryCache.GetAsync(normalizedQuery, cancellationToken);
+            if (cached is not null)
+            {
+                return cached;
+            }
         }
 
         var results = await trackSearch.SearchAsync(
@@ -24,15 +28,24 @@ public sealed class SearchMusicHandler(IQueryCachePort queryCache, ITrackSearchP
             request.Limit,
             cancellationToken);
 
-        if (results.Count > 0)
-        {
-            var resolved = SearchMusicResponse.Resolved(request.Query, results);
+        var filteredResults = request.MinConfidence is null
+            ? results
+            : results
+                .Where(result => result.Confidence.Value >= request.MinConfidence.Value.Value)
+                .ToArray();
 
-            await queryCache.StoreAsync(
-                normalizedQuery,
-                resolved,
-                CacheTtl,
-                cancellationToken);
+        if (filteredResults.Count > 0)
+        {
+            var resolved = SearchMusicResponse.Resolved(request.Query, filteredResults);
+
+            if (shouldUseCache)
+            {
+                await queryCache.StoreAsync(
+                    normalizedQuery,
+                    resolved,
+                    CacheTtl,
+                    cancellationToken);
+            }
 
             return resolved;
         }

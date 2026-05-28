@@ -10,6 +10,4 @@ public sealed record ArtistName
     public string Value { get; }
 
     public static ArtistName From(string value) => new(value.Trim());
-
-    public override string ToString() => Value;
 }

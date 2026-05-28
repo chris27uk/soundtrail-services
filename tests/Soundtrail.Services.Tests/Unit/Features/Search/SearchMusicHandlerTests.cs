@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Soundtrail.Services.Features.Search;
 using Soundtrail.Services.Features.Search.Models;
 
 namespace Soundtrail.Services.Tests.Unit.Features.Search;
@@ -31,6 +30,7 @@ public sealed class SearchMusicHandlerTests
         result.Status.Should().Be(ResolutionStatus.Resolved);
         result.Results.Should().ContainSingle();
         result.Results[0].Title.Value.Should().Be("Mr. Brightside");
+        env.QueryCache.StoreCallCount.Should().Be(1);
     }
 
     [Fact]
