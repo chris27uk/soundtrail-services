@@ -1,16 +1,15 @@
 using FluentAssertions;
-using Microsoft.Extensions.Options;
-using Soundtrail.Services.EnrichmentWorker.Budgets;
-using Soundtrail.Services.EnrichmentWorker.Configuration;
-using Soundtrail.Services.EnrichmentWorker.Jobs;
-using Soundtrail.Services.EnrichmentWorker.Models;
-using Soundtrail.Services.EnrichmentWorker.Ports;
-using Soundtrail.Services.EnrichmentWorker.Scheduling;
+using Soundtrail.Services.Enrichment.Budgets;
+using Soundtrail.Services.Enrichment.Configuration;
+using Soundtrail.Services.Enrichment.Jobs;
+using Soundtrail.Services.Enrichment.Models;
+using Soundtrail.Services.Enrichment.Ports;
+using Soundtrail.Services.Enrichment.Scheduling;
 using Soundtrail.Services.Features.Search.Models;
 using Soundtrail.Services.Features.Tracks;
 using Soundtrail.Services.Shared;
 
-namespace Soundtrail.Services.EnrichmentWorker.Tests.Unit.Features.Scheduling;
+namespace Soundtrail.Services.Enrichment.Worker.Tests.Unit.Features.Scheduling;
 
 public sealed class EnrichmentSchedulerTests
 {
@@ -121,9 +120,9 @@ internal sealed class EnrichmentSchedulerTestEnvironment
             providerBudgets,
             circuitState,
             new EnrichmentCandidateSelector(
-                new EnrichmentPriorityCalculator(Options.Create(WorkerOptions)),
+                new EnrichmentPriorityCalculator(WorkerOptions),
                 new NextStageDecider()),
-            Options.Create(WorkerOptions),
+            WorkerOptions,
             clock);
 
     public void PopularDemandAttempted(params EnrichmentStage[] stages)

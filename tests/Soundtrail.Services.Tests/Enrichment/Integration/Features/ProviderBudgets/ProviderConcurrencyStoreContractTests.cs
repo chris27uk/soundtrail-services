@@ -1,10 +1,10 @@
 using FluentAssertions;
-using Soundtrail.Services.EnrichmentWorker.Infrastructure.AzureTable;
-using Soundtrail.Services.EnrichmentWorker.Models;
-using Soundtrail.Services.EnrichmentWorker.Ports;
+using Soundtrail.Services.Enrichment.Worker.Infrastructure.CostBudgeting;
+using Soundtrail.Services.Enrichment.Models;
+using Soundtrail.Services.Enrichment.Ports;
 using Soundtrail.Services.Shared;
 
-namespace Soundtrail.Services.EnrichmentWorker.Tests.Integration.Features.ProviderBudgets;
+namespace Soundtrail.Services.Enrichment.Worker.Tests.Integration.Features.ProviderBudgets;
 
 public sealed class ProviderConcurrencyStoreContractTests
 {

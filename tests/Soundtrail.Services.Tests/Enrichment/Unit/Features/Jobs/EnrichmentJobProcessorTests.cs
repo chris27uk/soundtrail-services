@@ -1,16 +1,15 @@
 using FluentAssertions;
-using Microsoft.Extensions.Options;
-using Soundtrail.Services.EnrichmentWorker.Budgets;
-using Soundtrail.Services.EnrichmentWorker.Configuration;
-using Soundtrail.Services.EnrichmentWorker.Jobs;
-using Soundtrail.Services.EnrichmentWorker.Models;
-using Soundtrail.Services.EnrichmentWorker.Ports;
-using Soundtrail.Services.EnrichmentWorker.Providers;
+using Soundtrail.Services.Enrichment.Budgets;
+using Soundtrail.Services.Enrichment.Configuration;
+using Soundtrail.Services.Enrichment.Jobs;
+using Soundtrail.Services.Enrichment.Models;
+using Soundtrail.Services.Enrichment.Ports;
+using Soundtrail.Services.Enrichment.Providers;
 using Soundtrail.Services.Features.Search.Models;
 using Soundtrail.Services.Features.Tracks;
 using Soundtrail.Services.Shared;
 
-namespace Soundtrail.Services.EnrichmentWorker.Tests.Unit.Features.Jobs;
+namespace Soundtrail.Services.Enrichment.Worker.Tests.Unit.Features.Jobs;
 
 public sealed class EnrichmentJobProcessorTests
 {
@@ -106,7 +105,7 @@ internal sealed class EnrichmentJobProcessorTestEnvironment
             queryCache,
             searchIndex,
             new[] { provider },
-            Options.Create(new EnrichmentWorkerOptions()),
+            new EnrichmentWorkerOptions(),
             clock);
 
     public static EnrichmentJobProcessorTestEnvironment WithThirdPartyJob()
@@ -224,7 +223,7 @@ internal sealed class FakeMappingStore : IMappingStorePort
     public Task UpsertAsync(TrackMapping mapping, CancellationToken cancellationToken) => Task.CompletedTask;
 }
 
-internal sealed class FakeQueryCache : Soundtrail.Services.EnrichmentWorker.Ports.IQueryCachePort
+internal sealed class FakeQueryCache : Soundtrail.Services.Enrichment.Ports.IQueryCachePort
 {
     public Task RefreshAsync(ResolutionDemand demand, TrackMapping mapping, CancellationToken cancellationToken) => Task.CompletedTask;
 }
