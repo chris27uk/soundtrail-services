@@ -1,7 +1,4 @@
-using Soundtrail.Services.Enrichment.Models;
-using Soundtrail.Services.Enrichment.Ports;
-
-namespace Soundtrail.Services.Enrichment.Budgets;
+namespace Soundtrail.Services.Enrichment.Infrastructure.CostBudgeting;
 
 public sealed class ProviderCircuitBreaker(IProviderCircuitStatePort circuitStatePort)
 {

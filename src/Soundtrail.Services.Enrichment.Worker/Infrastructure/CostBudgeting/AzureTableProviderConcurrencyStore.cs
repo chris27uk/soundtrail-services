@@ -1,6 +1,5 @@
+using Soundtrail.Services.Enrichment.Infrastructure.CostBudgeting;
 using System.Collections.Concurrent;
-using Soundtrail.Services.Enrichment.Models;
-using Soundtrail.Services.Enrichment.Ports;
 using Soundtrail.Services.Shared;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.CostBudgeting;

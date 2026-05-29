@@ -1,11 +1,9 @@
-using Soundtrail.Services.Enrichment.Budgets;
-using Soundtrail.Services.Enrichment.Configuration;
-using Soundtrail.Services.Enrichment.Models;
-using Soundtrail.Services.Enrichment.Ports;
-using Soundtrail.Services.Enrichment.Providers;
+using Soundtrail.Services.Enrichment.Features.LocalCache;
+using Soundtrail.Services.Enrichment.Infrastructure.CostBudgeting;
+using Soundtrail.Services.Enrichment.Shared.Configuration;
 using Soundtrail.Services.Shared;
 
-namespace Soundtrail.Services.Enrichment.Jobs;
+namespace Soundtrail.Services.Enrichment.Infrastructure.Orchestration;
 
 public sealed class EnrichmentJobProcessor(
     IDemandStorePort demandStore,
@@ -14,7 +12,7 @@ public sealed class EnrichmentJobProcessor(
     IProviderBudgetPort providerBudgets,
     IEnrichmentAttemptStorePort attemptStore,
     IMappingStorePort mappingStore,
-    Ports.IQueryCachePort queryCache,
+    IQueryCachePort queryCache,
     ISearchIndexPort searchIndex,
     IEnumerable<IEnrichmentProvider> providers,
     EnrichmentWorkerOptions options,

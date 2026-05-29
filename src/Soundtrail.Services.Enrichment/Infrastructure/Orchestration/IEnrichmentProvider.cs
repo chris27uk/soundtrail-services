@@ -1,7 +1,6 @@
-using Soundtrail.Services.Enrichment.Jobs;
-using Soundtrail.Services.Enrichment.Models;
+using Soundtrail.Services.Enrichment.Infrastructure.CostBudgeting;
 
-namespace Soundtrail.Services.Enrichment.Providers;
+namespace Soundtrail.Services.Enrichment.Infrastructure.Orchestration;
 
 public interface IEnrichmentProvider
 {

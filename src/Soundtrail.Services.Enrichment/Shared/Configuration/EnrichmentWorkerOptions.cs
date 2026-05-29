@@ -1,7 +1,6 @@
-using Soundtrail.Services.Enrichment.Budgets;
-using Soundtrail.Services.Enrichment.Models;
+using Soundtrail.Services.Enrichment.Infrastructure.CostBudgeting;
 
-namespace Soundtrail.Services.Enrichment.Configuration;
+namespace Soundtrail.Services.Enrichment.Shared.Configuration;
 
 public sealed class EnrichmentWorkerOptions
 {

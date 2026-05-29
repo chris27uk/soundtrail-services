@@ -1,6 +1,4 @@
-using Soundtrail.Services.Enrichment.Models;
-
-namespace Soundtrail.Services.Enrichment.Budgets;
+namespace Soundtrail.Services.Enrichment.Infrastructure.CostBudgeting;
 
 public sealed record ProviderRateLimitPolicy(
     ProviderName Provider,

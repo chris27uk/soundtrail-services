@@ -1,8 +1,7 @@
-using Soundtrail.Services.Enrichment.Configuration;
-using Soundtrail.Services.Enrichment.Jobs;
-using Soundtrail.Services.Enrichment.Models;
+using Soundtrail.Services.Enrichment.Infrastructure.Orchestration;
+using Soundtrail.Services.Enrichment.Shared.Configuration;
 
-namespace Soundtrail.Services.Enrichment.Scheduling;
+namespace Soundtrail.Services.Enrichment.Infrastructure.Scheduling;
 
 public sealed class EnrichmentPriorityCalculator(EnrichmentWorkerOptions options)
 {
@@ -19,16 +18,16 @@ public sealed class EnrichmentPriorityCalculator(EnrichmentWorkerOptions options
         };
 
         var score =
-            demand.DemandCount * weights.DemandCountWeight +
-            demand.DistinctInstallCount * weights.DistinctInstallCountWeight +
-            demand.DistinctIpHashCount * weights.RecentDemandCountWeight +
-            (demand.BestKnownIsrc is not null ? weights.KnownIsrcBonus : 0) +
-            (demand.BestKnownMbid is not null ? weights.KnownMbidBonus : 0) +
-            (demand.HasStrongMetadata ? weights.KnownArtistAndTitleBonus : 0) +
-            (demand.HighestTrustLevelSeen > 0 ? weights.AttestedDemandBonus : 0) -
+            demand.DemandCount * this.weights.DemandCountWeight +
+            demand.DistinctInstallCount * this.weights.DistinctInstallCountWeight +
+            demand.DistinctIpHashCount * this.weights.RecentDemandCountWeight +
+            (demand.BestKnownIsrc is not null ? this.weights.KnownIsrcBonus : 0) +
+            (demand.BestKnownMbid is not null ? this.weights.KnownMbidBonus : 0) +
+            (demand.HasStrongMetadata ? this.weights.KnownArtistAndTitleBonus : 0) +
+            (demand.HighestTrustLevelSeen > 0 ? this.weights.AttestedDemandBonus : 0) -
             providerPenalty -
-            (demand.IsSuspicious ? weights.HighRiskPenalty : 0) -
-            (demand.PreviousFailureCount * weights.PreviousFailurePenalty);
+            (demand.IsSuspicious ? this.weights.HighRiskPenalty : 0) -
+            (demand.PreviousFailureCount * this.weights.PreviousFailurePenalty);
 
         return score;
     }

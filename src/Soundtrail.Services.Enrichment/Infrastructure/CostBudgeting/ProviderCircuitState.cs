@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Enrichment.Models;
+namespace Soundtrail.Services.Enrichment.Infrastructure.CostBudgeting;
 
 public sealed record ProviderCircuitState(
     ProviderName Provider,

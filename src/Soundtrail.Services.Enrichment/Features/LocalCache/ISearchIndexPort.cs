@@ -1,6 +1,4 @@
-using Soundtrail.Services.Enrichment.Models;
-
-namespace Soundtrail.Services.Enrichment.Ports;
+namespace Soundtrail.Services.Enrichment.Features.LocalCache;
 
 public interface ISearchIndexPort
 {

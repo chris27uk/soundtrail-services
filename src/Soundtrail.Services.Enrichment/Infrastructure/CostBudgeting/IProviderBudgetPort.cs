@@ -1,7 +1,4 @@
-using Soundtrail.Services.Enrichment.Budgets;
-using Soundtrail.Services.Enrichment.Models;
-
-namespace Soundtrail.Services.Enrichment.Ports;
+namespace Soundtrail.Services.Enrichment.Infrastructure.CostBudgeting;
 
 public interface IProviderBudgetPort
 {

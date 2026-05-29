@@ -1,8 +1,7 @@
-using Soundtrail.Services.Enrichment.Jobs;
-using Soundtrail.Services.Enrichment.Models;
-using Soundtrail.Services.Enrichment.Ports;
+using Soundtrail.Services.Enrichment.Infrastructure.CostBudgeting;
+using Soundtrail.Services.Enrichment.Infrastructure.Orchestration;
 
-namespace Soundtrail.Services.Enrichment.Providers;
+namespace Soundtrail.Services.Enrichment.Features.AppleMusic;
 
 public sealed class AppleMusicEnricher(IAppleMusicClient client) : IEnrichmentProvider
 {

@@ -1,10 +1,8 @@
 using FluentAssertions;
-using Soundtrail.Services.Enrichment.Budgets;
-using Soundtrail.Services.Enrichment.Configuration;
-using Soundtrail.Services.Enrichment.Jobs;
-using Soundtrail.Services.Enrichment.Models;
-using Soundtrail.Services.Enrichment.Ports;
-using Soundtrail.Services.Enrichment.Scheduling;
+using Soundtrail.Services.Enrichment.Infrastructure.CostBudgeting;
+using Soundtrail.Services.Enrichment.Infrastructure.Orchestration;
+using Soundtrail.Services.Enrichment.Infrastructure.Scheduling;
+using Soundtrail.Services.Enrichment.Shared.Configuration;
 using Soundtrail.Services.Features.Search.Models;
 using Soundtrail.Services.Features.Tracks;
 using Soundtrail.Services.Shared;

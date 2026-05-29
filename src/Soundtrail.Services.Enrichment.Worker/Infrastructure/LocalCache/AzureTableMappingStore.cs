@@ -1,6 +1,6 @@
+using Soundtrail.Services.Enrichment.Features.LocalCache;
+using Soundtrail.Services.Enrichment.Infrastructure.Orchestration;
 using System.Collections.Concurrent;
-using Soundtrail.Services.Enrichment.Models;
-using Soundtrail.Services.Enrichment.Ports;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.LocalCache;
 

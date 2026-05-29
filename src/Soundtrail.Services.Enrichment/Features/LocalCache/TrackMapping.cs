@@ -1,6 +1,6 @@
 using Soundtrail.Services.Features.Tracks;
 
-namespace Soundtrail.Services.Enrichment.Models;
+namespace Soundtrail.Services.Enrichment.Features.LocalCache;
 
 public sealed record TrackMapping(
     Isrc? Isrc,

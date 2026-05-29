@@ -1,11 +1,9 @@
-using Soundtrail.Services.Enrichment.Budgets;
-using Soundtrail.Services.Enrichment.Configuration;
-using Soundtrail.Services.Enrichment.Jobs;
-using Soundtrail.Services.Enrichment.Models;
-using Soundtrail.Services.Enrichment.Ports;
+using Soundtrail.Services.Enrichment.Infrastructure.CostBudgeting;
+using Soundtrail.Services.Enrichment.Infrastructure.Orchestration;
+using Soundtrail.Services.Enrichment.Shared.Configuration;
 using Soundtrail.Services.Shared;
 
-namespace Soundtrail.Services.Enrichment.Scheduling;
+namespace Soundtrail.Services.Enrichment.Infrastructure.Scheduling;
 
 public sealed class EnrichmentScheduler(
     IDemandStorePort demandStore,

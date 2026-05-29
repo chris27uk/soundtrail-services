@@ -1,6 +1,6 @@
+using Soundtrail.Services.Enrichment.Infrastructure.Orchestration;
+using Soundtrail.Services.Enrichment.Infrastructure.Scheduling;
 using System.Collections.Concurrent;
-using Soundtrail.Services.Enrichment.Jobs;
-using Soundtrail.Services.Enrichment.Ports;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Orchestration;
 

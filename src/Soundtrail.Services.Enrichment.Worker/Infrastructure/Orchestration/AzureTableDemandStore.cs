@@ -1,6 +1,5 @@
+using Soundtrail.Services.Enrichment.Infrastructure.Orchestration;
 using System.Collections.Concurrent;
-using Soundtrail.Services.Enrichment.Models;
-using Soundtrail.Services.Enrichment.Ports;
 using Soundtrail.Services.Features.Search.Models;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Orchestration;

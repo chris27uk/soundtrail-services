@@ -1,10 +1,8 @@
 using FluentAssertions;
-using Soundtrail.Services.Enrichment.Budgets;
-using Soundtrail.Services.Enrichment.Configuration;
-using Soundtrail.Services.Enrichment.Jobs;
-using Soundtrail.Services.Enrichment.Models;
-using Soundtrail.Services.Enrichment.Ports;
-using Soundtrail.Services.Enrichment.Providers;
+using Soundtrail.Services.Enrichment.Features.LocalCache;
+using Soundtrail.Services.Enrichment.Infrastructure.CostBudgeting;
+using Soundtrail.Services.Enrichment.Infrastructure.Orchestration;
+using Soundtrail.Services.Enrichment.Shared.Configuration;
 using Soundtrail.Services.Features.Search.Models;
 using Soundtrail.Services.Features.Tracks;
 using Soundtrail.Services.Shared;
@@ -223,7 +221,7 @@ internal sealed class FakeMappingStore : IMappingStorePort
     public Task UpsertAsync(TrackMapping mapping, CancellationToken cancellationToken) => Task.CompletedTask;
 }
 
-internal sealed class FakeQueryCache : Soundtrail.Services.Enrichment.Ports.IQueryCachePort
+internal sealed class FakeQueryCache : IQueryCachePort
 {
     public Task RefreshAsync(ResolutionDemand demand, TrackMapping mapping, CancellationToken cancellationToken) => Task.CompletedTask;
 }

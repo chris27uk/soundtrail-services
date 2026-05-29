@@ -1,7 +1,6 @@
-using Soundtrail.Services.Enrichment.Models;
 using Soundtrail.Services.Features.Search.Models;
 
-namespace Soundtrail.Services.Enrichment.Ports;
+namespace Soundtrail.Services.Enrichment.Infrastructure.Orchestration;
 
 public interface IDemandStorePort
 {

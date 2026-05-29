@@ -1,7 +1,6 @@
-using Soundtrail.Services.Enrichment.Jobs;
-using Soundtrail.Services.Enrichment.Models;
+using Soundtrail.Services.Enrichment.Infrastructure.Orchestration;
 
-namespace Soundtrail.Services.Enrichment.Scheduling;
+namespace Soundtrail.Services.Enrichment.Infrastructure.Scheduling;
 
 public sealed class EnrichmentCandidateSelector(EnrichmentPriorityCalculator priorityCalculator, NextStageDecider nextStageDecider)
 {

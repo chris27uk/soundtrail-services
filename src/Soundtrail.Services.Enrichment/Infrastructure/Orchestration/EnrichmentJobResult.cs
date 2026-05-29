@@ -1,6 +1,6 @@
-using Soundtrail.Services.Enrichment.Models;
+using Soundtrail.Services.Enrichment.Features.LocalCache;
 
-namespace Soundtrail.Services.Enrichment.Jobs;
+namespace Soundtrail.Services.Enrichment.Infrastructure.Orchestration;
 
 public sealed record EnrichmentJobResult(
     EnrichmentOutcome Outcome,

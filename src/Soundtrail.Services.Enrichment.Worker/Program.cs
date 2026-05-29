@@ -1,11 +1,12 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Soundtrail.Services.Enrichment.Budgets;
-using Soundtrail.Services.Enrichment.Configuration;
-using Soundtrail.Services.Enrichment.Jobs;
-using Soundtrail.Services.Enrichment.Ports;
-using Soundtrail.Services.Enrichment.Providers;
-using Soundtrail.Services.Enrichment.Scheduling;
+using Soundtrail.Services.Enrichment.Features.AppleMusic;
+using Soundtrail.Services.Enrichment.Features.LocalCache;
+using Soundtrail.Services.Enrichment.Features.MusicBrainz;
+using Soundtrail.Services.Enrichment.Infrastructure.CostBudgeting;
+using Soundtrail.Services.Enrichment.Infrastructure.Orchestration;
+using Soundtrail.Services.Enrichment.Infrastructure.Scheduling;
+using Soundtrail.Services.Enrichment.Shared.Configuration;
 using Soundtrail.Services.Shared;
 using Soundtrail.Services.Enrichment.Worker;
 

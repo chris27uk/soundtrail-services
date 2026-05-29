@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Enrichment.Jobs;
+namespace Soundtrail.Services.Enrichment.Infrastructure.Orchestration;
 
 public enum EnrichmentStage
 {

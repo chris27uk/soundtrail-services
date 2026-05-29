@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Enrichment.Budgets;
+namespace Soundtrail.Services.Enrichment.Infrastructure.CostBudgeting;
 
 public sealed record ProviderBudgetDecision(
     bool Allowed,

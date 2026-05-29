@@ -1,7 +1,7 @@
-using Soundtrail.Services.Enrichment.Jobs;
+using Soundtrail.Services.Enrichment.Infrastructure.CostBudgeting;
 using Soundtrail.Services.Features.Search.Models;
 
-namespace Soundtrail.Services.Enrichment.Models;
+namespace Soundtrail.Services.Enrichment.Infrastructure.Orchestration;
 
 public sealed record EnrichmentAttempt(
     string AttemptId,

@@ -1,8 +1,7 @@
-using Soundtrail.Services.Enrichment.Jobs;
 using Soundtrail.Services.Features.Search.Models;
 using Soundtrail.Services.Features.Tracks;
 
-namespace Soundtrail.Services.Enrichment.Models;
+namespace Soundtrail.Services.Enrichment.Infrastructure.Orchestration;
 
 public sealed record ResolutionDemand(
     QueryId QueryId,
