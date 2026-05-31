@@ -1,16 +1,17 @@
 using Soundtrail.Services.Enrichment.Features.Scheduling.Contracts;
 using Soundtrail.Services.Enrichment.Features.Scheduling.Models;
+using Soundtrail.Services.Features.Search.Models;
 
-namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling
+namespace Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure
 {
-    internal sealed class FakeMusicCatalogResolutionPort : IMusicCatalogResolutionPort
+    internal sealed class FakeMusicCatalogSearch : IMusicCatalogSearch
     {
         private MusicCatalogId? catalogId = MusicCatalogId.From("mc_default");
-
-        public Task<MusicCatalogId?> ResolveAsync(LookupMusicRequest request, CancellationToken cancellationToken) => Task.FromResult(this.catalogId);
 
         public void ResolveAs(MusicCatalogId musicCatalogId) => this.catalogId = musicCatalogId;
 
         public void Fails() => this.catalogId = null;
+
+        public Task<MusicCatalogId?> SearchAsync(NormalizedSearchQuery query, CancellationToken cancellationToken) => Task.FromResult(this.catalogId);
     }
 }

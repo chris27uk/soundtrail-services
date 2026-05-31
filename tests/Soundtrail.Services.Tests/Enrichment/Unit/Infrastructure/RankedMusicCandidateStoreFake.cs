@@ -1,9 +1,9 @@
 using Soundtrail.Services.Enrichment.Features.Scheduling.Contracts;
 using Soundtrail.Services.Enrichment.Features.Scheduling.Models;
 
-namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling
+namespace Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure
 {
-    internal sealed class InMemoryRankedMusicCandidateStore : IRankedMusicCandidateStore
+    internal sealed class RankedMusicCandidateStoreFake : IRankedMusicCandidateStore
     {
         private readonly Dictionary<string, RankedMusicCandidate> byMusicCatalogId = [];
 

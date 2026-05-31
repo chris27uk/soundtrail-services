@@ -1,13 +1,14 @@
 using Soundtrail.Services.Enrichment.Features.Scheduling.Contracts;
+using Soundtrail.Services.Enrichment.Features.Scheduling.Extensions;
 using Soundtrail.Services.Enrichment.Features.Scheduling.Models;
 
 namespace Soundtrail.Services.Enrichment.Features.Scheduling;
 
-public sealed class LookupMusicSchedulerHandler(IMusicCatalogResolutionPort musicCatalogResolutionPort, IRankedMusicCandidateStore rankedMusicCandidateStore)
+public sealed class LookupSchedulerHandler(IMusicCatalogSearch musicCatalogSearch, IRankedMusicCandidateStore rankedMusicCandidateStore)
 {
     public async Task<LookupMusicCommand?> Handle(LookupMusicRequest request, CancellationToken cancellationToken = default)
     {
-        var musicCatalogId = await musicCatalogResolutionPort.ResolveAsync(request, cancellationToken);
+        var musicCatalogId = await musicCatalogSearch.SearchAsync(request.Query, cancellationToken);
         if (musicCatalogId is null)
         {
             throw new ResolutionFailedException();
@@ -32,16 +33,6 @@ public sealed class LookupMusicSchedulerHandler(IMusicCatalogResolutionPort musi
             return null;
         }
 
-        return ToLookupCommand(request, rankedMusicCandidate);
-    }
-
-    private static LookupMusicCommand ToLookupCommand(LookupMusicRequest request, RankedMusicCandidate rankedMusicCandidate)
-    {
-        return new LookupMusicCommand(
-            CommandId: Guid.NewGuid().ToString("N"),
-            MusicCatalogId: rankedMusicCandidate.MusicCatalogId,
-            Query: rankedMusicCandidate.Query,
-            CreatedAt: request.OccurredAt,
-            CorrelationId: request.CorrelationId);
+        return request.ToCommand(musicCatalogId);
     }
 }
