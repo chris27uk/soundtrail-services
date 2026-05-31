@@ -10,11 +10,13 @@ internal sealed class SearchMusicTestEnvironment
     private SearchMusicTestEnvironment(
         FakeQueryCachePort queryCache,
         FakeTrackSearchPort trackSearch,
-        FakeResolutionDemandPort demandStore)
+        FakeResolutionDemandPort demandStore,
+        FakeResolutionDemandSignalPort demandSignals)
     {
         QueryCache = queryCache;
         TrackSearch = trackSearch;
         DemandStore = demandStore;
+        DemandSignals = demandSignals;
     }
 
     public FakeQueryCachePort QueryCache { get; }
@@ -22,6 +24,8 @@ internal sealed class SearchMusicTestEnvironment
     public FakeTrackSearchPort TrackSearch { get; }
 
     public FakeResolutionDemandPort DemandStore { get; }
+
+    public FakeResolutionDemandSignalPort DemandSignals { get; }
 
     public static SearchMusicTestEnvironment WithCachedResolvedResponse()
     {
@@ -35,22 +39,44 @@ internal sealed class SearchMusicTestEnvironment
             TimeSpan.FromHours(1),
             CancellationToken.None).GetAwaiter().GetResult();
 
-        return new SearchMusicTestEnvironment(queryCache, new FakeTrackSearchPort(), new FakeResolutionDemandPort());
+        return new SearchMusicTestEnvironment(queryCache, new FakeTrackSearchPort(), new FakeResolutionDemandPort(), new FakeResolutionDemandSignalPort());
     }
 
     public static SearchMusicTestEnvironment WithKnownTrack() =>
         new(
             new FakeQueryCachePort(),
             new FakeTrackSearchPort(KnownTracks.MrBrightside()),
-            new FakeResolutionDemandPort());
+            new FakeResolutionDemandPort(),
+            new FakeResolutionDemandSignalPort());
+
+    public static SearchMusicTestEnvironment WithCachedAndKnownTracks(params SearchResult[] results)
+    {
+        var queryCache = new FakeQueryCachePort();
+        var query = SearchQuery.From("mr brightside");
+
+        queryCache.StoreAsync(
+            NormalizedSearchQuery.From(query),
+            SearchMusicResponse.Resolved(query, new[] { KnownTracks.LowConfidenceMrBrightside() }, "cache"),
+            TimeSpan.FromHours(1),
+            CancellationToken.None).GetAwaiter().GetResult();
+
+        queryCache.ResetCounters();
+
+        return new SearchMusicTestEnvironment(
+            queryCache,
+            new FakeTrackSearchPort(results),
+            new FakeResolutionDemandPort(),
+            new FakeResolutionDemandSignalPort());
+    }
 
     public static SearchMusicTestEnvironment WithNoKnownTracks() =>
         new(
             new FakeQueryCachePort(),
             new FakeTrackSearchPort(),
-            new FakeResolutionDemandPort());
+            new FakeResolutionDemandPort(),
+            new FakeResolutionDemandSignalPort());
 
-    public SearchMusicHandler CreateHandler() => new(QueryCache, TrackSearch, DemandStore);
+    public SearchMusicHandler CreateHandler() => new(QueryCache, TrackSearch, DemandStore, DemandSignals);
 
     public SearchMusicRequest SearchForKnownTrack() =>
         new(SearchQuery.From("mr brightside"), Limit.From(10));
@@ -63,10 +89,13 @@ internal sealed class FakeQueryCachePort : IQueryCachePort
 {
     private readonly Dictionary<string, SearchMusicResponse> _responses = new();
 
+    public int GetCallCount { get; private set; }
+
     public int StoreCallCount { get; private set; }
 
     public Task<SearchMusicResponse?> GetAsync(NormalizedSearchQuery query, CancellationToken cancellationToken)
     {
+        GetCallCount++;
         _responses.TryGetValue(query.Value, out var response);
         return Task.FromResult(response);
     }
@@ -83,6 +112,12 @@ internal sealed class FakeQueryCachePort : IQueryCachePort
     }
 
     public Task<bool> IsReadyAsync(CancellationToken cancellationToken) => Task.FromResult(true);
+
+    public void ResetCounters()
+    {
+        GetCallCount = 0;
+        StoreCallCount = 0;
+    }
 }
 
 internal sealed class FakeTrackSearchPort : ITrackSearchPort
@@ -131,6 +166,34 @@ internal sealed class FakeResolutionDemandPort : IResolutionDemandPort
     }
 }
 
+internal sealed class FakeResolutionDemandSignalPort : IResolutionDemandSignalPort
+{
+    private readonly List<ResolutionDemandSignal> signals = [];
+
+    public IReadOnlyList<ResolutionDemandSignal> Signals => signals;
+
+    public Task EnqueueAsync(
+        ResolutionDemandSignal signal,
+        CancellationToken cancellationToken)
+    {
+        signals.Add(signal);
+        return Task.CompletedTask;
+    }
+
+    public ValueTask<ResolutionDemandSignal?> DequeueAsync(
+        CancellationToken cancellationToken)
+    {
+        if (signals.Count == 0)
+        {
+            return ValueTask.FromResult<ResolutionDemandSignal?>(null);
+        }
+
+        var signal = signals[0];
+        signals.RemoveAt(0);
+        return ValueTask.FromResult<ResolutionDemandSignal?>(signal);
+    }
+}
+
 internal static class KnownTracks
 {
     public static SearchResult MrBrightside() =>
@@ -142,4 +205,14 @@ internal static class KnownTracks
             AppleId.From("apple-mr-brightside"),
             SpotifyId.From("spotify-mr-brightside"),
             ConfidenceScore.From(0.98));
+
+    public static SearchResult LowConfidenceMrBrightside() =>
+        new(
+            TrackTitle.From("Mr. Brightside"),
+            ArtistName.From("The Killers"),
+            Isrc.From("USIR20400274"),
+            Mbid.From("mr-brightside-mbid"),
+            AppleId.From("apple-mr-brightside"),
+            SpotifyId.From("spotify-mr-brightside"),
+            ConfidenceScore.From(0.40));
 }

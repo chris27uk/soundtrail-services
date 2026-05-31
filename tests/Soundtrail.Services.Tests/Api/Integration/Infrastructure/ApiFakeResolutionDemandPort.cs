@@ -23,3 +23,27 @@ namespace Soundtrail.Services.Tests.Integration.Features.Search
         }
     }
 }
+
+public sealed class ApiFakeResolutionDemandSignalPort : IResolutionDemandSignalPort
+{
+    private readonly Queue<ResolutionDemandSignal> signals = new();
+
+    public IReadOnlyList<ResolutionDemandSignal> EnqueuedSignals => signals.ToArray();
+
+    public Task EnqueueAsync(
+        ResolutionDemandSignal signal,
+        CancellationToken cancellationToken)
+    {
+        signals.Enqueue(signal);
+        return Task.CompletedTask;
+    }
+
+    public ValueTask<ResolutionDemandSignal?> DequeueAsync(
+        CancellationToken cancellationToken)
+    {
+        return ValueTask.FromResult(
+            signals.Count > 0
+                ? signals.Dequeue()
+                : null);
+    }
+}

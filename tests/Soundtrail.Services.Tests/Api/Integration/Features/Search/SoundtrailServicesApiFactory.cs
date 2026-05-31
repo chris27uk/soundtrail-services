@@ -17,6 +17,8 @@ public sealed class SoundtrailServicesApiFactory : WebApplicationFactory<Program
 
     public ApiFakeResolutionDemandPort DemandStore { get; } = new();
 
+    public ApiFakeResolutionDemandSignalPort DemandSignals { get; } = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.ConfigureServices(services =>
@@ -25,11 +27,13 @@ public sealed class SoundtrailServicesApiFactory : WebApplicationFactory<Program
             services.RemoveAll<ICatalogLookupPort>();
             services.RemoveAll<ITrackSearchPort>();
             services.RemoveAll<IResolutionDemandPort>();
+            services.RemoveAll<IResolutionDemandSignalPort>();
 
             services.AddSingleton<IQueryCachePort>(QueryCache);
             services.AddSingleton<ICatalogLookupPort>(CatalogLookup);
             services.AddSingleton<ITrackSearchPort>(TrackSearch);
             services.AddSingleton<IResolutionDemandPort>(DemandStore);
+            services.AddSingleton<IResolutionDemandSignalPort>(DemandSignals);
         });
     }
 }

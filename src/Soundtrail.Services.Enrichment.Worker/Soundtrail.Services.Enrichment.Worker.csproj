@@ -18,4 +18,9 @@
     <ProjectReference Include="..\Soundtrail.Services\Soundtrail.Services.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Infrastructure\" />
+    <Folder Include="Shared\" />
+  </ItemGroup>
+
 </Project>

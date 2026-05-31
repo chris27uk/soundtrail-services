@@ -7,6 +7,7 @@ using Soundtrail.Services.Features.CatalogLookup.Contracts;
 using Soundtrail.Services.Features.Search;
 using Soundtrail.Services.Features.Search.Contracts;
 using Soundtrail.Services.Features.Search.Models;
+using Soundtrail.Services.Features.Search.Queueing;
 using Soundtrail.Services.Features.Tracks;
 using Soundtrail.Services.Shared;
 
@@ -14,6 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<IQueryCachePort, AzureTableQueryCache>();
 builder.Services.AddSingleton<IResolutionDemandPort, AzureTableResolutionDemandStore>();
+builder.Services.AddSingleton<IResolutionDemandSignalPort, InMemoryResolutionDemandSignalQueue>();
 builder.Services.AddSingleton<IClockPort, SystemClock>();
 builder.Services.AddSingleton<SqliteTrackSearchIndex>(sp =>
 {

@@ -32,7 +32,6 @@
 
   <ItemGroup>
     <Folder Include="Api\" />
-    <Folder Include="Enrichment\" />
   </ItemGroup>
 
 </Project>

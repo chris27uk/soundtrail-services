@@ -64,6 +64,8 @@ public sealed class SearchEndpointsTests(SoundtrailServicesApiFactory factory)
         content!.Status.Should().Be("pending");
         content.QueryId.Should().StartWith("q_");
         factory.DemandStore.RecordedQueries.Should().Contain("rare unknown song");
+        factory.DemandSignals.EnqueuedSignals.Should().ContainSingle();
+        factory.DemandSignals.EnqueuedSignals[0].Query.Value.Should().Be("rare unknown song");
     }
 
     [Fact]

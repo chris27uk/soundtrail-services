@@ -3,7 +3,11 @@ using Soundtrail.Services.Features.Search.Models;
 
 namespace Soundtrail.Services.Features.Search;
 
-public sealed class SearchMusicHandler(IQueryCachePort queryCache, ITrackSearchPort trackSearch, IResolutionDemandPort resolutionDemand)
+public sealed class SearchMusicHandler(
+    IQueryCachePort queryCache,
+    ITrackSearchPort trackSearch,
+    IResolutionDemandPort resolutionDemand,
+    IResolutionDemandSignalPort demandSignals)
 {
     private static readonly TimeSpan CacheTtl = TimeSpan.FromHours(1);
 
@@ -52,6 +56,10 @@ public sealed class SearchMusicHandler(IQueryCachePort queryCache, ITrackSearchP
 
         var queryId = await resolutionDemand.RecordDemandAsync(
             normalizedQuery,
+            cancellationToken);
+
+        await demandSignals.EnqueueAsync(
+            new ResolutionDemandSignal(queryId, normalizedQuery),
             cancellationToken);
 
         return SearchMusicResponse.Pending(request.Query, queryId);
