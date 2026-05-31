@@ -1,43 +1,38 @@
 using Soundtrail.Services.Enrichment.Features.Scheduling.Contracts;
 using Soundtrail.Services.Enrichment.Features.Scheduling.Models;
-using Soundtrail.Services.Features.Search.Models;
 
 namespace Soundtrail.Services.Enrichment.Features.Scheduling;
 
-public sealed class LookupMusicSchedulerHandler(
-    IMusicCatalogResolutionPort musicCatalogResolutionPort,
-    IRankedMusicCandidateStore rankedMusicCandidateStore,
-    ILookupMusicRequestDeadLetterPort lookupMusicRequestDeadLetterPort,
-    ILookupMusicCommandQueue lookupMusicCommandQueue)
+public sealed class LookupMusicSchedulerHandler(IMusicCatalogResolutionPort musicCatalogResolutionPort, IRankedMusicCandidateStore rankedMusicCandidateStore)
 {
-    public async Task Handle(LookupMusicRequest request, CancellationToken cancellationToken = default)
+    public async Task<LookupMusicCommand?> Handle(LookupMusicRequest request, CancellationToken cancellationToken = default)
     {
         var musicCatalogId = await musicCatalogResolutionPort.ResolveAsync(request, cancellationToken);
         if (musicCatalogId is null)
         {
-            await lookupMusicRequestDeadLetterPort.DeadLetterAsync(request,"resolution_failed", cancellationToken);
-            return;
+            throw new ResolutionFailedException();
         }
 
         var existing = await rankedMusicCandidateStore.FindByMusicCatalogIdAsync(musicCatalogId, cancellationToken);
         var rankedMusicCandidate = existing is null ? RankedMusicCandidate.Create(request, musicCatalogId) : existing.Register(request);
         await rankedMusicCandidateStore.UpsertAsync(rankedMusicCandidate, cancellationToken);
+        
         if (!rankedMusicCandidate.IsPending)
         {
-            return;
+            return null;
         }
 
         if (!rankedMusicCandidate.IsEligibleAt(request.OccurredAt))
         {
-            return;
+            return null;
         }
 
         if (rankedMusicCandidate.IsSuspicious)
         {
-            return;
+            return null;
         }
 
-        await lookupMusicCommandQueue.EnqueueAsync(ToLookupCommand(request, rankedMusicCandidate), cancellationToken);
+        return ToLookupCommand(request, rankedMusicCandidate);
     }
 
     private static LookupMusicCommand ToLookupCommand(LookupMusicRequest request, RankedMusicCandidate rankedMusicCandidate)
