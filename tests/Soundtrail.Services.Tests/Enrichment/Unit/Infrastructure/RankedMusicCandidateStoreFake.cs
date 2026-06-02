@@ -25,6 +25,21 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure
             return Task.CompletedTask;
         }
 
+        public Task<IReadOnlyList<RankedMusicCandidate>> GetPlanningCandidatesAsync(
+            DateTimeOffset now,
+            int take,
+            CancellationToken cancellationToken)
+        {
+            IReadOnlyList<RankedMusicCandidate> candidates = this.byMusicCatalogId.Values
+                .Where(candidate => candidate.IsPending && candidate.IsEligibleAt(now))
+                .OrderByDescending(candidate => candidate.HighestTrustLevelSeen)
+                .ThenByDescending(candidate => candidate.RequestCount)
+                .Take(take)
+                .ToArray();
+
+            return Task.FromResult(candidates);
+        }
+
         public void Seed(RankedMusicCandidate candidate) => this.byMusicCatalogId[candidate.MusicCatalogId.Value] = candidate;
     }
 }

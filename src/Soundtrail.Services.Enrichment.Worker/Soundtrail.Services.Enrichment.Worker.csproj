@@ -11,6 +11,9 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0" />
+    <PackageReference Include="RavenDB.Client" Version="7.1.2" />
+    <PackageReference Include="WolverineFx" Version="4.9.0" />
+    <PackageReference Include="WolverineFx.AzureServiceBus" Version="4.9.0" />
   </ItemGroup>
 
   <ItemGroup>
