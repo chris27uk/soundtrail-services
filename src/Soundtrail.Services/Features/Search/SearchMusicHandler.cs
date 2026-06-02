@@ -1,13 +1,13 @@
 using Soundtrail.Services.Features.Search.Contracts;
 using Soundtrail.Services.Features.Search.Models;
+using Soundtrail.Services.Features.Search.Queueing;
 
 namespace Soundtrail.Services.Features.Search;
 
 public sealed class SearchMusicHandler(
     IQueryCachePort queryCache,
     ITrackSearchPort trackSearch,
-    IResolutionDemandPort resolutionDemand,
-    IResolutionDemandSignalPort demandSignals)
+    ILookupMusicRequestQueue lookupMusicRequestQueue)
 {
     private static readonly TimeSpan CacheTtl = TimeSpan.FromHours(1);
 
@@ -54,14 +54,15 @@ public sealed class SearchMusicHandler(
             return resolved;
         }
 
-        var queryId = await resolutionDemand.RecordDemandAsync(
-            normalizedQuery,
+        await lookupMusicRequestQueue.EnqueueAsync(
+            new LookupMusicRequest(
+                normalizedQuery,
+                TrustLevel: 0,
+                RiskScore: 0,
+                OccurredAt: DateTimeOffset.UtcNow,
+                CorrelationId: Guid.NewGuid().ToString("N")),
             cancellationToken);
 
-        await demandSignals.EnqueueAsync(
-            new ResolutionDemandSignal(queryId, normalizedQuery),
-            cancellationToken);
-
-        return SearchMusicResponse.Pending(request.Query, queryId);
+        return SearchMusicResponse.Pending(request.Query);
     }
 }

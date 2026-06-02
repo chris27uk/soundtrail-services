@@ -7,7 +7,6 @@ public sealed record SearchMusicResponse(
     string Source,
     SearchQuery Query,
     IReadOnlyList<SearchResult> Results,
-    QueryId? QueryId,
     int? RetryAfterSeconds)
 {
     public static SearchMusicResponse Resolved(
@@ -19,18 +18,15 @@ public sealed record SearchMusicResponse(
             source,
             query,
             results,
-            QueryId: null,
             RetryAfterSeconds: null);
 
     public static SearchMusicResponse Pending(
         SearchQuery query,
-        QueryId queryId,
         int retryAfterSeconds = 60) =>
         new(
             ResolutionStatus.Pending,
             "local",
             query,
             Array.Empty<SearchResult>(),
-            queryId,
             retryAfterSeconds);
 }

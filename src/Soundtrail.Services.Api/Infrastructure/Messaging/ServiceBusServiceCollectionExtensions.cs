@@ -9,7 +9,7 @@ public static class ServiceBusServiceCollectionExtensions
         IConfiguration configuration)
     {
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
-        services.AddSingleton<IResolutionDemandSignalPort, WolverineResolutionDemandSignalQueue>();
+        services.AddSingleton<ILookupMusicRequestQueue, WolverineLookupMusicRequestQueue>();
         return services;
     }
 }

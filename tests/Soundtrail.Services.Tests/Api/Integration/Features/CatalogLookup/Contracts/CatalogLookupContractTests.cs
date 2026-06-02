@@ -1,23 +1,18 @@
 using FluentAssertions;
 using Soundtrail.Services.Features.CatalogLookup.Models;
 using Soundtrail.Services.Features.Tracks;
+using Soundtrail.Services.Tests.Api.Integration.Features.CatalogLookup.Contracts;
 using Soundtrail.Services.Tests.Integration.Features.Search.Contracts;
+using ContractKnownTracks = Soundtrail.Services.Tests.Api.Integration.Features.CatalogLookup.Contracts.ContractKnownTracks;
 
 namespace Soundtrail.Services.Tests.Integration.Features.CatalogLookup.Contracts;
 
 public sealed class CatalogLookupContractTests
 {
-    public static IEnumerable<object[]> Modes()
+    [Fact]
+    public async Task Given_A_Known_Isrc_When_A_Track_Is_Looked_Up_Then_The_Matching_Track_Is_Returned()
     {
-        yield return new object[] { StorageMode.Fake };
-        yield return new object[] { StorageMode.AzureTable };
-    }
-
-    [Theory]
-    [MemberData(nameof(Modes))]
-    public async Task Given_A_Known_Isrc_When_A_Track_Is_Looked_Up_Then_The_Matching_Track_Is_Returned(StorageMode mode)
-    {
-        var env = CatalogLookupTestEnvironment.Create(mode);
+        using var env = CatalogLookupTestEnvironment.Create();
         var track = ContractKnownTracks.MrBrightsideTrack();
         env.Seed(track);
 
@@ -28,11 +23,10 @@ public sealed class CatalogLookupContractTests
         actual.Should().BeEquivalentTo(track);
     }
 
-    [Theory]
-    [MemberData(nameof(Modes))]
-    public async Task Given_A_Known_Isrc_And_Matching_Duration_When_A_Track_Is_Looked_Up_Then_The_Matching_Track_Is_Returned(StorageMode mode)
+    [Fact]
+    public async Task Given_A_Known_Isrc_And_Matching_Duration_When_A_Track_Is_Looked_Up_Then_The_Matching_Track_Is_Returned()
     {
-        var env = CatalogLookupTestEnvironment.Create(mode);
+        using var env = CatalogLookupTestEnvironment.Create();
         var track = ContractKnownTracks.MrBrightsideTrack();
         env.Seed(track);
 

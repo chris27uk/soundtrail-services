@@ -1,4 +1,3 @@
-using System.Reflection;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Features.Search;
 using Soundtrail.Services.Features.Search.Models;
@@ -14,7 +13,6 @@ internal static class RavenMappings
         {
             return SearchMusicResponse.Pending(
                 query,
-                QueryIdFrom(document.QueryId ?? QueryId.New().Value),
                 document.RetryAfterSeconds ?? 60);
         }
 
@@ -32,7 +30,6 @@ internal static class RavenMappings
             Query = query.Value,
             Status = response.Status == ResolutionStatus.Pending ? "pending" : "resolved",
             Source = response.Source,
-            QueryId = response.QueryId?.Value,
             RetryAfterSeconds = response.RetryAfterSeconds,
             Results = response.Results.Select(ToDocument).ToList()
         };
@@ -87,7 +84,7 @@ internal static class RavenMappings
     public static QueryId QueryIdFrom(string value) =>
         (QueryId)Activator.CreateInstance(
             typeof(QueryId),
-            BindingFlags.Instance | BindingFlags.NonPublic,
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
             binder: null,
             args: [value],
             culture: null)!;

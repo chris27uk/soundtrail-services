@@ -6,17 +6,10 @@ namespace Soundtrail.Services.Tests.Integration.Features.Search.Contracts;
 
 public sealed class QueryCacheContractTests
 {
-    public static IEnumerable<object[]> Modes()
+    [Fact]
+    public async Task Given_A_Stored_Response_When_It_Is_Read_Back_Then_The_Same_Response_Is_Returned()
     {
-        yield return new object[] { StorageMode.Fake };
-        yield return new object[] { StorageMode.AzureTable };
-    }
-
-    [Theory]
-    [MemberData(nameof(Modes))]
-    public async Task Given_A_Stored_Response_When_It_Is_Read_Back_Then_The_Same_Response_Is_Returned(StorageMode mode)
-    {
-        var env = QueryCacheTestEnvironment.Create(mode);
+        using var env = QueryCacheTestEnvironment.Create();
 
         var query = SearchQuery.From("mr brightside");
         var normalizedQuery = NormalizedSearchQuery.From(query);

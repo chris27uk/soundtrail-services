@@ -1,3 +1,5 @@
+using Soundtrail.Services.Features.Search.Queueing;
+
 namespace Soundtrail.Services.Enrichment.Features.Scheduling.Models;
 
 public sealed record RankedMusicCandidate(

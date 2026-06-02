@@ -16,7 +16,7 @@ public sealed class SearchMusicHandlerTests
 
         result.Status.Should().Be(ResolutionStatus.Resolved);
         result.Results.Should().ContainSingle();
-        env.DemandStore.RecordedQueries.Should().BeEmpty();
+        env.LookupMusicRequests.Requests.Should().BeEmpty();
     }
 
     [Fact]
@@ -44,10 +44,8 @@ public sealed class SearchMusicHandlerTests
         var result = await sut.Handle(env.SearchForUnknownTrack());
 
         result.Status.Should().Be(ResolutionStatus.Pending);
-        result.QueryId.Should().NotBeNull();
-        env.DemandStore.RecordedQueries.Should().ContainSingle("rare unknown song");
-        env.DemandSignals.Signals.Should().ContainSingle();
-        env.DemandSignals.Signals[0].Query.Value.Should().Be("rare unknown song");
+        env.LookupMusicRequests.Requests.Should().ContainSingle();
+        env.LookupMusicRequests.Requests[0].Query.Value.Should().Be("rare unknown song");
     }
 
     [Fact]
@@ -82,8 +80,8 @@ public sealed class SearchMusicHandlerTests
                 ConfidenceScore.From(0.99)));
 
         result.Status.Should().Be(ResolutionStatus.Pending);
-        result.QueryId.Should().NotBeNull();
-        env.DemandStore.RecordedQueries.Should().ContainSingle("mr brightside");
+        env.LookupMusicRequests.Requests.Should().ContainSingle();
+        env.LookupMusicRequests.Requests[0].Query.Value.Should().Be("mr brightside");
         env.QueryCache.StoreCallCount.Should().Be(0);
     }
 }

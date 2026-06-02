@@ -1,50 +1,42 @@
 using Soundtrail.Services.Features.Search.Contracts;
 using Soundtrail.Services.Features.Search;
-using Soundtrail.Services.Api.Infrastructure.TableStorage;
+using Soundtrail.Services.Api.Infrastructure.Raven;
 using Soundtrail.Services.Features.Search.Models;
 using Soundtrail.Services.Features.Tracks;
+using Soundtrail.Services.Tests.Integration.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Features.Search.Contracts;
 
-internal sealed class QueryCacheTestEnvironment
+internal sealed class QueryCacheTestEnvironment : IDisposable
 {
+    private readonly RavenEmbeddedTestDatabase? raven;
+
     private QueryCacheTestEnvironment(IQueryCachePort cache)
     {
         Cache = cache;
     }
 
+    private QueryCacheTestEnvironment(
+        IQueryCachePort cache,
+        RavenEmbeddedTestDatabase raven)
+        : this(cache)
+    {
+        this.raven = raven;
+    }
+
     public IQueryCachePort Cache { get; }
 
-    public static QueryCacheTestEnvironment Create(StorageMode mode) =>
-        mode switch
-        {
-            StorageMode.Fake => new(new FakeQueryCachePort()),
-            StorageMode.AzureTable => new(new AzureTableQueryCache()),
-            _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
-        };
-}
+    public static QueryCacheTestEnvironment Create() => CreateRavenEmbedded();
 
-internal sealed class FakeQueryCachePort : IQueryCachePort
-{
-    private readonly Dictionary<string, SearchMusicResponse> _responses = new();
+    public void Dispose() => raven?.Dispose();
 
-    public Task<SearchMusicResponse?> GetAsync(NormalizedSearchQuery query, CancellationToken cancellationToken)
+    private static QueryCacheTestEnvironment CreateRavenEmbedded()
     {
-        _responses.TryGetValue(query.Value, out var response);
-        return Task.FromResult(response);
+        var raven = RavenEmbeddedTestDatabase.Create();
+        return new QueryCacheTestEnvironment(
+            new RavenQueryCache(raven.Store),
+            raven);
     }
-
-    public Task StoreAsync(
-        NormalizedSearchQuery query,
-        SearchMusicResponse response,
-        TimeSpan timeToLive,
-        CancellationToken cancellationToken)
-    {
-        _responses[query.Value] = response;
-        return Task.CompletedTask;
-    }
-
-    public Task<bool> IsReadyAsync(CancellationToken cancellationToken) => Task.FromResult(true);
 }
 
 internal static class ContractKnownTracks

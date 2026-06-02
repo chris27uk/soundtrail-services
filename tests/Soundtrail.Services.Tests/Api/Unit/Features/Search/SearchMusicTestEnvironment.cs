@@ -1,6 +1,7 @@
 using Soundtrail.Services.Features.Search.Contracts;
 using Soundtrail.Services.Features.Search;
 using Soundtrail.Services.Features.Search.Models;
+using Soundtrail.Services.Features.Search.Queueing;
 using Soundtrail.Services.Features.Tracks;
 
 namespace Soundtrail.Services.Tests.Unit.Features.Search;
@@ -10,22 +11,18 @@ internal sealed class SearchMusicTestEnvironment
     private SearchMusicTestEnvironment(
         FakeQueryCachePort queryCache,
         FakeTrackSearchPort trackSearch,
-        FakeResolutionDemandPort demandStore,
-        FakeResolutionDemandSignalPort demandSignals)
+        FakeLookupMusicRequestQueue lookupMusicRequests)
     {
         QueryCache = queryCache;
         TrackSearch = trackSearch;
-        DemandStore = demandStore;
-        DemandSignals = demandSignals;
+        LookupMusicRequests = lookupMusicRequests;
     }
 
     public FakeQueryCachePort QueryCache { get; }
 
     public FakeTrackSearchPort TrackSearch { get; }
 
-    public FakeResolutionDemandPort DemandStore { get; }
-
-    public FakeResolutionDemandSignalPort DemandSignals { get; }
+    public FakeLookupMusicRequestQueue LookupMusicRequests { get; }
 
     public static SearchMusicTestEnvironment WithCachedResolvedResponse()
     {
@@ -39,15 +36,14 @@ internal sealed class SearchMusicTestEnvironment
             TimeSpan.FromHours(1),
             CancellationToken.None).GetAwaiter().GetResult();
 
-        return new SearchMusicTestEnvironment(queryCache, new FakeTrackSearchPort(), new FakeResolutionDemandPort(), new FakeResolutionDemandSignalPort());
+        return new SearchMusicTestEnvironment(queryCache, new FakeTrackSearchPort(), new FakeLookupMusicRequestQueue());
     }
 
     public static SearchMusicTestEnvironment WithKnownTrack() =>
         new(
             new FakeQueryCachePort(),
             new FakeTrackSearchPort(KnownTracks.MrBrightside()),
-            new FakeResolutionDemandPort(),
-            new FakeResolutionDemandSignalPort());
+            new FakeLookupMusicRequestQueue());
 
     public static SearchMusicTestEnvironment WithCachedAndKnownTracks(params SearchResult[] results)
     {
@@ -65,18 +61,16 @@ internal sealed class SearchMusicTestEnvironment
         return new SearchMusicTestEnvironment(
             queryCache,
             new FakeTrackSearchPort(results),
-            new FakeResolutionDemandPort(),
-            new FakeResolutionDemandSignalPort());
+            new FakeLookupMusicRequestQueue());
     }
 
     public static SearchMusicTestEnvironment WithNoKnownTracks() =>
         new(
             new FakeQueryCachePort(),
             new FakeTrackSearchPort(),
-            new FakeResolutionDemandPort(),
-            new FakeResolutionDemandSignalPort());
+            new FakeLookupMusicRequestQueue());
 
-    public SearchMusicHandler CreateHandler() => new(QueryCache, TrackSearch, DemandStore, DemandSignals);
+    public SearchMusicHandler CreateHandler() => new(QueryCache, TrackSearch, LookupMusicRequests);
 
     public SearchMusicRequest SearchForKnownTrack() =>
         new(SearchQuery.From("mr brightside"), Limit.From(10));
@@ -146,51 +140,18 @@ internal sealed class FakeTrackSearchPort : ITrackSearchPort
     public Task<bool> IsReadyAsync(CancellationToken cancellationToken) => Task.FromResult(true);
 }
 
-internal sealed class FakeResolutionDemandPort : IResolutionDemandPort
+internal sealed class FakeLookupMusicRequestQueue : ILookupMusicRequestQueue
 {
-    private readonly Dictionary<string, QueryId> _queries = new();
+    private readonly List<LookupMusicRequest> requests = [];
 
-    public IReadOnlyCollection<string> RecordedQueries => _queries.Keys.ToArray();
-
-    public Task<QueryId> RecordDemandAsync(
-        NormalizedSearchQuery query,
-        CancellationToken cancellationToken)
-    {
-        if (!_queries.TryGetValue(query.Value, out var queryId))
-        {
-            queryId = QueryId.New();
-            _queries.Add(query.Value, queryId);
-        }
-
-        return Task.FromResult(queryId);
-    }
-}
-
-internal sealed class FakeResolutionDemandSignalPort : IResolutionDemandSignalPort
-{
-    private readonly List<ResolutionDemandSignal> signals = [];
-
-    public IReadOnlyList<ResolutionDemandSignal> Signals => signals;
+    public IReadOnlyList<LookupMusicRequest> Requests => requests;
 
     public Task EnqueueAsync(
-        ResolutionDemandSignal signal,
+        LookupMusicRequest request,
         CancellationToken cancellationToken)
     {
-        signals.Add(signal);
+        requests.Add(request);
         return Task.CompletedTask;
-    }
-
-    public ValueTask<ResolutionDemandSignal?> DequeueAsync(
-        CancellationToken cancellationToken)
-    {
-        if (signals.Count == 0)
-        {
-            return ValueTask.FromResult<ResolutionDemandSignal?>(null);
-        }
-
-        var signal = signals[0];
-        signals.RemoveAt(0);
-        return ValueTask.FromResult<ResolutionDemandSignal?>(signal);
     }
 }
 

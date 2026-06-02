@@ -1,6 +1,7 @@
 using Soundtrail.Services.Enrichment.Features.Scheduling;
 using Soundtrail.Services.Enrichment.Features.Scheduling.Models;
 using Soundtrail.Services.Features.Search.Models;
+using Soundtrail.Services.Features.Search.Queueing;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure
 {

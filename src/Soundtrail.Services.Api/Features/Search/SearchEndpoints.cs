@@ -53,7 +53,6 @@ public static class SearchEndpoints
                 status = "pending",
                 source = response.Source,
                 query = response.Query.Value,
-                queryId = response.QueryId!.Value,
                 retryAfterSeconds = response.RetryAfterSeconds,
                 results = Array.Empty<object>()
             }
