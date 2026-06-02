@@ -6,33 +6,39 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure
 {
     internal sealed class LookupMusicSchedulerHandlerTestEnvironment
     {
-        private readonly FakeMusicCatalogSearch search;
+        private readonly FakeMusicCatalogCandidateSearch search;
         private readonly RankedMusicCandidateStoreFake rankedMusicCandidateStoreFake;
 
         private LookupMusicSchedulerHandlerTestEnvironment(
-            FakeMusicCatalogSearch search,
+            FakeMusicCatalogCandidateSearch search,
             RankedMusicCandidateStoreFake rankedMusicCandidateStoreFake)
         {
             this.search = search;
             this.rankedMusicCandidateStoreFake = rankedMusicCandidateStoreFake;
-            this.Handler = new LookupSchedulerHandler(search, rankedMusicCandidateStoreFake);
+            this.Planner = new LookupPlanner();
+            this.ResolutionPolicy = new MusicCatalogResolutionPolicy();
+            this.Handler = new LookupSchedulerHandler(search, rankedMusicCandidateStoreFake, this.Planner, this.ResolutionPolicy);
         }
 
         public LookupSchedulerHandler Handler { get; }
 
-        public FakeMusicCatalogSearch Search => this.search;
+        public LookupPlanner Planner { get; }
+
+        public MusicCatalogResolutionPolicy ResolutionPolicy { get; }
+
+        public FakeMusicCatalogCandidateSearch Search => this.search;
 
         public IReadOnlyList<RankedMusicCandidate> RankedMusicCandidates => this.rankedMusicCandidateStoreFake.All;
 
         public static LookupMusicSchedulerHandlerTestEnvironment WithNoExistingCandidates() =>
             new(
-                new FakeMusicCatalogSearch(),
+                new FakeMusicCatalogCandidateSearch(),
                 new RankedMusicCandidateStoreFake());
 
         public static LookupMusicSchedulerHandlerTestEnvironment WithExistingEligibleCandidate(string musicCatalogId = "SomeId")
         {
             var store = new RankedMusicCandidateStoreFake();
-            var search = new FakeMusicCatalogSearch();
+            var search = new FakeMusicCatalogCandidateSearch();
             store.Seed(Candidates.ExistingCandidate(musicCatalogId));
             search.ResolveAs(musicCatalogId);
             return new LookupMusicSchedulerHandlerTestEnvironment(search, store);
@@ -41,7 +47,7 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure
         public static LookupMusicSchedulerHandlerTestEnvironment WithExistingNotYetEligibleCandidate(string musicCatalogId = "SomeId")
         {
             var store = new RankedMusicCandidateStoreFake();
-            var search = new FakeMusicCatalogSearch();
+            var search = new FakeMusicCatalogCandidateSearch();
             store.Seed(Candidates.NotYetEligibleCandidate(musicCatalogId));
             search.ResolveAs(musicCatalogId);
             return new LookupMusicSchedulerHandlerTestEnvironment(search, store);
@@ -50,7 +56,7 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure
         public static LookupMusicSchedulerHandlerTestEnvironment WithExistingCandidate(RankedMusicCandidate candidate)
         {
             var store = new RankedMusicCandidateStoreFake();
-            var search = new FakeMusicCatalogSearch();
+            var search = new FakeMusicCatalogCandidateSearch();
             store.Seed(candidate);
             search.ResolveAs(candidate.MusicCatalogId);
             return new LookupMusicSchedulerHandlerTestEnvironment(search, store);

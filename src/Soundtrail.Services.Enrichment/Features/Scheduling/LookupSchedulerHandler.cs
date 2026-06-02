@@ -4,35 +4,32 @@ using Soundtrail.Services.Enrichment.Features.Scheduling.Models;
 
 namespace Soundtrail.Services.Enrichment.Features.Scheduling;
 
-public sealed class LookupSchedulerHandler(IMusicCatalogSearch musicCatalogSearch, IRankedMusicCandidateStore rankedMusicCandidateStore)
+public sealed class LookupSchedulerHandler(
+    IMusicCatalogCandidateSearch musicCatalogCandidateSearch,
+    IRankedMusicCandidateStore rankedMusicCandidateStore,
+    LookupPlanner lookupPlanner,
+    MusicCatalogResolutionPolicy musicCatalogResolutionPolicy)
 {
     public async Task<LookupMusicCommand?> Handle(LookupMusicRequest request, CancellationToken cancellationToken = default)
     {
-        var musicCatalogId = await musicCatalogSearch.SearchAsync(request.Query, cancellationToken);
-        if (musicCatalogId is null)
+        var matches = await musicCatalogCandidateSearch.SearchAsync(request.Query, cancellationToken);
+        var resolution = musicCatalogResolutionPolicy.Resolve(matches);
+        if (!resolution.IsResolved)
         {
-            throw new ResolutionFailedException();
+            throw new ResolutionFailedException(resolution.Outcome);
         }
 
+        var musicCatalogId = resolution.MusicCatalogId!;
         var existing = await rankedMusicCandidateStore.FindByMusicCatalogIdAsync(musicCatalogId, cancellationToken);
         var rankedMusicCandidate = existing is null ? RankedMusicCandidate.Create(request, musicCatalogId) : existing.AcceptNewRequest(request);
         await rankedMusicCandidateStore.UpsertAsync(rankedMusicCandidate, cancellationToken);
-        
-        if (!rankedMusicCandidate.IsPending)
+
+        var plan = lookupPlanner.Plan(rankedMusicCandidate, request.OccurredAt);
+        if (!plan.ShouldSchedule)
         {
             return null;
         }
 
-        if (!rankedMusicCandidate.IsEligibleAt(request.OccurredAt))
-        {
-            return null;
-        }
-
-        if (rankedMusicCandidate.IsSuspicious)
-        {
-            return null;
-        }
-
-        return request.ToCommand(musicCatalogId);
+        return request.ToCommand(musicCatalogId, plan.Priority!.Value);
     }
 }

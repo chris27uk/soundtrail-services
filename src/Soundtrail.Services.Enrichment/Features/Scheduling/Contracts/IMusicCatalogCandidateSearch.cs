@@ -3,7 +3,7 @@ using Soundtrail.Services.Features.Search.Models;
 
 namespace Soundtrail.Services.Enrichment.Features.Scheduling.Contracts;
 
-public interface IMusicCatalogSearch
+public interface IMusicCatalogCandidateSearch
 {
-    Task<MusicCatalogId?> SearchAsync(NormalizedSearchQuery query, CancellationToken cancellationToken);
+    Task<IReadOnlyList<MusicCatalogMatch>> SearchAsync(NormalizedSearchQuery query, CancellationToken cancellationToken);
 }

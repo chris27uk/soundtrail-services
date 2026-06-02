@@ -60,6 +60,7 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.NoPrevio
             var command = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 30));
 
             command.Should().NotBeNull();
+            command?.Priority.Should().Be(LookupPriorityBand.Low);
         }
 
         [Fact]
@@ -96,6 +97,17 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.NoPrevio
             var command = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: riskScore));
 
             command.Should().NotBeNull();
+        }
+
+        [Fact]
+        public async Task Given_A_Low_Risk_Low_Demand_Request_When_Handled_Then_Command_Has_Low_Priority()
+        {
+            var env = LookupMusicSchedulerHandlerTestEnvironment.WithNoExistingCandidates();
+            env.Search.ResolveAs(MusicCatalogId.From("mc_track_1"));
+
+            var command = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
+
+            command?.Priority.Should().Be(LookupPriorityBand.Low);
         }
 
         [Theory]
