@@ -73,6 +73,17 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.NoPrevio
         }
 
         [Fact]
+        public async Task Given_A_Blocked_Risk_Resolved_Request_When_Handled_Then_Stored_Candidate_Status_Is_Ignored()
+        {
+            var env = LookupMusicSchedulerHandlerTestEnvironment.WithNoExistingCandidates();
+            env.Search.ResolveAs(MusicCatalogId.From("mc_track_1"));
+
+            await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 90));
+
+            env.RankedMusicCandidates[0].Status.Should().Be(RankedMusicCandidateStatus.Ignored);
+        }
+
+        [Fact]
         public async Task Given_A_Resolved_Request_When_Handled_Then_Stored_Candidate_NextEligibleAt_Is_Null()
         {
             var env = LookupMusicSchedulerHandlerTestEnvironment.WithNoExistingCandidates();

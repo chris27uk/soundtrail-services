@@ -18,22 +18,27 @@ public sealed record RankedMusicCandidate(
 
     public static RankedMusicCandidate Create(LookupMusicRequest request, MusicCatalogId musicCatalogId)
     {
+        var riskBand = ToRiskBand(request.RiskScore);
+
         return new RankedMusicCandidate(
             MusicCatalogId: musicCatalogId,
             RequestCount: 1,
             HighestTrustLevelSeen: request.TrustLevel,
             RiskScore: request.RiskScore,
-            Status: RankedMusicCandidateStatus.Pending,
+            Status: riskBand == RiskBand.Blocked ? RankedMusicCandidateStatus.Ignored : RankedMusicCandidateStatus.Pending,
             NextEligibleAt: null);
     }
 
     public RankedMusicCandidate AcceptNewRequest(LookupMusicRequest request)
     {
+        var updatedRiskScore = Math.Max(RiskScore, request.RiskScore);
+
         return this with
         {
             RequestCount = RequestCount + 1,
             HighestTrustLevelSeen = Math.Max(HighestTrustLevelSeen, request.TrustLevel),
-            RiskScore = Math.Max(RiskScore, request.RiskScore)
+            RiskScore = updatedRiskScore,
+            Status = PromoteStatus(Status, ToRiskBand(updatedRiskScore))
         };
     }
 
@@ -46,5 +51,19 @@ public sealed record RankedMusicCandidate(
             >= 30 => RiskBand.Medium,
             _ => RiskBand.Low
         };
+    }
+
+    private static RankedMusicCandidateStatus PromoteStatus(
+        RankedMusicCandidateStatus currentStatus,
+        RiskBand riskBand)
+    {
+        if (currentStatus != RankedMusicCandidateStatus.Pending)
+        {
+            return currentStatus;
+        }
+
+        return riskBand == RiskBand.Blocked
+            ? RankedMusicCandidateStatus.Ignored
+            : RankedMusicCandidateStatus.Pending;
     }
 }

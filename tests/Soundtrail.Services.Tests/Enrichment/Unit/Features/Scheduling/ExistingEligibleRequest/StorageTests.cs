@@ -102,5 +102,42 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.Existing
 
             env.RankedMusicCandidates[0].RiskScore.Should().Be(70);
         }
+
+        [Fact]
+        public async Task
+            Given_An_Existing_Pending_Candidate_When_A_Blocked_Request_Is_Handled_Then_Status_Becomes_Ignored()
+        {
+            const string musicCatalogId = "mc_track_1";
+            var env = LookupMusicSchedulerHandlerTestEnvironment.WithExistingEligibleCandidate(musicCatalogId);
+
+            await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 90));
+
+            env.RankedMusicCandidates[0].Status.Should().Be(RankedMusicCandidateStatus.Ignored);
+        }
+
+        [Fact]
+        public async Task
+            Given_An_Existing_Pending_Candidate_When_A_High_Risk_Request_Is_Handled_Then_Status_Remains_Pending()
+        {
+            const string musicCatalogId = "mc_track_1";
+            var env = LookupMusicSchedulerHandlerTestEnvironment.WithExistingEligibleCandidate(musicCatalogId);
+
+            await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 60));
+
+            env.RankedMusicCandidates[0].Status.Should().Be(RankedMusicCandidateStatus.Pending);
+        }
+
+        [Fact]
+        public async Task
+            Given_An_Existing_Pending_Candidate_When_A_High_Risk_Request_Is_Handled_Then_RequestCount_Is_Incremented_And_No_Command_Is_Returned()
+        {
+            const string musicCatalogId = "mc_track_1";
+            var env = LookupMusicSchedulerHandlerTestEnvironment.WithExistingEligibleCandidate(musicCatalogId);
+
+            var command = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 60));
+
+            command.Should().BeNull();
+            env.RankedMusicCandidates[0].RequestCount.Should().Be(3);
+        }
     }
 }
