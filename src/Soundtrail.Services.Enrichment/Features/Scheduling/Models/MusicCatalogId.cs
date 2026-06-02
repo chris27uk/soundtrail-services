@@ -6,8 +6,6 @@ public sealed record MusicCatalogId
 
     public string Value { get; }
 
-    public static MusicCatalogId New() => new($"mc_{Guid.NewGuid():N}");
-
     public static MusicCatalogId From(string value) => new(value);
     
     public static implicit operator MusicCatalogId(string id) => new(id);

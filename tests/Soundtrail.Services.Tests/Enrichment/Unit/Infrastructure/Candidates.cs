@@ -1,19 +1,24 @@
 using Soundtrail.Services.Enrichment.Features.Scheduling.Models;
-using Soundtrail.Services.Features.Search.Models;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure
 {
     public static class Candidates
     {
-        public static RankedMusicCandidate ExistingCandidate(MusicCatalogId musicCatalogId)
+        public static RankedMusicCandidate ExistingCandidate(
+            MusicCatalogId musicCatalogId,
+            int requestCount = 2,
+            int highestTrustLevelSeen = 0,
+            int riskScore = 5,
+            RankedMusicCandidateStatus status= RankedMusicCandidateStatus.Pending,
+            DateTimeOffset? nextEligibleAt = null)
         {
             return new RankedMusicCandidate(
                 MusicCatalogId: musicCatalogId,
-                RequestCount: 2,
-                HighestTrustLevelSeen: 0,
-                RiskScore: 5,
-                Status: RankedMusicCandidateStatus.Pending,
-                NextEligibleAt: null);
+                RequestCount: requestCount,
+                HighestTrustLevelSeen: highestTrustLevelSeen,
+                RiskScore: riskScore,
+                Status: status,
+                NextEligibleAt: nextEligibleAt);
         }
         
         public static RankedMusicCandidate NotYetEligibleCandidate(MusicCatalogId musicCatalogId)

@@ -15,7 +15,7 @@ public sealed class LookupSchedulerHandler(IMusicCatalogSearch musicCatalogSearc
         }
 
         var existing = await rankedMusicCandidateStore.FindByMusicCatalogIdAsync(musicCatalogId, cancellationToken);
-        var rankedMusicCandidate = existing is null ? RankedMusicCandidate.Create(request, musicCatalogId) : existing.Register(request);
+        var rankedMusicCandidate = existing is null ? RankedMusicCandidate.Create(request, musicCatalogId) : existing.AcceptNewRequest(request);
         await rankedMusicCandidateStore.UpsertAsync(rankedMusicCandidate, cancellationToken);
         
         if (!rankedMusicCandidate.IsPending)

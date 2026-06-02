@@ -47,6 +47,15 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure
             return new LookupMusicSchedulerHandlerTestEnvironment(search, store);
         }
 
+        public static LookupMusicSchedulerHandlerTestEnvironment WithExistingCandidate(RankedMusicCandidate candidate)
+        {
+            var store = new RankedMusicCandidateStoreFake();
+            var search = new FakeMusicCatalogSearch();
+            store.Seed(candidate);
+            search.ResolveAs(candidate.MusicCatalogId);
+            return new LookupMusicSchedulerHandlerTestEnvironment(search, store);
+        }
+
         public LookupMusicRequest Request(
             string query,
             int trustLevel,

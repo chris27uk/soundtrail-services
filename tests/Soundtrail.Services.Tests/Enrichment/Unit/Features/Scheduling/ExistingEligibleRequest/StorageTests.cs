@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Soundtrail.Services.Enrichment.Features.Scheduling.Models;
 using Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.ExistingEligibleRequest
@@ -62,6 +63,44 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.Existing
             await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 15));
 
             env.RankedMusicCandidates[0].RiskScore.Should().Be(15);
+        }
+
+        [Fact]
+        public async Task
+            Given_An_Existing_Candidate_With_Higher_Trust_When_Handled_Then_HighestTrustLevelSeen_Is_Preserved()
+        {
+            const string musicCatalogId = "mc_track_1";
+            var env = LookupMusicSchedulerHandlerTestEnvironment.WithExistingCandidate(
+                Candidates.ExistingCandidate(
+                    MusicCatalogId.From(musicCatalogId),
+                    requestCount: 2,
+                    highestTrustLevelSeen: 3,
+                    riskScore: 5,
+                    status: RankedMusicCandidateStatus.Pending,
+                    nextEligibleAt: null));
+
+            await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 15));
+
+            env.RankedMusicCandidates[0].HighestTrustLevelSeen.Should().Be(3);
+        }
+
+        [Fact]
+        public async Task
+            Given_An_Existing_Candidate_With_Higher_Risk_When_Handled_Then_RiskScore_Is_Preserved()
+        {
+            const string musicCatalogId = "mc_track_1";
+            var env = LookupMusicSchedulerHandlerTestEnvironment.WithExistingCandidate(
+                Candidates.ExistingCandidate(
+                    MusicCatalogId.From(musicCatalogId),
+                    requestCount: 2,
+                    highestTrustLevelSeen: 0,
+                    riskScore: 70,
+                    status: RankedMusicCandidateStatus.Pending,
+                    nextEligibleAt: null));
+
+            await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 15));
+
+            env.RankedMusicCandidates[0].RiskScore.Should().Be(70);
         }
     }
 }
