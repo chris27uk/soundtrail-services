@@ -1,8 +1,8 @@
+using FluentAssertions;
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
 
-namespace Soundtrail.Services.Tests.Integration.Features.Search;
+namespace Soundtrail.Services.Tests.Api.Integration.Features.Search;
 
 public sealed class SearchEndpointsTests(SoundtrailServicesApiFactory factory)
     : IClassFixture<SoundtrailServicesApiFactory>
@@ -34,8 +34,8 @@ public sealed class SearchEndpointsTests(SoundtrailServicesApiFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         content.Should().NotBeNull();
         content!.Status.Should().Be("pending");
-        factory.LookupMusicRequests.EnqueuedRequests.Should().ContainSingle();
-        factory.LookupMusicRequests.EnqueuedRequests[0].Query.Value.Should().Be("rare unknown song");
+        factory.EnqueueMusicRequests.EnqueuedRequests.Should().ContainSingle();
+        factory.EnqueueMusicRequests.EnqueuedRequests[0].Query.Value.Should().Be("rare unknown song");
     }
 
     private sealed class SearchResponseContract

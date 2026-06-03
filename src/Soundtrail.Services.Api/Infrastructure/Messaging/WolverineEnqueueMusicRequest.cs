@@ -4,8 +4,8 @@ using Wolverine;
 
 namespace Soundtrail.Services.Api.Infrastructure.Messaging;
 
-public sealed class WolverineLookupMusicRequestQueue(
-    IMessageBus messageBus) : ILookupMusicRequestQueue
+public sealed class WolverineEnqueueMusicRequest(
+    IMessageBus messageBus) : IEnqueueMusicRequest
 {
     public Task EnqueueAsync(
         LookupMusicRequest request,

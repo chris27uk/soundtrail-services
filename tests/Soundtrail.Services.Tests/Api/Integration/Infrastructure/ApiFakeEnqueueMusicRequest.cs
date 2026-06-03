@@ -1,19 +1,19 @@
 using Soundtrail.Services.Features.Search.Contracts;
 using Soundtrail.Services.Features.Search.Queueing;
 
-namespace Soundtrail.Services.Tests.Integration.Features.Search;
+namespace Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 
-public sealed class ApiFakeLookupMusicRequestQueue : ILookupMusicRequestQueue
+public sealed class ApiFakeEnqueueMusicRequest : IEnqueueMusicRequest
 {
     private readonly Queue<LookupMusicRequest> requests = new();
 
-    public IReadOnlyList<LookupMusicRequest> EnqueuedRequests => requests.ToArray();
+    public IReadOnlyList<LookupMusicRequest> EnqueuedRequests => this.requests.ToArray();
 
     public Task EnqueueAsync(
         LookupMusicRequest request,
         CancellationToken cancellationToken)
     {
-        requests.Enqueue(request);
+        this.requests.Enqueue(request);
         return Task.CompletedTask;
     }
 }

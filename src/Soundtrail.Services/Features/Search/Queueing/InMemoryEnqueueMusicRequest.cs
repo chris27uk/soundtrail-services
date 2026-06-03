@@ -3,7 +3,7 @@ using Soundtrail.Services.Features.Search.Contracts;
 
 namespace Soundtrail.Services.Features.Search.Queueing;
 
-public sealed class InMemoryLookupMusicRequestQueue : ILookupMusicRequestQueue
+public sealed class InMemoryEnqueueMusicRequest : IEnqueueMusicRequest
 {
     private readonly ConcurrentQueue<LookupMusicRequest> requests = new();
 

@@ -1,7 +1,7 @@
 using Soundtrail.Services.Features.Search.Contracts;
 using Soundtrail.Services.Features.Search.Models;
 
-namespace Soundtrail.Services.Tests.Integration.Features.Search
+namespace Soundtrail.Services.Tests.Api.Integration.Infrastructure
 {
     public sealed class ApiFakeTrackSearchPort : ITrackSearchPort
     {

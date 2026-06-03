@@ -4,9 +4,7 @@ using Soundtrail.Services.Api.Infrastructure.Raven;
 using Soundtrail.Services.Features.Search.Models;
 using Soundtrail.Services.Features.CatalogLookup.Contracts;
 using Soundtrail.Services.Features.Tracks;
-using Soundtrail.Services.Tests.Integration.Features.CatalogLookup.Contracts;
-using Soundtrail.Services.Tests.Integration.Features.Search.Contracts;
-using Soundtrail.Services.Tests.Integration.Infrastructure;
+using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Api.Integration.Features.CatalogLookup.Contracts;
 

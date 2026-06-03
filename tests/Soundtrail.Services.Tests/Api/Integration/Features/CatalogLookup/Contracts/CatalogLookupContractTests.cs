@@ -1,11 +1,7 @@
 using FluentAssertions;
 using Soundtrail.Services.Features.CatalogLookup.Models;
-using Soundtrail.Services.Features.Tracks;
-using Soundtrail.Services.Tests.Api.Integration.Features.CatalogLookup.Contracts;
-using Soundtrail.Services.Tests.Integration.Features.Search.Contracts;
-using ContractKnownTracks = Soundtrail.Services.Tests.Api.Integration.Features.CatalogLookup.Contracts.ContractKnownTracks;
 
-namespace Soundtrail.Services.Tests.Integration.Features.CatalogLookup.Contracts;
+namespace Soundtrail.Services.Tests.Api.Integration.Features.CatalogLookup.Contracts;
 
 public sealed class CatalogLookupContractTests
 {

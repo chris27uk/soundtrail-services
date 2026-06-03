@@ -1,9 +1,9 @@
+using FluentAssertions;
+using Soundtrail.Services.Tests.Api.Integration.Features.Search;
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
-using Soundtrail.Services.Tests.Integration.Features.Search;
 
-namespace Soundtrail.Services.Tests.Integration.Features.Health;
+namespace Soundtrail.Services.Tests.Api.Integration.Features.Health;
 
 public sealed class HealthEndpointsTests(SoundtrailServicesApiFactory factory) : IClassFixture<SoundtrailServicesApiFactory>
 {

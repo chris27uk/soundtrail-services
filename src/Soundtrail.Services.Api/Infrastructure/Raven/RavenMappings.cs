@@ -7,34 +7,6 @@ namespace Soundtrail.Services.Api.Infrastructure.Raven;
 
 internal static class RavenMappings
 {
-    public static SearchMusicResponse ToDomain(this RavenQueryCacheDocument document, SearchQuery query)
-    {
-        if (document.Status == "pending")
-        {
-            return SearchMusicResponse.Pending(
-                query,
-                document.RetryAfterSeconds ?? 60);
-        }
-
-        return SearchMusicResponse.Resolved(
-            query,
-            document.Results.Select(ToDomain).ToArray(),
-            document.Source);
-    }
-
-    public static RavenQueryCacheDocument ToDocument(this SearchMusicResponse response, NormalizedSearchQuery query)
-    {
-        return new RavenQueryCacheDocument
-        {
-            Id = RavenQueryCacheDocument.GetDocumentId(query),
-            Query = query.Value,
-            Status = response.Status == ResolutionStatus.Pending ? "pending" : "resolved",
-            Source = response.Source,
-            RetryAfterSeconds = response.RetryAfterSeconds,
-            Results = response.Results.Select(ToDocument).ToList()
-        };
-    }
-
     public static SearchResult ToDomain(this RavenSearchResultDocument document) =>
         new(
             TrackTitle.From(document.Title),
@@ -80,12 +52,4 @@ internal static class RavenMappings
             SpotifyId = track.SpotifyId?.Value,
             DurationMs = track.Duration?.Value
         };
-
-    public static QueryId QueryIdFrom(string value) =>
-        (QueryId)Activator.CreateInstance(
-            typeof(QueryId),
-            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
-            binder: null,
-            args: [value],
-            culture: null)!;
 }

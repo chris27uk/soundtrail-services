@@ -2,7 +2,7 @@ using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
 using Raven.Embedded;
 
-namespace Soundtrail.Services.Tests.Integration.Infrastructure;
+namespace Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 
 internal sealed class RavenEmbeddedTestDatabase : IDisposable
 {
@@ -17,7 +17,7 @@ internal sealed class RavenEmbeddedTestDatabase : IDisposable
         this.store = store;
     }
 
-    public IDocumentStore Store => store;
+    public IDocumentStore Store => this.store;
 
     public static RavenEmbeddedTestDatabase Create()
     {
@@ -36,7 +36,7 @@ internal sealed class RavenEmbeddedTestDatabase : IDisposable
 
     public void Dispose()
     {
-        store.Dispose();
+        this.store.Dispose();
     }
 
     private static void EnsureStarted()

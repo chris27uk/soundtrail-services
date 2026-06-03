@@ -17,7 +17,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 if (builder.Environment.IsEnvironment("Testing"))
 {
-    builder.Services.AddSingleton<ILookupMusicRequestQueue, InMemoryLookupMusicRequestQueue>();
+    builder.Services.AddSingleton<IEnqueueMusicRequest, InMemoryEnqueueMusicRequest>();
 }
 else
 {
@@ -37,7 +37,6 @@ else
 
     builder.Services.AddRavenDocumentStore(builder.Configuration);
     builder.Services.AddLookupMusicRequestQueue(builder.Configuration);
-    builder.Services.AddSingleton<IQueryCachePort, RavenQueryCache>();
     builder.Services.AddSingleton<ITrackSearchPort, RavenTrackSearchIndex>();
     builder.Services.AddSingleton<ICatalogLookupPort, RavenTrackLookup>();
 }

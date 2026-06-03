@@ -1,7 +1,7 @@
 using Soundtrail.Services.Features.Search.Models;
 using Soundtrail.Services.Features.Tracks;
 
-namespace Soundtrail.Services.Tests.Integration.Features.Search
+namespace Soundtrail.Services.Tests.Api.Integration.Features.Search
 {
     internal static class ApiKnownTracks
     {

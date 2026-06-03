@@ -1,9 +1,8 @@
 using Soundtrail.Services.Features.CatalogLookup.Contracts;
 using Soundtrail.Services.Features.CatalogLookup.Models;
 using Soundtrail.Services.Features.Tracks;
-using Soundtrail.Services.Tests.Api.Integration.Features.CatalogLookup.Contracts;
 
-namespace Soundtrail.Services.Tests.Integration.Features.CatalogLookup.Contracts
+namespace Soundtrail.Services.Tests.Api.Integration.Features.CatalogLookup.Contracts
 {
     internal sealed class FakeCatalogLookupPort : ICatalogLookupPort, ISeedCatalogLookup
     {

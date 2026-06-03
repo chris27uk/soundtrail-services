@@ -2,7 +2,7 @@ using Soundtrail.Services.Features.CatalogLookup.Contracts;
 using Soundtrail.Services.Features.CatalogLookup.Models;
 using Soundtrail.Services.Features.Tracks;
 
-namespace Soundtrail.Services.Tests.Integration.Features.Search
+namespace Soundtrail.Services.Tests.Api.Integration.Infrastructure
 {
     public sealed class ApiFakeCatalogLookupPort : ICatalogLookupPort
     {

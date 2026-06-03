@@ -1,76 +1,46 @@
-using Soundtrail.Services.Features.Search.Contracts;
 using Soundtrail.Services.Features.Search;
+using Soundtrail.Services.Features.Search.Contracts;
 using Soundtrail.Services.Features.Search.Models;
 using Soundtrail.Services.Features.Search.Queueing;
 using Soundtrail.Services.Features.Tracks;
 
-namespace Soundtrail.Services.Tests.Unit.Features.Search;
+namespace Soundtrail.Services.Tests.Api.Unit.Features.Search;
 
 internal sealed class SearchMusicTestEnvironment
 {
     private SearchMusicTestEnvironment(
-        FakeQueryCachePort queryCache,
         FakeTrackSearchPort trackSearch,
-        FakeLookupMusicRequestQueue lookupMusicRequests)
+        FakeEnqueueMusicRequest enqueueMusicRequests)
     {
-        QueryCache = queryCache;
         TrackSearch = trackSearch;
-        LookupMusicRequests = lookupMusicRequests;
+        EnqueueMusicRequests = enqueueMusicRequests;
     }
-
-    public FakeQueryCachePort QueryCache { get; }
 
     public FakeTrackSearchPort TrackSearch { get; }
 
-    public FakeLookupMusicRequestQueue LookupMusicRequests { get; }
+    public FakeEnqueueMusicRequest EnqueueMusicRequests { get; }
 
     public static SearchMusicTestEnvironment WithCachedResolvedResponse()
     {
-        var queryCache = new FakeQueryCachePort();
-        var knownTrack = KnownTracks.MrBrightside();
-        var query = SearchQuery.From("mr brightside");
-
-        queryCache.StoreAsync(
-            NormalizedSearchQuery.From(query),
-            SearchMusicResponse.Resolved(query, new[] { knownTrack }, "cache"),
-            TimeSpan.FromHours(1),
-            CancellationToken.None).GetAwaiter().GetResult();
-
-        return new SearchMusicTestEnvironment(queryCache, new FakeTrackSearchPort(), new FakeLookupMusicRequestQueue());
+        return new SearchMusicTestEnvironment(new FakeTrackSearchPort(), new FakeEnqueueMusicRequest());
     }
 
     public static SearchMusicTestEnvironment WithKnownTrack() =>
         new(
-            new FakeQueryCachePort(),
             new FakeTrackSearchPort(KnownTracks.MrBrightside()),
-            new FakeLookupMusicRequestQueue());
+            new FakeEnqueueMusicRequest());
 
     public static SearchMusicTestEnvironment WithCachedAndKnownTracks(params SearchResult[] results)
     {
-        var queryCache = new FakeQueryCachePort();
-        var query = SearchQuery.From("mr brightside");
-
-        queryCache.StoreAsync(
-            NormalizedSearchQuery.From(query),
-            SearchMusicResponse.Resolved(query, new[] { KnownTracks.LowConfidenceMrBrightside() }, "cache"),
-            TimeSpan.FromHours(1),
-            CancellationToken.None).GetAwaiter().GetResult();
-
-        queryCache.ResetCounters();
-
         return new SearchMusicTestEnvironment(
-            queryCache,
             new FakeTrackSearchPort(results),
-            new FakeLookupMusicRequestQueue());
+            new FakeEnqueueMusicRequest());
     }
 
     public static SearchMusicTestEnvironment WithNoKnownTracks() =>
-        new(
-            new FakeQueryCachePort(),
-            new FakeTrackSearchPort(),
-            new FakeLookupMusicRequestQueue());
+        new(new FakeTrackSearchPort(), new FakeEnqueueMusicRequest());
 
-    public SearchMusicHandler CreateHandler() => new(QueryCache, TrackSearch, LookupMusicRequests);
+    public SearchMusicHandler CreateHandler() => new(TrackSearch, EnqueueMusicRequests);
 
     public SearchMusicRequest SearchForKnownTrack() =>
         new(SearchQuery.From("mr brightside"), Limit.From(10));
@@ -79,48 +49,13 @@ internal sealed class SearchMusicTestEnvironment
         new(SearchQuery.From("rare unknown song"), Limit.From(10));
 }
 
-internal sealed class FakeQueryCachePort : IQueryCachePort
-{
-    private readonly Dictionary<string, SearchMusicResponse> _responses = new();
-
-    public int GetCallCount { get; private set; }
-
-    public int StoreCallCount { get; private set; }
-
-    public Task<SearchMusicResponse?> GetAsync(NormalizedSearchQuery query, CancellationToken cancellationToken)
-    {
-        GetCallCount++;
-        _responses.TryGetValue(query.Value, out var response);
-        return Task.FromResult(response);
-    }
-
-    public Task StoreAsync(
-        NormalizedSearchQuery query,
-        SearchMusicResponse response,
-        TimeSpan timeToLive,
-        CancellationToken cancellationToken)
-    {
-        StoreCallCount++;
-        _responses[query.Value] = response;
-        return Task.CompletedTask;
-    }
-
-    public Task<bool> IsReadyAsync(CancellationToken cancellationToken) => Task.FromResult(true);
-
-    public void ResetCounters()
-    {
-        GetCallCount = 0;
-        StoreCallCount = 0;
-    }
-}
-
 internal sealed class FakeTrackSearchPort : ITrackSearchPort
 {
     private readonly IReadOnlyList<SearchResult> _results;
 
     public FakeTrackSearchPort(params SearchResult[] results)
     {
-        _results = results;
+        this._results = results;
     }
 
     public Task<IReadOnlyList<SearchResult>> SearchAsync(
@@ -128,7 +63,7 @@ internal sealed class FakeTrackSearchPort : ITrackSearchPort
         Limit limit,
         CancellationToken cancellationToken)
     {
-        var results = _results
+        var results = this._results
             .Where(track => NormalizedSearchQuery.FromText($"{track.Title.Value} {track.Artist.Value}")
                 .Value.Contains(query.Value, StringComparison.Ordinal))
             .Take(limit.Value)
@@ -140,17 +75,17 @@ internal sealed class FakeTrackSearchPort : ITrackSearchPort
     public Task<bool> IsReadyAsync(CancellationToken cancellationToken) => Task.FromResult(true);
 }
 
-internal sealed class FakeLookupMusicRequestQueue : ILookupMusicRequestQueue
+internal sealed class FakeEnqueueMusicRequest : IEnqueueMusicRequest
 {
     private readonly List<LookupMusicRequest> requests = [];
 
-    public IReadOnlyList<LookupMusicRequest> Requests => requests;
+    public IReadOnlyList<LookupMusicRequest> Requests => this.requests;
 
     public Task EnqueueAsync(
         LookupMusicRequest request,
         CancellationToken cancellationToken)
     {
-        requests.Add(request);
+        this.requests.Add(request);
         return Task.CompletedTask;
     }
 }

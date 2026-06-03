@@ -12,13 +12,11 @@ public static class HealthEndpoints
         endpoints.MapGet(
             "/health/ready",
             async (
-                IQueryCachePort queryCache,
                 ICatalogLookupPort trackLookup,
                 ITrackSearchPort trackSearch,
                 CancellationToken cancellationToken) =>
             {
                 var isReady =
-                    await queryCache.IsReadyAsync(cancellationToken) &&
                     await trackLookup.IsReadyAsync(cancellationToken) &&
                     await trackSearch.IsReadyAsync(cancellationToken);
 

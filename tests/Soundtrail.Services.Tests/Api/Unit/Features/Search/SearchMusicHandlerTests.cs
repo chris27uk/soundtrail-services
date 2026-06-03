@@ -2,7 +2,7 @@ using FluentAssertions;
 using Soundtrail.Services.Features.Search;
 using Soundtrail.Services.Features.Search.Models;
 
-namespace Soundtrail.Services.Tests.Unit.Features.Search;
+namespace Soundtrail.Services.Tests.Api.Unit.Features.Search;
 
 public sealed class SearchMusicHandlerTests
 {
@@ -16,7 +16,7 @@ public sealed class SearchMusicHandlerTests
 
         result.Status.Should().Be(ResolutionStatus.Resolved);
         result.Results.Should().ContainSingle();
-        env.LookupMusicRequests.Requests.Should().BeEmpty();
+        env.EnqueueMusicRequests.Requests.Should().BeEmpty();
     }
 
     [Fact]
@@ -31,7 +31,6 @@ public sealed class SearchMusicHandlerTests
         result.Status.Should().Be(ResolutionStatus.Resolved);
         result.Results.Should().ContainSingle();
         result.Results[0].Title.Value.Should().Be("Mr. Brightside");
-        env.QueryCache.StoreCallCount.Should().Be(1);
     }
 
     [Fact]
@@ -44,8 +43,8 @@ public sealed class SearchMusicHandlerTests
         var result = await sut.Handle(env.SearchForUnknownTrack());
 
         result.Status.Should().Be(ResolutionStatus.Pending);
-        env.LookupMusicRequests.Requests.Should().ContainSingle();
-        env.LookupMusicRequests.Requests[0].Query.Value.Should().Be("rare unknown song");
+        env.EnqueueMusicRequests.Requests.Should().ContainSingle();
+        env.EnqueueMusicRequests.Requests[0].Query.Value.Should().Be("rare unknown song");
     }
 
     [Fact]
@@ -63,8 +62,6 @@ public sealed class SearchMusicHandlerTests
         result.Status.Should().Be(ResolutionStatus.Resolved);
         result.Results.Should().ContainSingle();
         result.Results[0].Confidence.Value.Should().Be(0.98);
-        env.QueryCache.GetCallCount.Should().Be(0);
-        env.QueryCache.StoreCallCount.Should().Be(0);
     }
 
     [Fact]
@@ -80,8 +77,7 @@ public sealed class SearchMusicHandlerTests
                 ConfidenceScore.From(0.99)));
 
         result.Status.Should().Be(ResolutionStatus.Pending);
-        env.LookupMusicRequests.Requests.Should().ContainSingle();
-        env.LookupMusicRequests.Requests[0].Query.Value.Should().Be("mr brightside");
-        env.QueryCache.StoreCallCount.Should().Be(0);
+        env.EnqueueMusicRequests.Requests.Should().ContainSingle();
+        env.EnqueueMusicRequests.Requests[0].Query.Value.Should().Be("mr brightside");
     }
 }
