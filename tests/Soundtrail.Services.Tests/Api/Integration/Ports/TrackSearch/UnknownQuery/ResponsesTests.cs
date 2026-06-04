@@ -2,15 +2,15 @@ using FluentAssertions;
 using Soundtrail.Services.Features.Search.Models;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 
-namespace Soundtrail.Services.Tests.Api.Integration.Ports.TrackSearch.RavenEmbedded.UnknownQuery;
+namespace Soundtrail.Services.Tests.Api.Integration.Ports.TrackSearch.Contract;
 
-[Collection(RavenEmbeddedCollection.Name)]
-public sealed class RavenEmbeddedPortResponsesTests
+public sealed partial class TrackSearchPortContractTests
 {
-    [Fact]
-    public async Task Given_An_Unknown_Query_When_Tracks_Are_Searched_Then_No_Results_Are_Returned()
+    [Theory]
+    [MemberData(nameof(Modes))]
+    public async Task Given_An_Unknown_Query_When_Tracks_Are_Searched_Then_No_Results_Are_Returned(TrackSearchPortMode mode)
     {
-        using var env = TrackSearchTestEnvironment.Create();
+        using var env = TrackSearchTestEnvironment.Create(mode);
         env.Seed(TrackSearchKnownResults.MrBrightside());
 
         var actual = await env.Search.SearchAsync(

@@ -1,13 +1,20 @@
 using FluentAssertions;
 
-namespace Soundtrail.Services.Tests.Api.Integration.Ports.EnqueueMusicRequest.WolverineLocal.ConfiguredRoute;
+namespace Soundtrail.Services.Tests.Api.Integration.Ports.EnqueueMusicRequest.Contract;
 
-public sealed class WolverineLocalPortResponsesTests
+public sealed partial class EnqueueMusicRequestPortContractTests
 {
-    [Fact]
-    public async Task Given_A_Configured_Wolverine_Route_When_A_Request_Is_Enqueued_Then_The_Message_Is_Sent()
+    public static IEnumerable<object[]> Modes =>
+    [
+        [EnqueueMusicRequestPortMode.InMemoryFake],
+        [EnqueueMusicRequestPortMode.WolverineLocal]
+    ];
+
+    [Theory]
+    [MemberData(nameof(Modes))]
+    public async Task Given_A_Configured_Route_When_A_Request_Is_Enqueued_Then_The_Message_Is_Sent(EnqueueMusicRequestPortMode mode)
     {
-        await using var env = await EnqueueMusicRequestTestEnvironment.WithConfiguredRouteAsync();
+        await using var env = await EnqueueMusicRequestTestEnvironment.CreateAsync(mode, configuredRoute: true);
         var request = EnqueueMusicRequestTestEnvironment.Request("mr brightside");
 
         await env.EnqueueMusicRequest.EnqueueAsync(request, CancellationToken.None);

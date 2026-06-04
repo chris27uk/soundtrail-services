@@ -2,35 +2,69 @@ using Raven.Client.Documents;
 using Raven.Client.Documents.Indexes;
 using Soundtrail.Services.Enrichment.Shared.Search;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;
+using Soundtrail.Services.Features.Search.Models;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 using System.Reflection;
 
-namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.MusicCatalogCandidateSearch.RavenEmbedded;
+namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.MusicCatalogCandidateSearch.Contract;
+
+public enum MusicCatalogCandidateSearchPortMode
+{
+    InProcessFake,
+    RavenEmbedded
+}
 
 internal sealed class MusicCatalogCandidateSearchTestEnvironment : IDisposable
 {
-    private readonly RavenEmbeddedTestDatabase raven;
+    private readonly RavenEmbeddedTestDatabase? raven;
+    private readonly Action<string, string> seed;
 
     private MusicCatalogCandidateSearchTestEnvironment(
         IMusicCatalogCandidateSearch search,
-        RavenEmbeddedTestDatabase raven)
+        Action<string, string> seed,
+        RavenEmbeddedTestDatabase? raven)
     {
         Search = search;
+        this.seed = seed;
         this.raven = raven;
     }
 
     public IMusicCatalogCandidateSearch Search { get; }
 
-    public static MusicCatalogCandidateSearchTestEnvironment Create()
+    public static MusicCatalogCandidateSearchTestEnvironment Create(MusicCatalogCandidateSearchPortMode mode)
+    {
+        return mode switch
+        {
+            MusicCatalogCandidateSearchPortMode.InProcessFake => CreateFake(),
+            MusicCatalogCandidateSearchPortMode.RavenEmbedded => CreateRavenEmbedded(),
+            _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
+        };
+    }
+
+    public void Seed(string musicCatalogId, string searchText) => this.seed(musicCatalogId, searchText);
+
+    public void Dispose() => raven?.Dispose();
+
+    private static MusicCatalogCandidateSearchTestEnvironment CreateFake()
+    {
+        var fake = new FakeCandidateSearchPort();
+        return new MusicCatalogCandidateSearchTestEnvironment(
+            fake,
+            fake.Seed,
+            raven: null);
+    }
+
+    private static MusicCatalogCandidateSearchTestEnvironment CreateRavenEmbedded()
     {
         var raven = RavenEmbeddedTestDatabase.Create();
         ExecuteTrackCatalogueIndex(raven.Store);
         return new MusicCatalogCandidateSearchTestEnvironment(
             new RavenMusicCatalogCandidateSearch(raven.Store),
+            (musicCatalogId, searchText) => SeedRaven(raven, musicCatalogId, searchText),
             raven);
     }
 
-    public void Seed(string musicCatalogId, string searchText)
+    private static void SeedRaven(RavenEmbeddedTestDatabase raven, string musicCatalogId, string searchText)
     {
         using var session = raven.Store.OpenSession();
         session.Advanced.WaitForIndexesAfterSaveChanges();
@@ -56,8 +90,6 @@ internal sealed class MusicCatalogCandidateSearchTestEnvironment : IDisposable
         session.SaveChanges();
     }
 
-    public void Dispose() => raven.Dispose();
-
     private static readonly Type RavenTrackDocumentType = typeof(RavenMusicCatalogCandidateSearch).Assembly
         .GetType("Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven.Documents.RavenTrackDocument", throwOnError: true)!;
 
@@ -80,4 +112,23 @@ internal sealed class MusicCatalogCandidateSearchTestEnvironment : IDisposable
         RavenTrackDocumentType
             .GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!
             .SetValue(target, value);
+}
+
+internal sealed class FakeCandidateSearchPort : IMusicCatalogCandidateSearch
+{
+    private readonly List<(string MusicCatalogId, string SearchText)> entries = [];
+
+    public void Seed(string musicCatalogId, string searchText) => this.entries.Add((musicCatalogId, searchText));
+
+    public Task<IReadOnlyList<MusicCatalogMatch>> SearchAsync(
+        NormalizedSearchQuery query,
+        CancellationToken cancellationToken)
+    {
+        IReadOnlyList<MusicCatalogMatch> matches = this.entries
+            .Where(entry => entry.SearchText.Contains(query.Value, StringComparison.Ordinal))
+            .Select(entry => new MusicCatalogMatch(MusicCatalogId.From(entry.MusicCatalogId), 1.00m))
+            .ToArray();
+
+        return Task.FromResult(matches);
+    }
 }

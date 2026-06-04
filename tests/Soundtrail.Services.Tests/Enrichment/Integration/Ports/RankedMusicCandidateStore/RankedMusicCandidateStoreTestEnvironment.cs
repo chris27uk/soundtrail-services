@@ -3,35 +3,75 @@ using Raven.Client.Documents.Indexes;
 using Soundtrail.Services.Enrichment.Shared.Persistence;
 using Soundtrail.Services.Enrichment.Shared.Search;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;
+using Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 using System.Reflection;
 
-namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.RankedMusicCandidateStore.RavenEmbedded;
+namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.RankedMusicCandidateStore.Contract;
+
+public enum RankedMusicCandidateStorePortMode
+{
+    InProcessFake,
+    RavenEmbedded
+}
 
 internal sealed class RankedMusicCandidateStoreTestEnvironment : IDisposable
 {
-    private readonly RavenEmbeddedTestDatabase raven;
+    private readonly RavenEmbeddedTestDatabase? raven;
+    private readonly Action<RankedMusicCandidate[]> seed;
 
     private RankedMusicCandidateStoreTestEnvironment(
         IRankedMusicCandidateStore store,
-        RavenEmbeddedTestDatabase raven)
+        Action<RankedMusicCandidate[]> seed,
+        RavenEmbeddedTestDatabase? raven)
     {
         Store = store;
+        this.seed = seed;
         this.raven = raven;
     }
 
     public IRankedMusicCandidateStore Store { get; }
 
-    public static RankedMusicCandidateStoreTestEnvironment Create()
+    public static RankedMusicCandidateStoreTestEnvironment Create(RankedMusicCandidateStorePortMode mode)
+    {
+        return mode switch
+        {
+            RankedMusicCandidateStorePortMode.InProcessFake => CreateFake(),
+            RankedMusicCandidateStorePortMode.RavenEmbedded => CreateRavenEmbedded(),
+            _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
+        };
+    }
+
+    public void Seed(params RankedMusicCandidate[] candidates) => this.seed(candidates);
+
+    public void Dispose() => raven?.Dispose();
+
+    private static RankedMusicCandidateStoreTestEnvironment CreateFake()
+    {
+        var fake = new RankedMusicCandidateStoreFake();
+        return new RankedMusicCandidateStoreTestEnvironment(
+            fake,
+            candidates =>
+            {
+                foreach (var candidate in candidates)
+                {
+                    fake.Seed(candidate);
+                }
+            },
+            raven: null);
+    }
+
+    private static RankedMusicCandidateStoreTestEnvironment CreateRavenEmbedded()
     {
         var raven = RavenEmbeddedTestDatabase.Create();
         ExecutePlanningIndex(raven.Store);
         return new RankedMusicCandidateStoreTestEnvironment(
             new RavenRankedMusicCandidateStore(raven.Store),
+            candidates => SeedRaven(raven, candidates),
             raven);
     }
 
-    public void Seed(params RankedMusicCandidate[] candidates)
+    private static void SeedRaven(RavenEmbeddedTestDatabase raven, params RankedMusicCandidate[] candidates)
     {
         using var session = raven.Store.OpenSession();
         session.Advanced.WaitForIndexesAfterSaveChanges();
@@ -58,8 +98,6 @@ internal sealed class RankedMusicCandidateStoreTestEnvironment : IDisposable
 
         session.SaveChanges();
     }
-
-    public void Dispose() => raven.Dispose();
 
     private static readonly Type RavenRankedMusicCandidateDocumentType = typeof(RavenRankedMusicCandidateStore).Assembly
         .GetType("Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven.Documents.RavenRankedMusicCandidateDocument", throwOnError: true)!;

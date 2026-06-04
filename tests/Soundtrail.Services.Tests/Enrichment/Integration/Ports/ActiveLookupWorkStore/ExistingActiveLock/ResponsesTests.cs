@@ -2,15 +2,15 @@ using FluentAssertions;
 using Soundtrail.Services.Shared;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 
-namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.ActiveLookupWorkStore.RavenEmbedded.ExistingActiveLock;
+namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.ActiveLookupWorkStore.Contract;
 
-[Collection(RavenEmbeddedCollection.Name)]
-public sealed class RavenEmbeddedPortResponsesTests
+public sealed partial class ActiveLookupWorkStorePortContractTests
 {
-    [Fact]
-    public async Task Given_An_Unexpired_Lock_When_Acquiring_Then_The_Lock_Is_Not_Acquired()
+    [Theory]
+    [MemberData(nameof(Modes))]
+    public async Task Given_An_Unexpired_Lock_When_Acquiring_Then_The_Lock_Is_Not_Acquired(ActiveLookupWorkStorePortMode mode)
     {
-        using var env = ActiveLookupWorkStoreTestEnvironment.Create();
+        using var env = ActiveLookupWorkStoreTestEnvironment.Create(mode);
         await env.Store.TryAcquireAsync(
             CommandId.For("mc_track_1"),
             DateTimeOffset.UtcNow.AddMinutes(5),

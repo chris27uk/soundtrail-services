@@ -3,15 +3,15 @@ using Soundtrail.Services.Enrichment.Shared.Persistence;
 using Soundtrail.Services.Enrichment.Shared.Search;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 
-namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.RankedMusicCandidateStore.RavenEmbedded.PlanningCandidates;
+namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.RankedMusicCandidateStore.Contract;
 
-[Collection(RavenEmbeddedCollection.Name)]
-public sealed class RavenEmbeddedPortResponsesTests
+public sealed partial class RankedMusicCandidateStorePortContractTests
 {
-    [Fact]
-    public async Task Given_Mixed_Candidates_When_Loading_Planning_Candidates_Then_Only_Pending_Eligible_Candidates_Are_Returned()
+    [Theory]
+    [MemberData(nameof(Modes))]
+    public async Task Given_Mixed_Candidates_When_Loading_Planning_Candidates_Then_Only_Pending_Eligible_Candidates_Are_Returned(RankedMusicCandidateStorePortMode mode)
     {
-        using var env = RankedMusicCandidateStoreTestEnvironment.Create();
+        using var env = RankedMusicCandidateStoreTestEnvironment.Create(mode);
         var now = new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero);
         var eligible = new RankedMusicCandidate(MusicCatalogId.From("eligible"), 3, 2, 10, RankedMusicCandidateStatus.Pending, null);
         var ignored = new RankedMusicCandidate(MusicCatalogId.From("ignored"), 3, 2, 10, RankedMusicCandidateStatus.Ignored, null);

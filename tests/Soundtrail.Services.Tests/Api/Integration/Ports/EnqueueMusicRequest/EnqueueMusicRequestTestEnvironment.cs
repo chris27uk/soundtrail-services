@@ -8,43 +8,62 @@ using Soundtrail.Services.Shared;
 using Wolverine;
 using Wolverine.Attributes;
 
-namespace Soundtrail.Services.Tests.Api.Integration.Ports.EnqueueMusicRequest.WolverineLocal;
+namespace Soundtrail.Services.Tests.Api.Integration.Ports.EnqueueMusicRequest.Contract;
+
+public enum EnqueueMusicRequestPortMode
+{
+    InMemoryFake,
+    WolverineLocal
+}
 
 internal sealed class EnqueueMusicRequestTestEnvironment : IAsyncDisposable
 {
     private readonly IHost host;
-    private readonly LookupMusicRequestCapture capture;
+    private readonly Func<TimeSpan, Task<LookupMusicRequest>> waitForCapturedRequest;
 
     private EnqueueMusicRequestTestEnvironment(
         IHost host,
-        LookupMusicRequestCapture capture)
+        IEnqueueMusicRequest enqueueMusicRequest,
+        Func<TimeSpan, Task<LookupMusicRequest>> waitForCapturedRequest)
     {
         this.host = host;
-        this.capture = capture;
-        EnqueueMusicRequest = host.Services.GetRequiredService<IEnqueueMusicRequest>();
+        this.waitForCapturedRequest = waitForCapturedRequest;
+        EnqueueMusicRequest = enqueueMusicRequest;
     }
 
     public IEnqueueMusicRequest EnqueueMusicRequest { get; }
 
-    public static async Task<EnqueueMusicRequestTestEnvironment> WithConfiguredRouteAsync()
+    public static Task<EnqueueMusicRequestTestEnvironment> CreateAsync(
+        EnqueueMusicRequestPortMode mode,
+        bool configuredRoute)
     {
-        var builder = Host.CreateApplicationBuilder();
-        var capture = new LookupMusicRequestCapture();
-
-        builder.Services.AddSingleton(capture);
-        builder.Services.AddSingleton<IEnqueueMusicRequest, WolverineEnqueueMusicRequest>();
-        builder.UseWolverine(opts =>
+        return mode switch
         {
-            opts.Discovery.DisableConventionalDiscovery();
-            opts.Discovery.IncludeType<LookupMusicRequestCaptureHandler>();
-        });
-
-        var host = builder.Build();
-        await host.StartAsync();
-        return new EnqueueMusicRequestTestEnvironment(host, capture);
+            EnqueueMusicRequestPortMode.InMemoryFake => Task.FromResult(CreateFake(configuredRoute)),
+            EnqueueMusicRequestPortMode.WolverineLocal => CreateWolverineAsync(configuredRoute),
+            _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
+        };
     }
 
-    public static async Task<EnqueueMusicRequestTestEnvironment> WithoutConfiguredRouteAsync()
+    private static EnqueueMusicRequestTestEnvironment CreateFake(bool configuredRoute)
+    {
+        var host = Host.CreateApplicationBuilder().Build();
+        if (!configuredRoute)
+        {
+            return new EnqueueMusicRequestTestEnvironment(
+                host,
+                new ThrowingEnqueueMusicRequest(),
+                _ => Task.FromException<LookupMusicRequest>(new InvalidOperationException("No fake route configured.")));
+        }
+
+        var queue = new InMemoryEnqueueMusicRequest();
+        return new EnqueueMusicRequestTestEnvironment(
+            host,
+            queue,
+            timeout => WaitForCapturedRequestAsync(queue, timeout));
+    }
+
+    private static async Task<EnqueueMusicRequestTestEnvironment> CreateWolverineAsync(bool configuredRoute)
     {
         var builder = Host.CreateApplicationBuilder();
         var capture = new LookupMusicRequestCapture();
@@ -54,15 +73,22 @@ internal sealed class EnqueueMusicRequestTestEnvironment : IAsyncDisposable
         builder.UseWolverine(opts =>
         {
             opts.Discovery.DisableConventionalDiscovery();
+            if (configuredRoute)
+            {
+                opts.Discovery.IncludeType<LookupMusicRequestCaptureHandler>();
+            }
         });
 
         var host = builder.Build();
         await host.StartAsync();
-        return new EnqueueMusicRequestTestEnvironment(host, capture);
+        return new EnqueueMusicRequestTestEnvironment(
+            host,
+            host.Services.GetRequiredService<IEnqueueMusicRequest>(),
+            capture.WaitAsync);
     }
 
     public Task<LookupMusicRequest> WaitForCapturedRequestAsync(TimeSpan timeout) =>
-        this.capture.WaitAsync(timeout);
+        this.waitForCapturedRequest(timeout);
 
     public async ValueTask DisposeAsync()
     {
@@ -77,6 +103,26 @@ internal sealed class EnqueueMusicRequestTestEnvironment : IAsyncDisposable
             RiskScore: 10,
             OccurredAt: new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero),
             CorrelationId: CorrelationId.New());
+
+    private static async Task<LookupMusicRequest> WaitForCapturedRequestAsync(
+        InMemoryEnqueueMusicRequest queue,
+        TimeSpan timeout)
+    {
+        using var cts = new CancellationTokenSource(timeout);
+
+        while (!cts.IsCancellationRequested)
+        {
+            var request = await queue.DequeueAsync(cts.Token);
+            if (request is not null)
+            {
+                return request;
+            }
+
+            await Task.Delay(10, cts.Token);
+        }
+
+        throw new TimeoutException("LookupMusicRequest was not captured.");
+    }
 }
 
 public sealed class LookupMusicRequestCapture
@@ -106,4 +152,10 @@ public sealed class LookupMusicRequestCaptureHandler(LookupMusicRequestCapture c
         capture.Record(request);
         return Task.CompletedTask;
     }
+}
+
+internal sealed class ThrowingEnqueueMusicRequest : IEnqueueMusicRequest
+{
+    public Task EnqueueAsync(LookupMusicRequest request, CancellationToken cancellationToken) =>
+        Task.FromException(new InvalidOperationException("No route configured."));
 }

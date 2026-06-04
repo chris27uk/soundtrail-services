@@ -7,30 +7,65 @@ using Soundtrail.Services.Features.Tracks;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 using System.Reflection;
 
-namespace Soundtrail.Services.Tests.Api.Integration.Ports.TrackSearch.RavenEmbedded;
+namespace Soundtrail.Services.Tests.Api.Integration.Ports.TrackSearch.Contract;
+
+public enum TrackSearchPortMode
+{
+    InProcessFake,
+    RavenEmbedded
+}
 
 internal sealed class TrackSearchTestEnvironment : IDisposable
 {
-    private readonly RavenEmbeddedTestDatabase raven;
+    private readonly RavenEmbeddedTestDatabase? raven;
+    private readonly Action<SearchResult[]> seed;
 
     private TrackSearchTestEnvironment(
         ITrackSearchPort search,
-        RavenEmbeddedTestDatabase raven)
+        Action<SearchResult[]> seed,
+        RavenEmbeddedTestDatabase? raven)
     {
         Search = search;
+        this.seed = seed;
         this.raven = raven;
     }
 
     public ITrackSearchPort Search { get; }
 
-    public static TrackSearchTestEnvironment Create()
+    public static TrackSearchTestEnvironment Create(TrackSearchPortMode mode)
+    {
+        return mode switch
+        {
+            TrackSearchPortMode.InProcessFake => CreateFake(),
+            TrackSearchPortMode.RavenEmbedded => CreateRavenEmbedded(),
+            _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
+        };
+    }
+
+    public void Seed(params SearchResult[] results) => this.seed(results);
+
+    public void Dispose() => raven?.Dispose();
+
+    private static TrackSearchTestEnvironment CreateFake()
+    {
+        var fake = new FakeTrackSearchPort();
+        return new TrackSearchTestEnvironment(
+            fake,
+            fake.Seed,
+            raven: null);
+    }
+
+    private static TrackSearchTestEnvironment CreateRavenEmbedded()
     {
         var raven = RavenEmbeddedTestDatabase.Create();
         ExecuteTrackSearchIndex(raven.Store);
-        return new TrackSearchTestEnvironment(new RavenTrackSearchIndex(raven.Store), raven);
+        return new TrackSearchTestEnvironment(
+            new RavenTrackSearchIndex(raven.Store),
+            results => SeedRaven(raven, results),
+            raven);
     }
 
-    public void Seed(params SearchResult[] results)
+    private static void SeedRaven(RavenEmbeddedTestDatabase raven, params SearchResult[] results)
     {
         using var session = raven.Store.OpenSession();
         session.Advanced.WaitForIndexesAfterSaveChanges();
@@ -66,8 +101,6 @@ internal sealed class TrackSearchTestEnvironment : IDisposable
         session.SaveChanges();
     }
 
-    public void Dispose() => raven.Dispose();
-
     private static readonly Type RavenTrackDocumentType = typeof(RavenTrackSearchIndex).Assembly
         .GetType("Soundtrail.Services.Api.Infrastructure.Raven.Documents.RavenTrackDocument", throwOnError: true)!;
 
@@ -90,6 +123,41 @@ internal sealed class TrackSearchTestEnvironment : IDisposable
 
         index.Execute(store);
     }
+}
+
+internal sealed class FakeTrackSearchPort : ITrackSearchPort
+{
+    private readonly List<SearchResult> results = [];
+
+    public void Seed(params SearchResult[] seededResults)
+    {
+        this.results.Clear();
+        this.results.AddRange(seededResults);
+    }
+
+    public Task<IReadOnlyList<SearchResult>> SearchAsync(
+        NormalizedSearchQuery query,
+        Limit limit,
+        CancellationToken cancellationToken)
+    {
+        IReadOnlyList<SearchResult> matches = this.results
+            .Where(track => NormalizedSearchQuery.FromText($"{track.Title.Value} {track.Artist.Value}")
+                .Value.Contains(query.Value, StringComparison.Ordinal))
+            .Take(limit.Value)
+            .Select(track => new SearchResult(
+                track.Title,
+                track.Artist,
+                track.Isrc,
+                track.Mbid,
+                track.AppleId,
+                track.SpotifyId,
+                ConfidenceScore.From(0.95)))
+            .ToArray();
+
+        return Task.FromResult(matches);
+    }
+
+    public Task<bool> IsReadyAsync(CancellationToken cancellationToken) => Task.FromResult(true);
 }
 
 internal static class TrackSearchKnownResults
