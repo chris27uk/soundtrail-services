@@ -27,7 +27,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Soundtrail.Services.Api\Soundtrail.Services.Api.csproj" />
     <ProjectReference Include="..\..\src\Soundtrail.Services.Enrichment\Soundtrail.Services.Enrichment.csproj" />
-    <ProjectReference Include="..\..\src\Soundtrail.Services.Enrichment.Worker\Soundtrail.Services.Enrichment.Worker.csproj" />
+    <ProjectReference Include="..\..\src\Soundtrail.Services.Enrichment.Scheduler\Soundtrail.Services.Enrichment.Scheduler.csproj" />
     <ProjectReference Include="..\..\src\Soundtrail.Services\Soundtrail.Services.csproj" />
   </ItemGroup>
 

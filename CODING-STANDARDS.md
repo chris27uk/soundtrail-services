@@ -20,7 +20,7 @@ The active projects in this solution are:
 - `src/Soundtrail.Services`
 - `src/Soundtrail.Services.Api`
 - `src/Soundtrail.Services.Enrichment`
-- `src/Soundtrail.Services.Enrichment.Worker`
+- `src/Soundtrail.Services.Enrichment.Scheduler`
 
 Treat these as the authoritative structure for new work unless the solution is deliberately reorganized.
 
@@ -79,7 +79,7 @@ Not allowed here:
 - concrete infrastructure clients
 - transport configuration
 
-### `Soundtrail.Services.Enrichment.Worker`
+### `Soundtrail.Services.Enrichment.Scheduler`
 
 Use this project for worker host startup and infrastructure composition.
 
@@ -90,7 +90,7 @@ As worker behavior expands, keep provider orchestration and host concerns here, 
 Dependencies should point inward toward business behavior.
 
 - `Api` may depend on `Services`
-- `Enrichment.Worker` may depend on `Enrichment` and shared core code
+- `Enrichment.Scheduler` may depend on `Enrichment` and shared core code
 - `Enrichment` may depend on `Services` where shared message/value types are needed
 - core business projects must not depend on API or infrastructure projects
 

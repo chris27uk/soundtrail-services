@@ -13,7 +13,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Soundtrail.Services.Tests",
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Enrichment", "Enrichment", "{9A2D3D60-FB99-4E0F-9C5A-845ECD0ACFCF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Soundtrail.Services.Enrichment.Worker", "src\Soundtrail.Services.Enrichment.Worker\Soundtrail.Services.Enrichment.Worker.csproj", "{AC592F97-31FD-4B92-A33F-C77717FA88ED}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Soundtrail.Services.Enrichment.Scheduler", "src\Soundtrail.Services.Enrichment.Scheduler\Soundtrail.Services.Enrichment.Scheduler.csproj", "{AC592F97-31FD-4B92-A33F-C77717FA88ED}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Soundtrail.Services.Enrichment", "src\Soundtrail.Services.Enrichment\Soundtrail.Services.Enrichment.csproj", "{2F487BE6-473A-44C3-A2E5-95214AD57426}"
 EndProject
