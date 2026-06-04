@@ -1,4 +1,5 @@
-using Soundtrail.Services.Enrichment.Features.Scheduling.Models;
+using Soundtrail.Services.Enrichment.Shared.Persistence;
+using Soundtrail.Services.Enrichment.Shared.Search;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven.Documents;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;

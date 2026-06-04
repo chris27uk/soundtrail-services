@@ -1,29 +1,44 @@
 using Raven.Client.Documents;
 using Raven.Client.Documents.Linq;
-using Soundtrail.Services.Enrichment.Features.Scheduling.Contracts;
-using Soundtrail.Services.Enrichment.Features.Scheduling.Models;
+using Raven.Client.Documents.Session;
+using Soundtrail.Services.Enrichment.Shared.Persistence;
+using Soundtrail.Services.Enrichment.Shared.Search;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven.Indexes;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;
 
-public sealed class RavenRankedMusicCandidateStore(IDocumentStore documentStore) : IRankedMusicCandidateStore
+public sealed class RavenRankedMusicCandidateStore(
+    IDocumentStore documentStore,
+    IAsyncDocumentSession? session = null) : IRankedMusicCandidateStore
 {
-    public async Task<RankedMusicCandidate?> FindByMusicCatalogIdAsync(MusicCatalogId musicCatalogId, CancellationToken cancellationToken)
+    public async Task<RankedMusicCandidate?> FindByMusicCatalogIdAsync(
+        MusicCatalogId musicCatalogId,
+        CancellationToken cancellationToken)
     {
-        using var session = documentStore.OpenAsyncSession();
-        var document = await session.LoadAsync<RavenRankedMusicCandidateDocument>(
-            RavenRankedMusicCandidateDocument.GetDocumentId(musicCatalogId.Value),
-            cancellationToken);
+        var (activeSession, dispose) = OpenSession();
+        using (dispose)
+        {
+            var document = await activeSession.LoadAsync<RavenRankedMusicCandidateDocument>(
+                RavenRankedMusicCandidateDocument.GetDocumentId(musicCatalogId.Value),
+                cancellationToken);
 
-        return document?.ToDomain();
+            return document?.ToDomain();
+        }
     }
 
     public async Task UpsertAsync(RankedMusicCandidate candidate, CancellationToken cancellationToken)
     {
-        using var session = documentStore.OpenAsyncSession();
-        await session.StoreAsync(candidate.ToDocument(), cancellationToken);
-        await session.SaveChangesAsync(cancellationToken);
+        var ownsSession = session is null;
+        var (activeSession, dispose) = OpenSession();
+        using (dispose)
+        {
+            await activeSession.StoreAsync(candidate.ToDocument(), cancellationToken);
+            if (ownsSession)
+            {
+                await activeSession.SaveChangesAsync(cancellationToken);
+            }
+        }
     }
 
     public async Task<IReadOnlyList<RankedMusicCandidate>> GetPlanningCandidatesAsync(
@@ -31,16 +46,39 @@ public sealed class RavenRankedMusicCandidateStore(IDocumentStore documentStore)
         int take,
         CancellationToken cancellationToken)
     {
-        using var session = documentStore.OpenAsyncSession();
-        var documents = await session
-            .Query<RavenRankedMusicCandidateDocument, RankedMusicCandidates_ByPlanning>()
-            .Where(candidate => candidate.Status == RankedMusicCandidateStatus.Pending.ToString())
-            .Where(candidate => candidate.NextEligibleAt == null || candidate.NextEligibleAt <= now)
-            .OrderByDescending(candidate => candidate.HighestTrustLevelSeen)
-            .ThenByDescending(candidate => candidate.RequestCount)
-            .Take(take)
-            .ToListAsync(cancellationToken);
+        var (activeSession, dispose) = OpenSession();
+        using (dispose)
+        {
+            var documents = await activeSession
+                .Query<RavenRankedMusicCandidateDocument, RankedMusicCandidates_ByPlanning>()
+                .Where(candidate => candidate.Status == RankedMusicCandidateStatus.Pending.ToString())
+                .Where(candidate => candidate.NextEligibleAt == null || candidate.NextEligibleAt <= now)
+                .OrderByDescending(candidate => candidate.HighestTrustLevelSeen)
+                .ThenByDescending(candidate => candidate.RequestCount)
+                .Take(take)
+                .ToListAsync(cancellationToken);
 
-        return documents.Select(document => document.ToDomain()).ToArray();
+            return documents.Select(document => document.ToDomain()).ToArray();
+        }
+    }
+
+    private (IAsyncDocumentSession Session, IDisposable Dispose) OpenSession()
+    {
+        if (session is not null)
+        {
+            return (session, NoopDisposable.Instance);
+        }
+
+        var openedSession = documentStore.OpenAsyncSession();
+        return (openedSession, openedSession);
+    }
+
+    private sealed class NoopDisposable : IDisposable
+    {
+        public static readonly NoopDisposable Instance = new();
+
+        public void Dispose()
+        {
+        }
     }
 }

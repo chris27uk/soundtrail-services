@@ -9,7 +9,7 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.Existing
         public async Task Given_A_Resolved_Request_That_Is_Not_Yet_Eligible_When_Handled_Then_A_Candidate_Is_Stored()
         {
             const string musicCatalogId = "mc_track_1";
-            var env = LookupMusicSchedulerHandlerTestEnvironment.WithExistingNotYetEligibleCandidate(musicCatalogId);
+            var env = LookupMusicRequestHandlerTestEnvironment.WithExistingNotYetEligibleCandidate(musicCatalogId);
 
             await env.Handler.Handle(env.Request(
                 "rare unknown song",
@@ -24,7 +24,7 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.Existing
         public async Task Given_A_Resolved_Request_That_Is_Not_Yet_Eligible_When_Handled_Then_RequestCount_Is_Incremented()
         {
             const string musicCatalogId = "mc_track_1";
-            var env = LookupMusicSchedulerHandlerTestEnvironment.WithExistingNotYetEligibleCandidate(musicCatalogId);
+            var env = LookupMusicRequestHandlerTestEnvironment.WithExistingNotYetEligibleCandidate(musicCatalogId);
 
             await env.Handler.Handle(env.Request(
                 "rare unknown song",

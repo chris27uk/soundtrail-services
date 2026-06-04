@@ -1,5 +1,5 @@
-using Soundtrail.Services.Features.CatalogLookup.Contracts;
 using Soundtrail.Services.Features.Search.Contracts;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Soundtrail.Services.Api.Features.Health;
 
@@ -12,13 +12,10 @@ public static class HealthEndpoints
         endpoints.MapGet(
             "/health/ready",
             async (
-                ICatalogLookupPort trackLookup,
-                ITrackSearchPort trackSearch,
+                [FromServices] ITrackSearchPort trackSearch,
                 CancellationToken cancellationToken) =>
             {
-                var isReady =
-                    await trackLookup.IsReadyAsync(cancellationToken) &&
-                    await trackSearch.IsReadyAsync(cancellationToken);
+                var isReady = await trackSearch.IsReadyAsync(cancellationToken);
 
                 return isReady
                     ? Results.Ok(new { status = "ready" })

@@ -1,6 +1,6 @@
 using FluentAssertions;
-using Soundtrail.Services.Enrichment.Features.Scheduling;
-using Soundtrail.Services.Enrichment.Features.Scheduling.Models;
+using Soundtrail.Services.Enrichment.Shared.Search;
+using Soundtrail.Services.Enrichment.Shared.Search.Resolution;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling;
 

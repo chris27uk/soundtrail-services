@@ -1,4 +1,5 @@
 using Soundtrail.Services.Features.Search.Models;
+using Soundtrail.Services.Shared;
 
 namespace Soundtrail.Services.Features.Search.Queueing;
 
@@ -7,4 +8,4 @@ public sealed record LookupMusicRequest(
     int TrustLevel,
     int RiskScore,
     DateTimeOffset OccurredAt,
-    string CorrelationId);
+    CorrelationId CorrelationId);

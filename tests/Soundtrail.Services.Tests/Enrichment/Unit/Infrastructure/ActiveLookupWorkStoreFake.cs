@@ -1,39 +1,37 @@
-using Soundtrail.Services.Enrichment.Features.Scheduling.Contracts;
-using Soundtrail.Services.Enrichment.Features.Scheduling.Models;
+using Soundtrail.Services.Enrichment.Features.JustInTimeScheduling.Idempotency;
+using Soundtrail.Services.Shared;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 
 internal sealed class ActiveLookupWorkStoreFake : IActiveLookupWorkStore
 {
-    private readonly Dictionary<string, ActiveLookupWork> reservedByMusicCatalogId = [];
+    private readonly Dictionary<string, ActiveLookupWork> locksByCommandId = [];
 
-    public IReadOnlyCollection<ActiveLookupWork> Reservations => this.reservedByMusicCatalogId.Values.ToArray();
+    public IReadOnlyCollection<ActiveLookupWork> Locks => this.locksByCommandId.Values.ToArray();
 
-    public Task<bool> TryReserveAsync(
-        MusicCatalogId musicCatalogId,
-        string commandId,
-        DateTimeOffset reservedUntil,
+    public Task<bool> TryAcquireAsync(
+        CommandId commandId,
+        DateTimeOffset expiresAt,
         CancellationToken cancellationToken)
     {
-        if (this.reservedByMusicCatalogId.TryGetValue(musicCatalogId.Value, out var existing) &&
-            existing.ReservedUntil > reservedUntil.AddYears(-100))
+        if (this.locksByCommandId.TryGetValue(commandId.Value, out var existing) &&
+            existing.ExpiresAt > expiresAt.AddYears(-100))
         {
             return Task.FromResult(false);
         }
 
-        this.reservedByMusicCatalogId[musicCatalogId.Value] = new ActiveLookupWork(musicCatalogId, commandId, reservedUntil);
+        this.locksByCommandId[commandId.Value] = new ActiveLookupWork(commandId, expiresAt);
         return Task.FromResult(true);
     }
 
     public Task ReleaseAsync(
-        MusicCatalogId musicCatalogId,
-        string commandId,
+        CommandId commandId,
         CancellationToken cancellationToken)
     {
-        if (this.reservedByMusicCatalogId.TryGetValue(musicCatalogId.Value, out var existing) &&
+        if (this.locksByCommandId.TryGetValue(commandId.Value, out var existing) &&
             existing.CommandId == commandId)
         {
-            this.reservedByMusicCatalogId.Remove(musicCatalogId.Value);
+            this.locksByCommandId.Remove(commandId.Value);
         }
 
         return Task.CompletedTask;

@@ -1,5 +1,4 @@
-using Soundtrail.Services.Enrichment.Features.Scheduling.Contracts;
-using Soundtrail.Services.Enrichment.Features.Scheduling.Models;
+using Soundtrail.Services.Enrichment.Shared.Search;
 using Soundtrail.Services.Features.Search.Models;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure

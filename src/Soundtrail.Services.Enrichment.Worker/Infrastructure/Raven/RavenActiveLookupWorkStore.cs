@@ -1,56 +1,91 @@
 using Raven.Client.Documents;
-using Soundtrail.Services.Enrichment.Features.Scheduling.Contracts;
-using Soundtrail.Services.Enrichment.Features.Scheduling.Models;
+using Raven.Client.Documents.Session;
+using Soundtrail.Services.Enrichment.Features.JustInTimeScheduling.Idempotency;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven.Documents;
+using Soundtrail.Services.Shared;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;
 
-public sealed class RavenActiveLookupWorkStore(IDocumentStore documentStore) : IActiveLookupWorkStore
+public sealed class RavenActiveLookupWorkStore(
+    IDocumentStore documentStore,
+    IAsyncDocumentSession? session = null) : IActiveLookupWorkStore
 {
-    public async Task<bool> TryReserveAsync(
-        MusicCatalogId musicCatalogId,
-        string commandId,
-        DateTimeOffset reservedUntil,
+    public async Task<bool> TryAcquireAsync(
+        CommandId commandId,
+        DateTimeOffset expiresAt,
         CancellationToken cancellationToken)
     {
-        using var session = documentStore.OpenAsyncSession();
-        session.Advanced.UseOptimisticConcurrency = true;
-
-        var documentId = RavenActiveLookupWorkDocument.GetDocumentId(musicCatalogId.Value);
-        var existing = await session.LoadAsync<RavenActiveLookupWorkDocument>(documentId, cancellationToken);
-
-        if (existing is not null && existing.ReservedUntil > DateTimeOffset.UtcNow)
+        var ownsSession = session is null;
+        var (activeSession, dispose) = OpenSession();
+        using (dispose)
         {
-            return false;
+            activeSession.Advanced.UseOptimisticConcurrency = true;
+
+            var documentId = RavenActiveLookupWorkDocument.GetDocumentId(commandId.Value);
+            var existing = await activeSession.LoadAsync<RavenActiveLookupWorkDocument>(documentId, cancellationToken);
+
+            if (existing is not null && existing.ExpiresAt > DateTimeOffset.UtcNow)
+            {
+                return false;
+            }
+
+            var activeLock = new RavenActiveLookupWorkDocument
+            {
+                Id = documentId,
+                CommandId = commandId.Value,
+                ExpiresAt = expiresAt
+            };
+
+            await activeSession.StoreAsync(activeLock, cancellationToken);
+            if (ownsSession)
+            {
+                await activeSession.SaveChangesAsync(cancellationToken);
+            }
+
+            return true;
         }
-
-        var reservation = new RavenActiveLookupWorkDocument
-        {
-            Id = documentId,
-            MusicCatalogId = musicCatalogId.Value,
-            CommandId = commandId,
-            ReservedUntil = reservedUntil
-        };
-
-        await session.StoreAsync(reservation, cancellationToken);
-        await session.SaveChangesAsync(cancellationToken);
-        return true;
     }
 
     public async Task ReleaseAsync(
-        MusicCatalogId musicCatalogId,
-        string commandId,
+        CommandId commandId,
         CancellationToken cancellationToken)
     {
-        using var session = documentStore.OpenAsyncSession();
-        var documentId = RavenActiveLookupWorkDocument.GetDocumentId(musicCatalogId.Value);
-        var existing = await session.LoadAsync<RavenActiveLookupWorkDocument>(documentId, cancellationToken);
-        if (existing is null || existing.CommandId != commandId)
+        var ownsSession = session is null;
+        var (activeSession, dispose) = OpenSession();
+        using (dispose)
         {
-            return;
+            var documentId = RavenActiveLookupWorkDocument.GetDocumentId(commandId.Value);
+            var existing = await activeSession.LoadAsync<RavenActiveLookupWorkDocument>(documentId, cancellationToken);
+            if (existing is null || existing.CommandId != commandId.Value)
+            {
+                return;
+            }
+
+            activeSession.Delete(existing);
+            if (ownsSession)
+            {
+                await activeSession.SaveChangesAsync(cancellationToken);
+            }
+        }
+    }
+
+    private (IAsyncDocumentSession Session, IDisposable Dispose) OpenSession()
+    {
+        if (session is not null)
+        {
+            return (session, NoopDisposable.Instance);
         }
 
-        session.Delete(existing);
-        await session.SaveChangesAsync(cancellationToken);
+        var openedSession = documentStore.OpenAsyncSession();
+        return (openedSession, openedSession);
+    }
+
+    private sealed class NoopDisposable : IDisposable
+    {
+        public static readonly NoopDisposable Instance = new();
+
+        public void Dispose()
+        {
+        }
     }
 }

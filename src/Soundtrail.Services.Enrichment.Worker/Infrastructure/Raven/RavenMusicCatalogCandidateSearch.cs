@@ -1,7 +1,6 @@
 using Raven.Client.Documents;
 using Raven.Client.Documents.Linq;
-using Soundtrail.Services.Enrichment.Features.Scheduling.Contracts;
-using Soundtrail.Services.Enrichment.Features.Scheduling.Models;
+using Soundtrail.Services.Enrichment.Shared.Search;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven.Indexes;
 using Soundtrail.Services.Features.Search.Models;

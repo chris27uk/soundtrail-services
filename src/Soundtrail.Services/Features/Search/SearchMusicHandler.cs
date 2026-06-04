@@ -1,12 +1,13 @@
 using Soundtrail.Services.Features.Search.Contracts;
 using Soundtrail.Services.Features.Search.Models;
 using Soundtrail.Services.Features.Search.Queueing;
+using Soundtrail.Services.Shared;
 
 namespace Soundtrail.Services.Features.Search;
 
 public sealed class SearchMusicHandler(
     ITrackSearchPort trackSearch,
-    IEnqueueMusicRequest enqueueMusicRequest)
+    IEnqueueMusicRequest enqueueMusicRequest) : IHandler<SearchMusicRequest, SearchMusicResponse>
 {
     public async Task<SearchMusicResponse> Handle(
         SearchMusicRequest request,
@@ -27,7 +28,7 @@ public sealed class SearchMusicHandler(
                 TrustLevel: 0,
                 RiskScore: 0,
                 OccurredAt: DateTimeOffset.UtcNow,
-                CorrelationId: Guid.NewGuid().ToString("N")),
+                CorrelationId: CorrelationId.New()),
             cancellationToken);
 
         return SearchMusicResponse.Pending(request.Query);

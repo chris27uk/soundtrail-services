@@ -1,5 +1,7 @@
 using FluentAssertions;
-using Soundtrail.Services.Enrichment.Features.Scheduling.Models;
+using Soundtrail.Services.Enrichment.Shared.Prioritisation;
+using Soundtrail.Services.Enrichment.Shared.Search;
+using Soundtrail.Services.Shared;
 using Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.NoPreviousRequests
@@ -9,80 +11,80 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.NoPrevio
         [Fact]
         public async Task Given_A_Resolved_Request_When_Handled_Then_Command_Has_Resolved_MusicCatalogId()
         {
-            var env = LookupMusicSchedulerHandlerTestEnvironment.WithNoExistingCandidates();
+            var env = LookupMusicRequestHandlerTestEnvironment.WithNoExistingCandidates();
             env.Search.ResolveAs(MusicCatalogId.From("mc_track_1"));
 
-            var command = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
+            var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
 
-            command?.MusicCatalogId.Value.Should().Be("mc_track_1");
+            result.Command?.MusicCatalogId.Value.Should().Be("mc_track_1");
         }
 
         [Fact]
         public async Task Given_A_Resolved_Request_When_Handled_Then_Command_CreatedAt_Matches_Request_OccurredAt()
         {
-            var env = LookupMusicSchedulerHandlerTestEnvironment.WithNoExistingCandidates();
+            var env = LookupMusicRequestHandlerTestEnvironment.WithNoExistingCandidates();
             env.Search.ResolveAs(MusicCatalogId.From("mc_track_1"));
             var occurredAt = new DateTimeOffset(2026, 5, 31, 12, 34, 56, TimeSpan.Zero);
 
-            var command = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10, occurredAt: occurredAt));
+            var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10, occurredAt: occurredAt));
 
-            command?.CreatedAt.Should().Be(occurredAt);
+            result.Command?.CreatedAt.Should().Be(occurredAt);
         }
 
         [Fact]
-        public async Task Given_A_Resolved_Request_When_Handled_Then_Command_CorrelationId_Matches_Request()
+        public async Task Given_A_Resolved_Request_When_Handled_Then_Command_CorrelationId_Is_Populated()
         {
-            var env = LookupMusicSchedulerHandlerTestEnvironment.WithNoExistingCandidates();
+            var env = LookupMusicRequestHandlerTestEnvironment.WithNoExistingCandidates();
             env.Search.ResolveAs(MusicCatalogId.From("mc_track_1"));
 
-            var command = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
+            var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
 
-            command?.CorrelationId.Should().Be("correlation-1");
+            result.Command?.CorrelationId.Value.Should().NotBeNullOrWhiteSpace();
         }
 
         [Fact]
-        public async Task Given_A_Resolved_Request_When_Handled_Then_CommandId_Is_Populated()
+        public async Task Given_A_Resolved_Request_When_Handled_Then_CommandId_Is_Built_From_The_MusicCatalogId()
         {
-            var env = LookupMusicSchedulerHandlerTestEnvironment.WithNoExistingCandidates();
+            var env = LookupMusicRequestHandlerTestEnvironment.WithNoExistingCandidates();
             env.Search.ResolveAs(MusicCatalogId.From("mc_track_1"));
 
-            var command = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
+            var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
 
-            command?.CommandId.Should().NotBeNullOrWhiteSpace();
+            result.Command?.CommandId.Should().Be(CommandId.For("mc_track_1"));
         }
 
         [Fact]
         public async Task Given_A_Medium_Risk_Resolved_Request_When_Handled_Then_Command_Is_Returned()
         {
-            var env = LookupMusicSchedulerHandlerTestEnvironment.WithNoExistingCandidates();
+            var env = LookupMusicRequestHandlerTestEnvironment.WithNoExistingCandidates();
             env.Search.ResolveAs(MusicCatalogId.From("mc_track_1"));
 
-            var command = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 30));
+            var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 30));
 
-            command.Should().NotBeNull();
-            command?.Priority.Should().Be(LookupPriorityBand.Low);
+            result.ShouldSchedule.Should().BeTrue();
+            result.Command?.Priority.Should().Be(LookupPriorityBand.Low);
         }
 
         [Fact]
         public async Task Given_A_High_Risk_Resolved_Request_When_Handled_Then_No_Command_Is_Returned()
         {
-            var env = LookupMusicSchedulerHandlerTestEnvironment.WithNoExistingCandidates();
+            var env = LookupMusicRequestHandlerTestEnvironment.WithNoExistingCandidates();
             env.Search.ResolveAs(MusicCatalogId.From("mc_track_1"));
 
-            var command = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 60));
+            var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 60));
 
-            command.Should().BeNull();
+            result.ShouldSchedule.Should().BeFalse();
         }
 
         [Fact]
         public async Task Given_A_Blocked_Risk_Resolved_Request_When_Handled_Then_No_Command_Is_Returned()
         {
-            var env = LookupMusicSchedulerHandlerTestEnvironment.WithNoExistingCandidates();
+            var env = LookupMusicRequestHandlerTestEnvironment.WithNoExistingCandidates();
             env.Search.ResolveAs(MusicCatalogId.From("mc_track_1"));
 
-            var command = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 90));
+            var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 90));
 
-            command.Should().BeNull();
+            result.ShouldSchedule.Should().BeFalse();
         }
 
         [Theory]
@@ -91,23 +93,23 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.NoPrevio
         [InlineData(59)]
         public async Task Given_A_Low_Or_Medium_Risk_Resolved_Request_When_Handled_Then_Command_Is_Returned(int riskScore)
         {
-            var env = LookupMusicSchedulerHandlerTestEnvironment.WithNoExistingCandidates();
+            var env = LookupMusicRequestHandlerTestEnvironment.WithNoExistingCandidates();
             env.Search.ResolveAs(MusicCatalogId.From("mc_track_1"));
 
-            var command = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: riskScore));
+            var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: riskScore));
 
-            command.Should().NotBeNull();
+            result.ShouldSchedule.Should().BeTrue();
         }
 
         [Fact]
         public async Task Given_A_Low_Risk_Low_Demand_Request_When_Handled_Then_Command_Has_Low_Priority()
         {
-            var env = LookupMusicSchedulerHandlerTestEnvironment.WithNoExistingCandidates();
+            var env = LookupMusicRequestHandlerTestEnvironment.WithNoExistingCandidates();
             env.Search.ResolveAs(MusicCatalogId.From("mc_track_1"));
 
-            var command = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
+            var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
 
-            command?.Priority.Should().Be(LookupPriorityBand.Low);
+            result.Command?.Priority.Should().Be(LookupPriorityBand.Low);
         }
 
         [Theory]
@@ -116,12 +118,12 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.NoPrevio
         [InlineData(90)]
         public async Task Given_A_High_Or_Blocked_Risk_Resolved_Request_When_Handled_Then_No_Command_Is_Returned(int riskScore)
         {
-            var env = LookupMusicSchedulerHandlerTestEnvironment.WithNoExistingCandidates();
+            var env = LookupMusicRequestHandlerTestEnvironment.WithNoExistingCandidates();
             env.Search.ResolveAs(MusicCatalogId.From("mc_track_1"));
 
-            var command = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: riskScore));
+            var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: riskScore));
 
-            command.Should().BeNull();
+            result.ShouldSchedule.Should().BeFalse();
         }
     }
 }

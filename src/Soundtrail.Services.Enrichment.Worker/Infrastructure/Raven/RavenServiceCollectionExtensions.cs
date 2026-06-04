@@ -4,7 +4,10 @@ using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
 using Raven.Client.Documents.Indexes;
-using Soundtrail.Services.Enrichment.Features.Scheduling.Contracts;
+using Raven.Client.Documents.Session;
+using Soundtrail.Services.Enrichment.Features.JustInTimeScheduling.Idempotency;
+using Soundtrail.Services.Enrichment.Shared.Persistence;
+using Soundtrail.Services.Enrichment.Shared.Search;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;
 
@@ -33,9 +36,9 @@ public static class RavenServiceCollectionExtensions
             return store;
         });
 
-        services.AddSingleton<IRankedMusicCandidateStore, RavenRankedMusicCandidateStore>();
+        services.AddScoped<IRankedMusicCandidateStore, RavenRankedMusicCandidateStore>();
+        services.AddScoped<IActiveLookupWorkStore, RavenActiveLookupWorkStore>();
         services.AddSingleton<IMusicCatalogCandidateSearch, RavenMusicCatalogCandidateSearch>();
-        services.AddSingleton<IActiveLookupWorkStore, RavenActiveLookupWorkStore>();
         return services;
     }
 }

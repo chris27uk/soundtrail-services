@@ -13,8 +13,7 @@ public sealed record SearchMusicResponse(
         SearchQuery query,
         IReadOnlyList<SearchResult> results,
         string source = "local") =>
-        new(
-            ResolutionStatus.Resolved,
+        new(ResolutionStatus.Resolved,
             source,
             query,
             results,

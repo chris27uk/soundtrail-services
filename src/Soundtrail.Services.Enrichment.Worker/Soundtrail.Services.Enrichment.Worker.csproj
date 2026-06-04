@@ -14,6 +14,7 @@
     <PackageReference Include="RavenDB.Client" Version="7.1.2" />
     <PackageReference Include="WolverineFx" Version="4.9.0" />
     <PackageReference Include="WolverineFx.AzureServiceBus" Version="4.9.0" />
+    <PackageReference Include="WolverineFx.RavenDb" Version="4.9.0" />
   </ItemGroup>
 
   <ItemGroup>

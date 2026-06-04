@@ -1,5 +1,5 @@
 using FluentAssertions;
-using Soundtrail.Services.Enrichment.Features.Scheduling;
+using Soundtrail.Services.Enrichment.Features.JustInTimeScheduling;
 using Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.NotFound
@@ -9,7 +9,7 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.NotFound
         [Fact]
         public async Task Given_A_Request_That_Cannot_Be_Resolved_When_Handled_Then_No_Candidate_Is_Stored()
         {
-            var env = LookupMusicSchedulerHandlerTestEnvironment.WithNoExistingCandidates();
+            var env = LookupMusicRequestHandlerTestEnvironment.WithNoExistingCandidates();
             env.Search.Fails();
 
             try

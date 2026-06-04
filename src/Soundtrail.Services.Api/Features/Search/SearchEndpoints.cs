@@ -1,5 +1,6 @@
 using Soundtrail.Services.Features.Search;
 using Soundtrail.Services.Features.Search.Models;
+using Soundtrail.Services.Shared;
 
 namespace Soundtrail.Services.Api.Features.Search;
 
@@ -13,7 +14,7 @@ public static class SearchEndpoints
                 string? q,
                 int? limit,
                 double? minConfidence,
-                SearchMusicHandler handler,
+                IHandler<SearchMusicRequest, SearchMusicResponse> handler,
                 CancellationToken cancellationToken) =>
             {
                 SearchMusicRequest request;

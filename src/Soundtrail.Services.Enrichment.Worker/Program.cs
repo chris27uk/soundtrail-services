@@ -1,12 +1,16 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Soundtrail.Services.Enrichment.Features.Scheduling;
+using Soundtrail.Services.Enrichment.Features.BacklogScheduling;
+using Soundtrail.Services.Enrichment.Features.JustInTimeScheduling;
+using Soundtrail.Services.Enrichment.Shared.Prioritisation;
+using Soundtrail.Services.Enrichment.Shared.Search.Resolution;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
-using Soundtrail.Services.Enrichment.Worker.Infrastructure.Planning;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;
+using Soundtrail.Services.Enrichment.Worker.Infrastructure.Scheduling;
 using Wolverine;
 using Wolverine.AzureServiceBus;
+using Wolverine.RavenDb;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -16,9 +20,15 @@ var serviceBusOptions = builder.Configuration
 
 builder.UseWolverine(opts =>
 {
+    opts.Discovery.DisableConventionalDiscovery();
+    opts.Discovery.IncludeType<LookupMusicRequestListener>();
+    opts.Discovery.IncludeType<DiscoveryBacklogSchedulingListener>();
+    opts.UseRavenDbPersistence();
+    opts.Policies.AutoApplyTransactions();
+
     opts.UseAzureServiceBus(serviceBusOptions.ConnectionString)
         .AutoProvision()
-        .SystemQueuesAreEnabled(false);
+        .EnableWolverineControlQueues();
 
     opts.ListenToAzureServiceBusQueue(serviceBusOptions.LookupMusicRequestsQueueName)
         .ProcessInline();
@@ -33,11 +43,12 @@ builder.UseWolverine(opts =>
 builder.Services.AddWorkerRavenDocumentStore(builder.Configuration);
 builder.Services.AddWorkerServiceBus(builder.Configuration);
 builder.Services.Configure<LookupPlanningOptions>(builder.Configuration.GetSection(LookupPlanningOptions.SectionName));
-builder.Services.AddSingleton<LookupPlanner>();
+builder.Services.AddSingleton<DiscoveryPriorityPolicy>();
 builder.Services.AddSingleton<MusicCatalogResolutionPolicy>();
-builder.Services.AddSingleton<LookupSchedulerHandler>();
-builder.Services.AddSingleton<LookupSchedulerOrchestrator>();
-builder.Services.AddSingleton<LookupPlanningSweep>();
+builder.Services.AddScoped<LookupMusicRequestHandler>();
+builder.Services.AddScoped<DiscoveryBacklogScheduler>();
+builder.Services.AddScoped<LookupMusicRequestListener>();
+builder.Services.AddScoped<DiscoveryBacklogSchedulingListener>();
 builder.Services.AddHostedService<LookupPlanningSweepHostedService>();
 
 var host = builder.Build();
