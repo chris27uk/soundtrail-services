@@ -40,7 +40,7 @@ public sealed class LookupMusicRequestHandler(
             : existing.AcceptNewRequest(request);
         await rankedMusicCandidateStore.UpsertAsync(rankedMusicCandidate, cancellationToken);
 
-        var plan = discoveryPriorityPolicy.Plan(rankedMusicCandidate, request.OccurredAt);
+        var plan = discoveryPriorityPolicy.Investigate(rankedMusicCandidate, request.OccurredAt);
         if (!plan.ShouldSchedule)
         {
             return LookupSchedulingResult.DoNotSchedule();

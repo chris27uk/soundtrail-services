@@ -1,6 +1,6 @@
 namespace Soundtrail.Services.Enrichment.Shared.Prioritisation;
 
-public enum LookupPlanningDisposition
+public enum ActionType
 {
     Schedule = 0,
     Defer = 1,

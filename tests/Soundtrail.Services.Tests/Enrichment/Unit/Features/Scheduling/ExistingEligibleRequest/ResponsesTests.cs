@@ -32,6 +32,24 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.Existing
         }
 
         [Fact]
+        public async Task Given_An_Existing_High_Trust_Candidate_When_Handled_Then_Command_Has_High_Priority()
+        {
+            const string musicCatalogId = "mc_track_1";
+            var env = LookupMusicRequestHandlerTestEnvironment.WithExistingCandidate(
+                Candidates.ExistingCandidate(
+                    MusicCatalogId.From(musicCatalogId),
+                    requestCount: 1,
+                    highestTrustLevelSeen: 2,
+                    riskScore: 5,
+                    status: RankedMusicCandidateStatus.Pending,
+                    nextEligibleAt: null));
+
+            var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
+
+            result.Command?.Priority.Should().Be(LookupPriorityBand.High);
+        }
+
+        [Fact]
         public async Task Given_An_Existing_Resolved_Candidate_When_Handled_Then_No_Command_Is_Returned()
         {
             const string musicCatalogId = "mc_track_1";

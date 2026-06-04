@@ -5,33 +5,33 @@ namespace Soundtrail.Services.Enrichment.Shared.Prioritisation;
 
 public sealed class DiscoveryPriorityPolicy
 {
-    public LookupPlan Plan(RankedMusicCandidate candidate, DateTimeOffset now)
+    public PriorityPlan Investigate(RankedMusicCandidate candidate, DateTimeOffset now)
     {
         if (!candidate.IsPending)
         {
-            return LookupPlan.Ignore();
+            return PriorityPlan.Ignore();
         }
 
         if (!candidate.IsEligibleAt(now))
         {
-            return LookupPlan.Defer();
+            return PriorityPlan.Defer();
         }
 
         if (candidate.IsSuspicious)
         {
-            return LookupPlan.Ignore();
+            return PriorityPlan.Ignore();
         }
 
         if (candidate.RiskBand == RiskBand.Medium)
         {
-            return LookupPlan.Schedule(LookupPriorityBand.Low);
+            return PriorityPlan.Schedule(LookupPriorityBand.Low);
         }
 
         if (candidate.HighestTrustLevelSeen >= 2 || candidate.RequestCount >= 2)
         {
-            return LookupPlan.Schedule(LookupPriorityBand.High);
+            return PriorityPlan.Schedule(LookupPriorityBand.High);
         }
 
-        return LookupPlan.Schedule(LookupPriorityBand.Low);
+        return PriorityPlan.Schedule(LookupPriorityBand.Low);
     }
 }

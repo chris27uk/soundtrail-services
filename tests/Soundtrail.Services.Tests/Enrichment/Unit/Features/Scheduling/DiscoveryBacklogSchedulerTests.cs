@@ -109,6 +109,86 @@ public class DiscoveryBacklogSchedulerTests
     }
 
     [Fact]
+    public async Task Given_A_High_Trust_Low_Demand_Candidate_When_Scheduling_Backlog_Then_A_High_Priority_Command_Is_Returned()
+    {
+        var now = new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero);
+        var store = new RankedMusicCandidateStoreFake();
+        store.Seed(Candidates.ExistingCandidate(
+            MusicCatalogId.From("mc_track_trusted"),
+            requestCount: 1,
+            highestTrustLevelSeen: 2,
+            riskScore: 10));
+
+        var activeWorkStore = new ActiveLookupWorkStoreFake();
+        var scheduler = new DiscoveryBacklogScheduler(store, activeWorkStore, new DiscoveryPriorityPolicy());
+
+        var commands = await scheduler.RunOnceAsync(now, 10);
+
+        commands.Should().ContainSingle(command => command.Priority == LookupPriorityBand.High);
+    }
+
+    [Fact]
+    public async Task Given_A_High_Risk_Candidate_When_Scheduling_Backlog_Then_No_Command_Is_Returned()
+    {
+        var now = new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero);
+        var store = new RankedMusicCandidateStoreFake();
+        store.Seed(Candidates.ExistingCandidate(
+            MusicCatalogId.From("mc_track_high_risk"),
+            requestCount: 2,
+            highestTrustLevelSeen: 1,
+            riskScore: 60));
+
+        var activeWorkStore = new ActiveLookupWorkStoreFake();
+        var scheduler = new DiscoveryBacklogScheduler(store, activeWorkStore, new DiscoveryPriorityPolicy());
+
+        var commands = await scheduler.RunOnceAsync(now, 10);
+
+        commands.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Given_A_Not_Yet_Eligible_Candidate_When_Scheduling_Backlog_Then_No_Command_Is_Returned()
+    {
+        var now = new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero);
+        var store = new RankedMusicCandidateStoreFake();
+        store.Seed(Candidates.ExistingCandidate(
+            MusicCatalogId.From("mc_track_deferred"),
+            requestCount: 2,
+            highestTrustLevelSeen: 1,
+            riskScore: 10,
+            status: RankedMusicCandidateStatus.Pending,
+            nextEligibleAt: now.AddMinutes(1)));
+
+        var activeWorkStore = new ActiveLookupWorkStoreFake();
+        var scheduler = new DiscoveryBacklogScheduler(store, activeWorkStore, new DiscoveryPriorityPolicy());
+
+        var commands = await scheduler.RunOnceAsync(now, 10);
+
+        commands.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Given_A_Resolved_Candidate_When_Scheduling_Backlog_Then_No_Command_Is_Returned()
+    {
+        var now = new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero);
+        var store = new RankedMusicCandidateStoreFake();
+        store.Seed(Candidates.ExistingCandidate(
+            MusicCatalogId.From("mc_track_resolved"),
+            requestCount: 2,
+            highestTrustLevelSeen: 1,
+            riskScore: 10,
+            status: RankedMusicCandidateStatus.Resolved,
+            nextEligibleAt: null));
+
+        var activeWorkStore = new ActiveLookupWorkStoreFake();
+        var scheduler = new DiscoveryBacklogScheduler(store, activeWorkStore, new DiscoveryPriorityPolicy());
+
+        var commands = await scheduler.RunOnceAsync(now, 10);
+
+        commands.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task Given_A_Scheduled_Candidate_When_Scheduling_Backlog_Then_Command_CreatedAt_Matches_The_Scheduling_Time()
     {
         var now = new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero);

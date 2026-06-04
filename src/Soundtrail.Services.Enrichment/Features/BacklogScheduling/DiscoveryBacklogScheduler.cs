@@ -24,7 +24,7 @@ public sealed class DiscoveryBacklogScheduler(
 
         foreach (var candidate in candidates)
         {
-            var plan = discoveryPriorityPolicy.Plan(candidate, now);
+            var plan = discoveryPriorityPolicy.Investigate(candidate, now);
             if (!plan.ShouldSchedule)
             {
                 continue;
@@ -48,7 +48,7 @@ public sealed class DiscoveryBacklogScheduler(
 
     private static LookupMusicCommand BuildCommand(
         RankedMusicCandidate candidate,
-        LookupPlan plan,
+        PriorityPlan plan,
         DateTimeOffset now)
     {
         return new LookupMusicCommand(
