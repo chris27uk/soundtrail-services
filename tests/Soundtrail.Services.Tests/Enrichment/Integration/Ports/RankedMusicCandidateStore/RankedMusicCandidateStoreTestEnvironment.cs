@@ -1,19 +1,12 @@
 using Raven.Client.Documents;
 using Raven.Client.Documents.Indexes;
 using Soundtrail.Services.Enrichment.Shared.Persistence;
-using Soundtrail.Services.Enrichment.Shared.Search;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;
-using Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
+using Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 using System.Reflection;
 
-namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.RankedMusicCandidateStore.Contract;
-
-public enum RankedMusicCandidateStorePortMode
-{
-    InProcessFake,
-    RavenEmbedded
-}
+namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.RankedMusicCandidateStore;
 
 internal sealed class RankedMusicCandidateStoreTestEnvironment : IDisposable
 {
@@ -44,7 +37,7 @@ internal sealed class RankedMusicCandidateStoreTestEnvironment : IDisposable
 
     public void Seed(params RankedMusicCandidate[] candidates) => this.seed(candidates);
 
-    public void Dispose() => raven?.Dispose();
+    public void Dispose() => this.raven?.Dispose();
 
     private static RankedMusicCandidateStoreTestEnvironment CreateFake()
     {

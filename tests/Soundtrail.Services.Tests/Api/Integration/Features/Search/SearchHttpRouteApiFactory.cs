@@ -3,10 +3,10 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Services.Features.Search;
-using Soundtrail.Services.Features.Search.Models;
+using Soundtrail.Services.Features.Search.TrackSearch;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 
-namespace Soundtrail.Services.Tests.Api.Integration.HttpRoutes.Search;
+namespace Soundtrail.Services.Tests.Api.Integration.Features.Search;
 
 public sealed class SearchHttpRouteApiFactory : WebApplicationFactory<Program>
 {

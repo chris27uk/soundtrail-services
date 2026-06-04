@@ -1,7 +1,7 @@
 using FluentAssertions;
 using System.Net.Http.Json;
 
-namespace Soundtrail.Services.Tests.Api.Integration.HttpRoutes.Search.UnknownQuery;
+namespace Soundtrail.Services.Tests.Api.Integration.Features.Search.UnknownQuery;
 
 public sealed class HttpRouteResponsesTests
 {

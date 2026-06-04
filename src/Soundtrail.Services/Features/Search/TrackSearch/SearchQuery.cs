@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Features.Search.Models;
+namespace Soundtrail.Services.Features.Search.TrackSearch;
 
 public sealed record SearchQuery
 {

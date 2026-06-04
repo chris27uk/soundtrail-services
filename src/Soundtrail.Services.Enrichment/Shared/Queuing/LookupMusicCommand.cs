@@ -2,7 +2,7 @@ using Soundtrail.Services.Enrichment.Shared.Prioritisation;
 using Soundtrail.Services.Enrichment.Shared.Search;
 using Soundtrail.Services.Shared;
 
-namespace Soundtrail.Services.Enrichment.Features.JustInTimeScheduling;
+namespace Soundtrail.Services.Enrichment.Shared.Queuing;
 
 public sealed record LookupMusicCommand(
     CommandId CommandId,

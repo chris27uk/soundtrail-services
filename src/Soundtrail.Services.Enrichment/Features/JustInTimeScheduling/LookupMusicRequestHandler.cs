@@ -1,5 +1,5 @@
 using Soundtrail.Services.Enrichment.Features.JustInTimeScheduling.Extensions;
-using Soundtrail.Services.Enrichment.Features.JustInTimeScheduling.Idempotency;
+using Soundtrail.Services.Enrichment.Shared.Idempotency;
 using Soundtrail.Services.Enrichment.Shared.Persistence;
 using Soundtrail.Services.Enrichment.Shared.Prioritisation;
 using Soundtrail.Services.Enrichment.Shared.Search;

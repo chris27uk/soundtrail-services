@@ -3,19 +3,13 @@ using Soundtrail.Services.Enrichment.Shared.Persistence;
 using Soundtrail.Services.Enrichment.Shared.Search;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 
-namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.RankedMusicCandidateStore.Contract;
+namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.RankedMusicCandidateStore.UpsertedCandidate;
 
 [Collection(RavenEmbeddedCollection.Name)]
-public sealed partial class RankedMusicCandidateStorePortContractTests
+public sealed class UpsertedCandidateResponsesTests
 {
-    public static IEnumerable<object[]> Modes =>
-    [
-        [RankedMusicCandidateStorePortMode.InProcessFake],
-        [RankedMusicCandidateStorePortMode.RavenEmbedded]
-    ];
-
     [Theory]
-    [MemberData(nameof(Modes))]
+    [MemberData(nameof(RankedMusicCandidateStorePortContractModes.All), MemberType = typeof(RankedMusicCandidateStorePortContractModes))]
     public async Task Given_An_Upserted_Candidate_When_Loading_By_MusicCatalogId_Then_The_Candidate_Is_Returned(RankedMusicCandidateStorePortMode mode)
     {
         using var env = RankedMusicCandidateStoreTestEnvironment.Create(mode);

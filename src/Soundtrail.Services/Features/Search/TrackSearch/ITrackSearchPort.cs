@@ -1,6 +1,4 @@
-using Soundtrail.Services.Features.Search.Models;
-
-namespace Soundtrail.Services.Features.Search.Contracts;
+namespace Soundtrail.Services.Features.Search.TrackSearch;
 
 public interface ITrackSearchPort
 {

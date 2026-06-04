@@ -3,7 +3,7 @@ using Raven.Client.Documents.Linq;
 using Soundtrail.Services.Enrichment.Shared.Search;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven.Indexes;
-using Soundtrail.Services.Features.Search.Models;
+using Soundtrail.Services.Features.Search.TrackSearch;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;
 

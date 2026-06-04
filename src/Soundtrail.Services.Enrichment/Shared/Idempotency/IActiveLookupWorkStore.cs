@@ -1,6 +1,6 @@
 using Soundtrail.Services.Shared;
 
-namespace Soundtrail.Services.Enrichment.Features.JustInTimeScheduling.Idempotency;
+namespace Soundtrail.Services.Enrichment.Shared.Idempotency;
 
 public interface IActiveLookupWorkStore
 {

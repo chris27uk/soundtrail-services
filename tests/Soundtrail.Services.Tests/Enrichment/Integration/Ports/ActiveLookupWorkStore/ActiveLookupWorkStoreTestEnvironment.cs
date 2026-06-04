@@ -1,15 +1,9 @@
-using Soundtrail.Services.Enrichment.Features.JustInTimeScheduling.Idempotency;
+using Soundtrail.Services.Enrichment.Shared.Idempotency;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;
-using Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
+using Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 
-namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.ActiveLookupWorkStore.Contract;
-
-public enum ActiveLookupWorkStorePortMode
-{
-    InProcessFake,
-    RavenEmbedded
-}
+namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.ActiveLookupWorkStore;
 
 internal sealed class ActiveLookupWorkStoreTestEnvironment : IDisposable
 {
@@ -35,7 +29,7 @@ internal sealed class ActiveLookupWorkStoreTestEnvironment : IDisposable
         };
     }
 
-    public void Dispose() => raven?.Dispose();
+    public void Dispose() => this.raven?.Dispose();
 
     private static ActiveLookupWorkStoreTestEnvironment CreateRavenEmbedded()
     {

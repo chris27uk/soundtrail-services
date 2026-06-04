@@ -1,6 +1,6 @@
 using Raven.Client.Documents;
 using Raven.Client.Documents.Session;
-using Soundtrail.Services.Enrichment.Features.JustInTimeScheduling.Idempotency;
+using Soundtrail.Services.Enrichment.Shared.Idempotency;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Shared;
 

@@ -1,5 +1,5 @@
-using Soundtrail.Services.Features.Search.Contracts;
 using Microsoft.AspNetCore.Mvc;
+using Soundtrail.Services.Features.Search.TrackSearch;
 
 namespace Soundtrail.Services.Api.Features.Health;
 

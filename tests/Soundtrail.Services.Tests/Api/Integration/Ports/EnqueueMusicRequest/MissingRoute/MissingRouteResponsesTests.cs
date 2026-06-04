@@ -1,11 +1,12 @@
 using FluentAssertions;
+using Soundtrail.Services.Tests.Api.Integration.Ports.EnqueueMusicRequest.ConfiguredRoute;
 
-namespace Soundtrail.Services.Tests.Api.Integration.Ports.EnqueueMusicRequest.Contract;
+namespace Soundtrail.Services.Tests.Api.Integration.Ports.EnqueueMusicRequest.MissingRoute;
 
-public sealed partial class EnqueueMusicRequestPortContractTests
+public sealed class MissingRouteResponsesTests
 {
     [Theory]
-    [MemberData(nameof(Modes))]
+    [MemberData(nameof(EnqueueMusicRequestPortContractModes.All), MemberType = typeof(EnqueueMusicRequestPortContractModes))]
     public async Task Given_No_Configured_Route_When_A_Request_Is_Enqueued_Then_An_Exception_Is_Thrown(EnqueueMusicRequestPortMode mode)
     {
         await using var env = await EnqueueMusicRequestTestEnvironment.CreateAsync(mode, configuredRoute: false);

@@ -1,4 +1,4 @@
-using Soundtrail.Services.Features.Search.Models;
+using Soundtrail.Services.Features.Search.TrackSearch;
 
 namespace Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 

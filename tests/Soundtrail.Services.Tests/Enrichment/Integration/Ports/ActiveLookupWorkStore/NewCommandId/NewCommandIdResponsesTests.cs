@@ -2,19 +2,13 @@ using FluentAssertions;
 using Soundtrail.Services.Shared;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 
-namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.ActiveLookupWorkStore.Contract;
+namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.ActiveLookupWorkStore.NewCommandId;
 
 [Collection(RavenEmbeddedCollection.Name)]
-public sealed partial class ActiveLookupWorkStorePortContractTests
+public sealed class NewCommandIdResponsesTests
 {
-    public static IEnumerable<object[]> Modes =>
-    [
-        [ActiveLookupWorkStorePortMode.InProcessFake],
-        [ActiveLookupWorkStorePortMode.RavenEmbedded]
-    ];
-
     [Theory]
-    [MemberData(nameof(Modes))]
+    [MemberData(nameof(ActiveLookupWorkStorePortContractModes.All), MemberType = typeof(ActiveLookupWorkStorePortContractModes))]
     public async Task Given_A_New_CommandId_When_Acquiring_Then_The_Lock_Is_Acquired(ActiveLookupWorkStorePortMode mode)
     {
         using var env = ActiveLookupWorkStoreTestEnvironment.Create(mode);

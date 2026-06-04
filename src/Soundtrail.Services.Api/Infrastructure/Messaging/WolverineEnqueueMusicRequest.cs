@@ -1,4 +1,3 @@
-using Soundtrail.Services.Features.Search.Contracts;
 using Soundtrail.Services.Features.Search.Queueing;
 using Wolverine;
 

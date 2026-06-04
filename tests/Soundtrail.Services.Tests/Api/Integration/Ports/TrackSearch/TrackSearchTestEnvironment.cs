@@ -1,19 +1,11 @@
 using Raven.Client.Documents;
 using Raven.Client.Documents.Indexes;
 using Soundtrail.Services.Api.Infrastructure.Raven;
-using Soundtrail.Services.Features.Search.Contracts;
-using Soundtrail.Services.Features.Search.Models;
-using Soundtrail.Services.Features.Tracks;
+using Soundtrail.Services.Features.Search.TrackSearch;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 using System.Reflection;
 
-namespace Soundtrail.Services.Tests.Api.Integration.Ports.TrackSearch.Contract;
-
-public enum TrackSearchPortMode
-{
-    InProcessFake,
-    RavenEmbedded
-}
+namespace Soundtrail.Services.Tests.Api.Integration.Ports.TrackSearch;
 
 internal sealed class TrackSearchTestEnvironment : IDisposable
 {
@@ -44,7 +36,7 @@ internal sealed class TrackSearchTestEnvironment : IDisposable
 
     public void Seed(params SearchResult[] results) => this.seed(results);
 
-    public void Dispose() => raven?.Dispose();
+    public void Dispose() => this.raven?.Dispose();
 
     private static TrackSearchTestEnvironment CreateFake()
     {
@@ -123,62 +115,4 @@ internal sealed class TrackSearchTestEnvironment : IDisposable
 
         index.Execute(store);
     }
-}
-
-internal sealed class FakeTrackSearchPort : ITrackSearchPort
-{
-    private readonly List<SearchResult> results = [];
-
-    public void Seed(params SearchResult[] seededResults)
-    {
-        this.results.Clear();
-        this.results.AddRange(seededResults);
-    }
-
-    public Task<IReadOnlyList<SearchResult>> SearchAsync(
-        NormalizedSearchQuery query,
-        Limit limit,
-        CancellationToken cancellationToken)
-    {
-        IReadOnlyList<SearchResult> matches = this.results
-            .Where(track => NormalizedSearchQuery.FromText($"{track.Title.Value} {track.Artist.Value}")
-                .Value.Contains(query.Value, StringComparison.Ordinal))
-            .Take(limit.Value)
-            .Select(track => new SearchResult(
-                track.Title,
-                track.Artist,
-                track.Isrc,
-                track.Mbid,
-                track.AppleId,
-                track.SpotifyId,
-                ConfidenceScore.From(0.95)))
-            .ToArray();
-
-        return Task.FromResult(matches);
-    }
-
-    public Task<bool> IsReadyAsync(CancellationToken cancellationToken) => Task.FromResult(true);
-}
-
-internal static class TrackSearchKnownResults
-{
-    public static SearchResult MrBrightside() =>
-        new(
-            TrackTitle.From("Mr. Brightside"),
-            ArtistName.From("The Killers"),
-            Isrc.From("USIR20400274"),
-            Mbid.From("mr-brightside-mbid"),
-            AppleId.From("apple-mr-brightside"),
-            SpotifyId.From("spotify-mr-brightside"),
-            ConfidenceScore.From(0.98));
-
-    public static SearchResult MrBrightsideFromIndex() =>
-        new(
-            TrackTitle.From("Mr. Brightside"),
-            ArtistName.From("The Killers"),
-            Isrc.From("USIR20400274"),
-            Mbid.From("mr-brightside-mbid"),
-            AppleId.From("apple-mr-brightside"),
-            SpotifyId.From("spotify-mr-brightside"),
-            ConfidenceScore.From(0.95));
 }

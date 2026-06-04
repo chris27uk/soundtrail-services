@@ -1,4 +1,5 @@
 using Soundtrail.Services.Enrichment.Shared.Prioritisation;
+using Soundtrail.Services.Enrichment.Shared.Queuing;
 using Soundtrail.Services.Enrichment.Shared.Search;
 using Soundtrail.Services.Features.Search.Queueing;
 using Soundtrail.Services.Shared;

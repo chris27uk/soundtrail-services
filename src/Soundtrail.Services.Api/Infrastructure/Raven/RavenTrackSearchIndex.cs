@@ -1,7 +1,6 @@
 using Raven.Client.Documents;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
-using Soundtrail.Services.Features.Search.Contracts;
-using Soundtrail.Services.Features.Search.Models;
+using Soundtrail.Services.Features.Search.TrackSearch;
 using Soundtrail.Services.Features.Tracks;
 
 namespace Soundtrail.Services.Api.Infrastructure.Raven;

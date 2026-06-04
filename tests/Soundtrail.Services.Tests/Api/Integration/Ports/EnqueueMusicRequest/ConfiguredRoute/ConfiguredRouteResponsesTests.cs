@@ -1,17 +1,11 @@
 using FluentAssertions;
 
-namespace Soundtrail.Services.Tests.Api.Integration.Ports.EnqueueMusicRequest.Contract;
+namespace Soundtrail.Services.Tests.Api.Integration.Ports.EnqueueMusicRequest.ConfiguredRoute;
 
-public sealed partial class EnqueueMusicRequestPortContractTests
+public sealed class ConfiguredRouteResponsesTests
 {
-    public static IEnumerable<object[]> Modes =>
-    [
-        [EnqueueMusicRequestPortMode.InMemoryFake],
-        [EnqueueMusicRequestPortMode.WolverineLocal]
-    ];
-
     [Theory]
-    [MemberData(nameof(Modes))]
+    [MemberData(nameof(EnqueueMusicRequestPortContractModes.All), MemberType = typeof(EnqueueMusicRequestPortContractModes))]
     public async Task Given_A_Configured_Route_When_A_Request_Is_Enqueued_Then_The_Message_Is_Sent(EnqueueMusicRequestPortMode mode)
     {
         await using var env = await EnqueueMusicRequestTestEnvironment.CreateAsync(mode, configuredRoute: true);

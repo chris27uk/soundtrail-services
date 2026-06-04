@@ -1,20 +1,14 @@
 using FluentAssertions;
-using Soundtrail.Services.Features.Search.Models;
+using Soundtrail.Services.Features.Search.TrackSearch;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 
-namespace Soundtrail.Services.Tests.Api.Integration.Ports.TrackSearch.Contract;
+namespace Soundtrail.Services.Tests.Api.Integration.Ports.TrackSearch.KnownQuery;
 
 [Collection(RavenEmbeddedCollection.Name)]
-public sealed partial class TrackSearchPortContractTests
+public sealed class KnownQueryResponsesTests
 {
-    public static IEnumerable<object[]> Modes =>
-    [
-        [TrackSearchPortMode.InProcessFake],
-        [TrackSearchPortMode.RavenEmbedded]
-    ];
-
     [Theory]
-    [MemberData(nameof(Modes))]
+    [MemberData(nameof(TrackSearchPortContractModes.All), MemberType = typeof(TrackSearchPortContractModes))]
     public async Task Given_A_Known_Query_When_Tracks_Are_Searched_Then_The_Matching_Result_Is_Returned(TrackSearchPortMode mode)
     {
         using var env = TrackSearchTestEnvironment.Create(mode);

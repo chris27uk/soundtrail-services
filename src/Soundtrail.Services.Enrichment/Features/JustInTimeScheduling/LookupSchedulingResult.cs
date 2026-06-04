@@ -1,3 +1,5 @@
+using Soundtrail.Services.Enrichment.Shared.Queuing;
+
 namespace Soundtrail.Services.Enrichment.Features.JustInTimeScheduling;
 
 public sealed record LookupSchedulingResult(

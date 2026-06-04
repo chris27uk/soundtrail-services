@@ -1,4 +1,3 @@
-using Soundtrail.Services.Features.Search.Contracts;
 using Soundtrail.Services.Features.Search.Queueing;
 
 namespace Soundtrail.Services.Api.Infrastructure.Messaging;
@@ -10,7 +9,7 @@ public static class ServiceBusServiceCollectionExtensions
         IConfiguration configuration)
     {
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
-        services.AddSingleton<IEnqueueMusicRequest, WolverineEnqueueMusicRequest>();
+        services.AddScoped<IEnqueueMusicRequest, WolverineEnqueueMusicRequest>();
         return services;
     }
 }

@@ -1,4 +1,4 @@
-using Soundtrail.Services.Enrichment.Features.JustInTimeScheduling.Idempotency;
+using Soundtrail.Services.Enrichment.Shared.Idempotency;
 using Soundtrail.Services.Shared;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;

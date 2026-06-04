@@ -4,8 +4,8 @@ using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Soundtrail.Services.Api.Infrastructure.Raven;
 using Soundtrail.Services.Api.Infrastructure.Time;
 using Soundtrail.Services.Features.Search;
-using Soundtrail.Services.Features.Search.Contracts;
 using Soundtrail.Services.Features.Search.Queueing;
+using Soundtrail.Services.Features.Search.TrackSearch;
 using Soundtrail.Services.Shared;
 using Soundtrail.Services.Features.Tracks;
 using Wolverine;
@@ -40,7 +40,7 @@ else
     builder.Services.AddSingleton<ITrackSearchPort, RavenTrackSearchIndex>();
 }
 
-builder.Services.AddSingleton<global::Soundtrail.Services.Shared.IHandler<SearchMusicRequest, SearchMusicResponse>, SearchMusicHandler>();
+builder.Services.AddScoped<global::Soundtrail.Services.Shared.IHandler<SearchMusicRequest, SearchMusicResponse>, SearchMusicHandler>();
 
 var app = builder.Build();
 

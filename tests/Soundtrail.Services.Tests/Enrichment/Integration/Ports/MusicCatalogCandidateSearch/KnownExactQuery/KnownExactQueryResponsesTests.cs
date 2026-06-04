@@ -1,21 +1,15 @@
 using FluentAssertions;
 using Soundtrail.Services.Enrichment.Shared.Search;
-using Soundtrail.Services.Features.Search.Models;
+using Soundtrail.Services.Features.Search.TrackSearch;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 
-namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.MusicCatalogCandidateSearch.Contract;
+namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.MusicCatalogCandidateSearch.KnownExactQuery;
 
 [Collection(RavenEmbeddedCollection.Name)]
-public sealed partial class MusicCatalogCandidateSearchPortContractTests
+public sealed class KnownExactQueryResponsesTests
 {
-    public static IEnumerable<object[]> Modes =>
-    [
-        [MusicCatalogCandidateSearchPortMode.InProcessFake],
-        [MusicCatalogCandidateSearchPortMode.RavenEmbedded]
-    ];
-
     [Theory]
-    [MemberData(nameof(Modes))]
+    [MemberData(nameof(MusicCatalogCandidateSearchPortContractModes.All), MemberType = typeof(MusicCatalogCandidateSearchPortContractModes))]
     public async Task Given_A_Known_Exact_Query_When_Candidates_Are_Searched_Then_The_Matching_Candidate_Is_Returned(MusicCatalogCandidateSearchPortMode mode)
     {
         using var env = MusicCatalogCandidateSearchTestEnvironment.Create(mode);

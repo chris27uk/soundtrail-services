@@ -2,8 +2,8 @@ using Soundtrail.Services.Enrichment.Features.JustInTimeScheduling;
 using Soundtrail.Services.Enrichment.Shared.Persistence;
 using Soundtrail.Services.Enrichment.Shared.Prioritisation;
 using Soundtrail.Services.Enrichment.Shared.Search.Resolution;
-using Soundtrail.Services.Features.Search.Models;
 using Soundtrail.Services.Features.Search.Queueing;
+using Soundtrail.Services.Features.Search.TrackSearch;
 using Soundtrail.Services.Shared;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure

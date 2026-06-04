@@ -2,17 +2,10 @@ using Raven.Client.Documents;
 using Raven.Client.Documents.Indexes;
 using Soundtrail.Services.Enrichment.Shared.Search;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;
-using Soundtrail.Services.Features.Search.Models;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 using System.Reflection;
 
-namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.MusicCatalogCandidateSearch.Contract;
-
-public enum MusicCatalogCandidateSearchPortMode
-{
-    InProcessFake,
-    RavenEmbedded
-}
+namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.MusicCatalogCandidateSearch;
 
 internal sealed class MusicCatalogCandidateSearchTestEnvironment : IDisposable
 {
@@ -43,7 +36,7 @@ internal sealed class MusicCatalogCandidateSearchTestEnvironment : IDisposable
 
     public void Seed(string musicCatalogId, string searchText) => this.seed(musicCatalogId, searchText);
 
-    public void Dispose() => raven?.Dispose();
+    public void Dispose() => this.raven?.Dispose();
 
     private static MusicCatalogCandidateSearchTestEnvironment CreateFake()
     {
@@ -112,23 +105,4 @@ internal sealed class MusicCatalogCandidateSearchTestEnvironment : IDisposable
         RavenTrackDocumentType
             .GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!
             .SetValue(target, value);
-}
-
-internal sealed class FakeCandidateSearchPort : IMusicCatalogCandidateSearch
-{
-    private readonly List<(string MusicCatalogId, string SearchText)> entries = [];
-
-    public void Seed(string musicCatalogId, string searchText) => this.entries.Add((musicCatalogId, searchText));
-
-    public Task<IReadOnlyList<MusicCatalogMatch>> SearchAsync(
-        NormalizedSearchQuery query,
-        CancellationToken cancellationToken)
-    {
-        IReadOnlyList<MusicCatalogMatch> matches = this.entries
-            .Where(entry => entry.SearchText.Contains(query.Value, StringComparison.Ordinal))
-            .Select(entry => new MusicCatalogMatch(MusicCatalogId.From(entry.MusicCatalogId), 1.00m))
-            .ToArray();
-
-        return Task.FromResult(matches);
-    }
 }

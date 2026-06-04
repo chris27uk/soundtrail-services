@@ -1,6 +1,5 @@
-using Soundtrail.Services.Features.Search.Contracts;
-using Soundtrail.Services.Features.Search.Models;
 using Soundtrail.Services.Features.Search.Queueing;
+using Soundtrail.Services.Features.Search.TrackSearch;
 using Soundtrail.Services.Shared;
 
 namespace Soundtrail.Services.Features.Search;

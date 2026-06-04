@@ -1,13 +1,13 @@
 using FluentAssertions;
 using Soundtrail.Services.Shared;
-using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
+using Soundtrail.Services.Tests.Enrichment.Integration.Ports.ActiveLookupWorkStore.NewCommandId;
 
-namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.ActiveLookupWorkStore.Contract;
+namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.ActiveLookupWorkStore.ExistingActiveLock;
 
-public sealed partial class ActiveLookupWorkStorePortContractTests
+public sealed class ExistingActiveLockResponsesTests
 {
     [Theory]
-    [MemberData(nameof(Modes))]
+    [MemberData(nameof(ActiveLookupWorkStorePortContractModes.All), MemberType = typeof(ActiveLookupWorkStorePortContractModes))]
     public async Task Given_An_Unexpired_Lock_When_Acquiring_Then_The_Lock_Is_Not_Acquired(ActiveLookupWorkStorePortMode mode)
     {
         using var env = ActiveLookupWorkStoreTestEnvironment.Create(mode);

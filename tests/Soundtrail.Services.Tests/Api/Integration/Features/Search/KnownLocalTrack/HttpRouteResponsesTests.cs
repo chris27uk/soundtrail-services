@@ -1,9 +1,9 @@
 using FluentAssertions;
 using Soundtrail.Services.Features.Search;
-using Soundtrail.Services.Features.Search.Models;
+using Soundtrail.Services.Features.Search.TrackSearch;
 using System.Net.Http.Json;
 
-namespace Soundtrail.Services.Tests.Api.Integration.HttpRoutes.Search.KnownLocalTrack;
+namespace Soundtrail.Services.Tests.Api.Integration.Features.Search.KnownLocalTrack;
 
 public sealed class HttpRouteResponsesTests
 {

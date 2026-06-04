@@ -1,6 +1,6 @@
 using FluentAssertions;
 using Soundtrail.Services.Features.Search;
-using Soundtrail.Services.Features.Search.Models;
+using Soundtrail.Services.Features.Search.TrackSearch;
 using Soundtrail.Services.Tests.Api.Unit.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Api.Unit.Features.Search.MinimumConfidenceSatisfied;

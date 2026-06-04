@@ -1,7 +1,8 @@
 using Soundtrail.Services.Enrichment.Features.JustInTimeScheduling;
-using Soundtrail.Services.Enrichment.Features.JustInTimeScheduling.Idempotency;
+using Soundtrail.Services.Enrichment.Shared.Idempotency;
 using Soundtrail.Services.Enrichment.Shared.Persistence;
 using Soundtrail.Services.Enrichment.Shared.Prioritisation;
+using Soundtrail.Services.Enrichment.Shared.Queuing;
 using Soundtrail.Services.Shared;
 
 namespace Soundtrail.Services.Enrichment.Features.BacklogScheduling;

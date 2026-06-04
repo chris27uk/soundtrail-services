@@ -1,14 +1,14 @@
 using FluentAssertions;
 using Soundtrail.Services.Enrichment.Shared.Persistence;
 using Soundtrail.Services.Enrichment.Shared.Search;
-using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
+using Soundtrail.Services.Tests.Enrichment.Integration.Ports.RankedMusicCandidateStore.UpsertedCandidate;
 
-namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.RankedMusicCandidateStore.Contract;
+namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.RankedMusicCandidateStore.PlanningCandidates;
 
-public sealed partial class RankedMusicCandidateStorePortContractTests
+public sealed class PlanningCandidatesResponsesTests
 {
     [Theory]
-    [MemberData(nameof(Modes))]
+    [MemberData(nameof(RankedMusicCandidateStorePortContractModes.All), MemberType = typeof(RankedMusicCandidateStorePortContractModes))]
     public async Task Given_Mixed_Candidates_When_Loading_Planning_Candidates_Then_Only_Pending_Eligible_Candidates_Are_Returned(RankedMusicCandidateStorePortMode mode)
     {
         using var env = RankedMusicCandidateStoreTestEnvironment.Create(mode);

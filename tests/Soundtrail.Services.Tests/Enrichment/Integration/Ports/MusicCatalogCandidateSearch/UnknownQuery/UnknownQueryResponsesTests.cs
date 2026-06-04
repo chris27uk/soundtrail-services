@@ -1,13 +1,13 @@
 using FluentAssertions;
-using Soundtrail.Services.Features.Search.Models;
-using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
+using Soundtrail.Services.Features.Search.TrackSearch;
+using Soundtrail.Services.Tests.Enrichment.Integration.Ports.MusicCatalogCandidateSearch.KnownExactQuery;
 
-namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.MusicCatalogCandidateSearch.Contract;
+namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.MusicCatalogCandidateSearch.UnknownQuery;
 
-public sealed partial class MusicCatalogCandidateSearchPortContractTests
+public sealed class UnknownQueryResponsesTests
 {
     [Theory]
-    [MemberData(nameof(Modes))]
+    [MemberData(nameof(MusicCatalogCandidateSearchPortContractModes.All), MemberType = typeof(MusicCatalogCandidateSearchPortContractModes))]
     public async Task Given_An_Unknown_Query_When_Candidates_Are_Searched_Then_No_Candidates_Are_Returned(MusicCatalogCandidateSearchPortMode mode)
     {
         using var env = MusicCatalogCandidateSearchTestEnvironment.Create(mode);
