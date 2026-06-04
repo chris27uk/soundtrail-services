@@ -2,10 +2,10 @@ using FluentAssertions;
 using Soundtrail.Services.Features.Search.Models;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 
-namespace Soundtrail.Services.Tests.Api.Integration.Ports.TrackSearch.KnownQuery;
+namespace Soundtrail.Services.Tests.Api.Integration.Ports.TrackSearch.RavenEmbedded.KnownQuery;
 
 [Collection(RavenEmbeddedCollection.Name)]
-public sealed class ResponsesTests
+public sealed class RavenEmbeddedPortResponsesTests
 {
     [Fact]
     public async Task Given_A_Known_Query_When_Tracks_Are_Searched_Then_The_Matching_Result_Is_Returned()

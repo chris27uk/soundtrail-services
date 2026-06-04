@@ -7,7 +7,7 @@ using Soundtrail.Services.Features.Tracks;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 using System.Reflection;
 
-namespace Soundtrail.Services.Tests.Api.Integration.Ports.TrackSearch;
+namespace Soundtrail.Services.Tests.Api.Integration.Ports.TrackSearch.RavenEmbedded;
 
 internal sealed class TrackSearchTestEnvironment : IDisposable
 {
