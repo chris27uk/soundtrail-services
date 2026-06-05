@@ -1,6 +1,6 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Services.Enrichment.Features.Execution.AppleLookupExecution;
-using Soundtrail.Services.Enrichment.Shared.Execution;
+using Soundtrail.Services.Enrichment.Shared.Orchestration;
 using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
@@ -10,7 +10,7 @@ public sealed class AppleLookupExecutionListener(ExecuteAppleLookupHandler handl
     [WolverineHandler]
     [Transactional]
     public async Task<object[]> Handle(
-        HighPriorityAppleLookupCommandMessage message,
+        HighPriorityVerifyApplePlaybackReferenceCommandMessage message,
         IAsyncDocumentSession _,
         CancellationToken cancellationToken = default)
     {
@@ -21,7 +21,7 @@ public sealed class AppleLookupExecutionListener(ExecuteAppleLookupHandler handl
     [WolverineHandler]
     [Transactional]
     public async Task<object[]> Handle(
-        LowPriorityAppleLookupCommandMessage message,
+        LowPriorityVerifyApplePlaybackReferenceCommandMessage message,
         IAsyncDocumentSession _,
         CancellationToken cancellationToken = default)
     {

@@ -1,6 +1,9 @@
 using FluentAssertions;
 using Soundtrail.Services.Enrichment.Features.Execution.ApplyEnrichmentResponse;
+using Soundtrail.Services.Enrichment.Features.Orchestration;
 using Soundtrail.Services.Enrichment.Shared.Execution;
+using Soundtrail.Services.Enrichment.Shared.Orchestration;
+using Soundtrail.Services.Enrichment.Shared.Prioritisation;
 using Soundtrail.Services.Enrichment.Shared.Search;
 using Soundtrail.Services.Shared;
 using Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
@@ -14,14 +17,18 @@ public sealed class ApplyEnrichmentResponseHandlerTests
     {
         var appliedStore = new AppliedEnrichmentResponseStoreFake();
         var trackStore = new TrackEnrichmentWriteStoreFake();
-        var followUpScheduler = new FollowUpEnrichmentSchedulerFake();
-        var handler = new ApplyEnrichmentResponseHandler(appliedStore, trackStore, followUpScheduler);
+        var handler = new ApplyEnrichmentResponseHandler(
+            appliedStore,
+            trackStore,
+            new EnrichmentOrchestrator(new ActiveLookupWorkStoreFake()));
 
-        await handler.Handle(
+        var result = await handler.Handle(
             new EnrichmentResponse(
-                CommandId.For("MusicBrainz:mc_track_1"),
+                CommandId.For("ResolveCanonicalMetadata:mc_track_1"),
                 MusicCatalogId.From("mc_track_1"),
                 ProviderName.MusicBrainz,
+                LookupPriorityBand.High,
+                new DateTimeOffset(2026, 6, 5, 12, 0, 0, TimeSpan.Zero),
                 new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000),
                 [
                     new ExternalReference(ProviderName.Apple, new Uri("https://music.apple.com/track/1"), "apple-1", ReferenceConfidence.Discovered),
@@ -36,8 +43,10 @@ public sealed class ApplyEnrichmentResponseHandlerTests
         state.Apple!.ExternalId.Should().Be("apple-1");
         state.Apple.SourceProvider.Should().Be(ProviderName.MusicBrainz);
         state.MusicBrainz.Should().NotBeNull();
-        appliedStore.AppliedCommandIds.Should().Contain(CommandId.For("MusicBrainz:mc_track_1").Value);
-        followUpScheduler.Scheduled.Should().ContainSingle();
+        appliedStore.AppliedCommandIds.Should().Contain(CommandId.For("ResolveCanonicalMetadata:mc_track_1").Value);
+        result.Commands.Should().ContainSingle()
+            .Which.Should().BeOfType<VerifyApplePlaybackReferenceCommand>();
+        result.Events.Should().Contain(e => e is ApplePlaybackVerificationRequested);
     }
 
     [Fact]
@@ -45,8 +54,10 @@ public sealed class ApplyEnrichmentResponseHandlerTests
     {
         var appliedStore = new AppliedEnrichmentResponseStoreFake();
         var trackStore = new TrackEnrichmentWriteStoreFake();
-        var followUpScheduler = new FollowUpEnrichmentSchedulerFake();
-        var handler = new ApplyEnrichmentResponseHandler(appliedStore, trackStore, followUpScheduler);
+        var handler = new ApplyEnrichmentResponseHandler(
+            appliedStore,
+            trackStore,
+            new EnrichmentOrchestrator(new ActiveLookupWorkStoreFake()));
 
         await trackStore.ApplyAsync(
             MusicCatalogId.From("mc_track_1"),
@@ -55,9 +66,11 @@ public sealed class ApplyEnrichmentResponseHandlerTests
 
         await handler.Handle(
             new EnrichmentResponse(
-                CommandId.For("Apple:mc_track_1"),
+                CommandId.For("VerifyApplePlaybackReference:mc_track_1"),
                 MusicCatalogId.From("mc_track_1"),
                 ProviderName.Apple,
+                LookupPriorityBand.High,
+                new DateTimeOffset(2026, 6, 5, 12, 2, 0, TimeSpan.Zero),
                 new SongMetadata("Apple Song", "Apple Artist", null, null, null),
                 [new ExternalReference(ProviderName.Apple, new Uri("https://music.apple.com/track/1"), "apple-1", ReferenceConfidence.Verified)],
                 CorrelationId.From("corr-2")));
@@ -74,20 +87,26 @@ public sealed class ApplyEnrichmentResponseHandlerTests
     {
         var appliedStore = new AppliedEnrichmentResponseStoreFake();
         var trackStore = new TrackEnrichmentWriteStoreFake();
-        var followUpScheduler = new FollowUpEnrichmentSchedulerFake();
-        var handler = new ApplyEnrichmentResponseHandler(appliedStore, trackStore, followUpScheduler);
+        var handler = new ApplyEnrichmentResponseHandler(
+            appliedStore,
+            trackStore,
+            new EnrichmentOrchestrator(new ActiveLookupWorkStoreFake()));
         var response = new EnrichmentResponse(
-            CommandId.For("MusicBrainz:mc_track_1"),
+            CommandId.For("ResolveCanonicalMetadata:mc_track_1"),
             MusicCatalogId.From("mc_track_1"),
             ProviderName.MusicBrainz,
+            LookupPriorityBand.High,
+            new DateTimeOffset(2026, 6, 5, 12, 0, 0, TimeSpan.Zero),
             new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000),
             [],
             CorrelationId.From("corr-1"));
 
-        await handler.Handle(response);
-        await handler.Handle(response);
+        var first = await handler.Handle(response);
+        var duplicate = await handler.Handle(response);
 
         trackStore.States.Should().ContainSingle();
-        followUpScheduler.Scheduled.Should().ContainSingle();
+        first.Events.Should().NotBeEmpty();
+        duplicate.Commands.Should().BeEmpty();
+        duplicate.Events.Should().BeEmpty();
     }
 }

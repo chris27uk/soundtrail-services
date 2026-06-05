@@ -1,4 +1,5 @@
 using Soundtrail.Services.Enrichment.Shared.Execution;
+using Soundtrail.Services.Enrichment.Shared.Orchestration;
 
 namespace Soundtrail.Services.Enrichment.Shared.Idempotency;
 
@@ -8,7 +9,7 @@ public abstract class WorkerIdempotencySession : IAsyncDisposable
 
     public static async Task<WorkerIdempotencySession> StartAsync(
         ILookupExecutionReceiptStore store,
-        ExecuteLookupMusicCommand command,
+        IEnrichmentIntentCommand command,
         CancellationToken cancellationToken)
     {
         if (await store.TryBeginAsync(command.CommandId, cancellationToken))
@@ -23,7 +24,7 @@ public abstract class WorkerIdempotencySession : IAsyncDisposable
 
     private sealed class StartedWorkerIdempotencySession(
         ILookupExecutionReceiptStore lookupExecutionReceiptStore,
-        ExecuteLookupMusicCommand command) : WorkerIdempotencySession
+        IEnrichmentIntentCommand command) : WorkerIdempotencySession
     {
         public override bool ProcessedBefore => false;
 

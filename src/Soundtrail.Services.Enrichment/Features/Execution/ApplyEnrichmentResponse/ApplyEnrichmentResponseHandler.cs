@@ -1,3 +1,4 @@
+using Soundtrail.Services.Enrichment.Features.Orchestration;
 using Soundtrail.Services.Enrichment.Shared.Execution;
 
 namespace Soundtrail.Services.Enrichment.Features.Execution.ApplyEnrichmentResponse;
@@ -5,23 +6,26 @@ namespace Soundtrail.Services.Enrichment.Features.Execution.ApplyEnrichmentRespo
 public sealed class ApplyEnrichmentResponseHandler(
     IAppliedEnrichmentResponseStore appliedEnrichmentResponseStore,
     ITrackEnrichmentWriteStore trackEnrichmentWriteStore,
-    IFollowUpEnrichmentScheduler followUpEnrichmentScheduler)
+    EnrichmentOrchestrator enrichmentOrchestrator)
 {
-    public async Task Handle(
+    public async Task<EnrichmentOrchestrationResult> Handle(
         EnrichmentResponse response,
         CancellationToken cancellationToken = default)
     {
         if (await appliedEnrichmentResponseStore.HasAppliedAsync(response.CommandId, cancellationToken))
         {
-            return;
+            return EnrichmentOrchestrationResult.Empty();
         }
 
+        TrackEnrichmentState? previousState = null;
         TrackEnrichmentState? updatedState = null;
 
         await trackEnrichmentWriteStore.ApplyAsync(
             response.MusicCatalogId,
             state =>
             {
+                previousState = state.Copy();
+
                 if (response.SourceProvider == ProviderName.MusicBrainz && response.Metadata is not null)
                 {
                     state.ApplyCanonicalMetadata(response.Metadata);
@@ -37,11 +41,11 @@ public sealed class ApplyEnrichmentResponseHandler(
                         response.SourceProvider);
                 }
 
-                updatedState = state;
+                updatedState = state.Copy();
             },
             cancellationToken);
 
         await appliedEnrichmentResponseStore.MarkAppliedAsync(response.CommandId, cancellationToken);
-        await followUpEnrichmentScheduler.ScheduleAsync(updatedState!, response, cancellationToken);
+        return await enrichmentOrchestrator.PlanAsync(previousState!, updatedState!, response, cancellationToken);
     }
 }

@@ -15,6 +15,6 @@ public sealed class DiscoveryBacklogSchedulingListener(DiscoveryBacklogScheduler
         CancellationToken cancellationToken = default)
     {
         var commands = await scheduler.RunOnceAsync(message.Now, message.Take, cancellationToken);
-        return commands.Select(command => command.ToMusicBrainzTransportMessage()).ToArray();
+        return commands.Select(command => command.ToResolveCanonicalMetadataTransportMessage()).ToArray();
     }
 }

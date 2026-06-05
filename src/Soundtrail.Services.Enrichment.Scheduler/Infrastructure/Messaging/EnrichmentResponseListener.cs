@@ -9,9 +9,12 @@ public sealed class EnrichmentResponseListener(ApplyEnrichmentResponseHandler ha
 {
     [WolverineHandler]
     [Transactional]
-    public Task Handle(
+    public async Task<object[]> Handle(
         EnrichmentResponse response,
         IAsyncDocumentSession _,
         CancellationToken cancellationToken = default) =>
-        handler.Handle(response, cancellationToken);
+        (await handler.Handle(response, cancellationToken))
+        .Commands
+        .Select(command => command.ToTransportMessage())
+        .ToArray();
 }

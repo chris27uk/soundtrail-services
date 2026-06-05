@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Soundtrail.Services.Enrichment.Shared.Execution;
+using Soundtrail.Services.Enrichment.Shared.Orchestration;
 using Soundtrail.Services.Enrichment.Shared.Prioritisation;
 using Soundtrail.Services.Enrichment.Shared.Queuing;
 using Soundtrail.Services.Enrichment.Shared.Search;
@@ -20,13 +21,13 @@ public sealed class LookupExecutionCommandMessageExtensionsTests
             new DateTimeOffset(2026, 6, 5, 12, 0, 0, TimeSpan.Zero),
             CorrelationId.From("corr-1"));
 
-        var message = command.ToMusicBrainzTransportMessage();
+        var message = command.ToResolveCanonicalMetadataTransportMessage();
 
-        message.Should().BeOfType<HighPriorityMusicBrainzLookupCommandMessage>();
+        message.Should().BeOfType<HighPriorityResolveCanonicalMetadataCommandMessage>();
 
-        var typedMessage = (HighPriorityMusicBrainzLookupCommandMessage)message;
-        typedMessage.Command.Provider.Should().Be(ProviderName.MusicBrainz);
-        typedMessage.Command.CommandId.Should().Be(CommandId.For("MusicBrainz:mc_track_1"));
+        var typedMessage = (HighPriorityResolveCanonicalMetadataCommandMessage)message;
+        typedMessage.Command.TargetProvider.Should().Be(ProviderName.MusicBrainz);
+        typedMessage.Command.CommandId.Should().Be(CommandId.For("ResolveCanonicalMetadata:mc_track_1"));
         typedMessage.Command.MusicCatalogId.Value.Should().Be("mc_track_1");
     }
 
@@ -40,13 +41,13 @@ public sealed class LookupExecutionCommandMessageExtensionsTests
             new DateTimeOffset(2026, 6, 5, 12, 5, 0, TimeSpan.Zero),
             CorrelationId.From("corr-2"));
 
-        var message = command.ToMusicBrainzTransportMessage();
+        var message = command.ToResolveCanonicalMetadataTransportMessage();
 
-        message.Should().BeOfType<LowPriorityMusicBrainzLookupCommandMessage>();
+        message.Should().BeOfType<LowPriorityResolveCanonicalMetadataCommandMessage>();
 
-        var typedMessage = (LowPriorityMusicBrainzLookupCommandMessage)message;
-        typedMessage.Command.Provider.Should().Be(ProviderName.MusicBrainz);
-        typedMessage.Command.CommandId.Should().Be(CommandId.For("MusicBrainz:mc_track_2"));
+        var typedMessage = (LowPriorityResolveCanonicalMetadataCommandMessage)message;
+        typedMessage.Command.TargetProvider.Should().Be(ProviderName.MusicBrainz);
+        typedMessage.Command.CommandId.Should().Be(CommandId.For("ResolveCanonicalMetadata:mc_track_2"));
         typedMessage.Command.MusicCatalogId.Value.Should().Be("mc_track_2");
     }
 }

@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Soundtrail.Services.Enrichment.Features.Execution.MusicBrainzLookupExecution;
 using Soundtrail.Services.Enrichment.Shared.Execution;
+using Soundtrail.Services.Enrichment.Shared.Orchestration;
 using Soundtrail.Services.Enrichment.Shared.Prioritisation;
 using Soundtrail.Services.Enrichment.Shared.Search;
 using Soundtrail.Services.Shared;
@@ -21,6 +22,7 @@ public sealed class ExecuteMusicBrainzLookupHandlerTests
         result.Outcome.Should().Be(LookupExecutionOutcome.Completed);
         result.Response.Should().NotBeNull();
         result.Response!.SourceProvider.Should().Be(ProviderName.MusicBrainz);
+        result.Response.Priority.Should().Be(LookupPriorityBand.High);
         result.Response.MusicCatalogId.Value.Should().Be("mc_track_1");
         state.StartedReceipts.Should().ContainSingle();
         state.CompletedReceipts.Should().ContainSingle();
@@ -41,11 +43,10 @@ public sealed class ExecuteMusicBrainzLookupHandlerTests
         state.CompletedReceipts.Should().ContainSingle();
     }
 
-    private static ExecuteLookupMusicCommand Command() =>
+    private static ResolveCanonicalMetadataCommand Command() =>
         new(
-            CommandId.For("MusicBrainz:mc_track_1"),
+            CommandId.For("ResolveCanonicalMetadata:mc_track_1"),
             MusicCatalogId.From("mc_track_1"),
-            ProviderName.MusicBrainz,
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 5, 10, 0, 0, TimeSpan.Zero),
             CorrelationId.From("corr-1"));

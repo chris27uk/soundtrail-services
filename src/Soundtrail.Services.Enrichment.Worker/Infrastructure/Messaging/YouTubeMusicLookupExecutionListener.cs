@@ -1,6 +1,6 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Services.Enrichment.Features.Execution.YouTubeMusicLookupExecution;
-using Soundtrail.Services.Enrichment.Shared.Execution;
+using Soundtrail.Services.Enrichment.Shared.Orchestration;
 using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
@@ -10,7 +10,7 @@ public sealed class YouTubeMusicLookupExecutionListener(ExecuteYouTubeMusicLooku
     [WolverineHandler]
     [Transactional]
     public async Task<object[]> Handle(
-        HighPriorityYouTubeMusicLookupCommandMessage message,
+        HighPriorityVerifyYouTubeMusicPlaybackReferenceCommandMessage message,
         IAsyncDocumentSession _,
         CancellationToken cancellationToken = default)
     {
@@ -21,7 +21,7 @@ public sealed class YouTubeMusicLookupExecutionListener(ExecuteYouTubeMusicLooku
     [WolverineHandler]
     [Transactional]
     public async Task<object[]> Handle(
-        LowPriorityYouTubeMusicLookupCommandMessage message,
+        LowPriorityVerifyYouTubeMusicPlaybackReferenceCommandMessage message,
         IAsyncDocumentSession _,
         CancellationToken cancellationToken = default)
     {

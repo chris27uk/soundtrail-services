@@ -4,7 +4,8 @@ using Microsoft.Extensions.Hosting;
 using Soundtrail.Services.Enrichment.Features.BacklogScheduling;
 using Soundtrail.Services.Enrichment.Features.Execution.ApplyEnrichmentResponse;
 using Soundtrail.Services.Enrichment.Features.JustInTimeScheduling;
-using Soundtrail.Services.Enrichment.Shared.Execution;
+using Soundtrail.Services.Enrichment.Features.Orchestration;
+using Soundtrail.Services.Enrichment.Shared.Orchestration;
 using Soundtrail.Services.Enrichment.Shared.Prioritisation;
 using Soundtrail.Services.Enrichment.Shared.Search.Resolution;
 using Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Messaging;
@@ -39,11 +40,23 @@ builder.UseWolverine(opts =>
     opts.ListenToAzureServiceBusQueue(serviceBusOptions.EnrichmentResponsesQueueName)
         .ProcessInline();
 
-    opts.PublishMessage<HighPriorityMusicBrainzLookupCommandMessage>()
+    opts.PublishMessage<HighPriorityResolveCanonicalMetadataCommandMessage>()
         .ToAzureServiceBusQueue(serviceBusOptions.HighPriorityMusicBrainzLookupQueueName);
 
-    opts.PublishMessage<LowPriorityMusicBrainzLookupCommandMessage>()
+    opts.PublishMessage<LowPriorityResolveCanonicalMetadataCommandMessage>()
         .ToAzureServiceBusQueue(serviceBusOptions.LowPriorityMusicBrainzLookupQueueName);
+
+    opts.PublishMessage<HighPriorityVerifyApplePlaybackReferenceCommandMessage>()
+        .ToAzureServiceBusQueue(serviceBusOptions.HighPriorityAppleLookupQueueName);
+
+    opts.PublishMessage<LowPriorityVerifyApplePlaybackReferenceCommandMessage>()
+        .ToAzureServiceBusQueue(serviceBusOptions.LowPriorityAppleLookupQueueName);
+
+    opts.PublishMessage<HighPriorityVerifyYouTubeMusicPlaybackReferenceCommandMessage>()
+        .ToAzureServiceBusQueue(serviceBusOptions.HighPriorityYouTubeMusicLookupQueueName);
+
+    opts.PublishMessage<LowPriorityVerifyYouTubeMusicPlaybackReferenceCommandMessage>()
+        .ToAzureServiceBusQueue(serviceBusOptions.LowPriorityYouTubeMusicLookupQueueName);
 });
 
 builder.Services.AddSchedulerRavenDocumentStore(builder.Configuration);
@@ -51,13 +64,13 @@ builder.Services.AddSchedulerServiceBus(builder.Configuration);
 builder.Services.Configure<LookupPlanningOptions>(builder.Configuration.GetSection(LookupPlanningOptions.SectionName));
 builder.Services.AddSingleton<DiscoveryPriorityPolicy>();
 builder.Services.AddSingleton<MusicCatalogResolutionPolicy>();
+builder.Services.AddScoped<EnrichmentOrchestrator>();
 builder.Services.AddScoped<ApplyEnrichmentResponseHandler>();
 builder.Services.AddScoped<LookupMusicRequestHandler>();
 builder.Services.AddScoped<DiscoveryBacklogScheduler>();
 builder.Services.AddScoped<LookupMusicRequestListener>();
 builder.Services.AddScoped<EnrichmentResponseListener>();
 builder.Services.AddScoped<DiscoveryBacklogSchedulingListener>();
-builder.Services.AddScoped<IFollowUpEnrichmentScheduler, NoOpFollowUpEnrichmentScheduler>();
 builder.Services.AddHostedService<LookupPlanningSweepHostedService>();
 
 var host = builder.Build();
