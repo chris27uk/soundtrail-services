@@ -1,9 +1,9 @@
-using Soundtrail.Services.Enrichment.Features.Execution.Idempotency;
 using Soundtrail.Services.Enrichment.Shared.Execution;
+using Soundtrail.Services.Enrichment.Shared.Idempotency;
 
-namespace Soundtrail.Services.Enrichment.Features.Execution;
+namespace Soundtrail.Services.Enrichment.Features.Execution.AppleLookupExecution;
 
-public sealed class ExecuteYouTubeMusicLookupHandler(ILookupExecutionReceiptStore lookupExecutionReceiptStore)
+public sealed class ExecuteAppleLookupHandler(ILookupExecutionReceiptStore lookupExecutionReceiptStore)
 {
     public async Task<LookupExecutionResult> Handle(
         ExecuteLookupMusicCommand command,
@@ -19,6 +19,13 @@ public sealed class ExecuteYouTubeMusicLookupHandler(ILookupExecutionReceiptStor
             return LookupExecutionResult.Duplicate();
         }
 
-        return LookupExecutionResult.Completed();
+        return LookupExecutionResult.Completed(
+            new EnrichmentResponse(
+                command.CommandId,
+                command.MusicCatalogId,
+                ProviderName.Apple,
+                null,
+                [],
+                command.CorrelationId));
     }
 }

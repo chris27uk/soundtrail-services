@@ -6,6 +6,7 @@ using Raven.Client.Documents.Conventions;
 using Raven.Client.Documents.Indexes;
 using Raven.Client.Documents.Session;
 using Soundtrail.Services.Enrichment.Shared.Idempotency;
+using Soundtrail.Services.Enrichment.Shared.Execution;
 using Soundtrail.Services.Enrichment.Shared.Persistence;
 using Soundtrail.Services.Enrichment.Shared.Search;
 
@@ -38,6 +39,8 @@ public static class RavenServiceCollectionExtensions
 
         services.AddScoped<IRankedMusicCandidateStore, RavenRankedMusicCandidateStore>();
         services.AddScoped<IActiveLookupWorkStore, RavenActiveLookupWorkStore>();
+        services.AddScoped<IAppliedEnrichmentResponseStore, RavenAppliedEnrichmentResponseStore>();
+        services.AddScoped<ITrackEnrichmentWriteStore, RavenTrackEnrichmentWriteStore>();
         services.AddSingleton<IMusicCatalogCandidateSearch, RavenMusicCatalogCandidateSearch>();
         return services;
     }

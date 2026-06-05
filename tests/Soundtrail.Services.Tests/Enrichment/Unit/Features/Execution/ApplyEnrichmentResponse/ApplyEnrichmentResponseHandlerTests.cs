@@ -1,11 +1,11 @@
 using FluentAssertions;
-using Soundtrail.Services.Enrichment.Features.Execution;
+using Soundtrail.Services.Enrichment.Features.Execution.ApplyEnrichmentResponse;
 using Soundtrail.Services.Enrichment.Shared.Execution;
 using Soundtrail.Services.Enrichment.Shared.Search;
 using Soundtrail.Services.Shared;
 using Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 
-namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Execution;
+namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Execution.ApplyEnrichmentResponse;
 
 public sealed class ApplyEnrichmentResponseHandlerTests
 {

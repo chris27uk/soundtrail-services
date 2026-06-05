@@ -1,7 +1,7 @@
-using Soundtrail.Services.Enrichment.Features.Execution.Idempotency;
 using Soundtrail.Services.Enrichment.Shared.Execution;
+using Soundtrail.Services.Enrichment.Shared.Idempotency;
 
-namespace Soundtrail.Services.Enrichment.Features.Execution;
+namespace Soundtrail.Services.Enrichment.Features.Execution.MusicBrainzLookupExecution;
 
 public sealed class ExecuteMusicBrainzLookupHandler(ILookupExecutionReceiptStore lookupExecutionReceiptStore)
 {
@@ -19,6 +19,13 @@ public sealed class ExecuteMusicBrainzLookupHandler(ILookupExecutionReceiptStore
             return LookupExecutionResult.Duplicate();
         }
 
-        return LookupExecutionResult.Completed();
+        return LookupExecutionResult.Completed(
+            new EnrichmentResponse(
+                command.CommandId,
+                command.MusicCatalogId,
+                ProviderName.MusicBrainz,
+                null,
+                [],
+                command.CorrelationId));
     }
 }

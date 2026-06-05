@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Soundtrail.Services.Enrichment.Features.BacklogScheduling;
+using Soundtrail.Services.Enrichment.Features.Execution.ApplyEnrichmentResponse;
 using Soundtrail.Services.Enrichment.Features.JustInTimeScheduling;
 using Soundtrail.Services.Enrichment.Shared.Execution;
 using Soundtrail.Services.Enrichment.Shared.Prioritisation;
@@ -24,6 +25,7 @@ builder.UseWolverine(opts =>
     opts.Discovery.DisableConventionalDiscovery();
     opts.Discovery.IncludeType<LookupMusicRequestListener>();
     opts.Discovery.IncludeType<DiscoveryBacklogSchedulingListener>();
+    opts.Discovery.IncludeType<EnrichmentResponseListener>();
     opts.UseRavenDbPersistence();
     opts.Policies.AutoApplyTransactions();
 
@@ -32,6 +34,9 @@ builder.UseWolverine(opts =>
         .EnableWolverineControlQueues();
 
     opts.ListenToAzureServiceBusQueue(serviceBusOptions.LookupMusicRequestsQueueName)
+        .ProcessInline();
+
+    opts.ListenToAzureServiceBusQueue(serviceBusOptions.EnrichmentResponsesQueueName)
         .ProcessInline();
 
     opts.PublishMessage<HighPriorityMusicBrainzLookupCommandMessage>()
@@ -46,10 +51,13 @@ builder.Services.AddSchedulerServiceBus(builder.Configuration);
 builder.Services.Configure<LookupPlanningOptions>(builder.Configuration.GetSection(LookupPlanningOptions.SectionName));
 builder.Services.AddSingleton<DiscoveryPriorityPolicy>();
 builder.Services.AddSingleton<MusicCatalogResolutionPolicy>();
+builder.Services.AddScoped<ApplyEnrichmentResponseHandler>();
 builder.Services.AddScoped<LookupMusicRequestHandler>();
 builder.Services.AddScoped<DiscoveryBacklogScheduler>();
 builder.Services.AddScoped<LookupMusicRequestListener>();
+builder.Services.AddScoped<EnrichmentResponseListener>();
 builder.Services.AddScoped<DiscoveryBacklogSchedulingListener>();
+builder.Services.AddScoped<IFollowUpEnrichmentScheduler, NoOpFollowUpEnrichmentScheduler>();
 builder.Services.AddHostedService<LookupPlanningSweepHostedService>();
 
 var host = builder.Build();

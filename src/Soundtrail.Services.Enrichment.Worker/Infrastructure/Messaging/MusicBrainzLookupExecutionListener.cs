@@ -1,5 +1,5 @@
 using Raven.Client.Documents.Session;
-using Soundtrail.Services.Enrichment.Features.Execution;
+using Soundtrail.Services.Enrichment.Features.Execution.MusicBrainzLookupExecution;
 using Soundtrail.Services.Enrichment.Shared.Execution;
 using Wolverine.Attributes;
 
@@ -9,17 +9,23 @@ public sealed class MusicBrainzLookupExecutionListener(ExecuteMusicBrainzLookupH
 {
     [WolverineHandler]
     [Transactional]
-    public Task Handle(
+    public async Task<object[]> Handle(
         HighPriorityMusicBrainzLookupCommandMessage message,
         IAsyncDocumentSession _,
-        CancellationToken cancellationToken = default) =>
-        handler.Handle(message.Command, cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        var result = await handler.Handle(message.Command, cancellationToken);
+        return result.Response is null ? [] : [result.Response];
+    }
 
     [WolverineHandler]
     [Transactional]
-    public Task Handle(
+    public async Task<object[]> Handle(
         LowPriorityMusicBrainzLookupCommandMessage message,
         IAsyncDocumentSession _,
-        CancellationToken cancellationToken = default) =>
-        handler.Handle(message.Command, cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        var result = await handler.Handle(message.Command, cancellationToken);
+        return result.Response is null ? [] : [result.Response];
+    }
 }

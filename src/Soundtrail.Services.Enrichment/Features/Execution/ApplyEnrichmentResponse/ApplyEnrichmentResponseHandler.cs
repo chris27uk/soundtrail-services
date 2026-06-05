@@ -1,6 +1,6 @@
 using Soundtrail.Services.Enrichment.Shared.Execution;
 
-namespace Soundtrail.Services.Enrichment.Features.Execution;
+namespace Soundtrail.Services.Enrichment.Features.Execution.ApplyEnrichmentResponse;
 
 public sealed class ApplyEnrichmentResponseHandler(
     IAppliedEnrichmentResponseStore appliedEnrichmentResponseStore,

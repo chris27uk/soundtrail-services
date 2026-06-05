@@ -1,6 +1,6 @@
 using Soundtrail.Services.Enrichment.Shared.Execution;
 
-namespace Soundtrail.Services.Enrichment.Features.Execution.Idempotency;
+namespace Soundtrail.Services.Enrichment.Shared.Idempotency;
 
 public abstract class WorkerIdempotencySession : IAsyncDisposable
 {

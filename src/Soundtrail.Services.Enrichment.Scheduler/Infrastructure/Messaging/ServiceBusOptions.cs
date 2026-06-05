@@ -19,4 +19,6 @@ public sealed class ServiceBusOptions
     public string HighPriorityYouTubeMusicLookupQueueName { get; init; } = "lookup-youtubemusic-high";
 
     public string LowPriorityYouTubeMusicLookupQueueName { get; init; } = "lookup-youtubemusic-low";
+
+    public string EnrichmentResponsesQueueName { get; init; } = "enrichment-responses";
 }
