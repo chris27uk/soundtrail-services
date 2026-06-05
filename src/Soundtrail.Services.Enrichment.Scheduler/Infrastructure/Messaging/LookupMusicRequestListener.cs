@@ -16,7 +16,7 @@ public sealed class LookupMusicRequestListener(LookupMusicRequestHandler handler
     {
         var result = await handler.ScheduleAsync(request, cancellationToken);
         return result.ShouldSchedule
-            ? [result.Command!.ToTransportMessage()]
+            ? [result.Command!.ToMusicBrainzTransportMessage()]
             : [];
     }
 }

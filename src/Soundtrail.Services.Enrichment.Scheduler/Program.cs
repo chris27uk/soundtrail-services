@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Soundtrail.Services.Enrichment.Features.BacklogScheduling;
 using Soundtrail.Services.Enrichment.Features.JustInTimeScheduling;
+using Soundtrail.Services.Enrichment.Shared.Execution;
 using Soundtrail.Services.Enrichment.Shared.Prioritisation;
 using Soundtrail.Services.Enrichment.Shared.Search.Resolution;
 using Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Messaging;
@@ -33,11 +34,11 @@ builder.UseWolverine(opts =>
     opts.ListenToAzureServiceBusQueue(serviceBusOptions.LookupMusicRequestsQueueName)
         .ProcessInline();
 
-    opts.PublishMessage<HighPriorityLookupMusicCommandMessage>()
-        .ToAzureServiceBusQueue(serviceBusOptions.LookupMusicHighQueueName);
+    opts.PublishMessage<HighPriorityMusicBrainzLookupCommandMessage>()
+        .ToAzureServiceBusQueue(serviceBusOptions.HighPriorityMusicBrainzLookupQueueName);
 
-    opts.PublishMessage<LowPriorityLookupMusicCommandMessage>()
-        .ToAzureServiceBusQueue(serviceBusOptions.LookupMusicLowQueueName);
+    opts.PublishMessage<LowPriorityMusicBrainzLookupCommandMessage>()
+        .ToAzureServiceBusQueue(serviceBusOptions.LowPriorityMusicBrainzLookupQueueName);
 });
 
 builder.Services.AddSchedulerRavenDocumentStore(builder.Configuration);

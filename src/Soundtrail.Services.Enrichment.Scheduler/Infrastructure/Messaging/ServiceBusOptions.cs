@@ -8,13 +8,15 @@ public sealed class ServiceBusOptions
 
     public string LookupMusicRequestsQueueName { get; init; } = "lookup-music-requests";
 
-    public string LookupMusicHighQueueName { get; init; } = "lookup-music-high";
+    public string HighPriorityMusicBrainzLookupQueueName { get; init; } = "lookup-musicbrainz-high";
 
-    public string LookupMusicLowQueueName { get; init; } = "lookup-music-low";
+    public string LowPriorityMusicBrainzLookupQueueName { get; init; } = "lookup-musicbrainz-low";
 
-    public string MusicBrainzLookupQueueName { get; init; } = "lookup-musicbrainz";
+    public string HighPriorityAppleLookupQueueName { get; init; } = "lookup-apple-high";
 
-    public string AppleLookupQueueName { get; init; } = "lookup-apple";
+    public string LowPriorityAppleLookupQueueName { get; init; } = "lookup-apple-low";
 
-    public string YouTubeMusicLookupQueueName { get; init; } = "lookup-youtubemusic";
+    public string HighPriorityYouTubeMusicLookupQueueName { get; init; } = "lookup-youtubemusic-high";
+
+    public string LowPriorityYouTubeMusicLookupQueueName { get; init; } = "lookup-youtubemusic-low";
 }

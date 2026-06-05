@@ -8,15 +8,15 @@ using Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Execution;
 
-public sealed class LookupExecutionHandlerTests
+public sealed class ExecuteMusicBrainzLookupHandlerTests
 {
     [Fact]
     public async Task Given_A_New_Execution_Command_When_Handled_Then_It_Is_Completed()
     {
         var state = new LookupExecutionReceiptStoreFake.State();
-        var handler = new LookupExecutionHandler(new LookupExecutionReceiptStoreFake(state));
+        var handler = new ExecuteMusicBrainzLookupHandler(new LookupExecutionReceiptStoreFake(state));
 
-        var result = await handler.Handle(Command(ProviderName.MusicBrainz));
+        var result = await handler.Handle(Command());
 
         result.Outcome.Should().Be(LookupExecutionOutcome.Completed);
         state.StartedReceipts.Should().ContainSingle();
@@ -27,8 +27,8 @@ public sealed class LookupExecutionHandlerTests
     public async Task Given_A_Duplicate_Execution_Command_When_Handled_Then_It_Is_Skipped()
     {
         var state = new LookupExecutionReceiptStoreFake.State();
-        var handler = new LookupExecutionHandler(new LookupExecutionReceiptStoreFake(state));
-        var command = Command(ProviderName.Apple);
+        var handler = new ExecuteMusicBrainzLookupHandler(new LookupExecutionReceiptStoreFake(state));
+        var command = Command();
 
         await handler.Handle(command);
         var duplicate = await handler.Handle(command);
@@ -38,26 +38,11 @@ public sealed class LookupExecutionHandlerTests
         state.CompletedReceipts.Should().ContainSingle();
     }
 
-    [Fact]
-    public async Task Given_The_Same_CommandId_For_Different_Providers_When_Handled_Then_Each_Provider_Is_Tracked_Separately()
-    {
-        var state = new LookupExecutionReceiptStoreFake.State();
-        var handler = new LookupExecutionHandler(new LookupExecutionReceiptStoreFake(state));
-
-        var first = await handler.Handle(Command(ProviderName.MusicBrainz));
-        var second = await handler.Handle(Command(ProviderName.YouTubeMusic));
-
-        first.Outcome.Should().Be(LookupExecutionOutcome.Completed);
-        second.Outcome.Should().Be(LookupExecutionOutcome.Duplicate);
-        state.StartedReceipts.Should().ContainSingle();
-        state.CompletedReceipts.Should().ContainSingle();
-    }
-
-    private static ExecuteLookupMusicCommand Command(ProviderName provider) =>
+    private static ExecuteLookupMusicCommand Command() =>
         new(
-            CommandId.For("mc_track_1"),
+            CommandId.For("MusicBrainz:mc_track_1"),
             MusicCatalogId.From("mc_track_1"),
-            provider,
+            ProviderName.MusicBrainz,
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 5, 10, 0, 0, TimeSpan.Zero),
             CorrelationId.From("corr-1"));

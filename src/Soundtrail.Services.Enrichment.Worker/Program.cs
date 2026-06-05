@@ -17,7 +17,9 @@ var serviceBusOptions = builder.Configuration
 builder.UseWolverine(opts =>
 {
     opts.Discovery.DisableConventionalDiscovery();
-    opts.Discovery.IncludeType<LookupExecutionListener>();
+    opts.Discovery.IncludeType<MusicBrainzLookupExecutionListener>();
+    opts.Discovery.IncludeType<AppleLookupExecutionListener>();
+    opts.Discovery.IncludeType<YouTubeMusicLookupExecutionListener>();
     opts.UseRavenDbPersistence();
     opts.Policies.AutoApplyTransactions();
 
@@ -25,19 +27,32 @@ builder.UseWolverine(opts =>
         .AutoProvision()
         .EnableWolverineControlQueues();
 
-    opts.ListenToAzureServiceBusQueue(serviceBusOptions.MusicBrainzLookupQueueName)
+    opts.ListenToAzureServiceBusQueue(serviceBusOptions.HighPriorityMusicBrainzLookupQueueName)
         .ProcessInline();
 
-    opts.ListenToAzureServiceBusQueue(serviceBusOptions.AppleLookupQueueName)
+    opts.ListenToAzureServiceBusQueue(serviceBusOptions.LowPriorityMusicBrainzLookupQueueName)
         .ProcessInline();
 
-    opts.ListenToAzureServiceBusQueue(serviceBusOptions.YouTubeMusicLookupQueueName)
+    opts.ListenToAzureServiceBusQueue(serviceBusOptions.HighPriorityAppleLookupQueueName)
+        .ProcessInline();
+
+    opts.ListenToAzureServiceBusQueue(serviceBusOptions.LowPriorityAppleLookupQueueName)
+        .ProcessInline();
+
+    opts.ListenToAzureServiceBusQueue(serviceBusOptions.HighPriorityYouTubeMusicLookupQueueName)
+        .ProcessInline();
+
+    opts.ListenToAzureServiceBusQueue(serviceBusOptions.LowPriorityYouTubeMusicLookupQueueName)
         .ProcessInline();
 });
 
 builder.Services.AddWorkerRavenDocumentStore(builder.Configuration);
-builder.Services.AddScoped<LookupExecutionHandler>();
-builder.Services.AddScoped<LookupExecutionListener>();
+builder.Services.AddScoped<ExecuteMusicBrainzLookupHandler>();
+builder.Services.AddScoped<ExecuteAppleLookupHandler>();
+builder.Services.AddScoped<ExecuteYouTubeMusicLookupHandler>();
+builder.Services.AddScoped<MusicBrainzLookupExecutionListener>();
+builder.Services.AddScoped<AppleLookupExecutionListener>();
+builder.Services.AddScoped<YouTubeMusicLookupExecutionListener>();
 
 var host = builder.Build();
 
