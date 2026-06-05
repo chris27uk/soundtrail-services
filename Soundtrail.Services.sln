@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Soundtrail.Services.Enrichm
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Soundtrail.Services.Enrichment", "src\Soundtrail.Services.Enrichment\Soundtrail.Services.Enrichment.csproj", "{2F487BE6-473A-44C3-A2E5-95214AD57426}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Soundtrail.Services.Enrichment.Worker", "src\Soundtrail.Services.Enrichment.Worker\Soundtrail.Services.Enrichment.Worker.csproj", "{98EA70CB-9E7A-4692-AFA1-D7B7205CD672}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -87,6 +89,18 @@ Global
 		{2F487BE6-473A-44C3-A2E5-95214AD57426}.Release|x64.Build.0 = Release|Any CPU
 		{2F487BE6-473A-44C3-A2E5-95214AD57426}.Release|x86.ActiveCfg = Release|Any CPU
 		{2F487BE6-473A-44C3-A2E5-95214AD57426}.Release|x86.Build.0 = Release|Any CPU
+		{98EA70CB-9E7A-4692-AFA1-D7B7205CD672}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{98EA70CB-9E7A-4692-AFA1-D7B7205CD672}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{98EA70CB-9E7A-4692-AFA1-D7B7205CD672}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{98EA70CB-9E7A-4692-AFA1-D7B7205CD672}.Debug|x64.Build.0 = Debug|Any CPU
+		{98EA70CB-9E7A-4692-AFA1-D7B7205CD672}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{98EA70CB-9E7A-4692-AFA1-D7B7205CD672}.Debug|x86.Build.0 = Debug|Any CPU
+		{98EA70CB-9E7A-4692-AFA1-D7B7205CD672}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{98EA70CB-9E7A-4692-AFA1-D7B7205CD672}.Release|Any CPU.Build.0 = Release|Any CPU
+		{98EA70CB-9E7A-4692-AFA1-D7B7205CD672}.Release|x64.ActiveCfg = Release|Any CPU
+		{98EA70CB-9E7A-4692-AFA1-D7B7205CD672}.Release|x64.Build.0 = Release|Any CPU
+		{98EA70CB-9E7A-4692-AFA1-D7B7205CD672}.Release|x86.ActiveCfg = Release|Any CPU
+		{98EA70CB-9E7A-4692-AFA1-D7B7205CD672}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -96,5 +110,6 @@ Global
 		{48F10C41-15AC-47DE-8338-85BA1B56CF23} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{AC592F97-31FD-4B92-A33F-C77717FA88ED} = {9A2D3D60-FB99-4E0F-9C5A-845ECD0ACFCF}
 		{2F487BE6-473A-44C3-A2E5-95214AD57426} = {9A2D3D60-FB99-4E0F-9C5A-845ECD0ACFCF}
+		{98EA70CB-9E7A-4692-AFA1-D7B7205CD672} = {9A2D3D60-FB99-4E0F-9C5A-845ECD0ACFCF}
 	EndGlobalSection
 EndGlobal
