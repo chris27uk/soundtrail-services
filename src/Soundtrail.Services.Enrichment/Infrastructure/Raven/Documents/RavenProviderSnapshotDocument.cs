@@ -1,6 +1,6 @@
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven.Documents;
 
-internal sealed class RavenProviderSnapshotDocument
+public sealed class RavenProviderSnapshotDocument
 {
     public string Id { get; set; } = string.Empty;
 

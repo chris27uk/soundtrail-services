@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
-using Raven.Client.Documents.Indexes;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven;
 
@@ -30,9 +29,6 @@ public static class RavenServiceCollectionExtensions
             };
 
             store.Initialize();
-            IndexCreation.CreateIndexes(
-                typeof(Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven.RavenServiceCollectionExtensions).Assembly,
-                store);
             return store;
         });
 

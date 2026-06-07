@@ -11,5 +11,11 @@ public sealed class WolverineEnqueueMusicRequest(
     public Task EnqueueAsync(
         LookupMusicRequest request,
         CancellationToken cancellationToken) =>
-        messageBus.SendAsync(request).AsTask();
+        messageBus.SendAsync(
+            new LookupMusicRequestDto(
+                request.Query,
+                request.TrustLevel,
+                request.RiskScore,
+                request.OccurredAt,
+                request.CorrelationId)).AsTask();
 }

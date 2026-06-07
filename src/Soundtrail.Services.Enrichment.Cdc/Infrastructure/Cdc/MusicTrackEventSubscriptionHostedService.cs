@@ -2,14 +2,10 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Raven.Client.Documents;
-using Raven.Client.Documents.Session;
 using Raven.Client.Documents.Subscriptions;
 using Soundtrail.Contracts;
 using Soundtrail.Contracts.Orchestrator.Events;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Wolverine;
 
 namespace Soundtrail.Services.Enrichment.Cdc.Infrastructure.Cdc;
@@ -30,7 +26,7 @@ public sealed class MusicTrackEventSubscriptionHostedService(
             try
             {
                 var options = new SubscriptionWorkerOptions(SubscriptionName);
-                await using var worker = documentStore.Subscriptions.GetSubscriptionWorker<RavenMusicTrackStreamDocument>(options);
+                await using var worker = documentStore.Subscriptions.GetSubscriptionWorker<RavenMusicTrackStreamDto>(options);
                 await worker.Run(batch => ProcessBatchAsync(batch, stoppingToken), stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -49,7 +45,7 @@ public sealed class MusicTrackEventSubscriptionHostedService(
     {
         try
         {
-            await documentStore.Subscriptions.CreateAsync<RavenMusicTrackStreamDocument>(
+            await documentStore.Subscriptions.CreateAsync<RavenMusicTrackStreamDto>(
                 new SubscriptionCreationOptions
                 {
                     Name = SubscriptionName
@@ -63,7 +59,7 @@ public sealed class MusicTrackEventSubscriptionHostedService(
     }
 
     private async Task ProcessBatchAsync(
-        SubscriptionBatch<RavenMusicTrackStreamDocument> batch,
+        SubscriptionBatch<RavenMusicTrackStreamDto> batch,
         CancellationToken cancellationToken)
     {
         using var scope = serviceScopeFactory.CreateScope();
@@ -103,23 +99,33 @@ public sealed class MusicTrackEventSubscriptionHostedService(
         await session.SaveChangesAsync(cancellationToken);
     }
 
-    private static object? ToIntegrationEvent(RavenMusicTrackEventDocument @event)
+    private static object? ToIntegrationEvent(RavenMusicTrackEventDto @event)
     {
         return @event.Type switch
             {
-                nameof(AppleMusicResolutionRequired) => new AppleMusicResolutionRequiredDto(
-                @event.MusicCatalogId ?? string.Empty,
-                Enum.Parse<LookupPriorityBand>(@event.Priority ?? nameof(LookupPriorityBand.Low), ignoreCase: true),
-                @event.CorrelationId ?? string.Empty,
-                @event.SourceProvider,
-                @event.ObservedAt),
-                nameof(YouTubeMusicResolutionRequired) => new YouTubeMusicResolutionRequiredDto(
-                @event.MusicCatalogId ?? string.Empty,
-                Enum.Parse<LookupPriorityBand>(@event.Priority ?? nameof(LookupPriorityBand.Low), ignoreCase: true),
-                @event.CorrelationId ?? string.Empty,
-                @event.SourceProvider,
-                @event.ObservedAt),
+                nameof(AppleMusicResolutionRequired) => AppleMusicResolutionRequiredDto(@event),
+                nameof(YouTubeMusicResolutionRequired) => YouTubeMusicResolutionRequiredDto(@event),
                 _ => null
             };
+    }
+
+    private static YouTubeMusicResolutionRequiredDto YouTubeMusicResolutionRequiredDto(RavenMusicTrackEventDto @event)
+    {
+        return new YouTubeMusicResolutionRequiredDto(
+            @event.MusicCatalogId ?? string.Empty,
+            Enum.Parse<LookupPriorityBand>(@event.Priority ?? nameof(LookupPriorityBand.Low), ignoreCase: true),
+            @event.CorrelationId ?? string.Empty,
+            @event.SourceProvider,
+            @event.ObservedAt);
+    }
+
+    private static AppleMusicResolutionRequiredDto AppleMusicResolutionRequiredDto(RavenMusicTrackEventDto @event)
+    {
+        return new AppleMusicResolutionRequiredDto(
+            @event.MusicCatalogId ?? string.Empty,
+            Enum.Parse<LookupPriorityBand>(@event.Priority ?? nameof(LookupPriorityBand.Low), ignoreCase: true),
+            @event.CorrelationId ?? string.Empty,
+            @event.SourceProvider,
+            @event.ObservedAt);
     }
 }

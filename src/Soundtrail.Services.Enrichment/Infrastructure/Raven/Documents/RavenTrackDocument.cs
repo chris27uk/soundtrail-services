@@ -1,6 +1,6 @@
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven.Documents;
 
-internal sealed class RavenTrackDocument
+public sealed class RavenTrackDocument
 {
     public string Id { get; set; } = string.Empty;
 
@@ -34,7 +34,7 @@ internal sealed class RavenTrackDocument
         $"{title} {artist}".Trim().ToLowerInvariant();
 }
 
-internal sealed class RavenSongMetadataDocument
+public sealed class RavenSongMetadataDocument
 {
     public string Title { get; set; } = string.Empty;
 
@@ -47,7 +47,7 @@ internal sealed class RavenSongMetadataDocument
     public int? DurationMs { get; set; }
 }
 
-internal sealed class RavenProviderReferenceDocument
+public sealed class RavenProviderReferenceDocument
 {
     public string Provider { get; set; } = string.Empty;
 

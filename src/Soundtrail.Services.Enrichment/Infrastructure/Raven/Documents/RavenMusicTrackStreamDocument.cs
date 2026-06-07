@@ -1,6 +1,6 @@
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven.Documents;
 
-internal sealed class RavenMusicTrackStreamDocument
+public sealed class RavenMusicTrackStreamDocument
 {
     public string Id { get; set; } = string.Empty;
 
@@ -15,7 +15,7 @@ internal sealed class RavenMusicTrackStreamDocument
     public static string GetDocumentId(string stableId) => $"music-track-streams/{stableId}";
 }
 
-internal sealed class RavenMusicTrackFactDocument
+public sealed class RavenMusicTrackFactDocument
 {
     public string Type { get; set; } = string.Empty;
 

@@ -1,5 +1,6 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts;
+using Soundtrail.Contracts.Orchestrator;
 using Soundtrail.Contracts.Worker.Responses;
 using Soundtrail.Services.Enrichment.Features.Execution.ApplyEnrichmentResponse;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
@@ -35,7 +36,7 @@ public sealed class EnrichmentResponseListener(ApplyEnrichmentResponseHandler ha
                     ProviderName.From(reference.Provider),
                     reference.Url,
                     reference.ExternalId,
-                    reference.ConfidenceDto)).ToArray(),
+                    (ReferenceConfidence)reference.ConfidenceDto)).ToArray(),
                 CorrelationId.From(dto.CorrelationId)),
             cancellationToken);
 }

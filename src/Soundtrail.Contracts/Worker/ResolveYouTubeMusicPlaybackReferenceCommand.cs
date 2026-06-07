@@ -1,6 +1,6 @@
 namespace Soundtrail.Contracts.Worker;
 
-public sealed record ResolveYouTubeMusicPlaybackReferenceCommand(
+public sealed record ResolveYouTubeMusicPlaybackReferenceCommandDto(
     string CommandId,
     string MusicCatalogId,
     LookupPriorityBand Priority,

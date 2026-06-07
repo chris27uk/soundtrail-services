@@ -1,6 +1,6 @@
 namespace Soundtrail.Contracts.Worker;
 
-public sealed record ResolveCanonicalMetadataCommand(
+public sealed record ResolveCanonicalMetadataCommandDto(
     string CommandId,
     string MusicCatalogId,
     LookupPriorityBand Priority,

@@ -34,7 +34,7 @@ builder.UseWolverine(opts =>
     opts.ListenToAzureServiceBusQueue(serviceBusOptions.LookupMusicRequestsQueueName)
         .ProcessInline();
 
-    opts.PublishMessage<ResolveCanonicalMetadataCommand>()
+    opts.PublishMessage<ResolveCanonicalMetadataCommandDto>()
         .ToAzureServiceBusQueue(serviceBusOptions.MusicBrainzLookupQueueName);
 });
 

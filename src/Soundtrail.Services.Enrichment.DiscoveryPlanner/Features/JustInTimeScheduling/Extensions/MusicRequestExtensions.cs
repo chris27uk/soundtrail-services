@@ -1,7 +1,6 @@
 using Soundtrail.Contracts;
-using Soundtrail.Contracts.Api;
-using Soundtrail.Contracts.Orchestrator.Commands;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Extensions
 {

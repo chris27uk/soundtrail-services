@@ -1,5 +1,4 @@
 using Soundtrail.Contracts;
-using Soundtrail.Contracts.Orchestrator;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
@@ -17,7 +16,7 @@ public interface IMusicTrackProjectionWriter
         ProviderName provider,
         Uri url,
         string? externalId,
-        ReferenceConfidenceDto confidenceDto,
+        ReferenceConfidence confidence,
         ProviderName sourceProvider);
 
     void WritePlayable(bool isPlayable);

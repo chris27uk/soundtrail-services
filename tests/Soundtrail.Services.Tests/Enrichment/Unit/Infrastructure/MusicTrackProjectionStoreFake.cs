@@ -1,5 +1,4 @@
 using Soundtrail.Contracts;
-using Soundtrail.Contracts.Orchestrator;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
@@ -47,10 +46,10 @@ public sealed class MusicTrackProjectionStoreFake : IMusicTrackProjectionStore
             ProviderName provider,
             Uri url,
             string? externalId,
-            ReferenceConfidenceDto confidenceDto,
+            ReferenceConfidence confidence,
             ProviderName sourceProvider)
         {
-            var reference = new ProviderReference(provider, url, externalId, confidenceDto, sourceProvider);
+            var reference = new ProviderReference(provider, url, externalId, confidence, sourceProvider);
 
             switch (provider)
             {

@@ -1,6 +1,6 @@
 using FluentAssertions;
 using Soundtrail.Contracts;
-using Soundtrail.Contracts.Orchestrator.Commands;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;

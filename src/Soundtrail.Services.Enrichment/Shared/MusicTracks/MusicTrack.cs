@@ -1,5 +1,4 @@
 using Soundtrail.Contracts;
-using Soundtrail.Contracts.Orchestrator;
 using Soundtrail.Contracts.Worker.Responses;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.EventSourcing;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
@@ -147,7 +146,7 @@ public sealed class MusicTrack
                 this.apple.Provider,
                 this.apple.Url,
                 this.apple.ExternalId,
-                this.apple.ConfidenceDto,
+                this.apple.Confidence,
                 this.apple.SourceProvider);
         }
 
@@ -157,7 +156,7 @@ public sealed class MusicTrack
                 this.youTubeMusic.Provider,
                 this.youTubeMusic.Url,
                 this.youTubeMusic.ExternalId,
-                this.youTubeMusic.ConfidenceDto,
+                this.youTubeMusic.Confidence,
                 this.youTubeMusic.SourceProvider);
         }
 
@@ -188,7 +187,7 @@ public sealed class MusicTrack
             @event.Provider,
             @event.Url,
             @event.ExternalId,
-            ReferenceConfidenceDto.Verified,
+            ReferenceConfidence.Verified,
             @event.SourceProvider);
     }
 
@@ -249,10 +248,10 @@ public sealed class MusicTrack
         ProviderName provider,
         Uri url,
         string? externalId,
-        ReferenceConfidenceDto confidenceDto,
+        ReferenceConfidence confidence,
         ProviderName sourceProvider)
     {
-        var candidate = new ProviderReference(provider, url, externalId, confidenceDto, sourceProvider);
+        var candidate = new ProviderReference(provider, url, externalId, confidence, sourceProvider);
 
         switch (provider)
         {

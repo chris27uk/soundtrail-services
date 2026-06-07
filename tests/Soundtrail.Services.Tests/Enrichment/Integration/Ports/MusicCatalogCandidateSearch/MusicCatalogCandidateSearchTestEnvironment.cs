@@ -1,6 +1,7 @@
 using Raven.Client.Documents;
 using Raven.Client.Documents.Indexes;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 using System.Reflection;
@@ -62,29 +63,22 @@ internal sealed class MusicCatalogCandidateSearchTestEnvironment : IDisposable
         using var session = raven.Store.OpenSession();
         session.Advanced.WaitForIndexesAfterSaveChanges();
 
-        var document = Activator.CreateInstance(
-            RavenTrackDocumentType,
-            BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public,
-            binder: null,
-            args: null,
-            culture: null)!;
-
-        Set(document, "Id", $"track-catalogue/{musicCatalogId}");
-        Set(document, "Title", "Fixture Track");
-        Set(document, "Artist", "Fixture Artist");
-        Set(document, "SearchText", searchText);
-        Set(document, "Isrc", null);
-        Set(document, "Mbid", null);
-        Set(document, "AppleId", null);
-        Set(document, "SpotifyId", null);
-        Set(document, "DurationMs", null);
+        var document = new RavenTrackDocument
+        {
+            Id = $"track-catalogue/{musicCatalogId}",
+            Title = "Fixture Track",
+            Artist = "Fixture Artist",
+            SearchText = searchText,
+            Isrc = null,
+            Mbid = null,
+            AppleId = null,
+            SpotifyId = null,
+            DurationMs = null
+        };
 
         session.Store(document);
         session.SaveChanges();
     }
-
-    private static readonly Type RavenTrackDocumentType = typeof(RavenMusicCatalogCandidateSearch).Assembly
-        .GetType("Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven.Documents.RavenTrackDocument", throwOnError: true)!;
 
     private static readonly Type TrackCatalogueIndexType = typeof(RavenMusicCatalogCandidateSearch).Assembly
         .GetType("Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven.Indexes.TrackCatalogue_BySearchText", throwOnError: true)!;
@@ -100,9 +94,4 @@ internal sealed class MusicCatalogCandidateSearchTestEnvironment : IDisposable
 
         index.Execute(store);
     }
-
-    private static void Set(object target, string propertyName, object? value) =>
-        RavenTrackDocumentType
-            .GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!
-            .SetValue(target, value);
 }

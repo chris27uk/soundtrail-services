@@ -30,7 +30,7 @@ else
             .AutoProvision()
             .SystemQueuesAreEnabled(false);
 
-        opts.PublishMessage<LookupMusicRequest>()
+        opts.PublishMessage<LookupMusicRequestDto>()
             .ToAzureServiceBusQueue(options.LookupMusicRequestsQueueName);
     });
 

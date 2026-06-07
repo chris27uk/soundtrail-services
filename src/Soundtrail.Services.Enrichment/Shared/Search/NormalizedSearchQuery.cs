@@ -1,5 +1,4 @@
 using Soundtrail.Contracts;
-using Soundtrail.Contracts.Api;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 
@@ -32,7 +31,7 @@ public sealed record NormalizedSearchQuery
     public LookupMusicRequest ToNewLookupRequest()
     {
         return new LookupMusicRequest(
-            this.Value,
+            this,
             TrustLevel: 0,
             RiskScore: 0,
             OccurredAt: DateTimeOffset.UtcNow,

@@ -6,11 +6,11 @@ namespace Soundtrail.Services.Tests.Api.Integration.Ports.EnqueueMusicRequest
 {
     public sealed class LookupMusicRequestCapture
     {
-        private readonly TaskCompletionSource<LookupMusicRequest> received = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<LookupMusicRequestDto> received = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public void Record(LookupMusicRequest request) => this.received.TrySetResult(request);
+        public void Record(LookupMusicRequestDto requestDto) => this.received.TrySetResult(requestDto);
 
-        public async Task<LookupMusicRequest> WaitAsync(TimeSpan timeout)
+        public async Task<LookupMusicRequestDto> WaitAsync(TimeSpan timeout)
         {
             var timeoutTask = Task.Delay(timeout);
             var completed = await Task.WhenAny(this.received.Task, timeoutTask);

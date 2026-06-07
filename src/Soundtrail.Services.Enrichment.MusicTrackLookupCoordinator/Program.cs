@@ -31,7 +31,7 @@ builder.UseWolverine(opts =>
     opts.PublishMessage<ResolveApplePlaybackReferenceCommandDto>()
         .ToAzureServiceBusQueue(serviceBusOptions.AppleLookupQueueName);
 
-    opts.PublishMessage<ResolveYouTubeMusicPlaybackReferenceCommand>()
+    opts.PublishMessage<ResolveYouTubeMusicPlaybackReferenceCommandDto>()
         .ToAzureServiceBusQueue(serviceBusOptions.YouTubeMusicLookupQueueName);
 });
 

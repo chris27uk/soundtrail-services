@@ -2,41 +2,16 @@ using Soundtrail.Contracts;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven;
 
 internal static class RavenMappings
 {
-    public static RankedMusicCandidate ToDomain(this RavenRankedMusicCandidateDocument document) =>
+    public static MusicTrackStream ToDomain(this RavenMusicTrackStreamDocument document) =>
         new(
-            MusicCatalogId.From(document.MusicCatalogId),
-            document.RequestCount,
-            document.HighestTrustLevelSeen,
-            document.RiskScore,
-            Enum.Parse<RankedMusicCandidateStatus>(document.Status, ignoreCase: true),
-            document.NextEligibleAt);
-
-    public static RavenRankedMusicCandidateDocument ToDocument(this RankedMusicCandidate candidate) =>
-        new()
-        {
-            Id = RavenRankedMusicCandidateDocument.GetDocumentId(candidate.MusicCatalogId.Value),
-            MusicCatalogId = candidate.MusicCatalogId.Value,
-            RequestCount = candidate.RequestCount,
-            HighestTrustLevelSeen = candidate.HighestTrustLevelSeen,
-            RiskScore = candidate.RiskScore,
-            Status = candidate.Status.ToString(),
-            NextEligibleAt = candidate.NextEligibleAt
-        };
-
-    public static MusicTrackStream ToDomain(this RavenMusicTrackStreamDocument document)
-    {
-        return new MusicTrackStream(
             document.Version,
             document.Facts.Select(ToDomain).ToArray());
-    }
 
     public static RavenMusicTrackFactDocument ToDocument(this MusicTrackFact fact) =>
         fact switch
@@ -98,9 +73,8 @@ internal static class RavenMappings
             _ => throw new ArgumentOutOfRangeException(nameof(fact), fact, "Unknown music track fact.")
         };
 
-    private static MusicTrackFact ToDomain(RavenMusicTrackFactDocument fact)
-    {
-        return fact.Type switch
+    private static MusicTrackFact ToDomain(RavenMusicTrackFactDocument fact) =>
+        fact.Type switch
         {
             nameof(MinimalTrackInfoDiscovered) => new MinimalTrackInfoDiscovered(
                 fact.Title ?? string.Empty,
@@ -140,6 +114,4 @@ internal static class RavenMappings
                 fact.ObservedAt),
             _ => throw new ArgumentOutOfRangeException(nameof(fact.Type), fact.Type, "Unknown music track fact type.")
         };
-    }
-
 }

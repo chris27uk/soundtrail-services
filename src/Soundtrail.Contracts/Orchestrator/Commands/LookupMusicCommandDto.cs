@@ -1,6 +1,6 @@
 namespace Soundtrail.Contracts.Orchestrator.Commands;
 
-public sealed record LookupMusicCommand(
+public sealed record LookupMusicCommandDto(
     string CommandId,
     string MusicCatalogId,
     LookupPriorityBand Priority,

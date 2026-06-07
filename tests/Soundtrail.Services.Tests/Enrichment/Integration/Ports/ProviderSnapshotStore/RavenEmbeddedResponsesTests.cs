@@ -1,11 +1,11 @@
 using FluentAssertions;
 using Raven.Client.Documents.Session;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
-using System.Reflection;
 
 namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.ProviderSnapshotStore;
 
@@ -46,49 +46,12 @@ public sealed class RavenEmbeddedResponsesTests
         }
 
         using var verificationSession = raven.Store.OpenAsyncSession();
-        var document = await LoadInternalDocumentAsync(
-            verificationSession,
-            RavenProviderSnapshotDocumentType,
+        var document = await verificationSession.LoadAsync<RavenProviderSnapshotDocument>(
             "provider-snapshots/mc_track_1/MusicBrainz");
 
-        RavenProviderSnapshotDocumentType
-            .GetProperty("PayloadJson", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!
-            .GetValue(document)
-            .Should().Be("{\"value\":\"second\"}");
-    }
-
-    private static readonly Type RavenProviderSnapshotDocumentType = typeof(RavenRankedMusicCandidateStore).Assembly
-        .GetType("Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven.Documents.RavenProviderSnapshotDocument", throwOnError: true)!;
-
-    private static readonly Type RavenProviderSnapshotStoreType = typeof(RavenRankedMusicCandidateStore).Assembly
-        .GetType("Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven.RavenProviderSnapshotStore", throwOnError: true)!;
-
-    private static async Task<object?> LoadInternalDocumentAsync(
-        IAsyncDocumentSession session,
-        Type documentType,
-        string id)
-    {
-        var method = typeof(IAsyncDocumentSession)
-            .GetMethods()
-            .Single(x =>
-                x.Name == nameof(IAsyncDocumentSession.LoadAsync)
-                && x.IsGenericMethodDefinition
-                && x.GetParameters() is var parameters
-                && parameters.Length == 2
-                && parameters[0].ParameterType == typeof(string)
-                && parameters[1].ParameterType == typeof(CancellationToken))
-            .MakeGenericMethod(documentType);
-
-        var task = (Task)method.Invoke(session, [id, CancellationToken.None])!;
-        await task;
-        return task.GetType().GetProperty("Result")!.GetValue(task);
+        document!.PayloadJson.Should().Be("{\"value\":\"second\"}");
     }
 
     private static IProviderSnapshotStore CreateStore(IAsyncDocumentSession session) =>
-        (IProviderSnapshotStore)Activator.CreateInstance(
-            RavenProviderSnapshotStoreType,
-            BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public,
-            binder: null,
-            args: [session],
-            culture: null)!;
+        new RavenProviderSnapshotStore(session);
 }

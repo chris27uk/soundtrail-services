@@ -16,7 +16,7 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.NoPrevio
 
             var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
 
-            result.Command?.MusicCatalogId.Should().Be("mc_track_1");
+            result.Command?.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
         }
 
         [Fact]
@@ -29,7 +29,7 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.NoPrevio
             var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
 
             result.ShouldSchedule.Should().BeTrue();
-            result.Command?.MusicCatalogId.Should().Be("mc_track_1");
+            result.Command?.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
         }
 
         [Fact]
@@ -43,7 +43,7 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.NoPrevio
             var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
 
             result.ShouldSchedule.Should().BeTrue();
-            result.Command?.MusicCatalogId.Should().Be("mc_track_1");
+            result.Command?.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
         }
 
         [Fact]
@@ -66,7 +66,7 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.NoPrevio
 
             var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
 
-            result.Command?.CorrelationId.Should().NotBeNullOrWhiteSpace();
+            result.Command?.CorrelationId.Value.Should().NotBeNullOrWhiteSpace();
         }
 
         [Fact]

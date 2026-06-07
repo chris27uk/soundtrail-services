@@ -1,8 +1,6 @@
 using Soundtrail.Contracts;
-using Soundtrail.Contracts.Api;
-using Soundtrail.Services.Api.Features.Search.Queueing;
-using Soundtrail.Services.Api.Features.Search.TrackSearch;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search.Resolution;
@@ -76,13 +74,13 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure
             return new LookupMusicRequestHandlerTestEnvironment(search, store);
         }
 
-        public LookupMusicRequest Request(
+        public Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search.LookupMusicRequest Request(
             string query,
             int trustLevel,
             int riskScore,
             DateTimeOffset? occurredAt = null) =>
             new(
-                Query: NormalizedSearchQuery.FromText(query),
+                Query: Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search.NormalizedSearchQuery.FromText(query),
                 TrustLevel: trustLevel,
                 RiskScore: riskScore,
                 OccurredAt: occurredAt ?? new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero),

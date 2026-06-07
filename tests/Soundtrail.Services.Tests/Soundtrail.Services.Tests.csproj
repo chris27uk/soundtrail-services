@@ -27,6 +27,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Soundtrail.Services.Api\Soundtrail.Services.Api.csproj" />
     <ProjectReference Include="..\..\src\Soundtrail.Services.Enrichment.Cdc\Soundtrail.Services.Enrichment.Cdc.csproj" />
+    <ProjectReference Include="..\..\src\Soundtrail.Services.Enrichment\Soundtrail.Services.Enrichment.csproj" />
     <ProjectReference Include="..\..\src\Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator\Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.csproj" />
     <ProjectReference Include="..\..\src\Soundtrail.Services.Enrichment.DiscoveryPlanner\Soundtrail.Services.Enrichment.DiscoveryPlanner.csproj" />
     <ProjectReference Include="..\..\src\Soundtrail.Services.Enrichment.Responder\Soundtrail.Services.Enrichment.Responder.csproj" />

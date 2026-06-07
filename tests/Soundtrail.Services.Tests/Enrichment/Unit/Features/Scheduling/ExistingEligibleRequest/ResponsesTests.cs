@@ -18,7 +18,7 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.Existing
 
             var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 15));
 
-            result.Command?.MusicCatalogId.Should().Be(musicCatalogId);
+            result.Command?.MusicCatalogId.Should().Be(MusicCatalogId.From(musicCatalogId));
         }
 
         [Fact]

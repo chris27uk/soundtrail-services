@@ -1,5 +1,4 @@
 using Soundtrail.Contracts;
-using Soundtrail.Contracts.Orchestrator.Commands;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
 

@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Soundtrail.Contracts;
-using Soundtrail.Contracts.Worker;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
@@ -23,10 +22,10 @@ public sealed class MusicTrackEventCommandHandlerTests
                 ProviderName.MusicBrainz,
                 new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero)));
 
-        message.Should().BeOfType<ResolveApplePlaybackReferenceCommandDto>();
-        var typed = (ResolveApplePlaybackReferenceCommandDto)message;
+        message.Should().BeOfType<ResolveApplePlaybackReferenceCommand>();
+        var typed = (ResolveApplePlaybackReferenceCommand)message;
         typed.CommandId.Should().Be(CommandId.For("ResolveApplePlaybackReference:mc_track_1"));
-        typed.MusicCatalogId.Should().Be("mc_track_1");
+        typed.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
     }
 
     [Fact]
@@ -45,6 +44,6 @@ public sealed class MusicTrackEventCommandHandlerTests
         message.Should().BeOfType<ResolveYouTubeMusicPlaybackReferenceCommand>();
         var typed = (ResolveYouTubeMusicPlaybackReferenceCommand)message;
         typed.CommandId.Should().Be(CommandId.For("ResolveYouTubeMusicPlaybackReference:mc_track_1"));
-        typed.MusicCatalogId.Should().Be("mc_track_1");
+        typed.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
     }
 }

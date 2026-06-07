@@ -13,15 +13,15 @@ internal sealed class RavenLookupExecutionReceiptStore(
         CommandId commandId,
         CancellationToken cancellationToken)
     {
-        var documentId = RavenLookupExecutionReceiptDocument.GetDocumentId(commandId.Value);
-        var existing = await session.LoadAsync<RavenLookupExecutionReceiptDocument>(documentId, cancellationToken);
+        var documentId = RavenLookupExecutionReceiptDto.GetDocumentId(commandId.Value);
+        var existing = await session.LoadAsync<RavenLookupExecutionReceiptDto>(documentId, cancellationToken);
         if (existing is not null)
         {
             return false;
         }
 
         await session.StoreAsync(
-            new RavenLookupExecutionReceiptDocument
+            new RavenLookupExecutionReceiptDto
             {
                 Id = documentId,
                 CommandId = commandId.Value
@@ -35,8 +35,8 @@ internal sealed class RavenLookupExecutionReceiptStore(
         CommandId commandId,
         CancellationToken cancellationToken)
     {
-        var documentId = RavenLookupExecutionReceiptDocument.GetDocumentId(commandId.Value);
-        var existing = await session.LoadAsync<RavenLookupExecutionReceiptDocument>(documentId, cancellationToken)
+        var documentId = RavenLookupExecutionReceiptDto.GetDocumentId(commandId.Value);
+        var existing = await session.LoadAsync<RavenLookupExecutionReceiptDto>(documentId, cancellationToken)
             ?? throw new InvalidOperationException($"Lookup execution receipt '{documentId}' was not found.");
 
         existing.Completed = true;

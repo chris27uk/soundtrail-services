@@ -78,14 +78,14 @@ public sealed class ApplyEnrichmentResponseHandlerTests
                 LookupPriorityBand.High,
                 new DateTimeOffset(2026, 6, 5, 12, 2, 0, TimeSpan.Zero),
                 new SongMetadata("Apple Song", "Apple Artist", null, null, null),
-                [new ExternalReference(ProviderName.AppleMusic, new Uri("https://music.apple.com/track/1"), "apple-1", ReferenceConfidenceDto.Verified)],
+                [new ExternalReference(ProviderName.AppleMusic, new Uri("https://music.apple.com/track/1"), "apple-1", ReferenceConfidence.Verified)],
                 CorrelationId.From("corr-2")));
 
         var projectedTrack = projectionStore.Projections["mc_track_1"];
         projectedTrack.CanonicalMetadata.Should().NotBeNull();
         projectedTrack.CanonicalMetadata!.Title.Should().Be("Canonical Song");
         projectedTrack.Apple.Should().NotBeNull();
-        projectedTrack.Apple!.ConfidenceDto.Should().Be(ReferenceConfidenceDto.Verified);
+        projectedTrack.Apple!.Confidence.Should().Be(ReferenceConfidence.Verified);
         projectedTrack.IsPlayable.Should().BeTrue();
         result.Facts.Should().ContainSingle()
             .Which.Should().BeOfType<ProviderPlaybackReferenceResolved>();

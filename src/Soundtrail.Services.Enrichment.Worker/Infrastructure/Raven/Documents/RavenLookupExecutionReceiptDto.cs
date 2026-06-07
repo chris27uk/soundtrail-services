@@ -1,6 +1,6 @@
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven.Documents;
 
-internal sealed class RavenLookupExecutionReceiptDocument
+internal sealed class RavenLookupExecutionReceiptDto
 {
     public string Id { get; set; } = string.Empty;
 

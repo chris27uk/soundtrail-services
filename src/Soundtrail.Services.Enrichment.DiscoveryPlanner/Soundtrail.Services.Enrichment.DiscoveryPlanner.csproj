@@ -20,11 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Soundtrail.Contracts\Soundtrail.Contracts.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Shared\Orchestration\" />
-    <Folder Include="Shared\Queuing\" />
+    <ProjectReference Include="..\Soundtrail.Services.Enrichment\Soundtrail.Services.Enrichment.csproj" />
   </ItemGroup>
 
 </Project>

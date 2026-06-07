@@ -215,7 +215,7 @@ public class DiscoveryBacklogSchedulerTests
 
         var commands = await scheduler.RunOnceAsync(now, 10);
 
-        commands[0].CorrelationId.Should().NotBeNullOrWhiteSpace();
+        commands[0].CorrelationId.Value.Should().NotBeNullOrWhiteSpace();
     }
 
     [Fact]

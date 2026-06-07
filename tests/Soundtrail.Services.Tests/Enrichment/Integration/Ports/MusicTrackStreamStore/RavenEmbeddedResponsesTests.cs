@@ -79,14 +79,6 @@ public sealed class RavenEmbeddedResponsesTests
         loaded.Facts.Should().ContainSingle();
     }
 
-    private static readonly Type RavenMusicTrackStreamStoreType = typeof(RavenRankedMusicCandidateStore).Assembly
-        .GetType("Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven.RavenMusicTrackStreamStore", throwOnError: true)!;
-
     private static IMusicTrackEventRepository CreateStore(IAsyncDocumentSession session) =>
-        (IMusicTrackEventRepository)Activator.CreateInstance(
-            RavenMusicTrackStreamStoreType,
-            BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public,
-            binder: null,
-            args: [session],
-            culture: null)!;
+        new RavenMusicTrackStreamStore(session);
 }

@@ -1,5 +1,3 @@
-using Soundtrail.Contracts;
-using Soundtrail.Contracts.Api;
 using Soundtrail.Services.Api.Features.Search.Queueing;
 
 namespace Soundtrail.Services.Tests.Api.Integration.Ports.EnqueueMusicRequest

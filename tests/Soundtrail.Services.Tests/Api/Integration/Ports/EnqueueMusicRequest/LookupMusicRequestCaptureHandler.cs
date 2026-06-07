@@ -8,9 +8,9 @@ namespace Soundtrail.Services.Tests.Api.Integration.Ports.EnqueueMusicRequest
     public sealed class LookupMusicRequestCaptureHandler(LookupMusicRequestCapture capture)
     {
         [WolverineHandler]
-        public Task Handle(LookupMusicRequest request, CancellationToken cancellationToken)
+        public Task Handle(LookupMusicRequestDto requestDto, CancellationToken cancellationToken)
         {
-            capture.Record(request);
+            capture.Record(requestDto);
             return Task.CompletedTask;
         }
     }

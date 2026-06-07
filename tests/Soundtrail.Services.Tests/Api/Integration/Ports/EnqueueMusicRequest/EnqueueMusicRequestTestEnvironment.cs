@@ -13,13 +13,13 @@ internal sealed class EnqueueMusicRequestTestEnvironment : IAsyncDisposable
 {
     private readonly IHost host;
     private readonly IServiceScope? scope;
-    private readonly Func<TimeSpan, Task<LookupMusicRequest>> waitForCapturedRequest;
+    private readonly Func<TimeSpan, Task<object>> waitForCapturedRequest;
 
     private EnqueueMusicRequestTestEnvironment(
         IHost host,
         IServiceScope? scope,
         IEnqueueMusicRequest enqueueMusicRequest,
-        Func<TimeSpan, Task<LookupMusicRequest>> waitForCapturedRequest)
+        Func<TimeSpan, Task<object>> waitForCapturedRequest)
     {
         this.host = host;
         this.scope = scope;
@@ -50,7 +50,7 @@ internal sealed class EnqueueMusicRequestTestEnvironment : IAsyncDisposable
                 host,
                 scope: null,
                 new ThrowingEnqueueMusicRequest(),
-                _ => Task.FromException<LookupMusicRequest>(new InvalidOperationException("No fake route configured.")));
+                _ => Task.FromException<object>(new InvalidOperationException("No fake route configured.")));
         }
 
         var queue = new InMemoryEnqueueMusicRequest();
@@ -84,10 +84,10 @@ internal sealed class EnqueueMusicRequestTestEnvironment : IAsyncDisposable
             host,
             scope,
             scope.ServiceProvider.GetRequiredService<IEnqueueMusicRequest>(),
-            capture.WaitAsync);
+            async timeout => await capture.WaitAsync(timeout));
     }
 
-    public Task<LookupMusicRequest> WaitForCapturedRequestAsync(TimeSpan timeout) =>
+    public Task<object> WaitForCapturedRequestAsync(TimeSpan timeout) =>
         this.waitForCapturedRequest(timeout);
 
     public async ValueTask DisposeAsync()
@@ -105,7 +105,7 @@ internal sealed class EnqueueMusicRequestTestEnvironment : IAsyncDisposable
             OccurredAt: new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero),
             CorrelationId: CorrelationId.New());
 
-    private static async Task<LookupMusicRequest> WaitForCapturedRequestAsync(
+    private static async Task<object> WaitForCapturedRequestAsync(
         InMemoryEnqueueMusicRequest queue,
         TimeSpan timeout)
     {
