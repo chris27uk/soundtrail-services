@@ -1,0 +1,3 @@
+namespace Soundtrail.Services.Enrichment.Shared.Orchestration;
+
+public sealed record HighPriorityResolveApplePlaybackReferenceCommandMessage(ResolveApplePlaybackReferenceCommand Command);

@@ -5,7 +5,7 @@ using Soundtrail.Services.Shared;
 
 namespace Soundtrail.Services.Enrichment.Shared.Orchestration;
 
-public sealed record VerifyApplePlaybackReferenceCommand(
+public sealed record ResolveApplePlaybackReferenceCommand(
     CommandId CommandId,
     MusicCatalogId MusicCatalogId,
     LookupPriorityBand Priority,

@@ -5,7 +5,7 @@ using Soundtrail.Services.Shared;
 
 namespace Soundtrail.Services.Enrichment.Shared.Orchestration;
 
-public sealed record VerifyYouTubeMusicPlaybackReferenceCommand(
+public sealed record ResolveYouTubeMusicPlaybackReferenceCommand(
     CommandId CommandId,
     MusicCatalogId MusicCatalogId,
     LookupPriorityBand Priority,

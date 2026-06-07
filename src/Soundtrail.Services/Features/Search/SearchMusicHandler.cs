@@ -4,13 +4,9 @@ using Soundtrail.Services.Shared;
 
 namespace Soundtrail.Services.Features.Search;
 
-public sealed class SearchMusicHandler(
-    ITrackSearchPort trackSearch,
-    IEnqueueMusicRequest enqueueMusicRequest) : IHandler<SearchMusicRequest, SearchMusicResponse>
+public sealed class SearchMusicHandler(ITrackSearchPort trackSearch, IEnqueueMusicRequest enqueueMusicRequest) : IHandler<SearchMusicRequest, SearchMusicResponse>
 {
-    public async Task<SearchMusicResponse> Handle(
-        SearchMusicRequest request,
-        CancellationToken cancellationToken = default)
+    public async Task<SearchMusicResponse> Handle(SearchMusicRequest request, CancellationToken cancellationToken = default)
     {
         var normalizedQuery = NormalizedSearchQuery.From(request.Query);
         var results = await trackSearch.SearchAsync(normalizedQuery, request.Limit, cancellationToken);
@@ -21,15 +17,7 @@ public sealed class SearchMusicHandler(
             return SearchMusicResponse.Resolved(request.Query, filteredResults);
         }
 
-        await enqueueMusicRequest.EnqueueAsync(
-            new LookupMusicRequest(
-                normalizedQuery,
-                TrustLevel: 0,
-                RiskScore: 0,
-                OccurredAt: DateTimeOffset.UtcNow,
-                CorrelationId: CorrelationId.New()),
-            cancellationToken);
-
+        await enqueueMusicRequest.EnqueueAsync(normalizedQuery.ToNewLookupRequest(), cancellationToken);
         return SearchMusicResponse.Pending(request.Query);
     }
 }

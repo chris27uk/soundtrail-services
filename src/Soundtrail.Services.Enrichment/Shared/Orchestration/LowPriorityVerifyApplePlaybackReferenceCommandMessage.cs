@@ -1,3 +1,0 @@
-namespace Soundtrail.Services.Enrichment.Shared.Orchestration;
-
-public sealed record LowPriorityVerifyApplePlaybackReferenceCommandMessage(VerifyApplePlaybackReferenceCommand Command);

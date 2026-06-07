@@ -7,7 +7,7 @@ namespace Soundtrail.Services.Enrichment.Features.Execution.YouTubeMusicLookupEx
 public sealed class ExecuteYouTubeMusicLookupHandler(ILookupExecutionReceiptStore lookupExecutionReceiptStore)
 {
     public async Task<LookupExecutionResult> Handle(
-        VerifyYouTubeMusicPlaybackReferenceCommand command,
+        ResolveYouTubeMusicPlaybackReferenceCommand command,
         CancellationToken cancellationToken = default)
     {
         await using var idempotencySession = await WorkerIdempotencySession.StartAsync(

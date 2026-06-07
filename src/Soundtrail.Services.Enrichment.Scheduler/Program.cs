@@ -4,7 +4,6 @@ using Microsoft.Extensions.Hosting;
 using Soundtrail.Services.Enrichment.Features.BacklogScheduling;
 using Soundtrail.Services.Enrichment.Features.Execution.ApplyEnrichmentResponse;
 using Soundtrail.Services.Enrichment.Features.JustInTimeScheduling;
-using Soundtrail.Services.Enrichment.Features.Orchestration;
 using Soundtrail.Services.Enrichment.Shared.Orchestration;
 using Soundtrail.Services.Enrichment.Shared.Prioritisation;
 using Soundtrail.Services.Enrichment.Shared.Search.Resolution;
@@ -27,6 +26,7 @@ builder.UseWolverine(opts =>
     opts.Discovery.IncludeType<LookupMusicRequestListener>();
     opts.Discovery.IncludeType<DiscoveryBacklogSchedulingListener>();
     opts.Discovery.IncludeType<EnrichmentResponseListener>();
+    opts.Discovery.IncludeType<MusicTrackBusinessIntentListener>();
     opts.UseRavenDbPersistence();
     opts.Policies.AutoApplyTransactions();
 
@@ -46,16 +46,16 @@ builder.UseWolverine(opts =>
     opts.PublishMessage<LowPriorityResolveCanonicalMetadataCommandMessage>()
         .ToAzureServiceBusQueue(serviceBusOptions.LowPriorityMusicBrainzLookupQueueName);
 
-    opts.PublishMessage<HighPriorityVerifyApplePlaybackReferenceCommandMessage>()
+    opts.PublishMessage<HighPriorityResolveApplePlaybackReferenceCommandMessage>()
         .ToAzureServiceBusQueue(serviceBusOptions.HighPriorityAppleLookupQueueName);
 
-    opts.PublishMessage<LowPriorityVerifyApplePlaybackReferenceCommandMessage>()
+    opts.PublishMessage<LowPriorityResolveApplePlaybackReferenceCommandMessage>()
         .ToAzureServiceBusQueue(serviceBusOptions.LowPriorityAppleLookupQueueName);
 
-    opts.PublishMessage<HighPriorityVerifyYouTubeMusicPlaybackReferenceCommandMessage>()
+    opts.PublishMessage<HighPriorityResolveYouTubeMusicPlaybackReferenceCommandMessage>()
         .ToAzureServiceBusQueue(serviceBusOptions.HighPriorityYouTubeMusicLookupQueueName);
 
-    opts.PublishMessage<LowPriorityVerifyYouTubeMusicPlaybackReferenceCommandMessage>()
+    opts.PublishMessage<LowPriorityResolveYouTubeMusicPlaybackReferenceCommandMessage>()
         .ToAzureServiceBusQueue(serviceBusOptions.LowPriorityYouTubeMusicLookupQueueName);
 });
 
@@ -64,7 +64,6 @@ builder.Services.AddSchedulerServiceBus(builder.Configuration);
 builder.Services.Configure<LookupPlanningOptions>(builder.Configuration.GetSection(LookupPlanningOptions.SectionName));
 builder.Services.AddSingleton<DiscoveryPriorityPolicy>();
 builder.Services.AddSingleton<MusicCatalogResolutionPolicy>();
-builder.Services.AddScoped<EnrichmentOrchestrator>();
 builder.Services.AddScoped<ApplyEnrichmentResponseHandler>();
 builder.Services.AddScoped<LookupMusicRequestHandler>();
 builder.Services.AddScoped<DiscoveryBacklogScheduler>();

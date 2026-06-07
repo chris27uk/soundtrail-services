@@ -12,4 +12,7 @@ public sealed record EnrichmentResponse(
     DateTimeOffset CreatedAt,
     SongMetadata? Metadata,
     IReadOnlyList<ExternalReference> References,
-    CorrelationId CorrelationId);
+    CorrelationId CorrelationId)
+{
+    public string? RawPayloadJson { get; init; }
+}

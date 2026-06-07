@@ -10,7 +10,7 @@ public sealed class YouTubeMusicLookupExecutionListener(ExecuteYouTubeMusicLooku
     [WolverineHandler]
     [Transactional]
     public async Task<object[]> Handle(
-        HighPriorityVerifyYouTubeMusicPlaybackReferenceCommandMessage message,
+        HighPriorityResolveYouTubeMusicPlaybackReferenceCommandMessage message,
         IAsyncDocumentSession _,
         CancellationToken cancellationToken = default)
     {
@@ -21,7 +21,7 @@ public sealed class YouTubeMusicLookupExecutionListener(ExecuteYouTubeMusicLooku
     [WolverineHandler]
     [Transactional]
     public async Task<object[]> Handle(
-        LowPriorityVerifyYouTubeMusicPlaybackReferenceCommandMessage message,
+        LowPriorityResolveYouTubeMusicPlaybackReferenceCommandMessage message,
         IAsyncDocumentSession _,
         CancellationToken cancellationToken = default)
     {

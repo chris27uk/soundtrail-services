@@ -22,11 +22,11 @@ internal sealed class RavenTrackDocument
 
     public RavenSongMetadataDocument? CanonicalMetadata { get; set; }
 
-    public RavenProviderReferenceDocument? MusicBrainzReference { get; set; }
-
     public RavenProviderReferenceDocument? AppleReference { get; set; }
 
     public RavenProviderReferenceDocument? YouTubeMusicReference { get; set; }
+
+    public bool IsPlayable { get; set; }
 
     public static string GetDocumentId(string stableId) => $"track-catalogue/{stableId}";
 

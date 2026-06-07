@@ -1,8 +1,7 @@
 using FluentAssertions;
 using Soundtrail.Services.Enrichment.Features.Execution.ApplyEnrichmentResponse;
-using Soundtrail.Services.Enrichment.Features.Orchestration;
 using Soundtrail.Services.Enrichment.Shared.Execution;
-using Soundtrail.Services.Enrichment.Shared.Orchestration;
+using Soundtrail.Services.Enrichment.Shared.MusicTracks;
 using Soundtrail.Services.Enrichment.Shared.Prioritisation;
 using Soundtrail.Services.Enrichment.Shared.Search;
 using Soundtrail.Services.Shared;
@@ -13,14 +12,15 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Execution.ApplyEnri
 public sealed class ApplyEnrichmentResponseHandlerTests
 {
     [Fact]
-    public async Task Given_A_MusicBrainz_Response_When_Handled_Then_Canonical_Metadata_And_Cross_Provider_References_Are_Applied()
+    public async Task Given_A_MusicBrainz_Response_When_Handled_Then_A_Stream_Is_Created_Projection_Is_Updated_And_Provider_Resolution_Is_Scheduled()
     {
-        var appliedStore = new AppliedEnrichmentResponseStoreFake();
-        var trackStore = new TrackEnrichmentWriteStoreFake();
+        var streamStore = new MusicTrackStreamStoreFake();
+        var projectionStore = new MusicTrackProjectionStoreFake();
+        var snapshotStore = new ProviderSnapshotStoreFake();
         var handler = new ApplyEnrichmentResponseHandler(
-            appliedStore,
-            trackStore,
-            new EnrichmentOrchestrator(new ActiveLookupWorkStoreFake()));
+            streamStore,
+            projectionStore,
+            snapshotStore);
 
         var result = await handler.Handle(
             new EnrichmentResponse(
@@ -30,43 +30,48 @@ public sealed class ApplyEnrichmentResponseHandlerTests
                 LookupPriorityBand.High,
                 new DateTimeOffset(2026, 6, 5, 12, 0, 0, TimeSpan.Zero),
                 new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000),
-                [
-                    new ExternalReference(ProviderName.Apple, new Uri("https://music.apple.com/track/1"), "apple-1", ReferenceConfidence.Discovered),
-                    new ExternalReference(ProviderName.MusicBrainz, new Uri("https://musicbrainz.org/recording/1"), "mbid-1", ReferenceConfidence.Verified)
-                ],
+                [],
                 CorrelationId.From("corr-1")));
 
-        var state = trackStore.States["mc_track_1"];
-        state.CanonicalMetadata.Should().NotBeNull();
-        state.CanonicalMetadata!.Title.Should().Be("Song A");
-        state.Apple.Should().NotBeNull();
-        state.Apple!.ExternalId.Should().Be("apple-1");
-        state.Apple.SourceProvider.Should().Be(ProviderName.MusicBrainz);
-        state.MusicBrainz.Should().NotBeNull();
-        appliedStore.AppliedCommandIds.Should().Contain(CommandId.For("ResolveCanonicalMetadata:mc_track_1").Value);
-        result.Commands.Should().ContainSingle()
-            .Which.Should().BeOfType<VerifyApplePlaybackReferenceCommand>();
-        result.Events.Should().Contain(e => e is ApplePlaybackVerificationRequested);
+        streamStore.Streams.Should().ContainKey("mc_track_1");
+        streamStore.Streams["mc_track_1"].AppliedCommandIds.Should().Contain(CommandId.For("ResolveCanonicalMetadata:mc_track_1").Value);
+        streamStore.Streams["mc_track_1"].Facts.Should().ContainItemsAssignableTo<MinimalTrackInfoDiscovered>();
+        projectionStore.Projections.Should().ContainKey("mc_track_1");
+
+        var projectedTrack = projectionStore.Projections["mc_track_1"];
+        projectedTrack.CanonicalMetadata.Should().NotBeNull();
+        projectedTrack.CanonicalMetadata!.Title.Should().Be("Song A");
+        projectedTrack.Apple.Should().BeNull();
+        snapshotStore.Snapshots.Should().ContainKey("mc_track_1:MusicBrainz");
+
+        result.Facts.Should().ContainItemsAssignableTo<AppleMusicResolutionRequired>();
+        result.Facts.Should().ContainItemsAssignableTo<YouTubeMusicResolutionRequired>();
     }
 
     [Fact]
-    public async Task Given_An_Apple_Response_When_Handled_Then_It_Does_Not_Replace_Canonical_Metadata()
+    public async Task Given_An_Apple_Response_When_Handled_Then_The_Track_Becomes_Playable()
     {
-        var appliedStore = new AppliedEnrichmentResponseStoreFake();
-        var trackStore = new TrackEnrichmentWriteStoreFake();
-        var handler = new ApplyEnrichmentResponseHandler(
-            appliedStore,
-            trackStore,
-            new EnrichmentOrchestrator(new ActiveLookupWorkStoreFake()));
-
-        await trackStore.ApplyAsync(
+        var streamStore = new MusicTrackStreamStoreFake();
+        var projectionStore = new MusicTrackProjectionStoreFake();
+        var snapshotStore = new ProviderSnapshotStoreFake();
+        var seedResponse = new EnrichmentResponse(
+            CommandId.For("ResolveCanonicalMetadata:mc_track_1"),
             MusicCatalogId.From("mc_track_1"),
-            state => state.ApplyCanonicalMetadata(new SongMetadata("Canonical Song", "Canonical Artist", "isrc-1", "mbid-1", 123000)),
-            CancellationToken.None);
+            ProviderName.MusicBrainz,
+            LookupPriorityBand.High,
+            new DateTimeOffset(2026, 6, 5, 12, 0, 0, TimeSpan.Zero),
+            new SongMetadata("Canonical Song", "Canonical Artist", "isrc-1", "mbid-1", 123000),
+            [],
+            CorrelationId.From("corr-1"));
+        var handler = new ApplyEnrichmentResponseHandler(
+            streamStore,
+            projectionStore,
+            snapshotStore);
 
-        await handler.Handle(
+        await handler.Handle(seedResponse);
+        var result = await handler.Handle(
             new EnrichmentResponse(
-                CommandId.For("VerifyApplePlaybackReference:mc_track_1"),
+                CommandId.For("ResolveApplePlaybackReference:mc_track_1"),
                 MusicCatalogId.From("mc_track_1"),
                 ProviderName.Apple,
                 LookupPriorityBand.High,
@@ -75,22 +80,26 @@ public sealed class ApplyEnrichmentResponseHandlerTests
                 [new ExternalReference(ProviderName.Apple, new Uri("https://music.apple.com/track/1"), "apple-1", ReferenceConfidence.Verified)],
                 CorrelationId.From("corr-2")));
 
-        var state = trackStore.States["mc_track_1"];
-        state.CanonicalMetadata.Should().NotBeNull();
-        state.CanonicalMetadata!.Title.Should().Be("Canonical Song");
-        state.Apple.Should().NotBeNull();
-        state.Apple!.Confidence.Should().Be(ReferenceConfidence.Verified);
+        var projectedTrack = projectionStore.Projections["mc_track_1"];
+        projectedTrack.CanonicalMetadata.Should().NotBeNull();
+        projectedTrack.CanonicalMetadata!.Title.Should().Be("Canonical Song");
+        projectedTrack.Apple.Should().NotBeNull();
+        projectedTrack.Apple!.Confidence.Should().Be(ReferenceConfidence.Verified);
+        projectedTrack.IsPlayable.Should().BeTrue();
+        result.Facts.Should().ContainSingle()
+            .Which.Should().BeOfType<ProviderPlaybackReferenceResolved>();
     }
 
     [Fact]
-    public async Task Given_A_Duplicate_Response_When_Handled_Then_No_State_Is_Applied()
+    public async Task Given_A_Duplicate_Response_When_Handled_Then_No_Duplicate_Facts_Are_Appended()
     {
-        var appliedStore = new AppliedEnrichmentResponseStoreFake();
-        var trackStore = new TrackEnrichmentWriteStoreFake();
+        var streamStore = new MusicTrackStreamStoreFake();
+        var projectionStore = new MusicTrackProjectionStoreFake();
+        var snapshotStore = new ProviderSnapshotStoreFake();
         var handler = new ApplyEnrichmentResponseHandler(
-            appliedStore,
-            trackStore,
-            new EnrichmentOrchestrator(new ActiveLookupWorkStoreFake()));
+            streamStore,
+            projectionStore,
+            snapshotStore);
         var response = new EnrichmentResponse(
             CommandId.For("ResolveCanonicalMetadata:mc_track_1"),
             MusicCatalogId.From("mc_track_1"),
@@ -104,9 +113,10 @@ public sealed class ApplyEnrichmentResponseHandlerTests
         var first = await handler.Handle(response);
         var duplicate = await handler.Handle(response);
 
-        trackStore.States.Should().ContainSingle();
-        first.Events.Should().NotBeEmpty();
-        duplicate.Commands.Should().BeEmpty();
-        duplicate.Events.Should().BeEmpty();
+        streamStore.Streams.Should().ContainKey("mc_track_1");
+        streamStore.Streams["mc_track_1"].AppliedCommandIds.Should().ContainSingle();
+        streamStore.Streams["mc_track_1"].Facts.Should().NotBeEmpty();
+        duplicate.Facts.Should().BeEmpty();
+        first.Facts.Should().HaveCount(3);
     }
 }

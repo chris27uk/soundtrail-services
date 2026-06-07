@@ -7,7 +7,7 @@ namespace Soundtrail.Services.Enrichment.Features.Execution.AppleLookupExecution
 public sealed class ExecuteAppleLookupHandler(ILookupExecutionReceiptStore lookupExecutionReceiptStore)
 {
     public async Task<LookupExecutionResult> Handle(
-        VerifyApplePlaybackReferenceCommand command,
+        ResolveApplePlaybackReferenceCommand command,
         CancellationToken cancellationToken = default)
     {
         await using var idempotencySession = await WorkerIdempotencySession.StartAsync(

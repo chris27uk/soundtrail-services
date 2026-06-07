@@ -1,0 +1,18 @@
+using Soundtrail.Services.Enrichment.Shared.MusicTracks;
+
+namespace Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
+
+public sealed class ProviderSnapshotStoreFake : IProviderSnapshotStore
+{
+    private readonly Dictionary<string, ProviderSnapshot> snapshots = [];
+
+    public IReadOnlyDictionary<string, ProviderSnapshot> Snapshots => snapshots;
+
+    public Task SaveAsync(
+        ProviderSnapshot snapshot,
+        CancellationToken cancellationToken)
+    {
+        snapshots[$"{snapshot.MusicCatalogId.Value}:{snapshot.Provider}"] = snapshot;
+        return Task.CompletedTask;
+    }
+}

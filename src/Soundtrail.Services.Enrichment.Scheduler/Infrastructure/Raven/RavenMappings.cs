@@ -1,7 +1,10 @@
 using Soundtrail.Services.Enrichment.Shared.Persistence;
 using Soundtrail.Services.Enrichment.Shared.Execution;
+using Soundtrail.Services.Enrichment.Shared.MusicTracks;
+using Soundtrail.Services.Enrichment.Shared.Prioritisation;
 using Soundtrail.Services.Enrichment.Shared.Search;
 using Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Raven.Documents;
+using Soundtrail.Services.Shared;
 
 namespace Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Raven;
 
@@ -28,84 +31,115 @@ internal static class RavenMappings
             NextEligibleAt = candidate.NextEligibleAt
         };
 
-    public static TrackEnrichmentState ToDomain(this RavenTrackDocument document)
+    public static MusicTrackStream ToDomain(this RavenMusicTrackStreamDocument document)
     {
-        var state = new TrackEnrichmentState();
-
-        if (document.CanonicalMetadata is not null)
-        {
-            state.ApplyCanonicalMetadata(new SongMetadata(
-                document.CanonicalMetadata.Title,
-                document.CanonicalMetadata.Artist,
-                document.CanonicalMetadata.Isrc,
-                document.CanonicalMetadata.Mbid,
-                document.CanonicalMetadata.DurationMs));
-        }
-
-        ApplyReference(document.MusicBrainzReference, state);
-        ApplyReference(document.AppleReference, state);
-        ApplyReference(document.YouTubeMusicReference, state);
-
-        return state;
+        return new MusicTrackStream(
+            document.Version,
+            document.Facts.Select(ToDomain).ToArray());
     }
 
-    public static void Apply(this RavenTrackDocument document, TrackEnrichmentState state)
-    {
-        document.CanonicalMetadata = state.CanonicalMetadata is null
-            ? null
-            : new RavenSongMetadataDocument
+    public static RavenMusicTrackFactDocument ToDocument(this MusicTrackFact fact) =>
+        fact switch
+        {
+            MinimalTrackInfoDiscovered minimalTrackInfoDiscovered => new RavenMusicTrackFactDocument
             {
-                Title = state.CanonicalMetadata.Title,
-                Artist = state.CanonicalMetadata.Artist,
-                Isrc = state.CanonicalMetadata.Isrc,
-                Mbid = state.CanonicalMetadata.Mbid,
-                DurationMs = state.CanonicalMetadata.DurationMs
-            };
+                Type = nameof(MinimalTrackInfoDiscovered),
+                SourceProvider = minimalTrackInfoDiscovered.SourceProvider.ToString(),
+                ObservedAt = minimalTrackInfoDiscovered.ObservedAt,
+                Title = minimalTrackInfoDiscovered.Title,
+                Artist = minimalTrackInfoDiscovered.Artist,
+                DurationMs = minimalTrackInfoDiscovered.DurationMs,
+                Isrc = minimalTrackInfoDiscovered.Isrc,
+                Mbid = minimalTrackInfoDiscovered.Mbid
+            },
+            ProviderPlaybackReferenceResolved providerPlaybackReferenceResolved => new RavenMusicTrackFactDocument
+            {
+                Type = nameof(ProviderPlaybackReferenceResolved),
+                SourceProvider = providerPlaybackReferenceResolved.SourceProvider.ToString(),
+                ObservedAt = providerPlaybackReferenceResolved.ObservedAt,
+                Provider = providerPlaybackReferenceResolved.Provider.ToString(),
+                ExternalId = providerPlaybackReferenceResolved.ExternalId,
+                Url = providerPlaybackReferenceResolved.Url.ToString()
+            },
+            AppleMusicResolutionRequired appleMusicResolutionRequired => new RavenMusicTrackFactDocument
+            {
+                Type = nameof(AppleMusicResolutionRequired),
+                SourceProvider = appleMusicResolutionRequired.SourceProvider.ToString(),
+                ObservedAt = appleMusicResolutionRequired.ObservedAt,
+                Priority = appleMusicResolutionRequired.Priority.ToString(),
+                CorrelationId = appleMusicResolutionRequired.CorrelationId.Value,
+                MusicCatalogId = appleMusicResolutionRequired.MusicCatalogId.Value
+            },
+            YouTubeMusicResolutionRequired youTubeMusicResolutionRequired => new RavenMusicTrackFactDocument
+            {
+                Type = nameof(YouTubeMusicResolutionRequired),
+                SourceProvider = youTubeMusicResolutionRequired.SourceProvider.ToString(),
+                ObservedAt = youTubeMusicResolutionRequired.ObservedAt,
+                Priority = youTubeMusicResolutionRequired.Priority.ToString(),
+                CorrelationId = youTubeMusicResolutionRequired.CorrelationId.Value,
+                MusicCatalogId = youTubeMusicResolutionRequired.MusicCatalogId.Value
+            },
+            TrackLinkedToAlbum trackLinkedToAlbum => new RavenMusicTrackFactDocument
+            {
+                Type = nameof(TrackLinkedToAlbum),
+                SourceProvider = trackLinkedToAlbum.SourceProvider.ToString(),
+                ObservedAt = trackLinkedToAlbum.ObservedAt,
+                AlbumId = trackLinkedToAlbum.AlbumId,
+                AlbumTitle = trackLinkedToAlbum.AlbumTitle
+            },
+            TrackLinkedToArtist trackLinkedToArtist => new RavenMusicTrackFactDocument
+            {
+                Type = nameof(TrackLinkedToArtist),
+                SourceProvider = trackLinkedToArtist.SourceProvider.ToString(),
+                ObservedAt = trackLinkedToArtist.ObservedAt,
+                ArtistId = trackLinkedToArtist.ArtistId,
+                ArtistName = trackLinkedToArtist.ArtistName
+            },
+            _ => throw new ArgumentOutOfRangeException(nameof(fact), fact, "Unknown music track fact.")
+        };
 
-        document.MusicBrainzReference = ToDocument(state.MusicBrainz);
-        document.AppleReference = ToDocument(state.Apple);
-        document.YouTubeMusicReference = ToDocument(state.YouTubeMusic);
-
-        document.Title = state.CanonicalMetadata?.Title ?? document.Title;
-        document.Artist = state.CanonicalMetadata?.Artist ?? document.Artist;
-        document.Isrc = state.CanonicalMetadata?.Isrc ?? document.Isrc;
-        document.Mbid = state.CanonicalMetadata?.Mbid ?? document.Mbid;
-        document.DurationMs = state.CanonicalMetadata?.DurationMs ?? document.DurationMs;
-        document.AppleId = state.Apple?.ExternalId ?? document.AppleId;
-        document.SearchText = RavenTrackDocument.BuildSearchText(document.Title, document.Artist);
-    }
-
-    private static void ApplyReference(
-        RavenProviderReferenceDocument? reference,
-        TrackEnrichmentState state)
+    private static MusicTrackFact ToDomain(RavenMusicTrackFactDocument fact)
     {
-        if (reference is null)
+        return fact.Type switch
         {
-            return;
-        }
-
-        state.ApplyReference(
-            Enum.Parse<ProviderName>(reference.Provider, ignoreCase: true),
-            new Uri(reference.Url),
-            reference.ExternalId,
-            Enum.Parse<ReferenceConfidence>(reference.Confidence, ignoreCase: true),
-            Enum.Parse<ProviderName>(reference.SourceProvider, ignoreCase: true));
-    }
-
-    private static RavenProviderReferenceDocument? ToDocument(ProviderReference? reference)
-    {
-        if (reference is null)
-        {
-            return null;
-        }
-
-        return new RavenProviderReferenceDocument
-        {
-            Provider = reference.Provider.ToString(),
-            Url = reference.Url.ToString(),
-            ExternalId = reference.ExternalId,
-            Confidence = reference.Confidence.ToString(),
-            SourceProvider = reference.SourceProvider.ToString()
+            nameof(MinimalTrackInfoDiscovered) => new MinimalTrackInfoDiscovered(
+                fact.Title ?? string.Empty,
+                fact.Artist ?? string.Empty,
+                fact.DurationMs,
+                fact.Isrc,
+                fact.Mbid,
+                Enum.Parse<ProviderName>(fact.SourceProvider, ignoreCase: true),
+                fact.ObservedAt),
+            nameof(ProviderPlaybackReferenceResolved) => new ProviderPlaybackReferenceResolved(
+                Enum.Parse<ProviderName>(fact.Provider ?? string.Empty, ignoreCase: true),
+                fact.ExternalId,
+                new Uri(fact.Url ?? string.Empty),
+                Enum.Parse<ProviderName>(fact.SourceProvider, ignoreCase: true),
+                fact.ObservedAt),
+            nameof(AppleMusicResolutionRequired) => new AppleMusicResolutionRequired(
+                MusicCatalogId.From(fact.MusicCatalogId ?? string.Empty),
+                Enum.Parse<LookupPriorityBand>(fact.Priority ?? string.Empty, ignoreCase: true),
+                CorrelationId.From(fact.CorrelationId ?? string.Empty),
+                Enum.Parse<ProviderName>(fact.SourceProvider, ignoreCase: true),
+                fact.ObservedAt),
+            nameof(YouTubeMusicResolutionRequired) => new YouTubeMusicResolutionRequired(
+                MusicCatalogId.From(fact.MusicCatalogId ?? string.Empty),
+                Enum.Parse<LookupPriorityBand>(fact.Priority ?? string.Empty, ignoreCase: true),
+                CorrelationId.From(fact.CorrelationId ?? string.Empty),
+                Enum.Parse<ProviderName>(fact.SourceProvider, ignoreCase: true),
+                fact.ObservedAt),
+            nameof(TrackLinkedToAlbum) => new TrackLinkedToAlbum(
+                fact.AlbumId,
+                fact.AlbumTitle,
+                Enum.Parse<ProviderName>(fact.SourceProvider, ignoreCase: true),
+                fact.ObservedAt),
+            nameof(TrackLinkedToArtist) => new TrackLinkedToArtist(
+                fact.ArtistId,
+                fact.ArtistName,
+                Enum.Parse<ProviderName>(fact.SourceProvider, ignoreCase: true),
+                fact.ObservedAt),
+            _ => throw new ArgumentOutOfRangeException(nameof(fact.Type), fact.Type, "Unknown music track fact type.")
         };
     }
+
 }

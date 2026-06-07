@@ -10,7 +10,7 @@ public sealed class AppleLookupExecutionListener(ExecuteAppleLookupHandler handl
     [WolverineHandler]
     [Transactional]
     public async Task<object[]> Handle(
-        HighPriorityVerifyApplePlaybackReferenceCommandMessage message,
+        HighPriorityResolveApplePlaybackReferenceCommandMessage message,
         IAsyncDocumentSession _,
         CancellationToken cancellationToken = default)
     {
@@ -21,7 +21,7 @@ public sealed class AppleLookupExecutionListener(ExecuteAppleLookupHandler handl
     [WolverineHandler]
     [Transactional]
     public async Task<object[]> Handle(
-        LowPriorityVerifyApplePlaybackReferenceCommandMessage message,
+        LowPriorityResolveApplePlaybackReferenceCommandMessage message,
         IAsyncDocumentSession _,
         CancellationToken cancellationToken = default)
     {

@@ -23,8 +23,8 @@ public static class LookupExecutionCommandMessageExtensions
         command switch
         {
             ResolveCanonicalMetadataCommand resolveCanonicalMetadataCommand => resolveCanonicalMetadataCommand.ToTransportMessage(),
-            VerifyApplePlaybackReferenceCommand verifyApplePlaybackReferenceCommand => verifyApplePlaybackReferenceCommand.ToTransportMessage(),
-            VerifyYouTubeMusicPlaybackReferenceCommand verifyYouTubeMusicPlaybackReferenceCommand => verifyYouTubeMusicPlaybackReferenceCommand.ToTransportMessage(),
+            ResolveApplePlaybackReferenceCommand resolveApplePlaybackReferenceCommand => resolveApplePlaybackReferenceCommand.ToTransportMessage(),
+            ResolveYouTubeMusicPlaybackReferenceCommand resolveYouTubeMusicPlaybackReferenceCommand => resolveYouTubeMusicPlaybackReferenceCommand.ToTransportMessage(),
             _ => throw new ArgumentOutOfRangeException(nameof(command), command, "Unknown enrichment intent command.")
         };
 
@@ -36,19 +36,19 @@ public static class LookupExecutionCommandMessageExtensions
             _ => throw new ArgumentOutOfRangeException(nameof(command.Priority), command.Priority, "Unknown lookup priority.")
         };
 
-    private static object ToTransportMessage(this VerifyApplePlaybackReferenceCommand command) =>
+    private static object ToTransportMessage(this ResolveApplePlaybackReferenceCommand command) =>
         command.Priority switch
         {
-            LookupPriorityBand.High => new HighPriorityVerifyApplePlaybackReferenceCommandMessage(command),
-            LookupPriorityBand.Low => new LowPriorityVerifyApplePlaybackReferenceCommandMessage(command),
+            LookupPriorityBand.High => new HighPriorityResolveApplePlaybackReferenceCommandMessage(command),
+            LookupPriorityBand.Low => new LowPriorityResolveApplePlaybackReferenceCommandMessage(command),
             _ => throw new ArgumentOutOfRangeException(nameof(command.Priority), command.Priority, "Unknown lookup priority.")
         };
 
-    private static object ToTransportMessage(this VerifyYouTubeMusicPlaybackReferenceCommand command) =>
+    private static object ToTransportMessage(this ResolveYouTubeMusicPlaybackReferenceCommand command) =>
         command.Priority switch
         {
-            LookupPriorityBand.High => new HighPriorityVerifyYouTubeMusicPlaybackReferenceCommandMessage(command),
-            LookupPriorityBand.Low => new LowPriorityVerifyYouTubeMusicPlaybackReferenceCommandMessage(command),
+            LookupPriorityBand.High => new HighPriorityResolveYouTubeMusicPlaybackReferenceCommandMessage(command),
+            LookupPriorityBand.Low => new LowPriorityResolveYouTubeMusicPlaybackReferenceCommandMessage(command),
             _ => throw new ArgumentOutOfRangeException(nameof(command.Priority), command.Priority, "Unknown lookup priority.")
         };
 }

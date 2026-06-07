@@ -1,3 +1,6 @@
+using Soundtrail.Services.Features.Search.Queueing;
+using Soundtrail.Services.Shared;
+
 namespace Soundtrail.Services.Features.Search.TrackSearch;
 
 public sealed record NormalizedSearchQuery
@@ -29,5 +32,15 @@ public sealed record NormalizedSearchQuery
             sanitized.Split(' ', StringSplitOptions.RemoveEmptyEntries));
 
         return new NormalizedSearchQuery(normalized);
+    }
+
+    public LookupMusicRequest ToNewLookupRequest()
+    {
+        return new LookupMusicRequest(
+            this,
+            TrustLevel: 0,
+            RiskScore: 0,
+            OccurredAt: DateTimeOffset.UtcNow,
+            CorrelationId: CorrelationId.New());
     }
 }
