@@ -1,13 +1,14 @@
 using Soundtrail.Contracts;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
 
 public sealed record EnrichmentResponse(
-    string CommandId,
-    string MusicCatalogId,
-    string SourceProvider,
+    CommandId CommandId,
+    MusicCatalogId MusicCatalogId,
+    ProviderName SourceProvider,
     LookupPriorityBand Priority,
     DateTimeOffset CreatedAt,
     SongMetadata? Metadata,
     IReadOnlyList<ExternalReference> References,
-    string CorrelationId);
+    CorrelationId CorrelationId);

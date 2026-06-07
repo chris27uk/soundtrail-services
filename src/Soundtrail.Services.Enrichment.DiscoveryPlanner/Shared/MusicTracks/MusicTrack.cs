@@ -1,4 +1,6 @@
 using Soundtrail.Contracts;
+using Soundtrail.Contracts.Orchestrator;
+using Soundtrail.Contracts.Worker.Responses;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.EventSourcing;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
@@ -90,7 +92,7 @@ public sealed class MusicTrack
     private IReadOnlyList<MusicTrackFact> DiscoverFacts(EnrichmentResponse response)
     {
         var facts = new List<MusicTrackFact>();
-        var sourceProvider = ProviderName.From(response.SourceProvider);
+        var sourceProvider = response.SourceProvider;
 
         if (sourceProvider == ProviderName.MusicBrainz && response.Metadata is not null)
         {
@@ -109,16 +111,17 @@ public sealed class MusicTrack
 
         foreach (var reference in response.References)
         {
-            if (sourceProvider != reference.Provider)
+            var provider = reference.Provider;
+            if (sourceProvider != provider)
             {
                 continue;
             }
 
-            var current = GetReference(reference.Provider);
+            var current = GetReference(provider);
             if (ShouldRecordResolvedReference(current, reference))
             {
                 facts.Add(new ProviderPlaybackReferenceResolved(
-                    reference.Provider,
+                    provider,
                     reference.ExternalId,
                     reference.Url,
                     sourceProvider,
@@ -144,7 +147,7 @@ public sealed class MusicTrack
                 this.apple.Provider,
                 this.apple.Url,
                 this.apple.ExternalId,
-                this.apple.Confidence,
+                this.apple.ConfidenceDto,
                 this.apple.SourceProvider);
         }
 
@@ -154,7 +157,7 @@ public sealed class MusicTrack
                 this.youTubeMusic.Provider,
                 this.youTubeMusic.Url,
                 this.youTubeMusic.ExternalId,
-                this.youTubeMusic.Confidence,
+                this.youTubeMusic.ConfidenceDto,
                 this.youTubeMusic.SourceProvider);
         }
 
@@ -185,7 +188,7 @@ public sealed class MusicTrack
             @event.Provider,
             @event.Url,
             @event.ExternalId,
-            ReferenceConfidence.Verified,
+            ReferenceConfidenceDto.Verified,
             @event.SourceProvider);
     }
 
@@ -246,10 +249,10 @@ public sealed class MusicTrack
         ProviderName provider,
         Uri url,
         string? externalId,
-        ReferenceConfidence confidence,
+        ReferenceConfidenceDto confidenceDto,
         ProviderName sourceProvider)
     {
-        var candidate = new ProviderReference(provider, url, externalId, confidence, sourceProvider);
+        var candidate = new ProviderReference(provider, url, externalId, confidenceDto, sourceProvider);
 
         switch (provider)
         {
@@ -268,7 +271,7 @@ public sealed class MusicTrack
 
     private IReadOnlyList<MusicTrackFact> DetermineBusinessIntentFacts(EnrichmentResponse response)
     {
-        var sourceProvider = ProviderName.From(response.SourceProvider);
+        var sourceProvider = response.SourceProvider;
         if (sourceProvider != ProviderName.MusicBrainz || !HasCanonicalMetadata())
         {
             return [];
@@ -281,7 +284,7 @@ public sealed class MusicTrack
             facts.Add(new AppleMusicResolutionRequired(
                 this.id,
                 response.Priority,
-                CorrelationId.From(response.CorrelationId),
+                response.CorrelationId,
                 sourceProvider,
                 response.CreatedAt));
         }
@@ -291,7 +294,7 @@ public sealed class MusicTrack
             facts.Add(new YouTubeMusicResolutionRequired(
                 this.id,
                 response.Priority,
-                CorrelationId.From(response.CorrelationId),
+                response.CorrelationId,
                 sourceProvider,
                 response.CreatedAt));
         }

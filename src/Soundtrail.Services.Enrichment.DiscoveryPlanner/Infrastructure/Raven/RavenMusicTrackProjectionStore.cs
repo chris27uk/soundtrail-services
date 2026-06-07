@@ -1,4 +1,6 @@
 using Raven.Client.Documents.Session;
+using Soundtrail.Contracts;
+using Soundtrail.Contracts.Orchestrator;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
@@ -53,7 +55,7 @@ public sealed class RavenMusicTrackProjectionStore(
             ProviderName provider,
             Uri url,
             string? externalId,
-            ReferenceConfidence confidence,
+            ReferenceConfidenceDto confidenceDto,
             ProviderName sourceProvider)
         {
             var reference = new RavenProviderReferenceDocument
@@ -61,7 +63,7 @@ public sealed class RavenMusicTrackProjectionStore(
                 Provider = provider.ToString(),
                 Url = url.ToString(),
                 ExternalId = externalId,
-                Confidence = confidence.ToString(),
+                Confidence = confidenceDto.ToString(),
                 SourceProvider = sourceProvider.ToString()
             };
 

@@ -1,5 +1,6 @@
 using Soundtrail.Contracts.Worker;
 using Soundtrail.Contracts;
+using Soundtrail.Contracts.Worker.Responses;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency;
@@ -23,7 +24,7 @@ public sealed class ExecuteYouTubeMusicLookupHandler(ILookupExecutionReceiptStor
         }
 
         return LookupExecutionResult.Completed(
-            new EnrichmentResponse(
+            new EnrichmentResponseDto(
                 CommandId.From(command.CommandId),
                 MusicCatalogId.From(command.MusicCatalogId),
                 ProviderName.YoutubeMusic.Value,

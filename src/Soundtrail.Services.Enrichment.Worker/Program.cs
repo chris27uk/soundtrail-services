@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Soundtrail.Contracts.Worker.Responses;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
 using Soundtrail.Services.Enrichment.Worker.Features.Execution.AppleLookupExecution;
 using Soundtrail.Services.Enrichment.Worker.Features.Execution.MusicBrainzLookupExecution;
@@ -39,7 +40,7 @@ builder.UseWolverine(opts =>
     opts.ListenToAzureServiceBusQueue(serviceBusOptions.YouTubeMusicLookupQueueName)
         .ProcessInline();
 
-    opts.PublishMessage<EnrichmentResponse>()
+    opts.PublishMessage<EnrichmentResponseDto>()
         .ToAzureServiceBusQueue(serviceBusOptions.EnrichmentResponsesQueueName);
 });
 

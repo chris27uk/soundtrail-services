@@ -1,5 +1,6 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts;
+using Soundtrail.Contracts.Api;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling;
 using Wolverine.Attributes;
 

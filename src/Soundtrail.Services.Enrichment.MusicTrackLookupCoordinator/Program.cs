@@ -28,7 +28,7 @@ builder.UseWolverine(opts =>
     opts.ListenToAzureServiceBusQueue(serviceBusOptions.MusicTrackEventsQueueName)
         .ProcessInline();
 
-    opts.PublishMessage<ResolveApplePlaybackReferenceCommand>()
+    opts.PublishMessage<ResolveApplePlaybackReferenceCommandDto>()
         .ToAzureServiceBusQueue(serviceBusOptions.AppleLookupQueueName);
 
     opts.PublishMessage<ResolveYouTubeMusicPlaybackReferenceCommand>()

@@ -1,6 +1,6 @@
 namespace Soundtrail.Contracts.Worker;
 
-public sealed record ResolveApplePlaybackReferenceCommand(
+public sealed record ResolveApplePlaybackReferenceCommandDto(
     string CommandId,
     string MusicCatalogId,
     LookupPriorityBand Priority,

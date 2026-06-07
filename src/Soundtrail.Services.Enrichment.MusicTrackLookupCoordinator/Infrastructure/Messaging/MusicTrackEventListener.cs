@@ -1,6 +1,10 @@
 using Raven.Client.Documents.Session;
-using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Features.Orchestration;
+using Soundtrail.Contracts;
+using Soundtrail.Contracts.Orchestrator.Events;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
+using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Features.Orchestration;
 using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Infrastructure.Messaging;
@@ -9,9 +13,21 @@ public sealed class MusicTrackEventListener(MusicTrackEventCommandHandler handle
 {
     [WolverineHandler]
     [Transactional]
-    public object Handle(AppleMusicResolutionRequired @event, IAsyncDocumentSession _) => handler.Handle(@event);
+    public object Handle(AppleMusicResolutionRequiredDto dto, IAsyncDocumentSession _) => handler.Handle(
+        new AppleMusicResolutionRequired(
+            MusicCatalogId.From(dto.MusicCatalogId),
+            dto.Priority,
+            CorrelationId.From(dto.CorrelationId),
+            ProviderName.From(dto.SourceProvider),
+            dto.ObservedAt));
 
     [WolverineHandler]
     [Transactional]
-    public object Handle(YouTubeMusicResolutionRequired @event, IAsyncDocumentSession _) => handler.Handle(@event);
+    public object Handle(YouTubeMusicResolutionRequiredDto dto, IAsyncDocumentSession _) => handler.Handle(
+        new YouTubeMusicResolutionRequired(
+            MusicCatalogId.From(dto.MusicCatalogId),
+            dto.Priority,
+            CorrelationId.From(dto.CorrelationId),
+            ProviderName.From(dto.SourceProvider),
+            dto.ObservedAt));
 }

@@ -1,4 +1,5 @@
 using Soundtrail.Contracts;
+using Soundtrail.Contracts.Api;
 using System.Collections.Concurrent;
 
 namespace Soundtrail.Services.Api.Features.Search.Queueing;

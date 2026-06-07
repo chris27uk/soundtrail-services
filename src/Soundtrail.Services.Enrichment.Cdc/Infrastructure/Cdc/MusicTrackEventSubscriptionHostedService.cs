@@ -5,6 +5,7 @@ using Raven.Client.Documents;
 using Raven.Client.Documents.Session;
 using Raven.Client.Documents.Subscriptions;
 using Soundtrail.Contracts;
+using Soundtrail.Contracts.Orchestrator.Events;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
@@ -57,6 +58,7 @@ public sealed class MusicTrackEventSubscriptionHostedService(
         }
         catch (Exception)
         {
+            // ignored
         }
     }
 
@@ -71,9 +73,9 @@ public sealed class MusicTrackEventSubscriptionHostedService(
         foreach (var item in batch.Items)
         {
             var stream = item.Result;
-            var cursorId = RavenMusicTrackEventSubscriptionCursorDocument.GetDocumentId(stream.Id);
-            var cursor = await session.LoadAsync<RavenMusicTrackEventSubscriptionCursorDocument>(cursorId, cancellationToken)
-                ?? new RavenMusicTrackEventSubscriptionCursorDocument
+            var cursorId = RavenMusicTrackEventSubscriptionCursorDto.GetDocumentId(stream.Id);
+            var cursor = await session.LoadAsync<RavenMusicTrackEventSubscriptionCursorDto>(cursorId, cancellationToken)
+                ?? new RavenMusicTrackEventSubscriptionCursorDto
                 {
                     Id = cursorId,
                     StreamId = stream.Id
@@ -87,10 +89,10 @@ public sealed class MusicTrackEventSubscriptionHostedService(
             var newEvents = stream.Facts.Skip(cursor.LastPublishedVersion).ToArray();
             foreach (var @event in newEvents)
             {
-                var domainEvent = ToDomainEvent(@event);
-                if (domainEvent is not null)
+                var integrationEvent = ToIntegrationEvent(@event);
+                if (integrationEvent is not null)
                 {
-                    await messageBus.SendAsync(domainEvent);
+                    await messageBus.SendAsync(integrationEvent);
                 }
             }
 
@@ -101,23 +103,23 @@ public sealed class MusicTrackEventSubscriptionHostedService(
         await session.SaveChangesAsync(cancellationToken);
     }
 
-    private static MusicTrackFact? ToDomainEvent(RavenMusicTrackEventDocument @event)
+    private static object? ToIntegrationEvent(RavenMusicTrackEventDocument @event)
     {
         return @event.Type switch
-        {
-            nameof(AppleMusicResolutionRequired) => new AppleMusicResolutionRequired(
-                MusicCatalogId.From(@event.MusicCatalogId ?? string.Empty),
+            {
+                nameof(AppleMusicResolutionRequired) => new AppleMusicResolutionRequiredDto(
+                @event.MusicCatalogId ?? string.Empty,
                 Enum.Parse<LookupPriorityBand>(@event.Priority ?? nameof(LookupPriorityBand.Low), ignoreCase: true),
-                CorrelationId.From(@event.CorrelationId ?? string.Empty),
-                ProviderName.From(@event.SourceProvider),
+                @event.CorrelationId ?? string.Empty,
+                @event.SourceProvider,
                 @event.ObservedAt),
-            nameof(YouTubeMusicResolutionRequired) => new YouTubeMusicResolutionRequired(
-                MusicCatalogId.From(@event.MusicCatalogId ?? string.Empty),
+                nameof(YouTubeMusicResolutionRequired) => new YouTubeMusicResolutionRequiredDto(
+                @event.MusicCatalogId ?? string.Empty,
                 Enum.Parse<LookupPriorityBand>(@event.Priority ?? nameof(LookupPriorityBand.Low), ignoreCase: true),
-                CorrelationId.From(@event.CorrelationId ?? string.Empty),
-                ProviderName.From(@event.SourceProvider),
+                @event.CorrelationId ?? string.Empty,
+                @event.SourceProvider,
                 @event.ObservedAt),
-            _ => null
-        };
+                _ => null
+            };
     }
 }

@@ -1,6 +1,6 @@
 namespace Soundtrail.Services.Enrichment.Cdc.Infrastructure.Cdc;
 
-internal sealed class RavenMusicTrackEventSubscriptionCursorDocument
+internal sealed class RavenMusicTrackEventSubscriptionCursorDto
 {
     public string Id { get; set; } = string.Empty;
 

@@ -6,7 +6,7 @@ namespace Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Features.Or
 
 public sealed class MusicTrackEventCommandHandler
 {
-    public ResolveApplePlaybackReferenceCommand Handle(AppleMusicResolutionRequired @event) =>
+    public ResolveApplePlaybackReferenceCommandDto Handle(AppleMusicResolutionRequired @event) =>
         new(
             CommandId.For($"ResolveApplePlaybackReference:{@event.MusicCatalogId.Value}"),
             @event.MusicCatalogId,

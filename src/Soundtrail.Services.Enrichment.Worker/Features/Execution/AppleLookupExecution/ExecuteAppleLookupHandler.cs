@@ -1,5 +1,6 @@
 using Soundtrail.Contracts.Worker;
 using Soundtrail.Contracts;
+using Soundtrail.Contracts.Worker.Responses;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency;
@@ -9,12 +10,12 @@ namespace Soundtrail.Services.Enrichment.Worker.Features.Execution.AppleLookupEx
 public sealed class ExecuteAppleLookupHandler(ILookupExecutionReceiptStore lookupExecutionReceiptStore)
 {
     public async Task<LookupExecutionResult> Handle(
-        ResolveApplePlaybackReferenceCommand command,
+        ResolveApplePlaybackReferenceCommandDto commandDto,
         CancellationToken cancellationToken = default)
     {
         await using var idempotencySession = await WorkerIdempotencySession.StartAsync(
             lookupExecutionReceiptStore,
-            command.CommandId,
+            commandDto.CommandId,
             cancellationToken);
 
         if (idempotencySession.ProcessedBefore)
@@ -23,14 +24,14 @@ public sealed class ExecuteAppleLookupHandler(ILookupExecutionReceiptStore looku
         }
 
         return LookupExecutionResult.Completed(
-            new EnrichmentResponse(
-                CommandId.From(command.CommandId),
-                MusicCatalogId.From(command.MusicCatalogId),
+            new EnrichmentResponseDto(
+                CommandId.From(commandDto.CommandId),
+                MusicCatalogId.From(commandDto.MusicCatalogId),
                 ProviderName.AppleMusic.Value,
-                command.Priority,
-                command.CreatedAt,
+                commandDto.Priority,
+                commandDto.CreatedAt,
                 null,
                 [],
-                CorrelationId.From(command.CorrelationId)));
+                CorrelationId.From(commandDto.CorrelationId)));
     }
 }

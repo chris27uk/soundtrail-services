@@ -1,8 +1,11 @@
+using Soundtrail.Contracts;
+using Soundtrail.Contracts.Orchestrator;
+
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
 
 public sealed record ProviderReference(
     ProviderName Provider,
     Uri Url,
     string? ExternalId,
-    ReferenceConfidence Confidence,
+    ReferenceConfidenceDto ConfidenceDto,
     ProviderName SourceProvider);

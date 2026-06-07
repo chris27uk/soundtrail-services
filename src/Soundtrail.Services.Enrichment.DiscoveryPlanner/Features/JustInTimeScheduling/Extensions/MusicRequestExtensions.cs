@@ -1,4 +1,5 @@
 using Soundtrail.Contracts;
+using Soundtrail.Contracts.Api;
 using Soundtrail.Contracts.Orchestrator.Commands;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 

@@ -1,4 +1,5 @@
 using Soundtrail.Contracts;
+using Soundtrail.Contracts.Api;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Extensions;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Idempotency;

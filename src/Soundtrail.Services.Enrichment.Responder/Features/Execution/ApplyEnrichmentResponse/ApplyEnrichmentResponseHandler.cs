@@ -32,13 +32,13 @@ public sealed class ApplyEnrichmentResponseHandler(
 
         await providerSnapshotStore.SaveAsync(
             new ProviderSnapshot(
-                MusicCatalogId.From(response.MusicCatalogId),
-                ProviderName.From(response.SourceProvider),
+                response.MusicCatalogId,
+                response.SourceProvider,
                 response.CreatedAt,
                 JsonSerializer.Serialize(response)),
             cancellationToken);
 
-        await musicTrackProjectionStore.StoreAsync(MusicCatalogId.From(response.MusicCatalogId), musicTrack, cancellationToken);
+        await musicTrackProjectionStore.StoreAsync(response.MusicCatalogId, musicTrack, cancellationToken);
         return new EnrichmentOrchestrationResult(append.AppendedFacts);
     }
 }

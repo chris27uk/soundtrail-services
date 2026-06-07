@@ -10,7 +10,7 @@ public sealed class AppleLookupExecutionListener(ExecuteAppleLookupHandler handl
     [WolverineHandler]
     [Transactional]
     public async Task<object[]> Handle(
-        ResolveApplePlaybackReferenceCommand message,
+        ResolveApplePlaybackReferenceCommandDto message,
         IAsyncDocumentSession _,
         CancellationToken cancellationToken = default)
     {
