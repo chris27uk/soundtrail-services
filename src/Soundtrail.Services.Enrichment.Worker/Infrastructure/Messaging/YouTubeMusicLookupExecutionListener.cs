@@ -10,22 +10,11 @@ public sealed class YouTubeMusicLookupExecutionListener(ExecuteYouTubeMusicLooku
     [WolverineHandler]
     [Transactional]
     public async Task<object[]> Handle(
-        HighPriorityResolveYouTubeMusicPlaybackReferenceCommandMessage message,
+        ResolveYouTubeMusicPlaybackReferenceCommand message,
         IAsyncDocumentSession _,
         CancellationToken cancellationToken = default)
     {
-        var result = await handler.Handle(message.Command, cancellationToken);
-        return result.Response is null ? [] : [result.Response];
-    }
-
-    [WolverineHandler]
-    [Transactional]
-    public async Task<object[]> Handle(
-        LowPriorityResolveYouTubeMusicPlaybackReferenceCommandMessage message,
-        IAsyncDocumentSession _,
-        CancellationToken cancellationToken = default)
-    {
-        var result = await handler.Handle(message.Command, cancellationToken);
+        var result = await handler.Handle(message, cancellationToken);
         return result.Response is null ? [] : [result.Response];
     }
 }

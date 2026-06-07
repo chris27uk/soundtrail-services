@@ -10,22 +10,11 @@ public sealed class AppleLookupExecutionListener(ExecuteAppleLookupHandler handl
     [WolverineHandler]
     [Transactional]
     public async Task<object[]> Handle(
-        HighPriorityResolveApplePlaybackReferenceCommandMessage message,
+        ResolveApplePlaybackReferenceCommand message,
         IAsyncDocumentSession _,
         CancellationToken cancellationToken = default)
     {
-        var result = await handler.Handle(message.Command, cancellationToken);
-        return result.Response is null ? [] : [result.Response];
-    }
-
-    [WolverineHandler]
-    [Transactional]
-    public async Task<object[]> Handle(
-        LowPriorityResolveApplePlaybackReferenceCommandMessage message,
-        IAsyncDocumentSession _,
-        CancellationToken cancellationToken = default)
-    {
-        var result = await handler.Handle(message.Command, cancellationToken);
+        var result = await handler.Handle(message, cancellationToken);
         return result.Response is null ? [] : [result.Response];
     }
 }

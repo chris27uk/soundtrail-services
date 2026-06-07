@@ -1,13 +1,12 @@
 using Soundtrail.Services.Enrichment.Shared.MusicTracks;
 using Soundtrail.Services.Enrichment.Shared.Orchestration;
+using Soundtrail.Services.Enrichment.Shared.Prioritisation;
 using Soundtrail.Services.Shared;
-using Wolverine.Attributes;
 
-namespace Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Messaging;
+namespace Soundtrail.Services.Enrichment.Cdc.Infrastructure.Cdc;
 
-public sealed class MusicTrackBusinessIntentListener
+public sealed class MusicTrackEventCommandHandler
 {
-    [WolverineHandler]
     public object Handle(AppleMusicResolutionRequired @event)
     {
         var command = new ResolveApplePlaybackReferenceCommand(
@@ -17,10 +16,11 @@ public sealed class MusicTrackBusinessIntentListener
             @event.ObservedAt,
             @event.CorrelationId);
 
-        return command.ToTransportMessage();
+        return command.Priority == LookupPriorityBand.High
+            ? command
+            : command;
     }
 
-    [WolverineHandler]
     public object Handle(YouTubeMusicResolutionRequired @event)
     {
         var command = new ResolveYouTubeMusicPlaybackReferenceCommand(
@@ -30,6 +30,8 @@ public sealed class MusicTrackBusinessIntentListener
             @event.ObservedAt,
             @event.CorrelationId);
 
-        return command.ToTransportMessage();
+        return command.Priority == LookupPriorityBand.High
+            ? command
+            : command;
     }
 }

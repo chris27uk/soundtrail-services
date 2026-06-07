@@ -6,7 +6,7 @@ using Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Raven.Documents;
 
 namespace Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Raven;
 
-internal sealed class RavenMusicTrackProjectionStore(
+public sealed class RavenMusicTrackProjectionStore(
     IAsyncDocumentSession session) : IMusicTrackProjectionStore
 {
     public async Task StoreAsync(

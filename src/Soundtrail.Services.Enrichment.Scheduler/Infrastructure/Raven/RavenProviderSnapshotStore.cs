@@ -4,7 +4,7 @@ using Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Raven.Documents;
 
 namespace Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Raven;
 
-internal sealed class RavenProviderSnapshotStore(
+public sealed class RavenProviderSnapshotStore(
     IAsyncDocumentSession session) : IProviderSnapshotStore
 {
     public Task SaveAsync(

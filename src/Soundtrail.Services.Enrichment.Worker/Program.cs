@@ -31,22 +31,13 @@ builder.UseWolverine(opts =>
         .AutoProvision()
         .EnableWolverineControlQueues();
 
-    opts.ListenToAzureServiceBusQueue(serviceBusOptions.HighPriorityMusicBrainzLookupQueueName)
+    opts.ListenToAzureServiceBusQueue(serviceBusOptions.MusicBrainzLookupQueueName)
         .ProcessInline();
 
-    opts.ListenToAzureServiceBusQueue(serviceBusOptions.LowPriorityMusicBrainzLookupQueueName)
+    opts.ListenToAzureServiceBusQueue(serviceBusOptions.AppleLookupQueueName)
         .ProcessInline();
 
-    opts.ListenToAzureServiceBusQueue(serviceBusOptions.HighPriorityAppleLookupQueueName)
-        .ProcessInline();
-
-    opts.ListenToAzureServiceBusQueue(serviceBusOptions.LowPriorityAppleLookupQueueName)
-        .ProcessInline();
-
-    opts.ListenToAzureServiceBusQueue(serviceBusOptions.HighPriorityYouTubeMusicLookupQueueName)
-        .ProcessInline();
-
-    opts.ListenToAzureServiceBusQueue(serviceBusOptions.LowPriorityYouTubeMusicLookupQueueName)
+    opts.ListenToAzureServiceBusQueue(serviceBusOptions.YouTubeMusicLookupQueueName)
         .ProcessInline();
 
     opts.PublishMessage<EnrichmentResponse>()

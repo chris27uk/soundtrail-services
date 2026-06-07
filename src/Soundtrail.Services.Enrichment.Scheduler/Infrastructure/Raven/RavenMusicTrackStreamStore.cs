@@ -8,7 +8,7 @@ using Soundtrail.Services.Shared;
 
 namespace Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Raven;
 
-internal sealed class RavenMusicTrackStreamStore(
+public sealed class RavenMusicTrackStreamStore(
     IAsyncDocumentSession session) : IMusicTrackEventRepository
 {
     public async Task<MusicTrackStream> LoadEventsAsync(
