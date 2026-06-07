@@ -1,6 +1,6 @@
 using FluentAssertions;
-using Soundtrail.Services.Enrichment.Shared.Persistence;
-using Soundtrail.Services.Enrichment.Shared.Search;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Services.Tests.Enrichment.Integration.Ports.RankedMusicCandidateStore.UpsertedCandidate;
 
 namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.RankedMusicCandidateStore.PlanningCandidates;

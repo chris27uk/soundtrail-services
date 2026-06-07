@@ -1,4 +1,4 @@
-using Soundtrail.Services.Shared;
+using Soundtrail.Contracts;
 
 namespace Soundtrail.Services.Api.Infrastructure.Time;
 

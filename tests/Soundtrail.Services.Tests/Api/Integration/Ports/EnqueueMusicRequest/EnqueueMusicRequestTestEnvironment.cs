@@ -1,9 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Soundtrail.Contracts;
+using Soundtrail.Services.Api.Features.Search.Queueing;
+using Soundtrail.Services.Api.Features.Search.TrackSearch;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
-using Soundtrail.Services.Features.Search.Queueing;
-using Soundtrail.Services.Features.Search.TrackSearch;
-using Soundtrail.Services.Shared;
 using Wolverine;
 
 namespace Soundtrail.Services.Tests.Api.Integration.Ports.EnqueueMusicRequest;

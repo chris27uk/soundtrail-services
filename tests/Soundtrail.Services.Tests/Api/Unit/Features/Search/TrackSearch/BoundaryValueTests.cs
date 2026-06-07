@@ -1,5 +1,5 @@
 using FluentAssertions;
-using Soundtrail.Services.Features.Search.TrackSearch;
+using Soundtrail.Services.Api.Features.Search.TrackSearch;
 
 namespace Soundtrail.Services.Tests.Api.Unit.Features.Search.TrackSearch;
 

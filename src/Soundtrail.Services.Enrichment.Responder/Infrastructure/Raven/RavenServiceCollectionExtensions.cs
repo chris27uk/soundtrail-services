@@ -4,8 +4,8 @@ using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
 using Raven.Client.Documents.Indexes;
-using Soundtrail.Services.Enrichment.Shared.MusicTracks;
-using Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Raven;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven;
 
 namespace Soundtrail.Services.Enrichment.Responder.Infrastructure.Raven;
 
@@ -30,7 +30,9 @@ public static class RavenServiceCollectionExtensions
             };
 
             store.Initialize();
-            IndexCreation.CreateIndexes(typeof(Indexes.TrackCatalogue_BySearchText).Assembly, store);
+            IndexCreation.CreateIndexes(
+                typeof(Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven.RavenServiceCollectionExtensions).Assembly,
+                store);
             return store;
         });
 

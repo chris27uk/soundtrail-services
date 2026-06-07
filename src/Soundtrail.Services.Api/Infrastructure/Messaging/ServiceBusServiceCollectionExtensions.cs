@@ -1,4 +1,4 @@
-using Soundtrail.Services.Features.Search.Queueing;
+using Soundtrail.Services.Api.Features.Search.Queueing;
 
 namespace Soundtrail.Services.Api.Infrastructure.Messaging;
 

@@ -1,6 +1,6 @@
-using Soundtrail.Services.Features.Search;
-using Soundtrail.Services.Features.Search.TrackSearch;
-using Soundtrail.Services.Shared;
+using Soundtrail.Contracts;
+using Soundtrail.Services.Api.Features.Search;
+using Soundtrail.Services.Api.Features.Search.TrackSearch;
 
 namespace Soundtrail.Services.Tests.Api.Unit.Infrastructure;
 
@@ -41,7 +41,7 @@ internal sealed class SearchMusicHandlerTestEnvironment
         double? minConfidence = null,
         int? limit = null) =>
         new(
-            SearchQuery.From(query),
+            NormalizedSearchQuery.FromText(query),
             Limit.From(limit),
             minConfidence is null ? null : ConfidenceScore.From(minConfidence.Value));
 }

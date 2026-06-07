@@ -1,7 +1,8 @@
 using FluentAssertions;
-using Soundtrail.Services.Enrichment.Shared.Persistence;
-using Soundtrail.Services.Enrichment.Shared.Prioritisation;
-using Soundtrail.Services.Enrichment.Shared.Search;
+using Soundtrail.Contracts;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.ExistingEligibleRequest
@@ -17,7 +18,7 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.Existing
 
             var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 15));
 
-            result.Command?.MusicCatalogId.Value.Should().Be(musicCatalogId);
+            result.Command?.MusicCatalogId.Should().Be(musicCatalogId);
         }
 
         [Fact]

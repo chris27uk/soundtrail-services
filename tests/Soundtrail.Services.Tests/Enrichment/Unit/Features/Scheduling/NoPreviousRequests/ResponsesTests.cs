@@ -1,7 +1,7 @@
 using FluentAssertions;
-using Soundtrail.Services.Enrichment.Shared.Prioritisation;
-using Soundtrail.Services.Enrichment.Shared.Search;
-using Soundtrail.Services.Shared;
+using Soundtrail.Contracts;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.NoPreviousRequests
@@ -16,7 +16,7 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.NoPrevio
 
             var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
 
-            result.Command?.MusicCatalogId.Value.Should().Be("mc_track_1");
+            result.Command?.MusicCatalogId.Should().Be("mc_track_1");
         }
 
         [Fact]
@@ -29,7 +29,7 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.NoPrevio
             var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
 
             result.ShouldSchedule.Should().BeTrue();
-            result.Command?.MusicCatalogId.Value.Should().Be("mc_track_1");
+            result.Command?.MusicCatalogId.Should().Be("mc_track_1");
         }
 
         [Fact]
@@ -43,7 +43,7 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.NoPrevio
             var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
 
             result.ShouldSchedule.Should().BeTrue();
-            result.Command?.MusicCatalogId.Value.Should().Be("mc_track_1");
+            result.Command?.MusicCatalogId.Should().Be("mc_track_1");
         }
 
         [Fact]
@@ -66,7 +66,7 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.NoPrevio
 
             var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
 
-            result.Command?.CorrelationId.Value.Should().NotBeNullOrWhiteSpace();
+            result.Command?.CorrelationId.Should().NotBeNullOrWhiteSpace();
         }
 
         [Fact]

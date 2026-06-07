@@ -1,4 +1,5 @@
-using Soundtrail.Services.Features.Search.Queueing;
+using Soundtrail.Contracts;
+using Soundtrail.Services.Api.Features.Search.Queueing;
 using Wolverine;
 
 namespace Soundtrail.Services.Api.Infrastructure.Messaging;

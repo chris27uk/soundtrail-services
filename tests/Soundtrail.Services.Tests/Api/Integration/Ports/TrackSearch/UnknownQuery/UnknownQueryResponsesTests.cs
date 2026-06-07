@@ -1,5 +1,5 @@
 using FluentAssertions;
-using Soundtrail.Services.Features.Search.TrackSearch;
+using Soundtrail.Services.Api.Features.Search.TrackSearch;
 using Soundtrail.Services.Tests.Api.Integration.Ports.TrackSearch.KnownQuery;
 
 namespace Soundtrail.Services.Tests.Api.Integration.Ports.TrackSearch.UnknownQuery;

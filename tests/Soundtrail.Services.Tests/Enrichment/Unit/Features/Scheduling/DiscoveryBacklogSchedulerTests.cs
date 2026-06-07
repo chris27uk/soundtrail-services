@@ -1,9 +1,9 @@
 using FluentAssertions;
-using Soundtrail.Services.Enrichment.Features.BacklogScheduling;
-using Soundtrail.Services.Enrichment.Shared.Persistence;
-using Soundtrail.Services.Enrichment.Shared.Prioritisation;
-using Soundtrail.Services.Enrichment.Shared.Search;
-using Soundtrail.Services.Shared;
+using Soundtrail.Contracts;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling;
@@ -36,8 +36,8 @@ public class DiscoveryBacklogSchedulerTests
         var commands = await sweep.RunOnceAsync(now, 10);
 
         commands.Should().HaveCount(2);
-        commands.Should().ContainSingle(command => command.MusicCatalogId.Value == "mc_track_high" && command.Priority == LookupPriorityBand.High);
-        commands.Should().ContainSingle(command => command.MusicCatalogId.Value == "mc_track_low" && command.Priority == LookupPriorityBand.Low);
+        commands.Should().ContainSingle(command => command.MusicCatalogId == "mc_track_high" && command.Priority == LookupPriorityBand.High);
+        commands.Should().ContainSingle(command => command.MusicCatalogId == "mc_track_low" && command.Priority == LookupPriorityBand.Low);
     }
 
     [Fact]
@@ -215,7 +215,7 @@ public class DiscoveryBacklogSchedulerTests
 
         var commands = await scheduler.RunOnceAsync(now, 10);
 
-        commands[0].CorrelationId.Value.Should().NotBeNullOrWhiteSpace();
+        commands[0].CorrelationId.Should().NotBeNullOrWhiteSpace();
     }
 
     [Fact]

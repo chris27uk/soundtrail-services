@@ -1,5 +1,5 @@
-using Soundtrail.Services.Features.Search.TrackSearch;
-using Soundtrail.Services.Features.Tracks;
+using Soundtrail.Services.Api.Features.Search.Tracks;
+using Soundtrail.Services.Api.Features.Search.TrackSearch;
 
 namespace Soundtrail.Services.Tests.Api.Integration.Features.Search
 {

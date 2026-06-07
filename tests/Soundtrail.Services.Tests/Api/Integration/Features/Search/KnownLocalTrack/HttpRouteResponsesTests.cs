@@ -1,6 +1,5 @@
 using FluentAssertions;
-using Soundtrail.Services.Features.Search;
-using Soundtrail.Services.Features.Search.TrackSearch;
+using Soundtrail.Services.Api.Features.Search.TrackSearch;
 using System.Net.Http.Json;
 
 namespace Soundtrail.Services.Tests.Api.Integration.Features.Search.KnownLocalTrack;
@@ -17,7 +16,7 @@ public sealed class HttpRouteResponsesTests
 
         factory.SearchMusicHandler.Requests.Should().ContainSingle().Which.Should().BeEquivalentTo(
             new SearchMusicRequest(
-                SearchQuery.From("mr brightside"),
+                NormalizedSearchQuery.FromText("mr brightside"),
                 Limit.From(5),
                 ConfidenceScore.From(0.95)));
     }

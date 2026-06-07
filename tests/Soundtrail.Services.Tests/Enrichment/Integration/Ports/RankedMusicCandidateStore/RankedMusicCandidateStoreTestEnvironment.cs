@@ -1,7 +1,7 @@
 using Raven.Client.Documents;
 using Raven.Client.Documents.Indexes;
-using Soundtrail.Services.Enrichment.Shared.Persistence;
-using Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Raven;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 using Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 using System.Reflection;
@@ -93,10 +93,10 @@ internal sealed class RankedMusicCandidateStoreTestEnvironment : IDisposable
     }
 
     private static readonly Type RavenRankedMusicCandidateDocumentType = typeof(RavenRankedMusicCandidateStore).Assembly
-        .GetType("Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Raven.Documents.RavenRankedMusicCandidateDocument", throwOnError: true)!;
+        .GetType("Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven.Documents.RavenRankedMusicCandidateDocument", throwOnError: true)!;
 
     private static readonly Type RankedMusicCandidatesByPlanningIndexType = typeof(RavenRankedMusicCandidateStore).Assembly
-        .GetType("Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Raven.Indexes.RankedMusicCandidates_ByPlanning", throwOnError: true)!;
+        .GetType("Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven.Indexes.RankedMusicCandidates_ByPlanning", throwOnError: true)!;
 
     private static void ExecutePlanningIndex(IDocumentStore store)
     {

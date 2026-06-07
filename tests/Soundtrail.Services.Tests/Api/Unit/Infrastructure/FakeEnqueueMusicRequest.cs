@@ -1,4 +1,5 @@
-using Soundtrail.Services.Features.Search.Queueing;
+using Soundtrail.Contracts;
+using Soundtrail.Services.Api.Features.Search.Queueing;
 
 namespace Soundtrail.Services.Tests.Api.Unit.Infrastructure
 {

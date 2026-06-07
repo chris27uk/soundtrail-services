@@ -1,5 +1,4 @@
-using Soundtrail.Services.Enrichment.Shared.Search;
-using Soundtrail.Services.Features.Search.TrackSearch;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure
 {

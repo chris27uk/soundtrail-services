@@ -1,11 +1,11 @@
 using FluentAssertions;
 using Raven.Client.Documents.Session;
-using Soundtrail.Services.Enrichment.Shared.Execution;
-using Soundtrail.Services.Enrichment.Shared.MusicTracks;
-using Soundtrail.Services.Enrichment.Shared.Search;
-using Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Raven;
+using Soundtrail.Contracts;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
-using Soundtrail.Services.Shared;
 using System.Reflection;
 
 namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.MusicTrackStreamStore;
@@ -80,7 +80,7 @@ public sealed class RavenEmbeddedResponsesTests
     }
 
     private static readonly Type RavenMusicTrackStreamStoreType = typeof(RavenRankedMusicCandidateStore).Assembly
-        .GetType("Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Raven.RavenMusicTrackStreamStore", throwOnError: true)!;
+        .GetType("Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven.RavenMusicTrackStreamStore", throwOnError: true)!;
 
     private static IMusicTrackEventRepository CreateStore(IAsyncDocumentSession session) =>
         (IMusicTrackEventRepository)Activator.CreateInstance(

@@ -3,8 +3,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Soundtrail.Services.Enrichment.Cdc.Infrastructure.Cdc;
 using Soundtrail.Services.Enrichment.Cdc.Infrastructure.Messaging;
-using Soundtrail.Services.Enrichment.Shared.Orchestration;
 using Soundtrail.Services.Enrichment.Cdc.Infrastructure.Raven;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
 using Wolverine;
 using Wolverine.AzureServiceBus;
 
@@ -20,15 +20,14 @@ builder.UseWolverine(opts =>
         .AutoProvision()
         .EnableWolverineControlQueues();
 
-    opts.PublishMessage<ResolveApplePlaybackReferenceCommand>()
-        .ToAzureServiceBusQueue(serviceBusOptions.AppleLookupQueueName);
+    opts.PublishMessage<AppleMusicResolutionRequired>()
+        .ToAzureServiceBusQueue(serviceBusOptions.MusicTrackEventsQueueName);
 
-    opts.PublishMessage<ResolveYouTubeMusicPlaybackReferenceCommand>()
-        .ToAzureServiceBusQueue(serviceBusOptions.YouTubeMusicLookupQueueName);
+    opts.PublishMessage<YouTubeMusicResolutionRequired>()
+        .ToAzureServiceBusQueue(serviceBusOptions.MusicTrackEventsQueueName);
 });
 
 builder.Services.AddCdcRavenDocumentStore(builder.Configuration);
-builder.Services.AddScoped<MusicTrackEventCommandHandler>();
 builder.Services.AddHostedService<MusicTrackEventSubscriptionHostedService>();
 
 var host = builder.Build();

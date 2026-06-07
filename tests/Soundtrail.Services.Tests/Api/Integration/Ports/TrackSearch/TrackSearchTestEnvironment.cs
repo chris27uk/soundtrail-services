@@ -1,7 +1,7 @@
 using Raven.Client.Documents;
 using Raven.Client.Documents.Indexes;
+using Soundtrail.Services.Api.Features.Search.TrackSearch;
 using Soundtrail.Services.Api.Infrastructure.Raven;
-using Soundtrail.Services.Features.Search.TrackSearch;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 using System.Reflection;
 

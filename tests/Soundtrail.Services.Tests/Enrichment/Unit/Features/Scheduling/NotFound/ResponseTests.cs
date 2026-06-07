@@ -1,7 +1,7 @@
 using FluentAssertions;
-using Soundtrail.Services.Enrichment.Features.JustInTimeScheduling;
-using Soundtrail.Services.Enrichment.Shared.Search;
-using Soundtrail.Services.Enrichment.Shared.Search.Resolution;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search.Resolution;
 using Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling.NotFound

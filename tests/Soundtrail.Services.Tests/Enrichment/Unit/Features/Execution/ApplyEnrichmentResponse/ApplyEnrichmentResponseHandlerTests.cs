@@ -1,10 +1,10 @@
 using FluentAssertions;
+using Soundtrail.Contracts;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Services.Enrichment.Features.Execution.ApplyEnrichmentResponse;
-using Soundtrail.Services.Enrichment.Shared.Execution;
-using Soundtrail.Services.Enrichment.Shared.MusicTracks;
-using Soundtrail.Services.Enrichment.Shared.Prioritisation;
-using Soundtrail.Services.Enrichment.Shared.Search;
-using Soundtrail.Services.Shared;
 using Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Execution.ApplyEnrichmentResponse;
@@ -26,7 +26,7 @@ public sealed class ApplyEnrichmentResponseHandlerTests
             new EnrichmentResponse(
                 CommandId.For("ResolveCanonicalMetadata:mc_track_1"),
                 MusicCatalogId.From("mc_track_1"),
-                ProviderName.MusicBrainz,
+                ProviderName.MusicBrainz.Value,
                 LookupPriorityBand.High,
                 new DateTimeOffset(2026, 6, 5, 12, 0, 0, TimeSpan.Zero),
                 new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000),
@@ -57,7 +57,7 @@ public sealed class ApplyEnrichmentResponseHandlerTests
         var seedResponse = new EnrichmentResponse(
             CommandId.For("ResolveCanonicalMetadata:mc_track_1"),
             MusicCatalogId.From("mc_track_1"),
-            ProviderName.MusicBrainz,
+            ProviderName.MusicBrainz.Value,
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 5, 12, 0, 0, TimeSpan.Zero),
             new SongMetadata("Canonical Song", "Canonical Artist", "isrc-1", "mbid-1", 123000),
@@ -73,11 +73,11 @@ public sealed class ApplyEnrichmentResponseHandlerTests
             new EnrichmentResponse(
                 CommandId.For("ResolveApplePlaybackReference:mc_track_1"),
                 MusicCatalogId.From("mc_track_1"),
-                ProviderName.Apple,
+                ProviderName.AppleMusic.Value,
                 LookupPriorityBand.High,
                 new DateTimeOffset(2026, 6, 5, 12, 2, 0, TimeSpan.Zero),
                 new SongMetadata("Apple Song", "Apple Artist", null, null, null),
-                [new ExternalReference(ProviderName.Apple, new Uri("https://music.apple.com/track/1"), "apple-1", ReferenceConfidence.Verified)],
+                [new ExternalReference(ProviderName.AppleMusic, new Uri("https://music.apple.com/track/1"), "apple-1", ReferenceConfidence.Verified)],
                 CorrelationId.From("corr-2")));
 
         var projectedTrack = projectionStore.Projections["mc_track_1"];
@@ -103,7 +103,7 @@ public sealed class ApplyEnrichmentResponseHandlerTests
         var response = new EnrichmentResponse(
             CommandId.For("ResolveCanonicalMetadata:mc_track_1"),
             MusicCatalogId.From("mc_track_1"),
-            ProviderName.MusicBrainz,
+            ProviderName.MusicBrainz.Value,
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 5, 12, 0, 0, TimeSpan.Zero),
             new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000),

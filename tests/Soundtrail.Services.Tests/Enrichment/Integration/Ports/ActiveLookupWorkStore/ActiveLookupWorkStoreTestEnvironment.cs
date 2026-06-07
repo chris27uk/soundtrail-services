@@ -1,5 +1,5 @@
-using Soundtrail.Services.Enrichment.Shared.Idempotency;
-using Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Raven;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Idempotency;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 using Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 

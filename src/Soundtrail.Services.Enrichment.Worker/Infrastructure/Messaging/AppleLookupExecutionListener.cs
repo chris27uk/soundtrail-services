@@ -1,6 +1,6 @@
 using Raven.Client.Documents.Session;
-using Soundtrail.Services.Enrichment.Features.Execution.AppleLookupExecution;
-using Soundtrail.Services.Enrichment.Shared.Orchestration;
+using Soundtrail.Contracts.Worker;
+using Soundtrail.Services.Enrichment.Worker.Features.Execution.AppleLookupExecution;
 using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;

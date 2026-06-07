@@ -1,9 +1,9 @@
 using FluentAssertions;
 using Raven.Client.Documents.Session;
-using Soundtrail.Services.Enrichment.Shared.Execution;
-using Soundtrail.Services.Enrichment.Shared.MusicTracks;
-using Soundtrail.Services.Enrichment.Shared.Search;
-using Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Raven;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 using System.Reflection;
 
@@ -58,10 +58,10 @@ public sealed class RavenEmbeddedResponsesTests
     }
 
     private static readonly Type RavenProviderSnapshotDocumentType = typeof(RavenRankedMusicCandidateStore).Assembly
-        .GetType("Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Raven.Documents.RavenProviderSnapshotDocument", throwOnError: true)!;
+        .GetType("Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven.Documents.RavenProviderSnapshotDocument", throwOnError: true)!;
 
     private static readonly Type RavenProviderSnapshotStoreType = typeof(RavenRankedMusicCandidateStore).Assembly
-        .GetType("Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Raven.RavenProviderSnapshotStore", throwOnError: true)!;
+        .GetType("Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven.RavenProviderSnapshotStore", throwOnError: true)!;
 
     private static async Task<object?> LoadInternalDocumentAsync(
         IAsyncDocumentSession session,

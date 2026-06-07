@@ -4,11 +4,11 @@ using Microsoft.Extensions.Logging;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Session;
 using Raven.Client.Documents.Subscriptions;
-using Soundtrail.Services.Enrichment.Shared.Execution;
-using Soundtrail.Services.Enrichment.Shared.MusicTracks;
-using Soundtrail.Services.Enrichment.Shared.Prioritisation;
-using Soundtrail.Services.Enrichment.Shared.Search;
-using Soundtrail.Services.Shared;
+using Soundtrail.Contracts;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Wolverine;
 
 namespace Soundtrail.Services.Enrichment.Cdc.Infrastructure.Cdc;
@@ -66,7 +66,6 @@ public sealed class MusicTrackEventSubscriptionHostedService(
     {
         using var scope = serviceScopeFactory.CreateScope();
         var messageBus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
-        var handler = scope.ServiceProvider.GetRequiredService<MusicTrackEventCommandHandler>();
         using var session = documentStore.OpenAsyncSession();
 
         foreach (var item in batch.Items)
@@ -88,14 +87,10 @@ public sealed class MusicTrackEventSubscriptionHostedService(
             var newEvents = stream.Facts.Skip(cursor.LastPublishedVersion).ToArray();
             foreach (var @event in newEvents)
             {
-                switch (ToDomainEvent(@event))
+                var domainEvent = ToDomainEvent(@event);
+                if (domainEvent is not null)
                 {
-                    case AppleMusicResolutionRequired appleMusicResolutionRequired:
-                        await messageBus.SendAsync(handler.Handle(appleMusicResolutionRequired));
-                        break;
-                    case YouTubeMusicResolutionRequired youTubeMusicResolutionRequired:
-                        await messageBus.SendAsync(handler.Handle(youTubeMusicResolutionRequired));
-                        break;
+                    await messageBus.SendAsync(domainEvent);
                 }
             }
 
@@ -114,13 +109,13 @@ public sealed class MusicTrackEventSubscriptionHostedService(
                 MusicCatalogId.From(@event.MusicCatalogId ?? string.Empty),
                 Enum.Parse<LookupPriorityBand>(@event.Priority ?? nameof(LookupPriorityBand.Low), ignoreCase: true),
                 CorrelationId.From(@event.CorrelationId ?? string.Empty),
-                Enum.Parse<ProviderName>(@event.SourceProvider, ignoreCase: true),
+                ProviderName.From(@event.SourceProvider),
                 @event.ObservedAt),
             nameof(YouTubeMusicResolutionRequired) => new YouTubeMusicResolutionRequired(
                 MusicCatalogId.From(@event.MusicCatalogId ?? string.Empty),
                 Enum.Parse<LookupPriorityBand>(@event.Priority ?? nameof(LookupPriorityBand.Low), ignoreCase: true),
                 CorrelationId.From(@event.CorrelationId ?? string.Empty),
-                Enum.Parse<ProviderName>(@event.SourceProvider, ignoreCase: true),
+                ProviderName.From(@event.SourceProvider),
                 @event.ObservedAt),
             _ => null
         };

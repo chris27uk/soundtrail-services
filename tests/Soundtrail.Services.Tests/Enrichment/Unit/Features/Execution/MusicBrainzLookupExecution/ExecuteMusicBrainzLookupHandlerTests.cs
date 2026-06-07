@@ -1,10 +1,10 @@
 using FluentAssertions;
-using Soundtrail.Services.Enrichment.Features.Execution.MusicBrainzLookupExecution;
-using Soundtrail.Services.Enrichment.Shared.Execution;
-using Soundtrail.Services.Enrichment.Shared.Orchestration;
-using Soundtrail.Services.Enrichment.Shared.Prioritisation;
-using Soundtrail.Services.Enrichment.Shared.Search;
-using Soundtrail.Services.Shared;
+using Soundtrail.Contracts;
+using Soundtrail.Contracts.Worker;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
+using Soundtrail.Services.Enrichment.Worker.Features.Execution.MusicBrainzLookupExecution;
 using Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Execution.MusicBrainzLookupExecution;
@@ -21,9 +21,9 @@ public sealed class ExecuteMusicBrainzLookupHandlerTests
 
         result.Outcome.Should().Be(LookupExecutionOutcome.Completed);
         result.Response.Should().NotBeNull();
-        result.Response!.SourceProvider.Should().Be(ProviderName.MusicBrainz);
+        result.Response!.SourceProvider.Should().Be(ProviderName.MusicBrainz.Value);
         result.Response.Priority.Should().Be(LookupPriorityBand.High);
-        result.Response.MusicCatalogId.Value.Should().Be("mc_track_1");
+        result.Response.MusicCatalogId.Should().Be("mc_track_1");
         state.StartedReceipts.Should().ContainSingle();
         state.CompletedReceipts.Should().ContainSingle();
     }

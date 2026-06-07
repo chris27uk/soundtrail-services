@@ -12,6 +12,6 @@ public sealed class QueueingTests
 
         await env.Handler.Handle(env.Request("  Rare!!!   UNKNOWN... Song  "));
 
-        env.EnqueueMusicRequests.Requests[0].Query.Value.Should().Be("rare unknown song");
+        env.EnqueueMusicRequests.Requests[0].Query.Should().Be("rare unknown song");
     }
 }

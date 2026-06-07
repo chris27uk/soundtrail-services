@@ -1,6 +1,5 @@
 using FluentAssertions;
-using Soundtrail.Services.Features.Search;
-using Soundtrail.Services.Features.Search.TrackSearch;
+using Soundtrail.Services.Api.Features.Search.TrackSearch;
 using Soundtrail.Services.Tests.Api.Unit.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Api.Unit.Features.Search.UnknownQuery;
@@ -34,7 +33,7 @@ public sealed class ResponsesTests
 
         var response = await env.Handler.Handle(env.Request("rare unknown song"));
 
-        response.Query.Value.Should().Be("rare unknown song");
+        response.Query.Should().Be("rare unknown song");
     }
 
     [Fact]

@@ -1,11 +1,10 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Soundtrail.Services.Enrichment.Features.Execution.AppleLookupExecution;
-using Soundtrail.Services.Enrichment.Features.Execution.MusicBrainzLookupExecution;
-using Soundtrail.Services.Enrichment.Features.Execution.YouTubeMusicLookupExecution;
-using Soundtrail.Services.Enrichment.Shared.Execution;
-using Soundtrail.Services.Enrichment.Shared.Orchestration;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
+using Soundtrail.Services.Enrichment.Worker.Features.Execution.AppleLookupExecution;
+using Soundtrail.Services.Enrichment.Worker.Features.Execution.MusicBrainzLookupExecution;
+using Soundtrail.Services.Enrichment.Worker.Features.Execution.YouTubeMusicLookupExecution;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;
 using Wolverine;

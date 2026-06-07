@@ -1,11 +1,10 @@
 using FluentAssertions;
-using Soundtrail.Services.Enrichment.Shared.Execution;
-using Soundtrail.Services.Enrichment.Shared.Orchestration;
-using Soundtrail.Services.Enrichment.Shared.Prioritisation;
-using Soundtrail.Services.Enrichment.Shared.Queuing;
-using Soundtrail.Services.Enrichment.Shared.Search;
-using Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Messaging;
-using Soundtrail.Services.Shared;
+using Soundtrail.Contracts;
+using Soundtrail.Contracts.Orchestrator.Commands;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Messaging;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling;
 
@@ -23,9 +22,9 @@ public sealed class LookupExecutionCommandMessageExtensionsTests
 
         var message = command.ToResolveCanonicalMetadataCommand();
 
-        message.TargetProvider.Should().Be(ProviderName.MusicBrainz);
+        message.TargetProvider.Should().Be(ProviderName.MusicBrainz.Value);
         message.CommandId.Should().Be(CommandId.For("ResolveCanonicalMetadata:mc_track_1"));
-        message.MusicCatalogId.Value.Should().Be("mc_track_1");
+        message.MusicCatalogId.Should().Be("mc_track_1");
     }
 
     [Fact]
@@ -40,8 +39,8 @@ public sealed class LookupExecutionCommandMessageExtensionsTests
 
         var message = command.ToResolveCanonicalMetadataCommand();
 
-        message.TargetProvider.Should().Be(ProviderName.MusicBrainz);
+        message.TargetProvider.Should().Be(ProviderName.MusicBrainz.Value);
         message.CommandId.Should().Be(CommandId.For("ResolveCanonicalMetadata:mc_track_2"));
-        message.MusicCatalogId.Value.Should().Be("mc_track_2");
+        message.MusicCatalogId.Should().Be("mc_track_2");
     }
 }

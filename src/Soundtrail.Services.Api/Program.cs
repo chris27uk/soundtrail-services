@@ -1,13 +1,11 @@
+using Soundtrail.Contracts;
 using Soundtrail.Services.Api.Features.Health;
 using Soundtrail.Services.Api.Features.Search;
+using Soundtrail.Services.Api.Features.Search.Queueing;
+using Soundtrail.Services.Api.Features.Search.TrackSearch;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Soundtrail.Services.Api.Infrastructure.Raven;
 using Soundtrail.Services.Api.Infrastructure.Time;
-using Soundtrail.Services.Features.Search;
-using Soundtrail.Services.Features.Search.Queueing;
-using Soundtrail.Services.Features.Search.TrackSearch;
-using Soundtrail.Services.Shared;
-using Soundtrail.Services.Features.Tracks;
 using Wolverine;
 using Wolverine.AzureServiceBus;
 
@@ -40,7 +38,7 @@ else
     builder.Services.AddSingleton<ITrackSearchPort, RavenTrackSearchIndex>();
 }
 
-builder.Services.AddScoped<global::Soundtrail.Services.Shared.IHandler<SearchMusicRequest, SearchMusicResponse>, SearchMusicHandler>();
+builder.Services.AddScoped<IHandler<SearchMusicRequest, SearchMusicResponse>, SearchMusicHandler>();
 
 var app = builder.Build();
 

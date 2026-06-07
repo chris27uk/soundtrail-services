@@ -2,8 +2,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Soundtrail.Services.Features.Search;
-using Soundtrail.Services.Features.Search.TrackSearch;
+using Soundtrail.Contracts;
+using Soundtrail.Services.Api.Features.Search.TrackSearch;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Api.Integration.Features.Search;
@@ -17,7 +17,7 @@ public sealed class SearchHttpRouteApiFactory : WebApplicationFactory<Program>
         var factory = new SearchHttpRouteApiFactory();
         factory.SearchMusicHandler.RespondWith(
             SearchMusicResponse.Resolved(
-                SearchQuery.From(query),
+                query,
                 results));
         return factory;
     }
@@ -27,7 +27,7 @@ public sealed class SearchHttpRouteApiFactory : WebApplicationFactory<Program>
         var factory = new SearchHttpRouteApiFactory();
         factory.SearchMusicHandler.RespondWith(
             SearchMusicResponse.Pending(
-                SearchQuery.From(query)));
+                query));
         return factory;
     }
 
@@ -36,8 +36,8 @@ public sealed class SearchHttpRouteApiFactory : WebApplicationFactory<Program>
         builder.UseEnvironment("Testing");
         builder.ConfigureServices(services =>
         {
-            services.RemoveAll<Shared.IHandler<SearchMusicRequest, SearchMusicResponse>>();
-            services.AddSingleton<Shared.IHandler<SearchMusicRequest, SearchMusicResponse>>(SearchMusicHandler);
+            services.RemoveAll<IHandler<SearchMusicRequest, SearchMusicResponse>>();
+            services.AddSingleton<IHandler<SearchMusicRequest, SearchMusicResponse>>(SearchMusicHandler);
         });
     }
 }

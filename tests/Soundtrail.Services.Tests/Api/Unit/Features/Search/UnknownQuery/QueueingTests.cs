@@ -22,7 +22,7 @@ public sealed class QueueingTests
 
         await env.Handler.Handle(env.Request("rare unknown song"));
 
-        env.EnqueueMusicRequests.Requests[0].Query.Value.Should().Be("rare unknown song");
+        env.EnqueueMusicRequests.Requests[0].Query.Should().Be("rare unknown song");
     }
 
     [Fact]
@@ -66,6 +66,6 @@ public sealed class QueueingTests
 
         await env.Handler.Handle(env.Request("rare unknown song"));
 
-        env.EnqueueMusicRequests.Requests[0].CorrelationId.Value.Should().NotBeNullOrWhiteSpace();
+        env.EnqueueMusicRequests.Requests[0].CorrelationId.Should().NotBeNullOrWhiteSpace();
     }
 }

@@ -1,5 +1,5 @@
 using FluentAssertions;
-using Soundtrail.Services.Features.Search.TrackSearch;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Services.Tests.Enrichment.Integration.Ports.MusicCatalogCandidateSearch.KnownExactQuery;
 
 namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.MusicCatalogCandidateSearch.UnknownQuery;

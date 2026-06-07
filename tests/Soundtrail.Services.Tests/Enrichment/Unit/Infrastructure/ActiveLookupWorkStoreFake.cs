@@ -1,5 +1,5 @@
-using Soundtrail.Services.Enrichment.Shared.Idempotency;
-using Soundtrail.Services.Shared;
+using Soundtrail.Contracts;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Idempotency;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 

@@ -1,13 +1,12 @@
-using Soundtrail.Services.Features.Search;
-using Soundtrail.Services.Features.Search.TrackSearch;
-using Soundtrail.Services.Shared;
+using Soundtrail.Contracts;
+using Soundtrail.Services.Api.Features.Search.TrackSearch;
 
 namespace Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 
 public sealed class ApiFakeSearchMusicHandler : IHandler<SearchMusicRequest, SearchMusicResponse>
 {
     private readonly List<SearchMusicRequest> requests = [];
-    private SearchMusicResponse response = SearchMusicResponse.Pending(SearchQuery.From("default"));
+    private SearchMusicResponse response = SearchMusicResponse.Pending("default");
 
     public IReadOnlyList<SearchMusicRequest> Requests => requests;
 

@@ -1,6 +1,5 @@
-using Soundtrail.Services.Features.Search;
-using Soundtrail.Services.Features.Search.TrackSearch;
-using Soundtrail.Services.Shared;
+using Soundtrail.Contracts;
+using Soundtrail.Services.Api.Features.Search.TrackSearch;
 
 namespace Soundtrail.Services.Api.Features.Search;
 
@@ -22,7 +21,7 @@ public static class SearchEndpoints
                 try
                 {
                     request = new SearchMusicRequest(
-                        SearchQuery.From(q),
+                        q,
                         Limit.From(limit),
                         minConfidence is null ? null : ConfidenceScore.From(minConfidence.Value));
                 }
@@ -46,14 +45,14 @@ public static class SearchEndpoints
             {
                 status = "resolved",
                 source = response.Source,
-                query = response.Query.Value,
+                query = response.Query,
                 results = response.Results.Select(ToContract)
             },
             _ => new
             {
                 status = "pending",
                 source = response.Source,
-                query = response.Query.Value,
+                query = response.Query,
                 retryAfterSeconds = response.RetryAfterSeconds,
                 results = Array.Empty<object>()
             }

@@ -7,7 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Soundtrail.Services\Soundtrail.Services.csproj" />
+    <ProjectReference Include="..\Soundtrail.Contracts\Soundtrail.Contracts.csproj" />
+    <ProjectReference Include="..\Soundtrail.Services.Api\Soundtrail.Services.Api.csproj" />
   </ItemGroup>
 
   <ItemGroup>

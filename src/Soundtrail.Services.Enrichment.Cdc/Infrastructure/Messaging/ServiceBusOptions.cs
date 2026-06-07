@@ -6,7 +6,5 @@ public sealed class ServiceBusOptions
 
     public string ConnectionString { get; init; } = string.Empty;
 
-    public string AppleLookupQueueName { get; init; } = string.Empty;
-
-    public string YouTubeMusicLookupQueueName { get; init; } = string.Empty;
+    public string MusicTrackEventsQueueName { get; init; } = string.Empty;
 }

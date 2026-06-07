@@ -1,6 +1,6 @@
-using Soundtrail.Services.Enrichment.Shared.Execution;
-using Soundtrail.Services.Enrichment.Shared.MusicTracks;
-using Soundtrail.Services.Enrichment.Shared.Search;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 
@@ -52,10 +52,10 @@ public sealed class MusicTrackProjectionStoreFake : IMusicTrackProjectionStore
 
             switch (provider)
             {
-                case ProviderName.Apple:
+                case var value when value == ProviderName.AppleMusic:
                     Apple = reference;
                     break;
-                case ProviderName.YouTubeMusic:
+                case var value when value == ProviderName.YoutubeMusic:
                     YouTubeMusic = reference;
                     break;
                 default:
