@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
@@ -7,7 +8,7 @@ namespace Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 
 public sealed class MusicTrackProjectionStoreFake : IMusicTrackProjectionStore
 {
-    private readonly Dictionary<string, ProjectedMusicTrack> projections = [];
+    private readonly ConcurrentDictionary<string, ProjectedMusicTrack> projections = [];
 
     public IReadOnlyDictionary<string, ProjectedMusicTrack> Projections => projections;
 
