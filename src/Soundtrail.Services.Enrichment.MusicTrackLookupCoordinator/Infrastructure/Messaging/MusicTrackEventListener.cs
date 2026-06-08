@@ -3,7 +3,6 @@ using Soundtrail.Contracts.Commands;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.Events;
 using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Features.Orchestration;
-using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Events;
 using Wolverine.Attributes;
 

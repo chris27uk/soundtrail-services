@@ -7,4 +7,9 @@ public sealed record ResolveApplePlaybackReferenceCommandDto(
     string MusicCatalogId,
     LookupPriorityBand Priority,
     DateTimeOffset CreatedAt,
-    string CorrelationId);
+    string CorrelationId)
+{
+    private const string ProviderName = "AppleMusic";
+    
+    public string TargetProvider => ProviderName;
+}

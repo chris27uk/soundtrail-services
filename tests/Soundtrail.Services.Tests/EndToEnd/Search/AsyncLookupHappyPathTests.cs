@@ -24,11 +24,11 @@ using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search.Resolution;
 using Soundtrail.Services.Enrichment.Features.Execution.ApplyEnrichmentResponse;
 using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Features.Orchestration;
-using Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
+using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 using Wolverine;
 using Wolverine.Attributes;
 
-namespace Soundtrail.Services.Tests.EndToEnd.Search;
+namespace Soundtrail.Services.Tests.Integration.EndToEnd.Search;
 
 public sealed class AsyncLookupHappyPathTests
 {
