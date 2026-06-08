@@ -18,8 +18,8 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.NotFound
 
             var act = async () => await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 0, riskScore: 100));
 
-            var exception = await Assert.ThrowsAsync<ResolutionFailedException>(act);
-            exception.Outcome.Should().Be(MusicCatalogResolutionOutcome.NotFound);
+            await act.Should().ThrowAsync<ResolutionFailedException>()
+                .Where(exception => exception.Outcome == MusicCatalogResolutionOutcome.NotFound);
         }
 
         [Fact]
@@ -31,8 +31,8 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.NotFound
 
             var act = async () => await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 0, riskScore: 10));
 
-            var exception = await Assert.ThrowsAsync<ResolutionFailedException>(act);
-            exception.Outcome.Should().Be(MusicCatalogResolutionOutcome.NotFound);
+            await act.Should().ThrowAsync<ResolutionFailedException>()
+                .Where(exception => exception.Outcome == MusicCatalogResolutionOutcome.NotFound);
         }
 
         [Fact]
@@ -45,8 +45,8 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.NotFound
 
             var act = async () => await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 0, riskScore: 10));
 
-            var exception = await Assert.ThrowsAsync<ResolutionFailedException>(act);
-            exception.Outcome.Should().Be(MusicCatalogResolutionOutcome.Ambiguous);
+            await act.Should().ThrowAsync<ResolutionFailedException>()
+                .Where(exception => exception.Outcome == MusicCatalogResolutionOutcome.Ambiguous);
         }
     }
 }

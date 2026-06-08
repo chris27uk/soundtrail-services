@@ -10,32 +10,26 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling;
 public class DiscoveryBacklogSchedulerTests
 {
     [Fact]
-    public async Task Given_Eligible_Candidates_When_Sweep_Runs_Then_High_And_Low_Priority_Commands_Are_Returned()
+    public async Task Given_Eligible_Candidates_When_Sweep_Runs_Then_Two_Commands_Are_Returned()
     {
-        var now = new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero);
-        var store = new RankedMusicCandidateStoreFake();
-        store.Seed(Candidates.ExistingCandidate(
-            MusicCatalogId.From("mc_track_high"),
-            requestCount: 3,
-            highestTrustLevelSeen: 2,
-            riskScore: 10,
-            status: RankedMusicCandidateStatus.Pending,
-            nextEligibleAt: null));
-        store.Seed(Candidates.ExistingCandidate(
-            MusicCatalogId.From("mc_track_low"),
-            requestCount: 1,
-            highestTrustLevelSeen: 1,
-            riskScore: 10,
-            status: RankedMusicCandidateStatus.Pending,
-            nextEligibleAt: null));
-
-        var activeWorkStore = new ActiveLookupWorkStoreFake();
-        var sweep = new DiscoveryBacklogScheduler(store, activeWorkStore, new DiscoveryPriorityPolicy());
-
-        var commands = await sweep.RunOnceAsync(now, 10);
+        var commands = await RunSweepWithHighAndLowPriorityCandidates();
 
         commands.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task Given_Eligible_Candidates_When_Sweep_Runs_Then_A_High_Priority_Command_Is_Returned_For_The_Popular_Candidate()
+    {
+        var commands = await RunSweepWithHighAndLowPriorityCandidates();
+
         commands.Should().ContainSingle(command => command.MusicCatalogId == "mc_track_high" && command.Priority == LookupPriorityBand.High);
+    }
+
+    [Fact]
+    public async Task Given_Eligible_Candidates_When_Sweep_Runs_Then_A_Low_Priority_Command_Is_Returned_For_The_Low_Demand_Candidate()
+    {
+        var commands = await RunSweepWithHighAndLowPriorityCandidates();
+
         commands.Should().ContainSingle(command => command.MusicCatalogId == "mc_track_low" && command.Priority == LookupPriorityBand.Low);
     }
 
@@ -230,5 +224,30 @@ public class DiscoveryBacklogSchedulerTests
         var commands = await scheduler.RunOnceAsync(now, 10);
 
         commands[0].CommandId.Should().Be(CommandId.For("mc_track_1"));
+    }
+
+    private static async Task<IReadOnlyList<Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model.LookupMusicCommand>> RunSweepWithHighAndLowPriorityCandidates()
+    {
+        var now = new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero);
+        var store = new RankedMusicCandidateStoreFake();
+        store.Seed(Candidates.ExistingCandidate(
+            MusicCatalogId.From("mc_track_high"),
+            requestCount: 3,
+            highestTrustLevelSeen: 2,
+            riskScore: 10,
+            status: RankedMusicCandidateStatus.Pending,
+            nextEligibleAt: null));
+        store.Seed(Candidates.ExistingCandidate(
+            MusicCatalogId.From("mc_track_low"),
+            requestCount: 1,
+            highestTrustLevelSeen: 1,
+            riskScore: 10,
+            status: RankedMusicCandidateStatus.Pending,
+            nextEligibleAt: null));
+
+        var activeWorkStore = new ActiveLookupWorkStoreFake();
+        var sweep = new DiscoveryBacklogScheduler(store, activeWorkStore, new DiscoveryPriorityPolicy());
+
+        return await sweep.RunOnceAsync(now, 10);
     }
 }

@@ -11,38 +11,64 @@ public sealed class MusicTrackEventCommandHandlerTests
     [Fact]
     public void Given_AppleMusicResolutionRequired_When_Handled_Then_An_AppleResolutionCommand_Is_Produced()
     {
-        var listener = new MusicTrackEventCommandHandler();
-
-        var message = listener.Handle(
-            new AppleMusicResolutionRequired(
-                MusicCatalogId.From("mc_track_1"),
-                LookupPriorityBand.High,
-                CorrelationId.From("corr-1"),
-                ProviderName.MusicBrainz,
-                new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero)));
+        var message = new MusicTrackEventCommandHandler().Handle(AppleResolutionRequired());
 
         message.Should().BeOfType<ResolveApplePlaybackReferenceCommand>();
-        var typed = (ResolveApplePlaybackReferenceCommand)message;
-        typed.CommandId.Should().Be(CommandId.For("ResolveApplePlaybackReference:mc_track_1"));
-        typed.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
+    }
+
+    [Fact]
+    public void Given_AppleMusicResolutionRequired_When_Handled_Then_The_Apple_CommandId_Is_Built_From_The_MusicCatalogId()
+    {
+        var message = (ResolveApplePlaybackReferenceCommand)new MusicTrackEventCommandHandler().Handle(AppleResolutionRequired());
+
+        message.CommandId.Should().Be(CommandId.For("ResolveApplePlaybackReference:mc_track_1"));
+    }
+
+    [Fact]
+    public void Given_AppleMusicResolutionRequired_When_Handled_Then_The_MusicCatalogId_Is_Preserved_On_The_Apple_Command()
+    {
+        var message = (ResolveApplePlaybackReferenceCommand)new MusicTrackEventCommandHandler().Handle(AppleResolutionRequired());
+
+        message.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
     }
 
     [Fact]
     public void Given_YouTubeMusicResolutionRequired_When_Handled_Then_A_YouTubeResolutionCommand_Is_Produced()
     {
-        var listener = new MusicTrackEventCommandHandler();
-
-        var message = listener.Handle(
-            new YouTubeMusicResolutionRequired(
-                MusicCatalogId.From("mc_track_1"),
-                LookupPriorityBand.Low,
-                CorrelationId.From("corr-2"),
-                ProviderName.MusicBrainz,
-                new DateTimeOffset(2026, 6, 6, 12, 5, 0, TimeSpan.Zero)));
+        var message = new MusicTrackEventCommandHandler().Handle(YouTubeResolutionRequired());
 
         message.Should().BeOfType<ResolveYouTubeMusicPlaybackReferenceCommand>();
-        var typed = (ResolveYouTubeMusicPlaybackReferenceCommand)message;
-        typed.CommandId.Should().Be(CommandId.For("ResolveYouTubeMusicPlaybackReference:mc_track_1"));
-        typed.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
     }
+
+    [Fact]
+    public void Given_YouTubeMusicResolutionRequired_When_Handled_Then_The_YouTube_CommandId_Is_Built_From_The_MusicCatalogId()
+    {
+        var message = (ResolveYouTubeMusicPlaybackReferenceCommand)new MusicTrackEventCommandHandler().Handle(YouTubeResolutionRequired());
+
+        message.CommandId.Should().Be(CommandId.For("ResolveYouTubeMusicPlaybackReference:mc_track_1"));
+    }
+
+    [Fact]
+    public void Given_YouTubeMusicResolutionRequired_When_Handled_Then_The_MusicCatalogId_Is_Preserved_On_The_YouTube_Command()
+    {
+        var message = (ResolveYouTubeMusicPlaybackReferenceCommand)new MusicTrackEventCommandHandler().Handle(YouTubeResolutionRequired());
+
+        message.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
+    }
+
+    private static AppleMusicResolutionRequired AppleResolutionRequired() =>
+        new(
+            MusicCatalogId.From("mc_track_1"),
+            LookupPriorityBand.High,
+            CorrelationId.From("corr-1"),
+            ProviderName.MusicBrainz,
+            new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero));
+
+    private static YouTubeMusicResolutionRequired YouTubeResolutionRequired() =>
+        new(
+            MusicCatalogId.From("mc_track_1"),
+            LookupPriorityBand.Low,
+            CorrelationId.From("corr-2"),
+            ProviderName.MusicBrainz,
+            new DateTimeOffset(2026, 6, 6, 12, 5, 0, TimeSpan.Zero));
 }

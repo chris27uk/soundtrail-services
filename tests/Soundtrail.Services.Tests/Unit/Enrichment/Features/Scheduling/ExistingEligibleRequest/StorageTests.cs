@@ -139,6 +139,17 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.Existing
             var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 60));
 
             result.ShouldSchedule.Should().BeFalse();
+        }
+
+        [Fact]
+        public async Task
+            Given_An_Existing_Pending_Candidate_When_A_High_Risk_Request_Is_Handled_Then_RequestCount_Is_Incremented()
+        {
+            const string musicCatalogId = "mc_track_1";
+            var env = LookupMusicRequestHandlerTestEnvironment.WithExistingEligibleCandidate(musicCatalogId);
+
+            await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 60));
+
             env.RankedMusicCandidates[0].RequestCount.Should().Be(3);
         }
 

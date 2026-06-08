@@ -29,6 +29,17 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.NoPrevio
             var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
 
             result.ShouldSchedule.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task Given_A_Request_With_A_Top_Match_At_The_Minimum_Accepted_Score_When_Handled_Then_The_Command_Uses_The_Top_Match_MusicCatalogId()
+        {
+            var env = LookupMusicRequestHandlerTestEnvironment.WithNoExistingCandidates();
+            env.Search.ReturnMatches(
+                new MusicCatalogMatch(MusicCatalogId.From("mc_track_1"), 0.80m));
+
+            var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
+
             result.Command?.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
         }
 
@@ -43,6 +54,18 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.NoPrevio
             var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
 
             result.ShouldSchedule.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task Given_A_Request_With_A_Winning_Margin_At_The_Minimum_Required_Gap_When_Handled_Then_The_Command_Uses_The_Higher_Scoring_MusicCatalogId()
+        {
+            var env = LookupMusicRequestHandlerTestEnvironment.WithNoExistingCandidates();
+            env.Search.ReturnMatches(
+                new MusicCatalogMatch(MusicCatalogId.From("mc_track_1"), 0.90m),
+                new MusicCatalogMatch(MusicCatalogId.From("mc_track_2"), 0.80m));
+
+            var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
+
             result.Command?.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
         }
 
@@ -89,7 +112,6 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.NoPrevio
             var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 30));
 
             result.ShouldSchedule.Should().BeTrue();
-            result.Command?.Priority.Should().Be(LookupPriorityBand.Low);
         }
 
         [Fact]

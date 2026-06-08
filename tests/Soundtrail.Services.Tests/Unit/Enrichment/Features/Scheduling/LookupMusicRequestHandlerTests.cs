@@ -7,7 +7,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling;
 public class LookupMusicRequestHandlerTests
 {
     [Fact]
-    public async Task Given_No_Active_Work_When_Handling_A_Schedulable_Request_Then_A_Command_Is_Returned()
+    public async Task Given_No_Active_Work_When_Handling_A_Schedulable_Request_Then_ShouldSchedule_Is_True()
     {
         var env = LookupMusicRequestHandlerTestEnvironment.WithNoExistingCandidates();
         env.Search.ResolveAs(MusicCatalogId.From("mc_track_1"));
@@ -15,6 +15,16 @@ public class LookupMusicRequestHandlerTests
         var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10), CancellationToken.None);
 
         result.ShouldSchedule.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Given_No_Active_Work_When_Handling_A_Schedulable_Request_Then_An_Active_Work_Lock_Is_Acquired()
+    {
+        var env = LookupMusicRequestHandlerTestEnvironment.WithNoExistingCandidates();
+        env.Search.ResolveAs(MusicCatalogId.From("mc_track_1"));
+
+        await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10), CancellationToken.None);
+
         env.ActiveWorkStore.Locks.Should().ContainSingle();
     }
 

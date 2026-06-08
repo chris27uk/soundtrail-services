@@ -7,13 +7,22 @@ namespace Soundtrail.Services.Tests.Unit.Api.Features.Search.DefaultLimit;
 public sealed class ResponsesTests
 {
     [Fact]
-    public async Task Given_Multiple_Known_Local_Tracks_When_Searching_Without_A_Limit_Then_The_Default_Limit_Does_Not_Trim_The_Results()
+    public async Task Given_Multiple_Known_Local_Tracks_When_Searching_Without_A_Limit_Then_Response_Status_Is_Resolved()
     {
         var env = SearchMusicHandlerTestEnvironment.WithMultipleKnownTracks();
 
         var response = await env.Handler.Handle(env.Request("the killers"));
 
         response.Status.Should().Be(ResolutionStatus.Resolved);
+    }
+
+    [Fact]
+    public async Task Given_Multiple_Known_Local_Tracks_When_Searching_Without_A_Limit_Then_The_Default_Limit_Does_Not_Trim_The_Results()
+    {
+        var env = SearchMusicHandlerTestEnvironment.WithMultipleKnownTracks();
+
+        var response = await env.Handler.Handle(env.Request("the killers"));
+
         response.Results.Should().HaveCount(2);
     }
 }

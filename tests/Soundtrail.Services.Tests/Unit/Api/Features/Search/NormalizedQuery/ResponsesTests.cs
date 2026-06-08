@@ -14,6 +14,15 @@ public sealed class ResponsesTests
         var response = await env.Handler.Handle(env.Request("  MR.   BRIGHTSIDE!!! "));
 
         response.Status.Should().Be(ResolutionStatus.Resolved);
+    }
+
+    [Fact]
+    public async Task Given_A_Known_Local_Track_With_A_Query_That_Needs_Normalization_When_Searching_Then_The_Response_Contains_A_Single_Result()
+    {
+        var env = SearchMusicHandlerTestEnvironment.WithKnownTrack();
+
+        var response = await env.Handler.Handle(env.Request("  MR.   BRIGHTSIDE!!! "));
+
         response.Results.Should().ContainSingle();
     }
 }
