@@ -1,7 +1,7 @@
-using Soundtrail.Contracts;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
+using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Events;
+using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Responses;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 
@@ -13,16 +13,16 @@ public sealed class MusicTrackProjectionStoreFake : IMusicTrackProjectionStore
 
     public Task StoreAsync(
         MusicCatalogId musicCatalogId,
-        MusicTrack musicTrack,
+        MusicTrackStream stream,
         CancellationToken cancellationToken)
     {
         var projection = new ProjectedMusicTrack();
-        musicTrack.Project(projection);
+        projection.Apply(stream);
         projections[musicCatalogId.Value] = projection;
         return Task.CompletedTask;
     }
 
-    public sealed class ProjectedMusicTrack : IMusicTrackProjectionWriter
+    public sealed class ProjectedMusicTrack
     {
         public ProjectedSongMetadata? CanonicalMetadata { get; private set; }
 
@@ -32,41 +32,55 @@ public sealed class MusicTrackProjectionStoreFake : IMusicTrackProjectionStore
 
         public bool IsPlayable { get; private set; }
 
-        public void WriteCanonicalMetadata(
-            string title,
-            string artist,
-            string? isrc,
-            string? mbid,
-            int? durationMs)
+        public void Apply(MusicTrackStream stream)
         {
-            CanonicalMetadata = new ProjectedSongMetadata(title, artist, isrc, mbid, durationMs);
-        }
+            ProjectedSongMetadata? canonicalMetadata = null;
+            ProviderReference? apple = null;
+            ProviderReference? youTubeMusic = null;
 
-        public void WriteProviderReference(
-            ProviderName provider,
-            Uri url,
-            string? externalId,
-            ReferenceConfidence confidence,
-            ProviderName sourceProvider)
-        {
-            var reference = new ProviderReference(provider, url, externalId, confidence, sourceProvider);
-
-            switch (provider)
+            foreach (var fact in stream.Facts)
             {
-                case var value when value == ProviderName.AppleMusic:
-                    Apple = reference;
-                    break;
-                case var value when value == ProviderName.YoutubeMusic:
-                    YouTubeMusic = reference;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(provider), provider, null);
-            }
-        }
+                switch (fact)
+                {
+                    case MinimalTrackInfoDiscovered minimalTrackInfoDiscovered:
+                        canonicalMetadata = new ProjectedSongMetadata(
+                            minimalTrackInfoDiscovered.Title,
+                            minimalTrackInfoDiscovered.Artist,
+                            minimalTrackInfoDiscovered.Isrc,
+                            minimalTrackInfoDiscovered.Mbid,
+                            minimalTrackInfoDiscovered.DurationMs);
+                        break;
+                    case ProviderPlaybackReferenceResolved providerPlaybackReferenceResolved:
+                        var reference = new ProviderReference(
+                            providerPlaybackReferenceResolved.Provider,
+                            providerPlaybackReferenceResolved.Url,
+                            providerPlaybackReferenceResolved.ExternalId,
+                            ReferenceConfidence.Verified,
+                            providerPlaybackReferenceResolved.SourceProvider);
 
-        public void WritePlayable(bool isPlayable)
-        {
-            IsPlayable = isPlayable;
+                        switch (providerPlaybackReferenceResolved.Provider)
+                        {
+                            case var value when value == ProviderName.AppleMusic:
+                                apple = reference;
+                                break;
+                            case var value when value == ProviderName.YoutubeMusic:
+                                youTubeMusic = reference;
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException(
+                                    nameof(providerPlaybackReferenceResolved.Provider),
+                                    providerPlaybackReferenceResolved.Provider,
+                                    null);
+                        }
+
+                        break;
+                }
+            }
+
+            CanonicalMetadata = canonicalMetadata;
+            Apple = apple;
+            YouTubeMusic = youTubeMusic;
+            IsPlayable = canonicalMetadata is not null && (apple is not null || youTubeMusic is not null);
         }
     }
 

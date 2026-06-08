@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Soundtrail.Contracts.Worker;
+using Soundtrail.Contracts.Commands;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Messaging;

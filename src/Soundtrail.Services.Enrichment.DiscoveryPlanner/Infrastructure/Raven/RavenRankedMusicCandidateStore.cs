@@ -4,7 +4,8 @@ using Raven.Client.Documents.Session;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven.Indexes;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
+using Soundtrail.Contracts;
+using Soundtrail.Contracts.Common;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven;
 

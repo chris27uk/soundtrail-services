@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Soundtrail.Contracts.Orchestrator.Events;
+using Soundtrail.Contracts.Events;
 using Soundtrail.Services.Enrichment.Cdc.Infrastructure.Cdc;
 using Soundtrail.Services.Enrichment.Cdc.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Cdc.Infrastructure.Raven;
@@ -20,10 +20,10 @@ builder.UseWolverine(opts =>
         .AutoProvision()
         .EnableWolverineControlQueues();
 
-    opts.PublishMessage<AppleMusicResolutionRequiredDto>()
+    opts.PublishMessage<AppleMusicResolutionRequiredMessageDto>()
         .ToAzureServiceBusQueue(serviceBusOptions.MusicTrackEventsQueueName);
 
-    opts.PublishMessage<YouTubeMusicResolutionRequiredDto>()
+    opts.PublishMessage<YouTubeMusicResolutionRequiredMessageDto>()
         .ToAzureServiceBusQueue(serviceBusOptions.MusicTrackEventsQueueName);
 });
 

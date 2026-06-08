@@ -1,9 +1,8 @@
 using FluentAssertions;
-using Soundtrail.Contracts;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
+using Soundtrail.Contracts.Common;
 using Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling;

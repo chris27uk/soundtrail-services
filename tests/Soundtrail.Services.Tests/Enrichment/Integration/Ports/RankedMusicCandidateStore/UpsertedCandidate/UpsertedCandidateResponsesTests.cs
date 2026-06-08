@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
+using Soundtrail.Contracts;
+using Soundtrail.Contracts.Common;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.RankedMusicCandidateStore.UpsertedCandidate;

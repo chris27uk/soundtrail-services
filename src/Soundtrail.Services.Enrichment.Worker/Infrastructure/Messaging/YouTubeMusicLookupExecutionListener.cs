@@ -1,9 +1,9 @@
 using Raven.Client.Documents.Session;
-using Soundtrail.Contracts;
-using Soundtrail.Contracts.Orchestrator;
-using Soundtrail.Contracts.Worker;
+using Soundtrail.Contracts.Commands;
+using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.Worker.Responses;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
+using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Enrichment.Worker.Features.Execution;
 using Soundtrail.Services.Enrichment.Worker.Features.Execution.YouTubeMusicLookupExecution;
 using Wolverine.Attributes;
@@ -20,7 +20,7 @@ public sealed class YouTubeMusicLookupExecutionListener(ExecuteYouTubeMusicLooku
         CancellationToken cancellationToken = default)
     {
         var result = await handler.Handle(
-            new Features.Execution.ResolveYouTubeMusicPlaybackReferenceCommand(
+            new ResolveYouTubeMusicPlaybackReferenceCommand(
                 CommandId.From(dto.CommandId),
                 MusicCatalogId.From(dto.MusicCatalogId),
                 dto.Priority,
@@ -30,8 +30,8 @@ public sealed class YouTubeMusicLookupExecutionListener(ExecuteYouTubeMusicLooku
         return result.Response is null
             ? []
             : [new EnrichmentResponseDto(
-                result.Response.CommandId,
-                result.Response.MusicCatalogId,
+                result.Response.CommandId.Value,
+                result.Response.MusicCatalogId.Value,
                 result.Response.SourceProvider.Value,
                 result.Response.Priority,
                 result.Response.CreatedAt,
@@ -47,7 +47,7 @@ public sealed class YouTubeMusicLookupExecutionListener(ExecuteYouTubeMusicLooku
                     reference.Provider.Value,
                     reference.Url,
                     reference.ExternalId,
-                    (ReferenceConfidenceDto)reference.Confidence)).ToArray(),
-                result.Response.CorrelationId)];
+                    reference.Confidence.ToString())).ToArray(),
+                result.Response.CorrelationId.Value)];
     }
 }

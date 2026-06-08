@@ -1,4 +1,5 @@
 using Soundtrail.Contracts;
+using Soundtrail.Contracts.Common;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Idempotency;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;

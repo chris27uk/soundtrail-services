@@ -2,9 +2,10 @@ using FluentAssertions;
 using Raven.Client.Documents.Session;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven.Documents;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
+using Soundtrail.Contracts;
+using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.ProviderSnapshotStore;

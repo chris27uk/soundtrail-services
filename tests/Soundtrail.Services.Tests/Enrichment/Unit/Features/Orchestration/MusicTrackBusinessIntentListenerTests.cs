@@ -1,9 +1,8 @@
 using FluentAssertions;
-using Soundtrail.Contracts;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
+using Soundtrail.Contracts.Common;
 using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Features.Orchestration;
+using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Events;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Orchestration;
 

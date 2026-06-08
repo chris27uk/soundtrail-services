@@ -1,11 +1,10 @@
 using Raven.Client.Documents.Session;
-using Soundtrail.Contracts;
-using Soundtrail.Contracts.Orchestrator.Events;
-using Soundtrail.Contracts.Worker;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
+using Soundtrail.Contracts.Commands;
+using Soundtrail.Contracts.Common;
+using Soundtrail.Contracts.Events;
 using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Features.Orchestration;
+using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Events;
 using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Infrastructure.Messaging;
@@ -14,7 +13,7 @@ public sealed class MusicTrackEventListener(MusicTrackEventCommandHandler handle
 {
     [WolverineHandler]
     [Transactional]
-    public object Handle(AppleMusicResolutionRequiredDto dto, IAsyncDocumentSession _)
+    public object Handle(AppleMusicResolutionRequiredMessageDto dto, IAsyncDocumentSession _)
     {
         var command = handler.Handle(
             new AppleMusicResolutionRequired(
@@ -25,16 +24,16 @@ public sealed class MusicTrackEventListener(MusicTrackEventCommandHandler handle
                 dto.ObservedAt));
 
         return new ResolveApplePlaybackReferenceCommandDto(
-            command.CommandId,
-            command.MusicCatalogId,
+            command.CommandId.Value,
+            command.MusicCatalogId.Value,
             command.Priority,
             command.CreatedAt,
-            command.CorrelationId);
+            command.CorrelationId.Value);
     }
 
     [WolverineHandler]
     [Transactional]
-    public object Handle(YouTubeMusicResolutionRequiredDto dto, IAsyncDocumentSession _)
+    public object Handle(YouTubeMusicResolutionRequiredMessageDto dto, IAsyncDocumentSession _)
     {
         var command = handler.Handle(
             new YouTubeMusicResolutionRequired(
@@ -45,10 +44,10 @@ public sealed class MusicTrackEventListener(MusicTrackEventCommandHandler handle
                 dto.ObservedAt));
 
         return new ResolveYouTubeMusicPlaybackReferenceCommandDto(
-            command.CommandId,
-            command.MusicCatalogId,
+            command.CommandId.Value,
+            command.MusicCatalogId.Value,
             command.Priority,
             command.CreatedAt,
-            command.CorrelationId);
+            command.CorrelationId.Value);
     }
 }

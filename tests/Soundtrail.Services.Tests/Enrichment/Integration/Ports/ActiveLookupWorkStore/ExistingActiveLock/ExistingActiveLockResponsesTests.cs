@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Soundtrail.Contracts;
+using Soundtrail.Contracts.Common;
 using Soundtrail.Services.Tests.Enrichment.Integration.Ports.ActiveLookupWorkStore.NewCommandId;
 
 namespace Soundtrail.Services.Tests.Enrichment.Integration.Ports.ActiveLookupWorkStore.ExistingActiveLock;

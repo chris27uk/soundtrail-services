@@ -1,11 +1,9 @@
 using FluentAssertions;
-using Soundtrail.Contracts;
-using Soundtrail.Contracts.Orchestrator;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
+using Soundtrail.Contracts.Common;
 using Soundtrail.Services.Enrichment.Features.Execution.ApplyEnrichmentResponse;
+using Soundtrail.Domain.Events;
+using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Execution.ApplyEnrichmentResponse;

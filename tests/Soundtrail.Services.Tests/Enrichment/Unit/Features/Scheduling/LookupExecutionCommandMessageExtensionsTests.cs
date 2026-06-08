@@ -1,10 +1,8 @@
 using FluentAssertions;
-using Soundtrail.Contracts;
+using Soundtrail.Contracts.Commands;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Messaging;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
+using Soundtrail.Contracts.Common;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Features.Scheduling;
 
@@ -20,11 +18,11 @@ public sealed class LookupExecutionCommandMessageExtensionsTests
             new DateTimeOffset(2026, 6, 5, 12, 0, 0, TimeSpan.Zero),
             CorrelationId.From("corr-1"));
 
-        var message = command.ToResolveCanonicalMetadataCommand();
+        var message = command.ToDto();
 
-        message.TargetProvider.Should().Be(ProviderName.MusicBrainz.Value);
-        message.CommandId.Should().Be(CommandId.For("ResolveCanonicalMetadata:mc_track_1"));
+        message.CommandId.Should().Be(CommandId.For("ResolveCanonicalMetadata:mc_track_1").Value);
         message.MusicCatalogId.Should().Be("mc_track_1");
+        message.Priority.Should().Be(LookupPriorityBand.High);
     }
 
     [Fact]
@@ -37,10 +35,10 @@ public sealed class LookupExecutionCommandMessageExtensionsTests
             new DateTimeOffset(2026, 6, 5, 12, 5, 0, TimeSpan.Zero),
             CorrelationId.From("corr-2"));
 
-        var message = command.ToResolveCanonicalMetadataCommand();
+        var message = command.ToDto();
 
-        message.TargetProvider.Should().Be(ProviderName.MusicBrainz.Value);
-        message.CommandId.Should().Be(CommandId.For("ResolveCanonicalMetadata:mc_track_2"));
+        message.CommandId.Should().Be(CommandId.For("ResolveCanonicalMetadata:mc_track_2").Value);
         message.MusicCatalogId.Should().Be("mc_track_2");
+        message.Priority.Should().Be(LookupPriorityBand.Low);
     }
 }

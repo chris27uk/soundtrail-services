@@ -1,4 +1,6 @@
 using FluentAssertions;
+using Soundtrail.Contracts;
+using Soundtrail.Contracts.Common;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Services.Tests.Api.Integration.Infrastructure;
 

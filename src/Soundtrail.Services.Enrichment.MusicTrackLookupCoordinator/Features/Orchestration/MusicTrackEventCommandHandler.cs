@@ -1,5 +1,6 @@
-using Soundtrail.Contracts;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
+using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Events;
 
 namespace Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Features.Orchestration;
 

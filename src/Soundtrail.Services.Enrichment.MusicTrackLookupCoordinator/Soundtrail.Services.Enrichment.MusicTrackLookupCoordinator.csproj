@@ -19,7 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Soundtrail.Contracts\Soundtrail.Contracts.csproj" />
-    <ProjectReference Include="..\Soundtrail.Services.Enrichment\Soundtrail.Services.Enrichment.csproj" />
+    <ProjectReference Include="..\Soundtrail.Domain\Soundtrail.Domain.csproj" />
   </ItemGroup>
 
 </Project>

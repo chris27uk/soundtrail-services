@@ -3,8 +3,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven;
+using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Services.Enrichment.Responder.Infrastructure.Raven;
 

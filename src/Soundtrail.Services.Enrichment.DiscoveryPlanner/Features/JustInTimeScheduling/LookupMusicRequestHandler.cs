@@ -3,6 +3,7 @@ using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeSchedul
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Idempotency;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
+using Soundtrail.Contracts;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search.Resolution;
 
@@ -33,7 +34,8 @@ public sealed class LookupMusicRequestHandler(
             throw new ResolutionFailedException(resolution.Outcome);
         }
 
-        var musicCatalogId = resolution.MusicCatalogId!;
+        var musicCatalogId = resolution.MusicCatalogId
+            ?? throw new ResolutionFailedException(resolution.Outcome);
         var existing = await rankedMusicCandidateStore.FindByMusicCatalogIdAsync(musicCatalogId, cancellationToken);
         var rankedMusicCandidate = existing is null
             ? RankedMusicCandidate.Create(request, musicCatalogId)

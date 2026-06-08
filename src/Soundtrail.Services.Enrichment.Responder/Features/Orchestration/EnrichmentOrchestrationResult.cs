@@ -1,4 +1,4 @@
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
+using Soundtrail.Domain.Events;
 
 namespace Soundtrail.Services.Enrichment.Features.Orchestration;
 

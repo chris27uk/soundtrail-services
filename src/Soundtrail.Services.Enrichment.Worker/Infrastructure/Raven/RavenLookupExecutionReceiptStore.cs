@@ -1,6 +1,6 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
+using Soundtrail.Contracts.Common;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven.Documents;
 

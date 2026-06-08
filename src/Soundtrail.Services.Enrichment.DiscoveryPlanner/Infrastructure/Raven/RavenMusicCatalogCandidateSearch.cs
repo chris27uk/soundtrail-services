@@ -1,5 +1,7 @@
 using Raven.Client.Documents;
 using Raven.Client.Documents.Linq;
+using Soundtrail.Contracts;
+using Soundtrail.Contracts.Common;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven.Indexes;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;

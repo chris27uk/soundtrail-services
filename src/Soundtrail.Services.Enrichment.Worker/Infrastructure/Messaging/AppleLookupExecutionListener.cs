@@ -1,12 +1,11 @@
 using Raven.Client.Documents.Session;
-using Soundtrail.Contracts;
-using Soundtrail.Contracts.Orchestrator;
-using Soundtrail.Contracts.Worker;
+using Soundtrail.Contracts.Commands;
+using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.Worker.Responses;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
+using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Responses;
+using Soundtrail.Services.Enrichment.Worker.Features.AppleLookupExecution;
 using Soundtrail.Services.Enrichment.Worker.Features.Execution;
-using Soundtrail.Services.Enrichment.Worker.Features.Execution.AppleLookupExecution;
 using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
@@ -31,8 +30,8 @@ public sealed class AppleLookupExecutionListener(ExecuteAppleLookupHandler handl
         return result.Response is null
             ? []
             : [new EnrichmentResponseDto(
-                result.Response.CommandId,
-                result.Response.MusicCatalogId,
+                result.Response.CommandId.Value,
+                result.Response.MusicCatalogId.Value,
                 result.Response.SourceProvider.Value,
                 result.Response.Priority,
                 result.Response.CreatedAt,
@@ -48,7 +47,7 @@ public sealed class AppleLookupExecutionListener(ExecuteAppleLookupHandler handl
                     reference.Provider.Value,
                     reference.Url,
                     reference.ExternalId,
-                    (ReferenceConfidenceDto)reference.Confidence)).ToArray(),
-                result.Response.CorrelationId)];
+                    reference.Confidence.ToString())).ToArray(),
+                result.Response.CorrelationId.Value)];
     }
 }

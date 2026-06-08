@@ -6,9 +6,10 @@ using Raven.Client.Documents.Conventions;
 using Raven.Client.Documents.Indexes;
 using Raven.Client.Documents.Session;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Idempotency;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
+using Soundtrail.Contracts;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
+using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven;
 

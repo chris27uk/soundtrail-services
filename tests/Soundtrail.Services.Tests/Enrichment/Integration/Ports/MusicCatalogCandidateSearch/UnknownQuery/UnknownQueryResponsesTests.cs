@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Soundtrail.Contracts;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Services.Tests.Enrichment.Integration.Ports.MusicCatalogCandidateSearch.KnownExactQuery;
 

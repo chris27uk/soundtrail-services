@@ -1,7 +1,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Soundtrail.Contracts.Worker;
+using Soundtrail.Contracts.Commands;
+using Soundtrail.Contracts.Events;
 using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Features.Orchestration;
 using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Infrastructure.Messaging;
 using Wolverine;

@@ -1,4 +1,4 @@
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
+using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 

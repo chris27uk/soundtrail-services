@@ -1,8 +1,7 @@
 using FluentAssertions;
-using Soundtrail.Contracts;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
+using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Enrichment.Worker.Features.Execution;
 using Soundtrail.Services.Enrichment.Worker.Features.Execution.MusicBrainzLookupExecution;
 using Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;

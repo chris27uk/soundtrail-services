@@ -1,6 +1,6 @@
-using Soundtrail.Contracts;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
+using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Events;
+using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Services.Tests.Enrichment.Unit.Infrastructure;
 

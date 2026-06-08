@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Soundtrail.Contracts;
 using Soundtrail.Contracts.Api;
+using Soundtrail.Contracts.Common;
 using Soundtrail.Services.Api.Features.Search.Queueing;
 using Soundtrail.Services.Api.Features.Search.TrackSearch;
 using Soundtrail.Services.Api.Infrastructure.Messaging;

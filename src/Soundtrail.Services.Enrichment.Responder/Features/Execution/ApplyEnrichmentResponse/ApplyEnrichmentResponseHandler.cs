@@ -1,8 +1,8 @@
 using Soundtrail.Services.Enrichment.Features.Orchestration;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Execution;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using System.Text.Json;
+using Soundtrail.Domain.Events;
+using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Responses;
 
 namespace Soundtrail.Services.Enrichment.Features.Execution.ApplyEnrichmentResponse;
 
@@ -15,14 +15,16 @@ public sealed class ApplyEnrichmentResponseHandler(
         EnrichmentResponse response,
         CancellationToken cancellationToken = default)
     {
-        var musicTrack = await MusicTrack.LoadAsync(
+        var stream = await musicTrackEventRepository.LoadEventsAsync(
             response.MusicCatalogId,
-            musicTrackEventRepository,
             cancellationToken);
-        musicTrack.Record(response);
-        var append = await musicTrack.SaveAsync(
-            musicTrackEventRepository,
+
+        var facts = MusicTrackFactBuilder.Build(stream, response);
+        var append = await musicTrackEventRepository.AppendEventsAsync(
+            response.MusicCatalogId,
+            stream.Version,
             response.CommandId,
+            facts,
             cancellationToken);
 
         if (!append.Appended)
@@ -38,7 +40,11 @@ public sealed class ApplyEnrichmentResponseHandler(
                 JsonSerializer.Serialize(response)),
             cancellationToken);
 
-        await musicTrackProjectionStore.StoreAsync(response.MusicCatalogId, musicTrack, cancellationToken);
+        var updatedStream = new MusicTrackStream(
+            append.Version,
+            stream.Facts.Concat(append.AppendedFacts).ToArray());
+
+        await musicTrackProjectionStore.StoreAsync(response.MusicCatalogId, updatedStream, cancellationToken);
         return new EnrichmentOrchestrationResult(append.AppendedFacts);
     }
 }

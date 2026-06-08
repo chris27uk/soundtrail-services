@@ -3,9 +3,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Subscriptions;
-using Soundtrail.Contracts;
-using Soundtrail.Contracts.Orchestrator.Events;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.MusicTracks;
+using Soundtrail.Contracts.Common;
+using Soundtrail.Contracts.Events;
+using Soundtrail.Domain.Events;
 using Wolverine;
 
 namespace Soundtrail.Services.Enrichment.Cdc.Infrastructure.Cdc;
@@ -16,6 +16,8 @@ public sealed class MusicTrackEventSubscriptionHostedService(
     ILogger<MusicTrackEventSubscriptionHostedService> logger) : BackgroundService
 {
     private const string SubscriptionName = "music-track-events-cdc";
+    private const string AppleMusicResolutionRequiredEventType = "AppleMusicResolutionRequired";
+    private const string YouTubeMusicResolutionRequiredEventType = "YouTubeMusicResolutionRequired";
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -103,15 +105,15 @@ public sealed class MusicTrackEventSubscriptionHostedService(
     {
         return @event.Type switch
             {
-                nameof(AppleMusicResolutionRequired) => AppleMusicResolutionRequiredDto(@event),
-                nameof(YouTubeMusicResolutionRequired) => YouTubeMusicResolutionRequiredDto(@event),
+                AppleMusicResolutionRequiredEventType => AppleMusicResolutionRequiredDto(@event),
+                YouTubeMusicResolutionRequiredEventType => YouTubeMusicResolutionRequiredDto(@event),
                 _ => null
             };
     }
 
-    private static YouTubeMusicResolutionRequiredDto YouTubeMusicResolutionRequiredDto(RavenMusicTrackEventDto @event)
+    private static YouTubeMusicResolutionRequiredMessageDto YouTubeMusicResolutionRequiredDto(RavenMusicTrackEventDto @event)
     {
-        return new YouTubeMusicResolutionRequiredDto(
+        return new YouTubeMusicResolutionRequiredMessageDto(
             @event.MusicCatalogId ?? string.Empty,
             Enum.Parse<LookupPriorityBand>(@event.Priority ?? nameof(LookupPriorityBand.Low), ignoreCase: true),
             @event.CorrelationId ?? string.Empty,
@@ -119,9 +121,9 @@ public sealed class MusicTrackEventSubscriptionHostedService(
             @event.ObservedAt);
     }
 
-    private static AppleMusicResolutionRequiredDto AppleMusicResolutionRequiredDto(RavenMusicTrackEventDto @event)
+    private static AppleMusicResolutionRequiredMessageDto AppleMusicResolutionRequiredDto(RavenMusicTrackEventDto @event)
     {
-        return new AppleMusicResolutionRequiredDto(
+        return new AppleMusicResolutionRequiredMessageDto(
             @event.MusicCatalogId ?? string.Empty,
             Enum.Parse<LookupPriorityBand>(@event.Priority ?? nameof(LookupPriorityBand.Low), ignoreCase: true),
             @event.CorrelationId ?? string.Empty,
