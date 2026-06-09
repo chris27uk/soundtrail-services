@@ -16,8 +16,7 @@ public sealed class MusicTrackEventSubscriptionHostedService(
     ILogger<MusicTrackEventSubscriptionHostedService> logger) : BackgroundService
 {
     private const string SubscriptionName = "music-track-events-cdc";
-    private const string AppleMusicResolutionRequiredEventType = "AppleMusicResolutionRequired";
-    private const string YouTubeMusicResolutionRequiredEventType = "YouTubeMusicResolutionRequired";
+    private const string PlaybackReferencesResolutionRequiredEventType = "PlaybackReferencesResolutionRequired";
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -105,29 +104,25 @@ public sealed class MusicTrackEventSubscriptionHostedService(
     {
         return @event.Type switch
             {
-                AppleMusicResolutionRequiredEventType => AppleMusicResolutionRequiredDto(@event),
-                YouTubeMusicResolutionRequiredEventType => YouTubeMusicResolutionRequiredDto(@event),
+                PlaybackReferencesResolutionRequiredEventType => PlaybackReferencesResolutionRequiredDto(@event),
                 _ => null
             };
     }
 
-    private static YouTubeMusicResolutionRequiredMessageDto YouTubeMusicResolutionRequiredDto(RavenMusicTrackEventDto @event)
+    private static PlaybackReferencesResolutionRequiredMessageDto PlaybackReferencesResolutionRequiredDto(RavenMusicTrackEventDto @event)
     {
-        return new YouTubeMusicResolutionRequiredMessageDto(
+        return new PlaybackReferencesResolutionRequiredMessageDto(
             @event.MusicCatalogId ?? string.Empty,
             Enum.Parse<LookupPriorityBand>(@event.Priority ?? nameof(LookupPriorityBand.Low), ignoreCase: true),
             @event.CorrelationId ?? string.Empty,
             @event.SourceProvider,
-            @event.ObservedAt);
-    }
-
-    private static AppleMusicResolutionRequiredMessageDto AppleMusicResolutionRequiredDto(RavenMusicTrackEventDto @event)
-    {
-        return new AppleMusicResolutionRequiredMessageDto(
-            @event.MusicCatalogId ?? string.Empty,
-            Enum.Parse<LookupPriorityBand>(@event.Priority ?? nameof(LookupPriorityBand.Low), ignoreCase: true),
-            @event.CorrelationId ?? string.Empty,
-            @event.SourceProvider,
-            @event.ObservedAt);
+            @event.ObservedAt,
+            new Soundtrail.Contracts.Commands.PlaybackReferenceLookupKeyDto(
+                Enum.Parse<Soundtrail.Contracts.Commands.PlaybackReferenceLookupModeDto>(
+                    @event.LookupMode ?? nameof(Soundtrail.Contracts.Commands.PlaybackReferenceLookupModeDto.ByTrackNameAndArtist),
+                    ignoreCase: true),
+                @event.Isrc,
+                @event.Title,
+                @event.Artist));
     }
 }

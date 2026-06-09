@@ -35,23 +35,18 @@ internal static class RavenMappings
                 ExternalId = providerPlaybackReferenceResolved.ExternalId,
                 Url = providerPlaybackReferenceResolved.Url.ToString()
             },
-            AppleMusicResolutionRequired appleMusicResolutionRequired => new RavenMusicTrackFactDocument
+            PlaybackReferencesResolutionRequired playbackReferencesResolutionRequired => new RavenMusicTrackFactDocument
             {
-                Type = nameof(AppleMusicResolutionRequired),
-                SourceProvider = appleMusicResolutionRequired.SourceProvider.ToString(),
-                ObservedAt = appleMusicResolutionRequired.ObservedAt,
-                Priority = appleMusicResolutionRequired.Priority.ToString(),
-                CorrelationId = appleMusicResolutionRequired.CorrelationId,
-                MusicCatalogId = appleMusicResolutionRequired.MusicCatalogId
-            },
-            YouTubeMusicResolutionRequired youTubeMusicResolutionRequired => new RavenMusicTrackFactDocument
-            {
-                Type = nameof(YouTubeMusicResolutionRequired),
-                SourceProvider = youTubeMusicResolutionRequired.SourceProvider.ToString(),
-                ObservedAt = youTubeMusicResolutionRequired.ObservedAt,
-                Priority = youTubeMusicResolutionRequired.Priority.ToString(),
-                CorrelationId = youTubeMusicResolutionRequired.CorrelationId,
-                MusicCatalogId = youTubeMusicResolutionRequired.MusicCatalogId
+                Type = nameof(PlaybackReferencesResolutionRequired),
+                SourceProvider = playbackReferencesResolutionRequired.SourceProvider.ToString(),
+                ObservedAt = playbackReferencesResolutionRequired.ObservedAt,
+                Priority = playbackReferencesResolutionRequired.Priority.ToString(),
+                CorrelationId = playbackReferencesResolutionRequired.CorrelationId,
+                MusicCatalogId = playbackReferencesResolutionRequired.MusicCatalogId,
+                LookupMode = playbackReferencesResolutionRequired.LookupKey.Mode.ToString(),
+                Isrc = playbackReferencesResolutionRequired.LookupKey.Isrc,
+                Title = playbackReferencesResolutionRequired.LookupKey.Title,
+                Artist = playbackReferencesResolutionRequired.LookupKey.Artist
             },
             TrackLinkedToAlbum trackLinkedToAlbum => new RavenMusicTrackFactDocument
             {
@@ -89,18 +84,17 @@ internal static class RavenMappings
                 new Uri(dto.Url ?? string.Empty),
                 ProviderName.From(dto.SourceProvider),
                 dto.ObservedAt),
-            nameof(AppleMusicResolutionRequired) => new AppleMusicResolutionRequired(
+            nameof(PlaybackReferencesResolutionRequired) => new PlaybackReferencesResolutionRequired(
                 MusicCatalogId.From(dto.MusicCatalogId ?? string.Empty),
                 Enum.Parse<LookupPriorityBand>(dto.Priority ?? string.Empty, ignoreCase: true),
                 CorrelationId.From(dto.CorrelationId ?? string.Empty),
                 ProviderName.From(dto.SourceProvider),
-                dto.ObservedAt),
-            nameof(YouTubeMusicResolutionRequired) => new YouTubeMusicResolutionRequired(
-                MusicCatalogId.From(dto.MusicCatalogId ?? string.Empty),
-                Enum.Parse<LookupPriorityBand>(dto.Priority ?? string.Empty, ignoreCase: true),
-                CorrelationId.From(dto.CorrelationId ?? string.Empty),
-                ProviderName.From(dto.SourceProvider),
-                dto.ObservedAt),
+                dto.ObservedAt,
+                new PlaybackReferenceLookupKey(
+                    Enum.Parse<PlaybackReferenceLookupMode>(dto.LookupMode ?? string.Empty, ignoreCase: true),
+                    dto.Isrc,
+                    dto.Title,
+                    dto.Artist)),
             nameof(TrackLinkedToAlbum) => new TrackLinkedToAlbum(
                 dto.AlbumId,
                 dto.AlbumTitle,

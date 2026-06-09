@@ -1,6 +1,6 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Contracts.Worker.Responses;
+using Soundtrail.Contracts.Responses;
 using Soundtrail.Domain.Model;
 using Soundtrail.Services.Enrichment.Features.Execution.ApplyEnrichmentResponse;
 using Soundtrail.Domain.Responses;

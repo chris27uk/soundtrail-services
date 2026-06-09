@@ -34,8 +34,11 @@ builder.UseWolverine(opts =>
     opts.ListenToAzureServiceBusQueue(serviceBusOptions.LookupMusicRequestsQueueName)
         .ProcessInline();
 
-    opts.PublishMessage<ResolveCanonicalMetadataCommandDto>()
+    opts.PublishMessage<LookupCanonicalMusicMetadataCommandDto>()
         .ToAzureServiceBusQueue(serviceBusOptions.MusicBrainzLookupQueueName);
+
+    opts.PublishMessage<ResolvePlaybackReferencesCommandDto>()
+        .ToAzureServiceBusQueue(serviceBusOptions.PlaybackReferencesLookupQueueName);
 });
 
 builder.Services.AddSchedulerRavenDocumentStore(builder.Configuration);

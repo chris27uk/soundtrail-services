@@ -1,13 +1,13 @@
-using Soundtrail.Contracts;
-
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
 
 public sealed record LookupSchedulingResult(
-    LookupMusicCommand? Command)
+    IReadOnlyList<LookupPhaseCommand> Commands)
 {
-    public bool ShouldSchedule => Command is not null;
+    public bool ShouldSchedule => Commands.Count > 0;
 
-    public static LookupSchedulingResult DoNotSchedule() => new(Command: null);
+    public LookupPhaseCommand? Command => Commands.SingleOrDefault();
 
-    public static LookupSchedulingResult Schedule(LookupMusicCommand command) => new(command);
+    public static LookupSchedulingResult DoNotSchedule() => new([]);
+
+    public static LookupSchedulingResult Schedule(params LookupPhaseCommand[] commands) => new(commands);
 }

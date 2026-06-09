@@ -1,11 +1,11 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Commands;
-using Soundtrail.Contracts.Worker.Responses;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Services.Enrichment.Worker.Features.Execution;
-using Soundtrail.Services.Enrichment.Worker.Features.Execution.MusicBrainzLookupExecution;
+using Soundtrail.Contracts.Responses;
 using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
+using Soundtrail.Services.Enrichment.Worker.Features.MusicBrainzLookupExecution;
 using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
@@ -15,17 +15,18 @@ public sealed class MusicBrainzLookupExecutionListener(ExecuteMusicBrainzLookupH
     [WolverineHandler]
     [Transactional]
     public async Task<object[]> Handle(
-        ResolveCanonicalMetadataCommandDto dto,
+        LookupCanonicalMusicMetadataCommandDto dto,
         IAsyncDocumentSession _,
         CancellationToken cancellationToken = default)
     {
         var result = await handler.Handle(
-            new ResolveCanonicalMetadataCommand(
+            new LookupCanonicalMusicMetadataCommand(
                 CommandId.From(dto.CommandId),
                 MusicCatalogId.From(dto.MusicCatalogId),
                 dto.Priority,
                 dto.CreatedAt,
-                CorrelationId.From(dto.CorrelationId)),
+                CorrelationId.From(dto.CorrelationId),
+                ToLookup(dto)),
             cancellationToken);
         return result.Response is null
             ? []
@@ -50,4 +51,12 @@ public sealed class MusicBrainzLookupExecutionListener(ExecuteMusicBrainzLookupH
                     reference.Confidence.ToString())).ToArray(),
                 result.Response.CorrelationId.Value)];
     }
+
+    private static CanonicalMusicMetadataLookup ToLookup(LookupCanonicalMusicMetadataCommandDto dto) =>
+        !string.IsNullOrWhiteSpace(dto.Isrc)
+            ? CanonicalMusicMetadataLookup.FromIsrc(dto.Isrc)
+            : CanonicalMusicMetadataLookup.FromTrackNameArtistAndAlbum(
+                dto.TrackName ?? string.Empty,
+                dto.ArtistName ?? string.Empty,
+                dto.AlbumName);
 }

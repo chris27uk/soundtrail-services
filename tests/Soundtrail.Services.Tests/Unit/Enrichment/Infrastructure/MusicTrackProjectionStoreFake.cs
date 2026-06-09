@@ -31,6 +31,8 @@ public sealed class MusicTrackProjectionStoreFake : IMusicTrackProjectionStore
 
         public ProviderReference? YouTubeMusic { get; private set; }
 
+        public ProviderReference? Spotify { get; private set; }
+
         public bool IsPlayable { get; private set; }
 
         public void Apply(MusicTrackStream stream)
@@ -38,6 +40,7 @@ public sealed class MusicTrackProjectionStoreFake : IMusicTrackProjectionStore
             ProjectedSongMetadata? canonicalMetadata = null;
             ProviderReference? apple = null;
             ProviderReference? youTubeMusic = null;
+            ProviderReference? spotify = null;
 
             foreach (var fact in stream.Facts)
             {
@@ -67,6 +70,9 @@ public sealed class MusicTrackProjectionStoreFake : IMusicTrackProjectionStore
                             case var value when value == ProviderName.YoutubeMusic:
                                 youTubeMusic = reference;
                                 break;
+                            case var value when value == ProviderName.Spotify:
+                                spotify = reference;
+                                break;
                             default:
                                 throw new ArgumentOutOfRangeException(
                                     nameof(providerPlaybackReferenceResolved.Provider),
@@ -81,7 +87,8 @@ public sealed class MusicTrackProjectionStoreFake : IMusicTrackProjectionStore
             CanonicalMetadata = canonicalMetadata;
             Apple = apple;
             YouTubeMusic = youTubeMusic;
-            IsPlayable = canonicalMetadata is not null && (apple is not null || youTubeMusic is not null);
+            Spotify = spotify;
+            IsPlayable = canonicalMetadata is not null && (apple is not null || youTubeMusic is not null || spotify is not null);
         }
     }
 

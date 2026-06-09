@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Soundtrail.Contracts.Commands;
 using Soundtrail.Contracts.Events;
-using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Features.Orchestration;
 using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Infrastructure.Messaging;
 using Wolverine;
 using Wolverine.AzureServiceBus;
@@ -29,14 +28,10 @@ builder.UseWolverine(opts =>
     opts.ListenToAzureServiceBusQueue(serviceBusOptions.MusicTrackEventsQueueName)
         .ProcessInline();
 
-    opts.PublishMessage<ResolveApplePlaybackReferenceCommandDto>()
-        .ToAzureServiceBusQueue(serviceBusOptions.AppleLookupQueueName);
-
-    opts.PublishMessage<ResolveYouTubeMusicPlaybackReferenceCommandDto>()
-        .ToAzureServiceBusQueue(serviceBusOptions.YouTubeMusicLookupQueueName);
+    opts.PublishMessage<ResolvePlaybackReferencesCommandDto>()
+        .ToAzureServiceBusQueue(serviceBusOptions.PlaybackReferencesLookupQueueName);
 });
 
-builder.Services.AddScoped<MusicTrackEventCommandHandler>();
 builder.Services.AddScoped<MusicTrackEventListener>();
 
 var host = builder.Build();

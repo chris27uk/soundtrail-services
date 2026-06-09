@@ -1,6 +1,5 @@
 using Raven.Client.Documents.Session;
-using Soundtrail.Contracts.Api;
-using Soundtrail.Contracts.Common;
+using Soundtrail.Contracts.Commands;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Wolverine.Attributes;
@@ -21,10 +20,8 @@ public sealed class LookupMusicRequestListener(LookupMusicRequestHandler handler
             requestDto.TrustLevel,
             requestDto.RiskScore,
             requestDto.OccurredAt,
-            CorrelationId.From(requestDto.CorrelationId));
+            Soundtrail.Contracts.Common.CorrelationId.From(requestDto.CorrelationId));
         var result = await handler.ScheduleAsync(request, cancellationToken);
-        return result.ShouldSchedule
-            ? [result.Command!.ToDto()]
-            : [];
+        return result.Commands.Select(command => command.ToMessage()).ToArray();
     }
 }

@@ -7,8 +7,9 @@ namespace Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 internal sealed class RavenEmbeddedTestDatabase : IDisposable
 {
     private static readonly object Sync = new();
-    private static string? dataDirectory;
     private static bool started;
+    private static string? dataDirectory;
+    private static string? logsDirectory;
 
     private readonly IDocumentStore store;
 
@@ -51,10 +52,23 @@ internal sealed class RavenEmbeddedTestDatabase : IDisposable
             dataDirectory = Path.Combine(
                 Path.GetTempPath(),
                 "soundtrail-raven-tests",
+                "data",
+                Guid.NewGuid().ToString("N"));
+            logsDirectory = Path.Combine(
+                Path.GetTempPath(),
+                "soundtrail-raven-tests",
+                "logs",
                 Guid.NewGuid().ToString("N"));
 
-            Environment.SetEnvironmentVariable("RAVEN_ARGS", $"--ServerUrl=http://127.0.0.1:0 --DataDir=\"{dataDirectory}\"");
-            EmbeddedServer.Instance.StartServer();
+            Directory.CreateDirectory(dataDirectory);
+            Directory.CreateDirectory(logsDirectory);
+
+            EmbeddedServer.Instance.StartServer(new ServerOptions
+            {
+                ServerUrl = "http://127.0.0.1:0",
+                DataDirectory = dataDirectory,
+                LogsPath = logsDirectory
+            });
 
             started = true;
         }

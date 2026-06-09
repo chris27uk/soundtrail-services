@@ -1,5 +1,6 @@
 using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Idempotency;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
@@ -10,17 +11,18 @@ namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogSchedu
 public sealed class DiscoveryBacklogScheduler(
     IRankedMusicCandidateStore rankedMusicCandidateStore,
     IActiveLookupWorkStore activeLookupWorkStore,
-    DiscoveryPriorityPolicy discoveryPriorityPolicy)
+    DiscoveryPriorityPolicy discoveryPriorityPolicy,
+    ILocalMusicTrackSearch localMusicTrackSearch)
 {
     private static readonly TimeSpan ActiveReservationDuration = TimeSpan.FromMinutes(15);
 
-    public async Task<IReadOnlyList<LookupMusicCommand>> RunOnceAsync(
+    public async Task<IReadOnlyList<LookupPhaseCommand>> RunOnceAsync(
         DateTimeOffset now,
         int take,
         CancellationToken cancellationToken = default)
     {
         var candidates = await rankedMusicCandidateStore.GetPlanningCandidatesAsync(now, take, cancellationToken);
-        var commands = new List<LookupMusicCommand>();
+        var commands = new List<LookupPhaseCommand>();
 
         foreach (var candidate in candidates)
         {
@@ -30,7 +32,13 @@ public sealed class DiscoveryBacklogScheduler(
                 continue;
             }
 
-            var command = BuildCommand(candidate, plan, now);
+            var localTrack = await localMusicTrackSearch.GetByMusicCatalogIdAsync(candidate.MusicCatalogId, cancellationToken);
+            var command = BuildCommand(candidate, plan, now, localTrack);
+            if (command is null)
+            {
+                continue;
+            }
+
             var acquired = await activeLookupWorkStore.TryAcquireAsync(
                 command.CommandId, now.Add(ActiveReservationDuration), cancellationToken);
             if (!acquired)
@@ -44,16 +52,41 @@ public sealed class DiscoveryBacklogScheduler(
         return commands;
     }
 
-    private static LookupMusicCommand BuildCommand(
+    private static LookupPhaseCommand? BuildCommand(
         RankedMusicCandidate candidate,
         PriorityPlan plan,
-        DateTimeOffset now)
+        DateTimeOffset now,
+        LocalMusicTrackSearchResult? localTrack)
     {
-        return new LookupMusicCommand(
-            CommandId: CommandId.For(candidate.MusicCatalogId.Value),
-            MusicCatalogId: candidate.MusicCatalogId,
-            Priority: plan.Priority!.Value,
-            CreatedAt: now,
-            CorrelationId: CorrelationId.New());
+        if (localTrack?.IsPlayable == true)
+        {
+            return null;
+        }
+
+        var playbackLookupKey = localTrack?.ToPlaybackLookupKey();
+        if (playbackLookupKey is not null && localTrack!.HasIsrc())
+        {
+            return new ResolvePlaybackReferencesCommand(
+                CommandId.For($"ResolvePlaybackReferences:{candidate.MusicCatalogId.Value}"),
+                candidate.MusicCatalogId,
+                plan.Priority!.Value,
+                now,
+                CorrelationId.New(),
+                playbackLookupKey);
+        }
+
+        var canonicalLookup = localTrack?.ToCanonicalMusicMetadataLookup();
+        if (canonicalLookup is null)
+        {
+            return null;
+        }
+
+        return new LookupCanonicalMusicMetadataCommand(
+            CommandId.For($"LookupCanonicalMusicMetadata:{candidate.MusicCatalogId.Value}"),
+            candidate.MusicCatalogId,
+            plan.Priority!.Value,
+            now,
+            CorrelationId.New(),
+            canonicalLookup);
     }
 }

@@ -8,7 +8,5 @@ public sealed class ServiceBusOptions
 
     public string MusicTrackEventsQueueName { get; init; } = "music-track-events";
 
-    public string AppleLookupQueueName { get; init; } = "lookup-apple";
-
-    public string YouTubeMusicLookupQueueName { get; init; } = "lookup-youtubemusic";
+    public string PlaybackReferencesLookupQueueName { get; init; } = "lookup-playback-references";
 }

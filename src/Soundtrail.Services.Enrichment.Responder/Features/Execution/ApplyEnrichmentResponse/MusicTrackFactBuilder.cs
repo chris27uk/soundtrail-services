@@ -47,11 +47,6 @@ internal static class MusicTrackFactBuilder
 
         foreach (var reference in response.References)
         {
-            if (sourceProvider != reference.Provider)
-            {
-                continue;
-            }
-
             var current = state.GetReference(reference.Provider);
             if (!ShouldRecordResolvedReference(current, reference))
             {
@@ -80,27 +75,42 @@ internal static class MusicTrackFactBuilder
 
         var facts = new List<MusicTrackFact>();
 
-        if (state.Apple is null && !state.AppleMusicResolutionRequired)
+        if (state.HasPlaybackReference() || state.PlaybackReferencesResolutionRequired)
         {
-            facts.Add(new AppleMusicResolutionRequired(
-                response.MusicCatalogId,
-                response.Priority,
-                response.CorrelationId,
-                response.SourceProvider,
-                response.CreatedAt));
+            return facts;
         }
 
-        if (state.YouTubeMusic is null && !state.YouTubeMusicResolutionRequired)
+        var lookupKey = BuildPlaybackReferenceLookupKey(response);
+        if (lookupKey is null)
         {
-            facts.Add(new YouTubeMusicResolutionRequired(
-                response.MusicCatalogId,
-                response.Priority,
-                response.CorrelationId,
-                response.SourceProvider,
-                response.CreatedAt));
+            return facts;
         }
+
+        facts.Add(new PlaybackReferencesResolutionRequired(
+            response.MusicCatalogId,
+            response.Priority,
+            response.CorrelationId,
+            response.SourceProvider,
+            response.CreatedAt,
+            lookupKey));
 
         return facts;
+    }
+
+    private static PlaybackReferenceLookupKey? BuildPlaybackReferenceLookupKey(EnrichmentResponse response)
+    {
+        if (!string.IsNullOrWhiteSpace(response.Metadata?.Isrc))
+        {
+            return PlaybackReferenceLookupKey.ByIsrc(response.Metadata.Isrc);
+        }
+
+        if (!string.IsNullOrWhiteSpace(response.Metadata?.Title)
+            && !string.IsNullOrWhiteSpace(response.Metadata.Artist))
+        {
+            return PlaybackReferenceLookupKey.ByTrackNameAndArtist(response.Metadata.Title, response.Metadata.Artist);
+        }
+
+        return null;
     }
 
     private static bool ShouldRecordResolvedReference(
@@ -128,9 +138,9 @@ internal static class MusicTrackFactBuilder
 
         public ProviderReference? YouTubeMusic { get; private set; }
 
-        public bool AppleMusicResolutionRequired { get; private set; }
+        public ProviderReference? Spotify { get; private set; }
 
-        public bool YouTubeMusicResolutionRequired { get; private set; }
+        public bool PlaybackReferencesResolutionRequired { get; private set; }
 
         public static MusicTrackState From(MusicTrackStream stream)
         {
@@ -165,20 +175,21 @@ internal static class MusicTrackFactBuilder
                     if (providerPlaybackReferenceResolved.Provider == ProviderName.AppleMusic)
                     {
                         Apple = reference;
-                        AppleMusicResolutionRequired = false;
                     }
                     else if (providerPlaybackReferenceResolved.Provider == ProviderName.YoutubeMusic)
                     {
                         YouTubeMusic = reference;
-                        YouTubeMusicResolutionRequired = false;
+                    }
+                    else if (providerPlaybackReferenceResolved.Provider == ProviderName.Spotify)
+                    {
+                        Spotify = reference;
                     }
 
+                    PlaybackReferencesResolutionRequired = false;
+
                     break;
-                case AppleMusicResolutionRequired _:
-                    AppleMusicResolutionRequired = true;
-                    break;
-                case YouTubeMusicResolutionRequired _:
-                    YouTubeMusicResolutionRequired = true;
+                case PlaybackReferencesResolutionRequired _:
+                    PlaybackReferencesResolutionRequired = true;
                     break;
             }
         }
@@ -186,6 +197,9 @@ internal static class MusicTrackFactBuilder
         public bool HasCanonicalMetadata() =>
             !string.IsNullOrWhiteSpace(title)
             && !string.IsNullOrWhiteSpace(artist);
+
+        public bool HasPlaybackReference() =>
+            Apple is not null || YouTubeMusic is not null || Spotify is not null;
 
         public bool ShouldRecordMinimalInfo(SongMetadata metadata)
         {
@@ -206,6 +220,7 @@ internal static class MusicTrackFactBuilder
             {
                 _ when provider == ProviderName.AppleMusic => Apple,
                 _ when provider == ProviderName.YoutubeMusic => YouTubeMusic,
+                _ when provider == ProviderName.Spotify => Spotify,
                 _ => throw new ArgumentOutOfRangeException(nameof(provider), provider, null)
             };
     }

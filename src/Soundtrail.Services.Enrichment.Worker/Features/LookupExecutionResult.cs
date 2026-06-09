@@ -1,6 +1,6 @@
 using Soundtrail.Domain.Responses;
 
-namespace Soundtrail.Services.Enrichment.Worker.Features.Execution;
+namespace Soundtrail.Services.Enrichment.Worker.Features;
 
 public sealed record LookupExecutionResult(
     LookupExecutionOutcome Outcome,

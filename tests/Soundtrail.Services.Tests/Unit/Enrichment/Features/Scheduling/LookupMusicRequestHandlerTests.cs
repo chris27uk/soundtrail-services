@@ -1,5 +1,7 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling;
@@ -34,10 +36,29 @@ public class LookupMusicRequestHandlerTests
         var env = LookupMusicRequestHandlerTestEnvironment.WithNoExistingCandidates();
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
         env.Search.ResolveAs(musicCatalogId);
-        await env.ActiveWorkStore.TryAcquireAsync(CommandId.For(musicCatalogId.Value), DateTimeOffset.UtcNow.AddMinutes(5), CancellationToken.None);
+        await env.ActiveWorkStore.TryAcquireAsync(CommandId.For($"ResolveCanonicalMetadataFromMusicBrainz:{musicCatalogId.Value}"), DateTimeOffset.UtcNow.AddMinutes(5), CancellationToken.None);
 
         var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10), CancellationToken.None);
 
         result.ShouldSchedule.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Given_Local_Search_Has_Isrc_When_Handling_A_Schedulable_Request_Then_Playback_References_Work_Is_Scheduled()
+    {
+        var env = LookupMusicRequestHandlerTestEnvironment.WithNoExistingCandidates();
+        env.Search.ResolveAs(MusicCatalogId.From("mc_track_1"));
+        env.LocalSearch.Seed(new LocalMusicTrackSearchResult(
+            MusicCatalogId.From("mc_track_1"),
+            "Song A",
+            "Artist A",
+            "isrc-1",
+            "mbid-1",
+            123000,
+            IsPlayable: false));
+
+        var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10), CancellationToken.None);
+
+        result.Commands.Should().ContainSingle().Which.Should().BeOfType<ResolvePlaybackReferencesCommand>();
     }
 }

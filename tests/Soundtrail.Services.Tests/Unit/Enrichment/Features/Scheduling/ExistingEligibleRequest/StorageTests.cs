@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
-using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 

@@ -8,6 +8,7 @@ using Raven.Client.Documents.Session;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Idempotency;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
 using Soundtrail.Contracts;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Domain.Model;
 
@@ -44,6 +45,7 @@ public static class RavenServiceCollectionExtensions
         services.AddScoped<IMusicTrackProjectionStore, RavenMusicTrackProjectionStore>();
         services.AddScoped<IProviderSnapshotStore, RavenProviderSnapshotStore>();
         services.AddSingleton<IMusicCatalogCandidateSearch, RavenMusicCatalogCandidateSearch>();
+        services.AddSingleton<ILocalMusicTrackSearch, RavenLocalMusicTrackSearch>();
         return services;
     }
 }

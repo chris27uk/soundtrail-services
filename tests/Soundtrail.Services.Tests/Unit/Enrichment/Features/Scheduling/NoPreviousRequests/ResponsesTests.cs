@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -100,7 +99,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.NoPrevio
 
             var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
 
-            result.Command?.CommandId.Should().Be(CommandId.For("mc_track_1"));
+            result.Command?.CommandId.Should().Be(CommandId.For("ResolveCanonicalMetadataFromMusicBrainz:mc_track_1"));
         }
 
         [Fact]

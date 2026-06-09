@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -13,7 +12,6 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.Existing
         {
             const string musicCatalogId = "mc_track_1";
             var env = LookupMusicRequestHandlerTestEnvironment.WithExistingEligibleCandidate(musicCatalogId);
-            env.Search.ResolveAs(musicCatalogId);
 
             var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 15));
 

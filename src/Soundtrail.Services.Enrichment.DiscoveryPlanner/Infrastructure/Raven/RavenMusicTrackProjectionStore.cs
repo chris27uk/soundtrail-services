@@ -29,11 +29,13 @@ public sealed class RavenMusicTrackProjectionStore(
     {
         string? title = null;
         string? artist = null;
+        string? albumTitle = null;
         string? isrc = null;
         string? mbid = null;
         int? durationMs = null;
         ProviderReference? apple = null;
         ProviderReference? youTubeMusic = null;
+        ProviderReference? spotify = null;
 
         foreach (var fact in stream.Facts)
         {
@@ -62,6 +64,9 @@ public sealed class RavenMusicTrackProjectionStore(
                         case var provider when provider == ProviderName.YoutubeMusic:
                             youTubeMusic = reference;
                             break;
+                        case var provider when provider == ProviderName.Spotify:
+                            spotify = reference;
+                            break;
                         default:
                             throw new ArgumentOutOfRangeException(
                                 nameof(providerPlaybackReferenceResolved.Provider),
@@ -69,6 +74,9 @@ public sealed class RavenMusicTrackProjectionStore(
                                 null);
                     }
 
+                    break;
+                case TrackLinkedToAlbum trackLinkedToAlbum:
+                    albumTitle = trackLinkedToAlbum.AlbumTitle;
                     break;
             }
         }
@@ -86,6 +94,7 @@ public sealed class RavenMusicTrackProjectionStore(
 
             document.Title = title;
             document.Artist = artist;
+            document.AlbumTitle = albumTitle;
             document.Isrc = isrc;
             document.Mbid = mbid;
             document.DurationMs = durationMs;
@@ -117,9 +126,14 @@ public sealed class RavenMusicTrackProjectionStore(
             };
         }
 
+        if (spotify is not null)
+        {
+            document.SpotifyId = spotify.ExternalId;
+        }
+
         document.IsPlayable =
             !string.IsNullOrWhiteSpace(title)
             && !string.IsNullOrWhiteSpace(artist)
-            && (apple is not null || youTubeMusic is not null);
+            && (apple is not null || youTubeMusic is not null || spotify is not null);
     }
 }

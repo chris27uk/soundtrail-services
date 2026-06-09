@@ -1,5 +1,6 @@
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
@@ -12,6 +13,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
         private readonly FakeMusicCatalogCandidateSearch search;
         private readonly RankedMusicCandidateStoreFake rankedMusicCandidateStoreFake;
         private readonly ActiveLookupWorkStoreFake activeLookupWorkStoreFake;
+        private readonly LocalMusicTrackSearchFake localMusicTrackSearchFake;
 
         private LookupMusicRequestHandlerTestEnvironment(
             FakeMusicCatalogCandidateSearch search,
@@ -20,6 +22,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
             this.search = search;
             this.rankedMusicCandidateStoreFake = rankedMusicCandidateStoreFake;
             this.activeLookupWorkStoreFake = new ActiveLookupWorkStoreFake();
+            this.localMusicTrackSearchFake = new LocalMusicTrackSearchFake();
             this.Planner = new DiscoveryPriorityPolicy();
             this.ResolutionPolicy = new MusicCatalogResolutionPolicy();
             this.Handler = new LookupMusicRequestHandler(
@@ -27,7 +30,8 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
                 rankedMusicCandidateStoreFake,
                 this.Planner,
                 this.ResolutionPolicy,
-                this.activeLookupWorkStoreFake);
+                this.activeLookupWorkStoreFake,
+                this.localMusicTrackSearchFake);
         }
 
         public LookupMusicRequestHandler Handler { get; }
@@ -39,6 +43,8 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
         public FakeMusicCatalogCandidateSearch Search => this.search;
 
         public ActiveLookupWorkStoreFake ActiveWorkStore => this.activeLookupWorkStoreFake;
+
+        public LocalMusicTrackSearchFake LocalSearch => this.localMusicTrackSearchFake;
 
         public IReadOnlyList<RankedMusicCandidate> RankedMusicCandidates => this.rankedMusicCandidateStoreFake.All;
 

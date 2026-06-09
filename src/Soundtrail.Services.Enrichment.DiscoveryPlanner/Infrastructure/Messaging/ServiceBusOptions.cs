@@ -10,9 +10,7 @@ public sealed class ServiceBusOptions
 
     public string MusicBrainzLookupQueueName { get; init; } = "lookup-musicbrainz";
 
-    public string AppleLookupQueueName { get; init; } = "lookup-apple";
-
-    public string YouTubeMusicLookupQueueName { get; init; } = "lookup-youtubemusic";
+    public string PlaybackReferencesLookupQueueName { get; init; } = "lookup-playback-references";
 
     public string EnrichmentResponsesQueueName { get; init; } = "enrichment-responses";
 }

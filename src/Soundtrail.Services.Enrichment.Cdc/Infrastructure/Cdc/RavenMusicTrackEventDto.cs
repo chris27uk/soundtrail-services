@@ -13,5 +13,13 @@ namespace Soundtrail.Services.Enrichment.Cdc.Infrastructure.Cdc
         public string? Priority { get; set; }
 
         public string? CorrelationId { get; set; }
+
+        public string? LookupMode { get; set; }
+
+        public string? Isrc { get; set; }
+
+        public string? Title { get; set; }
+
+        public string? Artist { get; set; }
     }
 }

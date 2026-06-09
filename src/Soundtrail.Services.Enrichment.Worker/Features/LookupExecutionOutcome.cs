@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Enrichment.Worker.Features.Execution;
+namespace Soundtrail.Services.Enrichment.Worker.Features;
 
 public enum LookupExecutionOutcome
 {

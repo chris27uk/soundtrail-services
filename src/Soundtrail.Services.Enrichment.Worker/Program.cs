@@ -1,11 +1,12 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Soundtrail.Contracts.Worker.Responses;
-using Soundtrail.Services.Enrichment.Worker.Features.AppleLookupExecution;
-using Soundtrail.Services.Enrichment.Worker.Features.Execution.MusicBrainzLookupExecution;
-using Soundtrail.Services.Enrichment.Worker.Features.Execution.YouTubeMusicLookupExecution;
+using Soundtrail.Contracts.Responses;
+using Soundtrail.Services.Enrichment.Worker.Features.MusicBrainzLookupExecution;
+using Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
+using Soundtrail.Services.Enrichment.Worker.Infrastructure.Providers.MusicBrainz;
+using Soundtrail.Services.Enrichment.Worker.Infrastructure.Providers.Odesli;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;
 using Wolverine;
 using Wolverine.AzureServiceBus;
@@ -21,8 +22,7 @@ builder.UseWolverine(opts =>
 {
     opts.Discovery.DisableConventionalDiscovery();
     opts.Discovery.IncludeType<MusicBrainzLookupExecutionListener>();
-    opts.Discovery.IncludeType<AppleLookupExecutionListener>();
-    opts.Discovery.IncludeType<YouTubeMusicLookupExecutionListener>();
+    opts.Discovery.IncludeType<PlaybackReferencesLookupExecutionListener>();
     opts.UseRavenDbPersistence();
     opts.Policies.AutoApplyTransactions();
 
@@ -33,10 +33,7 @@ builder.UseWolverine(opts =>
     opts.ListenToAzureServiceBusQueue(serviceBusOptions.MusicBrainzLookupQueueName)
         .ProcessInline();
 
-    opts.ListenToAzureServiceBusQueue(serviceBusOptions.AppleLookupQueueName)
-        .ProcessInline();
-
-    opts.ListenToAzureServiceBusQueue(serviceBusOptions.YouTubeMusicLookupQueueName)
+    opts.ListenToAzureServiceBusQueue(serviceBusOptions.PlaybackReferencesLookupQueueName)
         .ProcessInline();
 
     opts.PublishMessage<EnrichmentResponseDto>()
@@ -44,12 +41,24 @@ builder.UseWolverine(opts =>
 });
 
 builder.Services.AddWorkerRavenDocumentStore(builder.Configuration);
+builder.Services.Configure<MusicBrainzOptions>(builder.Configuration.GetSection(MusicBrainzOptions.SectionName));
+builder.Services.Configure<OdesliOptions>(builder.Configuration.GetSection(OdesliOptions.SectionName));
+builder.Services.AddHttpClient<IMusicBrainzMetadataSource, MusicBrainzHttpMetadataSource>()
+    .ConfigureHttpClient((sp, httpClient) =>
+    {
+        var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<MusicBrainzOptions>>().Value;
+        MusicBrainzHttpMetadataSource.ConfigureHttpClient(httpClient, options);
+    });
+builder.Services.AddHttpClient<IPlaybackReferenceSource, OdesliStreamingReferencesSource>()
+    .ConfigureHttpClient((sp, httpClient) =>
+    {
+        var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<OdesliOptions>>().Value;
+        OdesliStreamingReferencesSource.ConfigureHttpClient(httpClient, options);
+    });
 builder.Services.AddScoped<ExecuteMusicBrainzLookupHandler>();
-builder.Services.AddScoped<ExecuteAppleLookupHandler>();
-builder.Services.AddScoped<ExecuteYouTubeMusicLookupHandler>();
+builder.Services.AddScoped<ExecutePlaybackReferencesLookupHandler>();
 builder.Services.AddScoped<MusicBrainzLookupExecutionListener>();
-builder.Services.AddScoped<AppleLookupExecutionListener>();
-builder.Services.AddScoped<YouTubeMusicLookupExecutionListener>();
+builder.Services.AddScoped<PlaybackReferencesLookupExecutionListener>();
 
 var host = builder.Build();
 

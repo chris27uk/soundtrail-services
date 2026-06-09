@@ -20,10 +20,7 @@ builder.UseWolverine(opts =>
         .AutoProvision()
         .EnableWolverineControlQueues();
 
-    opts.PublishMessage<AppleMusicResolutionRequiredMessageDto>()
-        .ToAzureServiceBusQueue(serviceBusOptions.MusicTrackEventsQueueName);
-
-    opts.PublishMessage<YouTubeMusicResolutionRequiredMessageDto>()
+    opts.PublishMessage<PlaybackReferencesResolutionRequiredMessageDto>()
         .ToAzureServiceBusQueue(serviceBusOptions.MusicTrackEventsQueueName);
 });
 

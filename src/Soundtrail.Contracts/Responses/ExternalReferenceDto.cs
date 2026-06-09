@@ -1,4 +1,4 @@
-namespace Soundtrail.Contracts.Worker.Responses;
+namespace Soundtrail.Contracts.Responses;
 
 public sealed record ExternalReferenceDto(
     string Provider,

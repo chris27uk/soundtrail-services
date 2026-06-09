@@ -35,8 +35,4 @@
     <ProjectReference Include="..\..\src\Soundtrail.Contracts\Soundtrail.Contracts.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Api\" />
-  </ItemGroup>
-
 </Project>

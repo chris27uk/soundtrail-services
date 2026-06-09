@@ -2,33 +2,32 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Soundtrail.Contracts;
-using Soundtrail.Contracts.Api;
 using Soundtrail.Contracts.Commands;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.Events;
-using Soundtrail.Contracts.Worker.Responses;
+using Soundtrail.Contracts.Responses;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Api.Features.Search;
 using Soundtrail.Services.Api.Features.Search.Queueing;
-using Soundtrail.Services.Api.Features.Search.TrackSearch;
 using Soundtrail.Services.Api.Features.Search.Tracks;
+using Soundtrail.Services.Api.Features.Search.TrackSearch;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Messaging;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Idempotency;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search.Resolution;
 using Soundtrail.Services.Enrichment.Features.Execution.ApplyEnrichmentResponse;
-using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Features.Orchestration;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 using Wolverine;
 using Wolverine.Attributes;
 
-namespace Soundtrail.Services.Tests.Integration.EndToEnd.Search;
+namespace Soundtrail.Services.Tests.EndToEnd.Search;
 
 public sealed class AsyncLookupHappyPathTests
 {
@@ -76,6 +75,7 @@ public sealed class AsyncLookupHappyPathTests
 
             var rankedStore = new RankedMusicCandidateStoreFake();
             var activeLookupWorkStore = new ActiveLookupWorkStoreFake();
+            var localSearch = new LocalMusicTrackSearchFake();
             var streamStore = new MusicTrackStreamStoreFake();
             var projectionStore = new MusicTrackProjectionStoreFake();
             var snapshotStore = new ProviderSnapshotStoreFake();
@@ -86,6 +86,8 @@ public sealed class AsyncLookupHappyPathTests
             builder.Services.AddSingleton<IRankedMusicCandidateStore>(rankedStore);
             builder.Services.AddSingleton(activeLookupWorkStore);
             builder.Services.AddSingleton<IActiveLookupWorkStore>(activeLookupWorkStore);
+            builder.Services.AddSingleton(localSearch);
+            builder.Services.AddSingleton<ILocalMusicTrackSearch>(localSearch);
             builder.Services.AddSingleton(streamStore);
             builder.Services.AddSingleton<IMusicTrackEventRepository>(streamStore);
             builder.Services.AddSingleton(projectionStore);
@@ -98,7 +100,6 @@ public sealed class AsyncLookupHappyPathTests
             builder.Services.AddScoped<IEnqueueMusicRequest, WolverineEnqueueMusicRequest>();
             builder.Services.AddScoped<IHandler<SearchMusicRequest, SearchMusicResponse>, SearchMusicHandler>();
             builder.Services.AddScoped<LookupMusicRequestHandler>();
-            builder.Services.AddScoped<MusicTrackEventCommandHandler>();
             builder.Services.AddScoped<ApplyEnrichmentResponseHandler>();
 
             builder.UseWolverine(opts =>
@@ -118,7 +119,7 @@ public sealed class AsyncLookupHappyPathTests
 
         public async Task<SearchMusicResponse> SearchAsync(string query)
         {
-            using var scope = host.Services.CreateScope();
+            using var scope = this.host.Services.CreateScope();
             var handler = scope.ServiceProvider.GetRequiredService<IHandler<SearchMusicRequest, SearchMusicResponse>>();
             return await handler.Handle(
                 new SearchMusicRequest(
@@ -147,14 +148,13 @@ public sealed class AsyncLookupHappyPathTests
 
         public async ValueTask DisposeAsync()
         {
-            await host.StopAsync();
-            host.Dispose();
+            await this.host.StopAsync();
+            this.host.Dispose();
         }
     }
 
     public sealed class LocalPipelineHandlers(
         LookupMusicRequestHandler lookupMusicRequestHandler,
-        MusicTrackEventCommandHandler musicTrackEventCommandHandler,
         ApplyEnrichmentResponseHandler applyEnrichmentResponseHandler)
     {
         [WolverineHandler]
@@ -171,13 +171,11 @@ public sealed class AsyncLookupHappyPathTests
                     CorrelationId.From(dto.CorrelationId)),
                 cancellationToken);
 
-            return result.ShouldSchedule
-                ? [result.Command!.ToDto()]
-                : [];
+            return result.Commands.Select(MapCommand).ToArray();
         }
 
         [WolverineHandler]
-        public object Handle(ResolveCanonicalMetadataCommandDto dto)
+        public object Handle(ResolveCanonicalMetadataFromMusicBrainzCommandDto dto)
         {
             return new EnrichmentResponseDto(
                 dto.CommandId,
@@ -196,50 +194,24 @@ public sealed class AsyncLookupHappyPathTests
         }
 
         [WolverineHandler]
-        public object Handle(AppleMusicResolutionRequiredMessageDto dto)
+        public object Handle(PlaybackReferencesResolutionRequiredMessageDto dto)
         {
-            var command = musicTrackEventCommandHandler.Handle(
-                new AppleMusicResolutionRequired(
-                    MusicCatalogId.From(dto.MusicCatalogId),
-                    dto.Priority,
-                    CorrelationId.From(dto.CorrelationId),
-                    ProviderName.From(dto.SourceProvider),
-                    dto.ObservedAt));
-
-            return new ResolveApplePlaybackReferenceCommandDto(
-                command.CommandId.Value,
-                command.MusicCatalogId.Value,
-                command.Priority,
-                command.CreatedAt,
-                command.CorrelationId.Value);
+            return new ResolvePlaybackReferencesCommandDto(
+                CommandId.For($"ResolvePlaybackReferences:{dto.MusicCatalogId}").Value,
+                dto.MusicCatalogId,
+                dto.Priority,
+                dto.ObservedAt,
+                dto.CorrelationId,
+                dto.LookupKey);
         }
 
         [WolverineHandler]
-        public object Handle(YouTubeMusicResolutionRequiredMessageDto dto)
-        {
-            var command = musicTrackEventCommandHandler.Handle(
-                new YouTubeMusicResolutionRequired(
-                    MusicCatalogId.From(dto.MusicCatalogId),
-                    dto.Priority,
-                    CorrelationId.From(dto.CorrelationId),
-                    ProviderName.From(dto.SourceProvider),
-                    dto.ObservedAt));
-
-            return new ResolveYouTubeMusicPlaybackReferenceCommandDto(
-                command.CommandId.Value,
-                command.MusicCatalogId.Value,
-                command.Priority,
-                command.CreatedAt,
-                command.CorrelationId.Value);
-        }
-
-        [WolverineHandler]
-        public object Handle(ResolveApplePlaybackReferenceCommandDto dto)
+        public object Handle(ResolvePlaybackReferencesCommandDto dto)
         {
             return new EnrichmentResponseDto(
                 dto.CommandId,
                 dto.MusicCatalogId,
-                ProviderName.AppleMusic.Value,
+                ProviderName.Odesli.Value,
                 dto.Priority,
                 dto.CreatedAt,
                 null,
@@ -248,22 +220,7 @@ public sealed class AsyncLookupHappyPathTests
                         ProviderName.AppleMusic.Value,
                         new Uri("https://music.apple.com/track/apple-track-1"),
                         "apple-track-1",
-                        ReferenceConfidence.Verified.ToString())
-                ],
-                dto.CorrelationId);
-        }
-
-        [WolverineHandler]
-        public object Handle(ResolveYouTubeMusicPlaybackReferenceCommandDto dto)
-        {
-            return new EnrichmentResponseDto(
-                dto.CommandId,
-                dto.MusicCatalogId,
-                ProviderName.YoutubeMusic.Value,
-                dto.Priority,
-                dto.CreatedAt,
-                null,
-                [
+                        ReferenceConfidence.Verified.ToString()),
                     new ExternalReferenceDto(
                         ProviderName.YoutubeMusic.Value,
                         new Uri("https://music.youtube.com/watch?v=yt-track-1"),
@@ -311,19 +268,41 @@ public sealed class AsyncLookupHappyPathTests
         private static object? MapFollowUpMessage(MusicTrackFact fact) =>
             fact switch
             {
-                AppleMusicResolutionRequired apple => new AppleMusicResolutionRequiredMessageDto(
-                    apple.MusicCatalogId.Value,
-                    apple.Priority,
-                    apple.CorrelationId.Value,
-                    apple.SourceProvider.Value,
-                    apple.ObservedAt),
-                YouTubeMusicResolutionRequired youtube => new YouTubeMusicResolutionRequiredMessageDto(
-                    youtube.MusicCatalogId.Value,
-                    youtube.Priority,
-                    youtube.CorrelationId.Value,
-                    youtube.SourceProvider.Value,
-                    youtube.ObservedAt),
+                PlaybackReferencesResolutionRequired playback => new PlaybackReferencesResolutionRequiredMessageDto(
+                    playback.MusicCatalogId.Value,
+                    playback.Priority,
+                    playback.CorrelationId.Value,
+                    playback.SourceProvider.Value,
+                    playback.ObservedAt,
+                    new PlaybackReferenceLookupKeyDto(
+                        (PlaybackReferenceLookupModeDto)playback.LookupKey.Mode,
+                        playback.LookupKey.Isrc,
+                        playback.LookupKey.Title,
+                        playback.LookupKey.Artist)),
                 _ => null
+            };
+
+        private static object MapCommand(LookupPhaseCommand command) =>
+            command switch
+            {
+                ResolveCanonicalMetadataFromMusicBrainzCommand musicBrainz => new ResolveCanonicalMetadataFromMusicBrainzCommandDto(
+                    musicBrainz.CommandId.Value,
+                    musicBrainz.MusicCatalogId.Value,
+                    musicBrainz.Priority,
+                    musicBrainz.CreatedAt,
+                    musicBrainz.CorrelationId.Value),
+                ResolvePlaybackReferencesCommand playback => new ResolvePlaybackReferencesCommandDto(
+                    playback.CommandId.Value,
+                    playback.MusicCatalogId.Value,
+                    playback.Priority,
+                    playback.CreatedAt,
+                    playback.CorrelationId.Value,
+                    new PlaybackReferenceLookupKeyDto(
+                        (PlaybackReferenceLookupModeDto)playback.LookupKey.Mode,
+                        playback.LookupKey.Isrc,
+                        playback.LookupKey.Title,
+                        playback.LookupKey.Artist)),
+                _ => throw new ArgumentOutOfRangeException(nameof(command), command, null)
             };
     }
 

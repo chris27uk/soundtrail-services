@@ -8,6 +8,8 @@ public sealed class RavenTrackDocument
 
     public string Artist { get; set; } = string.Empty;
 
+    public string? AlbumTitle { get; set; }
+
     public string SearchText { get; set; } = string.Empty;
 
     public string? Isrc { get; set; }
