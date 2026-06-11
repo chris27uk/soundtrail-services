@@ -13,7 +13,6 @@ public sealed class LookupPlanningSweepHostedService(
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var interval = TimeSpan.FromSeconds(options.Value.SweepIntervalSeconds);
-
         while (!stoppingToken.IsCancellationRequested)
         {
             try

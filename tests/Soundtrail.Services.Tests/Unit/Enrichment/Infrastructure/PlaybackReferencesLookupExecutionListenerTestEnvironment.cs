@@ -2,8 +2,8 @@ using Soundtrail.Contracts.Commands;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
+using Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution.Adapters;
 using Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution;
-using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 

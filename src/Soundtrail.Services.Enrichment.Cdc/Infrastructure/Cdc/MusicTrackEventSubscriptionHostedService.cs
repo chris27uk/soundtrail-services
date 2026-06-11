@@ -84,7 +84,7 @@ public sealed class MusicTrackEventSubscriptionHostedService(
                 continue;
             }
 
-            var newEvents = stream.Facts.Skip(cursor.LastPublishedVersion).ToArray();
+            var newEvents = stream.Events.Skip(cursor.LastPublishedVersion).ToArray();
             foreach (var @event in newEvents)
             {
                 var integrationEvent = ToIntegrationEvent(@event);

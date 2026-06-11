@@ -5,4 +5,4 @@ namespace Soundtrail.Domain.Model;
 public sealed record AppendMusicTrackStreamResult(
     bool Appended,
     int Version,
-    IReadOnlyList<IMusicTrackEvent> AppendedFacts);
+    IReadOnlyList<IMusicTrackEvent> AppendedEvents);

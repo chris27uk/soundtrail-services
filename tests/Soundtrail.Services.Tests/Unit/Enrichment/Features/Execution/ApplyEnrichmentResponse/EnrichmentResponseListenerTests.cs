@@ -36,7 +36,7 @@ public sealed class EnrichmentResponseListenerTests
     {
         var env = EnrichmentResponseListenerTestEnvironment.WithAMusicBrainzResponseDto();
         await env.HandleMusicBrainzResponse();
-        env.StreamStore.Streams["mc_track_1"].Facts.Should().ContainItemsAssignableTo<MinimalTrackInfoDiscovered>();
+        env.StreamStore.Streams["mc_track_1"].Events.Should().ContainItemsAssignableTo<MinimalTrackInfoDiscovered>();
     }
 
     [Fact]

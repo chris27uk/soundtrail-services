@@ -10,5 +10,5 @@ internal sealed class RavenMusicTrackStreamDto
 
     public List<string> AppliedCommandIds { get; set; } = [];
 
-    public List<RavenMusicTrackEventDto> Facts { get; set; } = [];
+    public List<RavenMusicTrackEventDto> Events { get; set; } = [];
 }

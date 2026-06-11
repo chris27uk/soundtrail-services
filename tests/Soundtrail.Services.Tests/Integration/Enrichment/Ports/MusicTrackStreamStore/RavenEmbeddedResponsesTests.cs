@@ -1,9 +1,9 @@
 using FluentAssertions;
 using Raven.Client.Documents.Session;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicTrackStreamStore;

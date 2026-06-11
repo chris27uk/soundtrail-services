@@ -1,8 +1,8 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.Responses;
 using Soundtrail.Domain.Model;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Messaging;
-using Soundtrail.Services.Enrichment.Features.Execution.ApplyEnrichmentResponse;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 

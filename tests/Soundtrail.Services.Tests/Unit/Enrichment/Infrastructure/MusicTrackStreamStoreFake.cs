@@ -12,14 +12,14 @@ public sealed class MusicTrackStreamStoreFake : IMusicTrackEventRepository
 
     public void Seed(
         MusicCatalogId musicCatalogId,
-        params IMusicTrackEvent[] facts)
+        params IMusicTrackEvent[] events)
     {
         streams[musicCatalogId.Value] = new StoredStream
         {
-            Version = facts.Length
+            Version = events.Length
         };
 
-        streams[musicCatalogId.Value].Facts.AddRange(facts);
+        streams[musicCatalogId.Value].Events.AddRange(events);
     }
 
     public Task<MusicTrackStream> LoadEventsAsync(
@@ -31,7 +31,7 @@ public sealed class MusicTrackStreamStoreFake : IMusicTrackEventRepository
             return Task.FromResult(new MusicTrackStream(0, Array.Empty<IMusicTrackEvent>()));
         }
 
-        return Task.FromResult(new MusicTrackStream(stored.Version, stored.Facts.ToArray()));
+        return Task.FromResult(new MusicTrackStream(stored.Version, stored.Events.ToArray()));
     }
 
     public Task<AppendMusicTrackStreamResult> AppendEventsAsync(
@@ -58,7 +58,7 @@ public sealed class MusicTrackStreamStoreFake : IMusicTrackEventRepository
         }
 
         stored.AppliedCommandIds.Add(commandId.Value);
-        stored.Facts.AddRange(events);
+        stored.Events.AddRange(events);
         stored.Version += events.Count;
         return Task.FromResult(new AppendMusicTrackStreamResult(true, stored.Version, events.ToArray()));
     }
@@ -69,6 +69,6 @@ public sealed class MusicTrackStreamStoreFake : IMusicTrackEventRepository
 
         public List<string> AppliedCommandIds { get; } = [];
 
-        public List<IMusicTrackEvent> Facts { get; } = [];
+        public List<IMusicTrackEvent> Events { get; } = [];
     }
 }

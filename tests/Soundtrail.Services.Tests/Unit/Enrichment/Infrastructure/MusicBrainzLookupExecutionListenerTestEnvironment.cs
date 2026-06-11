@@ -4,7 +4,7 @@ using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Enrichment.Worker.Features.MusicBrainzLookupExecution;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
-using Soundtrail.Services.Enrichment.Worker.Infrastructure.Providers.MusicBrainz;
+using Soundtrail.Services.Enrichment.Worker.Features.MusicBrainzLookupExecution.Adapters;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 

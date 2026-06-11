@@ -14,7 +14,7 @@ using Soundtrail.Services.Api.Features.Search.Queueing;
 using Soundtrail.Services.Api.Features.Search.Tracks;
 using Soundtrail.Services.Api.Features.Search.TrackSearch;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
-using Soundtrail.Services.Enrichment.Features.Execution.ApplyEnrichmentResponse;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
@@ -265,7 +265,7 @@ public sealed class AsyncLookupHappyPathTests
                     CorrelationId.From(dto.CorrelationId)),
                 cancellationToken);
 
-            return result.Facts
+            return result.Events
                 .Select(MapFollowUpMessage)
                 .Where(message => message is not null)
                 .Cast<object>()
