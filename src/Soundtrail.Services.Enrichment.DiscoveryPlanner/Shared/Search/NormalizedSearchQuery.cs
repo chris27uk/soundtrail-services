@@ -1,6 +1,3 @@
-using Soundtrail.Contracts;
-using Soundtrail.Contracts.Common;
-
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 
 public sealed record NormalizedSearchQuery
@@ -27,16 +24,6 @@ public sealed record NormalizedSearchQuery
             sanitized.Split(' ', StringSplitOptions.RemoveEmptyEntries));
 
         return new NormalizedSearchQuery(normalized);
-    }
-
-    public LookupMusicRequest ToNewLookupRequest()
-    {
-        return new LookupMusicRequest(
-            this,
-            TrustLevel: 0,
-            RiskScore: 0,
-            OccurredAt: DateTimeOffset.UtcNow,
-            CorrelationId: CorrelationId.New());
     }
     
     public static implicit operator string(NormalizedSearchQuery query) => query.Value;

@@ -51,7 +51,7 @@ builder.UseWolverine(opts =>
 
 builder.Services.AddSchedulerRavenDocumentStore(builder.Configuration);
 builder.Services.AddSchedulerServiceBus(builder.Configuration);
-builder.Services.Configure<LookupPlanningOptions>(builder.Configuration.GetSection(LookupPlanningOptions.SectionName));
+builder.Services.Configure<DiscoveryBacklogSchedulingOptions>(builder.Configuration.GetSection(DiscoveryBacklogSchedulingOptions.SectionName));
 builder.Services.AddSingleton<DiscoveryPriorityPolicy>();
 builder.Services.AddSingleton<MusicCatalogResolutionPolicy>();
 builder.Services.AddScoped<LookupMusicRequestHandler>();
@@ -60,7 +60,7 @@ builder.Services.AddScoped<ApplyEnrichmentResponseHandler>();
 builder.Services.AddScoped<LookupMusicRequestListener>();
 builder.Services.AddScoped<DiscoveryBacklogSchedulingListener>();
 builder.Services.AddScoped<EnrichmentResponseListener>();
-builder.Services.AddHostedService<LookupPlanningSweepHostedService>();
+builder.Services.AddHostedService<DiscoveryBacklogSchedulingHostedService>();
 
 var host = builder.Build();
 

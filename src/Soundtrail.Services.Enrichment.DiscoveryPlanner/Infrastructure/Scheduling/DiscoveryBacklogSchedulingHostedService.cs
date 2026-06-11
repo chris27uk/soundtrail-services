@@ -5,14 +5,14 @@ using Wolverine;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Scheduling;
 
-public sealed class LookupPlanningSweepHostedService(
+public sealed class DiscoveryBacklogSchedulingHostedService(
     IMessageBus messageBus,
-    IOptions<LookupPlanningOptions> options,
-    ILogger<LookupPlanningSweepHostedService> logger) : BackgroundService
+    IOptions<DiscoveryBacklogSchedulingOptions> options,
+    ILogger<DiscoveryBacklogSchedulingHostedService> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var interval = TimeSpan.FromSeconds(options.Value.SweepIntervalSeconds);
+        var interval = TimeSpan.FromSeconds(options.Value.RunIntervalSeconds);
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -20,12 +20,12 @@ public sealed class LookupPlanningSweepHostedService(
                 await messageBus.InvokeAsync(
                     new RunDiscoveryBacklogScheduling(
                         DateTimeOffset.UtcNow,
-                        options.Value.SweepBatchSize),
+                        options.Value.BatchSize),
                     stoppingToken);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Lookup planning sweep failed.");
+                logger.LogError(ex, "Discovery backlog scheduling run failed.");
             }
 
             await Task.Delay(interval, stoppingToken);
