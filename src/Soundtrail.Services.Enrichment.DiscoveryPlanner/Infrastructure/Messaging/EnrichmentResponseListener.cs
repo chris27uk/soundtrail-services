@@ -2,21 +2,22 @@ using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.Responses;
 using Soundtrail.Domain.Model;
-using Soundtrail.Services.Enrichment.Features.Execution.ApplyEnrichmentResponse;
 using Soundtrail.Domain.Responses;
+using Soundtrail.Services.Enrichment.Features.Execution.ApplyEnrichmentResponse;
 using Wolverine.Attributes;
 
-namespace Soundtrail.Services.Enrichment.Responder.Infrastructure.Messaging;
+namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Messaging;
 
 public sealed class EnrichmentResponseListener(ApplyEnrichmentResponseHandler handler)
 {
     [WolverineHandler]
     [Transactional]
-    public Task Handle(
+    public async Task<object[]> Handle(
         EnrichmentResponseDto dto,
         IAsyncDocumentSession _,
-        CancellationToken cancellationToken = default) =>
-        handler.Handle(
+        CancellationToken cancellationToken = default)
+    {
+        await handler.Handle(
             new EnrichmentResponse(
                 CommandId.From(dto.CommandId),
                 MusicCatalogId.From(dto.MusicCatalogId),
@@ -38,4 +39,7 @@ public sealed class EnrichmentResponseListener(ApplyEnrichmentResponseHandler ha
                     Enum.Parse<ReferenceConfidence>(reference.Confidence, ignoreCase: true))).ToArray(),
                 CorrelationId.From(dto.CorrelationId)),
             cancellationToken);
+
+        return [];
+    }
 }

@@ -4,6 +4,7 @@ using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Enrichment.Worker.Features.MusicBrainzLookupExecution;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
+using Soundtrail.Services.Enrichment.Worker.Infrastructure.Providers.MusicBrainz;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -23,16 +24,16 @@ internal sealed class MusicBrainzLookupExecutionListenerTestEnvironment
 
     private MusicBrainzLookupExecutionListenerTestEnvironment(LookupExecutionReceiptStoreFake.State state)
     {
-        MetadataSource = new FakeMusicBrainzMetadataSource();
+        Metadata = new FakeGetCanonicalMusicMetadata();
         Listener = new MusicBrainzLookupExecutionListener(
-            new ExecuteMusicBrainzLookupHandler(
+            new LookupCanonicalMusicMetadataHandler(
                 new LookupExecutionReceiptStoreFake(state),
-                MetadataSource));
+                Metadata));
     }
 
     public MusicBrainzLookupExecutionListener Listener { get; }
 
-    public FakeMusicBrainzMetadataSource MetadataSource { get; }
+    public FakeGetCanonicalMusicMetadata Metadata { get; }
 
     public static MusicBrainzLookupExecutionListenerTestEnvironment WithANewExecutionCommandDto() =>
         new(new LookupExecutionReceiptStoreFake.State());
@@ -40,38 +41,35 @@ internal sealed class MusicBrainzLookupExecutionListenerTestEnvironment
     public static MusicBrainzLookupExecutionListenerTestEnvironment WithADuplicateExecutionCommandDto() =>
         new(new LookupExecutionReceiptStoreFake.State());
 
-    public void SeedMusicBrainzIsrc(string isrc, SongMetadata metadata) => MetadataSource.SeedIsrc(isrc, metadata);
+    public void SeedMusicBrainzIsrc(string isrc, SongMetadata metadata) => Metadata.SeedIsrc(isrc, metadata);
 
     public void SeedMusicBrainzNames(string title, string artist, string? albumName, SongMetadata metadata) =>
-        MetadataSource.SeedNames(title, artist, albumName, metadata);
+        Metadata.SeedNames(title, artist, albumName, metadata);
 
-    public Task<object[]> HandleNewExecutionCommand(CanonicalMusicMetadataLookup? lookup = null) =>
-        Listener.Handle(ToDto(lookup ?? CanonicalMusicMetadataLookup.FromIsrc("isrc-1")), null!);
+    public Task<object[]> HandleNewExecutionCommand(MusicSearchTerm? searchTerm = null) =>
+        Listener.Handle(ToDto(searchTerm ?? MusicSearchTerm.ByIsrc("isrc-1")), null!);
 
-    public async Task<object[]> HandleDuplicateExecutionCommand(CanonicalMusicMetadataLookup? lookup = null)
+    public async Task<object[]> HandleDuplicateExecutionCommand(MusicSearchTerm? searchTerm = null)
     {
-        var dto = ToDto(lookup ?? CanonicalMusicMetadataLookup.FromIsrc("isrc-1"));
+        var dto = ToDto(searchTerm ?? MusicSearchTerm.ByIsrc("isrc-1"));
         await Listener.Handle(dto, null!);
         return await Listener.Handle(dto, null!);
     }
 
-    private static LookupCanonicalMusicMetadataCommandDto ToDto(CanonicalMusicMetadataLookup lookup) =>
-        lookup switch
-        {
-            CanonicalMusicMetadataLookup.ByIsrc byIsrc => DefaultCommand with
+    private static LookupCanonicalMusicMetadataCommandDto ToDto(MusicSearchTerm searchTerm) =>
+        searchTerm.Match((track, artist, album) =>
+                DefaultCommand with
+                {
+                    Isrc = null,
+                    TrackName = track,
+                    ArtistName = artist,
+                    AlbumName = album
+                },
+            isrc => DefaultCommand with
             {
-                Isrc = byIsrc.Isrc,
+                Isrc = isrc,
                 TrackName = null,
                 ArtistName = null,
                 AlbumName = null
-            },
-            CanonicalMusicMetadataLookup.ByTrackNameArtistAndAlbum byTrack => DefaultCommand with
-            {
-                Isrc = null,
-                TrackName = byTrack.TrackName,
-                ArtistName = byTrack.ArtistName,
-                AlbumName = byTrack.AlbumName
-            },
-            _ => throw new ArgumentOutOfRangeException(nameof(lookup), lookup, null)
-        };
+            });
 }

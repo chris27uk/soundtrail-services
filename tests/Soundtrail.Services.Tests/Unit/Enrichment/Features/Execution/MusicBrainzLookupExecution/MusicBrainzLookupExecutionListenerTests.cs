@@ -48,10 +48,10 @@ public sealed class MusicBrainzLookupExecutionListenerTests
         var env = MusicBrainzLookupExecutionListenerTestEnvironment.WithANewExecutionCommandDto();
         env.SeedMusicBrainzIsrc("isrc-1", new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000));
 
-        var message = (EnrichmentResponseDto)(await env.HandleNewExecutionCommand(CanonicalMusicMetadataLookup.FromIsrc("isrc-1"))).Single();
+        var message = (EnrichmentResponseDto)(await env.HandleNewExecutionCommand(MusicSearchTerm.ByIsrc("isrc-1"))).Single();
 
         message.Metadata.Should().BeEquivalentTo(new SongMetadataDto("Song A", "Artist A", "isrc-1", "mbid-1", 123000));
-        env.MetadataSource.Lookups.Should().ContainSingle().Which.Should().Be("isrc:isrc-1");
+        env.Metadata.Lookups.Should().ContainSingle().Which.Should().Be("isrc:isrc-1");
     }
 
     [Fact]
@@ -61,9 +61,9 @@ public sealed class MusicBrainzLookupExecutionListenerTests
         env.SeedMusicBrainzNames("Song A", "Artist A", "Album A", new SongMetadata("Song A", "Artist A", null, "mbid-1", 123000));
 
         var message = (EnrichmentResponseDto)(await env.HandleNewExecutionCommand(
-            CanonicalMusicMetadataLookup.FromTrackNameArtistAndAlbum("Song A", "Artist A", "Album A"))).Single();
+            MusicSearchTerm.ByTrackArtistAlbum("Song A", "Artist A", "Album A"))).Single();
 
         message.Metadata.Should().BeEquivalentTo(new SongMetadataDto("Song A", "Artist A", null, "mbid-1", 123000));
-        env.MetadataSource.Lookups.Should().ContainSingle().Which.Should().StartWith("names:");
+        env.Metadata.Lookups.Should().ContainSingle().Which.Should().StartWith("names:");
     }
 }

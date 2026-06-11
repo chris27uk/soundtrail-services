@@ -17,22 +17,22 @@ public sealed class LookupMusicRequestListenerTests
     {
         var env = LookupMusicRequestListenerTestEnvironment.WithASchedulableRequest();
         var messages = await env.HandleSchedulableRequest();
-        messages.Should().ContainSingle().Which.Should().BeOfType<ResolveCanonicalMetadataFromMusicBrainzCommandDto>();
+        messages.Should().ContainSingle().Which.Should().BeOfType<LookupCanonicalMusicMetadataCommandDto>();
     }
 
     [Fact]
     public async Task Given_A_Schedulable_Request_When_Handled_Then_The_CommandId_Is_Built_From_The_MusicCatalogId()
     {
         var env = LookupMusicRequestListenerTestEnvironment.WithASchedulableRequest();
-        var message = (ResolveCanonicalMetadataFromMusicBrainzCommandDto)(await env.HandleSchedulableRequest()).Single();
-        message.CommandId.Should().Be(CommandId.For("ResolveCanonicalMetadataFromMusicBrainz:mc_track_1").Value);
+        var message = (LookupCanonicalMusicMetadataCommandDto)(await env.HandleSchedulableRequest()).Single();
+        message.CommandId.Should().Be(CommandId.For("LookupCanonicalMusicMetadata:mc_track_1").Value);
     }
 
     [Fact]
     public async Task Given_A_Schedulable_Request_When_Handled_Then_The_MusicCatalogId_Is_Preserved()
     {
         var env = LookupMusicRequestListenerTestEnvironment.WithASchedulableRequest();
-        var message = (ResolveCanonicalMetadataFromMusicBrainzCommandDto)(await env.HandleSchedulableRequest()).Single();
+        var message = (LookupCanonicalMusicMetadataCommandDto)(await env.HandleSchedulableRequest()).Single();
         message.MusicCatalogId.Should().Be("mc_track_1");
     }
 
@@ -40,7 +40,7 @@ public sealed class LookupMusicRequestListenerTests
     public async Task Given_A_Schedulable_Request_When_Handled_Then_The_Priority_Is_Preserved()
     {
         var env = LookupMusicRequestListenerTestEnvironment.WithASchedulableRequest();
-        var message = (ResolveCanonicalMetadataFromMusicBrainzCommandDto)(await env.HandleSchedulableRequest()).Single();
+        var message = (LookupCanonicalMusicMetadataCommandDto)(await env.HandleSchedulableRequest()).Single();
         message.Priority.Should().Be(LookupPriorityBand.Low);
     }
 
@@ -52,15 +52,15 @@ public sealed class LookupMusicRequestListenerTests
             MusicCatalogId.From("mc_track_1"),
             "Song A",
             "Artist A",
+            "Album A",
             "isrc-1",
             "mbid-1",
             123000,
             IsPlayable: false));
 
         var message = (ResolvePlaybackReferencesCommandDto)(await env.HandleSchedulableRequest()).Single();
-
-        message.LookupKey.Mode.Should().Be(PlaybackReferenceLookupModeDto.Isrc);
-        message.LookupKey.Isrc.Should().Be("isrc-1");
+        
+        message.SearchTerm.Isrc.Should().Be("isrc-1");
     }
 
     [Fact]

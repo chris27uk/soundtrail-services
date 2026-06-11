@@ -99,7 +99,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.NoPrevio
 
             var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
 
-            result.Command?.CommandId.Should().Be(CommandId.For("ResolveCanonicalMetadataFromMusicBrainz:mc_track_1"));
+            result.Command?.CommandId.Should().Be(CommandId.For("LookupCanonicalMusicMetadata:mc_track_1"));
         }
 
         [Fact]

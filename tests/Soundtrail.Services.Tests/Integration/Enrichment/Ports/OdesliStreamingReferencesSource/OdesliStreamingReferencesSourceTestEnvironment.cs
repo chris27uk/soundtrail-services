@@ -5,23 +5,22 @@ using Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExe
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Providers.Odesli;
 using Soundtrail.Services.Tests.Integration.Enrichment.Ports.ProviderClients;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
-using OdesliAdapter = Soundtrail.Services.Enrichment.Worker.Infrastructure.Providers.Odesli.OdesliStreamingReferencesSource;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.OdesliStreamingReferencesSource;
 
 internal sealed class OdesliStreamingReferencesSourceTestEnvironment
 {
-    private readonly Action<PlaybackReferenceLookupKey, IReadOnlyList<ExternalReference>> seed;
+    private readonly Action<MusicSearchTerm, IReadOnlyList<ExternalReference>> seed;
 
     private OdesliStreamingReferencesSourceTestEnvironment(
-        IPlaybackReferenceSource source,
-        Action<PlaybackReferenceLookupKey, IReadOnlyList<ExternalReference>> seed)
+        IGetMusicTrackReference source,
+        Action<MusicSearchTerm, IReadOnlyList<ExternalReference>> seed)
     {
         Source = source;
         this.seed = seed;
     }
 
-    public IPlaybackReferenceSource Source { get; }
+    public IGetMusicTrackReference Source { get; }
 
     public static OdesliStreamingReferencesSourceTestEnvironment Create(OdesliStreamingReferencesSourceMode mode) =>
         mode switch
@@ -31,11 +30,11 @@ internal sealed class OdesliStreamingReferencesSourceTestEnvironment
             _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
         };
 
-    public void Seed(PlaybackReferenceLookupKey lookupKey, params ExternalReference[] references) => seed(lookupKey, references);
+    public void Seed(MusicSearchTerm lookupKey, params ExternalReference[] references) => seed(lookupKey, references);
 
     private static OdesliStreamingReferencesSourceTestEnvironment CreateFake()
     {
-        var fake = new FakePlaybackReferenceSource();
+        var fake = new FakeGetMusicTrackReference();
         return new OdesliStreamingReferencesSourceTestEnvironment(
             fake,
             (lookupKey, references) => fake.Seed(lookupKey, references.ToArray()));
@@ -77,18 +76,15 @@ internal sealed class OdesliStreamingReferencesSourceTestEnvironment
             UserCountry = "US"
         });
         var client = new HttpClient(handler);
-        OdesliAdapter.ConfigureHttpClient(client, options.Value);
+        OdesliStreamingReferences.ConfigureHttpClient(client, options.Value);
 
         return new OdesliStreamingReferencesSourceTestEnvironment(
-            new OdesliAdapter(client, options),
-            (lookupKey, references) =>
+            new OdesliStreamingReferences(client, options),
+            (searchTerm, references) =>
             {
-                var key = lookupKey.Mode switch
-                {
-                    PlaybackReferenceLookupMode.Isrc => $"/v1-user/links?id={Uri.EscapeDataString(lookupKey.Isrc ?? string.Empty)}&platform=isrc&userCountry=US",
-                    PlaybackReferenceLookupMode.ByTrackNameAndArtist => $"/v1-user/links?title={Uri.EscapeDataString(lookupKey.Title ?? string.Empty)}&artist={Uri.EscapeDataString(lookupKey.Artist ?? string.Empty)}&userCountry=US",
-                    _ => throw new ArgumentOutOfRangeException(nameof(lookupKey.Mode), lookupKey.Mode, null)
-                };
+                var key = searchTerm.Match(
+                    (track, artist, album) => $"/v1-user/links?title={Uri.EscapeDataString(track)}&artist={Uri.EscapeDataString(artist)}&album={Uri.EscapeDataString(album ?? string.Empty)}&userCountry=US",
+                    isrc => $"/v1-user/links?id={Uri.EscapeDataString(isrc)}&platform=isrc&userCountry=US");
                 responses[key] = references;
             });
     }

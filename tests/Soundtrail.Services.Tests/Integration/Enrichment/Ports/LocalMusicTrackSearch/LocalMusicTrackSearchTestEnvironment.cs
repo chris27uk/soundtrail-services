@@ -59,11 +59,13 @@ internal sealed class LocalMusicTrackSearchTestEnvironment : IDisposable
             Id = RavenTrackDocument.GetDocumentId(result.MusicCatalogId.Value),
             Title = result.Title ?? string.Empty,
             Artist = result.Artist ?? string.Empty,
+            AlbumTitle = result.AlbumTitle,
             SearchText = RavenTrackDocument.BuildSearchText(result.Title ?? string.Empty, result.Artist ?? string.Empty),
             Isrc = result.Isrc,
             Mbid = result.Mbid,
             DurationMs = result.DurationMs,
-            CanonicalMetadata = result.HasTrackNameAndArtist()
+            CanonicalMetadata = !string.IsNullOrWhiteSpace(result.Title)
+                                && !string.IsNullOrWhiteSpace(result.Artist)
                 ? new RavenSongMetadataDocument
                 {
                     Title = result.Title!,

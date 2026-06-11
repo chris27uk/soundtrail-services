@@ -7,4 +7,4 @@ public sealed record ProviderPlaybackReferenceResolved(
     string? ExternalId,
     Uri Url,
     ProviderName SourceProvider,
-    DateTimeOffset ObservedAt) : MusicTrackFact;
+    DateTimeOffset ObservedAt) : IMusicTrackEvent;

@@ -29,6 +29,6 @@ public sealed class MusicTrackEventListenerTests
         var env = MusicTrackEventListenerTestEnvironment.WithPlaybackReferencesResolutionRequiredMessage();
         var message = (ResolvePlaybackReferencesCommandDto)env.HandlePlaybackReferencesResolutionRequired();
         message.MusicCatalogId.Should().Be("mc_track_1");
-        message.LookupKey.Mode.Should().Be(PlaybackReferenceLookupModeDto.Isrc);
+        message.SearchTerm.Isrc.Should().Be("isrc-1");
     }
 }

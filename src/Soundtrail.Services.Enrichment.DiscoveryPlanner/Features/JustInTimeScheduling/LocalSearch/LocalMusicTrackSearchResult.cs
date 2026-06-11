@@ -13,23 +13,22 @@ public sealed record LocalMusicTrackSearchResult(
     int? DurationMs,
     bool IsPlayable)
 {
-    public bool HasIsrc() => !string.IsNullOrWhiteSpace(Isrc);
+    public MusicSearchTerm? GetSearchTerm()
+    {
+        if (HasIsrc())
+        {
+            return MusicSearchTerm.ByIsrc(Isrc!);
+        }
 
-    public bool HasTrackNameAndArtist() =>
-        !string.IsNullOrWhiteSpace(Title)
-        && !string.IsNullOrWhiteSpace(Artist);
+        if (HasEnoughMusicCharacteristicsForSearch())
+        {
+            return MusicSearchTerm.ByTrackArtistAlbum(Title!, Artist!, AlbumTitle);
+        }
+        
+        return null;
+    }
 
-    public PlaybackReferenceLookupKey? ToPlaybackLookupKey() =>
-        HasIsrc()
-            ? PlaybackReferenceLookupKey.ByIsrc(Isrc!)
-            : HasTrackNameAndArtist()
-                ? PlaybackReferenceLookupKey.ByTrackNameAndArtist(Title!, Artist!)
-                : null;
+    private bool HasIsrc() => !string.IsNullOrWhiteSpace(Isrc);
 
-    public CanonicalMusicMetadataLookup? ToCanonicalMusicMetadataLookup() =>
-        HasIsrc()
-            ? CanonicalMusicMetadataLookup.FromIsrc(Isrc!)
-            : HasTrackNameAndArtist()
-                ? CanonicalMusicMetadataLookup.FromTrackNameArtistAndAlbum(Title!, Artist!, AlbumTitle)
-                : null;
+    private bool HasEnoughMusicCharacteristicsForSearch() => !string.IsNullOrWhiteSpace(Title) && !string.IsNullOrWhiteSpace(Artist);
 }

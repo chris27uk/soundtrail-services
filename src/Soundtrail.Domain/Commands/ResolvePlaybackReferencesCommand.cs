@@ -9,7 +9,7 @@ public sealed record ResolvePlaybackReferencesCommand(
     LookupPriorityBand Priority,
     DateTimeOffset CreatedAt,
     CorrelationId CorrelationId,
-    PlaybackReferenceLookupKey LookupKey)
+    MusicSearchTerm LookupKey)
 {
     public ProviderName TargetProvider => ProviderName.Odesli;
 }

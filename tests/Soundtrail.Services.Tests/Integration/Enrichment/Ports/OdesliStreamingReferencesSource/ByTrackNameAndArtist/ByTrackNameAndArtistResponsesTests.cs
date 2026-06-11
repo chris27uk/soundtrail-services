@@ -13,11 +13,11 @@ public sealed class ByTrackNameAndArtistResponsesTests
     {
         var env = OdesliStreamingReferencesSourceTestEnvironment.Create(mode);
         env.Seed(
-            PlaybackReferenceLookupKey.ByTrackNameAndArtist("Song A", "Artist A"),
+            MusicSearchTerm.ByTrackArtistAlbum("Song A", "Artist A", "Album A"),
             new ExternalReference(ProviderName.YoutubeMusic, new Uri("https://music.youtube.com/watch?v=yt-2"), "yt-2", ReferenceConfidence.Verified));
 
-        var actual = await env.Source.GetPlaybackReferencesAsync(
-            PlaybackReferenceLookupKey.ByTrackNameAndArtist("Song A", "Artist A"),
+        var actual = await env.Source.GetReferenceToMusicTrack(
+            MusicSearchTerm.ByTrackArtistAlbum("Song A", "Artist A", "Album A"),
             CancellationToken.None);
 
         actual.Should().BeEquivalentTo(

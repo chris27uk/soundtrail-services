@@ -12,7 +12,7 @@ public sealed class MusicTrackStreamStoreFake : IMusicTrackEventRepository
 
     public void Seed(
         MusicCatalogId musicCatalogId,
-        params MusicTrackFact[] facts)
+        params IMusicTrackEvent[] facts)
     {
         streams[musicCatalogId.Value] = new StoredStream
         {
@@ -28,7 +28,7 @@ public sealed class MusicTrackStreamStoreFake : IMusicTrackEventRepository
     {
         if (!streams.TryGetValue(musicCatalogId.Value, out var stored))
         {
-            return Task.FromResult(new MusicTrackStream(0, Array.Empty<MusicTrackFact>()));
+            return Task.FromResult(new MusicTrackStream(0, Array.Empty<IMusicTrackEvent>()));
         }
 
         return Task.FromResult(new MusicTrackStream(stored.Version, stored.Facts.ToArray()));
@@ -38,7 +38,7 @@ public sealed class MusicTrackStreamStoreFake : IMusicTrackEventRepository
         MusicCatalogId musicCatalogId,
         int expectedVersion,
         CommandId commandId,
-        IReadOnlyList<MusicTrackFact> events,
+        IReadOnlyList<IMusicTrackEvent> events,
         CancellationToken cancellationToken)
     {
         if (!streams.TryGetValue(musicCatalogId.Value, out var stored))
@@ -69,6 +69,6 @@ public sealed class MusicTrackStreamStoreFake : IMusicTrackEventRepository
 
         public List<string> AppliedCommandIds { get; } = [];
 
-        public List<MusicTrackFact> Facts { get; } = [];
+        public List<IMusicTrackEvent> Facts { get; } = [];
     }
 }

@@ -35,8 +35,8 @@ public sealed class RavenEmbeddedResponsesTests
         var loaded = await verificationStore.LoadEventsAsync(musicCatalogId, CancellationToken.None);
 
         loaded.Version.Should().Be(1);
-        loaded.Facts.Should().ContainItemsAssignableTo<MinimalTrackInfoDiscovered>();
-        var fact = loaded.Facts.Should().ContainSingle().Subject;
+        loaded.Events.Should().ContainItemsAssignableTo<MinimalTrackInfoDiscovered>();
+        var fact = loaded.Events.Should().ContainSingle().Subject;
         fact.Should().BeOfType<MinimalTrackInfoDiscovered>();
         ((MinimalTrackInfoDiscovered)fact).Mbid.Should().Be("mbid-1");
     }
@@ -74,7 +74,7 @@ public sealed class RavenEmbeddedResponsesTests
         var verificationStore = CreateStore(verificationSession);
         var loaded = await verificationStore.LoadEventsAsync(musicCatalogId, CancellationToken.None);
         loaded.Version.Should().Be(1);
-        loaded.Facts.Should().ContainSingle();
+        loaded.Events.Should().ContainSingle();
     }
 
     private static IMusicTrackEventRepository CreateStore(IAsyncDocumentSession session) =>

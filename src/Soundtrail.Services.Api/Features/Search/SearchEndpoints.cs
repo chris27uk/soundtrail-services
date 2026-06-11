@@ -1,4 +1,4 @@
-using Soundtrail.Contracts;
+using Soundtrail.Domain;
 using Soundtrail.Services.Api.Features.Search.TrackSearch;
 
 namespace Soundtrail.Services.Api.Features.Search;

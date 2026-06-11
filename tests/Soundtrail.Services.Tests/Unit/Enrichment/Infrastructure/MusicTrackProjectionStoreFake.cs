@@ -42,7 +42,7 @@ public sealed class MusicTrackProjectionStoreFake : IMusicTrackProjectionStore
             ProviderReference? youTubeMusic = null;
             ProviderReference? spotify = null;
 
-            foreach (var fact in stream.Facts)
+            foreach (var fact in stream.Events)
             {
                 switch (fact)
                 {

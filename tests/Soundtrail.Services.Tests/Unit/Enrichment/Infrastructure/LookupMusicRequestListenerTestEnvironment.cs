@@ -16,6 +16,15 @@ internal sealed class LookupMusicRequestListenerTestEnvironment
     private LookupMusicRequestListenerTestEnvironment(FakeMusicCatalogCandidateSearch search)
     {
         localSearchFake = new LocalMusicTrackSearchFake();
+        localSearchFake.Seed(new LocalMusicTrackSearchResult(
+            MusicCatalogId.From("mc_track_1"),
+            "Song A",
+            "Artist A",
+            "Album A",
+            null,
+            null,
+            null,
+            IsPlayable: false));
         Listener = new LookupMusicRequestListener(
             new LookupMusicRequestHandler(
                 search,

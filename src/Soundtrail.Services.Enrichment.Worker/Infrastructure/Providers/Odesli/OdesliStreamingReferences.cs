@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
+using Soundtrail.Contracts.Commands;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
@@ -8,17 +9,17 @@ using Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExe
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Providers.Odesli;
 
-public sealed class OdesliStreamingReferencesSource(
+public sealed class OdesliStreamingReferences(
     HttpClient httpClient,
-    IOptions<OdesliOptions> options) : IPlaybackReferenceSource
+    IOptions<OdesliOptions> options) : IGetMusicTrackReference
 {
     private readonly OdesliOptions options = options.Value;
 
-    public async Task<IReadOnlyList<ExternalReference>> GetPlaybackReferencesAsync(
-        PlaybackReferenceLookupKey lookupKey,
+    public async Task<IReadOnlyList<ExternalReference>> GetReferenceToMusicTrack(
+        MusicSearchTerm searchTerm,
         CancellationToken cancellationToken)
     {
-        var requestUri = BuildRequestUri(lookupKey);
+        var requestUri = BuildRequestUri(searchTerm);
         var response = await httpClient.GetFromJsonAsync<OdesliLookupResponse>(
             requestUri,
             cancellationToken);
@@ -48,13 +49,14 @@ public sealed class OdesliStreamingReferencesSource(
         return references;
     }
 
-    private string BuildRequestUri(PlaybackReferenceLookupKey lookupKey) =>
-        lookupKey.Mode switch
-        {
-            PlaybackReferenceLookupMode.Isrc => $"/v1-user/links?id={Uri.EscapeDataString(lookupKey.Isrc ?? string.Empty)}&platform=isrc&userCountry={Uri.EscapeDataString(options.UserCountry)}",
-            PlaybackReferenceLookupMode.ByTrackNameAndArtist => $"/v1-user/links?title={Uri.EscapeDataString(lookupKey.Title ?? string.Empty)}&artist={Uri.EscapeDataString(lookupKey.Artist ?? string.Empty)}&userCountry={Uri.EscapeDataString(options.UserCountry)}",
-            _ => throw new ArgumentOutOfRangeException(nameof(lookupKey.Mode), lookupKey.Mode, null)
-        };
+    private string BuildRequestUri(MusicSearchTerm searchTerm)
+    {
+        return searchTerm.Match(
+            (track, artist, album) =>
+                $"/v1-user/links?title={Uri.EscapeDataString(track)}&artist={Uri.EscapeDataString(artist)}&album={Uri.EscapeDataString(album ?? string.Empty)}&userCountry={Uri.EscapeDataString(options.UserCountry)}",
+            isrc =>
+                $"/v1-user/links?id={Uri.EscapeDataString(isrc ?? string.Empty)}&platform=isrc&userCountry={Uri.EscapeDataString(options.UserCountry)}");
+    }
 
     public static void ConfigureHttpClient(HttpClient httpClient, OdesliOptions options) =>
         httpClient.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);

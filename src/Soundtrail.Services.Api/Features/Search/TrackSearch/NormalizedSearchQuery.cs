@@ -42,5 +42,5 @@ public sealed record NormalizedSearchQuery
     
     public static implicit operator string(NormalizedSearchQuery query) => query.Value;
     
-    public static implicit operator NormalizedSearchQuery(string query) => new(query);
+    public static implicit operator NormalizedSearchQuery(string? query) => new(query ?? throw new ArgumentNullException(nameof(query)));
 }

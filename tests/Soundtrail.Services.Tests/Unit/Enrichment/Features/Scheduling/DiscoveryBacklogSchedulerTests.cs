@@ -107,6 +107,6 @@ public sealed class DiscoveryBacklogSchedulerTests
     {
         var env = DiscoveryBacklogSchedulerTestEnvironment.WithScheduledCandidate();
         var commands = await env.RunSweep();
-        commands[0].CommandId.Should().Be(CommandId.For("ResolveCanonicalMetadataFromMusicBrainz:mc_track_1"));
+        commands[0].CommandId.Should().Be(CommandId.For("LookupCanonicalMusicMetadata:mc_track_1"));
     }
 }

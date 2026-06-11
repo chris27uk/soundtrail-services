@@ -9,4 +9,4 @@ public sealed record MinimalTrackInfoDiscovered(
     string? Isrc,
     string? Mbid,
     ProviderName SourceProvider,
-    DateTimeOffset ObservedAt) : MusicTrackFact;
+    DateTimeOffset ObservedAt) : IMusicTrackEvent;

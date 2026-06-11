@@ -11,6 +11,7 @@
     <PackageReference Include="WolverineFx" Version="4.9.0" />
     <PackageReference Include="WolverineFx.AzureServiceBus" Version="4.9.0" />
     <ProjectReference Include="..\Soundtrail.Contracts\Soundtrail.Contracts.csproj" />
+    <ProjectReference Include="..\Soundtrail.Domain\Soundtrail.Domain.csproj" />
   </ItemGroup>
 
 </Project>

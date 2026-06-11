@@ -25,7 +25,7 @@ public sealed class RavenMusicTrackStreamStore(
         MusicCatalogId musicCatalogId,
         int expectedVersion,
         CommandId commandId,
-        IReadOnlyList<MusicTrackFact> events,
+        IReadOnlyList<IMusicTrackEvent> events,
         CancellationToken cancellationToken)
     {
         session.Advanced.UseOptimisticConcurrency = true;

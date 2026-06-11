@@ -10,7 +10,7 @@ using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
 
-public sealed class MusicBrainzLookupExecutionListener(ExecuteMusicBrainzLookupHandler handler)
+public sealed class MusicBrainzLookupExecutionListener(LookupCanonicalMusicMetadataHandler handler)
 {
     [WolverineHandler]
     [Transactional]
@@ -26,7 +26,7 @@ public sealed class MusicBrainzLookupExecutionListener(ExecuteMusicBrainzLookupH
                 dto.Priority,
                 dto.CreatedAt,
                 CorrelationId.From(dto.CorrelationId),
-                ToLookup(dto)),
+                ToSearchTerm(dto)),
             cancellationToken);
         return result.Response is null
             ? []
@@ -52,10 +52,10 @@ public sealed class MusicBrainzLookupExecutionListener(ExecuteMusicBrainzLookupH
                 result.Response.CorrelationId.Value)];
     }
 
-    private static CanonicalMusicMetadataLookup ToLookup(LookupCanonicalMusicMetadataCommandDto dto) =>
+    private static MusicSearchTerm ToSearchTerm(LookupCanonicalMusicMetadataCommandDto dto) =>
         !string.IsNullOrWhiteSpace(dto.Isrc)
-            ? CanonicalMusicMetadataLookup.FromIsrc(dto.Isrc)
-            : CanonicalMusicMetadataLookup.FromTrackNameArtistAndAlbum(
+            ? MusicSearchTerm.ByIsrc(dto.Isrc)
+            : MusicSearchTerm.ByTrackArtistAlbum(
                 dto.TrackName ?? string.Empty,
                 dto.ArtistName ?? string.Empty,
                 dto.AlbumName);

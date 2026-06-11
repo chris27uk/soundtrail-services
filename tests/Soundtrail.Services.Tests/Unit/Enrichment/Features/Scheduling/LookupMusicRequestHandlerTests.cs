@@ -36,7 +36,7 @@ public class LookupMusicRequestHandlerTests
         var env = LookupMusicRequestHandlerTestEnvironment.WithNoExistingCandidates();
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
         env.Search.ResolveAs(musicCatalogId);
-        await env.ActiveWorkStore.TryAcquireAsync(CommandId.For($"ResolveCanonicalMetadataFromMusicBrainz:{musicCatalogId.Value}"), DateTimeOffset.UtcNow.AddMinutes(5), CancellationToken.None);
+        await env.ActiveWorkStore.TryAcquireAsync(CommandId.For($"LookupCanonicalMusicMetadata:{musicCatalogId.Value}"), DateTimeOffset.UtcNow.AddMinutes(5), CancellationToken.None);
 
         var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10), CancellationToken.None);
 
@@ -52,6 +52,7 @@ public class LookupMusicRequestHandlerTests
             MusicCatalogId.From("mc_track_1"),
             "Song A",
             "Artist A",
+            "Album A",
             "isrc-1",
             "mbid-1",
             123000,

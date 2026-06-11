@@ -6,9 +6,9 @@ using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.MusicBrainzLookupExecution;
 
-public sealed class ExecuteMusicBrainzLookupHandler(
+public sealed class LookupCanonicalMusicMetadataHandler(
     ILookupExecutionReceiptStore lookupExecutionReceiptStore,
-    IMusicBrainzMetadataSource metadataSource)
+    IGetCanonicalMusicMetadata getMetaData)
 {
     public async Task<LookupExecutionResult> Handle(
         LookupCanonicalMusicMetadataCommand command,
@@ -24,8 +24,7 @@ public sealed class ExecuteMusicBrainzLookupHandler(
             return LookupExecutionResult.Duplicate();
         }
 
-        var metadata = await ResolveMetadataAsync(command.Lookup, cancellationToken);
-
+        var songMetadata = await ResolveMetadataAsync(command.SearchTerm, cancellationToken);
         return LookupExecutionResult.Completed(
             new EnrichmentResponse(
                 command.CommandId,
@@ -33,13 +32,13 @@ public sealed class ExecuteMusicBrainzLookupHandler(
                 ProviderName.MusicBrainz,
                 command.Priority,
                 command.CreatedAt,
-                metadata,
+                songMetadata,
                 [],
                 command.CorrelationId));
     }
 
     private async Task<SongMetadata?> ResolveMetadataAsync(
-        CanonicalMusicMetadataLookup lookup,
+        MusicSearchTerm searchTerm,
         CancellationToken cancellationToken)
-        => await metadataSource.GetMetadataAsync(lookup, cancellationToken);
+        => await getMetaData.GetMetadataAsync(searchTerm, cancellationToken);
 }

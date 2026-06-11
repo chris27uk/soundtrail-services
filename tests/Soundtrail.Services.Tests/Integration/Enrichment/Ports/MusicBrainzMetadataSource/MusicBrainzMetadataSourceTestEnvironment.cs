@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
+using Soundtrail.Services.Api.Features.Search.Tracks;
 using Soundtrail.Services.Enrichment.Worker.Features.MusicBrainzLookupExecution;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Providers.MusicBrainz;
 using Soundtrail.Services.Tests.Integration.Enrichment.Ports.ProviderClients;
@@ -10,17 +11,17 @@ namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicBrainzMeta
 
 internal sealed class MusicBrainzMetadataSourceTestEnvironment
 {
-    private readonly Action<CanonicalMusicMetadataLookup, SongMetadata> seed;
+    private readonly Action<MusicSearchTerm, SongMetadata> seed;
 
     private MusicBrainzMetadataSourceTestEnvironment(
-        IMusicBrainzMetadataSource source,
-        Action<CanonicalMusicMetadataLookup, SongMetadata> seed)
+        IGetCanonicalMusicMetadata source,
+        Action<MusicSearchTerm, SongMetadata> seed)
     {
         Source = source;
         this.seed = seed;
     }
 
-    public IMusicBrainzMetadataSource Source { get; }
+    public IGetCanonicalMusicMetadata Source { get; }
 
     public static MusicBrainzMetadataSourceTestEnvironment Create(MusicBrainzMetadataSourceMode mode) =>
         mode switch
@@ -30,24 +31,18 @@ internal sealed class MusicBrainzMetadataSourceTestEnvironment
             _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
         };
 
-    public void Seed(CanonicalMusicMetadataLookup lookup, SongMetadata metadata) => seed(lookup, metadata);
+    public void Seed(MusicSearchTerm searchTerm, SongMetadata metadata) => seed(searchTerm, metadata);
 
     private static MusicBrainzMetadataSourceTestEnvironment CreateFake()
     {
-        var fake = new FakeMusicBrainzMetadataSource();
+        var fake = new FakeGetCanonicalMusicMetadata();
         return new MusicBrainzMetadataSourceTestEnvironment(
             fake,
-            (lookup, metadata) =>
+            (searchTerm, metadata) =>
             {
-                if (lookup is CanonicalMusicMetadataLookup.ByIsrc byIsrc)
-                {
-                    fake.SeedIsrc(byIsrc.Isrc, metadata);
-                }
-                else
-                {
-                    var byTrack = (CanonicalMusicMetadataLookup.ByTrackNameArtistAndAlbum)lookup;
-                    fake.SeedNames(byTrack.TrackName, byTrack.ArtistName, byTrack.AlbumName, metadata);
-                }
+                searchTerm.Match(
+                    (track, artist, album) => fake.SeedNames(track, artist, album, metadata),
+                    isrc => fake.SeedIsrc(isrc, metadata));
             });
     }
 
@@ -73,32 +68,30 @@ internal sealed class MusicBrainzMetadataSourceTestEnvironment
 
         var options = Options.Create(new MusicBrainzOptions { BaseUrl = "https://musicbrainz.test", UserAgent = "Soundtrail.Tests/1.0" });
         var client = new HttpClient(handler);
-        MusicBrainzHttpMetadataSource.ConfigureHttpClient(client, options.Value);
+        MusicBrainzGetCanonicalMusicMetadata.ConfigureHttpClient(client, options.Value);
 
         return new MusicBrainzMetadataSourceTestEnvironment(
-            new MusicBrainzHttpMetadataSource(client),
+            new MusicBrainzGetCanonicalMusicMetadata(client),
             (lookup, metadata) =>
             {
-                if (lookup is CanonicalMusicMetadataLookup.ByIsrc byIsrc)
-                {
-                    responses[$"/ws/2/isrc/{Uri.EscapeDataString(byIsrc.Isrc)}?fmt=json&inc=artist-credits+isrcs"] = metadata;
-                }
-                else
-                {
-                    var byTrack = (CanonicalMusicMetadataLookup.ByTrackNameArtistAndAlbum)lookup;
-                    var clauses = new List<string>
+                lookup.Match((track, artist, album) =>
                     {
-                        $"recording:\"{byTrack.TrackName}\"",
-                        $"artist:\"{byTrack.ArtistName}\""
-                    };
-                    if (!string.IsNullOrWhiteSpace(byTrack.AlbumName))
-                    {
-                        clauses.Add($"release:\"{byTrack.AlbumName}\"");
-                    }
+                        var clauses = new List<string>
+                        {
+                            $"recording:\"{track}\"",
+                            $"artist:\"{artist}\""
+                        };
 
-                    var query = Uri.EscapeDataString(string.Join(" AND ", clauses));
-                    responses[$"/ws/2/recording?fmt=json&limit=5&query={query}&inc=artist-credits+isrcs+releases"] = metadata;
-                }
+                        if (!string.IsNullOrWhiteSpace(album))
+                        {
+                            clauses.Add($"release:\"{album}\"");
+                        }
+
+                        var query = Uri.EscapeDataString(string.Join(" AND ", clauses));
+                        responses[$"/ws/2/recording?fmt=json&limit=5&query={query}&inc=artist-credits+isrcs+releases"] =
+                            metadata;
+                    },
+                    isrc => responses[$"/ws/2/isrc/{Uri.EscapeDataString(isrc)}?fmt=json&inc=artist-credits+isrcs"] = metadata);
             });
     }
 }

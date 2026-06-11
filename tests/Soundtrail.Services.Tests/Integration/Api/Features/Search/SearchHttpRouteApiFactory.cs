@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Contracts;
+using Soundtrail.Domain;
 using Soundtrail.Services.Api.Features.Search.TrackSearch;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 

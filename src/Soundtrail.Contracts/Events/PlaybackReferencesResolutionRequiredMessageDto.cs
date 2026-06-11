@@ -9,4 +9,4 @@ public sealed record PlaybackReferencesResolutionRequiredMessageDto(
     string CorrelationId,
     string SourceProvider,
     DateTimeOffset ObservedAt,
-    PlaybackReferenceLookupKeyDto LookupKey);
+    PlaybackReferenceSearchTermDto SearchTerm);

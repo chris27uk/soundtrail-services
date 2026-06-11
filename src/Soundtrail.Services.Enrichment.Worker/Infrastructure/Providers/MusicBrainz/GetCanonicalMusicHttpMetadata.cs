@@ -7,38 +7,26 @@ using Soundtrail.Services.Enrichment.Worker.Features.TrackLookup;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Providers.MusicBrainz;
 
-public sealed class MusicBrainzHttpMetadataSource(
-    HttpClient httpClient) : IMusicBrainzMetadataSource
+public sealed class MusicBrainzGetCanonicalMusicMetadata(HttpClient httpClient) : IGetCanonicalMusicMetadata
 {
     public async Task<SongMetadata?> GetMetadataAsync(
-        CanonicalMusicMetadataLookup lookup,
+        MusicSearchTerm searchTerm,
         CancellationToken cancellationToken)
     {
-        MusicBrainzRecordingDto? recording = lookup switch
-        {
-            CanonicalMusicMetadataLookup.ByIsrc byIsrc => await LookupByIsrcAsync(byIsrc.Isrc, cancellationToken),
-            CanonicalMusicMetadataLookup.ByTrackNameArtistAndAlbum byNames => await SearchByNamesAsync(
-                byNames.TrackName,
-                byNames.ArtistName,
-                byNames.AlbumName,
-                cancellationToken),
-            _ => throw new ArgumentOutOfRangeException(nameof(lookup), lookup, null)
-        };
+        var recording = await searchTerm.Match(async (track, artist, album) => await SearchByNamesAsync(
+            track,
+            artist,
+            album,
+            cancellationToken), async isrc => await LookupByIsrcAsync(isrc, cancellationToken));
 
         if (recording is null)
         {
             return null;
         }
 
-        var fallbackTitle = lookup is CanonicalMusicMetadataLookup.ByTrackNameArtistAndAlbum byTrack
-            ? byTrack.TrackName
-            : string.Empty;
-        var fallbackArtist = lookup is CanonicalMusicMetadataLookup.ByTrackNameArtistAndAlbum byTrackArtist
-            ? byTrackArtist.ArtistName
-            : string.Empty;
-        var fallbackIsrc = lookup is CanonicalMusicMetadataLookup.ByIsrc isrcLookup
-            ? isrcLookup.Isrc
-            : null;
+        var fallbackTitle = searchTerm.Match((track, _, _) => track, __ => string.Empty);
+        var fallbackArtist = searchTerm.Match((_, artist, _) => artist, __ => string.Empty);
+        var fallbackIsrc = searchTerm.Match<string?>((_, _, _) => null, isrc => isrc);
 
         return new SongMetadata(
             recording.Title ?? fallbackTitle,

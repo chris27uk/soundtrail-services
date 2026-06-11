@@ -1,4 +1,5 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
@@ -23,6 +24,19 @@ internal sealed class DiscoveryBacklogSchedulerTestEnvironment
 
         ActiveWorkStore = new ActiveLookupWorkStoreFake();
         localSearch = new LocalMusicTrackSearchFake();
+        foreach (var candidate in candidates)
+        {
+            localSearch.Seed(new LocalMusicTrackSearchResult(
+                candidate.MusicCatalogId,
+                $"Track {candidate.MusicCatalogId.Value}",
+                $"Artist {candidate.MusicCatalogId.Value}",
+                $"Album {candidate.MusicCatalogId.Value}",
+                null,
+                null,
+                null,
+                IsPlayable: false));
+        }
+
         Scheduler = new DiscoveryBacklogScheduler(this.store, ActiveWorkStore, new DiscoveryPriorityPolicy(), localSearch);
         Now = DefaultNow;
     }
@@ -42,7 +56,7 @@ internal sealed class DiscoveryBacklogSchedulerTestEnvironment
     {
         var env = new DiscoveryBacklogSchedulerTestEnvironment(Candidates.PopularEligibleCandidate());
         env.ActiveWorkStore.TryAcquireAsync(
-            CommandId.For("ResolveCanonicalMetadataFromMusicBrainz:mc_track_high"),
+            CommandId.For("LookupCanonicalMusicMetadata:mc_track_high"),
             env.Now.AddMinutes(5),
             CancellationToken.None).GetAwaiter().GetResult();
         return env;
@@ -74,6 +88,5 @@ internal sealed class DiscoveryBacklogSchedulerTestEnvironment
 
     public LocalMusicTrackSearchFake LocalSearch => localSearch;
 
-    public Task<IReadOnlyList<LookupPhaseCommand>> RunSweep(int take = 10) =>
-        Scheduler.RunOnceAsync(Now, take);
+    public Task<IReadOnlyList<LookupPhaseCommand>> RunSweep(int take = 10) => Scheduler.RunOnceAsync(Now, take);
 }

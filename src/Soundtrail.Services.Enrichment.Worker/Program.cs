@@ -43,19 +43,19 @@ builder.UseWolverine(opts =>
 builder.Services.AddWorkerRavenDocumentStore(builder.Configuration);
 builder.Services.Configure<MusicBrainzOptions>(builder.Configuration.GetSection(MusicBrainzOptions.SectionName));
 builder.Services.Configure<OdesliOptions>(builder.Configuration.GetSection(OdesliOptions.SectionName));
-builder.Services.AddHttpClient<IMusicBrainzMetadataSource, MusicBrainzHttpMetadataSource>()
+builder.Services.AddHttpClient<IGetCanonicalMusicMetadata, MusicBrainzGetCanonicalMusicMetadata>()
     .ConfigureHttpClient((sp, httpClient) =>
     {
         var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<MusicBrainzOptions>>().Value;
-        MusicBrainzHttpMetadataSource.ConfigureHttpClient(httpClient, options);
+        MusicBrainzGetCanonicalMusicMetadata.ConfigureHttpClient(httpClient, options);
     });
-builder.Services.AddHttpClient<IPlaybackReferenceSource, OdesliStreamingReferencesSource>()
+builder.Services.AddHttpClient<IGetMusicTrackReference, OdesliStreamingReferences>()
     .ConfigureHttpClient((sp, httpClient) =>
     {
         var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<OdesliOptions>>().Value;
-        OdesliStreamingReferencesSource.ConfigureHttpClient(httpClient, options);
+        OdesliStreamingReferences.ConfigureHttpClient(httpClient, options);
     });
-builder.Services.AddScoped<ExecuteMusicBrainzLookupHandler>();
+builder.Services.AddScoped<LookupCanonicalMusicMetadataHandler>();
 builder.Services.AddScoped<ExecutePlaybackReferencesLookupHandler>();
 builder.Services.AddScoped<MusicBrainzLookupExecutionListener>();
 builder.Services.AddScoped<PlaybackReferencesLookupExecutionListener>();

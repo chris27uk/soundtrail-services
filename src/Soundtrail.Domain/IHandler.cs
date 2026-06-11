@@ -1,4 +1,4 @@
-namespace Soundtrail.Contracts;
+namespace Soundtrail.Domain;
 
 public interface IHandler<in TRequest, TResponse>
 {

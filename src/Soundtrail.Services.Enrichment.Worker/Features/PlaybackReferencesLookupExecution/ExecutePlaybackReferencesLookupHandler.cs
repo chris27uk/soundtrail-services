@@ -6,7 +6,7 @@ namespace Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLooku
 
 public sealed class ExecutePlaybackReferencesLookupHandler(
     ILookupExecutionReceiptStore lookupExecutionReceiptStore,
-    IPlaybackReferenceSource playbackReferenceSource)
+    IGetMusicTrackReference getMusicTrackReference)
 {
     public async Task<LookupExecutionResult> Handle(
         ResolvePlaybackReferencesCommand command,
@@ -22,7 +22,7 @@ public sealed class ExecutePlaybackReferencesLookupHandler(
             return LookupExecutionResult.Duplicate();
         }
 
-        var references = await playbackReferenceSource.GetPlaybackReferencesAsync(
+        var references = await getMusicTrackReference.GetReferenceToMusicTrack(
             command.LookupKey,
             cancellationToken);
 

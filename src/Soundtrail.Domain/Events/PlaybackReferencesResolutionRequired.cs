@@ -9,4 +9,4 @@ public sealed record PlaybackReferencesResolutionRequired(
     CorrelationId CorrelationId,
     ProviderName SourceProvider,
     DateTimeOffset ObservedAt,
-    PlaybackReferenceLookupKey LookupKey) : MusicTrackFact;
+    MusicSearchTerm SearchTerm) : IMusicTrackEvent;

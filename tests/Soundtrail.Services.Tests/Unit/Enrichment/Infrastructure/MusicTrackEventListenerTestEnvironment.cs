@@ -26,6 +26,6 @@ internal sealed class MusicTrackEventListenerTestEnvironment
                 "corr-1",
                 ProviderName.MusicBrainz.Value,
                 ObservedAt,
-                new PlaybackReferenceLookupKeyDto(PlaybackReferenceLookupModeDto.Isrc, "isrc-1", null, null)),
+                new PlaybackReferenceSearchTermDto("isrc-1", null, null, null)),
             null!);
 }

@@ -9,5 +9,4 @@ public sealed record LookupCanonicalMusicMetadataCommand(
     LookupPriorityBand Priority,
     DateTimeOffset CreatedAt,
     CorrelationId CorrelationId,
-    CanonicalMusicMetadataLookup Lookup)
-    : LookupPhaseCommand(CommandId, MusicCatalogId, Priority, CreatedAt, CorrelationId);
+    MusicSearchTerm SearchTerm) : LookupPhaseCommand(CommandId, MusicCatalogId, Priority, CreatedAt, CorrelationId);

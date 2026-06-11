@@ -30,8 +30,6 @@ namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven.D
 
         public string? CorrelationId { get; set; }
 
-        public string? LookupMode { get; set; }
-
         public string? AlbumId { get; set; }
 
         public string? AlbumTitle { get; set; }

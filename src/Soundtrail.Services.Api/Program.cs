@@ -1,5 +1,5 @@
-using Soundtrail.Contracts;
 using Soundtrail.Contracts.Commands;
+using Soundtrail.Domain;
 using Soundtrail.Services.Api.Features.Health;
 using Soundtrail.Services.Api.Features.Search;
 using Soundtrail.Services.Api.Features.Search.Queueing;

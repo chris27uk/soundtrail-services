@@ -3,9 +3,9 @@ using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.MusicBrainzLookupExecution;
 
-public interface IMusicBrainzMetadataSource
+public interface IGetCanonicalMusicMetadata
 {
     Task<SongMetadata?> GetMetadataAsync(
-        CanonicalMusicMetadataLookup lookup,
+        MusicSearchTerm searchTerm,
         CancellationToken cancellationToken);
 }

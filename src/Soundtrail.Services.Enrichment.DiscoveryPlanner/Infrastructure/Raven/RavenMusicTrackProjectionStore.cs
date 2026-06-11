@@ -37,7 +37,7 @@ public sealed class RavenMusicTrackProjectionStore(
         ProviderReference? youTubeMusic = null;
         ProviderReference? spotify = null;
 
-        foreach (var fact in stream.Facts)
+        foreach (var fact in stream.Events)
         {
             switch (fact)
             {

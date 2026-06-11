@@ -1,4 +1,5 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
 
@@ -7,4 +8,4 @@ public abstract record LookupPhaseCommand(
     MusicCatalogId MusicCatalogId,
     LookupPriorityBand Priority,
     DateTimeOffset CreatedAt,
-    CorrelationId CorrelationId);
+    CorrelationId CorrelationId) : ICommand;

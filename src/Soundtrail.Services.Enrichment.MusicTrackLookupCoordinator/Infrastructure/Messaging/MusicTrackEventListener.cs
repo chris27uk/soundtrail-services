@@ -17,6 +17,6 @@ public sealed class MusicTrackEventListener
             dto.Priority,
             dto.ObservedAt,
             dto.CorrelationId,
-            dto.LookupKey);
+            dto.SearchTerm);
     }
 }

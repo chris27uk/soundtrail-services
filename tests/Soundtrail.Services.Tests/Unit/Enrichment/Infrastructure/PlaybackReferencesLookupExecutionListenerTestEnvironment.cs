@@ -16,20 +16,20 @@ internal sealed class PlaybackReferencesLookupExecutionListenerTestEnvironment
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero),
             "corr-1",
-            new PlaybackReferenceLookupKeyDto(PlaybackReferenceLookupModeDto.Isrc, "isrc-1", null, null));
+            new PlaybackReferenceSearchTermDto("isrc-1", null, null, null));
 
     private PlaybackReferencesLookupExecutionListenerTestEnvironment(LookupExecutionReceiptStoreFake.State state)
     {
-        PlaybackReferenceSource = new FakePlaybackReferenceSource();
+        GetMusicTrackReference = new FakeGetMusicTrackReference();
         Listener = new PlaybackReferencesLookupExecutionListener(
             new ExecutePlaybackReferencesLookupHandler(
                 new LookupExecutionReceiptStoreFake(state),
-                PlaybackReferenceSource));
+                GetMusicTrackReference));
     }
 
     public PlaybackReferencesLookupExecutionListener Listener { get; }
 
-    public FakePlaybackReferenceSource PlaybackReferenceSource { get; }
+    public FakeGetMusicTrackReference GetMusicTrackReference { get; }
 
     public static PlaybackReferencesLookupExecutionListenerTestEnvironment WithANewExecutionCommandDto() =>
         new(new LookupExecutionReceiptStoreFake.State());
@@ -37,8 +37,8 @@ internal sealed class PlaybackReferencesLookupExecutionListenerTestEnvironment
     public static PlaybackReferencesLookupExecutionListenerTestEnvironment WithADuplicateExecutionCommandDto() =>
         new(new LookupExecutionReceiptStoreFake.State());
 
-    public void Seed(PlaybackReferenceLookupKey lookupKey, params ExternalReference[] references) =>
-        PlaybackReferenceSource.Seed(lookupKey, references);
+    public void Seed(MusicSearchTerm lookupKey, params ExternalReference[] references) =>
+        GetMusicTrackReference.Seed(lookupKey, references);
 
     public Task<object[]> HandleNewExecutionCommand() =>
         Listener.Handle(DefaultCommand, null!);

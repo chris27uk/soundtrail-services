@@ -11,7 +11,7 @@ public sealed class ByIsrcResponsesTests
     public async Task Given_An_Isrc_Lookup_When_Metadata_Is_Looked_Up_Then_The_Matching_Metadata_Is_Returned(MusicBrainzMetadataSourceMode mode)
     {
         var env = MusicBrainzMetadataSourceTestEnvironment.Create(mode);
-        var lookup = CanonicalMusicMetadataLookup.FromIsrc("isrc-1");
+        var lookup = MusicSearchTerm.ByIsrc("isrc-1");
         env.Seed(lookup, new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000));
 
         var actual = await env.Source.GetMetadataAsync(lookup, CancellationToken.None);

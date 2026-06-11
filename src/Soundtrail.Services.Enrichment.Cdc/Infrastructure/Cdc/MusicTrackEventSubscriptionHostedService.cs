@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Subscriptions;
+using Soundtrail.Contracts.Commands;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.Events;
 using Soundtrail.Domain.Events;
@@ -117,12 +118,10 @@ public sealed class MusicTrackEventSubscriptionHostedService(
             @event.CorrelationId ?? string.Empty,
             @event.SourceProvider,
             @event.ObservedAt,
-            new Soundtrail.Contracts.Commands.PlaybackReferenceLookupKeyDto(
-                Enum.Parse<Soundtrail.Contracts.Commands.PlaybackReferenceLookupModeDto>(
-                    @event.LookupMode ?? nameof(Soundtrail.Contracts.Commands.PlaybackReferenceLookupModeDto.ByTrackNameAndArtist),
-                    ignoreCase: true),
+            new PlaybackReferenceSearchTermDto(
                 @event.Isrc,
                 @event.Title,
-                @event.Artist));
+                @event.Artist,
+                @event.ALbum));
     }
 }

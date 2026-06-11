@@ -32,6 +32,13 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
                 this.ResolutionPolicy,
                 this.activeLookupWorkStoreFake,
                 this.localMusicTrackSearchFake);
+
+            SeedDefaultLocalTrack("mc_track_1");
+            SeedDefaultLocalTrack("mc_track_2");
+            SeedDefaultLocalTrack("mc_track_3");
+            SeedDefaultLocalTrack("mc_track_high");
+            SeedDefaultLocalTrack("mc_track_low");
+            SeedDefaultLocalTrack("mc_track_deferred");
         }
 
         public LookupMusicRequestHandler Handler { get; }
@@ -91,5 +98,16 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
                 RiskScore: riskScore,
                 OccurredAt: occurredAt ?? new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero),
                 CorrelationId: CorrelationId.New());
+
+        private void SeedDefaultLocalTrack(string musicCatalogId) =>
+            this.localMusicTrackSearchFake.Seed(new LocalMusicTrackSearchResult(
+                MusicCatalogId.From(musicCatalogId),
+                $"Track {musicCatalogId}",
+                $"Artist {musicCatalogId}",
+                $"Album {musicCatalogId}",
+                null,
+                null,
+                null,
+                IsPlayable: false));
     }
 }

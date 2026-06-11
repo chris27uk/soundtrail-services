@@ -1,11 +1,11 @@
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Soundtrail.Contracts;
 using Soundtrail.Contracts.Commands;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.Events;
 using Soundtrail.Contracts.Responses;
+using Soundtrail.Domain;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
@@ -14,6 +14,7 @@ using Soundtrail.Services.Api.Features.Search.Queueing;
 using Soundtrail.Services.Api.Features.Search.Tracks;
 using Soundtrail.Services.Api.Features.Search.TrackSearch;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
+using Soundtrail.Services.Enrichment.Features.Execution.ApplyEnrichmentResponse;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
@@ -22,7 +23,6 @@ using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search.Resolution;
-using Soundtrail.Services.Enrichment.Features.Execution.ApplyEnrichmentResponse;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 using Wolverine;
 using Wolverine.Attributes;
@@ -76,6 +76,15 @@ public sealed class AsyncLookupHappyPathTests
             var rankedStore = new RankedMusicCandidateStoreFake();
             var activeLookupWorkStore = new ActiveLookupWorkStoreFake();
             var localSearch = new LocalMusicTrackSearchFake();
+            localSearch.Seed(new LocalMusicTrackSearchResult(
+                MusicCatalogId.From("mc_track_1"),
+                "Rare Unknown Song",
+                "Test Artist",
+                "Rare Album",
+                null,
+                null,
+                null,
+                IsPlayable: false));
             var streamStore = new MusicTrackStreamStoreFake();
             var projectionStore = new MusicTrackProjectionStoreFake();
             var snapshotStore = new ProviderSnapshotStoreFake();
@@ -153,9 +162,7 @@ public sealed class AsyncLookupHappyPathTests
         }
     }
 
-    public sealed class LocalPipelineHandlers(
-        LookupMusicRequestHandler lookupMusicRequestHandler,
-        ApplyEnrichmentResponseHandler applyEnrichmentResponseHandler)
+    public sealed class LocalPipelineHandlers(LookupMusicRequestHandler lookupMusicRequestHandler, ApplyEnrichmentResponseHandler applyEnrichmentResponseHandler)
     {
         [WolverineHandler]
         public async Task<object[]> Handle(
@@ -175,7 +182,7 @@ public sealed class AsyncLookupHappyPathTests
         }
 
         [WolverineHandler]
-        public object Handle(ResolveCanonicalMetadataFromMusicBrainzCommandDto dto)
+        public object Handle(LookupCanonicalMusicMetadataCommandDto dto)
         {
             return new EnrichmentResponseDto(
                 dto.CommandId,
@@ -202,7 +209,7 @@ public sealed class AsyncLookupHappyPathTests
                 dto.Priority,
                 dto.ObservedAt,
                 dto.CorrelationId,
-                dto.LookupKey);
+                dto.SearchTerm);
         }
 
         [WolverineHandler]
@@ -265,8 +272,8 @@ public sealed class AsyncLookupHappyPathTests
                 .ToArray();
         }
 
-        private static object? MapFollowUpMessage(MusicTrackFact fact) =>
-            fact switch
+        private static object? MapFollowUpMessage(IMusicTrackEvent @event) =>
+            @event switch
             {
                 PlaybackReferencesResolutionRequired playback => new PlaybackReferencesResolutionRequiredMessageDto(
                     playback.MusicCatalogId.Value,
@@ -274,34 +281,38 @@ public sealed class AsyncLookupHappyPathTests
                     playback.CorrelationId.Value,
                     playback.SourceProvider.Value,
                     playback.ObservedAt,
-                    new PlaybackReferenceLookupKeyDto(
-                        (PlaybackReferenceLookupModeDto)playback.LookupKey.Mode,
-                        playback.LookupKey.Isrc,
-                        playback.LookupKey.Title,
-                        playback.LookupKey.Artist)),
+                    new PlaybackReferenceSearchTermDto(
+                        playback.SearchTerm.Isrc,
+                        playback.SearchTerm.Title,
+                        playback.SearchTerm.Artist,
+                        playback.SearchTerm.Album)),
                 _ => null
             };
 
-        private static object MapCommand(LookupPhaseCommand command) =>
+        private static object MapCommand(ICommand command) =>
             command switch
             {
-                ResolveCanonicalMetadataFromMusicBrainzCommand musicBrainz => new ResolveCanonicalMetadataFromMusicBrainzCommandDto(
+                LookupCanonicalMusicMetadataCommand musicBrainz => new LookupCanonicalMusicMetadataCommandDto(
                     musicBrainz.CommandId.Value,
                     musicBrainz.MusicCatalogId.Value,
                     musicBrainz.Priority,
                     musicBrainz.CreatedAt,
-                    musicBrainz.CorrelationId.Value),
+                    musicBrainz.CorrelationId.Value,
+                    musicBrainz.SearchTerm.Isrc,
+                    musicBrainz.SearchTerm.Title,
+                    musicBrainz.SearchTerm.Artist,
+                    musicBrainz.SearchTerm.Album),
                 ResolvePlaybackReferencesCommand playback => new ResolvePlaybackReferencesCommandDto(
                     playback.CommandId.Value,
                     playback.MusicCatalogId.Value,
                     playback.Priority,
                     playback.CreatedAt,
                     playback.CorrelationId.Value,
-                    new PlaybackReferenceLookupKeyDto(
-                        (PlaybackReferenceLookupModeDto)playback.LookupKey.Mode,
-                        playback.LookupKey.Isrc,
-                        playback.LookupKey.Title,
-                        playback.LookupKey.Artist)),
+                    new PlaybackReferenceSearchTermDto(
+                        playback.SearchTerm.Isrc,
+                        playback.SearchTerm.Title,
+                        playback.SearchTerm.Artist,
+                        playback.SearchTerm.Album)),
                 _ => throw new ArgumentOutOfRangeException(nameof(command), command, null)
             };
     }

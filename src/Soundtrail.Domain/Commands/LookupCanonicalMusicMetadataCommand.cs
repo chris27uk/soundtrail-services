@@ -9,7 +9,4 @@ public sealed record LookupCanonicalMusicMetadataCommand(
     LookupPriorityBand Priority,
     DateTimeOffset CreatedAt,
     CorrelationId CorrelationId,
-    CanonicalMusicMetadataLookup Lookup)
-{
-    public ProviderName TargetProvider => ProviderName.MusicBrainz;
-}
+    MusicSearchTerm SearchTerm);

@@ -1,5 +1,6 @@
 using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Idempotency;
@@ -63,8 +64,8 @@ public sealed class DiscoveryBacklogScheduler(
             return null;
         }
 
-        var playbackLookupKey = localTrack?.ToPlaybackLookupKey();
-        if (playbackLookupKey is not null && localTrack!.HasIsrc())
+        var playbackLookupKey = localTrack?.GetSearchTerm();
+        if ((localTrack != null ? !string.IsNullOrWhiteSpace(localTrack.Isrc) : null) == true && playbackLookupKey is not null)
         {
             return new ResolvePlaybackReferencesCommand(
                 CommandId.For($"ResolvePlaybackReferences:{candidate.MusicCatalogId.Value}"),
@@ -75,8 +76,7 @@ public sealed class DiscoveryBacklogScheduler(
                 playbackLookupKey);
         }
 
-        var canonicalLookup = localTrack?.ToCanonicalMusicMetadataLookup();
-        if (canonicalLookup is null)
+        if (playbackLookupKey is null)
         {
             return null;
         }
@@ -87,6 +87,6 @@ public sealed class DiscoveryBacklogScheduler(
             plan.Priority!.Value,
             now,
             CorrelationId.New(),
-            canonicalLookup);
+            playbackLookupKey);
     }
 }

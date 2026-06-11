@@ -12,8 +12,8 @@ internal static class RavenMappings
             document.Version,
             document.Facts.Select(ToDomain).ToArray());
 
-    public static RavenMusicTrackFactDocument ToDocument(this MusicTrackFact fact) =>
-        fact switch
+    public static RavenMusicTrackFactDocument ToDocument(this IMusicTrackEvent @event) =>
+        @event switch
         {
             MinimalTrackInfoDiscovered minimalTrackInfoDiscovered => new RavenMusicTrackFactDocument
             {
@@ -43,10 +43,9 @@ internal static class RavenMappings
                 Priority = playbackReferencesResolutionRequired.Priority.ToString(),
                 CorrelationId = playbackReferencesResolutionRequired.CorrelationId,
                 MusicCatalogId = playbackReferencesResolutionRequired.MusicCatalogId,
-                LookupMode = playbackReferencesResolutionRequired.LookupKey.Mode.ToString(),
-                Isrc = playbackReferencesResolutionRequired.LookupKey.Isrc,
-                Title = playbackReferencesResolutionRequired.LookupKey.Title,
-                Artist = playbackReferencesResolutionRequired.LookupKey.Artist
+                Isrc = playbackReferencesResolutionRequired.SearchTerm.Isrc,
+                Title = playbackReferencesResolutionRequired.SearchTerm.Title,
+                Artist = playbackReferencesResolutionRequired.SearchTerm.Artist
             },
             TrackLinkedToAlbum trackLinkedToAlbum => new RavenMusicTrackFactDocument
             {
@@ -64,10 +63,10 @@ internal static class RavenMappings
                 ArtistId = trackLinkedToArtist.ArtistId,
                 ArtistName = trackLinkedToArtist.ArtistName
             },
-            _ => throw new ArgumentOutOfRangeException(nameof(fact), fact, "Unknown music track fact.")
+            _ => throw new ArgumentOutOfRangeException(nameof(@event), @event, "Unknown music track fact.")
         };
 
-    private static MusicTrackFact ToDomain(RavenMusicTrackFactDocument dto) =>
+    private static IMusicTrackEvent ToDomain(RavenMusicTrackFactDocument dto) =>
         dto.Type switch
         {
             nameof(MinimalTrackInfoDiscovered) => new MinimalTrackInfoDiscovered(
@@ -90,11 +89,7 @@ internal static class RavenMappings
                 CorrelationId.From(dto.CorrelationId ?? string.Empty),
                 ProviderName.From(dto.SourceProvider),
                 dto.ObservedAt,
-                new PlaybackReferenceLookupKey(
-                    Enum.Parse<PlaybackReferenceLookupMode>(dto.LookupMode ?? string.Empty, ignoreCase: true),
-                    dto.Isrc,
-                    dto.Title,
-                    dto.Artist)),
+                dto.Isrc == null ? MusicSearchTerm.ByTrackArtistAlbum(dto.Title!, dto.Artist!, dto.AlbumTitle) : MusicSearchTerm.ByIsrc(dto.Isrc)),
             nameof(TrackLinkedToAlbum) => new TrackLinkedToAlbum(
                 dto.AlbumId,
                 dto.AlbumTitle,

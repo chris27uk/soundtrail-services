@@ -15,7 +15,7 @@ public sealed class PlaybackReferencesLookupExecutionListenerTests
     {
         var env = PlaybackReferencesLookupExecutionListenerTestEnvironment.WithANewExecutionCommandDto();
         env.Seed(
-            PlaybackReferenceLookupKey.ByIsrc("isrc-1"),
+            MusicSearchTerm.ByIsrc("isrc-1"),
             new ExternalReference(ProviderName.AppleMusic, new Uri("https://music.apple.com/us/song/apple-1?i=apple-1"), "apple-1", ReferenceConfidence.Verified),
             new ExternalReference(ProviderName.Spotify, new Uri("https://open.spotify.com/track/spotify-1"), "spotify-1", ReferenceConfidence.Verified));
 
@@ -23,7 +23,6 @@ public sealed class PlaybackReferencesLookupExecutionListenerTests
 
         message.SourceProvider.Should().Be(ProviderName.Odesli.Value);
         message.References.Should().HaveCount(2);
-        env.PlaybackReferenceSource.Lookups.Should().ContainSingle().Which.Mode.Should().Be(PlaybackReferenceLookupMode.Isrc);
     }
 
     [Fact]
@@ -36,15 +35,14 @@ public sealed class PlaybackReferencesLookupExecutionListenerTests
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero),
             "corr-1",
-            new PlaybackReferenceLookupKeyDto(PlaybackReferenceLookupModeDto.ByTrackNameAndArtist, null, "Song A", "Artist A"));
+            new PlaybackReferenceSearchTermDto(null, "Song A", "Artist A", "Album A"));
         env.Seed(
-            PlaybackReferenceLookupKey.ByTrackNameAndArtist("Song A", "Artist A"),
+            MusicSearchTerm.ByTrackArtistAlbum("Song A", "Artist A", "Album A"),
             new ExternalReference(ProviderName.YoutubeMusic, new Uri("https://music.youtube.com/watch?v=yt-1"), "yt-1", ReferenceConfidence.Verified));
 
         var message = (EnrichmentResponseDto)(await env.HandleNewExecutionCommand(command)).Single();
 
         message.References.Should().ContainSingle().Which.ExternalId.Should().Be("yt-1");
-        env.PlaybackReferenceSource.Lookups.Should().ContainSingle().Which.Mode.Should().Be(PlaybackReferenceLookupMode.ByTrackNameAndArtist);
     }
 
     [Fact]

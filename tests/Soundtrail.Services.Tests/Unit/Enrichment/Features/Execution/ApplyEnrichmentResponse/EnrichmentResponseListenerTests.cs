@@ -1,10 +1,6 @@
 using FluentAssertions;
-using Soundtrail.Contracts.Common;
-using Soundtrail.Contracts.Responses;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
-using Soundtrail.Services.Enrichment.Features.Execution.ApplyEnrichmentResponse;
-using Soundtrail.Services.Enrichment.Responder.Infrastructure.Messaging;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Execution.ApplyEnrichmentResponse;

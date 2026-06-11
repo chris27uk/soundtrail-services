@@ -6,4 +6,4 @@ public sealed record TrackLinkedToAlbum(
     string? AlbumId,
     string? AlbumTitle,
     ProviderName SourceProvider,
-    DateTimeOffset ObservedAt) : MusicTrackFact;
+    DateTimeOffset ObservedAt) : IMusicTrackEvent;

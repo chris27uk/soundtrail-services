@@ -26,11 +26,7 @@ public sealed class PlaybackReferencesLookupExecutionListener(ExecutePlaybackRef
                 dto.Priority,
                 dto.CreatedAt,
                 CorrelationId.From(dto.CorrelationId),
-                new PlaybackReferenceLookupKey(
-                    (PlaybackReferenceLookupMode)dto.LookupKey.Mode,
-                    dto.LookupKey.Isrc,
-                    dto.LookupKey.Title,
-                    dto.LookupKey.Artist)),
+                dto.SearchTerm.Isrc == null ? MusicSearchTerm.ByTrackArtistAlbum(dto.SearchTerm.Title!, dto.SearchTerm.Artist!,dto.SearchTerm.Album) : MusicSearchTerm.ByIsrc(dto.SearchTerm.Isrc)),
             cancellationToken);
 
         return result.Response is null

@@ -21,5 +21,7 @@ namespace Soundtrail.Services.Enrichment.Cdc.Infrastructure.Cdc
         public string? Title { get; set; }
 
         public string? Artist { get; set; }
+        
+        public string? ALbum { get; set; }
     }
 }

@@ -5,7 +5,7 @@ using Soundtrail.Services.Enrichment.Worker.Features.TrackLookup;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
-public sealed class FakeMusicBrainzMetadataSource : IMusicBrainzMetadataSource
+public sealed class FakeGetCanonicalMusicMetadata : IGetCanonicalMusicMetadata
 {
     private readonly Dictionary<string, SongMetadata> byIsrc = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, SongMetadata> byNames = new(StringComparer.OrdinalIgnoreCase);
@@ -13,25 +13,21 @@ public sealed class FakeMusicBrainzMetadataSource : IMusicBrainzMetadataSource
     public List<string> Lookups { get; } = [];
 
     public Task<SongMetadata?> GetMetadataAsync(
-        CanonicalMusicMetadataLookup lookup,
+        MusicSearchTerm searchTerm,
         CancellationToken cancellationToken)
     {
-        if (lookup is CanonicalMusicMetadataLookup.ByIsrc byIsrc)
+        return searchTerm.Match((track, artist, album) =>
         {
-            Lookups.Add($"isrc:{byIsrc.Isrc}");
-            this.byIsrc.TryGetValue(byIsrc.Isrc, out var isrcMatch);
-            return Task.FromResult(isrcMatch);
-        }
-
-        if (lookup is CanonicalMusicMetadataLookup.ByTrackNameArtistAndAlbum byNamesLookup)
-        {
-            var key = Key(byNamesLookup.TrackName, byNamesLookup.ArtistName, byNamesLookup.AlbumName);
+            var key = Key(track, artist, album);
             Lookups.Add($"names:{key}");
             byNames.TryGetValue(key, out var nameMatch);
             return Task.FromResult(nameMatch);
-        }
-
-        return Task.FromResult<SongMetadata?>(null);
+        }, isrc =>
+        {
+            Lookups.Add($"isrc:{isrc}");
+            this.byIsrc.TryGetValue(isrc, out var isrcMatch);
+            return Task.FromResult(isrcMatch);
+        });
     }
 
     public void SeedIsrc(string isrc, SongMetadata metadata) => byIsrc[isrc] = metadata;
