@@ -9,16 +9,19 @@ using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.OdesliStreamingReferencesSource;
 
-internal sealed class OdesliStreamingReferencesSourceTestEnvironment
+internal sealed class OdesliStreamingReferencesSourceTestEnvironment : IDisposable
 {
     private readonly Action<MusicSearchTerm, IReadOnlyList<ExternalReference>> seed;
+    private readonly IDisposable? cleanup;
 
     private OdesliStreamingReferencesSourceTestEnvironment(
         IGetMusicTrackReference source,
-        Action<MusicSearchTerm, IReadOnlyList<ExternalReference>> seed)
+        Action<MusicSearchTerm, IReadOnlyList<ExternalReference>> seed,
+        IDisposable? cleanup = null)
     {
         Source = source;
         this.seed = seed;
+        this.cleanup = cleanup;
     }
 
     public IGetMusicTrackReference Source { get; }
@@ -43,50 +46,24 @@ internal sealed class OdesliStreamingReferencesSourceTestEnvironment
 
     private static OdesliStreamingReferencesSourceTestEnvironment CreateHttpAdapter()
     {
-        var responses = new Dictionary<string, IReadOnlyList<ExternalReference>>(StringComparer.OrdinalIgnoreCase);
-        var handler = new StubHttpMessageHandler(request =>
-        {
-            var references = responses[request.RequestUri!.PathAndQuery];
-            var youtube = references.SingleOrDefault(x => x.Provider == Soundtrail.Contracts.Common.ProviderName.YoutubeMusic);
-            var spotify = references.SingleOrDefault(x => x.Provider == Soundtrail.Contracts.Common.ProviderName.Spotify);
-            var apple = references.SingleOrDefault(x => x.Provider == Soundtrail.Contracts.Common.ProviderName.AppleMusic);
-            var platforms = new List<string>();
-
-            if (youtube is not null)
-            {
-                platforms.Add($"\"youtubeMusic\":{{\"url\":\"{youtube.Url}\"}}");
-            }
-
-            if (spotify is not null)
-            {
-                platforms.Add($"\"spotify\":{{\"url\":\"{spotify.Url}\"}}");
-            }
-
-            if (apple is not null)
-            {
-                platforms.Add($"\"appleMusic\":{{\"url\":\"{apple.Url}\"}}");
-            }
-
-            return StubHttpMessageHandler.Json(
-                $"{{\"linksByPlatform\":{{{string.Join(",", platforms)}}}}}");
-        });
+        var server = new WireMockMusicProvidersServer();
 
         var options = Options.Create(new OdesliOptions
         {
-            BaseUrl = "https://song.link.test",
+            BaseUrl = server.BaseUrl,
             UserCountry = "US"
         });
-        var client = new HttpClient(handler);
+        var client = new HttpClient();
         OdesliStreamingReferences.ConfigureHttpClient(client, options.Value);
 
         return new OdesliStreamingReferencesSourceTestEnvironment(
             new OdesliStreamingReferences(client, options),
-            (searchTerm, references) =>
-            {
-                var key = searchTerm.Match(
-                    (track, artist, album) => $"/v1-user/links?title={Uri.EscapeDataString(track)}&artist={Uri.EscapeDataString(artist)}&album={Uri.EscapeDataString(album ?? string.Empty)}&userCountry=US",
-                    isrc => $"/v1-user/links?id={Uri.EscapeDataString(isrc)}&platform=isrc&userCountry=US");
-                responses[key] = references;
-            });
+            (searchTerm, references) => server.SeedOdesli(searchTerm, references, options.Value.UserCountry),
+            server);
+    }
+
+    public void Dispose()
+    {
+        cleanup?.Dispose();
     }
 }

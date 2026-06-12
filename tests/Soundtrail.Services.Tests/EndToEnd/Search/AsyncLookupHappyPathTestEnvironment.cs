@@ -36,6 +36,7 @@ using Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExe
 using Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution.GetReference;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
+using Soundtrail.Services.Tests.Integration.Enrichment.Ports.ProviderClients;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 using Wolverine;
 using Wolverine.RavenDb;
@@ -47,43 +48,67 @@ public sealed class AsyncLookupHappyPathTestEnvironment : IAsyncDisposable
 {
     private readonly IHost host;
     private readonly RavenEmbeddedTestDatabase raven;
+    private readonly WireMockMusicProvidersServer providersServer;
 
     private AsyncLookupHappyPathTestEnvironment(
         IHost host,
-        RavenEmbeddedTestDatabase raven)
+        RavenEmbeddedTestDatabase raven,
+        WireMockMusicProvidersServer providersServer)
     {
         this.host = host;
         this.raven = raven;
+        this.providersServer = providersServer;
     }
 
     public static async Task<AsyncLookupHappyPathTestEnvironment> CreateAsync()
     {
         var raven = RavenEmbeddedTestDatabase.Create();
         ExecuteIndexes(raven.Store);
-
-        var metadata = new FakeGetCanonicalMusicMetadata();
-        metadata.SeedNames(
-            "Rare Unknown Song",
-            "Test Artist",
-            "Rare Album",
+        var providersServer = new WireMockMusicProvidersServer();
+        providersServer.SeedMusicBrainz(
+            MusicSearchTerm.ByTrackArtistAlbum("Rare Unknown Song", "Test Artist", "Rare Album"),
             new SongMetadata(
                 "Rare Unknown Song",
                 "Test Artist",
                 "isrc-rare-1",
                 "mbid-rare-1",
                 123000));
-
-        var references = new FakeGetMusicTrackReference();
-        references.Seed(
+        providersServer.SeedOdesli(
             MusicSearchTerm.ByIsrc("isrc-rare-1"),
-            new ExternalReference(
-                ProviderName.AppleMusic,
-                new Uri("https://music.apple.com/track/apple-track-1"),
-                "apple-track-1"),
-            new ExternalReference(
-                ProviderName.YoutubeMusic,
-                new Uri("https://music.youtube.com/watch?v=yt-track-1"),
-                "yt-track-1"));
+            [
+                new ExternalReference(
+                    ProviderName.AppleMusic,
+                    new Uri("https://music.apple.com/track/apple-track-1?i=apple-track-1"),
+                    "apple-track-1"),
+                new ExternalReference(
+                    ProviderName.YoutubeMusic,
+                    new Uri("https://music.youtube.com/watch?v=yt-track-1"),
+                    "yt-track-1")
+            ]);
+        providersServer.SeedOdesli(
+            MusicSearchTerm.ByTrackArtistAlbum("Rare Unknown Song", "Test Artist", "Rare Album"),
+            [
+                new ExternalReference(
+                    ProviderName.AppleMusic,
+                    new Uri("https://music.apple.com/track/apple-track-1?i=apple-track-1"),
+                    "apple-track-1"),
+                new ExternalReference(
+                    ProviderName.YoutubeMusic,
+                    new Uri("https://music.youtube.com/watch?v=yt-track-1"),
+                    "yt-track-1")
+            ]);
+        providersServer.SeedOdesli(
+            MusicSearchTerm.ByTrackArtistAlbum("Rare Unknown Song", "Test Artist", null),
+            [
+                new ExternalReference(
+                    ProviderName.AppleMusic,
+                    new Uri("https://music.apple.com/track/apple-track-1?i=apple-track-1"),
+                    "apple-track-1"),
+                new ExternalReference(
+                    ProviderName.YoutubeMusic,
+                    new Uri("https://music.youtube.com/watch?v=yt-track-1"),
+                    "yt-track-1")
+            ]);
 
         var builder = Host.CreateApplicationBuilder();
         var candidateSearch = new FakeMusicCatalogCandidateSearch();
@@ -133,10 +158,29 @@ public sealed class AsyncLookupHappyPathTestEnvironment : IAsyncDisposable
         builder.Services.AddScoped<IMusicTrackProjectionStore, RavenMusicTrackProjectionStore>();
         builder.Services.AddScoped<IProviderSnapshotStore, RavenProviderSnapshotStore>();
 
-        builder.Services.AddSingleton(metadata);
-        builder.Services.AddSingleton<IGetCanonicalMusicMetadata>(metadata);
-        builder.Services.AddSingleton(references);
-        builder.Services.AddSingleton<IGetMusicTrackReference>(references);
+        builder.Services.AddSingleton(providersServer);
+        builder.Services.AddSingleton<IGetCanonicalMusicMetadata>(_ =>
+        {
+            var options = Microsoft.Extensions.Options.Options.Create(new MusicBrainzOptions
+            {
+                BaseUrl = providersServer.BaseUrl,
+                UserAgent = "Soundtrail.Tests/1.0"
+            });
+            var client = new HttpClient();
+            MusicBrainzGetCanonicalMusicMetadata.ConfigureHttpClient(client, options.Value);
+            return new MusicBrainzGetCanonicalMusicMetadata(client);
+        });
+        builder.Services.AddSingleton<IGetMusicTrackReference>(_ =>
+        {
+            var options = Microsoft.Extensions.Options.Options.Create(new OdesliOptions
+            {
+                BaseUrl = providersServer.BaseUrl,
+                UserCountry = "US"
+            });
+            var client = new HttpClient();
+            OdesliStreamingReferences.ConfigureHttpClient(client, options.Value);
+            return new OdesliStreamingReferences(client, options);
+        });
         builder.Services.AddSingleton(new LookupExecutionReceiptStoreFake.State());
         builder.Services.AddSingleton<ILookupExecutionReceiptStore, LookupExecutionReceiptStoreFake>();
 
@@ -160,7 +204,7 @@ public sealed class AsyncLookupHappyPathTestEnvironment : IAsyncDisposable
         var host = builder.Build();
         await host.StartAsync();
 
-        return new AsyncLookupHappyPathTestEnvironment(host, raven);
+        return new AsyncLookupHappyPathTestEnvironment(host, raven, providersServer);
     }
 
     public async Task<SearchMusicResponse> SearchAsync(string query)
@@ -214,6 +258,7 @@ public sealed class AsyncLookupHappyPathTestEnvironment : IAsyncDisposable
         await this.host.StopAsync();
         this.host.Dispose();
         this.raven.Dispose();
+        this.providersServer.Dispose();
     }
 
     private static void ExecuteIndexes(IDocumentStore store)

@@ -11,7 +11,7 @@ public sealed class ByTrackNameAndArtistResponsesTests
     [MemberData(nameof(OdesliStreamingReferencesSourceContractModes.All), MemberType = typeof(OdesliStreamingReferencesSourceContractModes))]
     public async Task Given_A_ByTrackNameAndArtist_Lookup_When_Streaming_References_Are_Looked_Up_Then_All_Supported_Providers_Are_Returned(OdesliStreamingReferencesSourceMode mode)
     {
-        var env = OdesliStreamingReferencesSourceTestEnvironment.Create(mode);
+        using var env = OdesliStreamingReferencesSourceTestEnvironment.Create(mode);
         env.Seed(
             MusicSearchTerm.ByTrackArtistAlbum("Song A", "Artist A", "Album A"),
             new ExternalReference(ProviderName.YoutubeMusic, new Uri("https://music.youtube.com/watch?v=yt-2"), "yt-2"));

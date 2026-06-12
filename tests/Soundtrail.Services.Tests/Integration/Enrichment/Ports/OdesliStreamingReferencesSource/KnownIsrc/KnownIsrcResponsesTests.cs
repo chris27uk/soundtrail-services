@@ -11,7 +11,7 @@ public sealed class KnownIsrcResponsesTests
     [MemberData(nameof(OdesliStreamingReferencesSourceContractModes.All), MemberType = typeof(OdesliStreamingReferencesSourceContractModes))]
     public async Task Given_A_Known_Isrc_When_Streaming_References_Are_Looked_Up_Then_All_Supported_Providers_Are_Returned(OdesliStreamingReferencesSourceMode mode)
     {
-        var env = OdesliStreamingReferencesSourceTestEnvironment.Create(mode);
+        using var env = OdesliStreamingReferencesSourceTestEnvironment.Create(mode);
         env.Seed(
             MusicSearchTerm.ByIsrc("isrc-1"),
             new ExternalReference(ProviderName.AppleMusic, new Uri("https://music.apple.com/us/song/song-a?i=apple-1"), "apple-1"),

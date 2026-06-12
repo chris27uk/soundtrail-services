@@ -1,8 +1,10 @@
 using FluentAssertions;
 using Soundtrail.Services.Api.Features.Search.TrackSearch;
+using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
 namespace Soundtrail.Services.Tests.EndToEnd.Search;
 
+[Collection(RavenEmbeddedCollection.Name)]
 public sealed class AsyncLookupHappyPathTests
 {
     [Fact]
