@@ -1,30 +1,29 @@
-using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency;
 
-public abstract class WorkerIdempotencySession : IAsyncDisposable
+public abstract class IdempotencySession : IAsyncDisposable
 {
     public abstract bool ProcessedBefore { get; }
 
-    public static async Task<WorkerIdempotencySession> StartAsync(
+    public static async Task<IdempotencySession> StartAsync(
         ILookupExecutionReceiptStore store,
         CommandId commandId,
         CancellationToken cancellationToken)
     {
         if (await store.TryBeginAsync(commandId, cancellationToken))
         {
-            return new StartedWorkerIdempotencySession(store, commandId);
+            return new StartedIdempotencySession(store, commandId);
         }
 
-        return NotStartedWorkerIdempotencySession.Instance;
+        return NotStartedIdempotencySession.Instance;
     }
 
     public abstract ValueTask DisposeAsync();
 
-    private sealed class StartedWorkerIdempotencySession(
+    private sealed class StartedIdempotencySession(
         ILookupExecutionReceiptStore lookupExecutionReceiptStore,
-        CommandId commandId) : WorkerIdempotencySession
+        CommandId commandId) : IdempotencySession
     {
         public override bool ProcessedBefore => false;
 
@@ -36,9 +35,9 @@ public abstract class WorkerIdempotencySession : IAsyncDisposable
         }
     }
 
-    private sealed class NotStartedWorkerIdempotencySession : WorkerIdempotencySession
+    private sealed class NotStartedIdempotencySession : IdempotencySession
     {
-        public static readonly NotStartedWorkerIdempotencySession Instance = new();
+        public static readonly NotStartedIdempotencySession Instance = new();
 
         public override bool ProcessedBefore => true;
 

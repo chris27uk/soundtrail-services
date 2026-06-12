@@ -2,7 +2,7 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Responses;
 
-namespace Soundtrail.Services.Enrichment.Worker.Features.MusicBrainzLookupExecution;
+namespace Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.Lookup;
 
 internal static class LookupCanonicalMusicMetadataCommandExtensions
 {

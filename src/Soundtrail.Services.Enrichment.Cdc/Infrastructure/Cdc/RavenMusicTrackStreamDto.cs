@@ -1,6 +1,6 @@
 namespace Soundtrail.Services.Enrichment.Cdc.Infrastructure.Cdc;
 
-internal sealed class RavenMusicTrackStreamDto
+internal sealed class RavenMusicTrackStreamDocument
 {
     public string Id { get; set; } = string.Empty;
 
@@ -10,5 +10,5 @@ internal sealed class RavenMusicTrackStreamDto
 
     public List<string> AppliedCommandIds { get; set; } = [];
 
-    public List<RavenMusicTrackEventDto> Events { get; set; } = [];
+    public List<RavenMusicTrackEventDocument> Events { get; set; } = [];
 }

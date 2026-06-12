@@ -34,7 +34,20 @@ public sealed class RavenRankedMusicCandidateStore(
         var (activeSession, dispose) = OpenSession();
         using (dispose)
         {
-            await activeSession.StoreAsync(candidate.ToDocument(), cancellationToken);
+            var documentId = RavenRankedMusicCandidateDocument.GetDocumentId(candidate.MusicCatalogId.Value);
+            var existing = await activeSession.LoadAsync<RavenRankedMusicCandidateDocument>(
+                documentId,
+                cancellationToken);
+
+            if (existing is null)
+            {
+                await activeSession.StoreAsync(candidate.ToDocument(), cancellationToken);
+            }
+            else
+            {
+                candidate.ApplyTo(existing);
+            }
+
             if (ownsSession)
             {
                 await activeSession.SaveChangesAsync(cancellationToken);

@@ -1,11 +1,10 @@
-using System.Net.Http.Json;
-using System.Text.Json.Serialization;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
-using Soundtrail.Services.Enrichment.Worker.Features.MusicBrainzLookupExecution;
-using Soundtrail.Services.Enrichment.Worker.Features.TrackLookup;
+using Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.Lookup;
+using System.Net.Http.Json;
+using System.Text.Json.Serialization;
 
-namespace Soundtrail.Services.Enrichment.Worker.Features.MusicBrainzLookupExecution.Adapters;
+namespace Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.Adapters;
 
 public sealed class MusicBrainzGetCanonicalMusicMetadata(HttpClient httpClient) : IGetCanonicalMusicMetadata
 {

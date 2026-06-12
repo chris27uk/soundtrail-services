@@ -1,7 +1,7 @@
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Responses;
 
-namespace Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution;
+namespace Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution.GetReference;
 
 internal static class ResolvePlaybackReferencesCommandExtensions
 {

@@ -1,6 +1,6 @@
 namespace Soundtrail.Services.Enrichment.Cdc.Infrastructure.Cdc
 {
-    internal sealed class RavenMusicTrackEventDto
+    internal sealed class RavenMusicTrackEventDocument
     {
         public string Type { get; set; } = string.Empty;
 
@@ -22,6 +22,6 @@ namespace Soundtrail.Services.Enrichment.Cdc.Infrastructure.Cdc
 
         public string? Artist { get; set; }
         
-        public string? ALbum { get; set; }
+        public string? Album { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Enrichment.Worker.Features.TrackLookup;
+namespace Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.Lookup;
 
 public static class MusicMetadataLookupMatch
 {

@@ -27,4 +27,15 @@ internal static class RavenRankedMusicCandidateMappings
             Status = candidate.Status.ToString(),
             NextEligibleAt = candidate.NextEligibleAt
         };
+
+    public static void ApplyTo(this RankedMusicCandidate candidate, RavenRankedMusicCandidateDocument document)
+    {
+        document.Id = RavenRankedMusicCandidateDocument.GetDocumentId(candidate.MusicCatalogId.Value);
+        document.MusicCatalogId = candidate.MusicCatalogId.Value;
+        document.RequestCount = candidate.RequestCount;
+        document.HighestTrustLevelSeen = candidate.HighestTrustLevelSeen;
+        document.RiskScore = candidate.RiskScore;
+        document.Status = candidate.Status.ToString();
+        document.NextEligibleAt = candidate.NextEligibleAt;
+    }
 }

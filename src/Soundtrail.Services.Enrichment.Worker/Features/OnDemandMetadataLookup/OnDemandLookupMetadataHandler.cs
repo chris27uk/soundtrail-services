@@ -1,5 +1,5 @@
 using Soundtrail.Domain.Commands;
-using Soundtrail.Services.Enrichment.Worker.Features.MusicBrainzLookupExecution;
+using Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.Lookup;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup;
@@ -12,7 +12,7 @@ public sealed class OnDemandLookupMetadataHandler(
         LookupMusicMetadataCommand command,
         CancellationToken cancellationToken = default)
     {
-        await using var idempotencySession = await WorkerIdempotencySession.StartAsync(
+        await using var idempotencySession = await IdempotencySession.StartAsync(
             lookupExecutionReceiptStore,
             command.CommandId,
             cancellationToken);

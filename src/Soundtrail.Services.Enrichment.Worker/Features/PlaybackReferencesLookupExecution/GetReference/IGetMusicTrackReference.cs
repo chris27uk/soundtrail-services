@@ -1,7 +1,7 @@
-using Soundtrail.Domain.Responses;
 using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Responses;
 
-namespace Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution;
+namespace Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution.GetReference;
 
 public interface IGetMusicTrackReference
 {

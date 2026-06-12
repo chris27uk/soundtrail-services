@@ -1,7 +1,7 @@
-using Soundtrail.Domain.Responses;
 using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Responses;
 
-namespace Soundtrail.Services.Enrichment.Worker.Features.MusicBrainzLookupExecution;
+namespace Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.Lookup;
 
 public interface IGetCanonicalMusicMetadata
 {
