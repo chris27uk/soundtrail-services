@@ -1,7 +1,6 @@
-using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
 
-namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency;
+namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
 
 public interface ILookupExecutionReceiptStore
 {

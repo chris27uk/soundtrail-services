@@ -1,10 +1,7 @@
 using Raven.Client.Documents.Session;
-using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency;
-using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven.Documents;
 
-namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;
+namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
 
 internal sealed class RavenLookupExecutionReceiptStore(
     IAsyncDocumentSession session) : ILookupExecutionReceiptStore

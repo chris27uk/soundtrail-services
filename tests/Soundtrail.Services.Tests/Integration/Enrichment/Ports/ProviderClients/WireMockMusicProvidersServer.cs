@@ -14,6 +14,15 @@ internal sealed class WireMockMusicProvidersServer : IDisposable
 
     public string BaseUrl => server.Urls[0];
 
+    public static WireMockMusicProvidersServer Create() => new();
+
+    public static WireMockMusicProvidersServer CreateForAsyncLookupHappyPath()
+    {
+        var server = new WireMockMusicProvidersServer();
+        server.SeedAsyncLookupHappyPath();
+        return server;
+    }
+
     public void SeedMusicBrainz(MusicSearchTerm lookup, SongMetadata metadata)
     {
         lookup.Match(
@@ -104,5 +113,34 @@ internal sealed class WireMockMusicProvidersServer : IDisposable
     public void Dispose()
     {
         server.Dispose();
+    }
+
+    private void SeedAsyncLookupHappyPath()
+    {
+        var metadata = new SongMetadata(
+            "Rare Unknown Song",
+            "Test Artist",
+            "isrc-rare-1",
+            "mbid-rare-1",
+            123000);
+        var references =
+            new ExternalReference[]
+            {
+                new(
+                    ProviderName.AppleMusic,
+                    new Uri("https://music.apple.com/track/apple-track-1?i=apple-track-1"),
+                    "apple-track-1"),
+                new(
+                    ProviderName.YoutubeMusic,
+                    new Uri("https://music.youtube.com/watch?v=yt-track-1"),
+                    "yt-track-1")
+            };
+
+        SeedMusicBrainz(
+            MusicSearchTerm.ByTrackArtistAlbum("Rare Unknown Song", "Test Artist", "Rare Album"),
+            metadata);
+        SeedOdesli(MusicSearchTerm.ByIsrc("isrc-rare-1"), references);
+        SeedOdesli(MusicSearchTerm.ByTrackArtistAlbum("Rare Unknown Song", "Test Artist", "Rare Album"), references);
+        SeedOdesli(MusicSearchTerm.ByTrackArtistAlbum("Rare Unknown Song", "Test Artist", null), references);
     }
 }

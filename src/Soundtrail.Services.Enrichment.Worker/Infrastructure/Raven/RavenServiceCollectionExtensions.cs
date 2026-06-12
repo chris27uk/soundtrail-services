@@ -1,9 +1,12 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
+using Raven.Client.Documents.Session;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency;
+using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;
 
@@ -15,23 +18,24 @@ public static class RavenServiceCollectionExtensions
     {
         services.Configure<RavenDbOptions>(configuration.GetSection(RavenDbOptions.SectionName));
 
-        services.AddSingleton<IDocumentStore>(sp =>
-        {
-            var options = sp.GetRequiredService<IOptions<RavenDbOptions>>().Value;
-            var store = new DocumentStore
+        services.TryAddSingleton<IDocumentStore>(sp =>
             {
-                Urls = options.Urls,
-                Database = options.Database,
-                Conventions = new DocumentConventions
+                var options = sp.GetRequiredService<IOptions<RavenDbOptions>>().Value;
+                var store = new DocumentStore
                 {
-                    FindCollectionName = type => type.Name
-                }
-            };
+                    Urls = options.Urls,
+                    Database = options.Database,
+                    Conventions = new DocumentConventions
+                    {
+                        FindCollectionName = type => type.Name
+                    }
+                };
 
-            return store.Initialize();
-        });
+                return store.Initialize();
+            });
+        services.TryAddScoped<IAsyncDocumentSession>(sp => sp.GetRequiredService<IDocumentStore>().OpenAsyncSession());
 
-        services.AddScoped<ILookupExecutionReceiptStore, RavenLookupExecutionReceiptStore>();
+        services.TryAddScoped<ILookupExecutionReceiptStore, RavenLookupExecutionReceiptStore>();
         return services;
     }
 }

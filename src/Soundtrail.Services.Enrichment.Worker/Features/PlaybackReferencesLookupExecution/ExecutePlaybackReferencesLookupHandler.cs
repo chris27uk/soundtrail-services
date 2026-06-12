@@ -1,6 +1,7 @@
 using Soundtrail.Domain.Commands;
 using Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution.GetReference;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency;
+using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution;
 

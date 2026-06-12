@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
@@ -25,31 +26,32 @@ public static class RavenServiceCollectionExtensions
         IConfiguration configuration)
     {
         services.Configure<RavenDbOptions>(configuration.GetSection(RavenDbOptions.SectionName));
-        services.AddSingleton<IDocumentStore>(sp =>
-        {
-            var options = sp.GetRequiredService<IOptions<RavenDbOptions>>().Value;
-            var store = new DocumentStore
+        services.TryAddSingleton<IDocumentStore>(sp =>
             {
-                Urls = options.Urls,
-                Database = options.Database,
-                Conventions = new DocumentConventions
+                var options = sp.GetRequiredService<IOptions<RavenDbOptions>>().Value;
+                var store = new DocumentStore
                 {
-                    FindCollectionName = type => type.Name
-                }
-            };
+                    Urls = options.Urls,
+                    Database = options.Database,
+                    Conventions = new DocumentConventions
+                    {
+                        FindCollectionName = type => type.Name
+                    }
+                };
 
-            store.Initialize();
-            IndexCreation.CreateIndexes(typeof(TrackCatalogue_BySearchText).Assembly, store);
-            return store;
-        });
+                store.Initialize();
+                IndexCreation.CreateIndexes(typeof(TrackCatalogue_BySearchText).Assembly, store);
+                return store;
+            });
+        services.TryAddScoped<IAsyncDocumentSession>(sp => sp.GetRequiredService<IDocumentStore>().OpenAsyncSession());
 
-        services.AddScoped<IRankedMusicCandidateStore, RavenRankedMusicCandidateStore>();
-        services.AddScoped<IActiveLookupWorkStore, RavenActiveLookupWorkStore>();
-        services.AddScoped<IMusicTrackEventRepository, RavenMusicTrackStreamStore>();
-        services.AddScoped<IMusicTrackProjectionStore, RavenMusicTrackProjectionStore>();
-        services.AddScoped<IProviderSnapshotStore, RavenProviderSnapshotStore>();
-        services.AddSingleton<IMusicCatalogCandidateSearch, RavenMusicCatalogCandidateSearch>();
-        services.AddSingleton<ILocalMusicTrackSearch, RavenLocalMusicTrackSearch>();
+        services.TryAddScoped<IRankedMusicCandidateStore, RavenRankedMusicCandidateStore>();
+        services.TryAddScoped<IActiveLookupWorkStore, RavenActiveLookupWorkStore>();
+        services.TryAddScoped<IMusicTrackEventRepository, RavenMusicTrackStreamStore>();
+        services.TryAddScoped<IMusicTrackProjectionStore, RavenMusicTrackProjectionStore>();
+        services.TryAddScoped<IProviderSnapshotStore, RavenProviderSnapshotStore>();
+        services.TryAddSingleton<IMusicCatalogCandidateSearch, RavenMusicCatalogCandidateSearch>();
+        services.TryAddSingleton<ILocalMusicTrackSearch, RavenLocalMusicTrackSearch>();
         return services;
     }
 }

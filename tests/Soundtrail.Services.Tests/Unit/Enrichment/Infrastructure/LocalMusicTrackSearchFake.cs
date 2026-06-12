@@ -8,6 +8,29 @@ public sealed class LocalMusicTrackSearchFake : ILocalMusicTrackSearch
 {
     private readonly ConcurrentDictionary<string, LocalMusicTrackSearchResult> results = [];
 
+    public static LocalMusicTrackSearchFake CreateWith(params LocalMusicTrackSearchResult[] seededResults)
+    {
+        var fake = new LocalMusicTrackSearchFake();
+        foreach (var result in seededResults)
+        {
+            fake.Seed(result);
+        }
+
+        return fake;
+    }
+
+    public static LocalMusicTrackSearchFake CreateForAsyncLookupHappyPath() =>
+        CreateWith(
+            new LocalMusicTrackSearchResult(
+                MusicCatalogId.From("mc_track_1"),
+                "Rare Unknown Song",
+                "Test Artist",
+                "Rare Album",
+                Isrc: null,
+                Mbid: null,
+                DurationMs: null,
+                IsPlayable: false));
+
     public Task<LocalMusicTrackSearchResult?> GetByMusicCatalogIdAsync(
         MusicCatalogId musicCatalogId,
         CancellationToken cancellationToken)

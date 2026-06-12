@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven.Documents;
+namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
 
 internal sealed class RavenLookupExecutionReceiptDto
 {

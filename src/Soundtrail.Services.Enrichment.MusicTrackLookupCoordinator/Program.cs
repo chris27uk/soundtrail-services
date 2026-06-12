@@ -1,8 +1,10 @@
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator;
+using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Infrastructure.Messaging;
+using Soundtrail.Services.ServiceDefaults;
 using Wolverine;
 using Wolverine.AzureServiceBus;
 using Wolverine.RavenDb;
@@ -30,10 +32,10 @@ builder.UseWolverine(opts =>
         .ProcessInline();
 
     opts.PublishMessage<ResolvePlaybackReferencesCommandDto>()
-        .ToAzureServiceBusQueue(serviceBusOptions.PlaybackReferencesLookupQueueName);
+            .ToAzureServiceBusQueue(serviceBusOptions.PlaybackReferencesLookupQueueName);
 });
 
-builder.Services.AddScoped<MusicTrackEventListener>();
+builder.Services.AddMusicTrackLookupCoordinatorAppServices();
 
 var host = builder.Build();
 

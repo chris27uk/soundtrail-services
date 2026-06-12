@@ -1,6 +1,8 @@
 using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
+using Raven.Client.Documents.Session;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Soundtrail.Services.Api.Infrastructure.Raven;
 
@@ -12,23 +14,25 @@ public static class RavenServiceCollectionExtensions
     {
         services.Configure<RavenDbOptions>(configuration.GetSection(RavenDbOptions.SectionName));
 
-        services.AddSingleton<IDocumentStore>(sp =>
-        {
-            var options = sp.GetRequiredService<IOptions<RavenDbOptions>>().Value;
-            var store = new DocumentStore
+        services.TryAddSingleton<IDocumentStore>(sp =>
             {
-                Urls = options.Urls,
-                Database = options.Database,
-                Conventions = new DocumentConventions
+                var options = sp.GetRequiredService<IOptions<RavenDbOptions>>().Value;
+                var store = new DocumentStore
                 {
-                    FindCollectionName = type => type.Name
-                }
-            };
+                    Urls = options.Urls,
+                    Database = options.Database,
+                    Conventions = new DocumentConventions
+                    {
+                        FindCollectionName = type => type.Name
+                    }
+                };
 
-            return store.Initialize();
-        });
+                return store.Initialize();
+            });
+        services.TryAddScoped<IAsyncDocumentSession>(sp => sp.GetRequiredService<IDocumentStore>().OpenAsyncSession());
 
-        services.AddHostedService<RavenDevelopmentSeedHostedService>();
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<IHostedService, RavenDevelopmentSeedHostedService>());
         return services;
     }
 }

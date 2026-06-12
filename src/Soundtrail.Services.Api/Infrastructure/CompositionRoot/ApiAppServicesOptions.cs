@@ -1,0 +1,13 @@
+namespace Soundtrail.Services.Api.Infrastructure.CompositionRoot
+{
+    public sealed class ApiAppServicesOptions
+    {
+        public bool UseInMemoryQueueing { get; set; }
+
+        public Action<IServiceCollection>? ConfigureQueueingDependencies { get; set; }
+
+        public Action<IServiceCollection>? ConfigureTrackSearchDependencies { get; set; }
+
+        public Action<IServiceCollection>? ConfigureClockDependencies { get; set; }
+    }
+}

@@ -1,10 +1,9 @@
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Soundtrail.Contracts.IntegrationMessaging.Events;
-using Soundtrail.Services.Enrichment.Cdc.Infrastructure.Cdc;
+using Soundtrail.Services.Enrichment.Cdc;
 using Soundtrail.Services.Enrichment.Cdc.Infrastructure.Messaging;
-using Soundtrail.Services.Enrichment.Cdc.Infrastructure.Raven;
+using Soundtrail.Services.ServiceDefaults;
 using Wolverine;
 using Wolverine.AzureServiceBus;
 
@@ -23,11 +22,10 @@ builder.UseWolverine(opts =>
         .EnableWolverineControlQueues();
 
     opts.PublishMessage<PlaybackReferencesResolutionRequiredMessageDto>()
-        .ToAzureServiceBusQueue(serviceBusOptions.MusicTrackEventsQueueName);
+            .ToAzureServiceBusQueue(serviceBusOptions.MusicTrackEventsQueueName);
 });
 
-builder.Services.AddCdcRavenDocumentStore(builder.Configuration);
-builder.Services.AddHostedService<MusicTrackEventSubscriptionHostedService>();
+builder.Services.AddCdcAppServices(builder.Configuration);
 
 var host = builder.Build();
 

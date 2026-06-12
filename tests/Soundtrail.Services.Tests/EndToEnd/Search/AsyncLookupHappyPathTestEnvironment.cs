@@ -1,8 +1,10 @@
+using JasperFx.CodeGeneration.Model;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Indexes;
-using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Contracts.IntegrationMessaging.Events;
@@ -10,31 +12,26 @@ using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Domain;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
-using Soundtrail.Services.Api.Features.Search;
+using Soundtrail.Services.Api;
 using Soundtrail.Services.Api.Features.Search.Queueing;
 using Soundtrail.Services.Api.Features.Search.TrackSearch;
+using Soundtrail.Services.Api.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Soundtrail.Services.Api.Infrastructure.Raven;
-using Soundtrail.Services.Enrichment.Cdc.Infrastructure.Cdc;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse;
+using Soundtrail.Services.Enrichment.Cdc;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Idempotency;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search.Resolution;
+using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator;
+using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Infrastructure.Messaging;
-using Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup;
 using Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.Adapters;
-using Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.Lookup;
-using Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution;
 using Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution.Adapters;
-using Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution.GetReference;
-using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency;
+using Soundtrail.Services.Enrichment.Worker;
+using Soundtrail.Services.Enrichment.Worker.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Services.Tests.Integration.Enrichment.Ports.ProviderClients;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
@@ -64,69 +61,16 @@ public sealed class AsyncLookupHappyPathTestEnvironment : IAsyncDisposable
     {
         var raven = RavenEmbeddedTestDatabase.Create();
         ExecuteIndexes(raven.Store);
-        var providersServer = new WireMockMusicProvidersServer();
-        providersServer.SeedMusicBrainz(
-            MusicSearchTerm.ByTrackArtistAlbum("Rare Unknown Song", "Test Artist", "Rare Album"),
-            new SongMetadata(
-                "Rare Unknown Song",
-                "Test Artist",
-                "isrc-rare-1",
-                "mbid-rare-1",
-                123000));
-        providersServer.SeedOdesli(
-            MusicSearchTerm.ByIsrc("isrc-rare-1"),
-            [
-                new ExternalReference(
-                    ProviderName.AppleMusic,
-                    new Uri("https://music.apple.com/track/apple-track-1?i=apple-track-1"),
-                    "apple-track-1"),
-                new ExternalReference(
-                    ProviderName.YoutubeMusic,
-                    new Uri("https://music.youtube.com/watch?v=yt-track-1"),
-                    "yt-track-1")
-            ]);
-        providersServer.SeedOdesli(
-            MusicSearchTerm.ByTrackArtistAlbum("Rare Unknown Song", "Test Artist", "Rare Album"),
-            [
-                new ExternalReference(
-                    ProviderName.AppleMusic,
-                    new Uri("https://music.apple.com/track/apple-track-1?i=apple-track-1"),
-                    "apple-track-1"),
-                new ExternalReference(
-                    ProviderName.YoutubeMusic,
-                    new Uri("https://music.youtube.com/watch?v=yt-track-1"),
-                    "yt-track-1")
-            ]);
-        providersServer.SeedOdesli(
-            MusicSearchTerm.ByTrackArtistAlbum("Rare Unknown Song", "Test Artist", null),
-            [
-                new ExternalReference(
-                    ProviderName.AppleMusic,
-                    new Uri("https://music.apple.com/track/apple-track-1?i=apple-track-1"),
-                    "apple-track-1"),
-                new ExternalReference(
-                    ProviderName.YoutubeMusic,
-                    new Uri("https://music.youtube.com/watch?v=yt-track-1"),
-                    "yt-track-1")
-            ]);
+        var providersServer = WireMockMusicProvidersServer.CreateForAsyncLookupHappyPath();
 
         var builder = Host.CreateApplicationBuilder();
-        var candidateSearch = new FakeMusicCatalogCandidateSearch();
-        candidateSearch.ResolveAs(MusicCatalogId.From("mc_track_1"));
-        var localSearch = new LocalMusicTrackSearchFake();
-        localSearch.Seed(new LocalMusicTrackSearchResult(
-            MusicCatalogId.From("mc_track_1"),
-            "Rare Unknown Song",
-            "Test Artist",
-            "Rare Album",
-            Isrc: null,
-            Mbid: null,
-            DurationMs: null,
-            IsPlayable: false));
+        var candidateSearch = FakeMusicCatalogCandidateSearch.CreateForAsyncLookupHappyPath();
+        var localSearch = LocalMusicTrackSearchFake.CreateForAsyncLookupHappyPath();
+        var discoveryPlannerDependencies = new EndToEndDiscoveryPlannerDependencyProvider(candidateSearch, localSearch);
+        var workerDependencies = new EndToEndWorkerDependencyProvider(providersServer.BaseUrl, new LookupExecutionReceiptStoreFake.State());
         builder.Services.RunWolverineInSoloMode();
 
-        builder.Services.AddSingleton<IDocumentStore>(raven.Store);
-        builder.Services.AddScoped<IAsyncDocumentSession>(_ => raven.Store.OpenAsyncSession());
+        builder.Services.AddEmbeddedRavenForTesting(raven.Store);
 
         builder.UseWolverine(opts =>
         {
@@ -134,6 +78,7 @@ public sealed class AsyncLookupHappyPathTestEnvironment : IAsyncDisposable
             opts.UseRavenDbPersistence();
             opts.Policies.AutoApplyTransactions();
             opts.Durability.DurabilityAgentEnabled = false;
+            opts.ServiceLocationPolicy = ServiceLocationPolicy.AllowedButWarn;
             opts.Discovery.DisableConventionalDiscovery();
             opts.Discovery.IncludeType<LookupMusicRequestListener>();
             opts.Discovery.IncludeType<MusicBrainzLookupExecutionListener>();
@@ -148,58 +93,22 @@ public sealed class AsyncLookupHappyPathTestEnvironment : IAsyncDisposable
             opts.LocalQueueFor<PlaybackReferencesResolutionRequiredMessageDto>();
         });
 
-        builder.Services.AddSingleton<ITrackSearchPort, RavenTrackSearchIndex>();
-        builder.Services.AddSingleton<IMusicCatalogCandidateSearch>(candidateSearch);
-        builder.Services.AddSingleton<ILocalMusicTrackSearch>(localSearch);
-
-        builder.Services.AddScoped<IRankedMusicCandidateStore, RavenRankedMusicCandidateStore>();
-        builder.Services.AddScoped<IActiveLookupWorkStore, RavenActiveLookupWorkStore>();
-        builder.Services.AddScoped<IMusicTrackEventRepository, RavenMusicTrackStreamStore>();
-        builder.Services.AddScoped<IMusicTrackProjectionStore, RavenMusicTrackProjectionStore>();
-        builder.Services.AddScoped<IProviderSnapshotStore, RavenProviderSnapshotStore>();
-
-        builder.Services.AddSingleton(providersServer);
-        builder.Services.AddSingleton<IGetCanonicalMusicMetadata>(_ =>
+        builder.Services.AddApiAppServices(builder.Configuration, builder.Environment, options =>
         {
-            var options = Microsoft.Extensions.Options.Options.Create(new MusicBrainzOptions
-            {
-                BaseUrl = providersServer.BaseUrl,
-                UserAgent = "Soundtrail.Tests/1.0"
-            });
-            var client = new HttpClient();
-            MusicBrainzGetCanonicalMusicMetadata.ConfigureHttpClient(client, options.Value);
-            return new MusicBrainzGetCanonicalMusicMetadata(client);
+            options.UseInMemoryQueueing = false;
+            options.ConfigureQueueingDependencies = services =>
+                services.TryAddScoped<IEnqueueMusicRequest, WolverineEnqueueMusicRequest>();
         });
-        builder.Services.AddSingleton<IGetMusicTrackReference>(_ =>
+        builder.Services.AddDiscoveryPlannerAppServices(builder.Configuration, options =>
         {
-            var options = Microsoft.Extensions.Options.Options.Create(new OdesliOptions
-            {
-                BaseUrl = providersServer.BaseUrl,
-                UserCountry = "US"
-            });
-            var client = new HttpClient();
-            OdesliStreamingReferences.ConfigureHttpClient(client, options.Value);
-            return new OdesliStreamingReferences(client, options);
+            options.IncludeBacklogHostedService = false;
+            options.DependencyProvider = discoveryPlannerDependencies;
         });
-        builder.Services.AddSingleton(new LookupExecutionReceiptStoreFake.State());
-        builder.Services.AddSingleton<ILookupExecutionReceiptStore, LookupExecutionReceiptStoreFake>();
-
-        builder.Services.AddSingleton<DiscoveryPriorityPolicy>();
-        builder.Services.AddSingleton<MusicCatalogMatchResolver>();
-
-        builder.Services.AddScoped<IEnqueueMusicRequest, WolverineEnqueueMusicRequest>();
-        builder.Services.AddScoped<IHandler<SearchMusicRequest, SearchMusicResponse>, SearchMusicHandler>();
-        builder.Services.AddScoped<LookupMusicRequestHandler>();
-        builder.Services.AddScoped<ApplyEnrichmentResponseHandler>();
-        builder.Services.AddScoped<OnDemandLookupMetadataHandler>();
-        builder.Services.AddScoped<ExecutePlaybackReferencesLookupHandler>();
-
-        builder.Services.AddScoped<LookupMusicRequestListener>();
-        builder.Services.AddScoped<MusicBrainzLookupExecutionListener>();
-        builder.Services.AddScoped<EnrichmentResponseListener>();
-        builder.Services.AddScoped<MusicTrackEventListener>();
-        builder.Services.AddScoped<PlaybackReferencesLookupExecutionListener>();
-        builder.Services.AddHostedService<MusicTrackEventSubscriptionHostedService>();
+        builder.Services.AddWorkerAppServices(
+            builder.Configuration,
+            options => options.DependencyProvider = workerDependencies);
+        builder.Services.AddCdcAppServices(builder.Configuration);
+        builder.Services.AddMusicTrackLookupCoordinatorAppServices();
 
         var host = builder.Build();
         await host.StartAsync();
