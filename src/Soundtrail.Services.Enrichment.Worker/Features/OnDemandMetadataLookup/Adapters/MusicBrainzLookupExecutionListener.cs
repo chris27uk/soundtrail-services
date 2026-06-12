@@ -1,16 +1,14 @@
 using Raven.Client.Documents.Session;
-using Soundtrail.Contracts.Commands;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Contracts.Responses;
+using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Model;
-using Soundtrail.Domain.Responses;
-using Soundtrail.Services.Enrichment.Worker.Features.MusicBrainzLookupExecution;
 using Wolverine.Attributes;
 
-namespace Soundtrail.Services.Enrichment.Worker.Features.MusicBrainzLookupExecution.Adapters;
+namespace Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.Adapters;
 
-public sealed class MusicBrainzLookupExecutionListener(LookupCanonicalMusicMetadataHandler handler)
+public sealed class MusicBrainzLookupExecutionListener(OnDemandLookupMetadataHandler handler)
 {
     [WolverineHandler]
     [Transactional]
@@ -20,7 +18,7 @@ public sealed class MusicBrainzLookupExecutionListener(LookupCanonicalMusicMetad
         CancellationToken cancellationToken = default)
     {
         var result = await handler.Handle(
-            new LookupCanonicalMusicMetadataCommand(
+            new LookupMusicMetadataCommand(
                 CommandId.From(dto.CommandId),
                 MusicCatalogId.From(dto.MusicCatalogId),
                 dto.Priority,
@@ -47,8 +45,7 @@ public sealed class MusicBrainzLookupExecutionListener(LookupCanonicalMusicMetad
                 result.Response.References.Select(reference => new ExternalReferenceDto(
                     reference.Provider.Value,
                     reference.Url,
-                    reference.ExternalId,
-                    reference.Confidence.ToString())).ToArray(),
+                    reference.ExternalId)).ToArray(),
                 result.Response.CorrelationId.Value)];
     }
 

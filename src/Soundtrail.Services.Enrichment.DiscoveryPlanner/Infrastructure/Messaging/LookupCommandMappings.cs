@@ -1,4 +1,4 @@
-using Soundtrail.Contracts.Commands;
+using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Messaging;

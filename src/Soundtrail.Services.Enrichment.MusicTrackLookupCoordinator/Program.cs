@@ -1,14 +1,15 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Soundtrail.Contracts.Commands;
-using Soundtrail.Contracts.Events;
+using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Infrastructure.Messaging;
 using Wolverine;
 using Wolverine.AzureServiceBus;
 using Wolverine.RavenDb;
 
 var builder = Host.CreateApplicationBuilder(args);
+
+builder.AddServiceDefaults();
 
 var serviceBusOptions = builder.Configuration
     .GetSection(ServiceBusOptions.SectionName)

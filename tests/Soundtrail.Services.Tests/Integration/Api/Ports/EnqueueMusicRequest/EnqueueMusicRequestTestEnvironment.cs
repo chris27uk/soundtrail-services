@@ -70,6 +70,7 @@ internal sealed class EnqueueMusicRequestTestEnvironment : IAsyncDisposable
         builder.Services.AddScoped<IEnqueueMusicRequest, WolverineEnqueueMusicRequest>();
         builder.UseWolverine(opts =>
         {
+            opts.UseRuntimeCompilation();
             opts.Discovery.DisableConventionalDiscovery();
             if (configuredRoute)
             {

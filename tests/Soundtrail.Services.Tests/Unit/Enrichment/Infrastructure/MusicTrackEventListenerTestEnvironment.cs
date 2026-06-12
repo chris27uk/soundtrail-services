@@ -1,6 +1,6 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Contracts.Commands;
-using Soundtrail.Contracts.Events;
+using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Contracts.IntegrationMessaging.Events;
 using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Infrastructure.Messaging;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;

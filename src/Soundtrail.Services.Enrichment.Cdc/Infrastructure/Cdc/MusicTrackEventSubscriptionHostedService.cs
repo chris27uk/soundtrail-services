@@ -3,9 +3,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Subscriptions;
-using Soundtrail.Contracts.Commands;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Contracts.Events;
+using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Contracts.IntegrationMessaging.Events;
 using Soundtrail.Domain.Events;
 using Wolverine;
 

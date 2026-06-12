@@ -59,7 +59,6 @@ public sealed class MusicTrackProjectionStoreFake : IMusicTrackProjectionStore
                             providerPlaybackReferenceResolved.Provider,
                             providerPlaybackReferenceResolved.Url,
                             providerPlaybackReferenceResolved.ExternalId,
-                            ReferenceConfidence.Verified,
                             providerPlaybackReferenceResolved.SourceProvider);
 
                         switch (providerPlaybackReferenceResolved.Provider)

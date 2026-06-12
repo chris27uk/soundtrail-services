@@ -35,29 +35,3 @@ public sealed class RavenTrackDocument
     public static string BuildSearchText(string title, string artist) =>
         $"{title} {artist}".Trim().ToLowerInvariant();
 }
-
-public sealed class RavenSongMetadataDocument
-{
-    public string Title { get; set; } = string.Empty;
-
-    public string Artist { get; set; } = string.Empty;
-
-    public string? Isrc { get; set; }
-
-    public string? Mbid { get; set; }
-
-    public int? DurationMs { get; set; }
-}
-
-public sealed class RavenProviderReferenceDocument
-{
-    public string Provider { get; set; } = string.Empty;
-
-    public string Url { get; set; } = string.Empty;
-
-    public string? ExternalId { get; set; }
-
-    public string Confidence { get; set; } = string.Empty;
-
-    public string SourceProvider { get; set; } = string.Empty;
-}

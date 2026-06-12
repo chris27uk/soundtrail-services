@@ -1,7 +1,7 @@
 using Raven.Client.Documents.Session;
-using Soundtrail.Contracts.Commands;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Contracts.Responses;
+using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
@@ -41,8 +41,7 @@ public sealed class PlaybackReferencesLookupExecutionListener(ExecutePlaybackRef
                 result.Response.References.Select(reference => new ExternalReferenceDto(
                     reference.Provider.Value,
                     reference.Url,
-                    reference.ExternalId,
-                    reference.Confidence.ToString())).ToArray(),
+                    reference.ExternalId)).ToArray(),
                 result.Response.CorrelationId.Value)];
     }
 }

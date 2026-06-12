@@ -1,4 +1,4 @@
-namespace Soundtrail.Contracts.Responses;
+namespace Soundtrail.Contracts.IntegrationMessaging.Responses;
 
 public sealed record SongMetadataDto(
     string Title,

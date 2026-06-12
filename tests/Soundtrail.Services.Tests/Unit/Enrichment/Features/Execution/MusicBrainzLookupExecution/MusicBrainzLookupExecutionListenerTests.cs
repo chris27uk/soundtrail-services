@@ -1,7 +1,6 @@
 using FluentAssertions;
-using Soundtrail.Contracts.Commands;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Contracts.Responses;
+using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;

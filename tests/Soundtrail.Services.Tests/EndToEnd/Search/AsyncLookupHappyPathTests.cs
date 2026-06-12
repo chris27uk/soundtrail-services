@@ -1,12 +1,14 @@
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Soundtrail.Contracts.Commands;
+using Raven.Client.Documents;
+using Raven.Client.Documents.Session;
+using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Contracts.Events;
-using Soundtrail.Contracts.Responses;
+using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Contracts.IntegrationMessaging.Events;
+using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Domain;
-using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Api.Features.Search;
@@ -14,18 +16,28 @@ using Soundtrail.Services.Api.Features.Search.Queueing;
 using Soundtrail.Services.Api.Features.Search.Tracks;
 using Soundtrail.Services.Api.Features.Search.TrackSearch;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Documents;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Idempotency;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search.Resolution;
+using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Infrastructure.Messaging;
+using Soundtrail.Services.Enrichment.Worker.Features.MusicBrainzLookupExecution;
+using Soundtrail.Services.Enrichment.Worker.Features.MusicBrainzLookupExecution.Adapters;
+using Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup;
+using Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.Adapters;
+using Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution;
+using Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution.Adapters;
+using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency;
+using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
-using Wolverine;
-using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Tests.EndToEnd.Search;
 
@@ -46,95 +58,99 @@ public sealed class AsyncLookupHappyPathTests
         resolved.Status.Should().Be(ResolutionStatus.Resolved);
         resolved.Results.Should().ContainSingle();
         resolved.Results[0].Title.Value.Should().Be("Rare Unknown Song");
+        resolved.Results[0].Artist.Value.Should().Be("Test Artist");
+        resolved.Results[0].AppleId!.Value.Should().Be("apple-track-1");
     }
 
     private sealed class AsyncLookupHappyPathTestEnvironment : IAsyncDisposable
     {
         private readonly IHost host;
+        private readonly RavenEmbeddedTestDatabase raven;
 
         private AsyncLookupHappyPathTestEnvironment(
             IHost host,
-            FakeMusicCatalogCandidateSearch candidateSearch,
-            MusicTrackProjectionStoreFake projectionStore)
+            RavenEmbeddedTestDatabase raven)
         {
             this.host = host;
-            CandidateSearch = candidateSearch;
-            ProjectionStore = projectionStore;
+            this.raven = raven;
         }
 
-        public FakeMusicCatalogCandidateSearch CandidateSearch { get; }
-
-        public MusicTrackProjectionStoreFake ProjectionStore { get; }
-
-        public static async Task<AsyncLookupHappyPathTestEnvironment> CreateAsync()
+        public static Task<AsyncLookupHappyPathTestEnvironment> CreateAsync()
         {
-            var builder = Host.CreateApplicationBuilder();
+            var raven = RavenEmbeddedTestDatabase.Create();
+            SeedSeedTrack(raven.Store);
 
-            var candidateSearch = new FakeMusicCatalogCandidateSearch();
-            candidateSearch.ResolveAs(MusicCatalogId.From("mc_track_1"));
-
-            var rankedStore = new RankedMusicCandidateStoreFake();
-            var activeLookupWorkStore = new ActiveLookupWorkStoreFake();
-            var localSearch = new LocalMusicTrackSearchFake();
-            localSearch.Seed(new LocalMusicTrackSearchResult(
-                MusicCatalogId.From("mc_track_1"),
+            var metadata = new FakeGetCanonicalMusicMetadata();
+            metadata.SeedNames(
                 "Rare Unknown Song",
                 "Test Artist",
                 "Rare Album",
-                null,
-                null,
-                null,
-                IsPlayable: false));
-            var streamStore = new MusicTrackStreamStoreFake();
-            var projectionStore = new MusicTrackProjectionStoreFake();
-            var snapshotStore = new ProviderSnapshotStoreFake();
+                new SongMetadata(
+                    "Rare Unknown Song",
+                    "Test Artist",
+                    "isrc-rare-1",
+                    "mbid-rare-1",
+                    123000));
 
-            builder.Services.AddSingleton(candidateSearch);
-            builder.Services.AddSingleton<IMusicCatalogCandidateSearch>(candidateSearch);
-            builder.Services.AddSingleton(rankedStore);
-            builder.Services.AddSingleton<IRankedMusicCandidateStore>(rankedStore);
-            builder.Services.AddSingleton(activeLookupWorkStore);
-            builder.Services.AddSingleton<IActiveLookupWorkStore>(activeLookupWorkStore);
-            builder.Services.AddSingleton(localSearch);
-            builder.Services.AddSingleton<ILocalMusicTrackSearch>(localSearch);
-            builder.Services.AddSingleton(streamStore);
-            builder.Services.AddSingleton<IMusicTrackEventRepository>(streamStore);
-            builder.Services.AddSingleton(projectionStore);
-            builder.Services.AddSingleton<IMusicTrackProjectionStore>(projectionStore);
-            builder.Services.AddSingleton(snapshotStore);
-            builder.Services.AddSingleton<IProviderSnapshotStore>(snapshotStore);
-            builder.Services.AddSingleton<ITrackSearchPort, ProjectionBackedTrackSearchPort>();
+            var references = new FakeGetMusicTrackReference();
+            references.Seed(
+                MusicSearchTerm.ByIsrc("isrc-rare-1"),
+                new ExternalReference(
+                    ProviderName.AppleMusic,
+                    new Uri("https://music.apple.com/track/apple-track-1"),
+                    "apple-track-1"),
+                new ExternalReference(
+                    ProviderName.YoutubeMusic,
+                    new Uri("https://music.youtube.com/watch?v=yt-track-1"),
+                    "yt-track-1"));
+
+            var builder = Host.CreateApplicationBuilder();
+
+            builder.Services.AddSingleton<IDocumentStore>(raven.Store);
+            builder.Services.AddScoped<IAsyncDocumentSession>(_ => raven.Store.OpenAsyncSession());
+
+            builder.Services.AddSingleton<IMusicCatalogCandidateSearch>(new PlannerProjectionCandidateSearch(raven.Store));
+            builder.Services.AddSingleton<ILocalMusicTrackSearch>(new RavenLocalMusicTrackSearch(raven.Store));
+            builder.Services.AddSingleton<ITrackSearchPort>(new PlannerProjectionTrackSearchPort(raven.Store));
+
+            builder.Services.AddScoped<IRankedMusicCandidateStore, RavenRankedMusicCandidateStore>();
+            builder.Services.AddScoped<IActiveLookupWorkStore, RavenActiveLookupWorkStore>();
+            builder.Services.AddScoped<IMusicTrackEventRepository, RavenMusicTrackStreamStore>();
+            builder.Services.AddScoped<IMusicTrackProjectionStore, RavenMusicTrackProjectionStore>();
+            builder.Services.AddScoped<IProviderSnapshotStore, RavenProviderSnapshotStore>();
+
+            builder.Services.AddSingleton(metadata);
+            builder.Services.AddSingleton<IGetCanonicalMusicMetadata>(metadata);
+            builder.Services.AddSingleton(references);
+            builder.Services.AddSingleton<IGetMusicTrackReference>(references);
+            builder.Services.AddSingleton<ILookupExecutionReceiptStore, InMemoryLookupExecutionReceiptStore>();
+
             builder.Services.AddSingleton<DiscoveryPriorityPolicy>();
-            builder.Services.AddSingleton<MusicCatalogResolutionPolicy>();
-            builder.Services.AddScoped<IEnqueueMusicRequest, WolverineEnqueueMusicRequest>();
+            builder.Services.AddSingleton<MusicCatalogMatchResolver>();
+
+            builder.Services.AddScoped<IEnqueueMusicRequest, InProcessEnqueueMusicRequest>();
             builder.Services.AddScoped<IHandler<SearchMusicRequest, SearchMusicResponse>, SearchMusicHandler>();
             builder.Services.AddScoped<LookupMusicRequestHandler>();
             builder.Services.AddScoped<ApplyEnrichmentResponseHandler>();
+            builder.Services.AddScoped<OnDemandLookupMetadataHandler>();
+            builder.Services.AddScoped<ExecutePlaybackReferencesLookupHandler>();
 
-            builder.UseWolverine(opts =>
-            {
-                opts.Discovery.DisableConventionalDiscovery();
-                opts.Discovery.IncludeType<LocalPipelineHandlers>();
-            });
+            builder.Services.AddScoped<LookupMusicRequestListener>();
+            builder.Services.AddScoped<MusicBrainzLookupExecutionListener>();
+            builder.Services.AddScoped<EnrichmentResponseBridge>();
+            builder.Services.AddScoped<MusicTrackEventListener>();
+            builder.Services.AddScoped<PlaybackReferencesLookupExecutionListener>();
 
             var host = builder.Build();
-            await host.StartAsync();
 
-            return new AsyncLookupHappyPathTestEnvironment(
-                host,
-                candidateSearch,
-                projectionStore);
+            return Task.FromResult(new AsyncLookupHappyPathTestEnvironment(host, raven));
         }
 
         public async Task<SearchMusicResponse> SearchAsync(string query)
         {
-            using var scope = this.host.Services.CreateScope();
+            using var scope = host.Services.CreateScope();
             var handler = scope.ServiceProvider.GetRequiredService<IHandler<SearchMusicRequest, SearchMusicResponse>>();
-            return await handler.Handle(
-                new SearchMusicRequest(
-                    query,
-                    Limit.From(5),
-                    MinConfidence: null));
+            return await handler.Handle(new SearchMusicRequest(query, Limit.From(5), MinConfidence: null));
         }
 
         public async Task<SearchMusicResponse> WaitForResolvedSearchAsync(string query, TimeSpan timeout)
@@ -157,92 +173,38 @@ public sealed class AsyncLookupHappyPathTests
 
         public async ValueTask DisposeAsync()
         {
-            await this.host.StopAsync();
-            this.host.Dispose();
+            await host.StopAsync();
+            host.Dispose();
+            raven.Dispose();
+        }
+
+        private static void SeedSeedTrack(IDocumentStore store)
+        {
+            using var session = store.OpenSession();
+            session.Advanced.WaitForIndexesAfterSaveChanges();
+            session.Store(new RavenTrackDocument
+            {
+                Id = RavenTrackDocument.GetDocumentId("mc_track_1"),
+                Title = "Rare Unknown Song",
+                Artist = "Test Artist",
+                AlbumTitle = "Rare Album",
+                SearchText = RavenTrackDocument.BuildSearchText("Rare Unknown Song", "Test Artist"),
+                IsPlayable = false
+            });
+            session.SaveChanges();
         }
     }
 
-    public sealed class LocalPipelineHandlers(LookupMusicRequestHandler lookupMusicRequestHandler, ApplyEnrichmentResponseHandler applyEnrichmentResponseHandler)
+    public sealed class EnrichmentResponseBridge(
+        ApplyEnrichmentResponseHandler handler,
+        MusicTrackEventListener musicTrackEventListener)
     {
-        [WolverineHandler]
-        public async Task<object[]> Handle(
-            LookupMusicRequestDto dto,
-            CancellationToken cancellationToken)
-        {
-            var result = await lookupMusicRequestHandler.ScheduleAsync(
-                new Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search.LookupMusicRequest(
-                    Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search.NormalizedSearchQuery.FromText(dto.Query),
-                    dto.TrustLevel,
-                    dto.RiskScore,
-                    dto.OccurredAt,
-                    CorrelationId.From(dto.CorrelationId)),
-                cancellationToken);
-
-            return result.Commands.Select(MapCommand).ToArray();
-        }
-
-        [WolverineHandler]
-        public object Handle(LookupCanonicalMusicMetadataCommandDto dto)
-        {
-            return new EnrichmentResponseDto(
-                dto.CommandId,
-                dto.MusicCatalogId,
-                ProviderName.MusicBrainz.Value,
-                dto.Priority,
-                dto.CreatedAt,
-                new SongMetadataDto(
-                    "Rare Unknown Song",
-                    "Test Artist",
-                    "isrc-rare-1",
-                    "mbid-rare-1",
-                    123000),
-                Array.Empty<ExternalReferenceDto>(),
-                dto.CorrelationId);
-        }
-
-        [WolverineHandler]
-        public object Handle(PlaybackReferencesResolutionRequiredMessageDto dto)
-        {
-            return new ResolvePlaybackReferencesCommandDto(
-                CommandId.For($"ResolvePlaybackReferences:{dto.MusicCatalogId}").Value,
-                dto.MusicCatalogId,
-                dto.Priority,
-                dto.ObservedAt,
-                dto.CorrelationId,
-                dto.SearchTerm);
-        }
-
-        [WolverineHandler]
-        public object Handle(ResolvePlaybackReferencesCommandDto dto)
-        {
-            return new EnrichmentResponseDto(
-                dto.CommandId,
-                dto.MusicCatalogId,
-                ProviderName.Odesli.Value,
-                dto.Priority,
-                dto.CreatedAt,
-                null,
-                [
-                    new ExternalReferenceDto(
-                        ProviderName.AppleMusic.Value,
-                        new Uri("https://music.apple.com/track/apple-track-1"),
-                        "apple-track-1",
-                        ReferenceConfidence.Verified.ToString()),
-                    new ExternalReferenceDto(
-                        ProviderName.YoutubeMusic.Value,
-                        new Uri("https://music.youtube.com/watch?v=yt-track-1"),
-                        "yt-track-1",
-                        ReferenceConfidence.Verified.ToString())
-                ],
-                dto.CorrelationId);
-        }
-
-        [WolverineHandler]
         public async Task<object[]> Handle(
             EnrichmentResponseDto dto,
+            IAsyncDocumentSession session,
             CancellationToken cancellationToken)
         {
-            var result = await applyEnrichmentResponseHandler.Handle(
+            var result = await handler.Handle(
                 new EnrichmentResponse(
                     CommandId.From(dto.CommandId),
                     MusicCatalogId.From(dto.MusicCatalogId),
@@ -260,22 +222,13 @@ public sealed class AsyncLookupHappyPathTests
                     dto.References.Select(reference => new ExternalReference(
                         ProviderName.From(reference.Provider),
                         reference.Url,
-                        reference.ExternalId,
-                        Enum.Parse<ReferenceConfidence>(reference.Confidence, ignoreCase: true))).ToArray(),
+                        reference.ExternalId)).ToArray(),
                     CorrelationId.From(dto.CorrelationId)),
                 cancellationToken);
 
             return result.Events
-                .Select(MapFollowUpMessage)
-                .Where(message => message is not null)
-                .Cast<object>()
-                .ToArray();
-        }
-
-        private static object? MapFollowUpMessage(IMusicTrackEvent @event) =>
-            @event switch
-            {
-                PlaybackReferencesResolutionRequired playback => new PlaybackReferencesResolutionRequiredMessageDto(
+                .OfType<Soundtrail.Domain.Events.PlaybackReferencesResolutionRequired>()
+                .Select(playback => new PlaybackReferencesResolutionRequiredMessageDto(
                     playback.MusicCatalogId.Value,
                     playback.Priority,
                     playback.CorrelationId.Value,
@@ -285,65 +238,131 @@ public sealed class AsyncLookupHappyPathTests
                         playback.SearchTerm.Isrc,
                         playback.SearchTerm.Title,
                         playback.SearchTerm.Artist,
-                        playback.SearchTerm.Album)),
-                _ => null
-            };
-
-        private static object MapCommand(ICommand command) =>
-            command switch
-            {
-                LookupCanonicalMusicMetadataCommand musicBrainz => new LookupCanonicalMusicMetadataCommandDto(
-                    musicBrainz.CommandId.Value,
-                    musicBrainz.MusicCatalogId.Value,
-                    musicBrainz.Priority,
-                    musicBrainz.CreatedAt,
-                    musicBrainz.CorrelationId.Value,
-                    musicBrainz.SearchTerm.Isrc,
-                    musicBrainz.SearchTerm.Title,
-                    musicBrainz.SearchTerm.Artist,
-                    musicBrainz.SearchTerm.Album),
-                ResolvePlaybackReferencesCommand playback => new ResolvePlaybackReferencesCommandDto(
-                    playback.CommandId.Value,
-                    playback.MusicCatalogId.Value,
-                    playback.Priority,
-                    playback.CreatedAt,
-                    playback.CorrelationId.Value,
-                    new PlaybackReferenceSearchTermDto(
-                        playback.SearchTerm.Isrc,
-                        playback.SearchTerm.Title,
-                        playback.SearchTerm.Artist,
-                        playback.SearchTerm.Album)),
-                _ => throw new ArgumentOutOfRangeException(nameof(command), command, null)
-            };
+                        playback.SearchTerm.Album)))
+                .Select(message => musicTrackEventListener.Handle(message, session))
+                .Cast<object>()
+                .ToArray();
+        }
     }
 
-    private sealed class ProjectionBackedTrackSearchPort(MusicTrackProjectionStoreFake projectionStore) : ITrackSearchPort
+    private sealed class InProcessEnqueueMusicRequest(
+        IAsyncDocumentSession session,
+        LookupMusicRequestListener lookupMusicRequestListener,
+        MusicBrainzLookupExecutionListener musicBrainzLookupExecutionListener,
+        PlaybackReferencesLookupExecutionListener playbackReferencesLookupExecutionListener,
+        EnrichmentResponseBridge enrichmentResponseBridge) : IEnqueueMusicRequest
     {
-        public Task<IReadOnlyList<SearchResult>> SearchAsync(
+        public async Task EnqueueAsync(
+            Soundtrail.Services.Api.Features.Search.Queueing.LookupMusicRequest request,
+            CancellationToken cancellationToken)
+        {
+            var pending = new Queue<object>(await lookupMusicRequestListener.Handle(
+                new LookupMusicRequestDto(
+                    request.Query,
+                    request.TrustLevel,
+                    request.RiskScore,
+                    request.OccurredAt,
+                    request.CorrelationId),
+                session,
+                cancellationToken));
+
+            while (pending.Count > 0)
+            {
+                var message = pending.Dequeue();
+                switch (message)
+                {
+                    case LookupCanonicalMusicMetadataCommandDto canonical:
+                        foreach (var response in await musicBrainzLookupExecutionListener.Handle(canonical, session, cancellationToken))
+                        {
+                            pending.Enqueue(response);
+                        }
+                        break;
+                    case ResolvePlaybackReferencesCommandDto playback:
+                        foreach (var response in await playbackReferencesLookupExecutionListener.Handle(playback, session, cancellationToken))
+                        {
+                            pending.Enqueue(response);
+                        }
+                        break;
+                    case EnrichmentResponseDto response:
+                        foreach (var next in await enrichmentResponseBridge.Handle(response, session, cancellationToken))
+                        {
+                            pending.Enqueue(next);
+                        }
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(message), message, null);
+                }
+            }
+
+            await session.SaveChangesAsync(cancellationToken);
+        }
+    }
+
+    private sealed class PlannerProjectionTrackSearchPort(IDocumentStore documentStore) : ITrackSearchPort
+    {
+        public async Task<IReadOnlyList<SearchResult>> SearchAsync(
             Soundtrail.Services.Api.Features.Search.TrackSearch.NormalizedSearchQuery query,
             Limit limit,
             CancellationToken cancellationToken)
         {
-            var matches = projectionStore.Projections.Values
-                .Where(track => track.CanonicalMetadata is not null)
-                .Where(track => Soundtrail.Services.Api.Features.Search.TrackSearch.NormalizedSearchQuery.FromText(
-                        $"{track.CanonicalMetadata!.Title} {track.CanonicalMetadata.Artist}")
-                    .Value.Contains(query.Value, StringComparison.Ordinal))
+            using var session = documentStore.OpenAsyncSession();
+            var documents = await session.Query<RavenTrackDocument>()
+                .Take(32)
+                .ToListAsync(cancellationToken);
+
+            return documents
+                .Where(document => document.IsPlayable)
+                .Where(document =>
+                    Soundtrail.Services.Api.Features.Search.TrackSearch.NormalizedSearchQuery.FromText(
+                        $"{document.Title} {document.Artist}").Value.Contains(query.Value, StringComparison.Ordinal))
                 .Take(limit.Value)
-                .Select(track => new SearchResult(
-                    TrackTitle.From(track.CanonicalMetadata!.Title),
-                    ArtistName.From(track.CanonicalMetadata.Artist),
-                    string.IsNullOrWhiteSpace(track.CanonicalMetadata.Isrc) ? null : Isrc.From(track.CanonicalMetadata.Isrc),
-                    string.IsNullOrWhiteSpace(track.CanonicalMetadata.Mbid) ? null : Mbid.From(track.CanonicalMetadata.Mbid),
-                    string.IsNullOrWhiteSpace(track.Apple?.ExternalId) ? null : AppleId.From(track.Apple.ExternalId!),
-                    null,
+                .Select(document => new SearchResult(
+                    TrackTitle.From(document.Title),
+                    ArtistName.From(document.Artist),
+                    string.IsNullOrWhiteSpace(document.Isrc) ? null : Isrc.From(document.Isrc),
+                    string.IsNullOrWhiteSpace(document.Mbid) ? null : Mbid.From(document.Mbid),
+                    string.IsNullOrWhiteSpace(document.AppleId) ? null : AppleId.From(document.AppleId),
+                    string.IsNullOrWhiteSpace(document.SpotifyId) ? null : SpotifyId.From(document.SpotifyId),
                     ConfidenceScore.From(0.95)))
                 .ToArray();
-
-            return Task.FromResult<IReadOnlyList<SearchResult>>(matches);
         }
 
         public Task<bool> IsReadyAsync(CancellationToken cancellationToken) =>
             Task.FromResult(true);
+    }
+
+    private sealed class PlannerProjectionCandidateSearch(IDocumentStore documentStore) : IMusicCatalogCandidateSearch
+    {
+        public async Task<IReadOnlyList<MusicCatalogMatch>> SearchAsync(
+            Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search.NormalizedSearchQuery query,
+            CancellationToken cancellationToken)
+        {
+            using var session = documentStore.OpenAsyncSession();
+            var documents = await session.Query<RavenTrackDocument>()
+                .Take(32)
+                .ToListAsync(cancellationToken);
+
+            return documents
+                .Where(document => document.SearchText.Contains(query.Value, StringComparison.Ordinal))
+                .Select(document => new MusicCatalogMatch(
+                    MusicCatalogId.From(document.Id.Replace("track-catalogue/", string.Empty)),
+                    0.95m))
+                .ToArray();
+        }
+    }
+
+    private sealed class InMemoryLookupExecutionReceiptStore : ILookupExecutionReceiptStore
+    {
+        private readonly HashSet<string> commandIds = [];
+        private readonly HashSet<string> completed = [];
+
+        public Task<bool> TryBeginAsync(CommandId commandId, CancellationToken cancellationToken) =>
+            Task.FromResult(commandIds.Add(commandId.Value));
+
+        public Task MarkCompletedAsync(CommandId commandId, CancellationToken cancellationToken)
+        {
+            completed.Add(commandId.Value);
+            return Task.CompletedTask;
+        }
     }
 }

@@ -1,4 +1,4 @@
-using Soundtrail.Contracts.Commands;
+using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain;
 using Soundtrail.Services.Api.Features.Health;
 using Soundtrail.Services.Api.Features.Search;
@@ -11,6 +11,8 @@ using Wolverine;
 using Wolverine.AzureServiceBus;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.AddServiceDefaults();
 
     builder.Services.AddSingleton<IClockPort, SystemClock>();
 
@@ -42,6 +44,8 @@ else
 builder.Services.AddScoped<IHandler<SearchMusicRequest, SearchMusicResponse>, SearchMusicHandler>();
 
 var app = builder.Build();
+
+app.MapDefaultEndpoints();
 
 app.MapHealthEndpoints();
 app.MapSearchEndpoints();

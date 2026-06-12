@@ -1,5 +1,5 @@
 using Soundtrail.Contracts;
-using Soundtrail.Contracts.Commands;
+using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Services.Api.Features.Search.Queueing;
 using Wolverine;
 

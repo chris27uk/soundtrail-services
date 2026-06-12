@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Soundtrail.Contracts.Commands;
+using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse;
@@ -18,6 +18,8 @@ using Wolverine.AzureServiceBus;
 using Wolverine.RavenDb;
 
 var builder = Host.CreateApplicationBuilder(args);
+
+builder.AddServiceDefaults();
 
 var serviceBusOptions = builder.Configuration
     .GetSection(ServiceBusOptions.SectionName)
@@ -53,7 +55,7 @@ builder.Services.AddSchedulerRavenDocumentStore(builder.Configuration);
 builder.Services.AddSchedulerServiceBus(builder.Configuration);
 builder.Services.Configure<DiscoveryBacklogSchedulingOptions>(builder.Configuration.GetSection(DiscoveryBacklogSchedulingOptions.SectionName));
 builder.Services.AddSingleton<DiscoveryPriorityPolicy>();
-builder.Services.AddSingleton<MusicCatalogResolutionPolicy>();
+builder.Services.AddSingleton<MusicCatalogMatchResolver>();
 builder.Services.AddScoped<LookupMusicRequestHandler>();
 builder.Services.AddScoped<DiscoveryBacklogScheduler>();
 builder.Services.AddScoped<ApplyEnrichmentResponseHandler>();

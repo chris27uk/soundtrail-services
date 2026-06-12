@@ -82,10 +82,3 @@ public sealed class RavenMusicTrackStreamStore(
         return document?.AppliedCommandIds.Contains(commandId.Value) == true;
     }
 }
-
-public sealed class MusicTrackStreamConcurrencyException(
-    MusicCatalogId musicCatalogId,
-    int expectedVersion,
-    int actualVersion)
-    : InvalidOperationException(
-        $"MusicTrack stream for '{musicCatalogId.Value}' expected version {expectedVersion} but found {actualVersion}.");

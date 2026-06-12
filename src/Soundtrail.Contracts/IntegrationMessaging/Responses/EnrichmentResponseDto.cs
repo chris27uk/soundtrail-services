@@ -1,6 +1,6 @@
 using Soundtrail.Contracts.Common;
 
-namespace Soundtrail.Contracts.Responses;
+namespace Soundtrail.Contracts.IntegrationMessaging.Responses;
 
 public sealed record EnrichmentResponseDto(
     string CommandId,

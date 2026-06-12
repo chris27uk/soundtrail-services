@@ -54,7 +54,6 @@ public sealed class RavenMusicTrackProjectionStore(
                         providerPlaybackReferenceResolved.Provider,
                         providerPlaybackReferenceResolved.Url,
                         providerPlaybackReferenceResolved.ExternalId,
-                        ReferenceConfidence.Verified,
                         providerPlaybackReferenceResolved.SourceProvider);
 
                     switch (providerPlaybackReferenceResolved.Provider)
@@ -109,7 +108,6 @@ public sealed class RavenMusicTrackProjectionStore(
                 Provider = apple.Provider.ToString(),
                 Url = apple.Url.ToString(),
                 ExternalId = apple.ExternalId,
-                Confidence = apple.Confidence.ToString(),
                 SourceProvider = apple.SourceProvider.ToString()
             };
             document.AppleId = apple.ExternalId;
@@ -122,7 +120,6 @@ public sealed class RavenMusicTrackProjectionStore(
                 Provider = youTubeMusic.Provider.ToString(),
                 Url = youTubeMusic.Url.ToString(),
                 ExternalId = youTubeMusic.ExternalId,
-                Confidence = youTubeMusic.Confidence.ToString(),
                 SourceProvider = youTubeMusic.SourceProvider.ToString()
             };
         }

@@ -1,10 +1,12 @@
-using Soundtrail.Contracts.Commands;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Enrichment.Worker.Features.MusicBrainzLookupExecution;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Worker.Features.MusicBrainzLookupExecution.Adapters;
+using Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup;
+using Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.Adapters;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -26,7 +28,7 @@ internal sealed class MusicBrainzLookupExecutionListenerTestEnvironment
     {
         Metadata = new FakeGetCanonicalMusicMetadata();
         Listener = new MusicBrainzLookupExecutionListener(
-            new LookupCanonicalMusicMetadataHandler(
+            new OnDemandLookupMetadataHandler(
                 new LookupExecutionReceiptStoreFake(state),
                 Metadata));
     }

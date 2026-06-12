@@ -1,7 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
-using Soundtrail.Contracts.Commands;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
@@ -84,8 +83,7 @@ public sealed class OdesliStreamingReferences(
         reference = new ExternalReference(
             ProviderName.YoutubeMusic,
             uri,
-            videoId,
-            ReferenceConfidence.Verified);
+            videoId);
         return true;
     }
 
@@ -115,8 +113,7 @@ public sealed class OdesliStreamingReferences(
         reference = new ExternalReference(
             ProviderName.Spotify,
             uri,
-            trackSegment,
-            ReferenceConfidence.Verified);
+            trackSegment);
         return true;
     }
 
@@ -143,8 +140,7 @@ public sealed class OdesliStreamingReferences(
         reference = new ExternalReference(
             ProviderName.AppleMusic,
             uri,
-            trackId,
-            ReferenceConfidence.Verified);
+            trackId);
         return true;
     }
 

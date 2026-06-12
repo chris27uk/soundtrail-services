@@ -1,7 +1,7 @@
 using FluentAssertions;
-using Soundtrail.Contracts.Commands;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Contracts.Responses;
+using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
@@ -16,8 +16,8 @@ public sealed class PlaybackReferencesLookupExecutionListenerTests
         var env = PlaybackReferencesLookupExecutionListenerTestEnvironment.WithANewExecutionCommandDto();
         env.Seed(
             MusicSearchTerm.ByIsrc("isrc-1"),
-            new ExternalReference(ProviderName.AppleMusic, new Uri("https://music.apple.com/us/song/apple-1?i=apple-1"), "apple-1", ReferenceConfidence.Verified),
-            new ExternalReference(ProviderName.Spotify, new Uri("https://open.spotify.com/track/spotify-1"), "spotify-1", ReferenceConfidence.Verified));
+            new ExternalReference(ProviderName.AppleMusic, new Uri("https://music.apple.com/us/song/apple-1?i=apple-1"), "apple-1"),
+            new ExternalReference(ProviderName.Spotify, new Uri("https://open.spotify.com/track/spotify-1"), "spotify-1"));
 
         var message = (EnrichmentResponseDto)(await env.HandleNewExecutionCommand()).Single();
 
@@ -38,7 +38,7 @@ public sealed class PlaybackReferencesLookupExecutionListenerTests
             new PlaybackReferenceSearchTermDto(null, "Song A", "Artist A", "Album A"));
         env.Seed(
             MusicSearchTerm.ByTrackArtistAlbum("Song A", "Artist A", "Album A"),
-            new ExternalReference(ProviderName.YoutubeMusic, new Uri("https://music.youtube.com/watch?v=yt-1"), "yt-1", ReferenceConfidence.Verified));
+            new ExternalReference(ProviderName.YoutubeMusic, new Uri("https://music.youtube.com/watch?v=yt-1"), "yt-1"));
 
         var message = (EnrichmentResponseDto)(await env.HandleNewExecutionCommand(command)).Single();
 

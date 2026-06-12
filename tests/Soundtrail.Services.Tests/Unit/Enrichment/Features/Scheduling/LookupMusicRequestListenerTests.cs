@@ -1,6 +1,6 @@
 using FluentAssertions;
-using Soundtrail.Contracts.Commands;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Messaging;

@@ -1,9 +1,11 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Soundtrail.Contracts.Responses;
+using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Services.Enrichment.Worker.Features.MusicBrainzLookupExecution;
 using Soundtrail.Services.Enrichment.Worker.Features.MusicBrainzLookupExecution.Adapters;
+using Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup;
+using Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.Adapters;
 using Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution;
 using Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution.Adapters;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
@@ -13,6 +15,8 @@ using Wolverine.AzureServiceBus;
 using Wolverine.RavenDb;
 
 var builder = Host.CreateApplicationBuilder(args);
+
+builder.AddServiceDefaults();
 
 var serviceBusOptions = builder.Configuration
     .GetSection(ServiceBusOptions.SectionName)
@@ -55,7 +59,7 @@ builder.Services.AddHttpClient<IGetMusicTrackReference, OdesliStreamingReference
         var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<OdesliOptions>>().Value;
         OdesliStreamingReferences.ConfigureHttpClient(httpClient, options);
     });
-builder.Services.AddScoped<LookupCanonicalMusicMetadataHandler>();
+builder.Services.AddScoped<OnDemandLookupMetadataHandler>();
 builder.Services.AddScoped<ExecutePlaybackReferencesLookupHandler>();
 builder.Services.AddScoped<MusicBrainzLookupExecutionListener>();
 builder.Services.AddScoped<PlaybackReferencesLookupExecutionListener>();

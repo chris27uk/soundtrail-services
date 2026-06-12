@@ -1,10 +1,12 @@
 using FluentAssertions;
 using Soundtrail.Contracts;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
+using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicCatalogCandidateSearch.KnownExactQuery;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicCatalogCandidateSearch.UnknownQuery;
 
+[Collection(RavenEmbeddedCollection.Name)]
 public sealed class UnknownQueryResponsesTests
 {
     [Theory]

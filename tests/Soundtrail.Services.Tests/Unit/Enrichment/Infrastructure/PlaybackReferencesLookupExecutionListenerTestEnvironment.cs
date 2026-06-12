@@ -1,5 +1,5 @@
-using Soundtrail.Contracts.Commands;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution.Adapters;

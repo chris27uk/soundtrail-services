@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Soundtrail.Contracts.Events;
+using Soundtrail.Contracts.IntegrationMessaging.Events;
 using Soundtrail.Services.Enrichment.Cdc.Infrastructure.Cdc;
 using Soundtrail.Services.Enrichment.Cdc.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Cdc.Infrastructure.Raven;
@@ -9,6 +9,8 @@ using Wolverine;
 using Wolverine.AzureServiceBus;
 
 var builder = Host.CreateApplicationBuilder(args);
+
+builder.AddServiceDefaults();
 
 var serviceBusOptions = builder.Configuration
     .GetSection(ServiceBusOptions.SectionName)

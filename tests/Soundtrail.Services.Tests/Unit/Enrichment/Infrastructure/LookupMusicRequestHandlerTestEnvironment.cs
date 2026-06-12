@@ -24,7 +24,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
             this.activeLookupWorkStoreFake = new ActiveLookupWorkStoreFake();
             this.localMusicTrackSearchFake = new LocalMusicTrackSearchFake();
             this.Planner = new DiscoveryPriorityPolicy();
-            this.ResolutionPolicy = new MusicCatalogResolutionPolicy();
+            this.ResolutionPolicy = new MusicCatalogMatchResolver();
             this.Handler = new LookupMusicRequestHandler(
                 search,
                 rankedMusicCandidateStoreFake,
@@ -45,7 +45,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
 
         public DiscoveryPriorityPolicy Planner { get; }
 
-        public MusicCatalogResolutionPolicy ResolutionPolicy { get; }
+        public MusicCatalogMatchResolver ResolutionPolicy { get; }
 
         public FakeMusicCatalogCandidateSearch Search => this.search;
 

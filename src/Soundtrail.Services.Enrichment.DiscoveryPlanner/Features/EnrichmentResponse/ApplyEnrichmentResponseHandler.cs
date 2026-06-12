@@ -1,5 +1,5 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Contracts.Responses;
+using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
 using System.Text.Json;
@@ -110,9 +110,6 @@ public sealed class ApplyEnrichmentResponseHandler(
             response.References.Select(reference => new ExternalReferenceDto(
                 reference.Provider.Value,
                 reference.Url,
-                reference.ExternalId,
-                reference.Confidence.ToString())).ToArray(),
+                reference.ExternalId)).ToArray(),
             response.CorrelationId.Value);
 }
-
-public sealed record EnrichmentOrchestrationResult(IReadOnlyList<IMusicTrackEvent> Events);

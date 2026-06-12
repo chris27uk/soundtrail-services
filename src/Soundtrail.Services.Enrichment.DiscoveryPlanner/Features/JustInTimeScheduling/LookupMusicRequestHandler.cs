@@ -14,7 +14,7 @@ public sealed class LookupMusicRequestHandler(
     IMusicCatalogCandidateSearch musicCatalogCandidateSearch,
     IRankedMusicCandidateStore rankedMusicCandidateStore,
     DiscoveryPriorityPolicy discoveryPriorityPolicy,
-    MusicCatalogResolutionPolicy musicCatalogResolutionPolicy,
+    MusicCatalogMatchResolver musicCatalogMatchResolver,
     IActiveLookupWorkStore activeLookupWorkStore,
     ILocalMusicTrackSearch localMusicTrackSearch)
 {
@@ -30,7 +30,7 @@ public sealed class LookupMusicRequestHandler(
         CancellationToken cancellationToken = default)
     {
         var matches = await musicCatalogCandidateSearch.SearchAsync(request.Query, cancellationToken);
-        var resolution = musicCatalogResolutionPolicy.Resolve(matches);
+        var resolution = musicCatalogMatchResolver.Resolve(matches);
         if (!resolution.IsResolved)
         {
             throw new ResolutionFailedException(resolution.Outcome);

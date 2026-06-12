@@ -1,34 +1,34 @@
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search.Resolution;
 
-public sealed class MusicCatalogResolutionPolicy
+public sealed class MusicCatalogMatchResolver
 {
     private const decimal MinimumAcceptedScore = 0.80m;
     private const decimal MinimumWinningMargin = 0.10m;
 
     public MusicCatalogResolution Resolve(IReadOnlyList<MusicCatalogMatch> matches)
     {
-        if (matches.Count == 0)
-        {
-            return MusicCatalogResolution.NotFound();
-        }
-
-        var orderedMatches = matches
-            .OrderByDescending(static x => x.Score)
+        var topMatches = matches
+            .OrderByDescending(static match => match.Score)
+            .Take(2)
             .ToArray();
 
-        var bestMatch = orderedMatches[0];
-        if (bestMatch.Score < MinimumAcceptedScore)
+        if (topMatches.Length == 0)
         {
             return MusicCatalogResolution.NotFound();
         }
 
-        if (orderedMatches.Length == 1)
+        var bestMatch = topMatches[0];
+        if (!bestMatch.MeetsMinimumScore(MinimumAcceptedScore))
+        {
+            return MusicCatalogResolution.NotFound();
+        }
+
+        if (topMatches.Length == 1)
         {
             return MusicCatalogResolution.Resolved(bestMatch.MusicCatalogId);
         }
 
-        var secondBestMatch = orderedMatches[1];
-        if (bestMatch.Score - secondBestMatch.Score < MinimumWinningMargin)
+        if (!bestMatch.HasWinningMarginOver(topMatches[1], MinimumWinningMargin))
         {
             return MusicCatalogResolution.Ambiguous();
         }

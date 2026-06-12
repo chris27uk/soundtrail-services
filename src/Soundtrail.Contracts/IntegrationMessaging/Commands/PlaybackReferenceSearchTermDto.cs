@@ -1,4 +1,4 @@
-namespace Soundtrail.Contracts.Commands;
+namespace Soundtrail.Contracts.IntegrationMessaging.Commands;
 
 public sealed record PlaybackReferenceSearchTermDto(
     string? Isrc,

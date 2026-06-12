@@ -1,7 +1,7 @@
-using Soundtrail.Contracts.Commands;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Contracts.IntegrationMessaging.Commands;
 
-namespace Soundtrail.Contracts.Events;
+namespace Soundtrail.Contracts.IntegrationMessaging.Events;
 
 public sealed record PlaybackReferencesResolutionRequiredMessageDto(
     string MusicCatalogId,

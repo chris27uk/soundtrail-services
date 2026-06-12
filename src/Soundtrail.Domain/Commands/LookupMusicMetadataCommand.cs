@@ -3,7 +3,7 @@ using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Domain.Commands;
 
-public sealed record LookupCanonicalMusicMetadataCommand(
+public sealed record LookupMusicMetadataCommand(
     CommandId CommandId,
     MusicCatalogId MusicCatalogId,
     LookupPriorityBand Priority,

@@ -1,5 +1,5 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Contracts.Responses;
+using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Domain.Model;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse;
@@ -82,6 +82,6 @@ internal sealed class EnrichmentResponseListenerTestEnvironment
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 8, 12, 2, 0, TimeSpan.Zero),
             null,
-            [new ExternalReferenceDto(ProviderName.AppleMusic.Value, new Uri("https://music.apple.com/track/1"), "apple-1", ReferenceConfidence.Verified.ToString())],
+            [new ExternalReferenceDto(ProviderName.AppleMusic.Value, new Uri("https://music.apple.com/track/1"), "apple-1")],
             "corr-2");
 }

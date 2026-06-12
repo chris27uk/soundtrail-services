@@ -1,0 +1,20 @@
+using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Responses;
+
+namespace Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution;
+
+internal static class ResolvePlaybackReferencesCommandExtensions
+{
+    public static EnrichmentResponse ToEnrichmentResponse(
+        this ResolvePlaybackReferencesCommand command,
+        IReadOnlyList<ExternalReference> references) =>
+        new(
+            command.CommandId,
+            command.MusicCatalogId,
+            command.TargetProvider,
+            command.Priority,
+            command.CreatedAt,
+            null,
+            references,
+            command.CorrelationId);
+}

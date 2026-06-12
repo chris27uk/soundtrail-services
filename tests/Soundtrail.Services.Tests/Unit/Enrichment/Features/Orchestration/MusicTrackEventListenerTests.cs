@@ -1,6 +1,6 @@
 using FluentAssertions;
-using Soundtrail.Contracts.Commands;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Orchestration;

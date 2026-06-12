@@ -48,11 +48,11 @@ public sealed class EnrichmentResponseListenerTests
     }
 
     [Fact]
-    public async Task Given_A_PlaybackReferences_Response_Dto_When_Handled_Then_The_Apple_Reference_Confidence_Is_Verified()
+    public async Task Given_A_PlaybackReferences_Response_Dto_When_Handled_Then_The_Apple_Reference_Is_Stored()
     {
         var env = EnrichmentResponseListenerTestEnvironment.WithAPlaybackReferencesResponseAfterCanonicalMetadata();
         await env.HandlePlaybackReferencesResponseAfterCanonicalMetadata();
-        env.ProjectionStore.Projections["mc_track_1"].Apple!.Confidence.Should().Be(ReferenceConfidence.Verified);
+        env.ProjectionStore.Projections["mc_track_1"].Apple!.ExternalId.Should().Be("apple-1");
     }
 
     [Fact]
