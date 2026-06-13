@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
@@ -6,9 +7,9 @@ using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Model;
 using Soundtrail.Services.Api.Features.Search.Queueing;
-using Soundtrail.Services.Api.Features.Search.TrackSearch;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Wolverine;
+using Wolverine.Logging;
 
 namespace Soundtrail.Services.Tests.Integration.Api.Ports.EnqueueMusicRequest;
 
@@ -68,12 +69,41 @@ internal sealed class EnqueueMusicRequestTestEnvironment : IAsyncDisposable
     {
         var builder = Host.CreateApplicationBuilder();
         var capture = new LookupMusicRequestCapture();
-
         builder.Services.AddSingleton(capture);
-        builder.Services.AddScoped<IEnqueueMusicRequest, WolverineEnqueueMusicRequest>();
+        builder.Services.AddSingleton<IMessageTracker>(capture);
+
+        if (configuredRoute)
+        {
+            builder.Environment.EnvironmentName = Environments.Development;
+            builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ServiceBus:ConnectionString"] = "Endpoint=sb://localhost;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;",
+                ["ServiceBus:LookupMusicRequestsQueueName"] = "lookup-music-requests"
+            });
+            builder.Services.AddLookupMusicRequestQueue(builder.Configuration);
+        }
+        else
+        {
+            builder.Services.AddScoped<IEnqueueMusicRequest, WolverineEnqueueMusicRequest>();
+        }
+
         builder.UseWolverine(opts =>
         {
-            opts.UseRuntimeCompilation();
+            if (configuredRoute)
+            {
+                opts.UseApiServiceBusMessaging(builder.Configuration, builder.Environment);
+                opts.LocalQueueFor<LookupMusicRequestDto>();
+                if (builder.Environment.IsDevelopment())
+                {
+                    opts.StubAllExternalTransports();
+                }
+            }
+            else
+            {
+                builder.Services.AddScoped<IEnqueueMusicRequest, WolverineEnqueueMusicRequest>();
+                opts.UseRuntimeCompilation();
+            }
+
             opts.Discovery.DisableConventionalDiscovery();
             if (configuredRoute)
             {

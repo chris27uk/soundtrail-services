@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.CompositionRoot;
 using Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution.CompositionRoot;
 
@@ -12,6 +13,7 @@ public static class AppServiceCollectionExtensions
         IConfiguration configuration,
         Action<WorkerAppServicesOptions>? configure = null)
     {
+        services.AddWorkerServiceBus(configuration);
         var options = new WorkerAppServicesOptions();
         configure?.Invoke(options);
         var dependencyProvider = options.DependencyProvider ?? new ProductionWorkerDependencyProvider();

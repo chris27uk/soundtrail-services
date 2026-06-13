@@ -113,7 +113,7 @@ public sealed class AsyncLookupHappyPathTestEnvironment : IAsyncDisposable
             builder.Configuration,
             options => options.DependencyProvider = workerDependencies);
         builder.Services.AddCdcAppServices(builder.Configuration);
-        builder.Services.AddMusicTrackLookupCoordinatorAppServices();
+        builder.Services.AddMusicTrackLookupCoordinatorAppServices(builder.Configuration);
 
         var app = builder.Build();
         app.MapSearchEndpoints();

@@ -1,20 +1,19 @@
 using JasperFx.CodeGeneration.Model;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Soundtrail.Contracts.IntegrationMessaging.Commands;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
+using Soundtrail.Contracts.IntegrationMessaging.Responses;
+using Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.Adapters;
+using Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution.Adapters;
 using Soundtrail.Services.ServiceDefaults;
 using Wolverine;
 using Wolverine.AzureServiceBus;
 using Wolverine.RavenDb;
 
-namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Messaging;
+namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
 
 public static class ServiceBusServiceCollectionExtensions
 {
-    public static IServiceCollection AddSchedulerServiceBus(
+    public static IServiceCollection AddWorkerServiceBus(
         this IServiceCollection services,
         IConfiguration configuration)
     {
@@ -22,16 +21,15 @@ public static class ServiceBusServiceCollectionExtensions
         return services;
     }
 
-    public static WolverineOptions UseDiscoveryPlannerServiceBusMessaging(
+    public static WolverineOptions UseWorkerServiceBusMessaging(
         this WolverineOptions opts,
         IConfiguration configuration)
     {
         opts.UseRuntimeCompilation();
         opts.ServiceLocationPolicy = ServiceLocationPolicy.AllowedButWarn;
         opts.Discovery.DisableConventionalDiscovery();
-        opts.Discovery.IncludeType<LookupMusicRequestListener>();
-        opts.Discovery.IncludeType<DiscoveryBacklogSchedulingListener>();
-        opts.Discovery.IncludeType<EnrichmentResponseListener>();
+        opts.Discovery.IncludeType<MusicBrainzLookupExecutionListener>();
+        opts.Discovery.IncludeType<PlaybackReferencesLookupExecutionListener>();
         opts.Policies.AutoApplyTransactions();
 
         var serviceBusOptions = configuration
@@ -55,17 +53,14 @@ public static class ServiceBusServiceCollectionExtensions
                 .EnableWolverineControlQueues();
         }
 
-        opts.ListenToAzureServiceBusQueue(serviceBusOptions.LookupMusicRequestsQueueName)
+        opts.ListenToAzureServiceBusQueue(serviceBusOptions.MusicBrainzLookupQueueName)
             .ProcessInline();
 
-        opts.ListenToAzureServiceBusQueue(serviceBusOptions.EnrichmentResponsesQueueName)
+        opts.ListenToAzureServiceBusQueue(serviceBusOptions.PlaybackReferencesLookupQueueName)
             .ProcessInline();
 
-        opts.PublishMessage<LookupCanonicalMusicMetadataCommandDto>()
-            .ToAzureServiceBusQueue(serviceBusOptions.MusicBrainzLookupQueueName);
-
-        opts.PublishMessage<ResolvePlaybackReferencesCommandDto>()
-            .ToAzureServiceBusQueue(serviceBusOptions.PlaybackReferencesLookupQueueName);
+        opts.PublishMessage<EnrichmentResponseDto>()
+            .ToAzureServiceBusQueue(serviceBusOptions.EnrichmentResponsesQueueName);
 
         return opts;
     }

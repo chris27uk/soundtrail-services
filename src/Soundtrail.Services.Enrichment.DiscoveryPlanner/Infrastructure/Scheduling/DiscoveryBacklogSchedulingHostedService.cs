@@ -1,12 +1,13 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.DependencyInjection;
 using Wolverine;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Scheduling;
 
 public sealed class DiscoveryBacklogSchedulingHostedService(
-    IMessageBus messageBus,
+    IServiceScopeFactory scopeFactory,
     IOptions<DiscoveryBacklogSchedulingOptions> options,
     ILogger<DiscoveryBacklogSchedulingHostedService> logger) : BackgroundService
 {
@@ -17,6 +18,8 @@ public sealed class DiscoveryBacklogSchedulingHostedService(
         {
             try
             {
+                await using var scope = scopeFactory.CreateAsyncScope();
+                var messageBus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
                 await messageBus.InvokeAsync(
                     new RunDiscoveryBacklogScheduling(
                         DateTimeOffset.UtcNow,

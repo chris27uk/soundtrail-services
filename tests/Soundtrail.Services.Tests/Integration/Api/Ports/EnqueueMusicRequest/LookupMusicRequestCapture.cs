@@ -1,10 +1,11 @@
 using Soundtrail.Contracts;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
-using Soundtrail.Services.Api.Features.Search.Queueing;
+using Wolverine;
+using Wolverine.Logging;
 
 namespace Soundtrail.Services.Tests.Integration.Api.Ports.EnqueueMusicRequest
 {
-    public sealed class LookupMusicRequestCapture
+    public sealed class LookupMusicRequestCapture : IMessageTracker
     {
         private readonly TaskCompletionSource<LookupMusicRequestDto> received = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -20,6 +21,66 @@ namespace Soundtrail.Services.Tests.Integration.Api.Ports.EnqueueMusicRequest
             }
 
             return await this.received.Task;
+        }
+
+        public void LogStatus(string message)
+        {
+        }
+
+        public void LogException(Exception ex, object? correlationId = null, string message = "Exception detected:")
+        {
+        }
+
+        public void Sent(Envelope envelope)
+        {
+            if (envelope.Message is LookupMusicRequestDto requestDto)
+            {
+                Record(requestDto);
+            }
+        }
+
+        public void Received(Envelope envelope)
+        {
+        }
+
+        public void ExecutionStarted(Envelope envelope)
+        {
+        }
+
+        public void ExecutionFinished(Envelope envelope)
+        {
+        }
+
+        public void ExecutionFinished(Envelope envelope, Exception exception)
+        {
+        }
+
+        public void MessageSucceeded(Envelope envelope)
+        {
+        }
+
+        public void MessageFailed(Envelope envelope, Exception ex)
+        {
+        }
+
+        public void NoHandlerFor(Envelope envelope)
+        {
+        }
+
+        public void NoRoutesFor(Envelope envelope)
+        {
+        }
+
+        public void MovedToErrorQueue(Envelope envelope, Exception ex)
+        {
+        }
+
+        public void DiscardedEnvelope(Envelope envelope)
+        {
+        }
+
+        public void Requeued(Envelope envelope)
+        {
         }
     }
 }
