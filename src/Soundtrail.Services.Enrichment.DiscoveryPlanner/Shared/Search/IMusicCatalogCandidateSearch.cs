@@ -1,3 +1,5 @@
+using Soundtrail.Domain.Model;
+
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 
 public interface IMusicCatalogCandidateSearch

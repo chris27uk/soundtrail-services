@@ -2,6 +2,7 @@ using Raven.Client.Documents;
 using Raven.Client.Documents.Linq;
 using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Model;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Documents;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Indexes;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;

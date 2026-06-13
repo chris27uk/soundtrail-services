@@ -1,3 +1,5 @@
+using Soundtrail.Domain.Model;
+
 namespace Soundtrail.Services.Api.Features.Search.TrackSearch;
 
 public interface ITrackSearchPort

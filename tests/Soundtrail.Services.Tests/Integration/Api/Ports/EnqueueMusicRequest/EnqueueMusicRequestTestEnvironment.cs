@@ -2,6 +2,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Model;
 using Soundtrail.Services.Api.Features.Search.Queueing;
 using Soundtrail.Services.Api.Features.Search.TrackSearch;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
@@ -100,7 +103,7 @@ internal sealed class EnqueueMusicRequestTestEnvironment : IAsyncDisposable
 
     public static LookupMusicRequest Request(string query) =>
         new(
-            Query: NormalizedSearchQuery.FromText(query),
+            Query: query,
             TrustLevel: 2,
             RiskScore: 10,
             OccurredAt: new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero),
@@ -114,7 +117,7 @@ internal sealed class EnqueueMusicRequestTestEnvironment : IAsyncDisposable
 
         while (!cts.IsCancellationRequested)
         {
-            var request = await queue.DequeueAsync(cts.Token);
+            var request = queue.Requests.SingleOrDefault();
             if (request is not null)
             {
                 return request;

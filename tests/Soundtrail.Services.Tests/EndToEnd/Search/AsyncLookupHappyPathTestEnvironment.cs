@@ -1,36 +1,29 @@
 using JasperFx.CodeGeneration.Model;
-using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
-using Raven.Client.Documents;
-using Raven.Client.Documents.Indexes;
-using Soundtrail.Contracts.Common;
+using System.Net.Http.Json;
+using System.Text.Json;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Contracts.IntegrationMessaging.Events;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Domain;
-using Soundtrail.Domain.Model;
-using Soundtrail.Domain.Responses;
-using Soundtrail.Services.Api;
+using Soundtrail.Services.Api.Features.Search;
 using Soundtrail.Services.Api.Features.Search.Queueing;
-using Soundtrail.Services.Api.Features.Search.TrackSearch;
 using Soundtrail.Services.Api.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Soundtrail.Services.Api.Infrastructure.Raven;
 using Soundtrail.Services.Enrichment.Cdc;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Documents;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.CompositionRoot;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
-using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator;
 using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.Adapters;
 using Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution.Adapters;
-using Soundtrail.Services.Enrichment.Worker;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Services.Tests.Integration.Enrichment.Ports.ProviderClients;
@@ -43,16 +36,23 @@ namespace Soundtrail.Services.Tests.EndToEnd.Search;
 
 public sealed class AsyncLookupHappyPathTestEnvironment : IAsyncDisposable
 {
-    private readonly IHost host;
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private readonly WebApplication app;
+    private readonly HttpClient client;
+    private readonly PipelineMessageCapture pipelineMessageCapture;
     private readonly RavenEmbeddedTestDatabase raven;
     private readonly WireMockMusicProvidersServer providersServer;
 
     private AsyncLookupHappyPathTestEnvironment(
-        IHost host,
+        WebApplication app,
+        HttpClient client,
+        PipelineMessageCapture pipelineMessageCapture,
         RavenEmbeddedTestDatabase raven,
         WireMockMusicProvidersServer providersServer)
     {
-        this.host = host;
+        this.app = app;
+        this.client = client;
+        this.pipelineMessageCapture = pipelineMessageCapture;
         this.raven = raven;
         this.providersServer = providersServer;
     }
@@ -60,19 +60,24 @@ public sealed class AsyncLookupHappyPathTestEnvironment : IAsyncDisposable
     public static async Task<AsyncLookupHappyPathTestEnvironment> CreateAsync()
     {
         var raven = RavenEmbeddedTestDatabase.Create();
-        ExecuteIndexes(raven.Store);
         var providersServer = WireMockMusicProvidersServer.CreateForAsyncLookupHappyPath();
+        SeedLocalTrack(raven);
 
-        var builder = Host.CreateApplicationBuilder();
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+        {
+            EnvironmentName = Environments.Production
+        });
+        builder.WebHost.UseTestServer();
         var candidateSearch = FakeMusicCatalogCandidateSearch.CreateForAsyncLookupHappyPath();
-        var localSearch = LocalMusicTrackSearchFake.CreateForAsyncLookupHappyPath();
-        var discoveryPlannerDependencies = new EndToEndDiscoveryPlannerDependencyProvider(candidateSearch, localSearch);
+        var discoveryPlannerDependencies = new EndToEndDiscoveryPlannerDependencyProvider(candidateSearch);
         var workerDependencies = new EndToEndWorkerDependencyProvider(providersServer.BaseUrl, new LookupExecutionReceiptStoreFake.State());
+        var pipelineMessageCapture = new PipelineMessageCapture();
         builder.Services.RunWolverineInSoloMode();
+        builder.Services.AddSingleton(pipelineMessageCapture);
 
         builder.Services.AddEmbeddedRavenForTesting(raven.Store);
 
-        builder.UseWolverine(opts =>
+        builder.Host.UseWolverine(opts =>
         {
             opts.UseRuntimeCompilation();
             opts.UseRavenDbPersistence();
@@ -85,6 +90,7 @@ public sealed class AsyncLookupHappyPathTestEnvironment : IAsyncDisposable
             opts.Discovery.IncludeType<PlaybackReferencesLookupExecutionListener>();
             opts.Discovery.IncludeType<EnrichmentResponseListener>();
             opts.Discovery.IncludeType<MusicTrackEventListener>();
+            opts.Discovery.IncludeType<PipelineMessageCaptureHandler>();
 
             opts.LocalQueueFor<LookupMusicRequestDto>();
             opts.LocalQueueFor<LookupCanonicalMusicMetadataCommandDto>();
@@ -96,8 +102,7 @@ public sealed class AsyncLookupHappyPathTestEnvironment : IAsyncDisposable
         builder.Services.AddApiAppServices(builder.Configuration, builder.Environment, options =>
         {
             options.UseInMemoryQueueing = false;
-            options.ConfigureQueueingDependencies = services =>
-                services.TryAddScoped<IEnqueueMusicRequest, WolverineEnqueueMusicRequest>();
+            options.ConfigureQueueingDependencies = services => services.TryAddScoped<IEnqueueMusicRequest, WolverineEnqueueMusicRequest>();
         });
         builder.Services.AddDiscoveryPlannerAppServices(builder.Configuration, options =>
         {
@@ -110,38 +115,58 @@ public sealed class AsyncLookupHappyPathTestEnvironment : IAsyncDisposable
         builder.Services.AddCdcAppServices(builder.Configuration);
         builder.Services.AddMusicTrackLookupCoordinatorAppServices();
 
-        var host = builder.Build();
-        await host.StartAsync();
+        var app = builder.Build();
+        app.MapSearchEndpoints();
+        await app.StartAsync();
+        var client = app.GetTestClient();
 
-        return new AsyncLookupHappyPathTestEnvironment(host, raven, providersServer);
+        return new AsyncLookupHappyPathTestEnvironment(app, client, pipelineMessageCapture, raven, providersServer);
     }
 
-    public async Task<SearchMusicResponse> SearchAsync(string query)
+    private static void SeedLocalTrack(RavenEmbeddedTestDatabase raven)
     {
-        using var scope = this.host.Services.CreateScope();
-        var handler = scope.ServiceProvider.GetRequiredService<IHandler<SearchMusicRequest, SearchMusicResponse>>();
-        return await handler.Handle(new SearchMusicRequest(query, Limit.From(5), MinConfidence: null));
+        using var session = raven.Store.OpenSession();
+        session.Store(new RavenTrackDocument
+        {
+            Id = RavenTrackDocument.GetDocumentId("mc_track_1"),
+            Title = "Rare Unknown Song",
+            Artist = "Test Artist",
+            AlbumTitle = "Rare Album",
+            SearchText = string.Empty,
+            CanonicalMetadata = new RavenSongMetadataDocument
+            {
+                Title = "Rare Unknown Song",
+                Artist = "Test Artist"
+            },
+            IsPlayable = false
+        });
+        session.SaveChanges();
     }
 
-    public async Task<SearchMusicResponse> SearchAndWaitForPipelineAsync(string query, TimeSpan timeout)
+    public async Task<SearchHttpResponseDto> SearchAsync(string query)
     {
-        SearchMusicResponse? response = null;
+        using var response = await this.client.GetAsync($"/search?q={Uri.EscapeDataString(query)}&limit=5");
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<SearchHttpResponseDto>(JsonOptions)
+               ?? throw new InvalidOperationException("Search response was not captured.");
+    }
+
+    public async Task<SearchHttpResponseDto> SearchAndWaitForPipelineAsync(string query, TimeSpan timeout)
+    {
+        SearchHttpResponseDto? response = null;
         Func<IMessageContext, Task> executeSearch = async _ =>
         {
-            using var scope = this.host.Services.CreateScope();
-            var handler = scope.ServiceProvider
-                .GetRequiredService<IHandler<SearchMusicRequest, SearchMusicResponse>>();
-            response = await handler.Handle(new SearchMusicRequest(query, Limit.From(5), MinConfidence: null));
+            response = await SearchAsync(query);
         };
 
-        await this.host.Services
+        await this.app.Services
             .TrackActivity(timeout)
             .ExecuteAndWaitAsync(executeSearch);
 
         return response ?? throw new InvalidOperationException("Search response was not captured.");
     }
 
-    public async Task<SearchMusicResponse> WaitForPlayableSearchAsync(string query, TimeSpan timeout)
+    public async Task<SearchHttpResponseDto> WaitForPlayableSearchAsync(string query, TimeSpan timeout)
     {
         using var cts = new CancellationTokenSource(timeout);
 
@@ -149,7 +174,7 @@ public sealed class AsyncLookupHappyPathTestEnvironment : IAsyncDisposable
         {
             var response = await SearchAsync(query);
 
-            if (response.Status == ResolutionStatus.Resolved
+            if (string.Equals(response.Status, "resolved", StringComparison.OrdinalIgnoreCase)
                 && response.Results.Count > 0
                 && response.Results[0].AppleId is not null)
             {
@@ -162,17 +187,30 @@ public sealed class AsyncLookupHappyPathTestEnvironment : IAsyncDisposable
         throw new TimeoutException($"Search for '{query}' did not become playable within {timeout}.");
     }
 
+    public Task<TMessage> WaitForMessageAsync<TMessage>(TimeSpan timeout) where TMessage : class =>
+        this.pipelineMessageCapture.WaitForAsync<TMessage>(timeout);
+
     public async ValueTask DisposeAsync()
     {
-        await this.host.StopAsync();
-        this.host.Dispose();
+        this.client.Dispose();
+        await this.app.StopAsync();
+        await this.app.DisposeAsync();
         this.raven.Dispose();
         this.providersServer.Dispose();
     }
-
-    private static void ExecuteIndexes(IDocumentStore store)
-    {
-        IndexCreation.CreateIndexes(typeof(RavenTrackSearchIndex).Assembly, store);
-        IndexCreation.CreateIndexes(typeof(RavenMusicCatalogCandidateSearch).Assembly, store);
-    }
 }
+
+public sealed record SearchHttpResponseDto(
+    string Status,
+    string Query,
+    int? RetryAfterSeconds,
+    IReadOnlyList<SearchHttpResultDto> Results);
+
+public sealed record SearchHttpResultDto(
+    string Title,
+    string Artist,
+    string? Isrc,
+    string? Mbid,
+    string? AppleId,
+    string? SpotifyId,
+    double Confidence);

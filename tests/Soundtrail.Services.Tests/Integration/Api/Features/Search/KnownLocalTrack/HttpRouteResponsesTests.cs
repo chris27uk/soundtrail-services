@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Soundtrail.Domain.Model;
 using Soundtrail.Services.Api.Features.Search.TrackSearch;
 using System.Net.Http.Json;
 

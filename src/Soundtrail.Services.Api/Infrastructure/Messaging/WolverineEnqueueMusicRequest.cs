@@ -1,5 +1,4 @@
-using Soundtrail.Contracts;
-using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Domain.Commands;
 using Soundtrail.Services.Api.Features.Search.Queueing;
 using Wolverine;
 
@@ -11,11 +10,5 @@ public sealed class WolverineEnqueueMusicRequest(
     public Task EnqueueAsync(
         LookupMusicRequest request,
         CancellationToken cancellationToken) =>
-        messageBus.SendAsync(
-            new LookupMusicRequestDto(
-                request.Query,
-                request.TrustLevel,
-                request.RiskScore,
-                request.OccurredAt,
-                request.CorrelationId)).AsTask();
+        messageBus.SendAsync(LookupMusicRequestMapper.ToDto(request)).AsTask();
 }

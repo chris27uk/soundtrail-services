@@ -1,3 +1,4 @@
+using Soundtrail.Domain.Model;
 using Soundtrail.Services.Api.Features.Search.TrackSearch;
 
 namespace Soundtrail.Services.Api.Infrastructure.Raven.Documents;

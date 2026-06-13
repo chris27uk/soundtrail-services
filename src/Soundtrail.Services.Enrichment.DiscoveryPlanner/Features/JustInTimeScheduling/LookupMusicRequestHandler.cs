@@ -5,8 +5,10 @@ using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain;
+using Soundtrail.Domain.Commands;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search.Resolution;
+using ResolvePlaybackReferencesCommand = Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model.ResolvePlaybackReferencesCommand;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling;
 

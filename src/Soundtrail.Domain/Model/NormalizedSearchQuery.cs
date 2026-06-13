@@ -1,8 +1,7 @@
-using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Services.Api.Features.Search.Queueing;
+using Soundtrail.Domain.Commands;
 
-namespace Soundtrail.Services.Api.Features.Search.TrackSearch;
+namespace Soundtrail.Domain.Model;
 
 public sealed record NormalizedSearchQuery
 {

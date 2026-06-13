@@ -1,7 +1,7 @@
-using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Model;
 
-namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
+namespace Soundtrail.Domain.Commands;
 
 public sealed record LookupMusicRequest(
     NormalizedSearchQuery Query,

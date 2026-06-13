@@ -1,6 +1,8 @@
 using Soundtrail.Contracts;
 using Soundtrail.Domain;
+using Soundtrail.Domain.Model;
 using Soundtrail.Services.Api.Features.Search;
+using Soundtrail.Services.Api.Features.Search.Queueing;
 using Soundtrail.Services.Api.Features.Search.TrackSearch;
 
 namespace Soundtrail.Services.Tests.Unit.Api.Infrastructure;
@@ -9,7 +11,7 @@ internal sealed class SearchMusicHandlerTestEnvironment
 {
     private SearchMusicHandlerTestEnvironment(
         FakeTrackSearchPort trackSearch,
-        FakeEnqueueMusicRequest enqueueMusicRequests)
+        InMemoryEnqueueMusicRequest enqueueMusicRequests)
     {
         TrackSearch = trackSearch;
         EnqueueMusicRequests = enqueueMusicRequests;
@@ -20,22 +22,22 @@ internal sealed class SearchMusicHandlerTestEnvironment
 
     public FakeTrackSearchPort TrackSearch { get; }
 
-    public FakeEnqueueMusicRequest EnqueueMusicRequests { get; }
+    public InMemoryEnqueueMusicRequest EnqueueMusicRequests { get; }
 
     public static SearchMusicHandlerTestEnvironment WithKnownTrack() =>
         new(
             new FakeTrackSearchPort(KnownSearchResults.MrBrightside()),
-            new FakeEnqueueMusicRequest());
+            new InMemoryEnqueueMusicRequest());
 
     public static SearchMusicHandlerTestEnvironment WithMultipleKnownTracks() =>
         new(
             new FakeTrackSearchPort(
                 KnownSearchResults.MrBrightside(),
                 KnownSearchResults.WhenYouWereYoung()),
-            new FakeEnqueueMusicRequest());
+            new InMemoryEnqueueMusicRequest());
 
     public static SearchMusicHandlerTestEnvironment WithNoKnownTracks() =>
-        new(new FakeTrackSearchPort(), new FakeEnqueueMusicRequest());
+        new(new FakeTrackSearchPort(), new InMemoryEnqueueMusicRequest());
 
     public SearchMusicRequest Request(
         string query,

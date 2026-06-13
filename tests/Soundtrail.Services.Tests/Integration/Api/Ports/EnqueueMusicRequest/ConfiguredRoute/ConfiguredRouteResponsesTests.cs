@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Soundtrail.Contracts.IntegrationMessaging.Commands;
 
 namespace Soundtrail.Services.Tests.Integration.Api.Ports.EnqueueMusicRequest.ConfiguredRoute;
 
@@ -12,8 +13,12 @@ public sealed class ConfiguredRouteResponsesTests
         var request = EnqueueMusicRequestTestEnvironment.Request("mr brightside");
 
         await env.EnqueueMusicRequest.EnqueueAsync(request, CancellationToken.None);
-        var actual = await env.WaitForCapturedRequestAsync(TimeSpan.FromSeconds(5));
+        var actual = (LookupMusicRequestDto)await env.WaitForCapturedRequestAsync(TimeSpan.FromSeconds(5));
 
-        actual.Should().BeEquivalentTo(request);
+        actual.Query.Should().Be(request.Query.Value);
+        actual.TrustLevel.Should().Be(request.TrustLevel);
+        actual.RiskScore.Should().Be(request.RiskScore);
+        actual.OccurredAt.Should().Be(request.OccurredAt);
+        actual.CorrelationId.Should().Be(request.CorrelationId.Value);
     }
 }
