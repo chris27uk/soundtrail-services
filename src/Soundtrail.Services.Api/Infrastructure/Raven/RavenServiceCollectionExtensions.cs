@@ -32,6 +32,8 @@ public static class RavenServiceCollectionExtensions
         services.TryAddScoped<IAsyncDocumentSession>(sp => sp.GetRequiredService<IDocumentStore>().OpenAsyncSession());
 
         services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<IHostedService, RavenDatabaseHostedService>());
+        services.TryAddEnumerable(
             ServiceDescriptor.Singleton<IHostedService, RavenDevelopmentSeedHostedService>());
         return services;
     }

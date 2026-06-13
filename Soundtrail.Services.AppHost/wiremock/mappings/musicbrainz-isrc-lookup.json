@@ -1,0 +1,29 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/ws/2/isrc/.*"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "recordings": [
+        {
+          "id": "mbid-rare-1",
+          "title": "Rare Unknown Song",
+          "length": 123000,
+          "isrcs": [
+            "isrc-rare-1"
+          ],
+          "artist-credit": [
+            {
+              "name": "Test Artist"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
@@ -34,6 +35,7 @@ public static class RavenServiceCollectionExtensions
                 return store.Initialize();
             });
         services.TryAddScoped<IAsyncDocumentSession>(sp => sp.GetRequiredService<IDocumentStore>().OpenAsyncSession());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, RavenDatabaseHostedService>());
 
         services.TryAddScoped<ILookupExecutionReceiptStore, RavenLookupExecutionReceiptStore>();
         return services;

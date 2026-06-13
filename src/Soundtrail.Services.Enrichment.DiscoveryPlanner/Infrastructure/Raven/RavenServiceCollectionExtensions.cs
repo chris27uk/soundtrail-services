@@ -41,6 +41,7 @@ public static class RavenServiceCollectionExtensions
                 return store.Initialize();
             });
         services.TryAddScoped<IAsyncDocumentSession>(sp => sp.GetRequiredService<IDocumentStore>().OpenAsyncSession());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, RavenDatabaseHostedService>());
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, RavenIndexesHostedService>());
 
         services.TryAddScoped<IRankedMusicCandidateStore, RavenRankedMusicCandidateStore>();

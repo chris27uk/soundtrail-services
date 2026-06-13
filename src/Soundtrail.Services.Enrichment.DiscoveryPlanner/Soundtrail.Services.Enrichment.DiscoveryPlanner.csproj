@@ -16,6 +16,7 @@
     <PackageReference Include="WolverineFx" Version="6.5.1" />
     <PackageReference Include="WolverineFx.AzureServiceBus" Version="6.2.2" />
     <PackageReference Include="WolverineFx.RavenDb" Version="6.2.2" />
+    <PackageReference Include="WolverineFx.RuntimeCompilation" Version="6.5.1" />
   </ItemGroup>
 
   <ItemGroup>

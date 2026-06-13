@@ -1,0 +1,85 @@
+{
+  "UserConfig": {
+    "Namespaces": [
+      {
+        "Name": "sbemulatorns",
+        "Queues": [
+          {
+            "Name": "lookup-music-requests",
+            "Properties": {
+              "DeadLetteringOnMessageExpiration": false,
+              "DefaultMessageTimeToLive": "PT1H",
+              "DuplicateDetectionHistoryTimeWindow": "PT20S",
+              "ForwardDeadLetteredMessagesTo": "",
+              "ForwardTo": "",
+              "LockDuration": "PT1M",
+              "MaxDeliveryCount": 3,
+              "RequiresDuplicateDetection": false,
+              "RequiresSession": false
+            }
+          },
+          {
+            "Name": "lookup-musicbrainz",
+            "Properties": {
+              "DeadLetteringOnMessageExpiration": false,
+              "DefaultMessageTimeToLive": "PT1H",
+              "DuplicateDetectionHistoryTimeWindow": "PT20S",
+              "ForwardDeadLetteredMessagesTo": "",
+              "ForwardTo": "",
+              "LockDuration": "PT1M",
+              "MaxDeliveryCount": 3,
+              "RequiresDuplicateDetection": false,
+              "RequiresSession": false
+            }
+          },
+          {
+            "Name": "lookup-playback-references",
+            "Properties": {
+              "DeadLetteringOnMessageExpiration": false,
+              "DefaultMessageTimeToLive": "PT1H",
+              "DuplicateDetectionHistoryTimeWindow": "PT20S",
+              "ForwardDeadLetteredMessagesTo": "",
+              "ForwardTo": "",
+              "LockDuration": "PT1M",
+              "MaxDeliveryCount": 3,
+              "RequiresDuplicateDetection": false,
+              "RequiresSession": false
+            }
+          },
+          {
+            "Name": "enrichment-responses",
+            "Properties": {
+              "DeadLetteringOnMessageExpiration": false,
+              "DefaultMessageTimeToLive": "PT1H",
+              "DuplicateDetectionHistoryTimeWindow": "PT20S",
+              "ForwardDeadLetteredMessagesTo": "",
+              "ForwardTo": "",
+              "LockDuration": "PT1M",
+              "MaxDeliveryCount": 3,
+              "RequiresDuplicateDetection": false,
+              "RequiresSession": false
+            }
+          },
+          {
+            "Name": "music-track-events",
+            "Properties": {
+              "DeadLetteringOnMessageExpiration": false,
+              "DefaultMessageTimeToLive": "PT1H",
+              "DuplicateDetectionHistoryTimeWindow": "PT20S",
+              "ForwardDeadLetteredMessagesTo": "",
+              "ForwardTo": "",
+              "LockDuration": "PT1M",
+              "MaxDeliveryCount": 3,
+              "RequiresDuplicateDetection": false,
+              "RequiresSession": false
+            }
+          }
+        ],
+        "Topics": []
+      }
+    ],
+    "Logging": {
+      "Type": "File"
+      }
+  }
+}

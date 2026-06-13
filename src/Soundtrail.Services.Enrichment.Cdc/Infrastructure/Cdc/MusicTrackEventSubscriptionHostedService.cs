@@ -35,6 +35,10 @@ public sealed class MusicTrackEventSubscriptionHostedService(
             {
                 break;
             }
+            catch (ObjectDisposedException) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
+            }
             catch (Exception ex)
             {
                 logger.LogError(ex, "MusicTrack event subscription failed.");

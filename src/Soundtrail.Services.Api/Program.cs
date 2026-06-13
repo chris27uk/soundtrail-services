@@ -7,6 +7,7 @@ using Soundtrail.Services.Api.Features.Search.TrackSearch;
 using Soundtrail.Services.Api.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Soundtrail.Services.ServiceDefaults;
+using JasperFx.CodeGeneration.Model;
 using Wolverine;
 using Wolverine.AzureServiceBus;
 
@@ -22,13 +23,20 @@ else
 {
     builder.Host.UseWolverine(opts =>
     {
+        opts.UseRuntimeCompilation();
+        opts.ServiceLocationPolicy = ServiceLocationPolicy.AllowedButWarn;
         var options = builder.Configuration
             .GetSection(ServiceBusOptions.SectionName)
             .Get<ServiceBusOptions>() ?? throw new InvalidOperationException("ServiceBus configuration is required.");
+        var useDevelopmentEmulator = options.ConnectionString.IsDevelopmentEmulatorConnectionString();
 
-        opts.UseAzureServiceBus(options.ConnectionString)
-            .AutoProvision()
+        var transport = opts.UseAzureServiceBus(options.ConnectionString)
             .SystemQueuesAreEnabled(false);
+
+        if (!useDevelopmentEmulator)
+        {
+            transport.AutoProvision();
+        }
 
         opts.PublishMessage<LookupMusicRequestDto>()
             .ToAzureServiceBusQueue(options.LookupMusicRequestsQueueName);

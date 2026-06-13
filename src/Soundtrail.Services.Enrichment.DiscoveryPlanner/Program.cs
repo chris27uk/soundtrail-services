@@ -8,6 +8,7 @@ using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeSchedul
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Messaging;
 using Soundtrail.Services.ServiceDefaults;
+using JasperFx.CodeGeneration.Model;
 using Wolverine;
 using Wolverine.AzureServiceBus;
 using Wolverine.RavenDb;
@@ -19,19 +20,37 @@ builder.AddServiceDefaults();
 var serviceBusOptions = builder.Configuration
     .GetSection(ServiceBusOptions.SectionName)
     .Get<ServiceBusOptions>() ?? throw new InvalidOperationException("ServiceBus configuration is required.");
+var useDevelopmentEmulator = serviceBusOptions.ConnectionString.IsDevelopmentEmulatorConnectionString();
+
+if (useDevelopmentEmulator)
+{
+    builder.Services.UseWolverineSoloMode();
+}
 
 builder.Host.UseWolverine(opts =>
 {
+    opts.UseRuntimeCompilation();
+    opts.ServiceLocationPolicy = ServiceLocationPolicy.AllowedButWarn;
     opts.Discovery.DisableConventionalDiscovery();
     opts.Discovery.IncludeType<LookupMusicRequestListener>();
     opts.Discovery.IncludeType<DiscoveryBacklogSchedulingListener>();
     opts.Discovery.IncludeType<EnrichmentResponseListener>();
-    opts.UseRavenDbPersistence();
+    if (!useDevelopmentEmulator)
+    {
+        opts.UseRavenDbPersistence();
+    }
     opts.Policies.AutoApplyTransactions();
 
-    opts.UseAzureServiceBus(serviceBusOptions.ConnectionString)
-        .AutoProvision()
-        .EnableWolverineControlQueues();
+    var transport = opts.UseAzureServiceBus(serviceBusOptions.ConnectionString);
+    if (useDevelopmentEmulator)
+    {
+        transport.SystemQueuesAreEnabled(false);
+    }
+    else
+    {
+        transport.AutoProvision()
+            .EnableWolverineControlQueues();
+    }
 
     opts.ListenToAzureServiceBusQueue(serviceBusOptions.LookupMusicRequestsQueueName)
         .ProcessInline();
