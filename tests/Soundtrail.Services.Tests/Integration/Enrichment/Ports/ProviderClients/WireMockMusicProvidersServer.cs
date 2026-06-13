@@ -1,18 +1,30 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
-using WireMock.Matchers;
-using WireMock.RequestBuilders;
-using WireMock.ResponseBuilders;
-using WireMock.Server;
+using System.Collections.Concurrent;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.ProviderClients;
 
 internal sealed class WireMockMusicProvidersServer : IDisposable
 {
-    private readonly WireMockServer server = WireMockServer.Start();
+    private readonly ConcurrentDictionary<string, ConcurrentQueue<StubResponse>> responsesByPath = new();
+    private readonly HttpListener server = new();
+    private readonly CancellationTokenSource shutdown = new();
+    private readonly Task serverLoop;
 
-    public string BaseUrl => server.Urls[0];
+    public WireMockMusicProvidersServer()
+    {
+        var port = GetAvailablePort();
+        BaseUrl = $"http://127.0.0.1:{port}";
+        server.Prefixes.Add($"{BaseUrl}/");
+        server.Start();
+        serverLoop = Task.Run(() => RunServerLoopAsync(shutdown.Token));
+    }
+
+    public string BaseUrl { get; }
 
     public static WireMockMusicProvidersServer Create() => new();
 
@@ -28,56 +40,46 @@ internal sealed class WireMockMusicProvidersServer : IDisposable
         lookup.Match(
             (track, artist, album) =>
             {
-                server
-                    .Given(Request.Create()
-                        .UsingGet()
-                        .WithPath("/ws/2/recording"))
-                    .RespondWith(Response.Create()
-                        .WithStatusCode(200)
-                        .WithHeader("Content-Type", "application/json")
-                        .WithBody($$"""
+                EnqueueResponse(
+                    "/ws/2/recording",
+                    $$"""
+                    {
+                      "recordings": [
                         {
-                          "recordings": [
-                            {
-                              "id": "{{metadata.Mbid}}",
-                              "title": "{{metadata.Title}}",
-                              "length": {{metadata.DurationMs?.ToString() ?? "null"}},
-                              "score": "100",
-                              "isrcs": [],
-                              "artist-credit": [
-                                { "name": "{{metadata.Artist}}" }
-                              ]
-                            }
+                          "id": "{{metadata.Mbid}}",
+                          "title": "{{metadata.Title}}",
+                          "length": {{metadata.DurationMs?.ToString() ?? "null"}},
+                          "score": "100",
+                          "isrcs": [],
+                          "artist-credit": [
+                            { "name": "{{metadata.Artist}}" }
                           ]
                         }
-                        """));
+                      ]
+                    }
+                    """);
 
                 return 0;
             },
             isrc =>
             {
-                server
-                    .Given(Request.Create()
-                        .UsingGet()
-                        .WithPath($"/ws/2/isrc/{Uri.EscapeDataString(isrc)}"))
-                    .RespondWith(Response.Create()
-                        .WithStatusCode(200)
-                        .WithHeader("Content-Type", "application/json")
-                        .WithBody($$"""
+                EnqueueResponse(
+                    $"/ws/2/isrc/{Uri.EscapeDataString(isrc)}",
+                    $$"""
+                    {
+                      "recordings": [
                         {
-                          "recordings": [
-                            {
-                              "id": "{{metadata.Mbid}}",
-                              "title": "{{metadata.Title}}",
-                              "length": {{metadata.DurationMs?.ToString() ?? "null"}},
-                              "isrcs": ["{{metadata.Isrc}}"],
-                              "artist-credit": [
-                                { "name": "{{metadata.Artist}}" }
-                              ]
-                            }
+                          "id": "{{metadata.Mbid}}",
+                          "title": "{{metadata.Title}}",
+                          "length": {{metadata.DurationMs?.ToString() ?? "null"}},
+                          "isrcs": ["{{metadata.Isrc}}"],
+                          "artist-credit": [
+                            { "name": "{{metadata.Artist}}" }
                           ]
                         }
-                        """));
+                      ]
+                    }
+                    """);
 
                 return 0;
             });
@@ -100,19 +102,27 @@ internal sealed class WireMockMusicProvidersServer : IDisposable
         }
         """;
 
-        server
-            .Given(Request.Create()
-                .UsingGet()
-                .WithPath("/v1-user/links"))
-            .RespondWith(Response.Create()
-                .WithStatusCode(200)
-                .WithHeader("Content-Type", "application/json")
-                .WithBody(body));
+        EnqueueResponse("/v1-user/links", body);
     }
 
     public void Dispose()
     {
-        server.Dispose();
+        shutdown.Cancel();
+        server.Stop();
+        server.Close();
+
+        try
+        {
+            serverLoop.GetAwaiter().GetResult();
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (HttpListenerException)
+        {
+        }
+
+        shutdown.Dispose();
     }
 
     private void SeedAsyncLookupHappyPath()
@@ -143,4 +153,61 @@ internal sealed class WireMockMusicProvidersServer : IDisposable
         SeedOdesli(MusicSearchTerm.ByTrackArtistAlbum("Rare Unknown Song", "Test Artist", "Rare Album"), references);
         SeedOdesli(MusicSearchTerm.ByTrackArtistAlbum("Rare Unknown Song", "Test Artist", null), references);
     }
+
+    private void EnqueueResponse(string path, string body)
+    {
+        var queue = responsesByPath.GetOrAdd(path, _ => new ConcurrentQueue<StubResponse>());
+        queue.Enqueue(new StubResponse(HttpStatusCode.OK, "application/json", body));
+    }
+
+    private async Task RunServerLoopAsync(CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            HttpListenerContext context;
+
+            try
+            {
+                context = await server.GetContextAsync();
+            }
+            catch (HttpListenerException) when (cancellationToken.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)
+            {
+                break;
+            }
+
+            await WriteResponseAsync(context, cancellationToken);
+        }
+    }
+
+    private async Task WriteResponseAsync(HttpListenerContext context, CancellationToken cancellationToken)
+    {
+        var path = context.Request.Url?.AbsolutePath ?? "/";
+
+        if (!responsesByPath.TryGetValue(path, out var queue) || !queue.TryDequeue(out var response))
+        {
+            context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+            context.Response.Close();
+            return;
+        }
+
+        var bytes = Encoding.UTF8.GetBytes(response.Body);
+        context.Response.StatusCode = (int)response.StatusCode;
+        context.Response.ContentType = response.ContentType;
+        context.Response.ContentLength64 = bytes.Length;
+        await context.Response.OutputStream.WriteAsync(bytes, cancellationToken);
+        context.Response.Close();
+    }
+
+    private static int GetAvailablePort()
+    {
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        return ((IPEndPoint)listener.LocalEndpoint).Port;
+    }
+
+    private sealed record StubResponse(HttpStatusCode StatusCode, string ContentType, string Body);
 }
