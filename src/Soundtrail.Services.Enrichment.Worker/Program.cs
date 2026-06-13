@@ -1,5 +1,5 @@
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Services.Enrichment.Worker;
 using Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.Adapters;
@@ -11,7 +11,7 @@ using Wolverine;
 using Wolverine.AzureServiceBus;
 using Wolverine.RavenDb;
 
-var builder = Host.CreateApplicationBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
@@ -19,7 +19,7 @@ var serviceBusOptions = builder.Configuration
     .GetSection(ServiceBusOptions.SectionName)
     .Get<ServiceBusOptions>() ?? throw new InvalidOperationException("ServiceBus configuration is required.");
 
-builder.UseWolverine(opts =>
+builder.Host.UseWolverine(opts =>
 {
     opts.Discovery.DisableConventionalDiscovery();
     opts.Discovery.IncludeType<MusicBrainzLookupExecutionListener>();
@@ -43,6 +43,7 @@ builder.UseWolverine(opts =>
 
 builder.Services.AddWorkerAppServices(builder.Configuration);
 
-var host = builder.Build();
+var app = builder.Build();
+app.MapDefaultEndpoints();
 
-await host.RunAsync();
+await app.RunAsync();

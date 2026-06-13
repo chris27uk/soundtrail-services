@@ -1,5 +1,5 @@
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters;
@@ -12,7 +12,7 @@ using Wolverine;
 using Wolverine.AzureServiceBus;
 using Wolverine.RavenDb;
 
-var builder = Host.CreateApplicationBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
@@ -20,7 +20,7 @@ var serviceBusOptions = builder.Configuration
     .GetSection(ServiceBusOptions.SectionName)
     .Get<ServiceBusOptions>() ?? throw new InvalidOperationException("ServiceBus configuration is required.");
 
-builder.UseWolverine(opts =>
+builder.Host.UseWolverine(opts =>
 {
     opts.Discovery.DisableConventionalDiscovery();
     opts.Discovery.IncludeType<LookupMusicRequestListener>();
@@ -48,6 +48,7 @@ builder.UseWolverine(opts =>
 
 builder.Services.AddDiscoveryPlannerAppServices(builder.Configuration);
 
-var host = builder.Build();
+var app = builder.Build();
+app.MapDefaultEndpoints();
 
-await host.RunAsync();
+await app.RunAsync();

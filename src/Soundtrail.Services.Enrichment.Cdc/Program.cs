@@ -1,5 +1,5 @@
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 using Soundtrail.Contracts.IntegrationMessaging.Events;
 using Soundtrail.Services.Enrichment.Cdc;
 using Soundtrail.Services.Enrichment.Cdc.Infrastructure.Messaging;
@@ -7,7 +7,7 @@ using Soundtrail.Services.ServiceDefaults;
 using Wolverine;
 using Wolverine.AzureServiceBus;
 
-var builder = Host.CreateApplicationBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
@@ -15,7 +15,7 @@ var serviceBusOptions = builder.Configuration
     .GetSection(ServiceBusOptions.SectionName)
     .Get<ServiceBusOptions>() ?? throw new InvalidOperationException("ServiceBus configuration is required.");
 
-builder.UseWolverine(opts =>
+builder.Host.UseWolverine(opts =>
 {
     opts.UseAzureServiceBus(serviceBusOptions.ConnectionString)
         .AutoProvision()
@@ -27,6 +27,7 @@ builder.UseWolverine(opts =>
 
 builder.Services.AddCdcAppServices(builder.Configuration);
 
-var host = builder.Build();
+var app = builder.Build();
+app.MapDefaultEndpoints();
 
-await host.RunAsync();
+await app.RunAsync();

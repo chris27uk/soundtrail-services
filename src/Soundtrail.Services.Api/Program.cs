@@ -1,7 +1,6 @@
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain;
 using Soundtrail.Services.Api;
-using Soundtrail.Services.Api.Features.Health;
 using Soundtrail.Services.Api.Features.Search;
 using Soundtrail.Services.Api.Features.Search.Queueing;
 using Soundtrail.Services.Api.Features.Search.TrackSearch;
@@ -40,7 +39,6 @@ else
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
-app.MapHealthEndpoints();
 app.MapSearchEndpoints();
 
 app.Run();
