@@ -22,7 +22,7 @@ internal sealed class SearchWebApiTestEnvironment : IAsyncDisposable
 
     public HttpClient Client { get; }
 
-    public ApiFakeSearchMusicHandler SearchHandler { get; }
+    public ApiFakeSearchCatalogHandler SearchHandler { get; }
 
     public static SearchWebApiTestEnvironment Create() => new(new SearchWebApplicationFactory());
 
@@ -35,7 +35,7 @@ internal sealed class SearchWebApiTestEnvironment : IAsyncDisposable
 
     private sealed class SearchWebApplicationFactory : WebApplicationFactory<ApiAssemblyMarker>
     {
-        public ApiFakeSearchMusicHandler SearchHandler { get; } = new();
+        public ApiFakeSearchCatalogHandler SearchHandler { get; } = new();
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {

@@ -5,9 +5,9 @@ using Soundtrail.Services.Api.Features.Albums.GetAlbum.CompositionRoot;
 using Soundtrail.Services.Api.Features.Albums.ListTracksByAlbum.CompositionRoot;
 using Soundtrail.Services.Api.Features.Artists.GetArtist.CompositionRoot;
 using Soundtrail.Services.Api.Features.Artists.ListTracksByArtist.CompositionRoot;
-using Soundtrail.Services.Api.Features.Health.TrackSearchReady.CompositionRoot;
-using Soundtrail.Services.Api.Features.Search.SearchCatalog.CompositionRoot;
-using Soundtrail.Services.Api.Features.Search.Queueing;
+using Soundtrail.Services.Api.Features.Search.Adapters;
+using Soundtrail.Services.Api.Features.Search.CompositionRoot;
+using Soundtrail.Services.Api.Features.Search.Ports;
 using Soundtrail.Services.Api.Features.Tracks.GetTrack.CompositionRoot;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Soundtrail.Services.Api.Infrastructure.Raven;
@@ -32,7 +32,6 @@ public static class AppServiceCollectionExtensions
         options.ConfigureClockDependencies?.Invoke(services);
         services.TryAddSingleton<IClockPort, SystemClock>();
 
-        services.AddTrackSearchReadyFeature();
         services.AddGetArtistFeature();
         services.AddListTracksByArtistFeature();
         services.AddGetAlbumFeature();
@@ -54,7 +53,7 @@ public static class AppServiceCollectionExtensions
                 }
             });
 
-            x.ConfigureCatalogSearchDependencies = options.ConfigureTrackSearchDependencies ?? (svc =>
+            x.ConfigureCatalogSearchDependencies = options.ConfigureCatalogSearchDependencies ?? (svc =>
             {
                 if (environment.IsEnvironment("Testing"))
                 {

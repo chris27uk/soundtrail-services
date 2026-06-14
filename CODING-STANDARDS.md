@@ -173,7 +173,7 @@ Examples:
 - `Features/Search/SearchCatalog/CompositionRoot/ServiceCollectionExtensions.cs`
 - `Features/Search/SearchCatalog/Adapters/SearchCatalogEndpoints.cs`
 - `Features/JustInTimeScheduling/LookupMusicRequestHandler.cs`
-- `Features/Search/SearchMusic/Ports/ITrackSearchPort.cs`
+- `Features/Search/SearchCatalog/Ports/ICatalogSearchPort.cs`
 - `Shared/ProviderContract.cs`
 
 Only the single feature entrypoint belongs in the concrete feature folder root.
@@ -317,7 +317,7 @@ Follow the naming style already used in the repository.
 - use clear, literal names
 - name handlers as `<UseCase>Handler`
 - name request and response models as `<UseCase>Request` and `<UseCase>Response`
-- name interfaces by role, for example `ITrackSearchPort`
+- name interfaces by role, for example `ICatalogSearchPort`
 - name tests in `Given_When_Then` style
 - keep the file path for handlers as `Features/<FeatureName>/<UseCase>Handler.cs`
 
@@ -412,7 +412,7 @@ Examples:
 
 - `Api/Unit/Features/Search/...`
 - `Enrichment/Unit/Features/Scheduling/...`
-- `Api/Integration/Ports/TrackSearch/...`
+- `Api/Integration/Ports/CatalogSearch/...`
 
 Prefer scenario-focused test classes over giant omnibus fixtures.
 

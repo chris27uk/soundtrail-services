@@ -3,7 +3,10 @@ using Soundtrail.Domain;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.CatalogBrowsing;
 using Soundtrail.Services.Api.Features.Albums;
+using Soundtrail.Services.Api.Features.Albums.GetAlbum;
+using Soundtrail.Services.Api.Features.Albums.ListTracksByAlbum;
 using Soundtrail.Services.Api.Features.Tracks;
+using Soundtrail.Services.Api.Features.Tracks.GetTrack;
 using Soundtrail.Services.Tests.Integration.Api.Features.Search;
 using Soundtrail.Services.Tests.Unit.Api.Infrastructure;
 

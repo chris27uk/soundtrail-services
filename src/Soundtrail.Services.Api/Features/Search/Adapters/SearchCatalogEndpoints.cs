@@ -3,7 +3,7 @@ using Soundtrail.Domain;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Search;
 
-namespace Soundtrail.Services.Api.Features.Search;
+namespace Soundtrail.Services.Api.Features.Search.Adapters;
 
 public static class SearchCatalogEndpoints
 {

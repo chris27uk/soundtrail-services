@@ -1,7 +1,13 @@
 using Soundtrail.Services.Api.Features.Albums;
+using Soundtrail.Services.Api.Features.Albums.GetAlbum.Adapters;
+using Soundtrail.Services.Api.Features.Albums.ListTracksByAlbum.Adapters;
 using Soundtrail.Services.Api.Features.Artists;
+using Soundtrail.Services.Api.Features.Artists.GetArtist.Adapters;
+using Soundtrail.Services.Api.Features.Artists.ListTracksByArtist.Adapters;
 using Soundtrail.Services.Api.Features.Search;
+using Soundtrail.Services.Api.Features.Search.Adapters;
 using Soundtrail.Services.Api.Features.Tracks;
+using Soundtrail.Services.Api.Features.Tracks.GetTrack.Adapters;
 using Soundtrail.Services.Api.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Soundtrail.Services.ServiceDefaults;

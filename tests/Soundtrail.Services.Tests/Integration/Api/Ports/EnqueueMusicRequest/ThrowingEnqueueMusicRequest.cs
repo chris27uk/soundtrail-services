@@ -1,5 +1,5 @@
 using Soundtrail.Domain.Commands;
-using Soundtrail.Services.Api.Features.Search.Queueing;
+using Soundtrail.Services.Api.Features.Search.Ports;
 
 namespace Soundtrail.Services.Tests.Integration.Api.Ports.EnqueueMusicRequest
 {

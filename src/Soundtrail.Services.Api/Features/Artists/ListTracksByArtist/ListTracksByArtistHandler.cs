@@ -1,7 +1,7 @@
 using Soundtrail.Domain;
 using Soundtrail.Domain.CatalogBrowsing;
 
-namespace Soundtrail.Services.Api.Features.Artists;
+namespace Soundtrail.Services.Api.Features.Artists.ListTracksByArtist;
 
 public sealed class ListTracksByArtistHandler(ICatalogReadPort catalogReadPort) : IHandler<ListTracksByArtistCommand, ArtistTracksResponse?>
 {

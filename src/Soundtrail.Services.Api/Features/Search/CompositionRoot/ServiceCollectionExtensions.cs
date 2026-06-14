@@ -2,9 +2,9 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Domain;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Api.Features.Search.Queueing;
+using Soundtrail.Services.Api.Features.Search.Ports;
 
-namespace Soundtrail.Services.Api.Features.Search.SearchCatalog.CompositionRoot;
+namespace Soundtrail.Services.Api.Features.Search.CompositionRoot;
 
 public static class ServiceCollectionExtensions
 {

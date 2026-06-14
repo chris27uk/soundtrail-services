@@ -13,7 +13,8 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
 using Soundtrail.Services.Api;
 using Soundtrail.Services.Api.Features.Search;
-using Soundtrail.Services.Api.Features.Search.Queueing;
+using Soundtrail.Services.Api.Features.Search.Adapters;
+using Soundtrail.Services.Api.Features.Search.Ports;
 using Soundtrail.Services.Api.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
@@ -75,7 +76,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
         {
             options.UseInMemoryQueueing = false;
             options.ConfigureQueueingDependencies = services => services.TryAddScoped<IEnqueueMusicRequest, WolverineEnqueueMusicRequest>();
-            options.ConfigureTrackSearchDependencies = services =>
+            options.ConfigureCatalogSearchDependencies = services =>
             {
                 services.AddEmbeddedRavenForTesting(raven.Store);
                 services.TryAddSingleton<Soundtrail.Domain.Search.ICatalogSearchPort, Soundtrail.Services.Api.Infrastructure.Raven.RavenCatalogSearch>();

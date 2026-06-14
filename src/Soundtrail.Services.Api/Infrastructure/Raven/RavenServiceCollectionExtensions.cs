@@ -33,8 +33,6 @@ public static class RavenServiceCollectionExtensions
 
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<IHostedService, RavenDatabaseHostedService>());
-        services.TryAddEnumerable(
-            ServiceDescriptor.Singleton<IHostedService, RavenDevelopmentSeedHostedService>());
         return services;
     }
 }

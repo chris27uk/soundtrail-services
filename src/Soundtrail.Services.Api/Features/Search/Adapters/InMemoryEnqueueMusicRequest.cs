@@ -1,9 +1,10 @@
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Commands;
+using Soundtrail.Services.Api.Features.Search.Ports;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using System.Collections.Concurrent;
 
-namespace Soundtrail.Services.Api.Features.Search.Queueing;
+namespace Soundtrail.Services.Api.Features.Search.Adapters;
 
 public sealed class InMemoryEnqueueMusicRequest : IEnqueueMusicRequest
 {
