@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Soundtrail.Domain.CatalogBrowsing;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.Health;
 using Soundtrail.Services.Api.Features.Search;
@@ -45,6 +46,7 @@ public static class AppServiceCollectionExtensions
             {
                 if (environment.IsEnvironment("Testing"))
                 {
+                    svc.TryAddSingleton<ICatalogSearchPort, TestingNoOpCatalogSearchPort>();
                     return;
                 }
 
@@ -52,6 +54,18 @@ public static class AppServiceCollectionExtensions
                 svc.TryAddSingleton<ICatalogSearchPort, RavenCatalogSearch>();
             });
         });
+
+        (options.ConfigureCatalogReadDependencies ?? (svc =>
+        {
+            if (environment.IsEnvironment("Testing"))
+            {
+                svc.TryAddSingleton<ICatalogReadPort, TestingNoOpCatalogReadPort>();
+                return;
+            }
+
+            svc.AddRavenDocumentStore(configuration);
+            svc.TryAddSingleton<ICatalogReadPort, RavenCatalogReadPort>();
+        })).Invoke(services);
 
         return services;
     }

@@ -8,6 +8,8 @@ namespace Soundtrail.Services.Api.Infrastructure.CompositionRoot
 
         public Action<IServiceCollection>? ConfigureTrackSearchDependencies { get; set; }
 
+        public Action<IServiceCollection>? ConfigureCatalogReadDependencies { get; set; }
+
         public Action<IServiceCollection>? ConfigureClockDependencies { get; set; }
     }
 }
