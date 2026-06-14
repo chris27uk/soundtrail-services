@@ -1,0 +1,25 @@
+using Raven.Client.Documents.Indexes;
+using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
+
+namespace Soundtrail.Services.Api.Infrastructure.Raven.Indexes;
+
+internal sealed class Search_Albums : AbstractIndexCreationTask<CatalogAlbumDocument>
+{
+    public Search_Albums()
+    {
+        Map = albums => from album in albums
+                        select new
+                        {
+                            album.AlbumId,
+                            album.ArtistId,
+                            album.Name,
+                            album.NormalizedName,
+                            album.ArtistName,
+                            album.MusicBrainzReleaseId
+                        };
+
+        Index(x => x.Name, FieldIndexing.Search);
+        Index(x => x.NormalizedName, FieldIndexing.Search);
+        Index(x => x.ArtistName, FieldIndexing.Search);
+    }
+}
