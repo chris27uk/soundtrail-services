@@ -17,7 +17,7 @@ public sealed class RavenMusicCatalogCandidateSearch(IDocumentStore documentStor
     {
         using var session = documentStore.OpenAsyncSession();
         var documents = await session
-            .Query<RavenTrackDocument, TrackCatalogue_BySearchText>()
+            .Query<RavenTrackRecordDto, TrackCatalogue_BySearchText>()
             .Search(x => x.SearchText, query.Value)
             .Take(5)
             .ToListAsync(cancellationToken);

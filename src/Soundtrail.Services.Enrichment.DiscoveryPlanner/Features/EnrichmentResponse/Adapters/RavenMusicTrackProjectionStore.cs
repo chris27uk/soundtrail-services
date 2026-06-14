@@ -16,9 +16,9 @@ public sealed class RavenMusicTrackProjectionStore(
         MusicTrackStream stream,
         CancellationToken cancellationToken)
     {
-        var documentId = RavenTrackDocument.GetDocumentId(musicCatalogId.Value);
-        var document = await session.LoadAsync<RavenTrackDocument>(documentId, cancellationToken)
-            ?? new RavenTrackDocument { Id = documentId };
+        var documentId = RavenTrackRecordDto.GetDocumentId(musicCatalogId.Value);
+        var document = await session.LoadAsync<RavenTrackRecordDto>(documentId, cancellationToken)
+            ?? new RavenTrackRecordDto { Id = documentId };
 
         Apply(stream, document);
         await session.StoreAsync(document, cancellationToken);
@@ -26,7 +26,7 @@ public sealed class RavenMusicTrackProjectionStore(
 
     private static void Apply(
         MusicTrackStream stream,
-        RavenTrackDocument document)
+        RavenTrackRecordDto document)
     {
         string? title = null;
         string? artist = null;
@@ -83,7 +83,7 @@ public sealed class RavenMusicTrackProjectionStore(
 
         if (!string.IsNullOrWhiteSpace(title) && !string.IsNullOrWhiteSpace(artist))
         {
-            document.CanonicalMetadata = new RavenSongMetadataDocument
+            document.CanonicalMetadata = new RavenSongMetadataRecordDto
             {
                 Title = title,
                 Artist = artist,
@@ -98,12 +98,12 @@ public sealed class RavenMusicTrackProjectionStore(
             document.Isrc = isrc;
             document.Mbid = mbid;
             document.DurationMs = durationMs;
-            document.SearchText = RavenTrackDocument.BuildSearchText(title, artist);
+            document.SearchText = RavenTrackRecordDto.BuildSearchText(title, artist);
         }
 
         if (apple is not null)
         {
-            document.AppleReference = new RavenProviderReferenceDocument
+            document.AppleReference = new RavenProviderReferenceRecordDto
             {
                 Provider = apple.Provider.ToString(),
                 Url = apple.Url.ToString(),
@@ -115,7 +115,7 @@ public sealed class RavenMusicTrackProjectionStore(
 
         if (youTubeMusic is not null)
         {
-            document.YouTubeMusicReference = new RavenProviderReferenceDocument
+            document.YouTubeMusicReference = new RavenProviderReferenceRecordDto
             {
                 Provider = youTubeMusic.Provider.ToString(),
                 Url = youTubeMusic.Url.ToString(),

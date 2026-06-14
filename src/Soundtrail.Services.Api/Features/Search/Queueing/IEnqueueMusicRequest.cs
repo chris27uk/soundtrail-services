@@ -2,7 +2,6 @@ using Soundtrail.Domain.Commands;
 
 namespace Soundtrail.Services.Api.Features.Search.Queueing;
 
-public interface IEnqueueMusicRequest
+public interface IEnqueueMusicRequest : IQueueLookupMusicRequestPort
 {
-    Task EnqueueAsync(LookupMusicRequest request, CancellationToken cancellationToken);
 }

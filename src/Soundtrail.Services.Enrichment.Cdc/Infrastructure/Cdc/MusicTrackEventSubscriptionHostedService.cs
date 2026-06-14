@@ -28,7 +28,7 @@ public sealed class MusicTrackEventSubscriptionHostedService(
             try
             {
                 var options = new SubscriptionWorkerOptions(SubscriptionName);
-                await using var worker = documentStore.Subscriptions.GetSubscriptionWorker<RavenMusicTrackStreamDocument>(options);
+                await using var worker = documentStore.Subscriptions.GetSubscriptionWorker<RavenMusicTrackStreamRecordDto>(options);
                 await worker.Run(batch => ProcessBatchAsync(batch, stoppingToken), stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -51,7 +51,7 @@ public sealed class MusicTrackEventSubscriptionHostedService(
     {
         try
         {
-            await documentStore.Subscriptions.CreateAsync<RavenMusicTrackStreamDocument>(
+            await documentStore.Subscriptions.CreateAsync<RavenMusicTrackStreamRecordDto>(
                 new SubscriptionCreationOptions
                 {
                     Name = SubscriptionName
@@ -65,7 +65,7 @@ public sealed class MusicTrackEventSubscriptionHostedService(
     }
 
     private async Task ProcessBatchAsync(
-        SubscriptionBatch<RavenMusicTrackStreamDocument> batch,
+        SubscriptionBatch<RavenMusicTrackStreamRecordDto> batch,
         CancellationToken cancellationToken)
     {
         using var scope = serviceScopeFactory.CreateScope();
@@ -105,7 +105,7 @@ public sealed class MusicTrackEventSubscriptionHostedService(
         await session.SaveChangesAsync(cancellationToken);
     }
 
-    private static object? ToIntegrationEvent(RavenMusicTrackEventDocument @event)
+    private static object? ToIntegrationEvent(RavenMusicTrackEventRecordDto @event)
     {
         return @event.Type switch
             {
@@ -114,7 +114,7 @@ public sealed class MusicTrackEventSubscriptionHostedService(
             };
     }
 
-    private static PlaybackReferencesResolutionRequiredMessageDto PlaybackReferencesResolutionRequiredDto(RavenMusicTrackEventDocument @event)
+    private static PlaybackReferencesResolutionRequiredMessageDto PlaybackReferencesResolutionRequiredDto(RavenMusicTrackEventRecordDto @event)
     {
         return new PlaybackReferencesResolutionRequiredMessageDto(
             @event.MusicCatalogId ?? string.Empty,

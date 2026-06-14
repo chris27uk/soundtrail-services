@@ -1,8 +1,8 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.Health;
 using Soundtrail.Services.Api.Features.Search;
 using Soundtrail.Services.Api.Features.Search.Queueing;
-using Soundtrail.Services.Api.Features.Search.TrackSearch;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Soundtrail.Services.Api.Infrastructure.Raven;
 using Soundtrail.Services.Api.Infrastructure.Time;
@@ -41,7 +41,7 @@ public static class AppServiceCollectionExtensions
                 }
             });
 
-            x.ConfigureTrackSearchDependencies = options.ConfigureTrackSearchDependencies ?? (svc =>
+            x.ConfigureCatalogSearchDependencies = options.ConfigureTrackSearchDependencies ?? (svc =>
             {
                 if (environment.IsEnvironment("Testing"))
                 {
@@ -49,7 +49,7 @@ public static class AppServiceCollectionExtensions
                 }
 
                 svc.AddRavenDocumentStore(configuration);
-                svc.TryAddSingleton<ITrackSearchPort, RavenTrackSearchIndex>();
+                svc.TryAddSingleton<ICatalogSearchPort, RavenCatalogSearch>();
             });
         });
 

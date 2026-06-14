@@ -2,8 +2,8 @@ namespace Soundtrail.Services.Api.Features.Search.TrackSearch;
 
 public readonly record struct Limit
 {
-    public const int DefaultValue = 10;
-    public const int Maximum = 25;
+    public const int DefaultValue = 25;
+    public const int Maximum = 100;
 
     private Limit(int value)
     {

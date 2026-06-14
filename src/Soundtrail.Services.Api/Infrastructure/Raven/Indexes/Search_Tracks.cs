@@ -3,7 +3,7 @@ using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 
 namespace Soundtrail.Services.Api.Infrastructure.Raven.Indexes;
 
-internal sealed class Search_Tracks : AbstractIndexCreationTask<CatalogTrackDocument>
+internal sealed class Search_Tracks : AbstractIndexCreationTask<CatalogTrackRecordDto>
 {
     public Search_Tracks()
     {

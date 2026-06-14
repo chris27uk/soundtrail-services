@@ -7,15 +7,15 @@ namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentRes
 
 internal static class RavenMappings
 {
-    public static MusicTrackStream ToDomain(this RavenMusicTrackStreamDocument document) =>
+    public static MusicTrackStream ToDomain(this RavenMusicTrackStreamRecordDto document) =>
         new(
             document.Version,
             document.Events.Select(ToDomain).ToArray());
 
-    public static RavenMusicTrackEventDocument ToDocument(this IMusicTrackEvent @event) =>
+    public static RavenMusicTrackEventRecordDto ToRecordDto(this IMusicTrackEvent @event) =>
         @event switch
         {
-            MinimalTrackInfoDiscovered minimalTrackInfoDiscovered => new RavenMusicTrackEventDocument
+            MinimalTrackInfoDiscovered minimalTrackInfoDiscovered => new RavenMusicTrackEventRecordDto
             {
                 Type = nameof(MinimalTrackInfoDiscovered),
                 SourceProvider = minimalTrackInfoDiscovered.SourceProvider.ToString(),
@@ -26,7 +26,7 @@ internal static class RavenMappings
                 Isrc = minimalTrackInfoDiscovered.Isrc,
                 Mbid = minimalTrackInfoDiscovered.Mbid
             },
-            ProviderPlaybackReferenceResolved providerPlaybackReferenceResolved => new RavenMusicTrackEventDocument
+            ProviderPlaybackReferenceResolved providerPlaybackReferenceResolved => new RavenMusicTrackEventRecordDto
             {
                 Type = nameof(ProviderPlaybackReferenceResolved),
                 SourceProvider = providerPlaybackReferenceResolved.SourceProvider.ToString(),
@@ -35,7 +35,7 @@ internal static class RavenMappings
                 ExternalId = providerPlaybackReferenceResolved.ExternalId,
                 Url = providerPlaybackReferenceResolved.Url.ToString()
             },
-            PlaybackReferencesResolutionRequired playbackReferencesResolutionRequired => new RavenMusicTrackEventDocument
+            PlaybackReferencesResolutionRequired playbackReferencesResolutionRequired => new RavenMusicTrackEventRecordDto
             {
                 Type = nameof(PlaybackReferencesResolutionRequired),
                 SourceProvider = playbackReferencesResolutionRequired.SourceProvider.ToString(),
@@ -47,7 +47,7 @@ internal static class RavenMappings
                 Title = playbackReferencesResolutionRequired.SearchTerm.Title,
                 Artist = playbackReferencesResolutionRequired.SearchTerm.Artist
             },
-            TrackLinkedToAlbum trackLinkedToAlbum => new RavenMusicTrackEventDocument
+            TrackLinkedToAlbum trackLinkedToAlbum => new RavenMusicTrackEventRecordDto
             {
                 Type = nameof(TrackLinkedToAlbum),
                 SourceProvider = trackLinkedToAlbum.SourceProvider.ToString(),
@@ -55,7 +55,7 @@ internal static class RavenMappings
                 AlbumId = trackLinkedToAlbum.AlbumId,
                 AlbumTitle = trackLinkedToAlbum.AlbumTitle
             },
-            TrackLinkedToArtist trackLinkedToArtist => new RavenMusicTrackEventDocument
+            TrackLinkedToArtist trackLinkedToArtist => new RavenMusicTrackEventRecordDto
             {
                 Type = nameof(TrackLinkedToArtist),
                 SourceProvider = trackLinkedToArtist.SourceProvider.ToString(),
@@ -66,7 +66,7 @@ internal static class RavenMappings
             _ => throw new ArgumentOutOfRangeException(nameof(@event), @event, "Unknown music track event.")
         };
 
-    private static IMusicTrackEvent ToDomain(RavenMusicTrackEventDocument dto) =>
+    private static IMusicTrackEvent ToDomain(RavenMusicTrackEventRecordDto dto) =>
         dto.Type switch
         {
             nameof(MinimalTrackInfoDiscovered) => new MinimalTrackInfoDiscovered(

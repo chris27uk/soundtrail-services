@@ -6,7 +6,7 @@ namespace Soundtrail.Services.Api.Infrastructure.Raven;
 
 internal static class RavenMappings
 {
-    public static SearchResult ToDomain(this RavenSearchResultDocument document) =>
+    public static SearchResult ToDomain(this RavenSearchResultRecordDto document) =>
         new(
             TrackTitle.From(document.Title),
             ArtistName.From(document.Artist),
@@ -16,7 +16,7 @@ internal static class RavenMappings
             string.IsNullOrWhiteSpace(document.SpotifyId) ? null : SpotifyId.From(document.SpotifyId),
             ConfidenceScore.From(document.Confidence));
 
-    public static RavenSearchResultDocument ToDocument(this SearchResult result) =>
+    public static RavenSearchResultRecordDto ToRecordDto(this SearchResult result) =>
         new()
         {
             Title = result.Title.Value,
@@ -28,7 +28,7 @@ internal static class RavenMappings
             Confidence = result.Confidence.Value
         };
 
-    public static Track ToDomainTrack(this RavenTrackDocument document) =>
+    public static Track ToDomainTrack(this RavenTrackRecordDto document) =>
         new(
             TrackTitle.From(document.Title),
             ArtistName.From(document.Artist),
@@ -38,13 +38,13 @@ internal static class RavenMappings
             string.IsNullOrWhiteSpace(document.SpotifyId) ? null : SpotifyId.From(document.SpotifyId),
             document.DurationMs is null ? null : DurationMs.From(document.DurationMs.Value));
 
-    public static RavenTrackDocument ToDocument(this Track track, string stableId) =>
+    public static RavenTrackRecordDto ToRecordDto(this Track track, string stableId) =>
         new()
         {
-            Id = RavenTrackDocument.GetDocumentId(stableId),
+            Id = RavenTrackRecordDto.GetDocumentId(stableId),
             Title = track.Title.Value,
             Artist = track.Artist.Value,
-            SearchText = RavenTrackDocument.BuildSearchText(track.Title.Value, track.Artist.Value),
+            SearchText = RavenTrackRecordDto.BuildSearchText(track.Title.Value, track.Artist.Value),
             Isrc = track.Isrc?.Value,
             Mbid = track.Mbid?.Value,
             AppleId = track.AppleId?.Value,

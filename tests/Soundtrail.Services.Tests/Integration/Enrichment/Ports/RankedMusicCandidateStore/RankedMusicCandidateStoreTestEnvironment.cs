@@ -72,7 +72,7 @@ internal sealed class RankedMusicCandidateStoreTestEnvironment : IDisposable
         foreach (var candidate in candidates)
         {
             var document = Activator.CreateInstance(
-                RavenRankedMusicCandidateDocumentType,
+                RavenRankedMusicCandidateRecordDtoType,
                 BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public,
                 binder: null,
                 args: null,
@@ -92,8 +92,8 @@ internal sealed class RankedMusicCandidateStoreTestEnvironment : IDisposable
         session.SaveChanges();
     }
 
-    private static readonly Type RavenRankedMusicCandidateDocumentType = typeof(RavenRankedMusicCandidateStore).Assembly
-        .GetType("Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters.Documents.RavenRankedMusicCandidateDocument", throwOnError: true)!;
+    private static readonly Type RavenRankedMusicCandidateRecordDtoType = typeof(RavenRankedMusicCandidateStore).Assembly
+        .GetType("Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters.Documents.RavenRankedMusicCandidateRecordDto", throwOnError: true)!;
 
     private static readonly Type RankedMusicCandidatesByPlanningIndexType = typeof(RavenRankedMusicCandidateStore).Assembly
         .GetType("Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters.Indexes.RankedMusicCandidates_ByPlanning", throwOnError: true)!;
@@ -111,7 +111,7 @@ internal sealed class RankedMusicCandidateStoreTestEnvironment : IDisposable
     }
 
     private static void Set(object target, string propertyName, object? value) =>
-        RavenRankedMusicCandidateDocumentType
+        RavenRankedMusicCandidateRecordDtoType
             .GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!
             .SetValue(target, value);
 }

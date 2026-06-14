@@ -16,7 +16,7 @@ public sealed class RavenTrackSearchIndex(IDocumentStore documentStore) : ITrack
         using var session = documentStore.OpenAsyncSession();
 
         var documents = await session
-            .Query<RavenTrackDocument, Indexes.TrackCatalogue_BySearchText>()
+            .Query<RavenTrackRecordDto, Indexes.TrackCatalogue_BySearchText>()
             .Search(x => x.SearchText, query.Value)
             .Take(limit.Value)
             .ToListAsync(cancellationToken);

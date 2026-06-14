@@ -23,8 +23,8 @@ public sealed class RavenDevelopmentSeedHostedService(
         }
 
         using var session = documentStore.OpenAsyncSession();
-        var mrBrightsideTrackId = RavenTrackDocument.GetDocumentId("mr-brightside");
-        var existingMrBrightside = await session.LoadAsync<RavenTrackDocument>(mrBrightsideTrackId, cancellationToken);
+        var mrBrightsideTrackId = RavenTrackRecordDto.GetDocumentId("mr-brightside");
+        var existingMrBrightside = await session.LoadAsync<RavenTrackRecordDto>(mrBrightsideTrackId, cancellationToken);
         if (existingMrBrightside is null)
         {
             await session.StoreAsync(
@@ -36,23 +36,23 @@ public sealed class RavenDevelopmentSeedHostedService(
                     AppleId.From("apple-mr-brightside"),
                     SpotifyId.From("spotify-mr-brightside"),
                     DurationMs.From(222000))
-                    .ToDocument("mr-brightside"),
+                    .ToRecordDto("mr-brightside"),
                 cancellationToken);
         }
 
         if (configuration.GetValue("LocalDevelopment:SeedAsyncLookupTrack", false))
         {
-            var asyncLookupTrackId = RavenTrackDocument.GetDocumentId("mc_track_1");
-            var existingAsyncLookupTrack = await session.LoadAsync<RavenTrackDocument>(asyncLookupTrackId, cancellationToken);
+            var asyncLookupTrackId = RavenTrackRecordDto.GetDocumentId("mc_track_1");
+            var existingAsyncLookupTrack = await session.LoadAsync<RavenTrackRecordDto>(asyncLookupTrackId, cancellationToken);
             if (existingAsyncLookupTrack is null)
             {
                 await session.StoreAsync(
-                    new RavenTrackDocument
+                    new RavenTrackRecordDto
                     {
                         Id = asyncLookupTrackId,
                         Title = "Rare Unknown Song",
                         Artist = "Test Artist",
-                        SearchText = RavenTrackDocument.BuildSearchText("Rare Unknown Song", "Test Artist")
+                        SearchText = RavenTrackRecordDto.BuildSearchText("Rare Unknown Song", "Test Artist")
                     },
                     cancellationToken);
             }

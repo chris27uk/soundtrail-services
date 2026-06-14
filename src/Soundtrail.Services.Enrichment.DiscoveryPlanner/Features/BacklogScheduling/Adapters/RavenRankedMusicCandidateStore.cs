@@ -20,8 +20,8 @@ public sealed class RavenRankedMusicCandidateStore(
         var (activeSession, dispose) = OpenSession();
         using (dispose)
         {
-            var document = await activeSession.LoadAsync<RavenRankedMusicCandidateDocument>(
-                RavenRankedMusicCandidateDocument.GetDocumentId(musicCatalogId.Value),
+            var document = await activeSession.LoadAsync<RavenRankedMusicCandidateRecordDto>(
+                RavenRankedMusicCandidateRecordDto.GetDocumentId(musicCatalogId.Value),
                 cancellationToken);
 
             return document?.ToDomain();
@@ -34,14 +34,14 @@ public sealed class RavenRankedMusicCandidateStore(
         var (activeSession, dispose) = OpenSession();
         using (dispose)
         {
-            var documentId = RavenRankedMusicCandidateDocument.GetDocumentId(candidate.MusicCatalogId.Value);
-            var existing = await activeSession.LoadAsync<RavenRankedMusicCandidateDocument>(
+            var documentId = RavenRankedMusicCandidateRecordDto.GetDocumentId(candidate.MusicCatalogId.Value);
+            var existing = await activeSession.LoadAsync<RavenRankedMusicCandidateRecordDto>(
                 documentId,
                 cancellationToken);
 
             if (existing is null)
             {
-                await activeSession.StoreAsync(candidate.ToDocument(), cancellationToken);
+                await activeSession.StoreAsync(candidate.ToRecordDto(), cancellationToken);
             }
             else
             {
@@ -64,7 +64,7 @@ public sealed class RavenRankedMusicCandidateStore(
         using (dispose)
         {
             var documents = await activeSession
-                .Query<RavenRankedMusicCandidateDocument, RankedMusicCandidates_ByPlanning>()
+                .Query<RavenRankedMusicCandidateRecordDto, RankedMusicCandidates_ByPlanning>()
                 .Where(candidate => candidate.Status == RankedMusicCandidateStatus.Pending.ToString())
                 .Where(candidate => candidate.NextEligibleAt == null || candidate.NextEligibleAt <= now)
                 .OrderByDescending(candidate => candidate.HighestTrustLevelSeen)

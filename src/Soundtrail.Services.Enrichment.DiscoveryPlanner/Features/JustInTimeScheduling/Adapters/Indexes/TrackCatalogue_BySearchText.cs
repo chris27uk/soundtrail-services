@@ -3,7 +3,7 @@ using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeSchedul
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Indexes;
 
-internal sealed class TrackCatalogue_BySearchText : AbstractIndexCreationTask<RavenTrackDocument>
+internal sealed class TrackCatalogue_BySearchText : AbstractIndexCreationTask<RavenTrackRecordDto>
 {
     public TrackCatalogue_BySearchText()
     {

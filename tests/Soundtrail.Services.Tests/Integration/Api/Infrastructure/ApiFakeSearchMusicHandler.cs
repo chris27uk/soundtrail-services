@@ -1,22 +1,25 @@
 using Soundtrail.Contracts;
 using Soundtrail.Domain;
-using Soundtrail.Services.Api.Features.Search.TrackSearch;
+using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
-public sealed class ApiFakeSearchMusicHandler : IHandler<SearchMusicRequest, SearchMusicResponse>
+public sealed class ApiFakeSearchMusicHandler : IHandler<SearchCatalogCommand, SearchCatalogResponse>
 {
-    private readonly List<SearchMusicRequest> requests = [];
-    private SearchMusicResponse response = SearchMusicResponse.Pending("default");
+    private readonly List<SearchCatalogCommand> requests = [];
+    private SearchCatalogResponse response = new(
+        "default",
+        [],
+        new SearchDiscovery(false, null, null));
 
-    public IReadOnlyList<SearchMusicRequest> Requests => requests;
+    public IReadOnlyList<SearchCatalogCommand> Requests => requests;
 
     public void ClearRequests() => requests.Clear();
 
-    public void RespondWith(SearchMusicResponse response) => this.response = response;
+    public void RespondWith(SearchCatalogResponse response) => this.response = response;
 
-    public Task<SearchMusicResponse> Handle(
-        SearchMusicRequest request,
+    public Task<SearchCatalogResponse> Handle(
+        SearchCatalogCommand request,
         CancellationToken cancellationToken = default)
     {
         requests.Add(request);

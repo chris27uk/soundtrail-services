@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Contracts;
 using Soundtrail.Domain;
 using Soundtrail.Services.Api;
-using Soundtrail.Services.Api.Features.Search.TrackSearch;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Api.Features.Search;
@@ -14,13 +14,14 @@ public sealed class SearchHttpRouteApiFactory : WebApplicationFactory<ApiAssembl
 {
     public ApiFakeSearchMusicHandler SearchMusicHandler { get; } = new();
 
-    public static SearchHttpRouteApiFactory WithResolvedSearch(string query, params SearchResult[] results)
+    public static SearchHttpRouteApiFactory WithResolvedSearch(string query, params SearchCatalogResult[] results)
     {
         var factory = new SearchHttpRouteApiFactory();
         factory.SearchMusicHandler.RespondWith(
-            SearchMusicResponse.Resolved(
+            new SearchCatalogResponse(
                 query,
-                results));
+                results,
+                new SearchDiscovery(false, null, null)));
         return factory;
     }
 
@@ -28,8 +29,10 @@ public sealed class SearchHttpRouteApiFactory : WebApplicationFactory<ApiAssembl
     {
         var factory = new SearchHttpRouteApiFactory();
         factory.SearchMusicHandler.RespondWith(
-            SearchMusicResponse.Pending(
-                query));
+            new SearchCatalogResponse(
+                query,
+                [],
+                new SearchDiscovery(true, "Local results incomplete", 60)));
         return factory;
     }
 
@@ -38,8 +41,8 @@ public sealed class SearchHttpRouteApiFactory : WebApplicationFactory<ApiAssembl
         builder.UseEnvironment("Testing");
         builder.ConfigureServices(services =>
         {
-            services.RemoveAll<IHandler<SearchMusicRequest, SearchMusicResponse>>();
-            services.AddSingleton<IHandler<SearchMusicRequest, SearchMusicResponse>>(SearchMusicHandler);
+            services.RemoveAll<IHandler<SearchCatalogCommand, SearchCatalogResponse>>();
+            services.AddSingleton<IHandler<SearchCatalogCommand, SearchCatalogResponse>>(SearchMusicHandler);
         });
     }
 }

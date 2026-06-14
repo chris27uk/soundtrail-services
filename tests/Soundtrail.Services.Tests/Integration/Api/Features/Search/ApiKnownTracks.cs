@@ -1,10 +1,39 @@
 using Soundtrail.Services.Api.Features.Search.Tracks;
 using Soundtrail.Services.Api.Features.Search.TrackSearch;
+using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Services.Tests.Integration.Api.Features.Search
 {
     internal static class ApiKnownTracks
     {
+        public static SearchCatalogResult MrBrightsideCatalogTrack() =>
+            new(
+                SearchResultType.Track,
+                "track_mr_brightside",
+                "Mr. Brightside",
+                "artist_the_killers",
+                "The Killers",
+                "album_hot_fuss",
+                "Hot Fuss",
+                PlayabilityStatus.Playable,
+                [ProviderName.Spotify, ProviderName.AppleMusic],
+                []);
+
+        public static SearchCatalogResult TheKillersArtist() =>
+            new(
+                SearchResultType.Artist,
+                "artist_the_killers",
+                "The Killers",
+                "artist_the_killers",
+                "The Killers",
+                null,
+                null,
+                PlayabilityStatus.Playable,
+                [ProviderName.Spotify, ProviderName.AppleMusic],
+                []);
+
         public static SearchResult MrBrightside() =>
             new(
                 TrackTitle.From("Mr. Brightside"),

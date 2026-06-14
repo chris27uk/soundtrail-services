@@ -126,14 +126,14 @@ public sealed class AsyncLookupHappyPathTestEnvironment : IAsyncDisposable
     private static void SeedLocalTrack(RavenEmbeddedTestDatabase raven)
     {
         using var session = raven.Store.OpenSession();
-        session.Store(new RavenTrackDocument
+        session.Store(new RavenTrackRecordDto
         {
-            Id = RavenTrackDocument.GetDocumentId("mc_track_1"),
+            Id = RavenTrackRecordDto.GetDocumentId("mc_track_1"),
             Title = "Rare Unknown Song",
             Artist = "Test Artist",
             AlbumTitle = "Rare Album",
             SearchText = string.Empty,
-            CanonicalMetadata = new RavenSongMetadataDocument
+            CanonicalMetadata = new RavenSongMetadataRecordDto
             {
                 Title = "Rare Unknown Song",
                 Artist = "Test Artist"

@@ -3,7 +3,7 @@ using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters.Indexes;
 
-internal sealed class RankedMusicCandidates_ByPlanning : AbstractIndexCreationTask<RavenRankedMusicCandidateDocument>
+internal sealed class RankedMusicCandidates_ByPlanning : AbstractIndexCreationTask<RavenRankedMusicCandidateRecordDto>
 {
     public RankedMusicCandidates_ByPlanning()
     {

@@ -14,8 +14,8 @@ public sealed class RavenMusicTrackStreamStore(
         MusicCatalogId musicCatalogId,
         CancellationToken cancellationToken)
     {
-        var documentId = RavenMusicTrackStreamDocument.GetDocumentId(musicCatalogId.Value);
-        var document = await session.LoadAsync<RavenMusicTrackStreamDocument>(documentId, cancellationToken);
+        var documentId = RavenMusicTrackStreamRecordDto.GetDocumentId(musicCatalogId.Value);
+        var document = await session.LoadAsync<RavenMusicTrackStreamRecordDto>(documentId, cancellationToken);
         return document is null
             ? new MusicTrackStream(0, [])
             : document.ToDomain();
@@ -29,9 +29,9 @@ public sealed class RavenMusicTrackStreamStore(
         CancellationToken cancellationToken)
     {
         session.Advanced.UseOptimisticConcurrency = true;
-        var documentId = RavenMusicTrackStreamDocument.GetDocumentId(musicCatalogId.Value);
-        var document = await session.LoadAsync<RavenMusicTrackStreamDocument>(documentId, cancellationToken)
-            ?? new RavenMusicTrackStreamDocument
+        var documentId = RavenMusicTrackStreamRecordDto.GetDocumentId(musicCatalogId.Value);
+        var document = await session.LoadAsync<RavenMusicTrackStreamRecordDto>(documentId, cancellationToken)
+            ?? new RavenMusicTrackStreamRecordDto
             {
                 Id = documentId,
                 MusicCatalogId = musicCatalogId.Value
@@ -48,7 +48,7 @@ public sealed class RavenMusicTrackStreamStore(
         }
 
         document.AppliedCommandIds.Add(commandId.Value);
-        document.Events.AddRange(events.Select(x => x.ToDocument()));
+        document.Events.AddRange(events.Select(x => x.ToRecordDto()));
         document.Version += events.Count;
 
         await session.StoreAsync(document, cancellationToken);
@@ -78,7 +78,7 @@ public sealed class RavenMusicTrackStreamStore(
     {
         var store = session.Advanced.DocumentStore;
         using var verificationSession = store.OpenAsyncSession();
-        var document = await verificationSession.LoadAsync<RavenMusicTrackStreamDocument>(documentId, cancellationToken);
+        var document = await verificationSession.LoadAsync<RavenMusicTrackStreamRecordDto>(documentId, cancellationToken);
         return document?.AppliedCommandIds.Contains(commandId.Value) == true;
     }
 }

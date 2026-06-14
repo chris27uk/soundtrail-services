@@ -72,7 +72,7 @@ internal sealed class TrackSearchTestEnvironment : IDisposable
                 ?? NormalizedSearchQuery.FromText($"{result.Title.Value} {result.Artist.Value}").Value;
 
             var document = Activator.CreateInstance(
-                RavenTrackDocumentType,
+                RavenTrackRecordDtoType,
                 BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public,
                 binder: null,
                 args: null,
@@ -94,14 +94,14 @@ internal sealed class TrackSearchTestEnvironment : IDisposable
         session.SaveChanges();
     }
 
-    private static readonly Type RavenTrackDocumentType = typeof(RavenTrackSearchIndex).Assembly
-        .GetType("Soundtrail.Services.Api.Infrastructure.Raven.Documents.RavenTrackDocument", throwOnError: true)!;
+    private static readonly Type RavenTrackRecordDtoType = typeof(RavenTrackSearchIndex).Assembly
+        .GetType("Soundtrail.Services.Api.Infrastructure.Raven.Documents.RavenTrackRecordDto", throwOnError: true)!;
 
     private static readonly Type TrackSearchIndexType = typeof(RavenTrackSearchIndex).Assembly
         .GetType("Soundtrail.Services.Api.Infrastructure.Raven.Indexes.TrackCatalogue_BySearchText", throwOnError: true)!;
 
     private static void Set(object target, string propertyName, object? value) =>
-        RavenTrackDocumentType
+        RavenTrackRecordDtoType
             .GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!
             .SetValue(target, value);
 

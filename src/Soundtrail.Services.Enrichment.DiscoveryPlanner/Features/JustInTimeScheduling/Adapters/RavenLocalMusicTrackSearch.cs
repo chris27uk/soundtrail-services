@@ -12,8 +12,8 @@ public sealed class RavenLocalMusicTrackSearch(IDocumentStore documentStore) : I
         CancellationToken cancellationToken)
     {
         using var session = documentStore.OpenAsyncSession();
-        var document = await session.LoadAsync<RavenTrackDocument>(
-            RavenTrackDocument.GetDocumentId(musicCatalogId.Value),
+        var document = await session.LoadAsync<RavenTrackRecordDto>(
+            RavenTrackRecordDto.GetDocumentId(musicCatalogId.Value),
             cancellationToken);
 
         if (document is null)

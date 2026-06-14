@@ -1,6 +1,6 @@
 using FluentAssertions;
 using Soundtrail.Domain.Model;
-using Soundtrail.Services.Api.Features.Search.TrackSearch;
+using Soundtrail.Domain.Search;
 using System.Net.Http.Json;
 
 namespace Soundtrail.Services.Tests.Integration.Api.Features.Search.KnownLocalTrack;
@@ -10,44 +10,24 @@ public sealed class HttpRouteResponsesTests
     [Fact]
     public async Task Given_A_Search_Request_When_Searching_Then_Query_Parameters_Are_Bound_Into_The_Handler_Request()
     {
-        await using var factory = SearchHttpRouteApiFactory.WithResolvedSearch("mr brightside", ApiKnownTracks.MrBrightside());
+        await using var factory = SearchHttpRouteApiFactory.WithResolvedSearch("mr brightside", ApiKnownTracks.MrBrightsideCatalogTrack());
         var client = factory.CreateClient();
 
-        await client.GetAsync("/search?q=mr%20brightside&limit=5&minConfidence=0.95");
+        await client.GetAsync("/search?q=mr%20brightside&types=track&playback=spotify,appleMusic&limit=5&offset=10");
 
         factory.SearchMusicHandler.Requests.Should().ContainSingle().Which.Should().BeEquivalentTo(
-            new SearchMusicRequest(
+            new SearchCatalogCommand(
                 NormalizedSearchQuery.FromText("mr brightside"),
-                Limit.From(5),
-                ConfidenceScore.From(0.95)));
-    }
-
-    [Fact]
-    public async Task Given_A_Resolved_Handler_Response_When_Searching_Then_Response_Status_Is_Mapped()
-    {
-        await using var factory = SearchHttpRouteApiFactory.WithResolvedSearch("mr brightside", ApiKnownTracks.MrBrightside());
-        var client = factory.CreateClient();
-
-        var response = await client.GetFromJsonAsync<SearchResponseContract>("/search?q=mr%20brightside");
-
-        response!.Status.Should().Be("resolved");
-    }
-
-    [Fact]
-    public async Task Given_A_Resolved_Handler_Response_When_Searching_Then_Response_Source_Is_Mapped()
-    {
-        await using var factory = SearchHttpRouteApiFactory.WithResolvedSearch("mr brightside", ApiKnownTracks.MrBrightside());
-        var client = factory.CreateClient();
-
-        var response = await client.GetFromJsonAsync<SearchResponseContract>("/search?q=mr%20brightside");
-
-        response!.Source.Should().Be("local");
+                SearchTypesFilter.Parse("track"),
+                PlaybackProviderFilter.Parse("spotify,appleMusic"),
+                SearchLimit.From(5),
+                SearchOffset.From(10)));
     }
 
     [Fact]
     public async Task Given_A_Resolved_Handler_Response_When_Searching_Then_Response_Query_Is_Mapped()
     {
-        await using var factory = SearchHttpRouteApiFactory.WithResolvedSearch("mr brightside", ApiKnownTracks.MrBrightside());
+        await using var factory = SearchHttpRouteApiFactory.WithResolvedSearch("mr brightside", ApiKnownTracks.MrBrightsideCatalogTrack());
         var client = factory.CreateClient();
 
         var response = await client.GetFromJsonAsync<SearchResponseContract>("/search?q=mr%20brightside");
@@ -58,7 +38,7 @@ public sealed class HttpRouteResponsesTests
     [Fact]
     public async Task Given_A_Resolved_Handler_Response_When_Searching_Then_Response_Contains_A_Single_Result()
     {
-        using var factory = SearchHttpRouteApiFactory.WithResolvedSearch("mr brightside", ApiKnownTracks.MrBrightside());
+        using var factory = SearchHttpRouteApiFactory.WithResolvedSearch("mr brightside", ApiKnownTracks.MrBrightsideCatalogTrack());
         var client = factory.CreateClient();
 
         var response = await client.GetFromJsonAsync<SearchResponseContract>("/search?q=mr%20brightside");
@@ -67,39 +47,56 @@ public sealed class HttpRouteResponsesTests
     }
 
     [Fact]
-    public async Task Given_A_Resolved_Handler_Response_When_Searching_Then_Result_Title_Is_Mapped()
+    public async Task Given_A_Resolved_Handler_Response_When_Searching_Then_Result_Type_Is_Mapped()
     {
-        using var factory = SearchHttpRouteApiFactory.WithResolvedSearch("mr brightside", ApiKnownTracks.MrBrightside());
+        using var factory = SearchHttpRouteApiFactory.WithResolvedSearch("mr brightside", ApiKnownTracks.MrBrightsideCatalogTrack());
         var client = factory.CreateClient();
 
         var response = await client.GetFromJsonAsync<SearchResponseContract>("/search?q=mr%20brightside");
 
-        response!.Results[0].Title.Should().Be("Mr. Brightside");
+        response!.Results[0].Type.Should().Be("track");
+    }
+
+    [Fact]
+    public async Task Given_A_Resolved_Handler_Response_When_Searching_Then_Result_Name_Is_Mapped()
+    {
+        using var factory = SearchHttpRouteApiFactory.WithResolvedSearch("mr brightside", ApiKnownTracks.MrBrightsideCatalogTrack());
+        var client = factory.CreateClient();
+
+        var response = await client.GetFromJsonAsync<SearchResponseContract>("/search?q=mr%20brightside");
+
+        response!.Results[0].Name.Should().Be("Mr. Brightside");
+    }
+
+    [Fact]
+    public async Task Given_A_Resolved_Handler_Response_When_Searching_Then_Discovery_Is_Not_Requesting_Work()
+    {
+        using var factory = SearchHttpRouteApiFactory.WithResolvedSearch("mr brightside", ApiKnownTracks.MrBrightsideCatalogTrack());
+        var client = factory.CreateClient();
+
+        var response = await client.GetFromJsonAsync<SearchResponseContract>("/search?q=mr%20brightside");
+
+        response!.Discovery.WillBeLookedUp.Should().BeFalse();
     }
 
     private sealed class SearchResponseContract
     {
-        public string Status { get; set; } = string.Empty;
-
-        public string Source { get; set; } = string.Empty;
-
         public string Query { get; set; } = string.Empty;
 
         public List<SearchResultContract> Results { get; set; } = [];
+
+        public SearchDiscoveryContract Discovery { get; set; } = new();
     }
 
     private sealed class SearchResultContract
     {
-        public string Title { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
 
-        public string Artist { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+    }
 
-        public string? Isrc { get; set; }
-
-        public string? Mbid { get; set; }
-
-        public string? AppleId { get; set; }
-
-        public string? SpotifyId { get; set; }
+    private sealed class SearchDiscoveryContract
+    {
+        public bool WillBeLookedUp { get; set; }
     }
 }

@@ -98,7 +98,7 @@ public sealed class MusicTrackProjectionStoreResponsesTests
             }
 
             using var session = raven!.Store.OpenAsyncSession();
-            var document = await session.LoadAsync<RavenTrackDocument>(RavenTrackDocument.GetDocumentId(musicCatalogId.Value));
+            var document = await session.LoadAsync<RavenTrackRecordDto>(RavenTrackRecordDto.GetDocumentId(musicCatalogId.Value));
             return document is null
                 ? null
                 : new ProjectedTrack(document.Title, document.Artist, document.AppleId, document.IsPlayable);

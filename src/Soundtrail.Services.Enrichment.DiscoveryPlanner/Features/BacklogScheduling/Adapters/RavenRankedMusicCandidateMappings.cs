@@ -7,7 +7,7 @@ namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogSchedu
 
 internal static class RavenRankedMusicCandidateMappings
 {
-    public static RankedMusicCandidate ToDomain(this RavenRankedMusicCandidateDocument document) =>
+    public static RankedMusicCandidate ToDomain(this RavenRankedMusicCandidateRecordDto document) =>
         new(
             MusicCatalogId.From(document.MusicCatalogId),
             document.RequestCount,
@@ -16,10 +16,10 @@ internal static class RavenRankedMusicCandidateMappings
             Enum.Parse<RankedMusicCandidateStatus>(document.Status, ignoreCase: true),
             document.NextEligibleAt);
 
-    public static RavenRankedMusicCandidateDocument ToDocument(this RankedMusicCandidate candidate) =>
+    public static RavenRankedMusicCandidateRecordDto ToRecordDto(this RankedMusicCandidate candidate) =>
         new()
         {
-            Id = RavenRankedMusicCandidateDocument.GetDocumentId(candidate.MusicCatalogId.Value),
+            Id = RavenRankedMusicCandidateRecordDto.GetDocumentId(candidate.MusicCatalogId.Value),
             MusicCatalogId = candidate.MusicCatalogId.Value,
             RequestCount = candidate.RequestCount,
             HighestTrustLevelSeen = candidate.HighestTrustLevelSeen,
@@ -28,9 +28,9 @@ internal static class RavenRankedMusicCandidateMappings
             NextEligibleAt = candidate.NextEligibleAt
         };
 
-    public static void ApplyTo(this RankedMusicCandidate candidate, RavenRankedMusicCandidateDocument document)
+    public static void ApplyTo(this RankedMusicCandidate candidate, RavenRankedMusicCandidateRecordDto document)
     {
-        document.Id = RavenRankedMusicCandidateDocument.GetDocumentId(candidate.MusicCatalogId.Value);
+        document.Id = RavenRankedMusicCandidateRecordDto.GetDocumentId(candidate.MusicCatalogId.Value);
         document.MusicCatalogId = candidate.MusicCatalogId.Value;
         document.RequestCount = candidate.RequestCount;
         document.HighestTrustLevelSeen = candidate.HighestTrustLevelSeen;

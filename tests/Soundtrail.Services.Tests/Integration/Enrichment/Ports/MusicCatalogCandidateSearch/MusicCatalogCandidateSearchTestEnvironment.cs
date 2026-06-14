@@ -64,7 +64,7 @@ internal sealed class MusicCatalogCandidateSearchTestEnvironment : IDisposable
         using var session = raven.Store.OpenSession();
         session.Advanced.WaitForIndexesAfterSaveChanges();
 
-        var document = new RavenTrackDocument
+        var document = new RavenTrackRecordDto
         {
             Id = $"track-catalogue/{musicCatalogId}",
             Title = "Fixture Track",

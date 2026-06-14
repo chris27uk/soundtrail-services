@@ -9,9 +9,10 @@ The goal is consistency more than cleverness. New code should fit the existing s
 - Keep the public API request path local, fast, and predictable.
 - Put business decisions in application/domain code, not in endpoints or infrastructure adapters.
 - Prefer small, explicit types over primitive-heavy code.
+- Keep a hard separation between domain models and DTOs.
 - Follow outside-in TDD.
 - Use custom fakes and sociable unit tests by default.
-- Add integration tests only where they prove a fake matches a real adapter or where infrastructure behavior matters.
+- Add integration tests where they prove a fake matches a real adapter or where infrastructure behavior matters.
 
 ## Solution Shape
 
@@ -25,6 +26,31 @@ The active projects in this solution are:
 Treat these as the authoritative structure for new work unless the solution is deliberately reorganized.
 
 ## Layer Responsibilities
+
+### `Soundtrail.Contracts`
+
+Use this project for shared transport contracts only.
+
+Allowed here:
+
+- shared request DTOs
+- shared response DTOs
+- shared integration message DTOs
+- shared transport enums or identifiers that exist only to support serialization contracts
+
+Rules:
+
+- shared DTO types must end with `Dto`
+- shared DTO types must be serialization-friendly and transport-focused
+- shared DTOs must not contain business behavior
+
+Not allowed here:
+
+- handlers
+- business rules
+- persistence documents
+- RavenDB or ASP.NET-specific types
+- domain models that should live in `Soundtrail.Domain`
 
 ### `Soundtrail.Services`
 
@@ -93,6 +119,8 @@ Dependencies should point inward toward business behavior.
 - `Enrichment.Scheduler` may depend on `Enrichment` and shared core code
 - `Enrichment` may depend on `Services` where shared message/value types are needed
 - core business projects must not depend on API or infrastructure projects
+- shared DTOs should depend inward on domain concepts only when that dependency is deliberate and stable
+- shared domain objects belong in `Soundtrail.Domain`, not `Soundtrail.Contracts`
 
 If a type only exists to satisfy HTTP, Raven, Azure Service Bus, or host startup, it should not live in a core business project.
 
@@ -171,6 +199,25 @@ Value types should:
 
 Do not spread validation rules for the same concept across multiple layers.
 
+## Domain Models And DTOs
+
+Domain commands, responses, events, value types, and port contracts belong in a business-owned project.
+
+Rules:
+
+- domain objects are used by technology-independent handlers and business logic
+- domain objects must not be designed around serialization concerns
+- domain objects are never the place for HTTP, RavenDB, Service Bus, or other transport/storage DTO concerns
+- any DTO must end with `Dto`
+- shared DTOs must live in `Soundtrail.Contracts` and end with `Dto`
+- DTOs belong in API, messaging, persistence, or other infrastructure-owned areas
+- ports must expose domain objects, never DTOs
+- endpoints and adapters are responsible for mapping between DTOs and domain objects
+- shared domain commands, responses, events, value types, and port contracts must live in `Soundtrail.Domain`
+- persisted infrastructure DTOs should use a `RecordDto` suffix by default
+
+If a type exists because JSON, RavenDB, or messaging needs a particular shape, it is a DTO and should not be passed through a business port.
+
 ## Ports And Adapters
 
 Ports define what the business layer needs. Adapters satisfy those ports.
@@ -181,6 +228,7 @@ Guidelines:
 - keep port interfaces small and use-case oriented
 - keep adapter-specific mapping and SDK code in the API or worker infrastructure project
 - do not leak Raven or Azure SDK types through ports
+- do not leak DTOs through ports
 
 ## Error Handling
 
@@ -276,6 +324,16 @@ Where a fake represents an infrastructure adapter, add contract tests that run a
 - the real adapter
 
 Contract tests should prove equivalent observable behavior, not internal implementation details.
+
+These adapter contract tests are mandatory.
+
+Rules:
+
+- every adapter port with a fake must have integration coverage
+- the fake and real implementation must be exercised by the same test cases
+- prefer `Theory` or equivalent shared test fixtures so the assertions stay identical across modes
+- do not write one test class for the fake and a separate loosely-mirrored class for the real adapter when a shared contract test is possible
+- a fake is not complete until the shared fake/real contract test exists
 
 ### Test Organization
 

@@ -3,7 +3,7 @@ using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 
 namespace Soundtrail.Services.Api.Infrastructure.Raven.Indexes;
 
-internal sealed class Albums_ByMusicBrainzReleaseId : AbstractIndexCreationTask<CatalogAlbumDocument>
+internal sealed class Albums_ByMusicBrainzReleaseId : AbstractIndexCreationTask<CatalogAlbumRecordDto>
 {
     public Albums_ByMusicBrainzReleaseId()
     {

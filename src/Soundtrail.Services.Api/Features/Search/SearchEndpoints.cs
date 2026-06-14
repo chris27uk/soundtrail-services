@@ -1,5 +1,7 @@
+using Soundtrail.Contracts.Common;
 using Soundtrail.Domain;
-using Soundtrail.Services.Api.Features.Search.TrackSearch;
+using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Services.Api.Features.Search;
 
@@ -11,19 +13,23 @@ public static class SearchEndpoints
             "/search",
             async (
                 string? q,
+                string? types,
+                string? playback,
                 int? limit,
-                double? minConfidence,
-                IHandler<SearchMusicRequest, SearchMusicResponse> handler,
+                int? offset,
+                IHandler<SearchCatalogCommand, SearchCatalogResponse> handler,
                 CancellationToken cancellationToken) =>
             {
-                SearchMusicRequest request;
+                SearchCatalogCommand request;
 
                 try
                 {
-                    request = new SearchMusicRequest(
-                        q,
-                        Limit.From(limit),
-                        minConfidence is null ? null : ConfidenceScore.From(minConfidence.Value));
+                    request = new SearchCatalogCommand(
+                        NormalizedSearchQuery.FromText(q ?? throw new ArgumentException("Query is required.", nameof(q))),
+                        SearchTypesFilter.Parse(types),
+                        PlaybackProviderFilter.Parse(playback),
+                        SearchLimit.From(limit),
+                        SearchOffset.From(offset));
                 }
                 catch (Exception ex) when (
                     ex is ArgumentException or ArgumentOutOfRangeException)
@@ -38,34 +44,47 @@ public static class SearchEndpoints
         return endpoints;
     }
 
-    private static object ToContract(SearchMusicResponse response) =>
-        response.Status switch
+    private static object ToContract(SearchCatalogResponse response) => new
+    {
+        query = response.Query,
+        results = response.Results.Select(ToContract),
+        discovery = new
         {
-            ResolutionStatus.Resolved => new
-            {
-                status = "resolved",
-                source = response.Source,
-                query = response.Query,
-                results = response.Results.Select(ToContract)
-            },
-            _ => new
-            {
-                status = "pending",
-                source = response.Source,
-                query = response.Query,
-                retryAfterSeconds = response.RetryAfterSeconds,
-                results = Array.Empty<object>()
-            }
+            willBeLookedUp = response.Discovery.WillBeLookedUp,
+            reason = response.Discovery.Reason,
+            retryAfterSeconds = response.Discovery.RetryAfterSeconds
+        }
+    };
+
+    private static object ToContract(SearchCatalogResult result) => new
+    {
+        type = ToContract(result.Type),
+        id = result.Id,
+        name = result.Name,
+        artistId = result.ArtistId,
+        artistName = result.ArtistName,
+        albumId = result.AlbumId,
+        albumName = result.AlbumName,
+        playabilityStatus = result.PlayabilityStatus.ToString(),
+        availableProviders = result.AvailableProviders.Select(ToContract),
+        terminallyUnavailableProviders = result.TerminallyUnavailableProviders.Select(ToContract)
+    };
+
+    private static string ToContract(ProviderName provider) =>
+        provider.Value switch
+        {
+            "Spotify" => "spotify",
+            "AppleMusic" => "appleMusic",
+            "YoutubeMusic" => "youtubeMusic",
+            _ => provider.Value
         };
 
-    private static object ToContract(SearchResult result) => new
-    {
-        title = result.Title.Value,
-        artist = result.Artist.Value,
-        isrc = result.Isrc?.Value,
-        mbid = result.Mbid?.Value,
-        appleId = result.AppleId?.Value,
-        spotifyId = result.SpotifyId?.Value,
-        confidence = result.Confidence.Value
-    };
+    private static string ToContract(SearchResultType type) =>
+        type switch
+        {
+            SearchResultType.Artist => "artist",
+            SearchResultType.Album => "album",
+            SearchResultType.Track => "track",
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
+        };
 }

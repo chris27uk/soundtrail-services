@@ -3,7 +3,7 @@ using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 
 namespace Soundtrail.Services.Api.Infrastructure.Raven.Indexes;
 
-internal sealed class Search_Albums : AbstractIndexCreationTask<CatalogAlbumDocument>
+internal sealed class Search_Albums : AbstractIndexCreationTask<CatalogAlbumRecordDto>
 {
     public Search_Albums()
     {
@@ -15,7 +15,9 @@ internal sealed class Search_Albums : AbstractIndexCreationTask<CatalogAlbumDocu
                             album.Name,
                             album.NormalizedName,
                             album.ArtistName,
-                            album.MusicBrainzReleaseId
+                            album.MusicBrainzReleaseId,
+                            album.AvailableProviders,
+                            album.TerminallyUnavailableProviders
                         };
 
         Index(x => x.Name, FieldIndexing.Search);
