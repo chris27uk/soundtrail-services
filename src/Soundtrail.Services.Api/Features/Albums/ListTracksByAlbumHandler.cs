@@ -1,4 +1,7 @@
-namespace Soundtrail.Domain.CatalogBrowsing;
+using Soundtrail.Domain;
+using Soundtrail.Domain.CatalogBrowsing;
+
+namespace Soundtrail.Services.Api.Features.Albums;
 
 public sealed class ListTracksByAlbumHandler(ICatalogReadPort catalogReadPort) : IHandler<ListTracksByAlbumCommand, AlbumTracksResponse?>
 {

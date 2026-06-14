@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Soundtrail.Domain.Commands;
 using Soundtrail.Domain;
+using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.CatalogBrowsing;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.Albums;

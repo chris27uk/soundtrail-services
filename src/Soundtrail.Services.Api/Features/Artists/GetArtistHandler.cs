@@ -1,4 +1,7 @@
-namespace Soundtrail.Domain.CatalogBrowsing;
+using Soundtrail.Domain;
+using Soundtrail.Domain.CatalogBrowsing;
+
+namespace Soundtrail.Services.Api.Features.Artists;
 
 public sealed class GetArtistHandler(ICatalogReadPort catalogReadPort) : IHandler<GetArtistCommand, ArtistDetailsResponse?>
 {

@@ -18,10 +18,10 @@ The goal is consistency more than cleverness. New code should fit the existing s
 
 The active projects in this solution are:
 
-- `src/Soundtrail.Services`
+- `src/Soundtrail.Domain`
+- `src/Soundtrail.Contracts`
 - `src/Soundtrail.Services.Api`
-- `src/Soundtrail.Services.Enrichment`
-- `src/Soundtrail.Services.Enrichment.Scheduler`
+- `src/Soundtrail.Services.Enrichment.*`
 
 Treat these as the authoritative structure for new work unless the solution is deliberately reorganized.
 
@@ -52,20 +52,22 @@ Not allowed here:
 - RavenDB or ASP.NET-specific types
 - domain models that should live in `Soundtrail.Domain`
 
-### `Soundtrail.Services`
+### `Soundtrail.Domain`
 
-Use this project for core application and domain behavior that is shared by the API path.
+Use this project for core domain models and business-owned contracts.
 
 Allowed here:
 
-- handlers
 - request/response models
+- commands
+- events
 - domain value types
 - core business rules
 - small shared abstractions such as ports and ids
 
 Not allowed here:
 
+- handlers
 - ASP.NET types
 - Raven, Azure Service Bus, or other infrastructure SDK types
 - configuration binding
@@ -115,9 +117,9 @@ As worker behavior expands, keep provider orchestration and host concerns here, 
 
 Dependencies should point inward toward business behavior.
 
-- `Api` may depend on `Services`
+- `Api` may depend on `Soundtrail.Domain`
 - `Enrichment.Scheduler` may depend on `Enrichment` and shared core code
-- `Enrichment` may depend on `Services` where shared message/value types are needed
+- `Enrichment` may depend on `Soundtrail.Domain` where shared message/value types are needed
 - core business projects must not depend on API or infrastructure projects
 - shared DTOs should depend inward on domain concepts only when that dependency is deliberate and stable
 - shared domain objects belong in `Soundtrail.Domain`, not `Soundtrail.Contracts`
@@ -139,7 +141,8 @@ Avoid dumping unrelated types into broad utility folders.
 When adding a new feature:
 
 - put the endpoint in the API feature folder
-- put the handler and business models in the core project
+- put the handler in the owning feature project, not in `Soundtrail.Domain`
+- put the business models in `Soundtrail.Domain`
 - put adapter implementations in the relevant infrastructure area
 - mirror the feature structure in tests
 - place handlers directly in the feature folder root, not in nested subfolders
@@ -185,6 +188,7 @@ Handlers should:
 - keep flow explicit and readable
 - return domain/application results rather than HTTP-specific results
 - live at the root of their feature folder
+- live outside `Soundtrail.Domain`
 
 Handlers should not:
 
@@ -192,6 +196,7 @@ Handlers should not:
 - know about ASP.NET response details
 - hide core decisions behind unnecessary abstraction
 - be placed in nested subfolders under a feature
+- live in `Soundtrail.Domain`
 
 ## Value Types And Models
 

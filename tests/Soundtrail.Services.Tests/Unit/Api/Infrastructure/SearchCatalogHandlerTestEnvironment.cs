@@ -1,6 +1,7 @@
 using Soundtrail.Domain;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Search;
+using Soundtrail.Services.Api.Features.Search;
 using Soundtrail.Services.Api.Features.Search.Queueing;
 using Soundtrail.Services.Tests.Integration.Api.Features.Search;
 
