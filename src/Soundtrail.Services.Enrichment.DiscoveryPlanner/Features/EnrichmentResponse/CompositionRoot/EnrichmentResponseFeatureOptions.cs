@@ -5,5 +5,7 @@ namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentRes
     public sealed class EnrichmentResponseFeatureOptions
     {
         public Action<IServiceCollection>? ConfigureDependencies { get; set; }
+
+        public bool IncludeProjectionHostedService { get; set; } = true;
     }
 }

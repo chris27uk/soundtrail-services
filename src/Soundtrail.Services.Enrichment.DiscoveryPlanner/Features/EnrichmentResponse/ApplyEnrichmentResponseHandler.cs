@@ -9,7 +9,6 @@ namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentRes
 
 public sealed class ApplyEnrichmentResponseHandler(
     IMusicTrackEventRepository eventRepository,
-    IMusicTrackProjectionStore projectionStore,
     IProviderSnapshotStore snapshotStore)
 {
     public async Task<EnrichmentOrchestrationResult> Handle(
@@ -33,9 +32,6 @@ public sealed class ApplyEnrichmentResponseHandler(
                 response.CreatedAt,
                 JsonSerializer.Serialize(ToDto(response))),
             cancellationToken);
-
-        var updatedStream = await eventRepository.LoadEventsAsync(response.MusicCatalogId, cancellationToken);
-        await projectionStore.StoreAsync(response.MusicCatalogId, updatedStream, cancellationToken);
 
         return new EnrichmentOrchestrationResult(
             append.Appended ? append.AppendedEvents : Array.Empty<IMusicTrackEvent>());

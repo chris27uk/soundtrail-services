@@ -78,7 +78,7 @@ public sealed class MusicTrackProjectionStoreResponsesTests
         private async Task StoreRavenAsync(MusicCatalogId musicCatalogId, MusicTrackStream stream)
         {
             using var session = raven!.Store.OpenAsyncSession();
-            var store = new RavenMusicTrackProjectionStore(session);
+            var store = new RavenMusicTrackProjectionStore(session, new MusicTrackProjectionApplier());
             await store.StoreAsync(musicCatalogId, stream, CancellationToken.None);
             await session.SaveChangesAsync();
         }

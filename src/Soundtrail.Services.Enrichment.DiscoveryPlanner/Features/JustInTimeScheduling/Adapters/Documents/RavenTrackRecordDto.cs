@@ -30,6 +30,8 @@ public sealed class RavenTrackRecordDto
 
     public bool IsPlayable { get; set; }
 
+    public int ProjectionVersion { get; set; }
+
     public static string GetDocumentId(string stableId) => $"track-catalogue/{stableId}";
 
     public static string BuildSearchText(string title, string artist) =>

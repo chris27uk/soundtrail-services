@@ -16,14 +16,6 @@ public sealed class EnrichmentResponseListenerTests
     }
 
     [Fact]
-    public async Task Given_A_MusicBrainz_Response_Dto_When_Handled_Then_A_Projection_Is_Created()
-    {
-        var env = EnrichmentResponseListenerTestEnvironment.WithAMusicBrainzResponseDto();
-        await env.HandleMusicBrainzResponse();
-        env.ProjectionStore.Projections.Should().ContainKey("mc_track_1");
-    }
-
-    [Fact]
     public async Task Given_A_MusicBrainz_Response_Dto_When_Handled_Then_A_MusicBrainz_Snapshot_Is_Saved()
     {
         var env = EnrichmentResponseListenerTestEnvironment.WithAMusicBrainzResponseDto();
@@ -37,22 +29,6 @@ public sealed class EnrichmentResponseListenerTests
         var env = EnrichmentResponseListenerTestEnvironment.WithAMusicBrainzResponseDto();
         await env.HandleMusicBrainzResponse();
         env.StreamStore.Streams["mc_track_1"].Events.Should().ContainItemsAssignableTo<MinimalTrackInfoDiscovered>();
-    }
-
-    [Fact]
-    public async Task Given_A_PlaybackReferences_Response_Dto_When_Handled_Then_The_Track_Becomes_Playable()
-    {
-        var env = EnrichmentResponseListenerTestEnvironment.WithAPlaybackReferencesResponseAfterCanonicalMetadata();
-        await env.HandlePlaybackReferencesResponseAfterCanonicalMetadata();
-        env.ProjectionStore.Projections["mc_track_1"].IsPlayable.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task Given_A_PlaybackReferences_Response_Dto_When_Handled_Then_The_Apple_Reference_Is_Stored()
-    {
-        var env = EnrichmentResponseListenerTestEnvironment.WithAPlaybackReferencesResponseAfterCanonicalMetadata();
-        await env.HandlePlaybackReferencesResponseAfterCanonicalMetadata();
-        env.ProjectionStore.Projections["mc_track_1"].Apple!.ExternalId.Should().Be("apple-1");
     }
 
     [Fact]

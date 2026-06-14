@@ -11,20 +11,16 @@ internal sealed class EnrichmentResponseListenerTestEnvironment
     private EnrichmentResponseListenerTestEnvironment()
     {
         StreamStore = new MusicTrackStreamStoreFake();
-        ProjectionStore = new MusicTrackProjectionStoreFake();
         SnapshotStore = new ProviderSnapshotStoreFake();
         Listener = new EnrichmentResponseListener(
             new ApplyEnrichmentResponseHandler(
                 StreamStore,
-                ProjectionStore,
                 SnapshotStore));
     }
 
     public EnrichmentResponseListener Listener { get; }
 
     public MusicTrackStreamStoreFake StreamStore { get; }
-
-    public MusicTrackProjectionStoreFake ProjectionStore { get; }
 
     public ProviderSnapshotStoreFake SnapshotStore { get; }
 

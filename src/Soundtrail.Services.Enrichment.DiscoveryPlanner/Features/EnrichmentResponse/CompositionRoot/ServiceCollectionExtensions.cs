@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.CompositionRoot;
@@ -16,6 +17,13 @@ public static class ServiceCollectionExtensions
 
         services.TryAddScoped<ApplyEnrichmentResponseHandler>();
         services.TryAddScoped<EnrichmentResponseListener>();
+        services.TryAddSingleton<MusicTrackProjectionApplier>();
+
+        if (options.IncludeProjectionHostedService)
+        {
+            services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, MusicTrackProjectionSubscriptionHostedService>());
+        }
+
         return services;
     }
 }
