@@ -87,7 +87,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
         });
 
         var app = builder.Build();
-        app.MapSearchEndpoints();
+        app.MapSearchCatalogEndpoints();
         await app.StartAsync();
 
         return new SearchOutsideInTestEnvironment(app, app.GetTestClient(), pipelineMessageCapture, raven);

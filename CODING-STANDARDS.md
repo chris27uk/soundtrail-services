@@ -135,29 +135,75 @@ Examples:
 - `Features/Search/...`
 - `Features/JustInTimeScheduling/...`
 - `Features/BacklogScheduling/...`
+- `Features/Albums/GetAlbum/...`
 
 Avoid dumping unrelated types into broad utility folders.
 
+Area folders may group related use-case features, but the concrete feature folder should still be the use case itself.
+
+Examples:
+
+- `Features/Artists/GetArtist/...`
+- `Features/Artists/ListTracksByArtist/...`
+- `Features/Albums/ListTracksByAlbum/...`
+
+If a folder does not contain a handler or other entrypoint in its root, it is not a feature folder. It should be a descriptive subfolder inside a concrete feature folder.
+
 When adding a new feature:
 
-- put the endpoint in the API feature folder
+- put the endpoint adapter inside the owning API feature folder
 - put the handler in the owning feature project, not in `Soundtrail.Domain`
 - put the business models in `Soundtrail.Domain`
 - put adapter implementations in the relevant infrastructure area
 - mirror the feature structure in tests
+- keep exactly one file in the concrete feature folder root: the handler or other entrypoint
 - place handlers directly in the feature folder root, not in nested subfolders
+- give each concrete feature its own `CompositionRoot` folder
+- do not share a `CompositionRoot` folder between sibling features
+- place `ServiceCollectionExtensions` and feature wiring options in that feature's own `CompositionRoot` folder
+- place adapter implementations in an `Adapters` folder
+- place supporting non-entrypoint files in a descriptive folder named for their role
+- use folders such as `Model`, `Ports`, `Contracts`, `Policies`, or `Mapping` when they describe the support types clearly
 
 Handler placement is a hard rule.
 
 Examples:
 
-- `Features/Search/SearchCatalogHandler.cs`
+- `Features/Search/SearchCatalog/SearchCatalogHandler.cs`
+- `Features/Search/SearchCatalog/CompositionRoot/ServiceCollectionExtensions.cs`
+- `Features/Search/SearchCatalog/Adapters/SearchCatalogEndpoints.cs`
 - `Features/JustInTimeScheduling/LookupMusicRequestHandler.cs`
+- `Features/Search/SearchMusic/Ports/ITrackSearchPort.cs`
+- `Shared/ProviderContract.cs`
+
+Only the single feature entrypoint belongs in the concrete feature folder root.
+
+Allowed examples:
+
+- handlers
+- HTTP endpoints
+- queue listeners
+- health checks
 
 Do not place handlers in nested folders such as:
 
 - `Features/Search/Handlers/...`
 - `Features/EnrichmentResponse/Application/...`
+
+Do not place support files directly in a feature folder root, including:
+
+- `ServiceCollectionExtensions`
+- feature options
+- helper mappers
+- adapter implementations
+- port interfaces
+- requests and responses that are not entrypoints
+- value objects and supporting model types
+- DTOs
+- indexes
+- documents
+
+For API features, HTTP endpoint classes are adapters. If a feature has both a handler and HTTP endpoint, keep the handler in the root and place the endpoint under `Adapters`.
 
 ## Endpoints
 
@@ -247,6 +293,8 @@ Guidelines:
 - define ports in the business-owned project
 - keep port interfaces small and use-case oriented
 - keep adapter-specific mapping and SDK code in the API or worker infrastructure project
+- place concrete adapters in an `Adapters` folder under the owning feature when they are feature-specific
+- place adapter-owned DTOs, documents, indexes, and transport helpers under descriptive subfolders beneath `Adapters` when needed
 - do not leak Raven or Azure SDK types through ports
 - do not leak DTOs through ports
 

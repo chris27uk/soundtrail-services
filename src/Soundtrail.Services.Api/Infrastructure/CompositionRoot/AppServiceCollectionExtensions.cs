@@ -1,9 +1,14 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Domain.CatalogBrowsing;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Api.Features.Health;
-using Soundtrail.Services.Api.Features.Search;
+using Soundtrail.Services.Api.Features.Albums.GetAlbum.CompositionRoot;
+using Soundtrail.Services.Api.Features.Albums.ListTracksByAlbum.CompositionRoot;
+using Soundtrail.Services.Api.Features.Artists.GetArtist.CompositionRoot;
+using Soundtrail.Services.Api.Features.Artists.ListTracksByArtist.CompositionRoot;
+using Soundtrail.Services.Api.Features.Health.TrackSearchReady.CompositionRoot;
+using Soundtrail.Services.Api.Features.Search.SearchCatalog.CompositionRoot;
 using Soundtrail.Services.Api.Features.Search.Queueing;
+using Soundtrail.Services.Api.Features.Tracks.GetTrack.CompositionRoot;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Soundtrail.Services.Api.Infrastructure.Raven;
 using Soundtrail.Services.Api.Infrastructure.Time;
@@ -27,14 +32,21 @@ public static class AppServiceCollectionExtensions
         options.ConfigureClockDependencies?.Invoke(services);
         services.TryAddSingleton<IClockPort, SystemClock>();
 
-        services.AddHealthFeature();
-        services.AddSearchFeature(x =>
+        services.AddTrackSearchReadyFeature();
+        services.AddGetArtistFeature();
+        services.AddListTracksByArtistFeature();
+        services.AddGetAlbumFeature();
+        services.AddListTracksByAlbumFeature();
+        services.AddGetTrackFeature();
+        services.AddSearchCatalogFeature(x =>
         {
             x.ConfigureQueueingDependencies = options.ConfigureQueueingDependencies ?? (svc =>
             {
                 if (options.UseInMemoryQueueing)
                 {
                     svc.TryAddSingleton<IEnqueueMusicRequest, InMemoryEnqueueMusicRequest>();
+                    svc.TryAddSingleton<IQueueLookupMusicRequest>(sp => sp.GetRequiredService<IEnqueueMusicRequest>());
+                    svc.TryAddSingleton<Soundtrail.Domain.Commands.IQueueLookupMusicRequestPort>(sp => sp.GetRequiredService<IQueueLookupMusicRequest>());
                 }
                 else
                 {

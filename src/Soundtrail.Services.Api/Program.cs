@@ -14,8 +14,10 @@ builder.Services.AddApiAppServices(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 app.MapDefaultEndpoints();
-app.MapSearchEndpoints();
-app.MapArtistEndpoints();
-app.MapAlbumEndpoints();
-app.MapTrackEndpoints();
+app.MapSearchCatalogEndpoints();
+app.MapGetArtistEndpoints();
+app.MapListTracksByArtistEndpoints();
+app.MapGetAlbumEndpoints();
+app.MapListTracksByAlbumEndpoints();
+app.MapGetTrackEndpoints();
 app.Run();

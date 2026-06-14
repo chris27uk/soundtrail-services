@@ -18,6 +18,8 @@ public static class ServiceBusServiceCollectionExtensions
     {
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
         services.TryAddScoped<IEnqueueMusicRequest, WolverineEnqueueMusicRequest>();
+        services.TryAddScoped<IQueueLookupMusicRequest>(sp => sp.GetRequiredService<IEnqueueMusicRequest>());
+        services.TryAddScoped<Soundtrail.Domain.Commands.IQueueLookupMusicRequestPort>(sp => sp.GetRequiredService<IQueueLookupMusicRequest>());
         return services;
     }
 

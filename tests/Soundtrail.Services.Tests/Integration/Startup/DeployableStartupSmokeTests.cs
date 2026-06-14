@@ -41,7 +41,7 @@ public sealed class DeployableStartupSmokeTests
             app =>
             {
                 app.MapDefaultEndpoints();
-                app.MapSearchEndpoints();
+                app.MapSearchCatalogEndpoints();
             },
             useEmbeddedRaven: true);
 

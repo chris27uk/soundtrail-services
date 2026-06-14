@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Soundtrail.Services.Enrichment.Cdc.Features;
+using Soundtrail.Services.Enrichment.Cdc.Features.CompositionRoot;
 using Soundtrail.Services.Enrichment.Cdc.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Cdc.Infrastructure.Raven;
 
