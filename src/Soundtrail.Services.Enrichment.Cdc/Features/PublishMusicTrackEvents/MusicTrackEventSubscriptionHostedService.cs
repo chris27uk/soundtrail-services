@@ -10,7 +10,7 @@ using Soundtrail.Contracts.IntegrationMessaging.Events;
 using System.Text.Json;
 using Wolverine;
 
-namespace Soundtrail.Services.Enrichment.Cdc.Infrastructure.Cdc;
+namespace Soundtrail.Services.Enrichment.Cdc.Features.PublishMusicTrackEvents;
 
 public sealed class MusicTrackEventSubscriptionHostedService(
     IDocumentStore documentStore,

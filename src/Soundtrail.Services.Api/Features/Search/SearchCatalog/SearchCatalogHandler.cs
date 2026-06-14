@@ -2,7 +2,7 @@ using Soundtrail.Domain;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Search;
 
-namespace Soundtrail.Services.Api.Features.Search;
+namespace Soundtrail.Services.Api.Features.Search.SearchCatalog;
 
 public sealed class SearchCatalogHandler(
     ICatalogSearchPort catalogSearch,

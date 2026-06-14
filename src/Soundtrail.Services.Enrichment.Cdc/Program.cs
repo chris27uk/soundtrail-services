@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Builder;
-using Soundtrail.Services.Enrichment.Cdc;
+using Soundtrail.Services.Enrichment.Cdc.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Enrichment.Cdc.Infrastructure.Messaging;
 using Soundtrail.Services.ServiceDefaults;
 using Wolverine;

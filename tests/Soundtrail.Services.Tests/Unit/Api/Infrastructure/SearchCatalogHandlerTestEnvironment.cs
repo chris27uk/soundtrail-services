@@ -1,8 +1,8 @@
 using Soundtrail.Domain;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Api.Features.Search;
-using Soundtrail.Services.Api.Features.Search.Adapters;
+using Soundtrail.Services.Api.Features.Search.SearchCatalog;
+using Soundtrail.Services.Api.Features.Search.SearchCatalog.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Features.Search;
 
 namespace Soundtrail.Services.Tests.Unit.Api.Infrastructure;

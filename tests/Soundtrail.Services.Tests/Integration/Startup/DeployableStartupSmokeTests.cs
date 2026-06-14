@@ -1,10 +1,10 @@
 using FluentAssertions;
 using Microsoft.Extensions.Hosting;
-using Soundtrail.Services.Api.Features.Search;
-using Soundtrail.Services.Api.Features.Search.Adapters;
+using Soundtrail.Services.Api.Features.Search.SearchCatalog.Adapters;
 using Soundtrail.Services.Api.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Cdc;
+using Soundtrail.Services.Enrichment.Cdc.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Enrichment.Cdc.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Messaging;
