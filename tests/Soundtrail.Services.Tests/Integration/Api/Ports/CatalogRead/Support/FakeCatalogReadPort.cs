@@ -1,7 +1,7 @@
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.CatalogBrowsing;
 
-namespace Soundtrail.Services.Tests.Integration.Api.Ports.CatalogRead;
+namespace Soundtrail.Services.Tests.Integration.Api.Ports.CatalogRead.Support;
 
 internal sealed class FakeCatalogReadPort : ICatalogReadPort
 {
@@ -26,20 +26,20 @@ internal sealed class FakeCatalogReadPort : ICatalogReadPort
     }
 
     public Task<ArtistDetailsResponse?> GetArtistAsync(ArtistId artistId, CancellationToken cancellationToken) =>
-        Task.FromResult(artist?.ArtistId == artistId ? artist : null);
+        Task.FromResult(this.artist?.ArtistId == artistId ? this.artist : null);
 
     public Task<IReadOnlyList<TrackSummary>> ListTracksByArtistAsync(ArtistId artistId, CancellationToken cancellationToken) =>
         Task.FromResult(this.artistTracks);
 
     public Task<AlbumDetailsResponse?> GetAlbumAsync(ArtistId artistId, AlbumId albumId, CancellationToken cancellationToken) =>
-        Task.FromResult(album?.ArtistId == artistId && album.AlbumId == albumId ? album : null);
+        Task.FromResult(this.album?.ArtistId == artistId && this.album.AlbumId == albumId ? this.album : null);
 
     public Task<AlbumTracksResponse?> ListTracksByAlbumAsync(ArtistId artistId, AlbumId albumId, CancellationToken cancellationToken) =>
         Task.FromResult(
-            album?.ArtistId == artistId && album.AlbumId == albumId
-                ? new AlbumTracksResponse(artistId, album.ArtistName, albumId, album.Name, this.albumTracks)
+            this.album?.ArtistId == artistId && this.album.AlbumId == albumId
+                ? new AlbumTracksResponse(artistId, this.album.ArtistName, albumId, this.album.Name, this.albumTracks)
                 : null);
 
     public Task<TrackDetailsResponse?> GetTrackAsync(ArtistId artistId, AlbumId albumId, TrackId trackId, CancellationToken cancellationToken) =>
-        Task.FromResult(track?.ArtistId == artistId && track.AlbumId == albumId && track.TrackId == trackId ? track : null);
+        Task.FromResult(this.track?.ArtistId == artistId && this.track.AlbumId == albumId && this.track.TrackId == trackId ? this.track : null);
 }

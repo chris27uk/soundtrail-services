@@ -6,7 +6,7 @@ using Soundtrail.Services.Tests.Integration.Api.Features.Search;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using System.Reflection;
 
-namespace Soundtrail.Services.Tests.Integration.Api.Ports.CatalogRead;
+namespace Soundtrail.Services.Tests.Integration.Api.Ports.CatalogRead.Support;
 
 internal sealed class CatalogReadTestEnvironment : IDisposable
 {
@@ -30,9 +30,9 @@ internal sealed class CatalogReadTestEnvironment : IDisposable
             _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
         };
 
-    public void Seed() => seed();
+    public void Seed() => this.seed();
 
-    public void Dispose() => raven?.Dispose();
+    public void Dispose() => this.raven?.Dispose();
 
     private static CatalogReadTestEnvironment CreateFake()
     {

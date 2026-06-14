@@ -2,7 +2,7 @@ using Soundtrail.Contracts;
 using Soundtrail.Domain;
 using Soundtrail.Domain.Search;
 
-namespace Soundtrail.Services.Tests.Integration.Api.Infrastructure;
+namespace Soundtrail.Services.Tests.Integration.Api.Features.Search;
 
 public sealed class ApiFakeSearchMusicHandler : IHandler<SearchCatalogCommand, SearchCatalogResponse>
 {

@@ -1,8 +1,9 @@
 using FluentAssertions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
+using Soundtrail.Services.Tests.Integration.Api.Ports.CatalogRead.Support;
 
-namespace Soundtrail.Services.Tests.Integration.Api.Ports.CatalogRead.Artist;
+namespace Soundtrail.Services.Tests.Integration.Api.Ports.CatalogRead;
 
 [Collection(RavenEmbeddedCollection.Name)]
 public sealed class KnownArtistResponsesTests

@@ -142,6 +142,19 @@ When adding a new feature:
 - put the handler and business models in the core project
 - put adapter implementations in the relevant infrastructure area
 - mirror the feature structure in tests
+- place handlers directly in the feature folder root, not in nested subfolders
+
+Handler placement is a hard rule.
+
+Examples:
+
+- `Features/Search/SearchCatalogHandler.cs`
+- `Features/JustInTimeScheduling/LookupMusicRequestHandler.cs`
+
+Do not place handlers in nested folders such as:
+
+- `Features/Search/Handlers/...`
+- `Features/EnrichmentResponse/Application/...`
 
 ## Endpoints
 
@@ -171,12 +184,14 @@ Handlers should:
 - depend on ports and policies, not concrete adapters
 - keep flow explicit and readable
 - return domain/application results rather than HTTP-specific results
+- live at the root of their feature folder
 
 Handlers should not:
 
 - reach into configuration directly
 - know about ASP.NET response details
 - hide core decisions behind unnecessary abstraction
+- be placed in nested subfolders under a feature
 
 ## Value Types And Models
 
@@ -251,6 +266,7 @@ Follow the naming style already used in the repository.
 - name request and response models as `<UseCase>Request` and `<UseCase>Response`
 - name interfaces by role, for example `ITrackSearchPort`
 - name tests in `Given_When_Then` style
+- keep the file path for handlers as `Features/<FeatureName>/<UseCase>Handler.cs`
 
 Avoid vague names such as `Helper`, `Utils`, `Manager`, or `Processor` unless the type genuinely matches that abstraction.
 
@@ -346,6 +362,38 @@ Examples:
 - `Api/Integration/Ports/TrackSearch/...`
 
 Prefer scenario-focused test classes over giant omnibus fixtures.
+
+Integration tests should be grouped by the technology being exercised.
+
+Examples:
+
+- `Integration/Api/WebApi/...`
+- `Integration/Api/Ports/Raven/...`
+- `Integration/Enrichment/Ports/Http/...`
+
+Do not use feature-level integration suites to prove broad business behavior when the real subject under test is a technology boundary such as Web API routing, RavenDB persistence, HTTP clients, or queue wiring.
+
+### Web API Integration Tests
+
+Web API route integration tests must stay intentionally minimal.
+
+Rules:
+
+- write one `200` status routing test per route
+- add one error-model mapping test only when the route has a non-trivial error contract worth proving
+- do not use Web API route tests to prove business rules, response-shaping branches, or adapter semantics that belong in handler, port, or technology-specific tests
+- keep deeper response and storage behavior in unit tests, port contract tests, or technology-focused integration tests
+
+### Integration Test Environments
+
+Integration tests should use a test environment class with a static factory method.
+
+Rules:
+
+- encapsulate `WebApplicationFactory` inside the test environment class instead of exposing the factory directly to test classes
+- prefer `Create(...)` or `CreateAsync(...)` as the entry point for building an environment
+- let the environment own setup, seeding, HTTP client creation, and disposal
+- keep tests focused on scenario intent rather than host wiring
 
 ### What New Feature Work Must Test
 

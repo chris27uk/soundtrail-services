@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Tests.Integration.Api.Ports.CatalogRead;
+namespace Soundtrail.Services.Tests.Integration.Api.Ports.CatalogRead.Support;
 
 public static class CatalogReadPortContractModes
 {
