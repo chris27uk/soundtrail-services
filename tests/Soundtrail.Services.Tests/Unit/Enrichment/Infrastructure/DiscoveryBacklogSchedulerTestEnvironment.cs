@@ -1,8 +1,8 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain;
+using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;

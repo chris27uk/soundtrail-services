@@ -11,11 +11,13 @@ internal sealed class SearchCatalogHandlerTestEnvironment
 {
     private SearchCatalogHandlerTestEnvironment(
         FakeCatalogSearchPort catalogSearch,
-        InMemoryEnqueueMusicRequest enqueueMusicRequests)
+        InMemoryEnqueueMusicRequest enqueueMusicRequests,
+        InMemoryRequestDiscovery requestDiscovery)
     {
         CatalogSearch = catalogSearch;
         EnqueueMusicRequests = enqueueMusicRequests;
-        Handler = new SearchCatalogHandler(catalogSearch, enqueueMusicRequests);
+        RequestDiscovery = requestDiscovery;
+        Handler = new SearchCatalogHandler(catalogSearch, requestDiscovery);
     }
 
     public IHandler<SearchCatalogCommand, SearchCatalogResponse> Handler { get; }
@@ -24,23 +26,27 @@ internal sealed class SearchCatalogHandlerTestEnvironment
 
     public InMemoryEnqueueMusicRequest EnqueueMusicRequests { get; }
 
+    public InMemoryRequestDiscovery RequestDiscovery { get; }
+
     public static SearchCatalogHandlerTestEnvironment WithKnownTrack() =>
-        new(
-            new FakeCatalogSearchPort([ApiKnownTracks.MrBrightsideCatalogTrack()]),
-            new InMemoryEnqueueMusicRequest());
+        Create(
+            new FakeCatalogSearchPort([ApiKnownTracks.MrBrightsideCatalogTrack()]));
 
     public static SearchCatalogHandlerTestEnvironment WithNoKnownResults() =>
-        new(
-            new FakeCatalogSearchPort([], discovery: null, isComplete: false),
-            new InMemoryEnqueueMusicRequest());
+        Create(
+            new FakeCatalogSearchPort([], discovery: null, isComplete: false));
 
     public static SearchCatalogHandlerTestEnvironment WithPendingDiscovery() =>
-        new(
+        Create(
             new FakeCatalogSearchPort(
                 [],
                 new SearchDiscovery(true, "Already planned", 30),
-                isComplete: false),
-            new InMemoryEnqueueMusicRequest());
+                isComplete: false));
+
+    public static SearchCatalogHandlerTestEnvironment WithRecordedDiscoveryRequest() =>
+        Create(
+            new FakeCatalogSearchPort([], discovery: null, isComplete: false),
+            seedRequestDiscovery: true);
 
     public SearchCatalogCommand Request(
         string query,
@@ -54,4 +60,20 @@ internal sealed class SearchCatalogHandlerTestEnvironment
             PlaybackProviderFilter.Parse(playback),
             SearchLimit.From(limit),
             SearchOffset.From(offset));
+
+    private static SearchCatalogHandlerTestEnvironment Create(
+        FakeCatalogSearchPort catalogSearch,
+        bool seedRequestDiscovery = false)
+    {
+        var queue = new InMemoryEnqueueMusicRequest();
+        var requestDiscovery = new InMemoryRequestDiscovery(queue);
+        var env = new SearchCatalogHandlerTestEnvironment(catalogSearch, queue, requestDiscovery);
+
+        if (seedRequestDiscovery)
+        {
+            requestDiscovery.Seed(env.Request("rare unknown song").ToDiscoveryQueryKey());
+        }
+
+        return env;
+    }
 }

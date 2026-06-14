@@ -12,6 +12,7 @@ public sealed class DiscoveryTests
 
         var response = await env.Handler.Handle(env.Request("rare unknown song"));
 
+        env.RequestDiscovery.Requests.Should().ContainSingle();
         env.EnqueueMusicRequests.Requests.Should().ContainSingle();
         response.Discovery.WillBeLookedUp.Should().BeTrue();
         response.Discovery.Reason.Should().Be("Local results incomplete");
@@ -27,5 +28,18 @@ public sealed class DiscoveryTests
         env.EnqueueMusicRequests.Requests.Should().BeEmpty();
         response.Discovery.WillBeLookedUp.Should().BeTrue();
         response.Discovery.RetryAfterSeconds.Should().Be(30);
+    }
+
+    [Fact]
+    public async Task Given_A_Previously_Recorded_Discovery_Request_When_Searching_Then_A_Duplicate_Request_Is_Not_Queued()
+    {
+        var env = SearchCatalogHandlerTestEnvironment.WithRecordedDiscoveryRequest();
+
+        var response = await env.Handler.Handle(env.Request("rare unknown song"));
+
+        env.RequestDiscovery.Requests.Should().BeEmpty();
+        env.EnqueueMusicRequests.Requests.Should().BeEmpty();
+        response.Discovery.WillBeLookedUp.Should().BeTrue();
+        response.Discovery.Reason.Should().Be("Local results incomplete");
     }
 }

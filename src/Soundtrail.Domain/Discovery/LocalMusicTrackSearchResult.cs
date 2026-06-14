@@ -1,7 +1,7 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Model;
 
-namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
+namespace Soundtrail.Domain.Discovery;
 
 public sealed record LocalMusicTrackSearchResult(
     MusicCatalogId MusicCatalogId,

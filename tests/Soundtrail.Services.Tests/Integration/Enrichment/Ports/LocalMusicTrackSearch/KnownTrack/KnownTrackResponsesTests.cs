@@ -1,6 +1,6 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.LocalMusicTrackSearch.KnownTrack;

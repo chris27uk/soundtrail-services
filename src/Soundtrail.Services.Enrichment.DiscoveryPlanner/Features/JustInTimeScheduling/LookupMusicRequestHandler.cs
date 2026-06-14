@@ -1,13 +1,13 @@
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Idempotency;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Responses;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search.Resolution;
-using ResolvePlaybackReferencesCommand = Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model.ResolvePlaybackReferencesCommand;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling;
 
@@ -95,7 +95,7 @@ public sealed class LookupMusicRequestHandler(
             return null;
         }
 
-        return new LookupCanonicalMusicMetadataCommand(
+        return new LookupMusicMetadataCommand(
             CommandId.For($"LookupCanonicalMusicMetadata:{musicCatalogId.Value}"),
             musicCatalogId,
             priority,

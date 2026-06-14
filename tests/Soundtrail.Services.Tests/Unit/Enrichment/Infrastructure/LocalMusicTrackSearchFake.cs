@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
+using Soundtrail.Domain.Discovery;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 

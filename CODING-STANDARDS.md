@@ -274,6 +274,7 @@ Rules:
 - domain objects are used by technology-independent handlers and business logic
 - domain objects must not be designed around serialization concerns
 - domain objects are never the place for HTTP, RavenDB, Service Bus, or other transport/storage DTO concerns
+- technology-independent command base types, orchestration results, and port-facing read models belong in `Soundtrail.Domain`
 - any DTO must end with `Dto`
 - shared DTOs must live in `Soundtrail.Contracts` and end with `Dto`
 - DTOs belong in API, messaging, persistence, or other infrastructure-owned areas

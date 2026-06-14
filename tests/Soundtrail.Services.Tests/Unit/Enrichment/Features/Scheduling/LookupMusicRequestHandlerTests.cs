@@ -1,7 +1,7 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
+using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling;

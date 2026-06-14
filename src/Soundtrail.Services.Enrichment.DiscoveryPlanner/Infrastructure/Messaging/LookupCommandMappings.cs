@@ -1,5 +1,5 @@
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
+using Soundtrail.Domain.Commands;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Messaging;
 
@@ -8,7 +8,7 @@ internal static class LookupCommandMappings
     public static object ToMessage(this object command) =>
         command switch
         {
-            LookupCanonicalMusicMetadataCommand musicBrainz => new LookupCanonicalMusicMetadataCommandDto(
+            LookupMusicMetadataCommand musicBrainz => new LookupCanonicalMusicMetadataCommandDto(
                 musicBrainz.CommandId.Value,
                 musicBrainz.MusicCatalogId.Value,
                 musicBrainz.Priority,
@@ -26,10 +26,10 @@ internal static class LookupCommandMappings
                 playback.CreatedAt,
                 playback.CorrelationId.Value,
                 new PlaybackReferenceSearchTermDto(
-                    playback.SearchTerm.Isrc,
-                    playback.SearchTerm.Title,
-                    playback.SearchTerm.Artist,
-                    playback.SearchTerm.Album)),
+                    playback.LookupKey.Isrc,
+                    playback.LookupKey.Title,
+                    playback.LookupKey.Artist,
+                    playback.LookupKey.Album)),
             _ => throw new ArgumentOutOfRangeException(nameof(command), command, null)
         };
 }

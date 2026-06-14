@@ -6,7 +6,9 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Indexes;
+using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain;
 using Soundtrail.Domain.Discovery;
@@ -138,6 +140,27 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
 
     public Task<bool> DidReceiveMessageAsync<TMessage>(TimeSpan timeout) where TMessage : class =>
         pipelineMessageCapture.DidReceiveAsync<TMessage>(timeout);
+
+    public int CountMessages<TMessage>() where TMessage : class =>
+        pipelineMessageCapture.Count<TMessage>();
+
+    public async Task<bool> HasDiscoveryRequestAsync(string queryKey)
+    {
+        using var session = raven.Store.OpenAsyncSession();
+        var metadata = await session.LoadAsync<DiscoveryQueryEventStreamMetadataRecordDto>(
+            DiscoveryQueryEventStreamMetadataRecordDto.GetDocumentId(queryKey),
+            CancellationToken.None);
+        return metadata is not null;
+    }
+
+    public async Task<int> CountDiscoveryRequestEventsAsync(string queryKey)
+    {
+        using var session = raven.Store.OpenAsyncSession();
+        var events = await session.Advanced.AsyncDocumentQuery<DiscoveryQueryStoredEventRecordDto>()
+            .WhereEquals(nameof(DiscoveryQueryStoredEventRecordDto.QueryKey), queryKey)
+            .ToListAsync(CancellationToken.None);
+        return events.Count;
+    }
 
     public async ValueTask DisposeAsync()
     {

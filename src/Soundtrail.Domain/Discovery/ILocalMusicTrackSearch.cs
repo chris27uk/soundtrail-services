@@ -1,6 +1,6 @@
 using Soundtrail.Contracts.Common;
 
-namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
+namespace Soundtrail.Domain.Discovery;
 
 public interface ILocalMusicTrackSearch
 {

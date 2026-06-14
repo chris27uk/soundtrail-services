@@ -1,6 +1,6 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
+using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Idempotency;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
@@ -79,7 +79,7 @@ public sealed class DiscoveryBacklogScheduler(
             return null;
         }
 
-        return new LookupCanonicalMusicMetadataCommand(
+        return new LookupMusicMetadataCommand(
             CommandId.For($"LookupCanonicalMusicMetadata:{candidate.MusicCatalogId.Value}"),
             candidate.MusicCatalogId,
             plan.Priority!.Value,

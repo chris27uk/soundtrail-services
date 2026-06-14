@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
 namespace Soundtrail.Services.Tests.EndToEnd.Search;
@@ -82,6 +83,7 @@ public sealed class SearchOutsideInTests
 
         var response = await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track");
         var lookupRequest = await env.WaitForMessageAsync<LookupMusicRequestDto>(TimeSpan.FromSeconds(1));
+        var queryKey = DiscoveryQueryKey.Search("track", "rare unknown song").Value;
 
         response.Query.Should().Be("rare unknown song");
         response.Results.Should().BeEmpty();
@@ -89,5 +91,25 @@ public sealed class SearchOutsideInTests
         response.Discovery.Reason.Should().Be("Local results incomplete");
         response.Discovery.RetryAfterSeconds.Should().BeNull();
         lookupRequest.Query.Should().Be("rare unknown song");
+        (await env.HasDiscoveryRequestAsync(queryKey)).Should().BeTrue();
+        (await env.CountDiscoveryRequestEventsAsync(queryKey)).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Given_A_Previously_Recorded_Discovery_Request_Without_A_Projection_When_Searching_Then_A_Duplicate_Request_Is_Not_Queued()
+    {
+        await using var env = await SearchOutsideInTestEnvironment.CreateAsync(_ => { });
+        var queryKey = DiscoveryQueryKey.Search("track", "rare unknown song").Value;
+
+        await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track");
+        var firstLookupRequest = await env.WaitForMessageAsync<LookupMusicRequestDto>(TimeSpan.FromSeconds(1));
+        firstLookupRequest.Query.Should().Be("rare unknown song");
+
+        var secondResponse = await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track");
+
+        secondResponse.Discovery.WillBeLookedUp.Should().BeTrue();
+        secondResponse.Results.Should().BeEmpty();
+        env.CountMessages<LookupMusicRequestDto>().Should().Be(1);
+        (await env.CountDiscoveryRequestEventsAsync(queryKey)).Should().Be(1);
     }
 }

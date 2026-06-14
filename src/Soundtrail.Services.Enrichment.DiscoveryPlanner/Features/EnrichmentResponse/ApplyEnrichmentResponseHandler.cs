@@ -2,7 +2,7 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.ApplyResponse;
+using Soundtrail.Domain.Responses;
 using System.Text.Json;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse;

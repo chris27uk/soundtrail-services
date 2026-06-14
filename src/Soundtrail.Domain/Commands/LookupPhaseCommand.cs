@@ -1,7 +1,7 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain;
 
-namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
+namespace Soundtrail.Domain.Commands;
 
 public abstract record LookupPhaseCommand(
     CommandId CommandId,

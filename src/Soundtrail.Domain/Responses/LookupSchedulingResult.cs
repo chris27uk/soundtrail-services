@@ -1,6 +1,7 @@
 using Soundtrail.Domain;
+using Soundtrail.Domain.Commands;
 
-namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
+namespace Soundtrail.Domain.Responses;
 
 public sealed record LookupSchedulingResult(IReadOnlyList<ICommand> Commands)
 {

@@ -1,7 +1,7 @@
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;

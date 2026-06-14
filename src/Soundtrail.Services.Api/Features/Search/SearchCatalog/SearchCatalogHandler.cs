@@ -1,12 +1,13 @@
 using Soundtrail.Domain;
 using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Services.Api.Features.Search.SearchCatalog;
 
 public sealed class SearchCatalogHandler(
     ICatalogSearchPort catalogSearch,
-    IQueueLookupMusicRequestPort queueLookupMusicRequest) : IHandler<SearchCatalogCommand, SearchCatalogResponse>
+    IRequestDiscoveryPort requestDiscoveryPort) : IHandler<SearchCatalogCommand, SearchCatalogResponse>
 {
     public async Task<SearchCatalogResponse> Handle(
         SearchCatalogCommand command,
@@ -17,7 +18,11 @@ public sealed class SearchCatalogHandler(
 
         if (!local.IsComplete && discovery is null)
         {
-            await queueLookupMusicRequest.EnqueueAsync(command.Query.ToNewLookupRequest(), cancellationToken);
+            await requestDiscoveryPort.TryRequestAsync(
+                new RequestDiscoveryCommand(
+                    command.ToDiscoveryQueryKey(),
+                    command.Query.ToNewLookupRequest()),
+                cancellationToken);
             discovery = new SearchDiscovery(
                 WillBeLookedUp: true,
                 Reason: "Local results incomplete",
