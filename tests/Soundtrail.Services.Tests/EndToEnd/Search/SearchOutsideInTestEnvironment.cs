@@ -254,10 +254,11 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
         session.SaveChanges();
     }
 
-    public static void SeedDiscoveryStatus(
+    public static void SeedCatalogSearchStatus(
         IDocumentStore store,
         string normalizedQuery,
         string types,
+        CatalogSearchLifecycleStatus status,
         bool willBeLookedUp,
         string reason,
         int? retryAfterSeconds)
@@ -270,7 +271,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
         {
             Id = CatalogSearchStatusRecordDto.GetDocumentId(criteria),
             Criteria = criteria,
-            Status = "Planned",
+            Status = status.ToString(),
             Priority = "High",
             WillBeLookedUp = willBeLookedUp,
             EstimatedRetryAfterSeconds = retryAfterSeconds,

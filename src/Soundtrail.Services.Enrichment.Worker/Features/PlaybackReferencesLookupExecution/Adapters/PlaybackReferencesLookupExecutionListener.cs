@@ -5,9 +5,6 @@ using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
-using Soundtrail.Domain.Responses;
-using Soundtrail.Domain.Discovery;
-using Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution;
 using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution.Adapters;

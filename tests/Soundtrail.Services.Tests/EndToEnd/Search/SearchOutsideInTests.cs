@@ -54,10 +54,11 @@ public sealed class SearchOutsideInTests
                 "Test Artist",
                 "album_rare_album",
                 "Rare Album");
-            SearchOutsideInTestEnvironment.SeedDiscoveryStatus(
+            SearchOutsideInTestEnvironment.SeedCatalogSearchStatus(
                 store,
                 "rare unknown song",
                 "track",
+                CatalogSearchLifecycleStatus.Planned,
                 true,
                 "Planner queued lookup",
                 30);
@@ -72,6 +73,81 @@ public sealed class SearchOutsideInTests
         response.Discovery.WillBeLookedUp.Should().BeTrue();
         response.Discovery.Reason.Should().Be("Planner queued lookup");
         response.Discovery.RetryAfterSeconds.Should().Be(30);
+        var receivedLookupRequest = await env.DidReceiveMessageAsync<CatalogSearchAttemptDto>(TimeSpan.FromMilliseconds(150));
+        receivedLookupRequest.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Given_An_InProgress_Discovery_Status_When_Searching_Then_The_Projected_Discovery_Is_Returned_Without_Requesting_Discovery()
+    {
+        await using var env = await SearchOutsideInTestEnvironment.CreateAsync(store =>
+        {
+            SearchOutsideInTestEnvironment.SeedCatalogSearchStatus(
+                store,
+                "rare unknown song",
+                "track",
+                CatalogSearchLifecycleStatus.InProgress,
+                true,
+                "Lookup started",
+                null);
+        });
+
+        var response = await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track");
+
+        response.Results.Should().BeEmpty();
+        response.Discovery.WillBeLookedUp.Should().BeTrue();
+        response.Discovery.Reason.Should().Be("Lookup started");
+        response.Discovery.RetryAfterSeconds.Should().BeNull();
+        var receivedLookupRequest = await env.DidReceiveMessageAsync<CatalogSearchAttemptDto>(TimeSpan.FromMilliseconds(150));
+        receivedLookupRequest.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Given_A_Failed_Discovery_Status_When_Searching_Then_The_Projected_Discovery_Is_Returned_Without_Requesting_Discovery()
+    {
+        await using var env = await SearchOutsideInTestEnvironment.CreateAsync(store =>
+        {
+            SearchOutsideInTestEnvironment.SeedCatalogSearchStatus(
+                store,
+                "rare unknown song",
+                "track",
+                CatalogSearchLifecycleStatus.Failed,
+                false,
+                "Lookup failed",
+                null);
+        });
+
+        var response = await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track");
+
+        response.Results.Should().BeEmpty();
+        response.Discovery.WillBeLookedUp.Should().BeFalse();
+        response.Discovery.Reason.Should().Be("Lookup failed");
+        response.Discovery.RetryAfterSeconds.Should().BeNull();
+        var receivedLookupRequest = await env.DidReceiveMessageAsync<CatalogSearchAttemptDto>(TimeSpan.FromMilliseconds(150));
+        receivedLookupRequest.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Given_A_Completed_Discovery_Status_When_Searching_Then_The_Projected_Discovery_Is_Returned_Without_Requesting_Discovery()
+    {
+        await using var env = await SearchOutsideInTestEnvironment.CreateAsync(store =>
+        {
+            SearchOutsideInTestEnvironment.SeedCatalogSearchStatus(
+                store,
+                "rare unknown song",
+                "track",
+                CatalogSearchLifecycleStatus.Completed,
+                false,
+                "Discovery completed",
+                null);
+        });
+
+        var response = await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track");
+
+        response.Results.Should().BeEmpty();
+        response.Discovery.WillBeLookedUp.Should().BeFalse();
+        response.Discovery.Reason.Should().Be("Discovery completed");
+        response.Discovery.RetryAfterSeconds.Should().BeNull();
         var receivedLookupRequest = await env.DidReceiveMessageAsync<CatalogSearchAttemptDto>(TimeSpan.FromMilliseconds(150));
         receivedLookupRequest.Should().BeFalse();
     }
