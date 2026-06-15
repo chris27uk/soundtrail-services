@@ -1,6 +1,6 @@
 namespace Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 
-internal sealed class CatalogTrackRecordDto
+public sealed class CatalogTrackRecordDto
 {
     public string Id { get; set; } = string.Empty;
 

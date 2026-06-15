@@ -26,6 +26,7 @@
     <ProjectReference Include="..\..\src\Soundtrail.Services.Enrichment.Cdc\Soundtrail.Services.Enrichment.Cdc.csproj" />
     <ProjectReference Include="..\..\src\Soundtrail.Domain\Soundtrail.Domain.csproj" />
     <ProjectReference Include="..\..\src\Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator\Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.csproj" />
+    <ProjectReference Include="..\..\src\Soundtrail.Services.Catalog.Projector\Soundtrail.Services.Catalog.Projector.csproj" />
     <ProjectReference Include="..\..\src\Soundtrail.Services.Enrichment.DiscoveryPlanner\Soundtrail.Services.Enrichment.DiscoveryPlanner.csproj" />
     <ProjectReference Include="..\..\src\Soundtrail.Services.Enrichment.Worker\Soundtrail.Services.Enrichment.Worker.csproj" />
     <ProjectReference Include="..\..\src\Soundtrail.Contracts\Soundtrail.Contracts.csproj" />

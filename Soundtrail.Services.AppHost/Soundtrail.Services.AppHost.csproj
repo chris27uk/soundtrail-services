@@ -17,4 +17,8 @@
       <ProjectReference Include="..\src\Soundtrail.Services.Enrichment.Worker\Soundtrail.Services.Enrichment.Worker.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\src\Soundtrail.Services.Catalog.Projector\Soundtrail.Services.Catalog.Projector.csproj" />
+    </ItemGroup>
+
 </Project>

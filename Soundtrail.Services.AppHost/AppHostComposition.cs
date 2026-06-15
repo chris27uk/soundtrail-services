@@ -88,6 +88,12 @@ public static class AppHostComposition
             cdc = cdc.WaitFor(serviceBusEmulator);
         }
 
+        var catalogProjector = builder.AddProject<Projects.Soundtrail_Services_Catalog_Projector>("soundtrail-services-catalog-projector")
+            .WithHttpEndpoint(name: "http")
+            .WaitFor(ravenDb)
+            .WithEnvironment("RavenDb__Urls__0", ravenDb.GetEndpoint("http"))
+            .WithEnvironment("RavenDb__Database", "soundtrail");
+
         var discoveryPlanner = builder.AddProject<Projects.Soundtrail_Services_Enrichment_DiscoveryPlanner>("soundtrail-services-enrichment-discoveryplanner")
             .WithHttpEndpoint(name: "http")
             .WithReference(serviceBus)
