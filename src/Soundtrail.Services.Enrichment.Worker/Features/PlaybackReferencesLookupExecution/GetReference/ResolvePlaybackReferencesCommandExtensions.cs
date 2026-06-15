@@ -7,7 +7,8 @@ internal static class ResolvePlaybackReferencesCommandExtensions
 {
     public static EnrichmentResponse ToEnrichmentResponse(
         this ResolvePlaybackReferencesCommand command,
-        IReadOnlyList<ExternalReference> references) =>
+        IReadOnlyList<ExternalReference> references,
+        IReadOnlyList<ProviderLookupFailure> failedProviders) =>
         new(
             command.CommandId,
             command.MusicCatalogId,
@@ -16,5 +17,6 @@ internal static class ResolvePlaybackReferencesCommandExtensions
             command.CreatedAt,
             null,
             references,
+            failedProviders,
             command.CorrelationId);
 }

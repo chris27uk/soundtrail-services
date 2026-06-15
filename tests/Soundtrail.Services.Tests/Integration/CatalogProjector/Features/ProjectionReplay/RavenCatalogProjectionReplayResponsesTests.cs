@@ -86,6 +86,27 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
         track!.AvailableProviders.Should().ContainSingle().Which.Should().Be(ProviderName.Spotify.Value);
     }
 
+    [Fact]
+    public async Task Given_A_Provider_Failure_Event_When_Projecting_Then_The_Provider_Becomes_Terminally_Unavailable()
+    {
+        await using var env = RavenCatalogProjectionReplayTestEnvironment.Create();
+
+        await env.ApplyAsync(
+            MinimalTrackInfo("mc_track_1", 1, "Mr. Brightside", "The Killers"),
+            TrackLinkedToArtist("mc_track_1", 2, "artist_the_killers", "The Killers"),
+            TrackLinkedToAlbum("mc_track_1", 3, "album_hot_fuss", "Hot Fuss"),
+            ProviderFailed("mc_track_1", 4, ProviderName.YoutubeMusic));
+
+        var track = await env.LoadTrackAsync("mc_track_1");
+        var search = await env.SearchAsync("mr brightside", types: "track");
+
+        track.Should().NotBeNull();
+        track!.TerminallyUnavailableProviders.Should().ContainSingle().Which.Should().Be(ProviderName.YoutubeMusic.Value);
+        search.Results.Should().ContainSingle();
+        search.Results[0].PlayabilityStatus.Should().Be(PlayabilityStatus.TerminallyUnavailable);
+        search.Results[0].TerminallyUnavailableProviders.Should().ContainSingle().Which.Should().Be(ProviderName.YoutubeMusic);
+    }
+
     private static MusicTrackStoredEventRecordDto MinimalTrackInfo(
         string musicCatalogId,
         int version,
@@ -168,5 +189,23 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
                     ProviderName.Odesli.Value,
                     new DateTimeOffset(2026, 6, 15, 12, 3, 0, TimeSpan.Zero))),
             OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 3, 0, TimeSpan.Zero)
+        };
+
+    private static MusicTrackStoredEventRecordDto ProviderFailed(
+        string musicCatalogId,
+        int version,
+        ProviderName provider) =>
+        new()
+        {
+            Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId, version),
+            MusicCatalogId = musicCatalogId,
+            Version = version,
+            EventType = nameof(ProviderReferenceLookupFailed),
+            Data = System.Text.Json.JsonSerializer.Serialize(
+                new ProviderReferenceLookupFailedEventDataRecordDto(
+                    provider.Value,
+                    ProviderName.Odesli.Value,
+                    new DateTimeOffset(2026, 6, 15, 12, 4, 0, TimeSpan.Zero))),
+            OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 4, 0, TimeSpan.Zero)
         };
 }

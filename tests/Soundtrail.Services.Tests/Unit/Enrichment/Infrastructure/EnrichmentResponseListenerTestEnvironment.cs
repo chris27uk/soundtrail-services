@@ -85,6 +85,7 @@ internal sealed class EnrichmentResponseListenerTestEnvironment
             new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero),
             new SongMetadataDto("Song A", "Artist A", "isrc-1", "mbid-1", 123000),
             [],
+            [],
             "corr-1");
 
     private static EnrichmentResponseDto CanonicalResponseDto() =>
@@ -95,6 +96,7 @@ internal sealed class EnrichmentResponseListenerTestEnvironment
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero),
             new SongMetadataDto("Canonical Song", "Canonical Artist", "isrc-1", "mbid-1", 123000),
+            [],
             [],
             "corr-1");
 
@@ -107,5 +109,6 @@ internal sealed class EnrichmentResponseListenerTestEnvironment
             new DateTimeOffset(2026, 6, 8, 12, 2, 0, TimeSpan.Zero),
             null,
             [new ExternalReferenceDto(ProviderName.AppleMusic.Value, new Uri("https://music.apple.com/track/1"), "apple-1")],
+            [],
             "corr-2");
 }

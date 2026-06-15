@@ -10,4 +10,5 @@ public sealed record EnrichmentResponse(
     DateTimeOffset CreatedAt,
     SongMetadata? Metadata,
     IReadOnlyList<ExternalReference> References,
+    IReadOnlyList<ProviderLookupFailure> FailedProviders,
     CorrelationId CorrelationId);

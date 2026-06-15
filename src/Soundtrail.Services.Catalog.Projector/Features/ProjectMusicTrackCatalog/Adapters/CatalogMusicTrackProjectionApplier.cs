@@ -44,6 +44,9 @@ public sealed class CatalogMusicTrackProjectionApplier
             case nameof(ProviderPlaybackReferenceResolved):
                 await ApplyProviderReferenceAsync(track, Deserialize<ProviderPlaybackReferenceResolvedEventDataRecordDto>(storedEvent), session, cancellationToken);
                 break;
+            case nameof(ProviderReferenceLookupFailed):
+                await ApplyProviderFailureAsync(track, Deserialize<ProviderReferenceLookupFailedEventDataRecordDto>(storedEvent), session, cancellationToken);
+                break;
             case nameof(PlaybackReferencesResolutionRequired):
                 break;
             default:
@@ -139,11 +142,13 @@ public sealed class CatalogMusicTrackProjectionApplier
         CancellationToken cancellationToken)
     {
         track.AvailableProviders = AddProvider(track.AvailableProviders, data.Provider);
+        track.TerminallyUnavailableProviders = RemoveProvider(track.TerminallyUnavailableProviders, data.Provider);
 
         if (!string.IsNullOrWhiteSpace(track.ArtistId))
         {
             var artist = await LoadOrCreateArtistAsync(track.ArtistId, session, cancellationToken);
             artist.AvailableProviders = AddProvider(artist.AvailableProviders, data.Provider);
+            artist.TerminallyUnavailableProviders = RemoveProvider(artist.TerminallyUnavailableProviders, data.Provider);
             artist.UpdatedAt = data.ObservedAt;
         }
 
@@ -151,6 +156,33 @@ public sealed class CatalogMusicTrackProjectionApplier
         {
             var album = await LoadOrCreateAlbumAsync(track.AlbumId, session, cancellationToken);
             album.AvailableProviders = AddProvider(album.AvailableProviders, data.Provider);
+            album.TerminallyUnavailableProviders = RemoveProvider(album.TerminallyUnavailableProviders, data.Provider);
+            album.UpdatedAt = data.ObservedAt;
+        }
+    }
+
+    private static async Task ApplyProviderFailureAsync(
+        CatalogTrackRecordDto track,
+        ProviderReferenceLookupFailedEventDataRecordDto data,
+        IAsyncDocumentSession session,
+        CancellationToken cancellationToken)
+    {
+        track.TerminallyUnavailableProviders = AddProvider(track.TerminallyUnavailableProviders, data.Provider);
+        track.AvailableProviders = RemoveProvider(track.AvailableProviders, data.Provider);
+
+        if (!string.IsNullOrWhiteSpace(track.ArtistId))
+        {
+            var artist = await LoadOrCreateArtistAsync(track.ArtistId, session, cancellationToken);
+            artist.TerminallyUnavailableProviders = AddProvider(artist.TerminallyUnavailableProviders, data.Provider);
+            artist.AvailableProviders = RemoveProvider(artist.AvailableProviders, data.Provider);
+            artist.UpdatedAt = data.ObservedAt;
+        }
+
+        if (!string.IsNullOrWhiteSpace(track.AlbumId))
+        {
+            var album = await LoadOrCreateAlbumAsync(track.AlbumId, session, cancellationToken);
+            album.TerminallyUnavailableProviders = AddProvider(album.TerminallyUnavailableProviders, data.Provider);
+            album.AvailableProviders = RemoveProvider(album.AvailableProviders, data.Provider);
             album.UpdatedAt = data.ObservedAt;
         }
     }
@@ -251,6 +283,9 @@ public sealed class CatalogMusicTrackProjectionApplier
         providers.Contains(provider, StringComparer.Ordinal)
             ? providers
             : [.. providers, provider];
+
+    private static string[] RemoveProvider(string[] providers, string provider) =>
+        providers.Where(value => !string.Equals(value, provider, StringComparison.Ordinal)).ToArray();
 
     private static string BuildSearchText(string title, string artistName) =>
         $"{title} {artistName}".Trim().ToLowerInvariant();

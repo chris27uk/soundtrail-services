@@ -24,6 +24,8 @@ public sealed class PlaybackReferencesLookupExecutionListenerTests
 
         message.SourceProvider.Should().Be(ProviderName.Odesli.Value);
         message.References.Should().HaveCount(2);
+        message.FailedProviders.Should().ContainSingle()
+            .Which.Provider.Should().Be(ProviderName.YoutubeMusic.Value);
     }
 
     [Fact]
@@ -44,6 +46,9 @@ public sealed class PlaybackReferencesLookupExecutionListenerTests
         var message = (EnrichmentResponseDto)(await env.HandleNewExecutionCommand(command)).Single();
 
         message.References.Should().ContainSingle().Which.ExternalId.Should().Be("yt-1");
+        message.FailedProviders.Select(x => x.Provider).Should().BeEquivalentTo(
+            ProviderName.AppleMusic.Value,
+            ProviderName.Spotify.Value);
     }
 
     [Fact]

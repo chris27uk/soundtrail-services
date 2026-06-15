@@ -36,6 +36,9 @@ public sealed class EnrichmentResponseListener(ApplyEnrichmentResponseHandler ha
                     ProviderName.From(reference.Provider),
                     reference.Url,
                     reference.ExternalId)).ToArray(),
+                dto.FailedProviders.Select(failure => new ProviderLookupFailure(
+                    ProviderName.From(failure.Provider),
+                    ProviderName.From(failure.SourceProvider))).ToArray(),
                 CorrelationId.From(dto.CorrelationId)),
             cancellationToken);
 

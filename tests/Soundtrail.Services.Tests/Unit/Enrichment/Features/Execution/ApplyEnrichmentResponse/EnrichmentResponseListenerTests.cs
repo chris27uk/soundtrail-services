@@ -1,4 +1,6 @@
 using FluentAssertions;
+using Soundtrail.Contracts.Common;
+using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
@@ -62,5 +64,31 @@ public sealed class EnrichmentResponseListenerTests
         env.DiscoveryStatus.Updates.Keys.Should().BeEquivalentTo(
             "search:track:rare unknown song",
             "search:track:rare unknown song live");
+    }
+
+    [Fact]
+    public async Task Given_A_Playback_References_Response_With_Failed_Providers_When_Handled_Then_ProviderReferenceLookupFailed_Facts_Are_Stored()
+    {
+        var env = EnrichmentResponseListenerTestEnvironment.WithAMusicBrainzResponseDto();
+
+        await env.Listener.Handle(
+            new EnrichmentResponseDto(
+                CommandId.For("ResolvePlaybackReferences:mc_track_1").Value,
+                "mc_track_1",
+                ProviderName.Odesli.Value,
+                LookupPriorityBand.High,
+                new DateTimeOffset(2026, 6, 8, 12, 2, 0, TimeSpan.Zero),
+                null,
+                [],
+                [
+                    new ProviderLookupFailureDto(ProviderName.Spotify.Value, ProviderName.Odesli.Value),
+                    new ProviderLookupFailureDto(ProviderName.YoutubeMusic.Value, ProviderName.Odesli.Value)
+                ],
+                "corr-2"),
+            null!);
+
+        env.StreamStore.Streams["mc_track_1"].Events.OfType<ProviderReferenceLookupFailed>()
+            .Select(x => x.Provider)
+            .Should().BeEquivalentTo(new[] { ProviderName.Spotify, ProviderName.YoutubeMusic });
     }
 }

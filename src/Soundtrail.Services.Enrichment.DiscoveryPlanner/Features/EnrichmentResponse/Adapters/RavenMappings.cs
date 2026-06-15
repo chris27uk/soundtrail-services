@@ -29,6 +29,7 @@ internal static class RavenMappings
             PlaybackReferencesResolutionRequired playbackReferencesResolutionRequired => playbackReferencesResolutionRequired.ObservedAt,
             TrackLinkedToAlbum trackLinkedToAlbum => trackLinkedToAlbum.ObservedAt,
             TrackLinkedToArtist trackLinkedToArtist => trackLinkedToArtist.ObservedAt,
+            ProviderReferenceLookupFailed providerReferenceLookupFailed => providerReferenceLookupFailed.ObservedAt,
             _ => throw new ArgumentOutOfRangeException(nameof(@event), @event, "Unknown music track event.")
         };
 
@@ -119,6 +120,19 @@ internal static class RavenMappings
                 OccurredAtUtc = trackLinkedToArtist.ObservedAt,
                 CausationId = commandId.Value
             },
+            ProviderReferenceLookupFailed providerReferenceLookupFailed => new MusicTrackStoredEventRecordDto
+            {
+                Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId.Value, version),
+                MusicCatalogId = musicCatalogId.Value,
+                Version = version,
+                EventType = nameof(ProviderReferenceLookupFailed),
+                Data = JsonSerializer.Serialize(new ProviderReferenceLookupFailedEventDataRecordDto(
+                    providerReferenceLookupFailed.Provider.Value,
+                    providerReferenceLookupFailed.SourceProvider.Value,
+                    providerReferenceLookupFailed.ObservedAt)),
+                OccurredAtUtc = providerReferenceLookupFailed.ObservedAt,
+                CausationId = commandId.Value
+            },
             _ => throw new ArgumentOutOfRangeException(nameof(@event), @event, "Unknown music track event.")
         };
 
@@ -130,6 +144,7 @@ internal static class RavenMappings
             nameof(PlaybackReferencesResolutionRequired) => PlaybackReferencesResolutionRequired(dto),
             nameof(TrackLinkedToAlbum) => TrackLinkedToAlbum(dto),
             nameof(TrackLinkedToArtist) => TrackLinkedToArtist(dto),
+            nameof(ProviderReferenceLookupFailed) => ProviderReferenceLookupFailed(dto),
             _ => throw new ArgumentOutOfRangeException(nameof(dto.EventType), dto.EventType, "Unknown music track event type.")
         };
 
@@ -192,6 +207,16 @@ internal static class RavenMappings
         return new TrackLinkedToArtist(
             data.ArtistId,
             data.ArtistName,
+            ProviderName.From(data.SourceProvider),
+            data.ObservedAt);
+    }
+
+    private static ProviderReferenceLookupFailed ProviderReferenceLookupFailed(MusicTrackStoredEventRecordDto dto)
+    {
+        var data = JsonSerializer.Deserialize<ProviderReferenceLookupFailedEventDataRecordDto>(dto.Data)
+            ?? throw new InvalidOperationException("Unable to deserialize provider reference lookup failed event data.");
+        return new ProviderReferenceLookupFailed(
+            ProviderName.From(data.Provider),
             ProviderName.From(data.SourceProvider),
             data.ObservedAt);
     }

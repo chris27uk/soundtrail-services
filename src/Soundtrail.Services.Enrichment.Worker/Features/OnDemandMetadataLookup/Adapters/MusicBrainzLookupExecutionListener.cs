@@ -64,6 +64,9 @@ public sealed class MusicBrainzLookupExecutionListener(
                         reference.Provider.Value,
                         reference.Url,
                         reference.ExternalId)).ToArray(),
+                    result.Response.FailedProviders.Select(failure => new ProviderLookupFailureDto(
+                        failure.Provider.Value,
+                        failure.SourceProvider.Value)).ToArray(),
                     result.Response.CorrelationId.Value)];
         }
         catch

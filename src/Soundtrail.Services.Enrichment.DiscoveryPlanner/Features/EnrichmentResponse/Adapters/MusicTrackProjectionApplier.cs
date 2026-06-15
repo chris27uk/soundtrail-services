@@ -76,6 +76,8 @@ public sealed class MusicTrackProjectionApplier
             case ProviderPlaybackReferenceResolved providerPlaybackReferenceResolved:
                 ApplyProviderReference(document, providerPlaybackReferenceResolved);
                 break;
+            case ProviderReferenceLookupFailed:
+                break;
             case TrackLinkedToAlbum trackLinkedToAlbum:
                 document.AlbumTitle = trackLinkedToAlbum.AlbumTitle;
                 break;

@@ -10,4 +10,5 @@ public sealed record EnrichmentResponseDto(
     DateTimeOffset CreatedAt,
     SongMetadataDto? Metadata,
     IReadOnlyList<ExternalReferenceDto> References,
+    IReadOnlyList<ProviderLookupFailureDto> FailedProviders,
     string CorrelationId);

@@ -84,6 +84,14 @@ public sealed class ApplyEnrichmentResponseHandler(
                 response.CreatedAt));
         }
 
+        foreach (var failedProvider in response.FailedProviders)
+        {
+            events.Add(new ProviderReferenceLookupFailed(
+                failedProvider.Provider,
+                failedProvider.SourceProvider,
+                response.CreatedAt));
+        }
+
         if (response.SourceProvider == ProviderName.MusicBrainz
             && response.Metadata is not null
             && !stream.Events.OfType<ProviderPlaybackReferenceResolved>().Any()
@@ -127,5 +135,8 @@ public sealed class ApplyEnrichmentResponseHandler(
                 reference.Provider.Value,
                 reference.Url,
                 reference.ExternalId)).ToArray(),
+            response.FailedProviders.Select(failure => new ProviderLookupFailureDto(
+                failure.Provider.Value,
+                failure.SourceProvider.Value)).ToArray(),
             response.CorrelationId.Value);
 }
