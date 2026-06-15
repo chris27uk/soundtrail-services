@@ -12,14 +12,14 @@ namespace Soundtrail.Services.Api.Infrastructure.Messaging;
 
 public static class ServiceBusServiceCollectionExtensions
 {
-    public static IServiceCollection AddLookupMusicRequestQueue(
+    public static IServiceCollection AddCatalogSearchAttemptQueue(
         this IServiceCollection services,
         IConfiguration configuration)
     {
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
-        services.TryAddScoped<IEnqueueMusicRequest, WolverineEnqueueMusicRequest>();
-        services.TryAddScoped<IQueueLookupMusicRequest>(sp => sp.GetRequiredService<IEnqueueMusicRequest>());
-        services.TryAddScoped<Soundtrail.Domain.Commands.IQueueLookupMusicRequestPort>(sp => sp.GetRequiredService<IQueueLookupMusicRequest>());
+        services.TryAddScoped<IEnqueueCatalogSearchAttempt, WolverineEnqueueCatalogSearchAttempt>();
+        services.TryAddScoped<IQueueCatalogSearchAttempt>(sp => sp.GetRequiredService<IEnqueueCatalogSearchAttempt>());
+        services.TryAddScoped<Soundtrail.Domain.Commands.IQueueCatalogSearchAttemptPort>(sp => sp.GetRequiredService<IQueueCatalogSearchAttempt>());
         return services;
     }
 
@@ -49,8 +49,8 @@ public static class ServiceBusServiceCollectionExtensions
             transport.AutoProvision();
         }
 
-        opts.PublishMessage<LookupMusicRequestDto>()
-            .ToAzureServiceBusQueue(options.LookupMusicRequestsQueueName);
+        opts.PublishMessage<CatalogSearchAttemptDto>()
+            .ToAzureServiceBusQueue(options.CatalogSearchAttemptsQueueName);
 
         return opts;
     }

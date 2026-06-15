@@ -36,7 +36,7 @@ public sealed class SearchOutsideInTests
         response.Results[0].PlayabilityStatus.Should().Be("Playable");
         response.Results[0].AvailableProviders.Should().ContainSingle().Which.Should().Be("spotify");
         response.Discovery.WillBeLookedUp.Should().BeFalse();
-        var receivedLookupRequest = await env.DidReceiveMessageAsync<LookupMusicRequestDto>(TimeSpan.FromMilliseconds(150));
+        var receivedLookupRequest = await env.DidReceiveMessageAsync<CatalogSearchAttemptDto>(TimeSpan.FromMilliseconds(150));
         receivedLookupRequest.Should().BeFalse();
     }
 
@@ -72,7 +72,7 @@ public sealed class SearchOutsideInTests
         response.Discovery.WillBeLookedUp.Should().BeTrue();
         response.Discovery.Reason.Should().Be("Planner queued lookup");
         response.Discovery.RetryAfterSeconds.Should().Be(30);
-        var receivedLookupRequest = await env.DidReceiveMessageAsync<LookupMusicRequestDto>(TimeSpan.FromMilliseconds(150));
+        var receivedLookupRequest = await env.DidReceiveMessageAsync<CatalogSearchAttemptDto>(TimeSpan.FromMilliseconds(150));
         receivedLookupRequest.Should().BeFalse();
     }
 
@@ -82,8 +82,8 @@ public sealed class SearchOutsideInTests
         await using var env = await SearchOutsideInTestEnvironment.CreateAsync(_ => { });
 
         var response = await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track");
-        var lookupRequest = await env.WaitForMessageAsync<LookupMusicRequestDto>(TimeSpan.FromSeconds(1));
-        var queryKey = DiscoveryQueryKey.Search("track", "rare unknown song").Value;
+        var lookupRequest = await env.WaitForMessageAsync<CatalogSearchAttemptDto>(TimeSpan.FromSeconds(1));
+        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song").Value;
 
         response.Query.Should().Be("rare unknown song");
         response.Results.Should().BeEmpty();
@@ -91,25 +91,25 @@ public sealed class SearchOutsideInTests
         response.Discovery.Reason.Should().Be("Local results incomplete");
         response.Discovery.RetryAfterSeconds.Should().BeNull();
         lookupRequest.Query.Should().Be("rare unknown song");
-        (await env.HasDiscoveryRequestAsync(queryKey)).Should().BeTrue();
-        (await env.CountDiscoveryRequestEventsAsync(queryKey)).Should().Be(1);
+        (await env.HasDiscoveryRequestAsync(criteria)).Should().BeTrue();
+        (await env.CountDiscoveryRequestEventsAsync(criteria)).Should().Be(1);
     }
 
     [Fact]
     public async Task Given_A_Previously_Recorded_Discovery_Request_Without_A_Projection_When_Searching_Then_A_Duplicate_Request_Is_Not_Queued()
     {
         await using var env = await SearchOutsideInTestEnvironment.CreateAsync(_ => { });
-        var queryKey = DiscoveryQueryKey.Search("track", "rare unknown song").Value;
+        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song").Value;
 
         await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track");
-        var firstLookupRequest = await env.WaitForMessageAsync<LookupMusicRequestDto>(TimeSpan.FromSeconds(1));
+        var firstLookupRequest = await env.WaitForMessageAsync<CatalogSearchAttemptDto>(TimeSpan.FromSeconds(1));
         firstLookupRequest.Query.Should().Be("rare unknown song");
 
         var secondResponse = await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track");
 
         secondResponse.Discovery.WillBeLookedUp.Should().BeTrue();
         secondResponse.Results.Should().BeEmpty();
-        env.CountMessages<LookupMusicRequestDto>().Should().Be(1);
-        (await env.CountDiscoveryRequestEventsAsync(queryKey)).Should().Be(1);
+        env.CountMessages<CatalogSearchAttemptDto>().Should().Be(1);
+        (await env.CountDiscoveryRequestEventsAsync(criteria)).Should().Be(1);
     }
 }

@@ -30,10 +30,10 @@ public sealed record NormalizedSearchQuery
         return new NormalizedSearchQuery(normalized);
     }
 
-    public LookupMusicRequest ToNewLookupRequest(DiscoveryQueryKey queryKey)
+    public CatalogSearchAttempt ToNewCatalogSearchAttempt(CatalogSearchCriteria criteria)
     {
-        return new LookupMusicRequest(
-            queryKey,
+        return new CatalogSearchAttempt(
+            criteria,
             this.Value,
             TrustLevel: 0,
             RiskScore: 0,

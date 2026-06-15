@@ -48,7 +48,19 @@ public sealed class EnrichmentResponseListenerTests
         await env.HandleMusicBrainzResponse();
 
         var status = env.DiscoveryStatus.Updates["search:track:rare unknown song"];
-        status.Status.Should().Be(DiscoveryLifecycleStatus.Completed);
+        status.Status.Should().Be(CatalogSearchLifecycleStatus.Completed);
         status.WillBeLookedUp.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Given_Multiple_Search_Trackings_For_The_Same_MusicCatalogId_When_Handled_Then_All_Tracked_Searches_Are_Projected_As_Completed()
+    {
+        var env = EnrichmentResponseListenerTestEnvironment.WithMultipleTrackingsForTheSameMusicCatalogId();
+
+        await env.HandleMusicBrainzResponse();
+
+        env.DiscoveryStatus.Updates.Keys.Should().BeEquivalentTo(
+            "search:track:rare unknown song",
+            "search:track:rare unknown song live");
     }
 }

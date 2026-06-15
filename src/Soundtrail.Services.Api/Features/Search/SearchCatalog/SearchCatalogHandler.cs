@@ -7,7 +7,7 @@ namespace Soundtrail.Services.Api.Features.Search.SearchCatalog;
 
 public sealed class SearchCatalogHandler(
     ICatalogSearchPort catalogSearch,
-    IRequestDiscoveryPort requestDiscoveryPort) : IHandler<SearchCatalogCommand, SearchCatalogResponse>
+    IRecordCatalogSearchAttemptPort requestDiscoveryPort) : IHandler<SearchCatalogCommand, SearchCatalogResponse>
 {
     public async Task<SearchCatalogResponse> Handle(
         SearchCatalogCommand command,
@@ -18,11 +18,11 @@ public sealed class SearchCatalogHandler(
 
         if (!local.IsComplete && discovery is null)
         {
-            var queryKey = command.ToDiscoveryQueryKey();
+            var criteria = command.ToCatalogSearchCriteria();
             await requestDiscoveryPort.TryRequestAsync(
-                new RequestDiscoveryCommand(
-                    queryKey,
-                    command.Query.ToNewLookupRequest(queryKey)),
+                new RecordCatalogSearchAttemptCommand(
+                    criteria,
+                    command.Query.ToNewCatalogSearchAttempt(criteria)),
                 cancellationToken);
             discovery = new SearchDiscovery(
                 WillBeLookedUp: true,

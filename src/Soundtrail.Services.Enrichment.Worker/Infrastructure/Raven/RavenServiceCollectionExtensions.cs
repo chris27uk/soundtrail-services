@@ -6,6 +6,8 @@ using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
 using Raven.Client.Documents.Session;
+using Soundtrail.Domain.Discovery;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
 
@@ -38,6 +40,8 @@ public static class RavenServiceCollectionExtensions
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, RavenDatabaseHostedService>());
 
         services.TryAddScoped<ILookupExecutionReceiptStore, RavenLookupExecutionReceiptStore>();
+        services.TryAddScoped<ICatalogSearchTrackingStore, RavenCatalogSearchTrackingStore>();
+        services.TryAddScoped<IUpsertCatalogSearchStatusPort, RavenUpsertCatalogSearchStatus>();
         return services;
     }
 }

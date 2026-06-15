@@ -85,7 +85,6 @@ internal sealed class PotentialCatalogLookupWorkStoreTestEnvironment : IDisposab
             Set(document, "RiskScore", candidate.RiskScore);
             Set(document, "Status", candidate.Status.ToString());
             Set(document, "NextEligibleAt", candidate.NextEligibleAt);
-            Set(document, "QueryKeys", candidate.QueryKeys.Select(queryKey => queryKey.Value).ToArray());
 
             session.Store(document);
         }

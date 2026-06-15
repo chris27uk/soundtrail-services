@@ -1,7 +1,9 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup;
 using Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.Adapters;
@@ -25,15 +27,25 @@ internal sealed class MusicBrainzLookupExecutionListenerTestEnvironment
     private MusicBrainzLookupExecutionListenerTestEnvironment(LookupExecutionReceiptStoreFake.State state)
     {
         Metadata = new FakeGetCanonicalMusicMetadata();
+        DiscoveryStatus = new InMemoryUpsertCatalogSearchStatus();
+        var catalogSearchTrackings = new CatalogSearchTrackingStoreFake();
+        catalogSearchTrackings.Seed(new CatalogSearchTracking(
+            CatalogSearchCriteria.Search("track", "rare unknown song"),
+            MusicCatalogId.From("mc_track_1"),
+            new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero)));
         Listener = new MusicBrainzLookupExecutionListener(
             new OnDemandLookupMetadataHandler(
                 new LookupExecutionReceiptStoreFake(state),
-                Metadata));
+                Metadata),
+            catalogSearchTrackings,
+            DiscoveryStatus);
     }
 
     public MusicBrainzLookupExecutionListener Listener { get; }
 
     public FakeGetCanonicalMusicMetadata Metadata { get; }
+
+    public InMemoryUpsertCatalogSearchStatus DiscoveryStatus { get; }
 
     public static MusicBrainzLookupExecutionListenerTestEnvironment WithANewExecutionCommandDto() =>
         new(new LookupExecutionReceiptStoreFake.State());
@@ -45,6 +57,8 @@ internal sealed class MusicBrainzLookupExecutionListenerTestEnvironment
 
     public void SeedMusicBrainzNames(string title, string artist, string? albumName, SongMetadata metadata) =>
         Metadata.SeedNames(title, artist, albumName, metadata);
+
+    public void Throw(Exception ex) => Metadata.Throw(ex);
 
     public Task<object[]> HandleNewExecutionCommand(MusicSearchTerm? searchTerm = null) =>
         Listener.Handle(ToDto(searchTerm ?? MusicSearchTerm.ByIsrc("isrc-1")), null!);

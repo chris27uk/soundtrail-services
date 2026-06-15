@@ -3,8 +3,6 @@ using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
 using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
-using Soundtrail.Domain.Discovery;
-
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.PotentialCatalogLookupWorkStore.UpsertedCandidate;
 
 [Collection(RavenEmbeddedCollection.Name)]
@@ -21,8 +19,7 @@ public sealed class UpsertedCandidateResponsesTests
             HighestTrustLevelSeen: 3,
             RiskScore: 10,
             Status: PotentialCatalogLookupWorkStatus.Pending,
-            NextEligibleAt: null,
-            QueryKeys: [DiscoveryQueryKey.Search("track", "rare unknown song")]);
+            NextEligibleAt: null);
 
         await env.Store.UpsertAsync(candidate, CancellationToken.None);
         var actual = await env.Store.FindByMusicCatalogIdAsync(MusicCatalogId.From("mc_track_1"), CancellationToken.None);

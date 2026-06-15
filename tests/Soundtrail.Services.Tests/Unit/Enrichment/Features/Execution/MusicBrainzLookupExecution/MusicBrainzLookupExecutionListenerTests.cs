@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
@@ -64,5 +65,38 @@ public sealed class MusicBrainzLookupExecutionListenerTests
 
         message.Metadata.Should().BeEquivalentTo(new SongMetadataDto("Song A", "Artist A", null, "mbid-1", 123000));
         env.Metadata.Lookups.Should().ContainSingle().Which.Should().StartWith("names:");
+    }
+
+    [Fact]
+    public async Task Given_A_New_Execution_Command_Dto_When_Handled_Then_CatalogSearch_Status_Is_Projected_As_InProgress()
+    {
+        var env = MusicBrainzLookupExecutionListenerTestEnvironment.WithANewExecutionCommandDto();
+
+        await env.HandleNewExecutionCommand();
+
+        env.DiscoveryStatus.Updates["search:track:rare unknown song"].Status.Should().Be(CatalogSearchLifecycleStatus.InProgress);
+    }
+
+    [Fact]
+    public async Task Given_A_Duplicate_Execution_Command_Dto_When_Handled_Then_CatalogSearch_Status_Is_Not_Reprojected()
+    {
+        var env = MusicBrainzLookupExecutionListenerTestEnvironment.WithADuplicateExecutionCommandDto();
+
+        await env.HandleDuplicateExecutionCommand();
+
+        env.DiscoveryStatus.Updates.Should().ContainSingle();
+        env.DiscoveryStatus.Updates["search:track:rare unknown song"].Status.Should().Be(CatalogSearchLifecycleStatus.InProgress);
+    }
+
+    [Fact]
+    public async Task Given_A_Failing_Execution_Command_Dto_When_Handled_Then_CatalogSearch_Status_Is_Projected_As_Failed()
+    {
+        var env = MusicBrainzLookupExecutionListenerTestEnvironment.WithANewExecutionCommandDto();
+        env.Throw(new InvalidOperationException("boom"));
+
+        Func<Task> act = () => env.HandleNewExecutionCommand();
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        env.DiscoveryStatus.Updates["search:track:rare unknown song"].Status.Should().Be(CatalogSearchLifecycleStatus.Failed);
     }
 }

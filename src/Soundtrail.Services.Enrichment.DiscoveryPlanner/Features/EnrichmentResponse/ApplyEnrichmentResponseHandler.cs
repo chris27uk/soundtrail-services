@@ -4,7 +4,6 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
 using System.Text.Json;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse;
@@ -12,8 +11,8 @@ namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentRes
 public sealed class ApplyEnrichmentResponseHandler(
     IMusicTrackEventRepository eventRepository,
     IProviderSnapshotStore snapshotStore,
-    IPotentialCatalogLookupWorkStore rankedMusicCandidateStore,
-    IUpsertDiscoveryStatusPort upsertDiscoveryStatusPort)
+    ICatalogSearchTrackingStore catalogSearchTrackingStore,
+    IUpsertCatalogSearchStatusPort upsertDiscoveryStatusPort)
 {
     public async Task<EnrichmentOrchestrationResult> Handle(
         Domain.Responses.EnrichmentResponse response,
@@ -37,23 +36,20 @@ public sealed class ApplyEnrichmentResponseHandler(
                 JsonSerializer.Serialize(ToDto(response))),
             cancellationToken);
 
-        var candidate = await rankedMusicCandidateStore.FindByMusicCatalogIdAsync(response.MusicCatalogId, cancellationToken);
-        if (candidate is not null)
+        var trackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(response.MusicCatalogId, cancellationToken);
+        foreach (var tracking in trackings)
         {
-            foreach (var queryKey in candidate.QueryKeys)
-            {
-                await upsertDiscoveryStatusPort.UpsertAsync(
-                    new DiscoveryStatusUpdate(
-                        queryKey,
-                        DiscoveryLifecycleStatus.Completed,
-                        response.Priority,
-                        WillBeLookedUp: false,
-                        EstimatedRetryAfterSeconds: null,
-                        EarliestExpectedCompletionAt: null,
-                        Reason: "Discovery completed",
-                        UpdatedAt: response.CreatedAt),
-                    cancellationToken);
-            }
+            await upsertDiscoveryStatusPort.UpsertAsync(
+                new CatalogSearchStatusUpdate(
+                    tracking.Criteria,
+                    CatalogSearchLifecycleStatus.Completed,
+                    response.Priority,
+                    WillBeLookedUp: false,
+                    EstimatedRetryAfterSeconds: null,
+                    EarliestExpectedCompletionAt: null,
+                    Reason: "Discovery completed",
+                    UpdatedAt: response.CreatedAt),
+                cancellationToken);
         }
 
         return new EnrichmentOrchestrationResult(

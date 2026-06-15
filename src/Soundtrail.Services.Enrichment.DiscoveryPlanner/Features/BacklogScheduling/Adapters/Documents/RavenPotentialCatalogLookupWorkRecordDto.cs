@@ -16,8 +16,6 @@ internal sealed class RavenPotentialCatalogLookupWorkRecordDto
 
     public DateTimeOffset? NextEligibleAt { get; set; }
 
-    public string[] QueryKeys { get; set; } = [];
-
     public static string GetDocumentId(string musicCatalogId) =>
         $"potential-catalog-lookup-work/{Uri.EscapeDataString(musicCatalogId)}";
 }

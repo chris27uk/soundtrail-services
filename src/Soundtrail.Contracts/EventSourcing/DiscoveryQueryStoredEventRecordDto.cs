@@ -6,7 +6,7 @@ public sealed class DiscoveryQueryStoredEventRecordDto
 
     public string Id { get; set; } = string.Empty;
 
-    public string QueryKey { get; set; } = string.Empty;
+    public string Criteria { get; set; } = string.Empty;
 
     public string AggregateType { get; set; } = AggregateTypeValue;
 
@@ -20,6 +20,6 @@ public sealed class DiscoveryQueryStoredEventRecordDto
 
     public string? CorrelationId { get; set; }
 
-    public static string GetDocumentId(string queryKey, int version) =>
-        $"discovery-query-events/{queryKey}/{version:D10}";
+    public static string GetDocumentId(string criteria, int version) =>
+        $"discovery-query-events/{criteria}/{version:D10}";
 }

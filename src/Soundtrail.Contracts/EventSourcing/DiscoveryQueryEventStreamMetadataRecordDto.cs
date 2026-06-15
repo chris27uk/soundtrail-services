@@ -4,7 +4,7 @@ public sealed class DiscoveryQueryEventStreamMetadataRecordDto
 {
     public string Id { get; set; } = string.Empty;
 
-    public string QueryKey { get; set; } = string.Empty;
+    public string Criteria { get; set; } = string.Empty;
 
     public string AggregateType { get; set; } = DiscoveryQueryStoredEventRecordDto.AggregateTypeValue;
 
@@ -12,5 +12,5 @@ public sealed class DiscoveryQueryEventStreamMetadataRecordDto
 
     public DateTimeOffset UpdatedAtUtc { get; set; }
 
-    public static string GetDocumentId(string queryKey) => $"discovery-query-streams/{queryKey}";
+    public static string GetDocumentId(string criteria) => $"discovery-query-streams/{criteria}";
 }

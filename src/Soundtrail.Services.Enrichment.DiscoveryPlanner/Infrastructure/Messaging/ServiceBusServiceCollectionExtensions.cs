@@ -29,7 +29,7 @@ public static class ServiceBusServiceCollectionExtensions
         opts.UseRuntimeCompilation();
         opts.ServiceLocationPolicy = ServiceLocationPolicy.AllowedButWarn;
         opts.Discovery.DisableConventionalDiscovery();
-        opts.Discovery.IncludeType<LookupMusicRequestListener>();
+        opts.Discovery.IncludeType<CatalogSearchAttemptListener>();
         opts.Discovery.IncludeType<DiscoveryBacklogSchedulingListener>();
         opts.Discovery.IncludeType<EnrichmentResponseListener>();
         opts.Policies.AutoApplyTransactions();
@@ -55,7 +55,7 @@ public static class ServiceBusServiceCollectionExtensions
                 .EnableWolverineControlQueues();
         }
 
-        opts.ListenToAzureServiceBusQueue(serviceBusOptions.LookupMusicRequestsQueueName)
+        opts.ListenToAzureServiceBusQueue(serviceBusOptions.CatalogSearchAttemptsQueueName)
             .ProcessInline();
 
         opts.ListenToAzureServiceBusQueue(serviceBusOptions.EnrichmentResponsesQueueName)

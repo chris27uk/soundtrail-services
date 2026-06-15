@@ -15,8 +15,7 @@ internal static class RavenPotentialCatalogLookupWorkMappings
             document.HighestTrustLevelSeen,
             document.RiskScore,
             Enum.Parse<PotentialCatalogLookupWorkStatus>(document.Status, ignoreCase: true),
-            document.NextEligibleAt,
-            document.QueryKeys.Select(DiscoveryQueryKey.From).ToArray());
+            document.NextEligibleAt);
 
     public static RavenPotentialCatalogLookupWorkRecordDto ToRecordDto(this PotentialCatalogLookupWork candidate) =>
         new()
@@ -27,8 +26,7 @@ internal static class RavenPotentialCatalogLookupWorkMappings
             HighestTrustLevelSeen = candidate.HighestTrustLevelSeen,
             RiskScore = candidate.RiskScore,
             Status = candidate.Status.ToString(),
-            NextEligibleAt = candidate.NextEligibleAt,
-            QueryKeys = candidate.QueryKeys.Select(queryKey => queryKey.Value).ToArray()
+            NextEligibleAt = candidate.NextEligibleAt
         };
 
     public static void ApplyTo(this PotentialCatalogLookupWork candidate, RavenPotentialCatalogLookupWorkRecordDto document)
@@ -40,6 +38,5 @@ internal static class RavenPotentialCatalogLookupWorkMappings
         document.RiskScore = candidate.RiskScore;
         document.Status = candidate.Status.ToString();
         document.NextEligibleAt = candidate.NextEligibleAt;
-        document.QueryKeys = candidate.QueryKeys.Select(queryKey => queryKey.Value).ToArray();
     }
 }

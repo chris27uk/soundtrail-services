@@ -11,7 +11,7 @@ public sealed record SearchTypesFilter(IReadOnlyList<SearchResultType> Types)
 
     public bool Includes(SearchResultType type) => Types.Contains(type);
 
-    public string ToQueryKeyType() =>
+    public string ToCriteriaType() =>
         string.Join(',', Types
             .Distinct()
             .OrderBy(type => type)

@@ -92,8 +92,8 @@ public sealed class RavenCatalogSearch(IDocumentStore documentStore) : ICatalogS
             .Take(command.Limit.Value)
             .ToArray();
 
-        var discoveryStatus = await session.LoadAsync<DiscoveryStatusRecordDto>(
-            DiscoveryStatusRecordDto.GetDocumentId(command.ToDiscoveryQueryKey().Value),
+        var discoveryStatus = await session.LoadAsync<CatalogSearchStatusRecordDto>(
+            CatalogSearchStatusRecordDto.GetDocumentId(command.ToCatalogSearchCriteria().Value),
             cancellationToken);
 
         return new LocalCatalogSearchResponse(

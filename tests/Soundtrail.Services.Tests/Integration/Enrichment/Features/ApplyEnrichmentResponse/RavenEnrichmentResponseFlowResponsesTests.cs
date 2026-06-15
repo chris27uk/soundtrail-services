@@ -9,7 +9,6 @@ using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Documents;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
 using Soundtrail.Domain.Discovery;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ApplyEnrichmentResponse;
@@ -38,16 +37,12 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
                 },
                 IsPlayable = false
             });
-            var rankedStore = new RavenPotentialCatalogLookupWorkStore(raven.Store, seedSession);
-            await rankedStore.UpsertAsync(
-                new PotentialCatalogLookupWork(
+            var trackingStore = new RavenCatalogSearchTrackingStore(raven.Store, seedSession);
+            await trackingStore.UpsertAsync(
+                new CatalogSearchTracking(
+                    CatalogSearchCriteria.Search("track", "rare unknown song"),
                     MusicCatalogId.From("mc_track_1"),
-                    RequestCount: 1,
-                    HighestTrustLevelSeen: 1,
-                    RiskScore: 10,
-                    Status: PotentialCatalogLookupWorkStatus.Pending,
-                    NextEligibleAt: null,
-                    QueryKeys: [DiscoveryQueryKey.Search("track", "rare unknown song")]),
+                    new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero)),
                 CancellationToken.None);
             await seedSession.SaveChangesAsync();
         }
@@ -79,8 +74,8 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
         track.Title.Should().Be("Rare Unknown Song");
         track.Artist.Should().Be("Test Artist");
 
-        var status = await verificationSession.LoadAsync<DiscoveryStatusRecordDto>(
-            DiscoveryStatusRecordDto.GetDocumentId(DiscoveryQueryKey.Search("track", "rare unknown song").Value),
+        var status = await verificationSession.LoadAsync<CatalogSearchStatusRecordDto>(
+            CatalogSearchStatusRecordDto.GetDocumentId(CatalogSearchCriteria.Search("track", "rare unknown song").Value),
             CancellationToken.None);
         status.Should().NotBeNull();
         status!.Status.Should().Be("Completed");
@@ -90,8 +85,8 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
         new(new ApplyEnrichmentResponseHandler(
             new RavenMusicTrackStreamStore(session),
             new RavenProviderSnapshotStore(session),
-            new RavenPotentialCatalogLookupWorkStore(session.Advanced.DocumentStore, session),
-            new RavenUpsertDiscoveryStatus(session.Advanced.DocumentStore)));
+            new RavenCatalogSearchTrackingStore(session.Advanced.DocumentStore, session),
+            new RavenUpsertCatalogSearchStatus(session.Advanced.DocumentStore)));
 
     private static async Task ReplayProjectionsAsync(RavenEmbeddedTestDatabase raven)
     {

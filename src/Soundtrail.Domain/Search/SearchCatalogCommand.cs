@@ -10,5 +10,5 @@ public sealed record SearchCatalogCommand(
     SearchLimit Limit,
     SearchOffset Offset)
 {
-    public DiscoveryQueryKey ToDiscoveryQueryKey() => DiscoveryQueryKey.Search(Types.ToQueryKeyType(), Query.Value);
+    public CatalogSearchCriteria ToCatalogSearchCriteria() => CatalogSearchCriteria.Search(Types.ToCriteriaType(), Query.Value);
 }

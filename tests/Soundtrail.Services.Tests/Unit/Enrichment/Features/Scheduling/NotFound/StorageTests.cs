@@ -9,7 +9,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.NotFound
         [Fact]
         public async Task Given_A_Request_That_Cannot_Be_Resolved_When_Handled_Then_No_Candidate_Is_Stored()
         {
-            var env = LookupMusicRequestHandlerTestEnvironment.WithNoExistingCandidates();
+            var env = CatalogSearchAttemptHandlerTestEnvironment.WithNoExistingCandidates();
             env.Search.Fails();
 
             try

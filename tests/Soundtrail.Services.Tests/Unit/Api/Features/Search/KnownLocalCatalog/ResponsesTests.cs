@@ -28,6 +28,6 @@ public sealed class ResponsesTests
         var response = await env.Handler.Handle(env.Request("mr brightside"));
 
         response.Discovery.WillBeLookedUp.Should().BeFalse();
-        env.EnqueueMusicRequests.Requests.Should().BeEmpty();
+        env.CatalogSearchAttemptQueues.Requests.Should().BeEmpty();
     }
 }

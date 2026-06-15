@@ -1,8 +1,6 @@
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
 using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Discovery;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -14,18 +12,14 @@ public static class Candidates
         int highestTrustLevelSeen = 0,
         int riskScore = 5,
         PotentialCatalogLookupWorkStatus status = PotentialCatalogLookupWorkStatus.Pending,
-        DateTimeOffset? nextEligibleAt = null,
-        params DiscoveryQueryKey[] queryKeys) =>
+        DateTimeOffset? nextEligibleAt = null) =>
         new(
             MusicCatalogId: musicCatalogId,
             RequestCount: requestCount,
             HighestTrustLevelSeen: highestTrustLevelSeen,
             RiskScore: riskScore,
             Status: status,
-            NextEligibleAt: nextEligibleAt,
-            QueryKeys: queryKeys.Length == 0
-                ? [DiscoveryQueryKey.Track(TrackId.From(musicCatalogId.Value))]
-                : queryKeys);
+            NextEligibleAt: nextEligibleAt);
 
     public static PotentialCatalogLookupWork PopularEligibleCandidate(string musicCatalogId = "mc_track_high") =>
         ExistingCandidate(

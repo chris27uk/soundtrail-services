@@ -72,13 +72,13 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
             opts.ServiceLocationPolicy = ServiceLocationPolicy.AllowedButWarn;
             opts.Discovery.DisableConventionalDiscovery();
             opts.Discovery.IncludeType<PipelineMessageCaptureHandler>();
-            opts.LocalQueueFor<LookupMusicRequestDto>();
+            opts.LocalQueueFor<CatalogSearchAttemptDto>();
         });
 
         builder.Services.AddApiAppServices(builder.Configuration, builder.Environment, options =>
         {
             options.UseInMemoryQueueing = false;
-            options.ConfigureQueueingDependencies = services => services.TryAddScoped<IEnqueueMusicRequest, WolverineEnqueueMusicRequest>();
+            options.ConfigureQueueingDependencies = services => services.TryAddScoped<IEnqueueCatalogSearchAttempt, WolverineEnqueueCatalogSearchAttempt>();
             options.ConfigureCatalogSearchDependencies = services =>
             {
                 services.AddEmbeddedRavenForTesting(raven.Store);
@@ -145,20 +145,20 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
     public int CountMessages<TMessage>() where TMessage : class =>
         pipelineMessageCapture.Count<TMessage>();
 
-    public async Task<bool> HasDiscoveryRequestAsync(string queryKey)
+    public async Task<bool> HasDiscoveryRequestAsync(string criteria)
     {
         using var session = raven.Store.OpenAsyncSession();
         var metadata = await session.LoadAsync<DiscoveryQueryEventStreamMetadataRecordDto>(
-            DiscoveryQueryEventStreamMetadataRecordDto.GetDocumentId(queryKey),
+            DiscoveryQueryEventStreamMetadataRecordDto.GetDocumentId(criteria),
             CancellationToken.None);
         return metadata is not null;
     }
 
-    public async Task<int> CountDiscoveryRequestEventsAsync(string queryKey)
+    public async Task<int> CountDiscoveryRequestEventsAsync(string criteria)
     {
         using var session = raven.Store.OpenAsyncSession();
         var events = await session.Advanced.AsyncDocumentQuery<DiscoveryQueryStoredEventRecordDto>()
-            .WhereEquals(nameof(DiscoveryQueryStoredEventRecordDto.QueryKey), queryKey)
+            .WhereEquals(nameof(DiscoveryQueryStoredEventRecordDto.Criteria), criteria)
             .ToListAsync(CancellationToken.None);
         return events.Count;
     }
@@ -265,11 +265,11 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
         using var session = store.OpenSession();
         session.Advanced.WaitForIndexesAfterSaveChanges();
 
-        var queryKey = DiscoveryQueryKey.Search(types, normalizedQuery).Value;
-        var document = new DiscoveryStatusRecordDto
+        var criteria = CatalogSearchCriteria.Search(types, normalizedQuery).Value;
+        var document = new CatalogSearchStatusRecordDto
         {
-            Id = DiscoveryStatusRecordDto.GetDocumentId(queryKey),
-            QueryKey = queryKey,
+            Id = CatalogSearchStatusRecordDto.GetDocumentId(criteria),
+            Criteria = criteria,
             Status = "Planned",
             Priority = "High",
             WillBeLookedUp = willBeLookedUp,

@@ -43,13 +43,13 @@ public static class AppServiceCollectionExtensions
             {
                 if (options.UseInMemoryQueueing)
                 {
-                    svc.TryAddSingleton<IEnqueueMusicRequest, InMemoryEnqueueMusicRequest>();
-                    svc.TryAddSingleton<IQueueLookupMusicRequest>(sp => sp.GetRequiredService<IEnqueueMusicRequest>());
-                    svc.TryAddSingleton<Soundtrail.Domain.Commands.IQueueLookupMusicRequestPort>(sp => sp.GetRequiredService<IQueueLookupMusicRequest>());
+                    svc.TryAddSingleton<IEnqueueCatalogSearchAttempt, InMemoryEnqueueCatalogSearchAttempt>();
+                    svc.TryAddSingleton<IQueueCatalogSearchAttempt>(sp => sp.GetRequiredService<IEnqueueCatalogSearchAttempt>());
+                    svc.TryAddSingleton<Soundtrail.Domain.Commands.IQueueCatalogSearchAttemptPort>(sp => sp.GetRequiredService<IQueueCatalogSearchAttempt>());
                 }
                 else
                 {
-                    svc.AddLookupMusicRequestQueue(configuration);
+                    svc.AddCatalogSearchAttemptQueue(configuration);
                 }
             });
 

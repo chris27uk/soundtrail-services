@@ -18,10 +18,10 @@ public static class ServiceCollectionExtensions
         configure?.Invoke(options);
 
         options.ConfigureQueueingDependencies?.Invoke(services);
-        services.TryAddScoped<IQueueLookupMusicRequest>(sp => sp.GetRequiredService<IEnqueueMusicRequest>());
-        services.TryAddScoped<IQueueLookupMusicRequestPort>(sp => sp.GetRequiredService<IQueueLookupMusicRequest>());
+        services.TryAddScoped<IQueueCatalogSearchAttempt>(sp => sp.GetRequiredService<IEnqueueCatalogSearchAttempt>());
+        services.TryAddScoped<IQueueCatalogSearchAttemptPort>(sp => sp.GetRequiredService<IQueueCatalogSearchAttempt>());
         options.ConfigureCatalogSearchDependencies?.Invoke(services);
-        services.TryAddScoped<IRequestDiscoveryPort, RavenRequestDiscovery>();
+        services.TryAddScoped<IRecordCatalogSearchAttemptPort, RavenRecordCatalogSearchAttempt>();
         services.TryAddScoped<IHandler<SearchCatalogCommand, SearchCatalogResponse>, SearchCatalogHandler>();
 
         return services;

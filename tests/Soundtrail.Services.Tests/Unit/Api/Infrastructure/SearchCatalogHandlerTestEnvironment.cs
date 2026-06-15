@@ -11,12 +11,12 @@ internal sealed class SearchCatalogHandlerTestEnvironment
 {
     private SearchCatalogHandlerTestEnvironment(
         FakeCatalogSearchPort catalogSearch,
-        InMemoryEnqueueMusicRequest enqueueMusicRequests,
-        InMemoryRequestDiscovery requestDiscovery)
+        InMemoryEnqueueCatalogSearchAttempt enqueueMusicRequests,
+        InMemoryRecordCatalogSearchAttempt requestDiscovery)
     {
         CatalogSearch = catalogSearch;
-        EnqueueMusicRequests = enqueueMusicRequests;
-        RequestDiscovery = requestDiscovery;
+        CatalogSearchAttemptQueues = enqueueMusicRequests;
+        RecordedCatalogSearchAttempts = requestDiscovery;
         Handler = new SearchCatalogHandler(catalogSearch, requestDiscovery);
     }
 
@@ -24,9 +24,9 @@ internal sealed class SearchCatalogHandlerTestEnvironment
 
     public FakeCatalogSearchPort CatalogSearch { get; }
 
-    public InMemoryEnqueueMusicRequest EnqueueMusicRequests { get; }
+    public InMemoryEnqueueCatalogSearchAttempt CatalogSearchAttemptQueues { get; }
 
-    public InMemoryRequestDiscovery RequestDiscovery { get; }
+    public InMemoryRecordCatalogSearchAttempt RecordedCatalogSearchAttempts { get; }
 
     public static SearchCatalogHandlerTestEnvironment WithKnownTrack() =>
         Create(
@@ -46,7 +46,7 @@ internal sealed class SearchCatalogHandlerTestEnvironment
     public static SearchCatalogHandlerTestEnvironment WithRecordedDiscoveryRequest() =>
         Create(
             new FakeCatalogSearchPort([], discovery: null, isComplete: false),
-            seedRequestDiscovery: true);
+            seedRecordedCatalogSearchAttempts: true);
 
     public SearchCatalogCommand Request(
         string query,
@@ -63,15 +63,15 @@ internal sealed class SearchCatalogHandlerTestEnvironment
 
     private static SearchCatalogHandlerTestEnvironment Create(
         FakeCatalogSearchPort catalogSearch,
-        bool seedRequestDiscovery = false)
+        bool seedRecordedCatalogSearchAttempts = false)
     {
-        var queue = new InMemoryEnqueueMusicRequest();
-        var requestDiscovery = new InMemoryRequestDiscovery(queue);
+        var queue = new InMemoryEnqueueCatalogSearchAttempt();
+        var requestDiscovery = new InMemoryRecordCatalogSearchAttempt(queue);
         var env = new SearchCatalogHandlerTestEnvironment(catalogSearch, queue, requestDiscovery);
 
-        if (seedRequestDiscovery)
+        if (seedRecordedCatalogSearchAttempts)
         {
-            requestDiscovery.Seed(env.Request("rare unknown song").ToDiscoveryQueryKey());
+            requestDiscovery.Seed(env.Request("rare unknown song").ToCatalogSearchCriteria());
         }
 
         return env;

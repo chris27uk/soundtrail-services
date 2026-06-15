@@ -2,6 +2,7 @@ using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
@@ -51,5 +52,28 @@ public sealed class PlaybackReferencesLookupExecutionListenerTests
         var env = PlaybackReferencesLookupExecutionListenerTestEnvironment.WithADuplicateExecutionCommandDto();
         var duplicate = await env.HandleDuplicateExecutionCommand();
         duplicate.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Given_A_New_Execution_Command_Dto_When_Handled_Then_CatalogSearch_Status_Is_Projected_As_InProgress()
+    {
+        var env = PlaybackReferencesLookupExecutionListenerTestEnvironment.WithANewExecutionCommandDto();
+        env.Seed(MusicSearchTerm.ByIsrc("isrc-1"));
+
+        await env.HandleNewExecutionCommand();
+
+        env.DiscoveryStatus.Updates["search:track:rare unknown song"].Status.Should().Be(CatalogSearchLifecycleStatus.InProgress);
+    }
+
+    [Fact]
+    public async Task Given_A_Failing_Execution_Command_Dto_When_Handled_Then_CatalogSearch_Status_Is_Projected_As_Failed()
+    {
+        var env = PlaybackReferencesLookupExecutionListenerTestEnvironment.WithANewExecutionCommandDto();
+        env.Throw(new InvalidOperationException("boom"));
+
+        Func<Task> act = () => env.HandleNewExecutionCommand();
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        env.DiscoveryStatus.Updates["search:track:rare unknown song"].Status.Should().Be(CatalogSearchLifecycleStatus.Failed);
     }
 }

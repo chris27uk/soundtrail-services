@@ -9,7 +9,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.Existing
         public async Task Given_A_Resolved_Request_That_Is_Not_Yet_Eligible_When_Handled_Then_No_Command_Is_Queued()
         {
             const string musicCatalogId = "mc_track_1";
-            var env = LookupMusicRequestHandlerTestEnvironment.WithExistingNotYetEligibleCandidate(musicCatalogId);
+            var env = CatalogSearchAttemptHandlerTestEnvironment.WithExistingNotYetEligibleCandidate(musicCatalogId);
 
             var result = await env.Handler.Handle(env.Request(
                 "rare unknown song",

@@ -4,7 +4,6 @@ using Soundtrail.Domain.Model;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
 using Soundtrail.Domain.Discovery;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
@@ -15,13 +14,13 @@ internal sealed class EnrichmentResponseListenerTestEnvironment
     {
         StreamStore = new MusicTrackStreamStoreFake();
         SnapshotStore = new ProviderSnapshotStoreFake();
-        PotentialCatalogLookupWorks = new PotentialCatalogLookupWorkStoreFake();
-        DiscoveryStatus = new InMemoryUpsertDiscoveryStatus();
+        CatalogSearchTrackings = new CatalogSearchTrackingStoreFake();
+        DiscoveryStatus = new InMemoryUpsertCatalogSearchStatus();
         Listener = new EnrichmentResponseListener(
             new ApplyEnrichmentResponseHandler(
                 StreamStore,
                 SnapshotStore,
-                PotentialCatalogLookupWorks,
+                CatalogSearchTrackings,
                 DiscoveryStatus));
     }
 
@@ -31,21 +30,27 @@ internal sealed class EnrichmentResponseListenerTestEnvironment
 
     public ProviderSnapshotStoreFake SnapshotStore { get; }
 
-    public PotentialCatalogLookupWorkStoreFake PotentialCatalogLookupWorks { get; }
+    public CatalogSearchTrackingStoreFake CatalogSearchTrackings { get; }
 
-    public InMemoryUpsertDiscoveryStatus DiscoveryStatus { get; }
+    public InMemoryUpsertCatalogSearchStatus DiscoveryStatus { get; }
 
     public static EnrichmentResponseListenerTestEnvironment WithAMusicBrainzResponseDto()
     {
         var env = new EnrichmentResponseListenerTestEnvironment();
-        env.PotentialCatalogLookupWorks.Seed(new PotentialCatalogLookupWork(
+        env.CatalogSearchTrackings.Seed(new CatalogSearchTracking(
+            CatalogSearchCriteria.Search("track", "rare unknown song"),
             MusicCatalogId.From("mc_track_1"),
-            RequestCount: 1,
-            HighestTrustLevelSeen: 1,
-            RiskScore: 10,
-            Status: PotentialCatalogLookupWorkStatus.Pending,
-            NextEligibleAt: null,
-            QueryKeys: [DiscoveryQueryKey.Search("track", "rare unknown song")]));
+            new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero)));
+        return env;
+    }
+
+    public static EnrichmentResponseListenerTestEnvironment WithMultipleTrackingsForTheSameMusicCatalogId()
+    {
+        var env = WithAMusicBrainzResponseDto();
+        env.CatalogSearchTrackings.Seed(new CatalogSearchTracking(
+            CatalogSearchCriteria.Search("track", "rare unknown song live"),
+            MusicCatalogId.From("mc_track_1"),
+            new DateTimeOffset(2026, 6, 8, 12, 1, 0, TimeSpan.Zero)));
         return env;
     }
 

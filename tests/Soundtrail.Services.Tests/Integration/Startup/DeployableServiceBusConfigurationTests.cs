@@ -18,7 +18,7 @@ public sealed class DeployableServiceBusConfigurationTests
     {
         var options = BindOptions<ApiServiceBusOptions>("src/Soundtrail.Services.Api/appsettings.json");
 
-        options.LookupMusicRequestsQueueName.Should().Be("lookup-music-requests");
+        options.CatalogSearchAttemptsQueueName.Should().Be("lookup-music-requests");
     }
 
     [Fact]
@@ -26,7 +26,7 @@ public sealed class DeployableServiceBusConfigurationTests
     {
         var options = BindOptions<DiscoveryPlannerServiceBusOptions>("src/Soundtrail.Services.Enrichment.DiscoveryPlanner/appsettings.json");
 
-        options.LookupMusicRequestsQueueName.Should().Be("lookup-music-requests");
+        options.CatalogSearchAttemptsQueueName.Should().Be("lookup-music-requests");
         options.MusicBrainzLookupQueueName.Should().Be("lookup-musicbrainz");
         options.PlaybackReferencesLookupQueueName.Should().Be("lookup-playback-references");
         options.EnrichmentResponsesQueueName.Should().Be("enrichment-responses");

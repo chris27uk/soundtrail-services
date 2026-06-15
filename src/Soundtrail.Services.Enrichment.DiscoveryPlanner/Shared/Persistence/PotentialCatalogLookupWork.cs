@@ -12,8 +12,7 @@ public sealed record PotentialCatalogLookupWork(
     int HighestTrustLevelSeen,
     int RiskScore,
     PotentialCatalogLookupWorkStatus Status,
-    DateTimeOffset? NextEligibleAt,
-    IReadOnlyList<DiscoveryQueryKey> QueryKeys)
+    DateTimeOffset? NextEligibleAt)
 {
     public RiskBand RiskBand => ToRiskBand(RiskScore);
 
@@ -23,7 +22,7 @@ public sealed record PotentialCatalogLookupWork(
 
     public bool IsEligibleAt(DateTimeOffset when) => NextEligibleAt is null || NextEligibleAt <= when;
 
-    public static PotentialCatalogLookupWork Create(LookupMusicRequest request, MusicCatalogId musicCatalogId)
+    public static PotentialCatalogLookupWork Create(CatalogSearchAttempt request, MusicCatalogId musicCatalogId)
     {
         var riskBand = ToRiskBand(request.RiskScore);
 
@@ -33,11 +32,10 @@ public sealed record PotentialCatalogLookupWork(
             HighestTrustLevelSeen: request.TrustLevel,
             RiskScore: request.RiskScore,
             Status: riskBand == RiskBand.Blocked ? PotentialCatalogLookupWorkStatus.Ignored : PotentialCatalogLookupWorkStatus.Pending,
-            NextEligibleAt: null,
-            QueryKeys: [request.QueryKey]);
+            NextEligibleAt: null);
     }
 
-    public PotentialCatalogLookupWork AcceptNewRequest(LookupMusicRequest request)
+    public PotentialCatalogLookupWork AcceptNewRequest(CatalogSearchAttempt request)
     {
         var updatedRiskScore = Math.Max(RiskScore, request.RiskScore);
 
@@ -46,21 +44,8 @@ public sealed record PotentialCatalogLookupWork(
             RequestCount = RequestCount + 1,
             HighestTrustLevelSeen = Math.Max(HighestTrustLevelSeen, request.TrustLevel),
             RiskScore = updatedRiskScore,
-            Status = PromoteStatus(Status, ToRiskBand(updatedRiskScore)),
-            QueryKeys = AddQueryKey(QueryKeys, request.QueryKey)
+            Status = PromoteStatus(Status, ToRiskBand(updatedRiskScore))
         };
-    }
-
-    private static IReadOnlyList<DiscoveryQueryKey> AddQueryKey(
-        IReadOnlyList<DiscoveryQueryKey> existing,
-        DiscoveryQueryKey queryKey)
-    {
-        if (existing.Contains(queryKey))
-        {
-            return existing;
-        }
-
-        return existing.Concat([queryKey]).ToArray();
     }
 
     private static RiskBand ToRiskBand(int riskScore)
