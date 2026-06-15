@@ -2,40 +2,44 @@ using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
 using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Discovery;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters;
 
-internal static class RavenRankedMusicCandidateMappings
+internal static class RavenPotentialCatalogLookupWorkMappings
 {
-    public static RankedMusicCandidate ToDomain(this RavenRankedMusicCandidateRecordDto document) =>
+    public static PotentialCatalogLookupWork ToDomain(this RavenPotentialCatalogLookupWorkRecordDto document) =>
         new(
             MusicCatalogId.From(document.MusicCatalogId),
             document.RequestCount,
             document.HighestTrustLevelSeen,
             document.RiskScore,
-            Enum.Parse<RankedMusicCandidateStatus>(document.Status, ignoreCase: true),
-            document.NextEligibleAt);
+            Enum.Parse<PotentialCatalogLookupWorkStatus>(document.Status, ignoreCase: true),
+            document.NextEligibleAt,
+            document.QueryKeys.Select(DiscoveryQueryKey.From).ToArray());
 
-    public static RavenRankedMusicCandidateRecordDto ToRecordDto(this RankedMusicCandidate candidate) =>
+    public static RavenPotentialCatalogLookupWorkRecordDto ToRecordDto(this PotentialCatalogLookupWork candidate) =>
         new()
         {
-            Id = RavenRankedMusicCandidateRecordDto.GetDocumentId(candidate.MusicCatalogId.Value),
+            Id = RavenPotentialCatalogLookupWorkRecordDto.GetDocumentId(candidate.MusicCatalogId.Value),
             MusicCatalogId = candidate.MusicCatalogId.Value,
             RequestCount = candidate.RequestCount,
             HighestTrustLevelSeen = candidate.HighestTrustLevelSeen,
             RiskScore = candidate.RiskScore,
             Status = candidate.Status.ToString(),
-            NextEligibleAt = candidate.NextEligibleAt
+            NextEligibleAt = candidate.NextEligibleAt,
+            QueryKeys = candidate.QueryKeys.Select(queryKey => queryKey.Value).ToArray()
         };
 
-    public static void ApplyTo(this RankedMusicCandidate candidate, RavenRankedMusicCandidateRecordDto document)
+    public static void ApplyTo(this PotentialCatalogLookupWork candidate, RavenPotentialCatalogLookupWorkRecordDto document)
     {
-        document.Id = RavenRankedMusicCandidateRecordDto.GetDocumentId(candidate.MusicCatalogId.Value);
+        document.Id = RavenPotentialCatalogLookupWorkRecordDto.GetDocumentId(candidate.MusicCatalogId.Value);
         document.MusicCatalogId = candidate.MusicCatalogId.Value;
         document.RequestCount = candidate.RequestCount;
         document.HighestTrustLevelSeen = candidate.HighestTrustLevelSeen;
         document.RiskScore = candidate.RiskScore;
         document.Status = candidate.Status.ToString();
         document.NextEligibleAt = candidate.NextEligibleAt;
+        document.QueryKeys = candidate.QueryKeys.Select(queryKey => queryKey.Value).ToArray();
     }
 }

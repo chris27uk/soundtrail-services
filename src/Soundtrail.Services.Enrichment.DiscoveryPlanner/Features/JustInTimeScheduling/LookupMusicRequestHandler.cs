@@ -13,7 +13,7 @@ namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeSch
 
 public sealed class LookupMusicRequestHandler(
     IMusicCatalogCandidateSearch musicCatalogCandidateSearch,
-    IRankedMusicCandidateStore rankedMusicCandidateStore,
+    IPotentialCatalogLookupWorkStore rankedMusicCandidateStore,
     DiscoveryPriorityPolicy discoveryPriorityPolicy,
     MusicCatalogMatchResolver musicCatalogMatchResolver,
     IActiveLookupWorkStore activeLookupWorkStore,
@@ -40,7 +40,7 @@ public sealed class LookupMusicRequestHandler(
         var musicCatalogId = resolution.MusicCatalogId ?? throw new ResolutionFailedException(resolution.Outcome);
         var existing = await rankedMusicCandidateStore.FindByMusicCatalogIdAsync(musicCatalogId, cancellationToken);
         var rankedMusicCandidate = existing is null
-            ? RankedMusicCandidate.Create(request, musicCatalogId)
+            ? PotentialCatalogLookupWork.Create(request, musicCatalogId)
             : existing.AcceptNewRequest(request);
         await rankedMusicCandidateStore.UpsertAsync(rankedMusicCandidate, cancellationToken);
 

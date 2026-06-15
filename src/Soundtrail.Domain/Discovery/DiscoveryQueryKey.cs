@@ -16,6 +16,8 @@ public readonly record struct DiscoveryQueryKey
 
     public string Value { get; }
 
+    public static DiscoveryQueryKey From(string value) => new(value);
+
     public static DiscoveryQueryKey Search(string type, string normalizedQuery) =>
         new($"search:{Require(type, nameof(type))}:{Require(normalizedQuery, nameof(normalizedQuery))}");
 

@@ -44,7 +44,7 @@ public static class RavenServiceCollectionExtensions
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, RavenDatabaseHostedService>());
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, RavenIndexesHostedService>());
 
-        services.TryAddScoped<IRankedMusicCandidateStore, RavenRankedMusicCandidateStore>();
+        services.TryAddScoped<IPotentialCatalogLookupWorkStore, RavenPotentialCatalogLookupWorkStore>();
         services.TryAddScoped<IActiveLookupWorkStore, RavenActiveLookupWorkStore>();
         services.TryAddScoped<IMusicTrackEventRepository, RavenMusicTrackStreamStore>();
         services.TryAddScoped<IMusicTrackProjectionStore, RavenMusicTrackProjectionStore>();

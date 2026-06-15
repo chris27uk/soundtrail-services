@@ -39,7 +39,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.Existing
                     requestCount: 1,
                     highestTrustLevelSeen: 2,
                     riskScore: 5,
-                    status: RankedMusicCandidateStatus.Pending,
+                    status: PotentialCatalogLookupWorkStatus.Pending,
                     nextEligibleAt: null));
 
             var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
@@ -57,7 +57,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.Existing
                     requestCount: 2,
                     highestTrustLevelSeen: 0,
                     riskScore: 5,
-                    status: RankedMusicCandidateStatus.Resolved,
+                    status: PotentialCatalogLookupWorkStatus.Resolved,
                     nextEligibleAt: null));
 
             var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 15));
@@ -75,7 +75,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.Existing
                     requestCount: 2,
                     highestTrustLevelSeen: 0,
                     riskScore: 90,
-                    status: RankedMusicCandidateStatus.Ignored,
+                    status: PotentialCatalogLookupWorkStatus.Ignored,
                     nextEligibleAt: null));
 
             var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 90));
@@ -94,7 +94,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.Existing
                     requestCount: 2,
                     highestTrustLevelSeen: 0,
                     riskScore: 5,
-                    status: RankedMusicCandidateStatus.Pending,
+                    status: PotentialCatalogLookupWorkStatus.Pending,
                     nextEligibleAt: occurredAt));
 
             var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 15, occurredAt: occurredAt));

@@ -20,7 +20,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.NotFound
             {
             }
 
-            env.RankedMusicCandidates.Should().BeEmpty();
+            env.PotentialCatalogLookupWorks.Should().BeEmpty();
         }
     }
 }

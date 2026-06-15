@@ -1,6 +1,6 @@
-namespace Soundtrail.Services.Api.Infrastructure.Raven.Documents;
+namespace Soundtrail.Contracts;
 
-internal sealed class DiscoveryStatusRecordDto
+public sealed class DiscoveryStatusRecordDto
 {
     public string Id { get; set; } = string.Empty;
 

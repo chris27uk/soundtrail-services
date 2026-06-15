@@ -1,6 +1,6 @@
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters.Documents;
 
-internal sealed class RavenRankedMusicCandidateRecordDto
+internal sealed class RavenPotentialCatalogLookupWorkRecordDto
 {
     public string Id { get; set; } = string.Empty;
 
@@ -16,6 +16,8 @@ internal sealed class RavenRankedMusicCandidateRecordDto
 
     public DateTimeOffset? NextEligibleAt { get; set; }
 
+    public string[] QueryKeys { get; set; } = [];
+
     public static string GetDocumentId(string musicCatalogId) =>
-        $"ranked-music-candidates/{Uri.EscapeDataString(musicCatalogId)}";
+        $"potential-catalog-lookup-work/{Uri.EscapeDataString(musicCatalogId)}";
 }

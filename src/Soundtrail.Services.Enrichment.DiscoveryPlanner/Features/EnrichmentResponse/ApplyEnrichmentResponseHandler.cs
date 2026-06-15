@@ -1,15 +1,19 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
 using System.Text.Json;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse;
 
 public sealed class ApplyEnrichmentResponseHandler(
     IMusicTrackEventRepository eventRepository,
-    IProviderSnapshotStore snapshotStore)
+    IProviderSnapshotStore snapshotStore,
+    IPotentialCatalogLookupWorkStore rankedMusicCandidateStore,
+    IUpsertDiscoveryStatusPort upsertDiscoveryStatusPort)
 {
     public async Task<EnrichmentOrchestrationResult> Handle(
         Domain.Responses.EnrichmentResponse response,
@@ -32,6 +36,25 @@ public sealed class ApplyEnrichmentResponseHandler(
                 response.CreatedAt,
                 JsonSerializer.Serialize(ToDto(response))),
             cancellationToken);
+
+        var candidate = await rankedMusicCandidateStore.FindByMusicCatalogIdAsync(response.MusicCatalogId, cancellationToken);
+        if (candidate is not null)
+        {
+            foreach (var queryKey in candidate.QueryKeys)
+            {
+                await upsertDiscoveryStatusPort.UpsertAsync(
+                    new DiscoveryStatusUpdate(
+                        queryKey,
+                        DiscoveryLifecycleStatus.Completed,
+                        response.Priority,
+                        WillBeLookedUp: false,
+                        EstimatedRetryAfterSeconds: null,
+                        EarliestExpectedCompletionAt: null,
+                        Reason: "Discovery completed",
+                        UpdatedAt: response.CreatedAt),
+                    cancellationToken);
+            }
+        }
 
         return new EnrichmentOrchestrationResult(
             append.Appended ? append.AppendedEvents : Array.Empty<IMusicTrackEvent>());

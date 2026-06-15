@@ -17,7 +17,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.Existing
                 riskScore: 0,
                 occurredAt: new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero)));
 
-            env.RankedMusicCandidates.Should().ContainSingle();
+            env.PotentialCatalogLookupWorks.Should().ContainSingle();
         }
         
         [Fact]
@@ -32,7 +32,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.Existing
                 riskScore: 0,
                 occurredAt: new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero)));
 
-            env.RankedMusicCandidates[0].RequestCount.Should().Be(2);
+            env.PotentialCatalogLookupWorks[0].RequestCount.Should().Be(2);
         }
     }
 }

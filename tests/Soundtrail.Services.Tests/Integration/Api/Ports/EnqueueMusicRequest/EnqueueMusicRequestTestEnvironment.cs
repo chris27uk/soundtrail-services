@@ -5,6 +5,7 @@ using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
 using Soundtrail.Services.Api.Features.Search.SearchCatalog.Adapters;
 using Soundtrail.Services.Api.Features.Search.SearchCatalog.Ports;
@@ -134,6 +135,7 @@ internal sealed class EnqueueMusicRequestTestEnvironment : IAsyncDisposable
 
     public static LookupMusicRequest Request(string query) =>
         new(
+            QueryKey: DiscoveryQueryKey.Search("track", NormalizedSearchQuery.FromText(query).Value),
             Query: query,
             TrustLevel: 2,
             RiskScore: 10,

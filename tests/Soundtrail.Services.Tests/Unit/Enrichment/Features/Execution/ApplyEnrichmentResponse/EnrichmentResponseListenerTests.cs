@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
@@ -37,5 +38,17 @@ public sealed class EnrichmentResponseListenerTests
         var env = EnrichmentResponseListenerTestEnvironment.WithADuplicateMusicBrainzResponseDto();
         await env.HandleDuplicateMusicBrainzResponse();
         env.StreamStore.Streams["mc_track_1"].AppliedCommandIds.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task Given_A_MusicBrainz_Response_Dto_When_Handled_Then_Discovery_Status_Is_Projected_As_Completed()
+    {
+        var env = EnrichmentResponseListenerTestEnvironment.WithAMusicBrainzResponseDto();
+
+        await env.HandleMusicBrainzResponse();
+
+        var status = env.DiscoveryStatus.Updates["search:track:rare unknown song"];
+        status.Status.Should().Be(DiscoveryLifecycleStatus.Completed);
+        status.WillBeLookedUp.Should().BeFalse();
     }
 }

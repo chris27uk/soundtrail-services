@@ -9,33 +9,33 @@ using Soundtrail.Contracts.Common;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters;
 
-public sealed class RavenRankedMusicCandidateStore(
+public sealed class RavenPotentialCatalogLookupWorkStore(
     IDocumentStore documentStore,
-    IAsyncDocumentSession? session = null) : IRankedMusicCandidateStore
+    IAsyncDocumentSession? session = null) : IPotentialCatalogLookupWorkStore
 {
-    public async Task<RankedMusicCandidate?> FindByMusicCatalogIdAsync(
+    public async Task<PotentialCatalogLookupWork?> FindByMusicCatalogIdAsync(
         MusicCatalogId musicCatalogId,
         CancellationToken cancellationToken)
     {
         var (activeSession, dispose) = OpenSession();
         using (dispose)
         {
-            var document = await activeSession.LoadAsync<RavenRankedMusicCandidateRecordDto>(
-                RavenRankedMusicCandidateRecordDto.GetDocumentId(musicCatalogId.Value),
+            var document = await activeSession.LoadAsync<RavenPotentialCatalogLookupWorkRecordDto>(
+                RavenPotentialCatalogLookupWorkRecordDto.GetDocumentId(musicCatalogId.Value),
                 cancellationToken);
 
             return document?.ToDomain();
         }
     }
 
-    public async Task UpsertAsync(RankedMusicCandidate candidate, CancellationToken cancellationToken)
+    public async Task UpsertAsync(PotentialCatalogLookupWork candidate, CancellationToken cancellationToken)
     {
         var ownsSession = session is null;
         var (activeSession, dispose) = OpenSession();
         using (dispose)
         {
-            var documentId = RavenRankedMusicCandidateRecordDto.GetDocumentId(candidate.MusicCatalogId.Value);
-            var existing = await activeSession.LoadAsync<RavenRankedMusicCandidateRecordDto>(
+            var documentId = RavenPotentialCatalogLookupWorkRecordDto.GetDocumentId(candidate.MusicCatalogId.Value);
+            var existing = await activeSession.LoadAsync<RavenPotentialCatalogLookupWorkRecordDto>(
                 documentId,
                 cancellationToken);
 
@@ -55,7 +55,7 @@ public sealed class RavenRankedMusicCandidateStore(
         }
     }
 
-    public async Task<IReadOnlyList<RankedMusicCandidate>> GetPlanningCandidatesAsync(
+    public async Task<IReadOnlyList<PotentialCatalogLookupWork>> GetPlanningCandidatesAsync(
         DateTimeOffset now,
         int take,
         CancellationToken cancellationToken)
@@ -64,8 +64,8 @@ public sealed class RavenRankedMusicCandidateStore(
         using (dispose)
         {
             var documents = await activeSession
-                .Query<RavenRankedMusicCandidateRecordDto, RankedMusicCandidates_ByPlanning>()
-                .Where(candidate => candidate.Status == RankedMusicCandidateStatus.Pending.ToString())
+                .Query<RavenPotentialCatalogLookupWorkRecordDto, PotentialCatalogLookupWork_ByPlanning>()
+                .Where(candidate => candidate.Status == nameof(PotentialCatalogLookupWorkStatus.Pending))
                 .Where(candidate => candidate.NextEligibleAt == null || candidate.NextEligibleAt <= now)
                 .OrderByDescending(candidate => candidate.HighestTrustLevelSeen)
                 .ThenByDescending(candidate => candidate.RequestCount)

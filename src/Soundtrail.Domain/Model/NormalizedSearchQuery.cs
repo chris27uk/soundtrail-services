@@ -1,5 +1,6 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Discovery;
 
 namespace Soundtrail.Domain.Model;
 
@@ -29,9 +30,10 @@ public sealed record NormalizedSearchQuery
         return new NormalizedSearchQuery(normalized);
     }
 
-    public LookupMusicRequest ToNewLookupRequest()
+    public LookupMusicRequest ToNewLookupRequest(DiscoveryQueryKey queryKey)
     {
         return new LookupMusicRequest(
+            queryKey,
             this.Value,
             TrustLevel: 0,
             RiskScore: 0,

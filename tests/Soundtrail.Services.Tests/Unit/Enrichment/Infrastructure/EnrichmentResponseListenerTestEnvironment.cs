@@ -3,6 +3,9 @@ using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Domain.Model;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
+using Soundtrail.Domain.Discovery;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -12,10 +15,14 @@ internal sealed class EnrichmentResponseListenerTestEnvironment
     {
         StreamStore = new MusicTrackStreamStoreFake();
         SnapshotStore = new ProviderSnapshotStoreFake();
+        PotentialCatalogLookupWorks = new PotentialCatalogLookupWorkStoreFake();
+        DiscoveryStatus = new InMemoryUpsertDiscoveryStatus();
         Listener = new EnrichmentResponseListener(
             new ApplyEnrichmentResponseHandler(
                 StreamStore,
-                SnapshotStore));
+                SnapshotStore,
+                PotentialCatalogLookupWorks,
+                DiscoveryStatus));
     }
 
     public EnrichmentResponseListener Listener { get; }
@@ -24,11 +31,27 @@ internal sealed class EnrichmentResponseListenerTestEnvironment
 
     public ProviderSnapshotStoreFake SnapshotStore { get; }
 
-    public static EnrichmentResponseListenerTestEnvironment WithAMusicBrainzResponseDto() => new();
+    public PotentialCatalogLookupWorkStoreFake PotentialCatalogLookupWorks { get; }
 
-    public static EnrichmentResponseListenerTestEnvironment WithAPlaybackReferencesResponseAfterCanonicalMetadata() => new();
+    public InMemoryUpsertDiscoveryStatus DiscoveryStatus { get; }
 
-    public static EnrichmentResponseListenerTestEnvironment WithADuplicateMusicBrainzResponseDto() => new();
+    public static EnrichmentResponseListenerTestEnvironment WithAMusicBrainzResponseDto()
+    {
+        var env = new EnrichmentResponseListenerTestEnvironment();
+        env.PotentialCatalogLookupWorks.Seed(new PotentialCatalogLookupWork(
+            MusicCatalogId.From("mc_track_1"),
+            RequestCount: 1,
+            HighestTrustLevelSeen: 1,
+            RiskScore: 10,
+            Status: PotentialCatalogLookupWorkStatus.Pending,
+            NextEligibleAt: null,
+            QueryKeys: [DiscoveryQueryKey.Search("track", "rare unknown song")]));
+        return env;
+    }
+
+    public static EnrichmentResponseListenerTestEnvironment WithAPlaybackReferencesResponseAfterCanonicalMetadata() => WithAMusicBrainzResponseDto();
+
+    public static EnrichmentResponseListenerTestEnvironment WithADuplicateMusicBrainzResponseDto() => WithAMusicBrainzResponseDto();
 
     public async Task HandleMusicBrainzResponse()
     {

@@ -8,6 +8,7 @@ using Raven.Client.Documents;
 using Raven.Client.Documents.Indexes;
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Contracts;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain;
@@ -265,16 +266,18 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
         session.Advanced.WaitForIndexesAfterSaveChanges();
 
         var queryKey = DiscoveryQueryKey.Search(types, normalizedQuery).Value;
-        var document = Activator.CreateInstance(DiscoveryStatusRecordDtoType)!;
-        Set(document, DiscoveryStatusRecordDtoType, "Id", $"catalog/discovery-status/{queryKey}");
-        Set(document, DiscoveryStatusRecordDtoType, "QueryKey", queryKey);
-        Set(document, DiscoveryStatusRecordDtoType, "Status", "Planned");
-        Set(document, DiscoveryStatusRecordDtoType, "Priority", "High");
-        Set(document, DiscoveryStatusRecordDtoType, "WillBeLookedUp", willBeLookedUp);
-        Set(document, DiscoveryStatusRecordDtoType, "EstimatedRetryAfterSeconds", retryAfterSeconds);
-        Set(document, DiscoveryStatusRecordDtoType, "EarliestExpectedCompletionAt", null);
-        Set(document, DiscoveryStatusRecordDtoType, "Reason", reason);
-        Set(document, DiscoveryStatusRecordDtoType, "UpdatedAt", DateTimeOffset.UtcNow);
+        var document = new DiscoveryStatusRecordDto
+        {
+            Id = DiscoveryStatusRecordDto.GetDocumentId(queryKey),
+            QueryKey = queryKey,
+            Status = "Planned",
+            Priority = "High",
+            WillBeLookedUp = willBeLookedUp,
+            EstimatedRetryAfterSeconds = retryAfterSeconds,
+            EarliestExpectedCompletionAt = null,
+            Reason = reason,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
         session.Store(document);
         session.SaveChanges();
     }
@@ -305,9 +308,6 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
 
     private static readonly Type CatalogTrackRecordDtoType = ApiAssembly
         .GetType("Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogTrackRecordDto", true)!;
-
-    private static readonly Type DiscoveryStatusRecordDtoType = ApiAssembly
-        .GetType("Soundtrail.Services.Api.Infrastructure.Raven.Documents.DiscoveryStatusRecordDto", true)!;
 
     private static readonly IReadOnlyList<Type> IndexTypes =
     [

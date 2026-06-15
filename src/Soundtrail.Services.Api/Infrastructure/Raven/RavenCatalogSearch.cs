@@ -1,5 +1,6 @@
 using Raven.Client.Documents;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Contracts;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;

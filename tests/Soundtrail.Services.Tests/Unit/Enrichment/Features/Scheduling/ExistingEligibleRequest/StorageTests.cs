@@ -14,7 +14,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.Existing
 
             await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 15));
 
-            env.RankedMusicCandidates.Should().ContainSingle();
+            env.PotentialCatalogLookupWorks.Should().ContainSingle();
         }
 
         [Fact]
@@ -26,7 +26,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.Existing
 
             await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 15));
 
-            var catalogId = env.RankedMusicCandidates[0].MusicCatalogId.Value;
+            var catalogId = env.PotentialCatalogLookupWorks[0].MusicCatalogId.Value;
             catalogId.Should().Be(musicCatalogId);
         }
 
@@ -39,7 +39,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.Existing
 
             await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 15));
 
-            env.RankedMusicCandidates[0].RequestCount.Should().Be(3);
+            env.PotentialCatalogLookupWorks[0].RequestCount.Should().Be(3);
         }
 
         [Fact]
@@ -51,7 +51,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.Existing
 
             await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 15));
 
-            env.RankedMusicCandidates[0].HighestTrustLevelSeen.Should().Be(2);
+            env.PotentialCatalogLookupWorks[0].HighestTrustLevelSeen.Should().Be(2);
         }
 
         [Fact]
@@ -63,7 +63,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.Existing
 
             await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 15));
 
-            env.RankedMusicCandidates[0].RiskScore.Should().Be(15);
+            env.PotentialCatalogLookupWorks[0].RiskScore.Should().Be(15);
         }
 
         [Fact]
@@ -77,12 +77,12 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.Existing
                     requestCount: 2,
                     highestTrustLevelSeen: 3,
                     riskScore: 5,
-                    status: RankedMusicCandidateStatus.Pending,
+                    status: PotentialCatalogLookupWorkStatus.Pending,
                     nextEligibleAt: null));
 
             await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 15));
 
-            env.RankedMusicCandidates[0].HighestTrustLevelSeen.Should().Be(3);
+            env.PotentialCatalogLookupWorks[0].HighestTrustLevelSeen.Should().Be(3);
         }
 
         [Fact]
@@ -96,12 +96,12 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.Existing
                     requestCount: 2,
                     highestTrustLevelSeen: 0,
                     riskScore: 70,
-                    status: RankedMusicCandidateStatus.Pending,
+                    status: PotentialCatalogLookupWorkStatus.Pending,
                     nextEligibleAt: null));
 
             await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 15));
 
-            env.RankedMusicCandidates[0].RiskScore.Should().Be(70);
+            env.PotentialCatalogLookupWorks[0].RiskScore.Should().Be(70);
         }
 
         [Fact]
@@ -113,7 +113,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.Existing
 
             await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 90));
 
-            env.RankedMusicCandidates[0].Status.Should().Be(RankedMusicCandidateStatus.Ignored);
+            env.PotentialCatalogLookupWorks[0].Status.Should().Be(PotentialCatalogLookupWorkStatus.Ignored);
         }
 
         [Fact]
@@ -125,7 +125,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.Existing
 
             await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 60));
 
-            env.RankedMusicCandidates[0].Status.Should().Be(RankedMusicCandidateStatus.Pending);
+            env.PotentialCatalogLookupWorks[0].Status.Should().Be(PotentialCatalogLookupWorkStatus.Pending);
         }
 
         [Fact]
@@ -149,7 +149,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.Existing
 
             await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 60));
 
-            env.RankedMusicCandidates[0].RequestCount.Should().Be(3);
+            env.PotentialCatalogLookupWorks[0].RequestCount.Should().Be(3);
         }
 
         [Fact]
@@ -163,12 +163,12 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.Existing
                     requestCount: 2,
                     highestTrustLevelSeen: 1,
                     riskScore: 90,
-                    status: RankedMusicCandidateStatus.Ignored,
+                    status: PotentialCatalogLookupWorkStatus.Ignored,
                     nextEligibleAt: null));
 
             await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 10));
 
-            env.RankedMusicCandidates[0].Status.Should().Be(RankedMusicCandidateStatus.Ignored);
+            env.PotentialCatalogLookupWorks[0].Status.Should().Be(PotentialCatalogLookupWorkStatus.Ignored);
         }
 
         [Fact]
@@ -182,12 +182,12 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.Existing
                     requestCount: 2,
                     highestTrustLevelSeen: 1,
                     riskScore: 90,
-                    status: RankedMusicCandidateStatus.Ignored,
+                    status: PotentialCatalogLookupWorkStatus.Ignored,
                     nextEligibleAt: null));
 
             await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 10));
 
-            env.RankedMusicCandidates[0].RequestCount.Should().Be(3);
+            env.PotentialCatalogLookupWorks[0].RequestCount.Should().Be(3);
         }
     }
 }

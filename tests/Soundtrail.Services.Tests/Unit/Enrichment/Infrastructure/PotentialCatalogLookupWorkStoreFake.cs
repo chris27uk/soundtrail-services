@@ -4,13 +4,13 @@ using Soundtrail.Contracts.Common;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
 {
-    internal sealed class RankedMusicCandidateStoreFake : IRankedMusicCandidateStore
+    internal sealed class PotentialCatalogLookupWorkStoreFake : IPotentialCatalogLookupWorkStore
     {
-        private readonly Dictionary<string, RankedMusicCandidate> byMusicCatalogId = [];
+        private readonly Dictionary<string, PotentialCatalogLookupWork> byMusicCatalogId = [];
 
-        public IReadOnlyList<RankedMusicCandidate> All => this.byMusicCatalogId.Values.ToArray();
+        public IReadOnlyList<PotentialCatalogLookupWork> All => this.byMusicCatalogId.Values.ToArray();
 
-        public Task<RankedMusicCandidate?> FindByMusicCatalogIdAsync(
+        public Task<PotentialCatalogLookupWork?> FindByMusicCatalogIdAsync(
             MusicCatalogId musicCatalogId,
             CancellationToken cancellationToken)
         {
@@ -19,19 +19,19 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
         }
 
         public Task UpsertAsync(
-            RankedMusicCandidate candidate,
+            PotentialCatalogLookupWork candidate,
             CancellationToken cancellationToken)
         {
             this.byMusicCatalogId[candidate.MusicCatalogId.Value] = candidate;
             return Task.CompletedTask;
         }
 
-        public Task<IReadOnlyList<RankedMusicCandidate>> GetPlanningCandidatesAsync(
+        public Task<IReadOnlyList<PotentialCatalogLookupWork>> GetPlanningCandidatesAsync(
             DateTimeOffset now,
             int take,
             CancellationToken cancellationToken)
         {
-            IReadOnlyList<RankedMusicCandidate> candidates = this.byMusicCatalogId.Values
+            IReadOnlyList<PotentialCatalogLookupWork> candidates = this.byMusicCatalogId.Values
                 .Where(candidate => candidate.IsPending && candidate.IsEligibleAt(now))
                 .OrderByDescending(candidate => candidate.HighestTrustLevelSeen)
                 .ThenByDescending(candidate => candidate.RequestCount)
@@ -41,6 +41,6 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
             return Task.FromResult(candidates);
         }
 
-        public void Seed(RankedMusicCandidate candidate) => this.byMusicCatalogId[candidate.MusicCatalogId.Value] = candidate;
+        public void Seed(PotentialCatalogLookupWork candidate) => this.byMusicCatalogId[candidate.MusicCatalogId.Value] = candidate;
     }
 }

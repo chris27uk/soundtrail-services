@@ -18,10 +18,11 @@ public sealed class SearchCatalogHandler(
 
         if (!local.IsComplete && discovery is null)
         {
+            var queryKey = command.ToDiscoveryQueryKey();
             await requestDiscoveryPort.TryRequestAsync(
                 new RequestDiscoveryCommand(
-                    command.ToDiscoveryQueryKey(),
-                    command.Query.ToNewLookupRequest()),
+                    queryKey,
+                    command.Query.ToNewLookupRequest(queryKey)),
                 cancellationToken);
             discovery = new SearchDiscovery(
                 WillBeLookedUp: true,

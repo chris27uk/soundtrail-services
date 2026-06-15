@@ -3,9 +3,9 @@ using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters.Indexes;
 
-internal sealed class RankedMusicCandidates_ByPlanning : AbstractIndexCreationTask<RavenRankedMusicCandidateRecordDto>
+internal sealed class PotentialCatalogLookupWork_ByPlanning : AbstractIndexCreationTask<RavenPotentialCatalogLookupWorkRecordDto>
 {
-    public RankedMusicCandidates_ByPlanning()
+    public PotentialCatalogLookupWork_ByPlanning()
     {
         Map = candidates => from candidate in candidates
                             select new

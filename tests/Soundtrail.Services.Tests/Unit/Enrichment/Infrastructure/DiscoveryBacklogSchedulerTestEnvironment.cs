@@ -11,12 +11,12 @@ internal sealed class DiscoveryBacklogSchedulerTestEnvironment
 {
     private static readonly DateTimeOffset DefaultNow = new(2026, 5, 31, 12, 0, 0, TimeSpan.Zero);
 
-    private readonly RankedMusicCandidateStoreFake store;
+    private readonly PotentialCatalogLookupWorkStoreFake store;
     private readonly LocalMusicTrackSearchFake localSearch;
 
-    private DiscoveryBacklogSchedulerTestEnvironment(params Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence.RankedMusicCandidate[] candidates)
+    private DiscoveryBacklogSchedulerTestEnvironment(params Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence.PotentialCatalogLookupWork[] candidates)
     {
-        this.store = new RankedMusicCandidateStoreFake();
+        this.store = new PotentialCatalogLookupWorkStoreFake();
         foreach (var candidate in candidates)
         {
             this.store.Seed(candidate);

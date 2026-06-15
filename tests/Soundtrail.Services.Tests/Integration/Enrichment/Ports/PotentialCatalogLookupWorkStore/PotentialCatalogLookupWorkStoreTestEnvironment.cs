@@ -6,16 +6,16 @@ using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 using System.Reflection;
 
-namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.RankedMusicCandidateStore;
+namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.PotentialCatalogLookupWorkStore;
 
-internal sealed class RankedMusicCandidateStoreTestEnvironment : IDisposable
+internal sealed class PotentialCatalogLookupWorkStoreTestEnvironment : IDisposable
 {
     private readonly RavenEmbeddedTestDatabase? raven;
-    private readonly Action<RankedMusicCandidate[]> seed;
+    private readonly Action<PotentialCatalogLookupWork[]> seed;
 
-    private RankedMusicCandidateStoreTestEnvironment(
-        IRankedMusicCandidateStore store,
-        Action<RankedMusicCandidate[]> seed,
+    private PotentialCatalogLookupWorkStoreTestEnvironment(
+        IPotentialCatalogLookupWorkStore store,
+        Action<PotentialCatalogLookupWork[]> seed,
         RavenEmbeddedTestDatabase? raven)
     {
         Store = store;
@@ -23,26 +23,26 @@ internal sealed class RankedMusicCandidateStoreTestEnvironment : IDisposable
         this.raven = raven;
     }
 
-    public IRankedMusicCandidateStore Store { get; }
+    public IPotentialCatalogLookupWorkStore Store { get; }
 
-    public static RankedMusicCandidateStoreTestEnvironment Create(RankedMusicCandidateStorePortMode mode)
+    public static PotentialCatalogLookupWorkStoreTestEnvironment Create(PotentialCatalogLookupWorkStorePortMode mode)
     {
         return mode switch
         {
-            RankedMusicCandidateStorePortMode.InProcessFake => CreateFake(),
-            RankedMusicCandidateStorePortMode.RavenEmbedded => CreateRavenEmbedded(),
+            PotentialCatalogLookupWorkStorePortMode.InProcessFake => CreateFake(),
+            PotentialCatalogLookupWorkStorePortMode.RavenEmbedded => CreateRavenEmbedded(),
             _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
         };
     }
 
-    public void Seed(params RankedMusicCandidate[] candidates) => this.seed(candidates);
+    public void Seed(params PotentialCatalogLookupWork[] candidates) => this.seed(candidates);
 
     public void Dispose() => this.raven?.Dispose();
 
-    private static RankedMusicCandidateStoreTestEnvironment CreateFake()
+    private static PotentialCatalogLookupWorkStoreTestEnvironment CreateFake()
     {
-        var fake = new RankedMusicCandidateStoreFake();
-        return new RankedMusicCandidateStoreTestEnvironment(
+        var fake = new PotentialCatalogLookupWorkStoreFake();
+        return new PotentialCatalogLookupWorkStoreTestEnvironment(
             fake,
             candidates =>
             {
@@ -54,17 +54,17 @@ internal sealed class RankedMusicCandidateStoreTestEnvironment : IDisposable
             raven: null);
     }
 
-    private static RankedMusicCandidateStoreTestEnvironment CreateRavenEmbedded()
+    private static PotentialCatalogLookupWorkStoreTestEnvironment CreateRavenEmbedded()
     {
         var raven = RavenEmbeddedTestDatabase.Create();
         ExecutePlanningIndex(raven.Store);
-        return new RankedMusicCandidateStoreTestEnvironment(
-            new RavenRankedMusicCandidateStore(raven.Store),
+        return new PotentialCatalogLookupWorkStoreTestEnvironment(
+            new RavenPotentialCatalogLookupWorkStore(raven.Store),
             candidates => SeedRaven(raven, candidates),
             raven);
     }
 
-    private static void SeedRaven(RavenEmbeddedTestDatabase raven, params RankedMusicCandidate[] candidates)
+    private static void SeedRaven(RavenEmbeddedTestDatabase raven, params PotentialCatalogLookupWork[] candidates)
     {
         using var session = raven.Store.OpenSession();
         session.Advanced.WaitForIndexesAfterSaveChanges();
@@ -72,19 +72,20 @@ internal sealed class RankedMusicCandidateStoreTestEnvironment : IDisposable
         foreach (var candidate in candidates)
         {
             var document = Activator.CreateInstance(
-                RavenRankedMusicCandidateRecordDtoType,
+                RavenPotentialCatalogLookupWorkRecordDtoType,
                 BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public,
                 binder: null,
                 args: null,
                 culture: null)!;
 
-            Set(document, "Id", $"ranked-music-candidates/{Uri.EscapeDataString(candidate.MusicCatalogId.Value)}");
+            Set(document, "Id", $"potential-catalog-lookup-work/{Uri.EscapeDataString(candidate.MusicCatalogId.Value)}");
             Set(document, "MusicCatalogId", candidate.MusicCatalogId.Value);
             Set(document, "RequestCount", candidate.RequestCount);
             Set(document, "HighestTrustLevelSeen", candidate.HighestTrustLevelSeen);
             Set(document, "RiskScore", candidate.RiskScore);
             Set(document, "Status", candidate.Status.ToString());
             Set(document, "NextEligibleAt", candidate.NextEligibleAt);
+            Set(document, "QueryKeys", candidate.QueryKeys.Select(queryKey => queryKey.Value).ToArray());
 
             session.Store(document);
         }
@@ -92,16 +93,16 @@ internal sealed class RankedMusicCandidateStoreTestEnvironment : IDisposable
         session.SaveChanges();
     }
 
-    private static readonly Type RavenRankedMusicCandidateRecordDtoType = typeof(RavenRankedMusicCandidateStore).Assembly
-        .GetType("Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters.Documents.RavenRankedMusicCandidateRecordDto", throwOnError: true)!;
+    private static readonly Type RavenPotentialCatalogLookupWorkRecordDtoType = typeof(RavenPotentialCatalogLookupWorkStore).Assembly
+        .GetType("Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters.Documents.RavenPotentialCatalogLookupWorkRecordDto", throwOnError: true)!;
 
-    private static readonly Type RankedMusicCandidatesByPlanningIndexType = typeof(RavenRankedMusicCandidateStore).Assembly
-        .GetType("Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters.Indexes.RankedMusicCandidates_ByPlanning", throwOnError: true)!;
+    private static readonly Type PotentialCatalogLookupWorksByPlanningIndexType = typeof(RavenPotentialCatalogLookupWorkStore).Assembly
+        .GetType("Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters.Indexes.PotentialCatalogLookupWork_ByPlanning", throwOnError: true)!;
 
     private static void ExecutePlanningIndex(IDocumentStore store)
     {
         var index = (AbstractIndexCreationTask)Activator.CreateInstance(
-            RankedMusicCandidatesByPlanningIndexType,
+            PotentialCatalogLookupWorksByPlanningIndexType,
             BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public,
             binder: null,
             args: null,
@@ -111,7 +112,7 @@ internal sealed class RankedMusicCandidateStoreTestEnvironment : IDisposable
     }
 
     private static void Set(object target, string propertyName, object? value) =>
-        RavenRankedMusicCandidateRecordDtoType
+        RavenPotentialCatalogLookupWorkRecordDtoType
             .GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!
             .SetValue(target, value);
 }

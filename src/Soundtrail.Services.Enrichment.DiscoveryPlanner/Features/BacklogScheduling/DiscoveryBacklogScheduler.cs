@@ -8,7 +8,7 @@ using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling;
 
 public sealed class DiscoveryBacklogScheduler(
-    IRankedMusicCandidateStore rankedMusicCandidateStore,
+    IPotentialCatalogLookupWorkStore rankedMusicCandidateStore,
     IActiveLookupWorkStore activeLookupWorkStore,
     DiscoveryPriorityPolicy discoveryPriorityPolicy,
     ILocalMusicTrackSearch localMusicTrackSearch)
@@ -52,7 +52,7 @@ public sealed class DiscoveryBacklogScheduler(
     }
 
     private static LookupPhaseCommand? BuildCommand(
-        RankedMusicCandidate candidate,
+        PotentialCatalogLookupWork candidate,
         PriorityPlan plan,
         DateTimeOffset now,
         LocalMusicTrackSearchResult? localTrack)

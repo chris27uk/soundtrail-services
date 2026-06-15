@@ -1,6 +1,6 @@
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
 
-public enum RankedMusicCandidateStatus
+public enum PotentialCatalogLookupWorkStatus
 {
     Pending = 0,
     Resolved = 1,

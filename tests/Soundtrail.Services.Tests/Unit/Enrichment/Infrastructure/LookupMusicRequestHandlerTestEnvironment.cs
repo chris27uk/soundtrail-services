@@ -12,13 +12,13 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
     internal sealed class LookupMusicRequestHandlerTestEnvironment
     {
         private readonly FakeMusicCatalogCandidateSearch search;
-        private readonly RankedMusicCandidateStoreFake rankedMusicCandidateStoreFake;
+        private readonly PotentialCatalogLookupWorkStoreFake rankedMusicCandidateStoreFake;
         private readonly ActiveLookupWorkStoreFake activeLookupWorkStoreFake;
         private readonly LocalMusicTrackSearchFake localMusicTrackSearchFake;
 
         private LookupMusicRequestHandlerTestEnvironment(
             FakeMusicCatalogCandidateSearch search,
-            RankedMusicCandidateStoreFake rankedMusicCandidateStoreFake)
+            PotentialCatalogLookupWorkStoreFake rankedMusicCandidateStoreFake)
         {
             this.search = search;
             this.rankedMusicCandidateStoreFake = rankedMusicCandidateStoreFake;
@@ -54,16 +54,16 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
 
         public LocalMusicTrackSearchFake LocalSearch => this.localMusicTrackSearchFake;
 
-        public IReadOnlyList<RankedMusicCandidate> RankedMusicCandidates => this.rankedMusicCandidateStoreFake.All;
+        public IReadOnlyList<PotentialCatalogLookupWork> PotentialCatalogLookupWorks => this.rankedMusicCandidateStoreFake.All;
 
         public static LookupMusicRequestHandlerTestEnvironment WithNoExistingCandidates() =>
             new(
                 new FakeMusicCatalogCandidateSearch(),
-                new RankedMusicCandidateStoreFake());
+                new PotentialCatalogLookupWorkStoreFake());
 
         public static LookupMusicRequestHandlerTestEnvironment WithExistingEligibleCandidate(string musicCatalogId = "SomeId")
         {
-            var store = new RankedMusicCandidateStoreFake();
+            var store = new PotentialCatalogLookupWorkStoreFake();
             var search = new FakeMusicCatalogCandidateSearch();
             store.Seed(Candidates.ExistingCandidate(musicCatalogId));
             search.ResolveAs(musicCatalogId);
@@ -72,16 +72,16 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
         
         public static LookupMusicRequestHandlerTestEnvironment WithExistingNotYetEligibleCandidate(string musicCatalogId = "SomeId")
         {
-            var store = new RankedMusicCandidateStoreFake();
+            var store = new PotentialCatalogLookupWorkStoreFake();
             var search = new FakeMusicCatalogCandidateSearch();
             store.Seed(Candidates.NotYetEligibleCandidate(musicCatalogId));
             search.ResolveAs(musicCatalogId);
             return new LookupMusicRequestHandlerTestEnvironment(search, store);
         }
 
-        public static LookupMusicRequestHandlerTestEnvironment WithExistingCandidate(RankedMusicCandidate candidate)
+        public static LookupMusicRequestHandlerTestEnvironment WithExistingCandidate(PotentialCatalogLookupWork candidate)
         {
-            var store = new RankedMusicCandidateStoreFake();
+            var store = new PotentialCatalogLookupWorkStoreFake();
             var search = new FakeMusicCatalogCandidateSearch();
             store.Seed(candidate);
             search.ResolveAs(candidate.MusicCatalogId);
@@ -94,6 +94,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
             int riskScore,
             DateTimeOffset? occurredAt = null) =>
             new(
+                QueryKey: DiscoveryQueryKey.Search("track", NormalizedSearchQuery.FromText(query).Value),
                 Query: NormalizedSearchQuery.FromText(query),
                 TrustLevel: trustLevel,
                 RiskScore: riskScore,

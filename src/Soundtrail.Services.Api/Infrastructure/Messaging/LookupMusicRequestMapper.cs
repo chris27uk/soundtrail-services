@@ -1,5 +1,6 @@
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Discovery;
 
 namespace Soundtrail.Services.Api.Infrastructure.Messaging
 {
@@ -8,6 +9,7 @@ namespace Soundtrail.Services.Api.Infrastructure.Messaging
         public static LookupMusicRequestDto ToDto(LookupMusicRequest request)
         {
             return new LookupMusicRequestDto(
+                request.QueryKey,
                 request.Query,
                 request.TrustLevel,
                 request.RiskScore,
@@ -18,6 +20,7 @@ namespace Soundtrail.Services.Api.Infrastructure.Messaging
         public static LookupMusicRequest? FromDto(LookupMusicRequestDto request)
         {
             return new LookupMusicRequest(
+                DiscoveryQueryKey.From(request.QueryKey),
                 request.Query,
                 request.TrustLevel,
                 request.RiskScore,
