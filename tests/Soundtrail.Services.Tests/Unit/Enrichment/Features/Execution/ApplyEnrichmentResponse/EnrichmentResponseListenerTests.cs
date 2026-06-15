@@ -27,11 +27,11 @@ public sealed class EnrichmentResponseListenerTests
     }
 
     [Fact]
-    public async Task Given_A_MusicBrainz_Response_Dto_When_Handled_Then_A_MinimalTrackInfoDiscovered_Fact_Is_Stored()
+    public async Task Given_A_MusicBrainz_Response_Dto_When_Handled_Then_A_TrackDiscovered_Fact_Is_Stored()
     {
         var env = EnrichmentResponseListenerTestEnvironment.WithAMusicBrainzResponseDto();
         await env.HandleMusicBrainzResponse();
-        env.StreamStore.Streams["mc_track_1"].Events.Should().ContainItemsAssignableTo<MinimalTrackInfoDiscovered>();
+        env.StreamStore.Streams["mc_track_1"].Events.Should().ContainItemsAssignableTo<TrackDiscovered>();
     }
 
     [Fact]

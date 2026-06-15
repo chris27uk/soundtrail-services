@@ -64,7 +64,7 @@ public sealed class ApplyEnrichmentResponseHandler(
 
         if (response.SourceProvider == ProviderName.MusicBrainz && response.Metadata is not null)
         {
-            events.Add(new MinimalTrackInfoDiscovered(
+            events.Add(new TrackDiscovered(
                 response.Metadata.Title,
                 response.Metadata.Artist,
                 response.Metadata.DurationMs,
@@ -76,7 +76,7 @@ public sealed class ApplyEnrichmentResponseHandler(
 
         foreach (var reference in response.References)
         {
-            events.Add(new ProviderPlaybackReferenceResolved(
+            events.Add(new ProviderReferenceDiscovered(
                 reference.Provider,
                 reference.ExternalId,
                 reference.Url,
@@ -94,7 +94,7 @@ public sealed class ApplyEnrichmentResponseHandler(
 
         if (response.SourceProvider == ProviderName.MusicBrainz
             && response.Metadata is not null
-            && !stream.Events.OfType<ProviderPlaybackReferenceResolved>().Any()
+            && !stream.Events.OfType<ProviderReferenceDiscovered>().Any()
             && !stream.Events.OfType<PlaybackReferencesResolutionRequired>().Any())
         {
             var searchTerm = !string.IsNullOrWhiteSpace(response.Metadata.Isrc)

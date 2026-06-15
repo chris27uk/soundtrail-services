@@ -23,12 +23,12 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
             musicCatalogId,
             0,
             CommandId.For("LookupCanonicalMusicMetadata:mc_track_1"),
-            [new MinimalTrackInfoDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))]);
+            [new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))]);
 
         var loaded = await env.LoadAsync(musicCatalogId);
 
         loaded.Version.Should().Be(1);
-        loaded.Events.Should().ContainSingle().Which.Should().BeOfType<MinimalTrackInfoDiscovered>();
+        loaded.Events.Should().ContainSingle().Which.Should().BeOfType<TrackDiscovered>();
     }
 
     [Theory]
@@ -38,7 +38,7 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
         await using var env = StreamStoreTestEnvironment.Create(mode);
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
         var commandId = CommandId.For("LookupCanonicalMusicMetadata:mc_track_1");
-        var @event = new MinimalTrackInfoDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero));
+        var @event = new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero));
 
         var first = await env.AppendAsync(musicCatalogId, 0, commandId, [@event]);
         var second = await env.AppendAsync(musicCatalogId, 1, commandId, [@event]);

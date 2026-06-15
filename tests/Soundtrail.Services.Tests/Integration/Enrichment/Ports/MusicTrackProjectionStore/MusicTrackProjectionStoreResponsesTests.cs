@@ -21,8 +21,8 @@ public sealed class MusicTrackProjectionStoreResponsesTests
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
         var stream = new MusicTrackStream(2,
         [
-            new MinimalTrackInfoDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero)),
-            new ProviderPlaybackReferenceResolved(ProviderName.AppleMusic, "apple-1", new Uri("https://music.apple.com/us/song/song-a?i=apple-1"), ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero))
+            new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero)),
+            new ProviderReferenceDiscovered(ProviderName.AppleMusic, "apple-1", new Uri("https://music.apple.com/us/song/song-a?i=apple-1"), ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero))
         ]);
 
         await env.StoreAsync(musicCatalogId, stream);

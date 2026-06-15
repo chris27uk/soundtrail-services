@@ -17,8 +17,8 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
 
         await env.ApplyAsync(
             MinimalTrackInfo("mc_track_1", 1, "Mr. Brightside", "The Killers"),
-            TrackLinkedToArtist("mc_track_1", 2, "artist_the_killers", "The Killers"),
-            TrackLinkedToAlbum("mc_track_1", 3, "album_hot_fuss", "Hot Fuss"),
+            ArtistDiscovered("mc_track_1", 2, "artist_the_killers", "The Killers"),
+            AlbumDiscovered("mc_track_1", 3, "album_hot_fuss", "Hot Fuss"),
             ProviderResolved("mc_track_1", 4, ProviderName.Spotify, "spotify-1"));
 
         var track = await env.LoadTrackAsync("mc_track_1");
@@ -54,8 +54,8 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
 
         await env.ApplyAsync(
             MinimalTrackInfo("mc_track_1", 1, "Mr. Brightside", "The Killers"),
-            TrackLinkedToAlbum("mc_track_1", 2, "album_hot_fuss", "Hot Fuss"),
-            TrackLinkedToArtist("mc_track_1", 3, "artist_the_killers", "The Killers"));
+            AlbumDiscovered("mc_track_1", 2, "album_hot_fuss", "Hot Fuss"),
+            ArtistDiscovered("mc_track_1", 3, "artist_the_killers", "The Killers"));
 
         var album = await env.LoadAlbumAsync("album_hot_fuss");
         var track = await env.LoadTrackAsync("mc_track_1");
@@ -93,8 +93,8 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
 
         await env.ApplyAsync(
             MinimalTrackInfo("mc_track_1", 1, "Mr. Brightside", "The Killers"),
-            TrackLinkedToArtist("mc_track_1", 2, "artist_the_killers", "The Killers"),
-            TrackLinkedToAlbum("mc_track_1", 3, "album_hot_fuss", "Hot Fuss"),
+            ArtistDiscovered("mc_track_1", 2, "artist_the_killers", "The Killers"),
+            AlbumDiscovered("mc_track_1", 3, "album_hot_fuss", "Hot Fuss"),
             ProviderFailed("mc_track_1", 4, ProviderName.YoutubeMusic));
 
         var track = await env.LoadTrackAsync("mc_track_1");
@@ -117,9 +117,9 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
             Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId, version),
             MusicCatalogId = musicCatalogId,
             Version = version,
-            EventType = nameof(MinimalTrackInfoDiscovered),
+            EventType = nameof(TrackDiscovered),
             Data = System.Text.Json.JsonSerializer.Serialize(
-                new MinimalTrackInfoDiscoveredEventDataRecordDto(
+                new TrackDiscoveredEventDataRecordDto(
                     title,
                     artist,
                     222000,
@@ -130,7 +130,7 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
             OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 0, 0, TimeSpan.Zero)
         };
 
-    private static MusicTrackStoredEventRecordDto TrackLinkedToArtist(
+    private static MusicTrackStoredEventRecordDto ArtistDiscovered(
         string musicCatalogId,
         int version,
         string artistId,
@@ -140,9 +140,9 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
             Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId, version),
             MusicCatalogId = musicCatalogId,
             Version = version,
-            EventType = nameof(TrackLinkedToArtist),
+            EventType = nameof(ArtistDiscovered),
             Data = System.Text.Json.JsonSerializer.Serialize(
-                new TrackLinkedToArtistEventDataRecordDto(
+                new ArtistDiscoveredEventDataRecordDto(
                     artistId,
                     artistName,
                     ProviderName.MusicBrainz.Value,
@@ -150,7 +150,7 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
             OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 1, 0, TimeSpan.Zero)
         };
 
-    private static MusicTrackStoredEventRecordDto TrackLinkedToAlbum(
+    private static MusicTrackStoredEventRecordDto AlbumDiscovered(
         string musicCatalogId,
         int version,
         string albumId,
@@ -160,9 +160,9 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
             Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId, version),
             MusicCatalogId = musicCatalogId,
             Version = version,
-            EventType = nameof(TrackLinkedToAlbum),
+            EventType = nameof(AlbumDiscovered),
             Data = System.Text.Json.JsonSerializer.Serialize(
-                new TrackLinkedToAlbumEventDataRecordDto(
+                new AlbumDiscoveredEventDataRecordDto(
                     albumId,
                     albumName,
                     ProviderName.MusicBrainz.Value,
@@ -180,9 +180,9 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
             Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId, version),
             MusicCatalogId = musicCatalogId,
             Version = version,
-            EventType = nameof(ProviderPlaybackReferenceResolved),
+            EventType = nameof(ProviderReferenceDiscovered),
             Data = System.Text.Json.JsonSerializer.Serialize(
-                new ProviderPlaybackReferenceResolvedEventDataRecordDto(
+                new ProviderReferenceDiscoveredEventDataRecordDto(
                     provider.Value,
                     externalId,
                     $"https://example.com/{externalId}",

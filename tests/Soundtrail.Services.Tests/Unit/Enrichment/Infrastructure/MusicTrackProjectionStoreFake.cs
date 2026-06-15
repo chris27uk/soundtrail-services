@@ -46,7 +46,7 @@ public sealed class MusicTrackProjectionStoreFake : IMusicTrackProjectionStore
             {
                 switch (fact)
                 {
-                    case MinimalTrackInfoDiscovered minimalTrackInfoDiscovered:
+                    case TrackDiscovered minimalTrackInfoDiscovered:
                         canonicalMetadata = new ProjectedSongMetadata(
                             minimalTrackInfoDiscovered.Title,
                             minimalTrackInfoDiscovered.Artist,
@@ -54,7 +54,7 @@ public sealed class MusicTrackProjectionStoreFake : IMusicTrackProjectionStore
                             minimalTrackInfoDiscovered.Mbid,
                             minimalTrackInfoDiscovered.DurationMs);
                         break;
-                    case ProviderPlaybackReferenceResolved providerPlaybackReferenceResolved:
+                    case ProviderReferenceDiscovered providerPlaybackReferenceResolved:
                         var reference = new ProviderReference(
                             providerPlaybackReferenceResolved.Provider,
                             providerPlaybackReferenceResolved.Url,

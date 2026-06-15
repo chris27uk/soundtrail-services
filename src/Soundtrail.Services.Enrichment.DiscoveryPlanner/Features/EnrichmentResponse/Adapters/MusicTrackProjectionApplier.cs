@@ -55,7 +55,7 @@ public sealed class MusicTrackProjectionApplier
     {
         switch (@event)
         {
-            case MinimalTrackInfoDiscovered minimalTrackInfoDiscovered:
+            case TrackDiscovered minimalTrackInfoDiscovered:
                 document.CanonicalMetadata = new RavenSongMetadataRecordDto
                 {
                     Title = minimalTrackInfoDiscovered.Title,
@@ -73,16 +73,16 @@ public sealed class MusicTrackProjectionApplier
                     minimalTrackInfoDiscovered.Title,
                     minimalTrackInfoDiscovered.Artist);
                 break;
-            case ProviderPlaybackReferenceResolved providerPlaybackReferenceResolved:
+            case ProviderReferenceDiscovered providerPlaybackReferenceResolved:
                 ApplyProviderReference(document, providerPlaybackReferenceResolved);
                 break;
             case ProviderReferenceLookupFailed:
                 break;
-            case TrackLinkedToAlbum trackLinkedToAlbum:
+            case AlbumDiscovered trackLinkedToAlbum:
                 document.AlbumTitle = trackLinkedToAlbum.AlbumTitle;
                 break;
             case PlaybackReferencesResolutionRequired:
-            case TrackLinkedToArtist:
+            case ArtistDiscovered:
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(@event), @event, "Unknown music track event.");
@@ -98,7 +98,7 @@ public sealed class MusicTrackProjectionApplier
 
     private static void ApplyProviderReference(
         RavenTrackRecordDto document,
-        ProviderPlaybackReferenceResolved providerPlaybackReferenceResolved)
+        ProviderReferenceDiscovered providerPlaybackReferenceResolved)
     {
         switch (providerPlaybackReferenceResolved.Provider.Value)
         {

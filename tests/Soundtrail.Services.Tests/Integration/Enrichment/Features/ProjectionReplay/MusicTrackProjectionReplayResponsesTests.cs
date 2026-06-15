@@ -28,9 +28,9 @@ public sealed class MusicTrackProjectionReplayResponsesTests
                 Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId.Value, 1),
                 MusicCatalogId = musicCatalogId.Value,
                 Version = 1,
-                EventType = nameof(MinimalTrackInfoDiscovered),
+                EventType = nameof(TrackDiscovered),
                 Data = System.Text.Json.JsonSerializer.Serialize(
-                    new MinimalTrackInfoDiscoveredEventDataRecordDto(
+                    new TrackDiscoveredEventDataRecordDto(
                         "Song A",
                         "Artist A",
                         123000,
@@ -46,9 +46,9 @@ public sealed class MusicTrackProjectionReplayResponsesTests
                 Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId.Value, 2),
                 MusicCatalogId = musicCatalogId.Value,
                 Version = 2,
-                EventType = nameof(ProviderPlaybackReferenceResolved),
+                EventType = nameof(ProviderReferenceDiscovered),
                 Data = System.Text.Json.JsonSerializer.Serialize(
-                    new ProviderPlaybackReferenceResolvedEventDataRecordDto(
+                    new ProviderReferenceDiscoveredEventDataRecordDto(
                         ProviderName.AppleMusic.Value,
                         "apple-1",
                         "https://music.apple.com/us/song/song-a?i=apple-1",
@@ -89,9 +89,9 @@ public sealed class MusicTrackProjectionReplayResponsesTests
             Id = MusicTrackStoredEventRecordDto.GetDocumentId("mc_track_1", 1),
             MusicCatalogId = "mc_track_1",
             Version = 1,
-            EventType = nameof(MinimalTrackInfoDiscovered),
+            EventType = nameof(TrackDiscovered),
             Data = System.Text.Json.JsonSerializer.Serialize(
-                new MinimalTrackInfoDiscoveredEventDataRecordDto(
+                new TrackDiscoveredEventDataRecordDto(
                     "Song A",
                     "Artist A",
                     123000,

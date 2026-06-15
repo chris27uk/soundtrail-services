@@ -32,17 +32,17 @@ public sealed class CatalogMusicTrackProjectionApplier
 
         switch (storedEvent.EventType)
         {
-            case nameof(MinimalTrackInfoDiscovered):
-                ApplyMinimalTrackInfo(track, Deserialize<MinimalTrackInfoDiscoveredEventDataRecordDto>(storedEvent));
+            case nameof(TrackDiscovered):
+                ApplyMinimalTrackInfo(track, Deserialize<TrackDiscoveredEventDataRecordDto>(storedEvent));
                 break;
-            case nameof(TrackLinkedToArtist):
-                await ApplyTrackLinkedToArtistAsync(track, Deserialize<TrackLinkedToArtistEventDataRecordDto>(storedEvent), session, cancellationToken);
+            case nameof(ArtistDiscovered):
+                await ApplyArtistDiscoveredAsync(track, Deserialize<ArtistDiscoveredEventDataRecordDto>(storedEvent), session, cancellationToken);
                 break;
-            case nameof(TrackLinkedToAlbum):
-                await ApplyTrackLinkedToAlbumAsync(track, Deserialize<TrackLinkedToAlbumEventDataRecordDto>(storedEvent), session, cancellationToken);
+            case nameof(AlbumDiscovered):
+                await ApplyAlbumDiscoveredAsync(track, Deserialize<AlbumDiscoveredEventDataRecordDto>(storedEvent), session, cancellationToken);
                 break;
-            case nameof(ProviderPlaybackReferenceResolved):
-                await ApplyProviderReferenceAsync(track, Deserialize<ProviderPlaybackReferenceResolvedEventDataRecordDto>(storedEvent), session, cancellationToken);
+            case nameof(ProviderReferenceDiscovered):
+                await ApplyProviderReferenceAsync(track, Deserialize<ProviderReferenceDiscoveredEventDataRecordDto>(storedEvent), session, cancellationToken);
                 break;
             case nameof(ProviderReferenceLookupFailed):
                 await ApplyProviderFailureAsync(track, Deserialize<ProviderReferenceLookupFailedEventDataRecordDto>(storedEvent), session, cancellationToken);
@@ -62,7 +62,7 @@ public sealed class CatalogMusicTrackProjectionApplier
 
     private static void ApplyMinimalTrackInfo(
         CatalogTrackRecordDto track,
-        MinimalTrackInfoDiscoveredEventDataRecordDto data)
+        TrackDiscoveredEventDataRecordDto data)
     {
         track.Title = data.Title;
         track.NormalizedTitle = Normalize(data.Title);
@@ -73,9 +73,9 @@ public sealed class CatalogMusicTrackProjectionApplier
         track.DurationMs = data.DurationMs;
     }
 
-    private static async Task ApplyTrackLinkedToArtistAsync(
+    private static async Task ApplyArtistDiscoveredAsync(
         CatalogTrackRecordDto track,
-        TrackLinkedToArtistEventDataRecordDto data,
+        ArtistDiscoveredEventDataRecordDto data,
         IAsyncDocumentSession session,
         CancellationToken cancellationToken)
     {
@@ -108,9 +108,9 @@ public sealed class CatalogMusicTrackProjectionApplier
         }
     }
 
-    private static async Task ApplyTrackLinkedToAlbumAsync(
+    private static async Task ApplyAlbumDiscoveredAsync(
         CatalogTrackRecordDto track,
-        TrackLinkedToAlbumEventDataRecordDto data,
+        AlbumDiscoveredEventDataRecordDto data,
         IAsyncDocumentSession session,
         CancellationToken cancellationToken)
     {
@@ -137,7 +137,7 @@ public sealed class CatalogMusicTrackProjectionApplier
 
     private static async Task ApplyProviderReferenceAsync(
         CatalogTrackRecordDto track,
-        ProviderPlaybackReferenceResolvedEventDataRecordDto data,
+        ProviderReferenceDiscoveredEventDataRecordDto data,
         IAsyncDocumentSession session,
         CancellationToken cancellationToken)
     {
