@@ -15,19 +15,7 @@ public sealed record NormalizedSearchQuery
 
     public static NormalizedSearchQuery FromText(string value)
     {
-        var sanitized = new string(
-            value
-                .Trim()
-                .Select(character => char.IsLetterOrDigit(character) || char.IsWhiteSpace(character)
-                    ? char.ToLowerInvariant(character)
-                    : ' ')
-                .ToArray());
-
-        var normalized = string.Join(
-            ' ',
-            sanitized.Split(' ', StringSplitOptions.RemoveEmptyEntries));
-
-        return new NormalizedSearchQuery(normalized);
+        return new NormalizedSearchQuery(MusicIdentityText.NormalizeFreeText(value));
     }
 
     public CatalogSearchAttempt ToNewCatalogSearchAttempt(CatalogSearchCriteria criteria)

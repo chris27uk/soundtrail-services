@@ -174,6 +174,69 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
         search.Results[0].ArtistName.Should().Be("The Killers");
     }
 
+    [Fact]
+    public async Task Given_Provider_Resolution_Before_Hierarchy_When_Projecting_Then_Artist_And_Album_Providers_Are_Repaired_When_Hierarchy_Arrives()
+    {
+        await using var env = RavenCatalogProjectionReplayTestEnvironment.Create();
+
+        await env.ApplyAsync(
+            MinimalTrackInfo("mc_track_1", 1, "Mr. Brightside", "The Killers"),
+            ProviderResolved("mc_track_1", 2, ProviderName.Spotify, "spotify-1"),
+            ArtistDiscovered("mc_track_1", 3, "artist_the_killers", "The Killers"),
+            AlbumDiscovered("mc_track_1", 4, "album_hot_fuss", "Hot Fuss"));
+
+        var artist = await env.LoadArtistAsync("artist_the_killers");
+        var album = await env.LoadAlbumAsync("album_hot_fuss");
+
+        artist.Should().NotBeNull();
+        artist!.AvailableProviders.Should().Contain(ProviderName.Spotify.Value);
+
+        album.Should().NotBeNull();
+        album!.AvailableProviders.Should().Contain(ProviderName.Spotify.Value);
+    }
+
+    [Fact]
+    public async Task Given_Provider_Failure_Before_Hierarchy_When_Projecting_Then_Artist_And_Album_Failures_Are_Repaired_When_Hierarchy_Arrives()
+    {
+        await using var env = RavenCatalogProjectionReplayTestEnvironment.Create();
+
+        await env.ApplyAsync(
+            MinimalTrackInfo("mc_track_1", 1, "Mr. Brightside", "The Killers"),
+            ProviderFailed("mc_track_1", 2, ProviderName.YoutubeMusic),
+            ArtistDiscovered("mc_track_1", 3, "artist_the_killers", "The Killers"),
+            AlbumDiscovered("mc_track_1", 4, "album_hot_fuss", "Hot Fuss"));
+
+        var artist = await env.LoadArtistAsync("artist_the_killers");
+        var album = await env.LoadAlbumAsync("album_hot_fuss");
+
+        artist.Should().NotBeNull();
+        artist!.TerminallyUnavailableProviders.Should().Contain(ProviderName.YoutubeMusic.Value);
+
+        album.Should().NotBeNull();
+        album!.TerminallyUnavailableProviders.Should().Contain(ProviderName.YoutubeMusic.Value);
+    }
+
+    [Fact]
+    public async Task Given_Track_Artwork_Before_Hierarchy_When_Projecting_Then_Artist_And_Album_Artwork_Are_Repaired_When_Hierarchy_Arrives()
+    {
+        await using var env = RavenCatalogProjectionReplayTestEnvironment.Create();
+
+        await env.ApplyAsync(
+            MinimalTrackInfo("mc_track_1", 1, "Mr. Brightside", "The Killers"),
+            ArtworkDiscovered("mc_track_1", 2, "Track", null, "https://images.example.com/track.png"),
+            ArtistDiscovered("mc_track_1", 3, "artist_the_killers", "The Killers"),
+            AlbumDiscovered("mc_track_1", 4, "album_hot_fuss", "Hot Fuss"));
+
+        var artist = await env.LoadArtistAsync("artist_the_killers");
+        var album = await env.LoadAlbumAsync("album_hot_fuss");
+
+        artist.Should().NotBeNull();
+        artist!.ArtworkUrl.Should().Be("https://images.example.com/track.png");
+
+        album.Should().NotBeNull();
+        album!.ArtworkUrl.Should().Be("https://images.example.com/track.png");
+    }
+
     private static MusicTrackStoredEventRecordDto MinimalTrackInfo(
         string musicCatalogId,
         int version,

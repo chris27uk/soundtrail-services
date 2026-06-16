@@ -43,9 +43,19 @@ public sealed class MusicBrainzGetCanonicalMusicMetadata(HttpClient httpClient) 
             $"/ws/2/isrc/{Uri.EscapeDataString(isrc)}?fmt=json&inc=artist-credits+isrcs",
             cancellationToken);
 
-        return response?.Recordings?.FirstOrDefault(recording =>
-                   recording.Isrcs?.Any(value => string.Equals(value, isrc, StringComparison.OrdinalIgnoreCase)) == true)
-               ?? response?.Recordings?.FirstOrDefault();
+        var exactMatches = response?.Recordings?
+            .Where(recording => recording.Isrcs?.Any(value => string.Equals(value, isrc, StringComparison.OrdinalIgnoreCase)) == true)
+            .ToArray()
+            ?? [];
+
+        if (exactMatches.Length == 0)
+        {
+            return response?.Recordings?.FirstOrDefault();
+        }
+
+        return HasAmbiguousIdentifiers(exactMatches)
+            ? null
+            : exactMatches[0];
     }
 
     private async Task<MusicBrainzRecordingDto?> SearchByNamesAsync(
@@ -69,15 +79,76 @@ public sealed class MusicBrainzGetCanonicalMusicMetadata(HttpClient httpClient) 
             $"/ws/2/recording?fmt=json&limit=5&query={query}&inc=artist-credits+isrcs+releases",
             cancellationToken);
 
-        return response?.Recordings?
-            .OrderByDescending(recording => MusicMetadataLookupMatch.TitleAndArtistMatch(
-                trackName,
-                artist,
+        return SelectBestNameMatch(response?.Recordings, trackName, artist, albumName);
+    }
+
+    private static MusicBrainzRecordingDto? SelectBestNameMatch(
+        IReadOnlyList<MusicBrainzRecordingDto>? recordings,
+        string trackName,
+        string artist,
+        string? albumName)
+    {
+        var ranked = (recordings ?? [])
+            .Select(recording => new RankedRecording(recording, Score(recording, trackName, artist, albumName)))
+            .OrderByDescending(item => item.Score)
+            .ToArray();
+
+        if (ranked.Length == 0 || ranked[0].Score < 100)
+        {
+            return null;
+        }
+
+        if (ranked.Length > 1 && ranked[0].Score - ranked[1].Score < 10)
+        {
+            return null;
+        }
+
+        return ranked[0].Recording;
+    }
+
+    private static int Score(
+        MusicBrainzRecordingDto recording,
+        string expectedTitle,
+        string expectedArtist,
+        string? expectedAlbum)
+    {
+        var score = 0;
+        if (MusicMetadataLookupMatch.TitleAndArtistMatch(
+                expectedTitle,
+                expectedArtist,
                 recording.Title,
                 recording.ArtistCredit?.FirstOrDefault()?.Name))
-            .ThenByDescending(recording => int.TryParse(recording.Score, out var score) ? score : 0)
-            .FirstOrDefault();
+        {
+            score += 100;
+        }
+
+        var normalizedAlbum = MusicMetadataLookupMatch.Normalize(expectedAlbum);
+        if (!string.IsNullOrWhiteSpace(normalizedAlbum)
+            && recording.Releases?.Any(release =>
+                string.Equals(
+                    MusicMetadataLookupMatch.Normalize(release.Title),
+                    normalizedAlbum,
+                    StringComparison.Ordinal)) == true)
+        {
+            score += 20;
+        }
+
+        if (recording.Releases?.Any(static release => !string.IsNullOrWhiteSpace(release.Date)) == true)
+        {
+            score += 2;
+        }
+
+        score += int.TryParse(recording.Score, out var musicBrainzScore) ? musicBrainzScore / 10 : 0;
+        return score;
     }
+
+    private static bool HasAmbiguousIdentifiers(IReadOnlyList<MusicBrainzRecordingDto> exactMatches) =>
+        exactMatches
+            .Select(recording => recording.Id)
+            .Where(static id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Skip(1)
+            .Any();
 
     public static void ConfigureHttpClient(
         HttpClient httpClient,
@@ -118,6 +189,9 @@ public sealed class MusicBrainzGetCanonicalMusicMetadata(HttpClient httpClient) 
 
         [JsonPropertyName("artist-credit")]
         public List<MusicBrainzArtistCreditDto>? ArtistCredit { get; init; }
+
+        [JsonPropertyName("releases")]
+        public List<MusicBrainzReleaseDto>? Releases { get; init; }
     }
 
     private sealed class MusicBrainzArtistCreditDto
@@ -125,4 +199,15 @@ public sealed class MusicBrainzGetCanonicalMusicMetadata(HttpClient httpClient) 
         [JsonPropertyName("name")]
         public string? Name { get; init; }
     }
+
+    private sealed class MusicBrainzReleaseDto
+    {
+        [JsonPropertyName("title")]
+        public string? Title { get; init; }
+
+        [JsonPropertyName("date")]
+        public string? Date { get; init; }
+    }
+
+    private sealed record RankedRecording(MusicBrainzRecordingDto Recording, int Score);
 }

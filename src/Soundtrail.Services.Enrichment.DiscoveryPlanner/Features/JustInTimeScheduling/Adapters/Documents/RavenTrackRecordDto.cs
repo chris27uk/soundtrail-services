@@ -12,13 +12,21 @@ public sealed class RavenTrackRecordDto
 
     public string Artist { get; set; } = string.Empty;
 
+    public string NormalizedArtist { get; set; } = string.Empty;
+
     public string? AlbumTitle { get; set; }
+
+    public string NormalizedAlbumTitle { get; set; } = string.Empty;
 
     public string SearchText { get; set; } = string.Empty;
 
     public string? Isrc { get; set; }
 
+    public string NormalizedIsrc { get; set; } = string.Empty;
+
     public string? Mbid { get; set; }
+
+    public string NormalizedMbid { get; set; } = string.Empty;
 
     public string? AppleId { get; set; }
 
@@ -41,5 +49,5 @@ public sealed class RavenTrackRecordDto
     public static string GetDocumentId(string stableId) => $"track-catalogue/{stableId}";
 
     public static string BuildSearchText(string title, string artist) =>
-        $"{title} {artist}".Trim().ToLowerInvariant();
+        Domain.Model.MusicIdentityText.NormalizeFreeText($"{title} {artist}".Trim());
 }

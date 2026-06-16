@@ -40,50 +40,25 @@ internal sealed class WireMockMusicProvidersServer : IDisposable
         lookup.Match(
             (track, artist, album) =>
             {
-                EnqueueResponse(
-                    "/ws/2/recording",
-                    $$"""
-                    {
-                      "recordings": [
-                        {
-                          "id": "{{metadata.Mbid}}",
-                          "title": "{{metadata.Title}}",
-                          "length": {{metadata.DurationMs?.ToString() ?? "null"}},
-                          "score": "100",
-                          "isrcs": [],
-                          "artist-credit": [
-                            { "name": "{{metadata.Artist}}" }
-                          ]
-                        }
-                      ]
-                    }
-                    """);
+                EnqueueResponse("/ws/2/recording", BuildRecordingSearchResponse(
+                    (metadata.Mbid, metadata.Title, metadata.DurationMs, "100", Array.Empty<string>(), metadata.Artist, album, null)));
 
                 return 0;
             },
             isrc =>
             {
-                EnqueueResponse(
-                    $"/ws/2/isrc/{Uri.EscapeDataString(isrc)}",
-                    $$"""
-                    {
-                      "recordings": [
-                        {
-                          "id": "{{metadata.Mbid}}",
-                          "title": "{{metadata.Title}}",
-                          "length": {{metadata.DurationMs?.ToString() ?? "null"}},
-                          "isrcs": ["{{metadata.Isrc}}"],
-                          "artist-credit": [
-                            { "name": "{{metadata.Artist}}" }
-                          ]
-                        }
-                      ]
-                    }
-                    """);
+                EnqueueResponse($"/ws/2/isrc/{Uri.EscapeDataString(isrc)}", BuildIsrcLookupResponse(
+                    (metadata.Mbid, metadata.Title, metadata.DurationMs, new[] { metadata.Isrc ?? isrc }, metadata.Artist)));
 
                 return 0;
             });
     }
+
+    public void SeedMusicBrainzSearchResponse(params (string? Mbid, string Title, int? DurationMs, string Score, string[] Isrcs, string Artist, string? ReleaseTitle, string? ReleaseDate)[] recordings) =>
+        EnqueueResponse("/ws/2/recording", BuildRecordingSearchResponse(recordings));
+
+    public void SeedMusicBrainzIsrcResponse(string isrc, params (string? Mbid, string Title, int? DurationMs, string[] Isrcs, string Artist)[] recordings) =>
+        EnqueueResponse($"/ws/2/isrc/{Uri.EscapeDataString(isrc)}", BuildIsrcLookupResponse(recordings));
 
     public void SeedOdesli(MusicSearchTerm searchTerm, IReadOnlyList<ExternalReference> references, string userCountry = "US")
     {
@@ -158,6 +133,67 @@ internal sealed class WireMockMusicProvidersServer : IDisposable
     {
         var queue = responsesByPath.GetOrAdd(path, _ => new ConcurrentQueue<StubResponse>());
         queue.Enqueue(new StubResponse(HttpStatusCode.OK, "application/json", body));
+    }
+
+    private static string BuildRecordingSearchResponse(
+        params (string? Mbid, string Title, int? DurationMs, string Score, string[] Isrcs, string Artist, string? ReleaseTitle, string? ReleaseDate)[] recordings) =>
+        $$"""
+        {
+          "recordings": [
+            {{string.Join(",",
+                recordings.Select(recording =>
+                    $$"""
+                    {
+                      "id": "{{recording.Mbid}}",
+                      "title": "{{recording.Title}}",
+                      "length": {{recording.DurationMs?.ToString() ?? "null"}},
+                      "score": "{{recording.Score}}",
+                      "isrcs": [{{string.Join(",", recording.Isrcs.Select(isrc => $"\"{isrc}\""))}}],
+                      "artist-credit": [
+                        { "name": "{{recording.Artist}}" }
+                      ],
+                      "releases": [{{BuildRelease(recording.ReleaseTitle, recording.ReleaseDate)}}]
+                    }
+                    """))}}
+          ]
+        }
+        """;
+
+    private static string BuildIsrcLookupResponse(
+        params (string? Mbid, string Title, int? DurationMs, string[] Isrcs, string Artist)[] recordings) =>
+        $$"""
+        {
+          "recordings": [
+            {{string.Join(",",
+                recordings.Select(recording =>
+                    $$"""
+                    {
+                      "id": "{{recording.Mbid}}",
+                      "title": "{{recording.Title}}",
+                      "length": {{recording.DurationMs?.ToString() ?? "null"}},
+                      "isrcs": [{{string.Join(",", recording.Isrcs.Select(isrc => $"\"{isrc}\""))}}],
+                      "artist-credit": [
+                        { "name": "{{recording.Artist}}" }
+                      ]
+                    }
+                    """))}}
+          ]
+        }
+        """;
+
+    private static string BuildRelease(string? releaseTitle, string? releaseDate)
+    {
+        if (string.IsNullOrWhiteSpace(releaseTitle))
+        {
+            return string.Empty;
+        }
+
+        return $$"""
+        {
+          "title": "{{releaseTitle}}",
+          "date": {{(string.IsNullOrWhiteSpace(releaseDate) ? "null" : $"\"{releaseDate}\"")}}
+        }
+        """;
     }
 
     private async Task RunServerLoopAsync(CancellationToken cancellationToken)

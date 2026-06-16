@@ -1,5 +1,6 @@
 using Raven.Client.Documents;
 using Raven.Client.Documents.Linq;
+using Raven.Client.Documents.Session;
 using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Model;
@@ -16,6 +17,12 @@ public sealed class RavenMusicCatalogCandidateSearch(IDocumentStore documentStor
         CancellationToken cancellationToken)
     {
         using var session = documentStore.OpenAsyncSession();
+        var exactIdentityMatches = await SearchByExactIdentityAsync(session, query, cancellationToken);
+        if (exactIdentityMatches.Count > 0)
+        {
+            return exactIdentityMatches;
+        }
+
         var documents = await session
             .Query<RavenTrackRecordDto, TrackCatalogue_BySearchText>()
             .Search(x => x.SearchText, query.Value)
@@ -25,22 +32,86 @@ public sealed class RavenMusicCatalogCandidateSearch(IDocumentStore documentStor
         return documents
             .Select(document => new MusicCatalogMatch(
                 MusicCatalogId.From(document.Id.Replace("track-catalogue/", string.Empty)),
-                Score(document.SearchText, query.Value)))
+                Score(document, query.Value)))
+            .OrderByDescending(match => match.Score)
             .ToArray();
     }
 
-    private static decimal Score(string searchText, string query)
+    private static async Task<IReadOnlyList<MusicCatalogMatch>> SearchByExactIdentityAsync(
+        IAsyncDocumentSession session,
+        NormalizedSearchQuery query,
+        CancellationToken cancellationToken)
     {
-        if (string.Equals(searchText, query, StringComparison.Ordinal))
+        var compactQuery = MusicIdentityText.NormalizeCompact(query.Value);
+        if (!MusicIdentityText.LooksLikeIsrc(compactQuery)
+            && !MusicIdentityText.LooksLikeMusicBrainzId(compactQuery))
+        {
+            return [];
+        }
+
+        var documents = await session
+            .Query<RavenTrackRecordDto, TrackCatalogue_BySearchText>()
+            .Where(document =>
+                document.NormalizedIsrc == compactQuery
+                || document.NormalizedMbid == compactQuery)
+            .Take(5)
+            .ToListAsync(cancellationToken);
+
+        return documents
+            .Select(document => new MusicCatalogMatch(
+                MusicCatalogId.From(document.Id.Replace("track-catalogue/", string.Empty)),
+                1.00m))
+            .ToArray();
+    }
+
+    private static decimal Score(RavenTrackRecordDto document, string query)
+    {
+        if (string.Equals(document.SearchText, query, StringComparison.Ordinal))
         {
             return 1.00m;
         }
 
-        if (searchText.Contains(query, StringComparison.Ordinal))
+        if (string.Equals(MusicIdentityText.NormalizeFreeText(document.Title), query, StringComparison.Ordinal))
+        {
+            return 0.96m;
+        }
+
+        if (document.SearchText.Contains(query, StringComparison.Ordinal))
         {
             return 0.90m;
         }
 
-        return 0.80m;
+        var overlap = TokenOverlap(document, query);
+        if (overlap >= 0.75m)
+        {
+            return 0.85m;
+        }
+
+        if (overlap >= 0.50m)
+        {
+            return 0.80m;
+        }
+
+        return 0.79m;
+    }
+
+    private static decimal TokenOverlap(RavenTrackRecordDto document, string query)
+    {
+        var queryTokens = query.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (queryTokens.Length == 0)
+        {
+            return 0m;
+        }
+
+        var candidate = string.Join(
+            ' ',
+            new[]
+            {
+                document.SearchText,
+                document.NormalizedAlbumTitle
+            }.Where(static value => !string.IsNullOrWhiteSpace(value)));
+
+        var matchedCount = queryTokens.Count(token => candidate.Contains(token, StringComparison.Ordinal));
+        return matchedCount / (decimal)queryTokens.Length;
     }
 }

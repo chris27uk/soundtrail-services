@@ -102,6 +102,9 @@ public sealed class CatalogMusicTrackProjectionApplier
             var artist = await LoadOrCreateArtistAsync(track.ArtistId, session, cancellationToken);
             artist.Name = Coalesce(track.ArtistName, artist.Name);
             artist.NormalizedName = Normalize(artist.Name);
+            artist.AvailableProviders = MergeProviders(artist.AvailableProviders, track.AvailableProviders);
+            artist.TerminallyUnavailableProviders = MergeProviders(artist.TerminallyUnavailableProviders, track.TerminallyUnavailableProviders);
+            artist.ArtworkUrl = CoalesceNullable(track.ArtworkUrl, artist.ArtworkUrl);
             artist.UpdatedAt = data.ObservedAt;
 
             if (!string.IsNullOrWhiteSpace(track.AlbumId))
@@ -109,6 +112,8 @@ public sealed class CatalogMusicTrackProjectionApplier
                 var album = await LoadOrCreateAlbumAsync(track.AlbumId, session, cancellationToken);
                 album.ArtistId = track.ArtistId;
                 album.ArtistName = Coalesce(track.ArtistName, album.ArtistName);
+                album.AvailableProviders = MergeProviders(album.AvailableProviders, track.AvailableProviders);
+                album.TerminallyUnavailableProviders = MergeProviders(album.TerminallyUnavailableProviders, track.TerminallyUnavailableProviders);
                 album.UpdatedAt = data.ObservedAt;
             }
         }
@@ -137,6 +142,9 @@ public sealed class CatalogMusicTrackProjectionApplier
             album.NormalizedName = Normalize(album.Name);
             album.ArtistId = Coalesce(track.ArtistId, album.ArtistId);
             album.ArtistName = Coalesce(track.ArtistName, album.ArtistName);
+            album.AvailableProviders = MergeProviders(album.AvailableProviders, track.AvailableProviders);
+            album.TerminallyUnavailableProviders = MergeProviders(album.TerminallyUnavailableProviders, track.TerminallyUnavailableProviders);
+            album.ArtworkUrl = CoalesceNullable(track.ArtworkUrl, album.ArtworkUrl);
             album.UpdatedAt = data.ObservedAt;
         }
     }
@@ -253,6 +261,9 @@ public sealed class CatalogMusicTrackProjectionApplier
             var artist = await LoadOrCreateArtistAsync(track.ArtistId, session, cancellationToken);
             artist.Name = data.ArtistName;
             artist.NormalizedName = Normalize(data.ArtistName);
+            artist.AvailableProviders = MergeProviders(artist.AvailableProviders, track.AvailableProviders);
+            artist.TerminallyUnavailableProviders = MergeProviders(artist.TerminallyUnavailableProviders, track.TerminallyUnavailableProviders);
+            artist.ArtworkUrl = CoalesceNullable(track.ArtworkUrl, artist.ArtworkUrl);
             artist.UpdatedAt = data.CorrectedAt;
         }
 
@@ -263,6 +274,9 @@ public sealed class CatalogMusicTrackProjectionApplier
             album.NormalizedName = Normalize(album.Name);
             album.ArtistId = Coalesce(track.ArtistId, album.ArtistId);
             album.ArtistName = Coalesce(data.ArtistName, album.ArtistName);
+            album.AvailableProviders = MergeProviders(album.AvailableProviders, track.AvailableProviders);
+            album.TerminallyUnavailableProviders = MergeProviders(album.TerminallyUnavailableProviders, track.TerminallyUnavailableProviders);
+            album.ArtworkUrl = CoalesceNullable(track.ArtworkUrl, album.ArtworkUrl);
             album.UpdatedAt = data.CorrectedAt;
         }
     }
@@ -367,11 +381,17 @@ public sealed class CatalogMusicTrackProjectionApplier
     private static string[] RemoveProvider(string[] providers, string provider) =>
         providers.Where(value => !string.Equals(value, provider, StringComparison.Ordinal)).ToArray();
 
+    private static string[] MergeProviders(string[] current, string[] additions) =>
+        additions.Aggregate(current, AddProvider);
+
     private static string BuildSearchText(string title, string artistName) =>
         $"{title} {artistName}".Trim().ToLowerInvariant();
 
     private static string Normalize(string value) => value.Trim().ToLowerInvariant();
 
     private static string Coalesce(string candidate, string fallback) =>
+        string.IsNullOrWhiteSpace(candidate) ? fallback : candidate;
+
+    private static string? CoalesceNullable(string? candidate, string? fallback) =>
         string.IsNullOrWhiteSpace(candidate) ? fallback : candidate;
 }

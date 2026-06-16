@@ -1,5 +1,6 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Model;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Events;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Documents;
@@ -66,8 +67,11 @@ public sealed class MusicTrackProjectionApplier
                 };
                 document.Title = minimalTrackInfoDiscovered.Title;
                 document.Artist = minimalTrackInfoDiscovered.Artist;
+                document.NormalizedArtist = MusicIdentityText.NormalizeFreeText(minimalTrackInfoDiscovered.Artist);
                 document.Isrc = minimalTrackInfoDiscovered.Isrc;
+                document.NormalizedIsrc = MusicIdentityText.NormalizeCompact(minimalTrackInfoDiscovered.Isrc);
                 document.Mbid = minimalTrackInfoDiscovered.Mbid;
+                document.NormalizedMbid = MusicIdentityText.NormalizeCompact(minimalTrackInfoDiscovered.Mbid);
                 document.DurationMs = minimalTrackInfoDiscovered.DurationMs;
                 document.SearchText = RavenTrackRecordDto.BuildSearchText(
                     minimalTrackInfoDiscovered.Title,
@@ -80,12 +84,19 @@ public sealed class MusicTrackProjectionApplier
                 break;
             case AlbumDiscovered trackLinkedToAlbum:
                 document.AlbumTitle = trackLinkedToAlbum.AlbumTitle;
+                document.NormalizedAlbumTitle = MusicIdentityText.NormalizeFreeText(trackLinkedToAlbum.AlbumTitle);
                 document.AlbumId = trackLinkedToAlbum.AlbumId;
                 break;
             case PlaybackReferencesResolutionRequired:
                 break;
             case ArtistDiscovered artistDiscovered:
                 document.ArtistId = artistDiscovered.ArtistId;
+                if (!string.IsNullOrWhiteSpace(artistDiscovered.ArtistName))
+                {
+                    document.Artist = artistDiscovered.ArtistName!;
+                    document.NormalizedArtist = MusicIdentityText.NormalizeFreeText(artistDiscovered.ArtistName);
+                    document.SearchText = RavenTrackRecordDto.BuildSearchText(document.Title, document.Artist);
+                }
                 break;
             case ArtworkDiscovered artworkDiscovered:
                 if (artworkDiscovered.EntityKind == Domain.Catalog.CatalogEntityKind.Track)
@@ -104,11 +115,15 @@ public sealed class MusicTrackProjectionApplier
                 };
                 document.Title = metadataCorrected.Title;
                 document.Artist = metadataCorrected.ArtistName;
+                document.NormalizedArtist = MusicIdentityText.NormalizeFreeText(metadataCorrected.ArtistName);
                 document.ArtistId = metadataCorrected.ArtistId;
                 document.AlbumTitle = metadataCorrected.AlbumTitle;
+                document.NormalizedAlbumTitle = MusicIdentityText.NormalizeFreeText(metadataCorrected.AlbumTitle);
                 document.AlbumId = metadataCorrected.AlbumId;
                 document.Isrc = metadataCorrected.Isrc;
+                document.NormalizedIsrc = MusicIdentityText.NormalizeCompact(metadataCorrected.Isrc);
                 document.Mbid = metadataCorrected.Mbid;
+                document.NormalizedMbid = MusicIdentityText.NormalizeCompact(metadataCorrected.Mbid);
                 document.DurationMs = metadataCorrected.DurationMs;
                 document.SearchText = RavenTrackRecordDto.BuildSearchText(
                     metadataCorrected.Title,
