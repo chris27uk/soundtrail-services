@@ -3,6 +3,7 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Contracts;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
@@ -81,6 +82,23 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
             CancellationToken.None);
         status.Should().NotBeNull();
         status!.Status.Should().Be("Completed");
+
+        var trackStatus = await verificationSession.LoadAsync<CatalogSearchStatusRecordDto>(
+            CatalogSearchStatusRecordDto.GetDocumentId(CatalogSearchCriteria.Track(TrackId.From("mc_track_1")).Value),
+            CancellationToken.None);
+        var artistStatus = await verificationSession.LoadAsync<CatalogSearchStatusRecordDto>(
+            CatalogSearchStatusRecordDto.GetDocumentId(CatalogSearchCriteria.Artist(ArtistId.From("artist_test_artist")).Value),
+            CancellationToken.None);
+        var albumStatus = await verificationSession.LoadAsync<CatalogSearchStatusRecordDto>(
+            CatalogSearchStatusRecordDto.GetDocumentId(CatalogSearchCriteria.Album(AlbumId.From("album_rare_album")).Value),
+            CancellationToken.None);
+
+        trackStatus.Should().NotBeNull();
+        artistStatus.Should().NotBeNull();
+        albumStatus.Should().NotBeNull();
+        trackStatus!.Status.Should().Be("Completed");
+        artistStatus!.Status.Should().Be("Completed");
+        albumStatus!.Status.Should().Be("Completed");
     }
 
     private static EnrichmentResponseListener CreateListener(Raven.Client.Documents.Session.IAsyncDocumentSession session) =>

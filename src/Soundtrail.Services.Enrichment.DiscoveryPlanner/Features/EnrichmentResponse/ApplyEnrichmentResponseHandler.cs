@@ -36,6 +36,19 @@ public sealed class ApplyEnrichmentResponseHandler(
                 JsonSerializer.Serialize(ToDto(response))),
             cancellationToken);
 
+        foreach (var criteria in CatalogSearchCriteriaSet.ForResolvedTrack(
+                     response.MusicCatalogId,
+                     response.Hierarchy?.ArtistId,
+                     response.Hierarchy?.AlbumId))
+        {
+            await catalogSearchTrackingStore.UpsertAsync(
+                new CatalogSearchTracking(
+                    criteria,
+                    response.MusicCatalogId,
+                    response.CreatedAt),
+                cancellationToken);
+        }
+
         var trackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(response.MusicCatalogId, cancellationToken);
         foreach (var tracking in trackings)
         {

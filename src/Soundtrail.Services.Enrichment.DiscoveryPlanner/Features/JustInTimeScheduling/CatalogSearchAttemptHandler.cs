@@ -46,16 +46,15 @@ public sealed class CatalogSearchAttemptHandler(
             ? PotentialCatalogLookupWork.Create(request, musicCatalogId)
             : existing.AcceptNewRequest(request);
         await potentialCatalogLookupWorkStore.UpsertAsync(rankedMusicCandidate, cancellationToken);
-        await catalogSearchTrackingStore.UpsertAsync(
-            new CatalogSearchTracking(
-                request.Criteria,
-                musicCatalogId,
-                request.OccurredAt),
-            cancellationToken);
-
         var plan = discoveryPriorityPolicy.Investigate(rankedMusicCandidate, request.OccurredAt);
         if (!plan.ShouldSchedule)
         {
+            await UpsertTrackingsAsync(
+                CatalogSearchCriteriaSet.ForResolvedTrack(musicCatalogId, artistId: null, albumId: null, request.Criteria),
+                musicCatalogId,
+                request.OccurredAt,
+                cancellationToken);
+
             return LookupSchedulingResult.DoNotSchedule(
                 plan.EstimatedRetryAfterSeconds,
                 plan.EarliestExpectedCompletionAt,
@@ -63,6 +62,12 @@ public sealed class CatalogSearchAttemptHandler(
         }
 
         var localTrack = await localMusicTrackSearch.GetByMusicCatalogIdAsync(musicCatalogId, cancellationToken);
+        await UpsertTrackingsAsync(
+            CatalogSearchCriteriaSet.ForResolvedTrack(musicCatalogId, localTrack?.ArtistId, localTrack?.AlbumId, request.Criteria),
+            musicCatalogId,
+            request.OccurredAt,
+            cancellationToken);
+
         var command = BuildCommand(request, musicCatalogId, plan.Priority!.Value, localTrack);
         if (command is null)
         {
@@ -112,6 +117,20 @@ public sealed class CatalogSearchAttemptHandler(
             ResolvePlaybackReferencesCommand => ProviderName.Odesli,
             _ => throw new ArgumentOutOfRangeException(nameof(command), command, "Unsupported lookup phase command.")
         };
+
+    private async Task UpsertTrackingsAsync(
+        IReadOnlyList<CatalogSearchCriteria> criteria,
+        MusicCatalogId musicCatalogId,
+        DateTimeOffset updatedAt,
+        CancellationToken cancellationToken)
+    {
+        foreach (var item in criteria)
+        {
+            await catalogSearchTrackingStore.UpsertAsync(
+                new CatalogSearchTracking(item, musicCatalogId, updatedAt),
+                cancellationToken);
+        }
+    }
 
     private static LookupPhaseCommand? BuildCommand(
         CatalogSearchAttempt request,

@@ -66,6 +66,20 @@ public sealed class EnrichmentResponseListenerTests
     }
 
     [Fact]
+    public async Task Given_A_MusicBrainz_Response_Dto_When_Handled_Then_Entity_Criteria_Are_Also_Projected_As_Completed()
+    {
+        var env = EnrichmentResponseListenerTestEnvironment.WithAMusicBrainzResponseDto();
+
+        await env.HandleMusicBrainzResponse();
+
+        env.DiscoveryStatus.Updates.Keys.Should().Contain([
+            "track:mc_track_1",
+            "artist:artist_test_artist",
+            "album:album_rare_album"
+        ]);
+    }
+
+    [Fact]
     public async Task Given_Multiple_Search_Trackings_For_The_Same_MusicCatalogId_When_Handled_Then_All_Tracked_Searches_Are_Projected_As_Completed()
     {
         var env = EnrichmentResponseListenerTestEnvironment.WithMultipleTrackingsForTheSameMusicCatalogId();
@@ -74,7 +88,10 @@ public sealed class EnrichmentResponseListenerTests
 
         env.DiscoveryStatus.Updates.Keys.Should().BeEquivalentTo(
             "search:track:rare unknown song",
-            "search:track:rare unknown song live");
+            "search:track:rare unknown song live",
+            "track:mc_track_1",
+            "artist:artist_test_artist",
+            "album:album_rare_album");
     }
 
     [Fact]

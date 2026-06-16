@@ -39,13 +39,16 @@ public sealed class RavenCatalogSearchTrackingStore(
         var (activeSession, dispose) = OpenSession();
         using (dispose)
         {
-            var document = new RavenCatalogSearchTrackingRecordDto
-            {
-                Id = RavenCatalogSearchTrackingRecordDto.GetDocumentId(tracking.Criteria.Value),
-                Criteria = tracking.Criteria.Value,
-                MusicCatalogId = tracking.MusicCatalogId.Value,
-                UpdatedAt = tracking.UpdatedAt
-            };
+            var documentId = RavenCatalogSearchTrackingRecordDto.GetDocumentId(tracking.Criteria.Value);
+            var document = await activeSession.LoadAsync<RavenCatalogSearchTrackingRecordDto>(documentId, cancellationToken)
+                ?? new RavenCatalogSearchTrackingRecordDto
+                {
+                    Id = documentId
+                };
+
+            document.Criteria = tracking.Criteria.Value;
+            document.MusicCatalogId = tracking.MusicCatalogId.Value;
+            document.UpdatedAt = tracking.UpdatedAt;
 
             await activeSession.StoreAsync(document, cancellationToken);
             if (ownsSession)

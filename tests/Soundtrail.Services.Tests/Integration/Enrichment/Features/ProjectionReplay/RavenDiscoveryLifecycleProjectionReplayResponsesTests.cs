@@ -2,6 +2,7 @@ using FluentAssertions;
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
@@ -64,6 +65,28 @@ public sealed class RavenDiscoveryLifecycleProjectionReplayResponsesTests
         status!.Status.Should().Be(CatalogSearchLifecycleStatus.Rejected.ToString());
         status.WillBeLookedUp.Should().BeFalse();
         status.Reason.Should().Be("Planner rejected lookup");
+    }
+
+    [Fact]
+    public async Task Given_An_Artist_Criteria_Discovery_Event_When_Replayed_Then_The_Artist_Status_Document_Is_Projected()
+    {
+        using var raven = RavenEmbeddedTestDatabase.Create();
+        var criteria = CatalogSearchCriteria.Artist(ArtistId.From("artist_test_artist"));
+        var repository = new RavenCatalogSearchDiscoveryRepository(raven.Store);
+        var discovery = await CatalogSearchDiscovery.LoadAsync(repository, criteria, CancellationToken.None);
+        discovery.Plan(LookupPriorityBand.High, 30, null, "Planner queued lookup", Clock);
+        await discovery.SaveAsync(repository, CancellationToken.None);
+
+        await ReplayAsync(raven.Store);
+
+        using var session = raven.Store.OpenAsyncSession();
+        var status = await session.LoadAsync<Soundtrail.Contracts.CatalogSearchStatusRecordDto>(
+            Soundtrail.Contracts.CatalogSearchStatusRecordDto.GetDocumentId(criteria.Value),
+            CancellationToken.None);
+
+        status.Should().NotBeNull();
+        status!.Status.Should().Be(CatalogSearchLifecycleStatus.Planned.ToString());
+        status.Reason.Should().Be("Planner queued lookup");
     }
 
     private static async Task ReplayAsync(Raven.Client.Documents.IDocumentStore store)

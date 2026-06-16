@@ -2,6 +2,7 @@ using FluentAssertions;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -105,9 +106,36 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.NoPrevio
 
             await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
 
-            env.CatalogSearchTrackings.Should().ContainSingle();
-            env.CatalogSearchTrackings[0].Criteria.Value.Should().Be("search:track:rare unknown song");
-            env.CatalogSearchTrackings[0].MusicCatalogId.Value.Should().Be("mc_track_1");
+            env.CatalogSearchTrackings.Select(x => x.Criteria.Value).Should().BeEquivalentTo(
+                "search:track:rare unknown song",
+                "track:mc_track_1");
+            env.CatalogSearchTrackings.Should().OnlyContain(x => x.MusicCatalogId.Value == "mc_track_1");
+        }
+
+        [Fact]
+        public async Task Given_A_Resolved_Request_With_Known_Hierarchy_When_Handled_Then_Artist_And_Album_Trackings_Are_Stored()
+        {
+            var env = CatalogSearchAttemptHandlerTestEnvironment.WithNoExistingCandidates();
+            env.Search.ResolveAs(MusicCatalogId.From("mc_track_1"));
+            env.LocalSearch.Seed(new LocalMusicTrackSearchResult(
+                MusicCatalogId.From("mc_track_1"),
+                "Song A",
+                "Artist A",
+                "Album A",
+                null,
+                null,
+                null,
+                IsPlayable: false,
+                ArtistId.From("artist_a"),
+                AlbumId.From("album_a")));
+
+            await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
+
+            env.CatalogSearchTrackings.Select(x => x.Criteria.Value).Should().BeEquivalentTo(
+                "search:track:rare unknown song",
+                "track:mc_track_1",
+                "artist:artist_a",
+                "album:album_a");
         }
 
         [Theory]
