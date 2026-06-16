@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
-using Raven.Client.Documents.Operations.CompareExchange;
+using Raven.Client.Documents.Session;
+using Raven.Client.Exceptions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.SourceBudgets.Configuration;
@@ -64,11 +65,14 @@ public sealed class RavenCompareExchangeSourceApiBudgetPort(
 
         for (var attempt = 0; attempt < 5; attempt++)
         {
-            var current = await documentStore.Operations.SendAsync(
-                new GetCompareExchangeValueOperation<SourceApiBudgetWindowRecordDto>(key),
-                cancellationToken);
+            using var session = documentStore.OpenAsyncSession(new SessionOptions
+            {
+                TransactionMode = TransactionMode.ClusterWide
+            });
+            var current = await session.Advanced.ClusterTransaction
+                .GetCompareExchangeValueAsync<SourceApiBudgetWindowRecordDto>(key, cancellationToken);
 
-            var record = current.Value ?? new SourceApiBudgetWindowRecordDto
+            var record = current?.Value ?? new SourceApiBudgetWindowRecordDto
             {
                 Source = source.Value,
                 WindowStartedAt = windowStartedAt,
@@ -96,13 +100,22 @@ public sealed class RavenCompareExchangeSourceApiBudgetPort(
                 SafetyMarginPercent = record.SafetyMarginPercent
             };
 
-            var put = await documentStore.Operations.SendAsync(
-                new PutCompareExchangeValueOperation<SourceApiBudgetWindowRecordDto>(key, updated, current.Index),
-                cancellationToken);
-
-            if (put.Successful)
+            try
             {
+                if (current?.Value is null)
+                {
+                    session.Advanced.ClusterTransaction.CreateCompareExchangeValue(key, updated);
+                }
+                else
+                {
+                    current.Value.ReservedRequests = updated.ReservedRequests;
+                }
+
+                await session.SaveChangesAsync(cancellationToken);
                 return SourceApiBudgetReservationResult.Reserved();
+            }
+            catch (ConcurrencyException)
+            {
             }
         }
 
@@ -127,16 +140,16 @@ public sealed class RavenCompareExchangeSourceApiBudgetPort(
 
     public sealed class SourceApiBudgetWindowRecordDto
     {
-        public string Source { get; init; } = string.Empty;
+        public string Source { get; set; } = string.Empty;
 
-        public DateTimeOffset WindowStartedAt { get; init; }
+        public DateTimeOffset WindowStartedAt { get; set; }
 
-        public DateTimeOffset WindowEndsAt { get; init; }
+        public DateTimeOffset WindowEndsAt { get; set; }
 
-        public int MaxRequests { get; init; }
+        public int MaxRequests { get; set; }
 
-        public int ReservedRequests { get; init; }
+        public int ReservedRequests { get; set; }
 
-        public int SafetyMarginPercent { get; init; }
+        public int SafetyMarginPercent { get; set; }
     }
 }
