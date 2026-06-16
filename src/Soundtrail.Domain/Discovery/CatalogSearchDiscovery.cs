@@ -6,7 +6,7 @@ namespace Soundtrail.Domain.Discovery;
 
 public sealed class CatalogSearchDiscovery
 {
-    private static readonly EventHandlers<CatalogSearchDiscovery> RegisteredEventHandlers = CreateHandlers();
+    private readonly EventHandlers<CatalogSearchDiscovery> eventHandlers;
     private readonly List<IDomainEvent> uncommittedEvents = [];
     private CatalogSearchCriteria? criteria;
     private CatalogSearchLifecycleStatus? status;
@@ -19,22 +19,18 @@ public sealed class CatalogSearchDiscovery
     private bool hasRequested;
     private int version;
 
-    private CatalogSearchDiscovery(
-        IEnumerable<IDomainEvent> events,
-        int version)
+    private CatalogSearchDiscovery(IEnumerable<IDomainEvent> events, int version)
     {
         foreach (var @event in events)
         {
             Apply(@event, isNew: false);
         }
 
+        this.eventHandlers = CreateHandlers();
         this.version = version;
     }
 
-    public static async Task<CatalogSearchDiscovery> LoadAsync(
-        ICatalogSearchDiscoveryRepository repository,
-        CatalogSearchCriteria criteria,
-        CancellationToken cancellationToken)
+    public static async Task<CatalogSearchDiscovery> LoadAsync(ICatalogSearchDiscoveryRepository repository, CatalogSearchCriteria criteria, CancellationToken cancellationToken)
     {
         var stream = await repository.LoadAsync(criteria, cancellationToken);
         var discovery = new CatalogSearchDiscovery(stream.Events, stream.Version);
@@ -44,7 +40,7 @@ public sealed class CatalogSearchDiscovery
 
     public bool Request(CatalogSearchAttempt request)
     {
-        if (hasRequested)
+        if (this.hasRequested)
         {
             return false;
         }
@@ -195,7 +191,7 @@ public sealed class CatalogSearchDiscovery
 
     private void Apply(IDomainEvent @event, bool isNew)
     {
-        RegisteredEventHandlers.Handle(this, @event);
+        this.eventHandlers.Handle(@event);
 
         if (isNew)
         {
@@ -224,14 +220,14 @@ public sealed class CatalogSearchDiscovery
         }
     }
 
-    private static EventHandlers<CatalogSearchDiscovery> CreateHandlers()
+    private EventHandlers<CatalogSearchDiscovery> CreateHandlers()
     {
         var handlers = new EventHandlers<CatalogSearchDiscovery>();
-        handlers.Register<DiscoveryRequested>((aggregate, @event) => aggregate.On(@event));
-        handlers.Register<DiscoveryPlanned>((aggregate, @event) => aggregate.On(@event));
-        handlers.Register<DiscoveryDeferred>((aggregate, @event) => aggregate.On(@event));
-        handlers.Register<DiscoveryRejected>((aggregate, @event) => aggregate.On(@event));
-        handlers.Register<DiscoveryFailed>((aggregate, @event) => aggregate.On(@event));
+        handlers.Register<DiscoveryRequested>(this.On);
+        handlers.Register<DiscoveryPlanned>(this.On);
+        handlers.Register<DiscoveryDeferred>(this.On);
+        handlers.Register<DiscoveryRejected>(this.On);
+        handlers.Register<DiscoveryFailed>(this.On);
         return handlers;
     }
 

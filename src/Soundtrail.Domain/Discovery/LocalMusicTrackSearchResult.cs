@@ -4,17 +4,7 @@ using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Domain.Discovery;
 
-public sealed record LocalMusicTrackSearchResult(
-    MusicCatalogId MusicCatalogId,
-    string? Title,
-    string? Artist,
-    string? AlbumTitle,
-    string? Isrc,
-    string? Mbid,
-    int? DurationMs,
-    bool IsPlayable,
-    ArtistId? ArtistId = null,
-    AlbumId? AlbumId = null)
+public sealed record LocalMusicTrackSearchResult(MusicCatalogId MusicCatalogId, string? Title, string? Artist, string? AlbumTitle, string? Isrc, string? Mbid, int? DurationMs, bool IsPlayable, ArtistId? ArtistId = null, AlbumId? AlbumId = null)
 {
     public MusicSearchTerm? GetSearchTerm()
     {
