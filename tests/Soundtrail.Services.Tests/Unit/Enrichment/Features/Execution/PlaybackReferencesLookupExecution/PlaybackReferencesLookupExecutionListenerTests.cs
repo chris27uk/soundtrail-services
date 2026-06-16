@@ -38,7 +38,9 @@ public sealed class PlaybackReferencesLookupExecutionListenerTests
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero),
             "corr-1",
-            new PlaybackReferenceSearchTermDto(null, "Song A", "Artist A", "Album A"));
+            new PlaybackReferenceSearchTermDto(null, "Song A", "Artist A", "Album A"),
+            null,
+            null);
         env.Seed(
             MusicSearchTerm.ByTrackArtistAlbum("Song A", "Artist A", "Album A"),
             new ExternalReference(ProviderName.YoutubeMusic, new Uri("https://music.youtube.com/watch?v=yt-1"), "yt-1"));

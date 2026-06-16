@@ -18,5 +18,6 @@ internal static class LookupCanonicalMusicMetadataCommandExtensions
             metadata,
             [],
             [],
+            command.Hierarchy,
             command.CorrelationId);
 }

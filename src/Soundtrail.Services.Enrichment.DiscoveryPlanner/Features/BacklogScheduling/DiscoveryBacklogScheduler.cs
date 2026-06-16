@@ -1,5 +1,6 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Idempotency;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
@@ -71,7 +72,8 @@ public sealed class DiscoveryBacklogScheduler(
                 plan.Priority!.Value,
                 now,
                 CorrelationId.New(),
-                playbackLookupKey);
+                playbackLookupKey,
+                ToHierarchy(localTrack));
         }
 
         if (playbackLookupKey is null)
@@ -85,6 +87,12 @@ public sealed class DiscoveryBacklogScheduler(
             plan.Priority!.Value,
             now,
             CorrelationId.New(),
-            playbackLookupKey);
+            playbackLookupKey,
+            ToHierarchy(localTrack));
     }
+
+    private static CatalogTrackHierarchy? ToHierarchy(LocalMusicTrackSearchResult? localTrack) =>
+        localTrack?.ArtistId is null && localTrack?.AlbumId is null
+            ? null
+            : new CatalogTrackHierarchy(localTrack?.ArtistId, localTrack?.AlbumId);
 }

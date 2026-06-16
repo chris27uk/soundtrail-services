@@ -106,6 +106,8 @@ public sealed class MusicTrackEventSubscriptionHostedService(
                 data.Isrc,
                 data.Title,
                 data.Artist,
-                data.Album));
+                data.Album),
+            data.ArtistId,
+            data.AlbumId);
     }
 }

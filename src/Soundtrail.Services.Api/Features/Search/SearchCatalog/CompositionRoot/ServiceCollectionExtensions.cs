@@ -21,6 +21,7 @@ public static class ServiceCollectionExtensions
         services.TryAddScoped<IQueueCatalogSearchAttempt>(sp => sp.GetRequiredService<IEnqueueCatalogSearchAttempt>());
         services.TryAddScoped<IQueueCatalogSearchAttemptPort>(sp => sp.GetRequiredService<IQueueCatalogSearchAttempt>());
         options.ConfigureCatalogSearchDependencies?.Invoke(services);
+        services.TryAddScoped<ICatalogSearchDiscoveryRepository, RavenCatalogSearchDiscoveryRepository>();
         services.TryAddScoped<IRecordCatalogSearchAttemptPort, RavenRecordCatalogSearchAttempt>();
         services.TryAddScoped<IHandler<SearchCatalogCommand, SearchCatalogResponse>, SearchCatalogHandler>();
 

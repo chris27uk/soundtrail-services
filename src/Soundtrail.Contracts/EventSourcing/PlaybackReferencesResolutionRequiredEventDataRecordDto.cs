@@ -9,4 +9,6 @@ public sealed record PlaybackReferencesResolutionRequiredEventDataRecordDto(
     string? Isrc,
     string? Title,
     string? Artist,
-    string? Album);
+    string? Album,
+    string? ArtistId,
+    string? AlbumId);

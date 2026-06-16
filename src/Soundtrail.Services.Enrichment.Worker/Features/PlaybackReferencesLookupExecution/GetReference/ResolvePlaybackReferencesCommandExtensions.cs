@@ -18,5 +18,6 @@ internal static class ResolvePlaybackReferencesCommandExtensions
             null,
             references,
             failedProviders,
+            command.Hierarchy,
             command.CorrelationId);
 }

@@ -18,6 +18,8 @@ public sealed class MusicTrackEventListener
             dto.Priority,
             dto.ObservedAt,
             dto.CorrelationId,
-            dto.SearchTerm);
+            dto.SearchTerm,
+            dto.ArtistId,
+            dto.AlbumId);
     }
 }

@@ -4,6 +4,10 @@ public sealed class RavenTrackRecordDto
 {
     public string Id { get; set; } = string.Empty;
 
+    public string? ArtistId { get; set; }
+
+    public string? AlbumId { get; set; }
+
     public string Title { get; set; } = string.Empty;
 
     public string Artist { get; set; } = string.Empty;

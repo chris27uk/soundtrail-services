@@ -1,10 +1,11 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
+using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
-using Soundtrail.Domain.Discovery;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -86,6 +87,8 @@ internal sealed class EnrichmentResponseListenerTestEnvironment
             new SongMetadataDto("Song A", "Artist A", "isrc-1", "mbid-1", 123000),
             [],
             [],
+            ArtistId.From("artist_test_artist").Value,
+            AlbumId.From("album_rare_album").Value,
             "corr-1");
 
     private static EnrichmentResponseDto CanonicalResponseDto() =>
@@ -98,6 +101,8 @@ internal sealed class EnrichmentResponseListenerTestEnvironment
             new SongMetadataDto("Canonical Song", "Canonical Artist", "isrc-1", "mbid-1", 123000),
             [],
             [],
+            ArtistId.From("artist_test_artist").Value,
+            AlbumId.From("album_rare_album").Value,
             "corr-1");
 
     private static EnrichmentResponseDto PlaybackReferencesResponseDto() =>
@@ -110,5 +115,7 @@ internal sealed class EnrichmentResponseListenerTestEnvironment
             null,
             [new ExternalReferenceDto(ProviderName.AppleMusic.Value, new Uri("https://music.apple.com/track/1"), "apple-1")],
             [],
+            ArtistId.From("artist_test_artist").Value,
+            AlbumId.From("album_rare_album").Value,
             "corr-2");
 }

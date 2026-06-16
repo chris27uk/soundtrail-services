@@ -22,6 +22,8 @@ internal sealed class MusicBrainzLookupExecutionListenerTestEnvironment
             "isrc-1",
             null,
             null,
+            null,
+            null,
             null);
 
     private MusicBrainzLookupExecutionListenerTestEnvironment(LookupExecutionReceiptStoreFake.State state)

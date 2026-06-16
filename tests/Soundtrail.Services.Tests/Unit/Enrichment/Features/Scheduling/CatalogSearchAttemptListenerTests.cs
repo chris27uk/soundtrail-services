@@ -2,6 +2,7 @@ using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Events;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search.Resolution;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
@@ -73,42 +74,60 @@ public sealed class CatalogSearchAttemptListenerTests
     public async Task Given_A_Schedulable_Request_When_Handled_Then_Discovery_Status_Is_Projected_As_Planned()
     {
         var env = CatalogSearchAttemptListenerTestEnvironment.WithASchedulableRequest();
+        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
 
         await env.HandleSchedulableRequest();
 
-        var status = env.DiscoveryStatus.Updates[CatalogSearchCriteria.Search("track", "rare unknown song").Value];
-        status.Status.Should().Be(CatalogSearchLifecycleStatus.Planned);
-        status.WillBeLookedUp.Should().BeTrue();
-        status.EstimatedRetryAfterSeconds.Should().Be(30);
-        status.Reason.Should().Be("Planner queued lookup");
+        var @event = env.DiscoveryRepository.GetStoredEvents(criteria)
+            .Should()
+            .ContainSingle()
+            .Which
+            .Should()
+            .BeOfType<DiscoveryPlanned>()
+            .Subject;
+        @event.WillBeLookedUp.Should().BeTrue();
+        @event.EstimatedRetryAfterSeconds.Should().Be(30);
+        @event.Reason.Should().Be("Planner queued lookup");
     }
 
     [Fact]
     public async Task Given_A_Deferred_Request_When_Handled_Then_Discovery_Status_Is_Projected_As_Deferred()
     {
         var env = CatalogSearchAttemptListenerTestEnvironment.WithADeferredRequest();
+        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
 
         var messages = await env.HandleDeferredRequest();
 
         messages.Should().BeEmpty();
-        var status = env.DiscoveryStatus.Updates[CatalogSearchCriteria.Search("track", "rare unknown song").Value];
-        status.Status.Should().Be(CatalogSearchLifecycleStatus.Deferred);
-        status.WillBeLookedUp.Should().BeTrue();
-        status.EstimatedRetryAfterSeconds.Should().Be(60);
-        status.Reason.Should().Be("Planner deferred lookup");
+        var @event = env.DiscoveryRepository.GetStoredEvents(criteria)
+            .Should()
+            .ContainSingle()
+            .Which
+            .Should()
+            .BeOfType<DiscoveryDeferred>()
+            .Subject;
+        @event.WillBeLookedUp.Should().BeTrue();
+        @event.EstimatedRetryAfterSeconds.Should().Be(60);
+        @event.Reason.Should().Be("Planner deferred lookup");
     }
 
     [Fact]
     public async Task Given_A_Request_That_Cannot_Be_Resolved_When_Handled_Then_Discovery_Status_Is_Projected_As_Rejected()
     {
         var env = CatalogSearchAttemptListenerTestEnvironment.WithAnUnschedulableRequest();
+        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
 
         var messages = await env.HandleUnschedulableRequest();
 
         messages.Should().BeEmpty();
-        var status = env.DiscoveryStatus.Updates[CatalogSearchCriteria.Search("track", "rare unknown song").Value];
-        status.Status.Should().Be(CatalogSearchLifecycleStatus.Rejected);
-        status.WillBeLookedUp.Should().BeFalse();
-        status.Reason.Should().Be("Planner rejected lookup");
+        var @event = env.DiscoveryRepository.GetStoredEvents(criteria)
+            .Should()
+            .ContainSingle()
+            .Which
+            .Should()
+            .BeOfType<DiscoveryRejected>()
+            .Subject;
+        @event.WillBeLookedUp.Should().BeFalse();
+        @event.Reason.Should().Be("Planner rejected lookup");
     }
 }

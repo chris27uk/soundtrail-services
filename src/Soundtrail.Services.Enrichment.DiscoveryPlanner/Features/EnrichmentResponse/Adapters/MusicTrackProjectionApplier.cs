@@ -80,9 +80,12 @@ public sealed class MusicTrackProjectionApplier
                 break;
             case AlbumDiscovered trackLinkedToAlbum:
                 document.AlbumTitle = trackLinkedToAlbum.AlbumTitle;
+                document.AlbumId = trackLinkedToAlbum.AlbumId;
                 break;
             case PlaybackReferencesResolutionRequired:
-            case ArtistDiscovered:
+                break;
+            case ArtistDiscovered artistDiscovered:
+                document.ArtistId = artistDiscovered.ArtistId;
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(@event), @event, "Unknown music track event.");

@@ -2,6 +2,7 @@ using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
@@ -30,7 +31,8 @@ public sealed class MusicBrainzLookupExecutionListener(
                     dto.Priority,
                     dto.CreatedAt,
                     CorrelationId.From(dto.CorrelationId),
-                    ToSearchTerm(dto)),
+                    ToSearchTerm(dto),
+                    ToHierarchy(dto)),
                 cancellationToken);
 
             if (result.Started)
@@ -67,6 +69,8 @@ public sealed class MusicBrainzLookupExecutionListener(
                     result.Response.FailedProviders.Select(failure => new ProviderLookupFailureDto(
                         failure.Provider.Value,
                         failure.SourceProvider.Value)).ToArray(),
+                    result.Response.Hierarchy?.ArtistId?.Value,
+                    result.Response.Hierarchy?.AlbumId?.Value,
                     result.Response.CorrelationId.Value)];
         }
         catch
@@ -114,4 +118,11 @@ public sealed class MusicBrainzLookupExecutionListener(
                 dto.TrackName ?? string.Empty,
                 dto.ArtistName ?? string.Empty,
                 dto.AlbumName);
+
+    private static CatalogTrackHierarchy? ToHierarchy(LookupCanonicalMusicMetadataCommandDto dto) =>
+        dto.ArtistId is null && dto.AlbumId is null
+            ? null
+            : new CatalogTrackHierarchy(
+                dto.ArtistId is null ? null : ArtistId.From(dto.ArtistId),
+                dto.AlbumId is null ? null : AlbumId.From(dto.AlbumId));
 }

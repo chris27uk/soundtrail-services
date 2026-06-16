@@ -1,5 +1,6 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
 using System.Text.Json;
@@ -87,7 +88,9 @@ internal static class RavenMappings
                     playbackReferencesResolutionRequired.SearchTerm.Isrc,
                     playbackReferencesResolutionRequired.SearchTerm.Title,
                     playbackReferencesResolutionRequired.SearchTerm.Artist,
-                    playbackReferencesResolutionRequired.SearchTerm.Album)),
+                    playbackReferencesResolutionRequired.SearchTerm.Album,
+                    playbackReferencesResolutionRequired.Hierarchy?.ArtistId?.Value,
+                    playbackReferencesResolutionRequired.Hierarchy?.AlbumId?.Value)),
                 OccurredAtUtc = playbackReferencesResolutionRequired.ObservedAt,
                 CorrelationId = playbackReferencesResolutionRequired.CorrelationId.Value,
                 CausationId = commandId.Value
@@ -186,7 +189,12 @@ internal static class RavenMappings
             data.ObservedAt,
             data.Isrc is null
                 ? MusicSearchTerm.ByTrackArtistAlbum(data.Title ?? string.Empty, data.Artist ?? string.Empty, data.Album)
-                : MusicSearchTerm.ByIsrc(data.Isrc));
+                : MusicSearchTerm.ByIsrc(data.Isrc),
+            data.ArtistId is null && data.AlbumId is null
+                ? null
+                : new CatalogTrackHierarchy(
+                    data.ArtistId is null ? null : ArtistId.From(data.ArtistId),
+                    data.AlbumId is null ? null : AlbumId.From(data.AlbumId)));
     }
 
     private static AlbumDiscovered AlbumDiscovered(MusicTrackStoredEventRecordDto dto)

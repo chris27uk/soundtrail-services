@@ -17,6 +17,7 @@ public static class ServiceCollectionExtensions
         options.ConfigureDependencies?.Invoke(services);
 
         services.TryAddSingleton<MusicCatalogMatchResolver>();
+        services.TryAddScoped<ICatalogSearchDiscoveryRepository, RavenCatalogSearchDiscoveryRepository>();
         services.TryAddScoped<IUpsertCatalogSearchStatusPort, RavenUpsertCatalogSearchStatus>();
         services.TryAddScoped<CatalogSearchAttemptHandler>();
         services.TryAddScoped<CatalogSearchAttemptListener>();

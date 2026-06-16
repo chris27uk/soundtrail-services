@@ -1,3 +1,4 @@
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Search;
 
@@ -27,6 +28,12 @@ internal sealed class FakeCatalogSearchPort : ICatalogSearchPort
             .Take(request.Limit.Value)
             .ToArray();
 
-        return Task.FromResult(new LocalCatalogSearchResponse(matches, null, IsComplete: matches.Length > 0));
+        return Task.FromResult(new LocalCatalogSearchResponse(
+            matches,
+            null,
+            IsComplete: matches.Length > 0 && matches.All(IsComplete)));
     }
+
+    private static bool IsComplete(SearchCatalogResult result) =>
+        result.PlayabilityStatus != PlayabilityStatus.NotYetDiscovered;
 }

@@ -17,7 +17,9 @@ internal static class LookupCommandMappings
                 musicBrainz.SearchTerm.Isrc,
                 musicBrainz.SearchTerm.Title,
                 musicBrainz.SearchTerm.Artist,
-                musicBrainz.SearchTerm.Album
+                musicBrainz.SearchTerm.Album,
+                musicBrainz.Hierarchy?.ArtistId?.Value,
+                musicBrainz.Hierarchy?.AlbumId?.Value
             ),
             ResolvePlaybackReferencesCommand playback => new ResolvePlaybackReferencesCommandDto(
                 playback.CommandId.Value,
@@ -29,7 +31,9 @@ internal static class LookupCommandMappings
                     playback.LookupKey.Isrc,
                     playback.LookupKey.Title,
                     playback.LookupKey.Artist,
-                    playback.LookupKey.Album)),
+                    playback.LookupKey.Album),
+                playback.Hierarchy?.ArtistId?.Value,
+                playback.Hierarchy?.AlbumId?.Value),
             _ => throw new ArgumentOutOfRangeException(nameof(command), command, null)
         };
 }

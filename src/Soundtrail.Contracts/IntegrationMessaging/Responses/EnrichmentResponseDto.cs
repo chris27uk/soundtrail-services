@@ -11,4 +11,6 @@ public sealed record EnrichmentResponseDto(
     SongMetadataDto? Metadata,
     IReadOnlyList<ExternalReferenceDto> References,
     IReadOnlyList<ProviderLookupFailureDto> FailedProviders,
+    string? ArtistId,
+    string? AlbumId,
     string CorrelationId);

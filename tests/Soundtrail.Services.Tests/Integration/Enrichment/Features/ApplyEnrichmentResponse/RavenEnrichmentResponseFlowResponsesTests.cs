@@ -3,13 +3,13 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Contracts;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Documents;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
-using Soundtrail.Domain.Discovery;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ApplyEnrichmentResponse;
 
@@ -26,6 +26,8 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
             await seedSession.StoreAsync(new RavenTrackRecordDto
             {
                 Id = RavenTrackRecordDto.GetDocumentId("mc_track_1"),
+                ArtistId = "artist_test_artist",
+                AlbumId = "album_rare_album",
                 Title = "Rare Unknown Song",
                 Artist = "Test Artist",
                 AlbumTitle = "Rare Album",
@@ -113,6 +115,8 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
             new SongMetadataDto("Rare Unknown Song", "Test Artist", "isrc-1", "mbid-1", 123000),
             [],
             [],
+            "artist_test_artist",
+            "album_rare_album",
             "corr-1");
 
     private static EnrichmentResponseDto PlaybackReferencesResponseDto() =>
@@ -125,5 +129,7 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
             null,
             [new ExternalReferenceDto(ProviderName.AppleMusic.Value, new Uri("https://music.apple.com/track/1"), "apple-track-1")],
             [],
+            "artist_test_artist",
+            "album_rare_album",
             "corr-2");
 }

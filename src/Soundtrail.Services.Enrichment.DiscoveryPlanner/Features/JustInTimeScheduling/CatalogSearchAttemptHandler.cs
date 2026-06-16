@@ -1,5 +1,6 @@
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Idempotency;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
 using Soundtrail.Contracts.Common;
@@ -94,7 +95,8 @@ public sealed class CatalogSearchAttemptHandler(
                 priority,
                 request.OccurredAt,
                 request.CorrelationId,
-                searchTerm);
+                searchTerm,
+                ToHierarchy(localTrack));
         }
 
         if (searchTerm is null)
@@ -108,6 +110,12 @@ public sealed class CatalogSearchAttemptHandler(
             priority,
             request.OccurredAt,
             request.CorrelationId,
-            searchTerm);
+            searchTerm,
+            ToHierarchy(localTrack));
     }
+
+    private static CatalogTrackHierarchy? ToHierarchy(LocalMusicTrackSearchResult? localTrack) =>
+        localTrack?.ArtistId is null && localTrack?.AlbumId is null
+            ? null
+            : new CatalogTrackHierarchy(localTrack?.ArtistId, localTrack?.AlbumId);
 }

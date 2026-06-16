@@ -1,5 +1,6 @@
 using Raven.Client.Documents;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Documents;
 
@@ -29,6 +30,8 @@ public sealed class RavenLocalMusicTrackSearch(IDocumentStore documentStore) : I
             document.CanonicalMetadata?.Isrc ?? document.Isrc,
             document.CanonicalMetadata?.Mbid ?? document.Mbid,
             document.CanonicalMetadata?.DurationMs ?? document.DurationMs,
-            document.IsPlayable);
+            document.IsPlayable,
+            string.IsNullOrWhiteSpace(document.ArtistId) ? null : ArtistId.From(document.ArtistId),
+            string.IsNullOrWhiteSpace(document.AlbumId) ? null : AlbumId.From(document.AlbumId));
     }
 }

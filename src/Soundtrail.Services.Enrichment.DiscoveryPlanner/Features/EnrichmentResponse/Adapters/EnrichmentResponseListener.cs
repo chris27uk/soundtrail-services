@@ -1,6 +1,7 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse;
@@ -39,6 +40,11 @@ public sealed class EnrichmentResponseListener(ApplyEnrichmentResponseHandler ha
                 dto.FailedProviders.Select(failure => new ProviderLookupFailure(
                     ProviderName.From(failure.Provider),
                     ProviderName.From(failure.SourceProvider))).ToArray(),
+                dto.ArtistId is null && dto.AlbumId is null
+                    ? null
+                    : new CatalogTrackHierarchy(
+                        dto.ArtistId is null ? null : ArtistId.From(dto.ArtistId),
+                        dto.AlbumId is null ? null : AlbumId.From(dto.AlbumId)),
                 CorrelationId.From(dto.CorrelationId)),
             cancellationToken);
 

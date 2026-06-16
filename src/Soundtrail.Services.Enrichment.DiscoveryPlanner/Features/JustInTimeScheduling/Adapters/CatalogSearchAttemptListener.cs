@@ -14,7 +14,7 @@ namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeSch
 
 public sealed class CatalogSearchAttemptListener(
     CatalogSearchAttemptHandler handler,
-    IUpsertCatalogSearchStatusPort upsertDiscoveryStatusPort)
+    ICatalogSearchDiscoveryRepository discoveryRepository)
 {
     private const int PlannedRetryAfterSeconds = 30;
     private const int DeferredRetryAfterSeconds = 60;
@@ -38,54 +38,58 @@ public sealed class CatalogSearchAttemptListener(
         try
         {
             var result = await handler.ScheduleAsync(request, cancellationToken);
-            await upsertDiscoveryStatusPort.UpsertAsync(ToStatusUpdate(criteria, result, request), cancellationToken);
+            await PersistLifecycleAsync(criteria, discovery =>
+            {
+                if (result.ShouldSchedule)
+                {
+                    return discovery.Plan(
+                        result.Command?.Priority ?? throw new InvalidOperationException("Scheduled discovery must include a priority."),
+                        PlannedRetryAfterSeconds,
+                        earliestExpectedCompletionAt: null,
+                        reason: "Planner queued lookup",
+                        plannedAt: request.OccurredAt);
+                }
+
+                return discovery.Defer(
+                    DeferredRetryAfterSeconds,
+                    request.OccurredAt.AddSeconds(DeferredRetryAfterSeconds),
+                    "Planner deferred lookup",
+                    request.OccurredAt);
+            }, cancellationToken);
+
             return result.Commands.Select(command => command.ToMessage()).ToArray();
         }
         catch (ResolutionFailedException ex)
         {
-            await upsertDiscoveryStatusPort.UpsertAsync(
-                new CatalogSearchStatusUpdate(
-                    criteria,
-                    CatalogSearchLifecycleStatus.Rejected,
-                    Priority: null,
-                    WillBeLookedUp: false,
-                    EstimatedRetryAfterSeconds: null,
-                    EarliestExpectedCompletionAt: null,
-                    Reason: ToRejectedReason(ex.Outcome),
-                    UpdatedAt: request.OccurredAt),
+            await PersistLifecycleAsync(
+                criteria,
+                discovery => discovery.Reject(ToRejectedReason(ex.Outcome), request.OccurredAt),
                 cancellationToken);
 
             return [];
         }
     }
 
-    private static CatalogSearchStatusUpdate ToStatusUpdate(
+    private async Task PersistLifecycleAsync(
         CatalogSearchCriteria criteria,
-        Soundtrail.Domain.Responses.LookupSchedulingResult result,
-        CatalogSearchAttempt request)
+        Func<CatalogSearchDiscovery, bool> apply,
+        CancellationToken cancellationToken)
     {
-        if (result.ShouldSchedule)
+        for (var attempt = 0; attempt < 2; attempt++)
         {
-            return new CatalogSearchStatusUpdate(
-                criteria,
-                CatalogSearchLifecycleStatus.Planned,
-                result.Command?.Priority,
-                WillBeLookedUp: true,
-                EstimatedRetryAfterSeconds: PlannedRetryAfterSeconds,
-                EarliestExpectedCompletionAt: null,
-                Reason: "Planner queued lookup",
-                UpdatedAt: request.OccurredAt);
+            var discovery = await CatalogSearchDiscovery.LoadAsync(discoveryRepository, criteria, cancellationToken);
+            if (!apply(discovery))
+            {
+                return;
+            }
+
+            if (await discovery.SaveAsync(discoveryRepository, cancellationToken))
+            {
+                return;
+            }
         }
 
-        return new CatalogSearchStatusUpdate(
-            criteria,
-            CatalogSearchLifecycleStatus.Deferred,
-            Priority: null,
-            WillBeLookedUp: true,
-            EstimatedRetryAfterSeconds: DeferredRetryAfterSeconds,
-            EarliestExpectedCompletionAt: request.OccurredAt.AddSeconds(DeferredRetryAfterSeconds),
-            Reason: "Planner deferred lookup",
-            UpdatedAt: request.OccurredAt);
+        throw new InvalidOperationException($"Unable to persist discovery lifecycle for {criteria.Value} after retry.");
     }
 
     private static string ToRejectedReason(MusicCatalogResolutionOutcome outcome) =>

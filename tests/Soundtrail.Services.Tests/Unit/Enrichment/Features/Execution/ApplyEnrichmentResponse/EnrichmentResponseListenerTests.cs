@@ -35,6 +35,17 @@ public sealed class EnrichmentResponseListenerTests
     }
 
     [Fact]
+    public async Task Given_A_MusicBrainz_Response_Dto_When_Handled_Then_Artist_And_Album_Discovered_Facts_Are_Stored_From_Response_Hierarchy()
+    {
+        var env = EnrichmentResponseListenerTestEnvironment.WithAMusicBrainzResponseDto();
+
+        await env.HandleMusicBrainzResponse();
+
+        env.StreamStore.Streams["mc_track_1"].Events.OfType<ArtistDiscovered>().Should().ContainSingle();
+        env.StreamStore.Streams["mc_track_1"].Events.OfType<AlbumDiscovered>().Should().ContainSingle();
+    }
+
+    [Fact]
     public async Task Given_A_Duplicate_Response_Dto_When_Handled_Then_Only_A_Single_CommandId_Is_Recorded()
     {
         var env = EnrichmentResponseListenerTestEnvironment.WithADuplicateMusicBrainzResponseDto();
@@ -84,6 +95,8 @@ public sealed class EnrichmentResponseListenerTests
                     new ProviderLookupFailureDto(ProviderName.Spotify.Value, ProviderName.Odesli.Value),
                     new ProviderLookupFailureDto(ProviderName.YoutubeMusic.Value, ProviderName.Odesli.Value)
                 ],
+                null,
+                null,
                 "corr-2"),
             null!);
 

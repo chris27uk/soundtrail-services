@@ -1,4 +1,5 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Domain.Discovery;
@@ -11,7 +12,9 @@ public sealed record LocalMusicTrackSearchResult(
     string? Isrc,
     string? Mbid,
     int? DurationMs,
-    bool IsPlayable)
+    bool IsPlayable,
+    ArtistId? ArtistId = null,
+    AlbumId? AlbumId = null)
 {
     public MusicSearchTerm? GetSearchTerm()
     {

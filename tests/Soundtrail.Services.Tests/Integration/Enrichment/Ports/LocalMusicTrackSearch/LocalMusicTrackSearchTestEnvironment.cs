@@ -57,6 +57,8 @@ internal sealed class LocalMusicTrackSearchTestEnvironment : IDisposable
         session.Store(new RavenTrackRecordDto
         {
             Id = RavenTrackRecordDto.GetDocumentId(result.MusicCatalogId.Value),
+            ArtistId = result.ArtistId?.Value,
+            AlbumId = result.AlbumId?.Value,
             Title = result.Title ?? string.Empty,
             Artist = result.Artist ?? string.Empty,
             AlbumTitle = result.AlbumTitle,

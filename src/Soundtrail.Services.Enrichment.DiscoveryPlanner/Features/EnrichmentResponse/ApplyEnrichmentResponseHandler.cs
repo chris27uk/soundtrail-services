@@ -64,6 +64,24 @@ public sealed class ApplyEnrichmentResponseHandler(
 
         if (response.SourceProvider == ProviderName.MusicBrainz && response.Metadata is not null)
         {
+            if (response.Hierarchy?.ArtistId is not null || !string.IsNullOrWhiteSpace(response.Metadata.Artist))
+            {
+                events.Add(new ArtistDiscovered(
+                    response.Hierarchy?.ArtistId?.Value,
+                    response.Metadata.Artist,
+                    response.SourceProvider,
+                    response.CreatedAt));
+            }
+
+            if (response.Hierarchy?.AlbumId is not null)
+            {
+                events.Add(new AlbumDiscovered(
+                    response.Hierarchy?.AlbumId?.Value,
+                    null,
+                    response.SourceProvider,
+                    response.CreatedAt));
+            }
+
             events.Add(new TrackDiscovered(
                 response.Metadata.Title,
                 response.Metadata.Artist,
@@ -110,7 +128,8 @@ public sealed class ApplyEnrichmentResponseHandler(
                 response.CorrelationId,
                 response.SourceProvider,
                 response.CreatedAt,
-                searchTerm));
+                searchTerm,
+                response.Hierarchy));
         }
 
         return events;
@@ -138,5 +157,7 @@ public sealed class ApplyEnrichmentResponseHandler(
             response.FailedProviders.Select(failure => new ProviderLookupFailureDto(
                 failure.Provider.Value,
                 failure.SourceProvider.Value)).ToArray(),
+            response.Hierarchy?.ArtistId?.Value,
+            response.Hierarchy?.AlbumId?.Value,
             response.CorrelationId.Value);
 }

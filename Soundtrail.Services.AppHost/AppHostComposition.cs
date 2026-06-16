@@ -60,7 +60,7 @@ public static class AppHostComposition
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
-            .WithEnvironment("ServiceBus__LookupMusicRequestsQueueName", "lookup-music-requests")
+            .WithEnvironment("ServiceBus__CatalogSearchAttemptsQueueName", "lookup-music-requests")
             .WithEnvironment("RavenDb__Urls__0", ravenDb.GetEndpoint("http"))
             .WithEnvironment("RavenDb__Database", "soundtrail");
 
@@ -99,7 +99,7 @@ public static class AppHostComposition
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
-            .WithEnvironment("ServiceBus__LookupMusicRequestsQueueName", "lookup-music-requests")
+            .WithEnvironment("ServiceBus__CatalogSearchAttemptsQueueName", "lookup-music-requests")
             .WithEnvironment("ServiceBus__MusicBrainzLookupQueueName", "lookup-musicbrainz")
             .WithEnvironment("ServiceBus__PlaybackReferencesLookupQueueName", "lookup-playback-references")
             .WithEnvironment("ServiceBus__EnrichmentResponsesQueueName", "enrichment-responses")

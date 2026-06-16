@@ -78,6 +78,31 @@ public sealed class SearchOutsideInTests
     }
 
     [Fact]
+    public async Task Given_A_Local_Incomplete_Track_Without_A_Discovery_Status_When_Searching_Then_The_Local_Result_Is_Returned_And_Discovery_Is_Requested()
+    {
+        await using var env = await SearchOutsideInTestEnvironment.CreateAsync(store =>
+            SearchOutsideInTestEnvironment.SeedPlayableTrack(
+                store,
+                "rare unknown song",
+                "track_rare_unknown_song",
+                "Rare Unknown Song",
+                "artist_test_artist",
+                "Test Artist",
+                "album_rare_album",
+                "Rare Album"));
+
+        var response = await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track");
+        var lookupRequest = await env.WaitForMessageAsync<CatalogSearchAttemptDto>(TimeSpan.FromSeconds(1));
+
+        response.Results.Should().ContainSingle();
+        response.Results[0].Id.Should().Be("track_rare_unknown_song");
+        response.Results[0].PlayabilityStatus.Should().Be("NotYetDiscovered");
+        response.Discovery.WillBeLookedUp.Should().BeTrue();
+        response.Discovery.Reason.Should().Be("Local results incomplete");
+        lookupRequest.Query.Should().Be("rare unknown song");
+    }
+
+    [Fact]
     public async Task Given_An_InProgress_Discovery_Status_When_Searching_Then_The_Projected_Discovery_Is_Returned_Without_Requesting_Discovery()
     {
         await using var env = await SearchOutsideInTestEnvironment.CreateAsync(store =>

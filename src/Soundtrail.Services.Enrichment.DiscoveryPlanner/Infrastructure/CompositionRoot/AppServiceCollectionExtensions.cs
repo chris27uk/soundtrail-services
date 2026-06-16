@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.CompositionRoot;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.CompositionRoot;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.CompositionRoot;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.CompositionRoot;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Scheduling;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
@@ -29,6 +30,7 @@ public static class AppServiceCollectionExtensions
 
         services.AddJustInTimeSchedulingFeature(x =>
             x.ConfigureDependencies = svc => dependencyProvider.AddJustInTimeSchedulingDependencies(svc, configuration));
+        services.AddProjectDiscoveryLifecycleFeature();
         services.AddBacklogSchedulingFeature(x =>
         {
             x.IncludeHostedService = options.IncludeBacklogHostedService;

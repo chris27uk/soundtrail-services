@@ -2,6 +2,7 @@ using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
@@ -30,7 +31,8 @@ public sealed class PlaybackReferencesLookupExecutionListener(
                     dto.Priority,
                     dto.CreatedAt,
                     CorrelationId.From(dto.CorrelationId),
-                    dto.SearchTerm.Isrc == null ? MusicSearchTerm.ByTrackArtistAlbum(dto.SearchTerm.Title!, dto.SearchTerm.Artist!,dto.SearchTerm.Album) : MusicSearchTerm.ByIsrc(dto.SearchTerm.Isrc)),
+                    dto.SearchTerm.Isrc == null ? MusicSearchTerm.ByTrackArtistAlbum(dto.SearchTerm.Title!, dto.SearchTerm.Artist!, dto.SearchTerm.Album) : MusicSearchTerm.ByIsrc(dto.SearchTerm.Isrc),
+                    ToHierarchy(dto)),
                 cancellationToken);
 
             if (result.Started)
@@ -60,6 +62,8 @@ public sealed class PlaybackReferencesLookupExecutionListener(
                     result.Response.FailedProviders.Select(failure => new ProviderLookupFailureDto(
                         failure.Provider.Value,
                         failure.SourceProvider.Value)).ToArray(),
+                    result.Response.Hierarchy?.ArtistId?.Value,
+                    result.Response.Hierarchy?.AlbumId?.Value,
                     result.Response.CorrelationId.Value)];
         }
         catch
@@ -99,4 +103,11 @@ public sealed class PlaybackReferencesLookupExecutionListener(
                 cancellationToken);
         }
     }
+
+    private static CatalogTrackHierarchy? ToHierarchy(ResolvePlaybackReferencesCommandDto dto) =>
+        dto.ArtistId is null && dto.AlbumId is null
+            ? null
+            : new CatalogTrackHierarchy(
+                dto.ArtistId is null ? null : ArtistId.From(dto.ArtistId),
+                dto.AlbumId is null ? null : AlbumId.From(dto.AlbumId));
 }

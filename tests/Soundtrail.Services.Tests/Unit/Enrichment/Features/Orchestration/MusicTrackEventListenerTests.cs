@@ -30,5 +30,7 @@ public sealed class MusicTrackEventListenerTests
         var message = (ResolvePlaybackReferencesCommandDto)env.HandlePlaybackReferencesResolutionRequired();
         message.MusicCatalogId.Should().Be("mc_track_1");
         message.SearchTerm.Isrc.Should().Be("isrc-1");
+        message.ArtistId.Should().Be("artist_test_artist");
+        message.AlbumId.Should().Be("album_rare_album");
     }
 }

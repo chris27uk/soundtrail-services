@@ -18,7 +18,9 @@ internal sealed class PlaybackReferencesLookupExecutionListenerTestEnvironment
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero),
             "corr-1",
-            new PlaybackReferenceSearchTermDto("isrc-1", null, null, null));
+            new PlaybackReferenceSearchTermDto("isrc-1", null, null, null),
+            null,
+            null);
 
     private PlaybackReferencesLookupExecutionListenerTestEnvironment(LookupExecutionReceiptStoreFake.State state)
     {
