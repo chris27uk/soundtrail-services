@@ -16,6 +16,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
         private readonly ActiveLookupWorkStoreFake activeLookupWorkStoreFake;
         private readonly LocalMusicTrackSearchFake localMusicTrackSearchFake;
         private readonly CatalogSearchTrackingStoreFake catalogSearchTrackingStoreFake;
+        private readonly SourceApiBudgetPortFake sourceApiBudgetPortFake;
 
         private CatalogSearchAttemptHandlerTestEnvironment(
             FakeMusicCatalogCandidateSearch search,
@@ -26,6 +27,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
             this.activeLookupWorkStoreFake = new ActiveLookupWorkStoreFake();
             this.localMusicTrackSearchFake = new LocalMusicTrackSearchFake();
             this.catalogSearchTrackingStoreFake = new CatalogSearchTrackingStoreFake();
+            this.sourceApiBudgetPortFake = new SourceApiBudgetPortFake();
             this.Planner = new DiscoveryPriorityPolicy();
             this.ResolutionPolicy = new MusicCatalogMatchResolver();
             this.Handler = new CatalogSearchAttemptHandler(
@@ -33,6 +35,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
                 potentialCatalogLookupWorkStoreFake,
                 this.catalogSearchTrackingStoreFake,
                 this.Planner,
+                this.sourceApiBudgetPortFake,
                 this.ResolutionPolicy,
                 this.activeLookupWorkStoreFake,
                 this.localMusicTrackSearchFake);
@@ -56,6 +59,8 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
         public ActiveLookupWorkStoreFake ActiveWorkStore => this.activeLookupWorkStoreFake;
 
         public LocalMusicTrackSearchFake LocalSearch => this.localMusicTrackSearchFake;
+
+        public SourceApiBudgetPortFake SourceBudget => this.sourceApiBudgetPortFake;
 
         public IReadOnlyList<PotentialCatalogLookupWork> PotentialCatalogLookupWorks => this.potentialCatalogLookupWorkStoreFake.All;
 

@@ -12,6 +12,7 @@ public sealed class DiscoveryBacklogScheduler(
     IPotentialCatalogLookupWorkStore rankedMusicCandidateStore,
     IActiveLookupWorkStore activeLookupWorkStore,
     DiscoveryPriorityPolicy discoveryPriorityPolicy,
+    IReserveSourceApiBudgetPort reserveSourceApiBudgetPort,
     ILocalMusicTrackSearch localMusicTrackSearch)
 {
     private static readonly TimeSpan ActiveReservationDuration = TimeSpan.FromMinutes(15);
@@ -39,6 +40,14 @@ public sealed class DiscoveryBacklogScheduler(
                 continue;
             }
 
+            var budgetReservation = await reserveSourceApiBudgetPort.TryReserveAsync(
+                new SourceApiBudgetReservationRequest(GetSource(command), now),
+                cancellationToken);
+            if (!budgetReservation.Accepted)
+            {
+                continue;
+            }
+
             var acquired = await activeLookupWorkStore.TryAcquireAsync(
                 command.CommandId, now.Add(ActiveReservationDuration), cancellationToken);
             if (!acquired)
@@ -51,6 +60,14 @@ public sealed class DiscoveryBacklogScheduler(
 
         return commands;
     }
+
+    private static ProviderName GetSource(LookupPhaseCommand command) =>
+        command switch
+        {
+            LookupMusicMetadataCommand => ProviderName.MusicBrainz,
+            ResolvePlaybackReferencesCommand => ProviderName.Odesli,
+            _ => throw new ArgumentOutOfRangeException(nameof(command), command, "Unsupported lookup phase command.")
+        };
 
     private static LookupPhaseCommand? BuildCommand(
         PotentialCatalogLookupWork candidate,

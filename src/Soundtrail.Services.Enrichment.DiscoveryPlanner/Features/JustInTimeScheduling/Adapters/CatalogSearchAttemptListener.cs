@@ -16,9 +16,6 @@ public sealed class CatalogSearchAttemptListener(
     CatalogSearchAttemptHandler handler,
     ICatalogSearchDiscoveryRepository discoveryRepository)
 {
-    private const int PlannedRetryAfterSeconds = 30;
-    private const int DeferredRetryAfterSeconds = 60;
-
     [WolverineHandler]
     [Transactional]
     public async Task<object[]> Handle(
@@ -44,16 +41,16 @@ public sealed class CatalogSearchAttemptListener(
                 {
                     return discovery.Plan(
                         result.Command?.Priority ?? throw new InvalidOperationException("Scheduled discovery must include a priority."),
-                        PlannedRetryAfterSeconds,
-                        earliestExpectedCompletionAt: null,
-                        reason: "Planner queued lookup",
+                        result.EstimatedRetryAfterSeconds,
+                        result.EarliestExpectedCompletionAt,
+                        result.Reason,
                         plannedAt: request.OccurredAt);
                 }
 
                 return discovery.Defer(
-                    DeferredRetryAfterSeconds,
-                    request.OccurredAt.AddSeconds(DeferredRetryAfterSeconds),
-                    "Planner deferred lookup",
+                    result.EstimatedRetryAfterSeconds,
+                    result.EarliestExpectedCompletionAt,
+                    result.Reason,
                     request.OccurredAt);
             }, cancellationToken);
 

@@ -13,6 +13,7 @@ internal sealed class DiscoveryBacklogSchedulerTestEnvironment
 
     private readonly PotentialCatalogLookupWorkStoreFake store;
     private readonly LocalMusicTrackSearchFake localSearch;
+    private readonly SourceApiBudgetPortFake sourceBudget;
 
     private DiscoveryBacklogSchedulerTestEnvironment(params Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence.PotentialCatalogLookupWork[] candidates)
     {
@@ -24,6 +25,7 @@ internal sealed class DiscoveryBacklogSchedulerTestEnvironment
 
         ActiveWorkStore = new ActiveLookupWorkStoreFake();
         localSearch = new LocalMusicTrackSearchFake();
+        sourceBudget = new SourceApiBudgetPortFake();
         foreach (var candidate in candidates)
         {
             localSearch.Seed(new LocalMusicTrackSearchResult(
@@ -37,7 +39,7 @@ internal sealed class DiscoveryBacklogSchedulerTestEnvironment
                 IsPlayable: false));
         }
 
-        Scheduler = new DiscoveryBacklogScheduler(this.store, ActiveWorkStore, new DiscoveryPriorityPolicy(), localSearch);
+        Scheduler = new DiscoveryBacklogScheduler(this.store, ActiveWorkStore, new DiscoveryPriorityPolicy(), sourceBudget, localSearch);
         Now = DefaultNow;
     }
 
@@ -46,6 +48,8 @@ internal sealed class DiscoveryBacklogSchedulerTestEnvironment
     public ActiveLookupWorkStoreFake ActiveWorkStore { get; }
 
     public DateTimeOffset Now { get; }
+
+    public SourceApiBudgetPortFake SourceBudget => sourceBudget;
 
     public static DiscoveryBacklogSchedulerTestEnvironment WithHighAndLowPriorityEligibleCandidates() =>
         new(

@@ -13,11 +13,13 @@ internal sealed class CatalogSearchAttemptListenerTestEnvironment
     private static readonly DateTimeOffset DefaultOccurredAt = new(2026, 6, 8, 12, 0, 0, TimeSpan.Zero);
     private readonly LocalMusicTrackSearchFake localSearchFake;
     private readonly CatalogSearchDiscoveryRepositoryFake discoveryRepository;
+    private readonly SourceApiBudgetPortFake sourceBudgetFake;
 
     private CatalogSearchAttemptListenerTestEnvironment(FakeMusicCatalogCandidateSearch search)
     {
         localSearchFake = new LocalMusicTrackSearchFake();
         discoveryRepository = new CatalogSearchDiscoveryRepositoryFake();
+        sourceBudgetFake = new SourceApiBudgetPortFake();
         localSearchFake.Seed(new LocalMusicTrackSearchResult(
             MusicCatalogId.From("mc_track_1"),
             "Song A",
@@ -33,6 +35,7 @@ internal sealed class CatalogSearchAttemptListenerTestEnvironment
                 new PotentialCatalogLookupWorkStoreFake(),
                 new CatalogSearchTrackingStoreFake(),
                 new DiscoveryPriorityPolicy(),
+                sourceBudgetFake,
                 new MusicCatalogMatchResolver(),
                 new ActiveLookupWorkStoreFake(),
                 localSearchFake),
@@ -44,6 +47,8 @@ internal sealed class CatalogSearchAttemptListenerTestEnvironment
     public LocalMusicTrackSearchFake LocalSearch => localSearchFake;
 
     public CatalogSearchDiscoveryRepositoryFake DiscoveryRepository => discoveryRepository;
+
+    public SourceApiBudgetPortFake SourceBudget => sourceBudgetFake;
 
     public static CatalogSearchAttemptListenerTestEnvironment WithASchedulableRequest()
     {

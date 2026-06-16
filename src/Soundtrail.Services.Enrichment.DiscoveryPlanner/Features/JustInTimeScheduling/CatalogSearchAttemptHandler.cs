@@ -17,6 +17,7 @@ public sealed class CatalogSearchAttemptHandler(
     IPotentialCatalogLookupWorkStore potentialCatalogLookupWorkStore,
     ICatalogSearchTrackingStore catalogSearchTrackingStore,
     DiscoveryPriorityPolicy discoveryPriorityPolicy,
+    IReserveSourceApiBudgetPort reserveSourceApiBudgetPort,
     MusicCatalogMatchResolver musicCatalogMatchResolver,
     IActiveLookupWorkStore activeLookupWorkStore,
     ILocalMusicTrackSearch localMusicTrackSearch)
@@ -55,14 +56,32 @@ public sealed class CatalogSearchAttemptHandler(
         var plan = discoveryPriorityPolicy.Investigate(rankedMusicCandidate, request.OccurredAt);
         if (!plan.ShouldSchedule)
         {
-            return LookupSchedulingResult.DoNotSchedule();
+            return LookupSchedulingResult.DoNotSchedule(
+                plan.EstimatedRetryAfterSeconds,
+                plan.EarliestExpectedCompletionAt,
+                plan.Reason);
         }
 
         var localTrack = await localMusicTrackSearch.GetByMusicCatalogIdAsync(musicCatalogId, cancellationToken);
         var command = BuildCommand(request, musicCatalogId, plan.Priority!.Value, localTrack);
         if (command is null)
         {
-            return LookupSchedulingResult.DoNotSchedule();
+            var deferred = PriorityPlan.Defer(request.OccurredAt);
+            return LookupSchedulingResult.DoNotSchedule(
+                deferred.EstimatedRetryAfterSeconds,
+                deferred.EarliestExpectedCompletionAt,
+                deferred.Reason);
+        }
+
+        var budgetReservation = await reserveSourceApiBudgetPort.TryReserveAsync(
+            new SourceApiBudgetReservationRequest(GetSource(command), request.OccurredAt),
+            cancellationToken);
+        if (!budgetReservation.Accepted)
+        {
+            return LookupSchedulingResult.DoNotSchedule(
+                budgetReservation.RetryAfterSecondsFrom(request.OccurredAt),
+                budgetReservation.RetryAt,
+                budgetReservation.Reason);
         }
 
         var acquired = await activeLookupWorkStore.TryAcquireAsync(
@@ -70,10 +89,29 @@ public sealed class CatalogSearchAttemptHandler(
             request.OccurredAt.Add(ActiveReservationDuration),
             cancellationToken);
 
-        return acquired
-            ? LookupSchedulingResult.Schedule(command)
-            : LookupSchedulingResult.DoNotSchedule();
+        if (acquired)
+        {
+            return LookupSchedulingResult.Schedule(
+                plan.EstimatedRetryAfterSeconds,
+                plan.EarliestExpectedCompletionAt,
+                plan.Reason,
+                command);
+        }
+
+        var deferredByReservation = PriorityPlan.Defer(request.OccurredAt);
+        return LookupSchedulingResult.DoNotSchedule(
+            deferredByReservation.EstimatedRetryAfterSeconds,
+            deferredByReservation.EarliestExpectedCompletionAt,
+            deferredByReservation.Reason);
     }
+
+    private static ProviderName GetSource(LookupPhaseCommand command) =>
+        command switch
+        {
+            LookupMusicMetadataCommand => ProviderName.MusicBrainz,
+            ResolvePlaybackReferencesCommand => ProviderName.Odesli,
+            _ => throw new ArgumentOutOfRangeException(nameof(command), command, "Unsupported lookup phase command.")
+        };
 
     private static LookupPhaseCommand? BuildCommand(
         CatalogSearchAttempt request,

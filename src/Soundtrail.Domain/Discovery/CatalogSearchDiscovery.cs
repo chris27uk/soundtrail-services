@@ -21,12 +21,13 @@ public sealed class CatalogSearchDiscovery
 
     private CatalogSearchDiscovery(IEnumerable<IDomainEvent> events, int version)
     {
+        this.eventHandlers = CreateHandlers();
+
         foreach (var @event in events)
         {
             Apply(@event, isNew: false);
         }
 
-        this.eventHandlers = CreateHandlers();
         this.version = version;
     }
 

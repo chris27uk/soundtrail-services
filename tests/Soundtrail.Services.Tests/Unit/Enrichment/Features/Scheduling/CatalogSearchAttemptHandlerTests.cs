@@ -17,6 +17,8 @@ public class CatalogSearchAttemptHandlerTests
         var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10), CancellationToken.None);
 
         result.ShouldSchedule.Should().BeTrue();
+        result.EstimatedRetryAfterSeconds.Should().Be(30);
+        result.Reason.Should().Be("Planner queued lookup");
     }
 
     [Fact]
@@ -41,6 +43,8 @@ public class CatalogSearchAttemptHandlerTests
         var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10), CancellationToken.None);
 
         result.ShouldSchedule.Should().BeFalse();
+        result.EstimatedRetryAfterSeconds.Should().Be(60);
+        result.Reason.Should().Be("Planner deferred lookup");
     }
 
     [Fact]

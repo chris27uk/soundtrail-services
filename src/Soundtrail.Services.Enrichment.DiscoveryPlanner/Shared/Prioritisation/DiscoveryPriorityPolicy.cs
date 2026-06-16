@@ -10,17 +10,17 @@ public sealed class DiscoveryPriorityPolicy
     {
         if (!candidate.IsPending)
         {
-            return PriorityPlan.Ignore();
+            return PriorityPlan.Ignore(now);
         }
 
         if (!candidate.IsEligibleAt(now))
         {
-            return PriorityPlan.Defer();
+            return PriorityPlan.Defer(now);
         }
 
         if (candidate.IsSuspicious)
         {
-            return PriorityPlan.Ignore();
+            return PriorityPlan.Ignore(now);
         }
 
         if (candidate.RiskBand == RiskBand.Medium)

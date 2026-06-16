@@ -158,6 +158,8 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.NoPrevio
             var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
 
             result.Command?.Priority.Should().Be(LookupPriorityBand.Low);
+            result.EstimatedRetryAfterSeconds.Should().Be(30);
+            result.Reason.Should().Be("Planner queued lookup");
         }
 
         [Theory]
@@ -172,6 +174,8 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.NoPrevio
             var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: riskScore));
 
             result.ShouldSchedule.Should().BeFalse();
+            result.EstimatedRetryAfterSeconds.Should().Be(60);
+            result.Reason.Should().Be("Planner deferred lookup");
         }
     }
 }

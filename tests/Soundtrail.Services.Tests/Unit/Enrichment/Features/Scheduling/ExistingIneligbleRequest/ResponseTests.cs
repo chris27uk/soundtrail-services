@@ -18,6 +18,8 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.Existing
                 occurredAt: new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero)));
 
             result.ShouldSchedule.Should().BeFalse();
+            result.EstimatedRetryAfterSeconds.Should().Be(60);
+            result.Reason.Should().Be("Planner deferred lookup");
         }
     }
 }
