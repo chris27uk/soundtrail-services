@@ -87,6 +87,33 @@ public sealed class MusicTrackProjectionApplier
             case ArtistDiscovered artistDiscovered:
                 document.ArtistId = artistDiscovered.ArtistId;
                 break;
+            case ArtworkDiscovered artworkDiscovered:
+                if (artworkDiscovered.EntityKind == Domain.Catalog.CatalogEntityKind.Track)
+                {
+                    document.ArtworkUrl = artworkDiscovered.Url.ToString();
+                }
+                break;
+            case MetadataCorrected metadataCorrected:
+                document.CanonicalMetadata = new RavenSongMetadataRecordDto
+                {
+                    Title = metadataCorrected.Title,
+                    Artist = metadataCorrected.ArtistName,
+                    Isrc = metadataCorrected.Isrc,
+                    Mbid = metadataCorrected.Mbid,
+                    DurationMs = metadataCorrected.DurationMs
+                };
+                document.Title = metadataCorrected.Title;
+                document.Artist = metadataCorrected.ArtistName;
+                document.ArtistId = metadataCorrected.ArtistId;
+                document.AlbumTitle = metadataCorrected.AlbumTitle;
+                document.AlbumId = metadataCorrected.AlbumId;
+                document.Isrc = metadataCorrected.Isrc;
+                document.Mbid = metadataCorrected.Mbid;
+                document.DurationMs = metadataCorrected.DurationMs;
+                document.SearchText = RavenTrackRecordDto.BuildSearchText(
+                    metadataCorrected.Title,
+                    metadataCorrected.ArtistName);
+                break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(@event), @event, "Unknown music track event.");
         }

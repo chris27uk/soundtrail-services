@@ -31,6 +31,8 @@ internal static class RavenMappings
             AlbumDiscovered trackLinkedToAlbum => trackLinkedToAlbum.ObservedAt,
             ArtistDiscovered trackLinkedToArtist => trackLinkedToArtist.ObservedAt,
             ProviderReferenceLookupFailed providerReferenceLookupFailed => providerReferenceLookupFailed.ObservedAt,
+            ArtworkDiscovered artworkDiscovered => artworkDiscovered.ObservedAt,
+            MetadataCorrected metadataCorrected => metadataCorrected.CorrectedAt,
             _ => throw new ArgumentOutOfRangeException(nameof(@event), @event, "Unknown music track event.")
         };
 
@@ -136,6 +138,41 @@ internal static class RavenMappings
                 OccurredAtUtc = providerReferenceLookupFailed.ObservedAt,
                 CausationId = commandId.Value
             },
+            ArtworkDiscovered artworkDiscovered => new MusicTrackStoredEventRecordDto
+            {
+                Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId.Value, version),
+                MusicCatalogId = musicCatalogId.Value,
+                Version = version,
+                EventType = nameof(ArtworkDiscovered),
+                Data = JsonSerializer.Serialize(new ArtworkDiscoveredEventDataRecordDto(
+                    artworkDiscovered.EntityKind.ToString(),
+                    artworkDiscovered.EntityId,
+                    artworkDiscovered.Url.ToString(),
+                    artworkDiscovered.Source,
+                    artworkDiscovered.ObservedAt)),
+                OccurredAtUtc = artworkDiscovered.ObservedAt,
+                CausationId = commandId.Value
+            },
+            MetadataCorrected metadataCorrected => new MusicTrackStoredEventRecordDto
+            {
+                Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId.Value, version),
+                MusicCatalogId = musicCatalogId.Value,
+                Version = version,
+                EventType = nameof(MetadataCorrected),
+                Data = JsonSerializer.Serialize(new MetadataCorrectedEventDataRecordDto(
+                    metadataCorrected.Title,
+                    metadataCorrected.ArtistName,
+                    metadataCorrected.ArtistId,
+                    metadataCorrected.AlbumTitle,
+                    metadataCorrected.AlbumId,
+                    metadataCorrected.DurationMs,
+                    metadataCorrected.Isrc,
+                    metadataCorrected.Mbid,
+                    metadataCorrected.Source,
+                    metadataCorrected.CorrectedAt)),
+                OccurredAtUtc = metadataCorrected.CorrectedAt,
+                CausationId = commandId.Value
+            },
             _ => throw new ArgumentOutOfRangeException(nameof(@event), @event, "Unknown music track event.")
         };
 
@@ -148,6 +185,8 @@ internal static class RavenMappings
             nameof(AlbumDiscovered) => AlbumDiscovered(dto),
             nameof(ArtistDiscovered) => ArtistDiscovered(dto),
             nameof(ProviderReferenceLookupFailed) => ProviderReferenceLookupFailed(dto),
+            nameof(ArtworkDiscovered) => ArtworkDiscovered(dto),
+            nameof(MetadataCorrected) => MetadataCorrected(dto),
             _ => throw new ArgumentOutOfRangeException(nameof(dto.EventType), dto.EventType, "Unknown music track event type.")
         };
 
@@ -227,5 +266,34 @@ internal static class RavenMappings
             ProviderName.From(data.Provider),
             ProviderName.From(data.SourceProvider),
             data.ObservedAt);
+    }
+
+    private static ArtworkDiscovered ArtworkDiscovered(MusicTrackStoredEventRecordDto dto)
+    {
+        var data = JsonSerializer.Deserialize<ArtworkDiscoveredEventDataRecordDto>(dto.Data)
+            ?? throw new InvalidOperationException("Unable to deserialize artwork discovered event data.");
+        return new ArtworkDiscovered(
+            Enum.Parse<Domain.Catalog.CatalogEntityKind>(data.EntityKind, ignoreCase: true),
+            data.EntityId,
+            new Uri(data.Url),
+            data.Source,
+            data.ObservedAt);
+    }
+
+    private static MetadataCorrected MetadataCorrected(MusicTrackStoredEventRecordDto dto)
+    {
+        var data = JsonSerializer.Deserialize<MetadataCorrectedEventDataRecordDto>(dto.Data)
+            ?? throw new InvalidOperationException("Unable to deserialize metadata corrected event data.");
+        return new MetadataCorrected(
+            data.Title,
+            data.ArtistName,
+            data.ArtistId,
+            data.AlbumTitle,
+            data.AlbumId,
+            data.DurationMs,
+            data.Isrc,
+            data.Mbid,
+            data.Source,
+            data.CorrectedAt);
     }
 }

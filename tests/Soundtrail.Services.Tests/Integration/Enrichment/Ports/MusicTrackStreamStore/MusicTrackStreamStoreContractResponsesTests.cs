@@ -47,6 +47,44 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
         second.Appended.Should().BeFalse();
     }
 
+    [Theory]
+    [MemberData(nameof(AllModes))]
+    public async Task Given_New_Spec_Events_When_Appending_Then_They_Can_Be_Loaded_Back(StreamStoreMode mode)
+    {
+        await using var env = StreamStoreTestEnvironment.Create(mode);
+        var musicCatalogId = MusicCatalogId.From("mc_track_1");
+
+        await env.AppendAsync(
+            musicCatalogId,
+            0,
+            CommandId.For("RepairMetadata:mc_track_1"),
+            [
+                new ArtworkDiscovered(
+                    Domain.Catalog.CatalogEntityKind.Track,
+                    null,
+                    new Uri("https://images.example.com/track.png"),
+                    "worker/musicbrainz",
+                    new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero)),
+                new MetadataCorrected(
+                    "Song A (Remastered)",
+                    "Artist A",
+                    "artist_a",
+                    "Album A",
+                    "album_a",
+                    123000,
+                    "isrc-1",
+                    "mbid-1",
+                    "admin/repair",
+                    new DateTimeOffset(2026, 6, 16, 12, 1, 0, TimeSpan.Zero))
+            ]);
+
+        var loaded = await env.LoadAsync(musicCatalogId);
+
+        loaded.Version.Should().Be(2);
+        loaded.Events[0].Should().BeOfType<ArtworkDiscovered>();
+        loaded.Events[1].Should().BeOfType<MetadataCorrected>();
+    }
+
     public static IEnumerable<object[]> AllModes()
     {
         yield return [StreamStoreMode.InProcessFake];

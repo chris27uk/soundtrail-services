@@ -47,6 +47,12 @@ public sealed class CatalogMusicTrackProjectionApplier
             case nameof(ProviderReferenceLookupFailed):
                 await ApplyProviderFailureAsync(track, Deserialize<ProviderReferenceLookupFailedEventDataRecordDto>(storedEvent), session, cancellationToken);
                 break;
+            case nameof(ArtworkDiscovered):
+                await ApplyArtworkDiscoveredAsync(track, Deserialize<ArtworkDiscoveredEventDataRecordDto>(storedEvent), session, cancellationToken);
+                break;
+            case nameof(MetadataCorrected):
+                await ApplyMetadataCorrectedAsync(track, Deserialize<MetadataCorrectedEventDataRecordDto>(storedEvent), session, cancellationToken);
+                break;
             case nameof(PlaybackReferencesResolutionRequired):
                 break;
             default:
@@ -184,6 +190,80 @@ public sealed class CatalogMusicTrackProjectionApplier
             album.TerminallyUnavailableProviders = AddProvider(album.TerminallyUnavailableProviders, data.Provider);
             album.AvailableProviders = RemoveProvider(album.AvailableProviders, data.Provider);
             album.UpdatedAt = data.ObservedAt;
+        }
+    }
+
+    private static async Task ApplyArtworkDiscoveredAsync(
+        CatalogTrackRecordDto track,
+        ArtworkDiscoveredEventDataRecordDto data,
+        IAsyncDocumentSession session,
+        CancellationToken cancellationToken)
+    {
+        var entityKind = Enum.Parse<Domain.Catalog.CatalogEntityKind>(data.EntityKind, ignoreCase: true);
+
+        switch (entityKind)
+        {
+            case Domain.Catalog.CatalogEntityKind.Track:
+                track.ArtworkUrl = data.Url;
+                break;
+            case Domain.Catalog.CatalogEntityKind.Artist:
+                var artistId = !string.IsNullOrWhiteSpace(data.EntityId) ? data.EntityId : track.ArtistId;
+                if (!string.IsNullOrWhiteSpace(artistId))
+                {
+                    var artist = await LoadOrCreateArtistAsync(artistId, session, cancellationToken);
+                    artist.ArtworkUrl = data.Url;
+                    artist.UpdatedAt = data.ObservedAt;
+                }
+
+                break;
+            case Domain.Catalog.CatalogEntityKind.Album:
+                var albumId = !string.IsNullOrWhiteSpace(data.EntityId) ? data.EntityId : track.AlbumId;
+                if (!string.IsNullOrWhiteSpace(albumId))
+                {
+                    var album = await LoadOrCreateAlbumAsync(albumId, session, cancellationToken);
+                    album.ArtworkUrl = data.Url;
+                    album.UpdatedAt = data.ObservedAt;
+                }
+
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(data.EntityKind), data.EntityKind, null);
+        }
+    }
+
+    private static async Task ApplyMetadataCorrectedAsync(
+        CatalogTrackRecordDto track,
+        MetadataCorrectedEventDataRecordDto data,
+        IAsyncDocumentSession session,
+        CancellationToken cancellationToken)
+    {
+        track.Title = data.Title;
+        track.NormalizedTitle = Normalize(data.Title);
+        track.ArtistName = data.ArtistName;
+        track.AlbumName = data.AlbumTitle ?? track.AlbumName;
+        track.ArtistId = data.ArtistId ?? track.ArtistId;
+        track.AlbumId = data.AlbumId ?? track.AlbumId;
+        track.MusicBrainzRecordingId = data.Mbid;
+        track.Isrc = data.Isrc;
+        track.DurationMs = data.DurationMs;
+        track.SearchText = BuildSearchText(track.Title, track.ArtistName);
+
+        if (!string.IsNullOrWhiteSpace(track.ArtistId))
+        {
+            var artist = await LoadOrCreateArtistAsync(track.ArtistId, session, cancellationToken);
+            artist.Name = data.ArtistName;
+            artist.NormalizedName = Normalize(data.ArtistName);
+            artist.UpdatedAt = data.CorrectedAt;
+        }
+
+        if (!string.IsNullOrWhiteSpace(track.AlbumId))
+        {
+            var album = await LoadOrCreateAlbumAsync(track.AlbumId, session, cancellationToken);
+            album.Name = string.IsNullOrWhiteSpace(data.AlbumTitle) ? album.Name : data.AlbumTitle;
+            album.NormalizedName = Normalize(album.Name);
+            album.ArtistId = Coalesce(track.ArtistId, album.ArtistId);
+            album.ArtistName = Coalesce(data.ArtistName, album.ArtistName);
+            album.UpdatedAt = data.CorrectedAt;
         }
     }
 

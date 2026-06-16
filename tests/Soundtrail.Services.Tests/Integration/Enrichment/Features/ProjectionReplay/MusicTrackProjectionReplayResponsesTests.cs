@@ -117,4 +117,73 @@ public sealed class MusicTrackProjectionReplayResponsesTests
         projection.Should().NotBeNull();
         projection!.ProjectionVersion.Should().Be(1);
     }
+
+    [Fact]
+    public async Task Given_Artwork_And_Metadata_Correction_Events_When_Projecting_Then_The_Track_Projection_Is_Updated()
+    {
+        using var raven = RavenEmbeddedTestDatabase.Create();
+        using var session = raven.Store.OpenAsyncSession();
+        var applier = new MusicTrackProjectionApplier();
+        var musicCatalogId = MusicCatalogId.From("mc_track_1");
+
+        var storedEvents = new MusicTrackStoredEventRecordDto[]
+        {
+            new()
+            {
+                Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId.Value, 1),
+                MusicCatalogId = musicCatalogId.Value,
+                Version = 1,
+                EventType = nameof(MetadataCorrected),
+                Data = System.Text.Json.JsonSerializer.Serialize(
+                    new MetadataCorrectedEventDataRecordDto(
+                        "Song A (Remastered)",
+                        "Artist A",
+                        "artist_a",
+                        "Album A",
+                        "album_a",
+                        123000,
+                        "isrc-1",
+                        "mbid-1",
+                        "admin/repair",
+                        new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero))),
+                OccurredAtUtc = new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero)
+            },
+            new()
+            {
+                Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId.Value, 2),
+                MusicCatalogId = musicCatalogId.Value,
+                Version = 2,
+                EventType = nameof(ArtworkDiscovered),
+                Data = System.Text.Json.JsonSerializer.Serialize(
+                    new ArtworkDiscoveredEventDataRecordDto(
+                        "Track",
+                        null,
+                        "https://images.example.com/track.png",
+                        "worker/musicbrainz",
+                        new DateTimeOffset(2026, 6, 16, 12, 1, 0, TimeSpan.Zero))),
+                OccurredAtUtc = new DateTimeOffset(2026, 6, 16, 12, 1, 0, TimeSpan.Zero)
+            }
+        };
+
+        foreach (var storedEvent in storedEvents)
+        {
+            await applier.ApplyStoredEventAsync(storedEvent, session, CancellationToken.None);
+        }
+
+        await session.SaveChangesAsync(CancellationToken.None);
+
+        using var verificationSession = raven.Store.OpenAsyncSession();
+        var projection = await verificationSession.LoadAsync<RavenTrackRecordDto>(
+            RavenTrackRecordDto.GetDocumentId(musicCatalogId.Value),
+            CancellationToken.None);
+
+        projection.Should().NotBeNull();
+        projection!.Title.Should().Be("Song A (Remastered)");
+        projection.Artist.Should().Be("Artist A");
+        projection.ArtistId.Should().Be("artist_a");
+        projection.AlbumId.Should().Be("album_a");
+        projection.AlbumTitle.Should().Be("Album A");
+        projection.ArtworkUrl.Should().Be("https://images.example.com/track.png");
+        projection.ProjectionVersion.Should().Be(2);
+    }
 }

@@ -107,6 +107,73 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
         search.Results[0].TerminallyUnavailableProviders.Should().ContainSingle().Which.Should().Be(ProviderName.YoutubeMusic);
     }
 
+    [Fact]
+    public async Task Given_Artwork_Events_For_Track_Artist_And_Album_When_Projecting_Then_All_Catalog_Documents_Are_Updated()
+    {
+        await using var env = RavenCatalogProjectionReplayTestEnvironment.Create();
+
+        await env.ApplyAsync(
+            MinimalTrackInfo("mc_track_1", 1, "Mr. Brightside", "The Killers"),
+            ArtistDiscovered("mc_track_1", 2, "artist_the_killers", "The Killers"),
+            AlbumDiscovered("mc_track_1", 3, "album_hot_fuss", "Hot Fuss"),
+            ArtworkDiscovered("mc_track_1", 4, "Track", null, "https://images.example.com/track.png"),
+            ArtworkDiscovered("mc_track_1", 5, "Artist", "artist_the_killers", "https://images.example.com/artist.png"),
+            ArtworkDiscovered("mc_track_1", 6, "Album", "album_hot_fuss", "https://images.example.com/album.png"));
+
+        var track = await env.LoadTrackAsync("mc_track_1");
+        var artist = await env.LoadArtistAsync("artist_the_killers");
+        var album = await env.LoadAlbumAsync("album_hot_fuss");
+
+        track.Should().NotBeNull();
+        track!.ArtworkUrl.Should().Be("https://images.example.com/track.png");
+
+        artist.Should().NotBeNull();
+        artist!.ArtworkUrl.Should().Be("https://images.example.com/artist.png");
+
+        album.Should().NotBeNull();
+        album!.ArtworkUrl.Should().Be("https://images.example.com/album.png");
+    }
+
+    [Fact]
+    public async Task Given_A_Metadata_Correction_Event_When_Projecting_Then_The_Catalog_Hierarchy_And_Search_Data_Are_Repaired()
+    {
+        await using var env = RavenCatalogProjectionReplayTestEnvironment.Create();
+
+        await env.ApplyAsync(
+            MinimalTrackInfo("mc_track_1", 1, "Mr Brightside", "Killers"),
+            MetadataCorrected(
+                "mc_track_1",
+                2,
+                "Mr. Brightside",
+                "The Killers",
+                "artist_the_killers",
+                "Hot Fuss",
+                "album_hot_fuss"));
+
+        var track = await env.LoadTrackAsync("mc_track_1");
+        var artist = await env.LoadArtistAsync("artist_the_killers");
+        var album = await env.LoadAlbumAsync("album_hot_fuss");
+        var search = await env.SearchAsync("mr brightside", types: "track");
+
+        track.Should().NotBeNull();
+        track!.Title.Should().Be("Mr. Brightside");
+        track.ArtistName.Should().Be("The Killers");
+        track.ArtistId.Should().Be("artist_the_killers");
+        track.AlbumId.Should().Be("album_hot_fuss");
+        track.AlbumName.Should().Be("Hot Fuss");
+
+        artist.Should().NotBeNull();
+        artist!.Name.Should().Be("The Killers");
+
+        album.Should().NotBeNull();
+        album!.Name.Should().Be("Hot Fuss");
+        album.ArtistId.Should().Be("artist_the_killers");
+
+        search.Results.Should().ContainSingle();
+        search.Results[0].Name.Should().Be("Mr. Brightside");
+        search.Results[0].ArtistName.Should().Be("The Killers");
+    }
+
     private static MusicTrackStoredEventRecordDto MinimalTrackInfo(
         string musicCatalogId,
         int version,
@@ -207,5 +274,56 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
                     ProviderName.Odesli.Value,
                     new DateTimeOffset(2026, 6, 15, 12, 4, 0, TimeSpan.Zero))),
             OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 4, 0, TimeSpan.Zero)
+        };
+
+    private static MusicTrackStoredEventRecordDto ArtworkDiscovered(
+        string musicCatalogId,
+        int version,
+        string entityKind,
+        string? entityId,
+        string url) =>
+        new()
+        {
+            Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId, version),
+            MusicCatalogId = musicCatalogId,
+            Version = version,
+            EventType = nameof(ArtworkDiscovered),
+            Data = System.Text.Json.JsonSerializer.Serialize(
+                new ArtworkDiscoveredEventDataRecordDto(
+                    entityKind,
+                    entityId,
+                    url,
+                    "worker/musicbrainz",
+                    new DateTimeOffset(2026, 6, 15, 12, version, 0, TimeSpan.Zero))),
+            OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, version, 0, TimeSpan.Zero)
+        };
+
+    private static MusicTrackStoredEventRecordDto MetadataCorrected(
+        string musicCatalogId,
+        int version,
+        string title,
+        string artistName,
+        string artistId,
+        string albumTitle,
+        string albumId) =>
+        new()
+        {
+            Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId, version),
+            MusicCatalogId = musicCatalogId,
+            Version = version,
+            EventType = nameof(MetadataCorrected),
+            Data = System.Text.Json.JsonSerializer.Serialize(
+                new MetadataCorrectedEventDataRecordDto(
+                    title,
+                    artistName,
+                    artistId,
+                    albumTitle,
+                    albumId,
+                    222000,
+                    "USIR20400274",
+                    "mbid-1",
+                    "admin/repair",
+                    new DateTimeOffset(2026, 6, 15, 12, 5, 0, TimeSpan.Zero))),
+            OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 5, 0, TimeSpan.Zero)
         };
 }
