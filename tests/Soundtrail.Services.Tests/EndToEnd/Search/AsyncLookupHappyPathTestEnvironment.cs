@@ -11,7 +11,7 @@ using Soundtrail.Contracts.IntegrationMessaging.Events;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Domain;
 using Soundtrail.Services.Api.Features.Search;
-using Soundtrail.Services.Api.Features.Search.Queueing;
+using Soundtrail.Services.Api.Features.SearchMusic.Queueing;
 using Soundtrail.Services.Api.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Soundtrail.Services.Api.Infrastructure.Raven;

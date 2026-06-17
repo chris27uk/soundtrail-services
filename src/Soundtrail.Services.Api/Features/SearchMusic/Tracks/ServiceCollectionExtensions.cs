@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Api.Features.Search.Tracks;
+namespace Soundtrail.Services.Api.Features.SearchMusic.Tracks;
 
 public static class ServiceCollectionExtensions
 {

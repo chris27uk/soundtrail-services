@@ -3,7 +3,7 @@ using Soundtrail.Domain.Commands;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using System.Collections.Concurrent;
 
-namespace Soundtrail.Services.Api.Features.Search.Queueing;
+namespace Soundtrail.Services.Api.Features.SearchMusic.Queueing;
 
 public sealed class InMemoryEnqueueMusicRequest : IEnqueueMusicRequest
 {

@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Soundtrail.Services.Api.Features.Search.TrackSearch;
+using Soundtrail.Services.Api.Features.SearchMusic.TrackSearch;
 
 namespace Soundtrail.Services.Api.Features.Health;
 

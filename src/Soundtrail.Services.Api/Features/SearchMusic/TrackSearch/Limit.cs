@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Api.Features.Search.TrackSearch;
+namespace Soundtrail.Services.Api.Features.SearchMusic.TrackSearch;
 
 public readonly record struct Limit
 {

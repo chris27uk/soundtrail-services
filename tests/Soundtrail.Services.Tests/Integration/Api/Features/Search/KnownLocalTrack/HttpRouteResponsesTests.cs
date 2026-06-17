@@ -1,6 +1,6 @@
 using FluentAssertions;
 using Soundtrail.Domain.Model;
-using Soundtrail.Services.Api.Features.Search.TrackSearch;
+using Soundtrail.Services.Api.Features.SearchMusic.TrackSearch;
 using System.Net.Http.Json;
 
 namespace Soundtrail.Services.Tests.Integration.Api.Features.Search.KnownLocalTrack;

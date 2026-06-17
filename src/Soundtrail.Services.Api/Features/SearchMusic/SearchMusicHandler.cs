@@ -1,9 +1,9 @@
 using Soundtrail.Contracts;
 using Soundtrail.Domain;
-using Soundtrail.Services.Api.Features.Search.Queueing;
-using Soundtrail.Services.Api.Features.Search.TrackSearch;
+using Soundtrail.Services.Api.Features.SearchMusic.Queueing;
+using Soundtrail.Services.Api.Features.SearchMusic.TrackSearch;
 
-namespace Soundtrail.Services.Api.Features.Search;
+namespace Soundtrail.Services.Api.Features.SearchMusic;
 
 public sealed class SearchMusicHandler(ITrackSearchPort trackSearch, IEnqueueMusicRequest enqueueMusicRequest) : IHandler<SearchMusicRequest, SearchMusicResponse>
 {

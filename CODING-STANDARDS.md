@@ -2,218 +2,249 @@
 
 This document defines the default standards for new feature work in this solution.
 
-The goal is consistency more than cleverness. New code should fit the existing shape of the solution, keep the business rules easy to read, and make tests prove behavior rather than implementation details.
+The priority is strong business design, clear boundaries, and tests that prove real behavior. Favor the current architecture and the specification over preserving older shapes.
 
 ## Primary Principles
 
-- Keep the public API request path local, fast, and predictable.
-- Put business decisions in application/domain code, not in endpoints or infrastructure adapters.
-- Prefer small, explicit types over primitive-heavy code.
-- Follow outside-in TDD.
-- Use custom fakes and sociable unit tests by default.
-- Add integration tests only where they prove a fake matches a real adapter or where infrastructure behavior matters.
+- Optimize for the right design, not backwards compatibility with the POC.
+- Treat the spec in `specs/` as the source of truth for behavior, naming, and major components.
+- Keep business logic technology-independent.
+- Preserve ports-and-adapters architecture and vertical slicing.
+- Follow outside-in TDD and replace thin/solitary tests with more meaningful coverage as structure matures.
+- Add infrastructure through adapters with mandatory fake-and-real integration coverage under the same contract tests.
 
 ## Solution Shape
 
 The active projects in this solution are:
 
-- `src/Soundtrail.Services`
+- `src/Soundtrail.Contracts`
+- `src/Soundtrail.Domain`
 - `src/Soundtrail.Services.Api`
+- `src/Soundtrail.Services.Application`
+- `src/Soundtrail.Services.Catalog.Projector`
+- `src/Soundtrail.Services.Domain`
 - `src/Soundtrail.Services.Enrichment`
+- `src/Soundtrail.Services.Enrichment.Cdc`
+- `src/Soundtrail.Services.Enrichment.DiscoveryPlanner`
+- `src/Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator`
 - `src/Soundtrail.Services.Enrichment.Scheduler`
+- `src/Soundtrail.Services.Enrichment.Worker`
+- `src/Soundtrail.Services.Infrastructure`
 
-Treat these as the authoritative structure for new work unless the solution is deliberately reorganized.
-
-## Layer Responsibilities
-
-### `Soundtrail.Services`
-
-Use this project for core application and domain behavior that is shared by the API path.
-
-Allowed here:
-
-- handlers
-- request/response models
-- domain value types
-- core business rules
-- small shared abstractions such as ports and ids
-
-Not allowed here:
-
-- ASP.NET types
-- Raven, Azure Service Bus, or other infrastructure SDK types
-- configuration binding
-- transport concerns
-
-### `Soundtrail.Services.Api`
-
-Use this project for HTTP endpoints and infrastructure wiring for the public API.
-
-Allowed here:
-
-- minimal API endpoint definitions
-- request parsing and request-to-domain translation
-- dependency registration
-- infrastructure adapters for ports used by the API
-- transport contracts
-
-Not allowed here:
-
-- business rules that belong in handlers or domain types
-- direct third-party provider calls on the public search path
-
-### `Soundtrail.Services.Enrichment`
-
-Use this project for enrichment scheduling and related business decisions.
-
-Allowed here:
-
-- scheduling handlers
-- prioritization logic
-- resolution logic
-- queue command models
-- persistence and search abstractions needed by scheduling
-
-Not allowed here:
-
-- concrete infrastructure clients
-- transport configuration
-
-### `Soundtrail.Services.Enrichment.Scheduler`
-
-Use this project for worker host startup and infrastructure composition.
-
-As worker behavior expands, keep provider orchestration and host concerns here, while keeping reusable business rules in `Soundtrail.Services.Enrichment`.
+Treat the current repo structure as authoritative unless the solution is deliberately reorganized.
 
 ## Dependency Direction
 
-Dependencies should point inward toward business behavior.
+Dependencies must point inward toward business behavior.
 
-- `Api` may depend on `Services`
-- `Enrichment.Scheduler` may depend on `Enrichment` and shared core code
-- `Enrichment` may depend on `Services` where shared message/value types are needed
-- core business projects must not depend on API or infrastructure projects
+- `Contracts` contains shared DTOs and transport-facing shared contracts.
+- `Domain` contains shared domain commands, responses, events, aggregates, policies, value objects, and ports.
+- application and host projects may depend on `Domain` and `Contracts`
+- adapters may depend on infrastructure SDKs
+- domain code must not depend on API, Raven, Azure Service Bus, HTTP, serialization, or persistence concerns
 
-If a type only exists to satisfy HTTP, Raven, Azure Service Bus, or host startup, it should not live in a core business project.
+If a type exists only to satisfy HTTP, Raven, CDC, queueing, or host startup, it does not belong in the domain layer.
+
+## Domain, Contracts, DTOs, And Documents
+
+Keep domain objects and DTOs clearly separated.
+
+- domain commands live in `src/Soundtrail.Domain/Commands`
+- domain responses live in `src/Soundtrail.Domain/Responses`
+- domain events live in `src/Soundtrail.Domain/Events`
+- shared domain objects live in the domain project
+- shared DTOs live in `src/Soundtrail.Contracts`
+
+Rules:
+
+- domain objects are technology-independent and are never serialized
+- ports never expose DTOs
+- adapters own DTO mapping
+- every DTO type must end with `Dto`
+- `Document` is reserved for persistence models only
+- do not use `Document` as a suffix for shared contracts or transport models
+
+## Aggregates And Event Sourcing
+
+Aggregates are consistency boundaries, not query models.
+
+Rules:
+
+- aggregates should not expose public state for querying
+- aggregates should not expose event collections on their public interface
+- load/save should occur through aggregate methods and a repository that persists domain events
+- repositories map domain events to persisted DTOs through dedicated mapper classes
+- aggregate state is rebuilt from domain events only
+- projections and status records are read models, not aggregate state
+
+For event-sourced features:
+
+- keep event names business-focused and technology-independent
+- keep serialization, Raven document shapes, and stream metadata outside the domain layer
+- use optimistic concurrency at the repository boundary
+- project lifecycle/read state from events rather than mutating status documents directly
 
 ## Feature Placement
 
 Organize code by feature first, then by role inside the feature.
 
-Examples:
+Feature folder rules:
 
-- `Features/Search/...`
-- `Features/JustInTimeScheduling/...`
-- `Features/BacklogScheduling/...`
+- each feature folder root contains exactly one entrypoint file
+- that entrypoint is the handler or other true entrypoint for the feature
+- if a folder has no entrypoint, it is not a feature folder and should be a subfolder of a feature folder
+- handlers must live in feature folder roots
+- adapters live in an `Adapters` folder
+- dependency-registration code lives in a feature-local `CompositionRoot` folder
+- supporting files live in folders that describe what they do
+- `CompositionRoot` folders are not shared between feature folders
 
-Avoid dumping unrelated types into broad utility folders.
+Examples of supporting folders:
 
-When adding a new feature:
+- `Lookup`
+- `Model`
+- `Policies`
+- `Projection`
+- `Indexes`
+- `Documents`
 
-- put the endpoint in the API feature folder
-- put the handler and business models in the core project
-- put adapter implementations in the relevant infrastructure area
-- mirror the feature structure in tests
+Avoid broad utility folders that mix unrelated concerns.
+
+## Layer Responsibilities
+
+### Domain
+
+Use the domain layer for:
+
+- commands
+- responses
+- events
+- aggregates
+- value objects
+- business rules
+- ports
+
+Do not put handlers in the domain project.
+
+### API
+
+Use API projects for:
+
+- HTTP endpoints
+- request parsing
+- transport-to-domain translation
+- HTTP contract mapping
+- API-only adapters
+- API composition roots
+
+Keep endpoints thin and local-only on the public request path.
+
+### Enrichment Planner, Worker, CDC, Projector, And Coordinator Hosts
+
+Use these projects for:
+
+- feature handlers outside the public request path
+- orchestration
+- adapter implementations
+- queue listeners
+- projector subscriptions
+- persistence/event-store adapters
+- host-specific composition
+
+Keep business decisions in handlers/domain policies, not in listeners or infrastructure wiring.
 
 ## Endpoints
-
-Endpoints should be thin.
 
 Endpoints should:
 
 - parse transport input
-- convert input into domain request models
-- return `400` for invalid user input
-- delegate behavior to a handler
-- translate handler output into HTTP contracts
+- validate basic request shape
+- translate to domain commands or requests
+- delegate to a handler
+- translate domain responses into HTTP contracts
 
 Endpoints should not:
 
 - contain branching business rules
-- call infrastructure directly when a handler/port abstraction should own the behavior
-- construct provider-specific logic on the request path
+- call infrastructure directly when a handler/port should own the behavior
+- perform provider lookups on the public request path
+
+Routing tests should stay minimal:
+
+- one `200` route test per route
+- one error-model mapping test where necessary
 
 ## Handlers
 
-Handlers are the default place for use-case behavior.
+Handlers are the default use-case entrypoint.
 
 Handlers should:
 
 - model one business use case
-- depend on ports and policies, not concrete adapters
-- keep flow explicit and readable
-- return domain/application results rather than HTTP-specific results
+- depend on ports, policies, aggregates, and domain abstractions
+- return domain/application responses, not HTTP-specific results
+- keep control flow explicit and readable
 
 Handlers should not:
 
-- reach into configuration directly
-- know about ASP.NET response details
+- depend on Raven, HTTP, or queue SDK details
+- mutate projection/read-model documents directly when an event-sourced workflow should emit events instead
 - hide core decisions behind unnecessary abstraction
-
-## Value Types And Models
-
-Prefer explicit value types for important inputs and identifiers.
-
-Use value types for:
-
-- ids
-- search queries
-- limits
-- confidence scores
-- artist/title fields
-- other constrained business concepts
-
-Value types should:
-
-- validate at creation time
-- expose a simple `From(...)` factory when that is the established pattern
-- keep normalization and invariants close to the data they protect
-
-Do not spread validation rules for the same concept across multiple layers.
 
 ## Ports And Adapters
 
 Ports define what the business layer needs. Adapters satisfy those ports.
 
-Guidelines:
+Rules:
 
-- define ports in the business-owned project
-- keep port interfaces small and use-case oriented
-- keep adapter-specific mapping and SDK code in the API or worker infrastructure project
-- do not leak Raven or Azure SDK types through ports
+- define ports in the domain-owned layer
+- keep ports use-case oriented
+- do not leak infrastructure SDK types through ports
+- do not return DTOs from ports
+- adapters may map between domain objects and DTOs/documents
 
-## Error Handling
+Adapters must be covered by integration tests that exercise:
 
-Use exceptions sparingly and intentionally.
+- the fake implementation
+- the real implementation
+- the same observable contract under both
 
-Prefer:
+This fake-vs-real contract coverage is mandatory.
 
-- validated value objects for invalid input
-- explicit response/result models for expected business outcomes
-- focused exceptions for exceptional scheduling/resolution failures
+## Projections And Read Models
 
-Do not use exceptions as normal control flow when a result model would make the behavior clearer.
+Projection/read-model state must stay separate from domain behavior.
+
+Rules:
+
+- read models may be serialized and persisted
+- read models are rebuilt from events where the feature is event-sourced
+- lifecycle/status documents are projection-only when the aggregate owns the lifecycle
+- do not update projection state directly from handlers/listeners if the source of truth is an event stream
 
 ## Naming
 
-Follow the naming style already used in the repository.
+Follow the naming style already established in the current codebase and spec.
 
 - use clear, literal names
 - name handlers as `<UseCase>Handler`
-- name request and response models as `<UseCase>Request` and `<UseCase>Response`
-- name interfaces by role, for example `ITrackSearchPort`
-- name tests in `Given_When_Then` style
+- name commands as nouns or imperative business operations
+- name responses as `<UseCase>Response` where appropriate
+- name interfaces by role
+- name DTOs with the `Dto` suffix
+- reserve `Document` for persisted document models only
+- prefer business names over technical names like `Key` when the concept is not truly a key
 
 Avoid vague names such as `Helper`, `Utils`, `Manager`, or `Processor` unless the type genuinely matches that abstraction.
 
 ## Code Style
 
-- Prefer small files with a single clear purpose.
-- Prefer straightforward control flow over indirection.
-- Keep constructors simple and explicit.
-- Use immutability by default where practical.
-- Add comments only when they explain non-obvious intent.
-- Do not introduce inheritance-heavy patterns for application logic or tests.
+- prefer small files with a single clear purpose
+- prefer straightforward control flow over indirection
+- keep constructors explicit
+- use immutability by default where practical
+- add comments only when they explain non-obvious intent
+- do not introduce inheritance-heavy patterns for application logic or tests
 
 ## Testing Standards
 
@@ -221,10 +252,10 @@ Avoid vague names such as `Helper`, `Utils`, `Manager`, or `Processor` unless th
 
 Follow outside-in TDD:
 
-1. start with the behavior we want
+1. start from behavior
 2. write the failing test
 3. implement the smallest clear change
-4. refactor only after behavior is proven
+4. refactor once behavior is proven
 
 ### Unit Tests
 
@@ -232,62 +263,61 @@ Default to sociable unit tests.
 
 That means:
 
-- exercise a handler, scheduler, or other meaningful unit with its real in-memory collaborators
+- exercise a handler, aggregate, projector, or other meaningful business unit
+- use real in-memory collaborators where practical
 - use custom fakes for ports
-- let tests cover policies through the public behavior of the unit when practical
+- prove policies through observable behavior when possible
 
-Avoid solitary tests for small internal policies when the same rule can be proven through a more meaningful unit-level scenario.
-
-Good unit-test targets:
+Good sociable test targets:
 
 - handlers
-- schedulers
-- domain models with invariants
+- aggregates and their invariants
+- projectors
+- orchestration decisions
 - request/response decision points
 
 ### Solitary Tests
 
-Solitary tests are acceptable when a type has meaningful standalone behavior that would become awkward or noisy to prove indirectly.
+Solitary tests are allowed only when a standalone type has meaningful behavior that would become awkward to prove indirectly.
 
 Examples:
 
 - constrained value objects
-- pure transformation rules with no richer unit around them
+- pure normalization rules
+- focused event-data mappers where sociable coverage would be noisy
 
-Do not default to policy-only tests when the surrounding handler or scheduler can prove the same rule clearly.
+Do not default to solitary tests for policies or handlers when an outside-in or sociable test can prove the same behavior clearly.
 
-### Fakes
+Where structure is now in place, prefer replacing solitary tests with outside-in coverage over adding more thin isolated tests.
 
-Use custom fakes instead of mocking frameworks by default.
+### Integration Tests
 
-Fakes should:
-
-- be simple to read
-- capture the behavior needed by the test
-- expose recorded interactions only where that interaction is part of the business outcome
-
-Do not add a mocking library for routine application tests.
-
-### Contract Tests
-
-Where a fake represents an infrastructure adapter, add contract tests that run against:
-
-- the fake
-- the real adapter
-
-Contract tests should prove equivalent observable behavior, not internal implementation details.
-
-### Test Organization
-
-Mirror the production feature layout in tests.
+Integration tests should be named after the technology they exercise unless they are minimal routing tests.
 
 Examples:
 
-- `Api/Unit/Features/Search/...`
-- `Enrichment/Unit/Features/Scheduling/...`
-- `Api/Integration/Ports/TrackSearch/...`
+- `Raven...Tests`
+- `AzureServiceBus...Tests`
+- `AspNetRouting...Tests`
 
-Prefer scenario-focused test classes over giant omnibus fixtures.
+Rules:
+
+- group integration tests by the technology being tested
+- use the test-environment pattern
+- each test environment should expose a static factory method
+- encapsulate `WebApplicationFactory` inside the test environment class
+- keep routing tests minimal
+
+### Adapter Contract Tests
+
+Where a fake represents a real adapter, add one contract suite that runs against:
+
+- the fake implementation
+- the real implementation
+
+The same test cases must exercise both implementations.
+
+This is mandatory for adapters and ports used by business logic.
 
 ### What New Feature Work Must Test
 
@@ -296,10 +326,16 @@ At minimum, new feature work should cover:
 - happy path behavior
 - important boundary values
 - invalid input handling
-- the branch where work is deferred or rejected
-- any queueing, persistence, or deduplication behavior that is part of the business outcome
+- deferred/rejected/failure branches where relevant
+- queueing, persistence, projection, replay, deduplication, or concurrency behavior that is part of the business outcome
+- fake-vs-real adapter contract coverage for any new adapter pair
 
-If a fake adapter is introduced, plan the contract test in the same change or immediately after.
+For event-sourced features, add coverage for:
+
+- aggregate behavior
+- repository load/save/versioning behavior
+- projection replay behavior
+- outside-in flow where lifecycle state must round-trip through read models
 
 ## Public Request Path Rule
 
@@ -308,20 +344,28 @@ The public API path must not directly call third-party providers.
 Public requests may:
 
 - read local data
-- read local caches
+- read local projections
 - create demand signals
+- append domain events where the public use case owns that command
 
-Provider enrichment must happen asynchronously and under explicit worker control.
+Provider enrichment must happen asynchronously and under explicit worker/planner control.
 
 ## New Feature Checklist
 
 Before finishing a feature, confirm:
 
 - the code sits in the correct project and feature folder
-- business rules live in handlers/domain code, not endpoints
-- ports do not leak infrastructure types
+- the feature folder root contains exactly one entrypoint
+- handlers are in feature roots
+- adapters are in `Adapters`
+- composition code is in the feature-local `CompositionRoot`
+- domain objects and DTOs are separated correctly
+- ports do not leak DTOs or infrastructure types
+- business rules live in handlers/domain code, not endpoints or adapters
+- event-sourced lifecycle state is projection-driven where applicable
 - tests are sociable by default
-- fake adapters have or will have contract coverage
+- outside-in coverage exists where structure supports it
+- fake and real adapters share mandatory contract coverage
 - the request path remains local-only where required
 - the solution builds and relevant tests pass
 
@@ -332,6 +376,7 @@ Use the smallest command that proves the change.
 Common examples:
 
 - `dotnet test tests/Soundtrail.Services.Tests/Soundtrail.Services.Tests.csproj --filter FullyQualifiedName~Unit`
-- `dotnet test`
+- `dotnet test tests/Soundtrail.Services.Tests/Soundtrail.Services.Tests.csproj --filter FullyQualifiedName~Integration`
+- `dotnet test tests/Soundtrail.Services.Tests/Soundtrail.Services.Tests.csproj`
 
-Run the focused unit slice during iteration, then broaden verification when the change touches integration or infrastructure behavior.
+Run focused slices during iteration, then broaden verification when the change touches integration or infrastructure behavior.

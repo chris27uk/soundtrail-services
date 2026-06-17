@@ -1,7 +1,7 @@
 using Raven.Client.Documents;
 using Raven.Client.Documents.Indexes;
 using Microsoft.Extensions.Configuration;
-using Soundtrail.Services.Api.Features.Search.Tracks;
+using Soundtrail.Services.Api.Features.SearchMusic.Tracks;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 
 namespace Soundtrail.Services.Api.Infrastructure.Raven;

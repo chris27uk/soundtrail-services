@@ -2,8 +2,8 @@ using Soundtrail.Contracts;
 using Soundtrail.Domain;
 using Soundtrail.Domain.Model;
 using Soundtrail.Services.Api.Features.Search;
-using Soundtrail.Services.Api.Features.Search.Queueing;
-using Soundtrail.Services.Api.Features.Search.TrackSearch;
+using Soundtrail.Services.Api.Features.SearchMusic.Queueing;
+using Soundtrail.Services.Api.Features.SearchMusic.TrackSearch;
 
 namespace Soundtrail.Services.Tests.Unit.Api.Infrastructure;
 

@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Api.Features.Search.Queueing;
+namespace Soundtrail.Services.Api.Features.SearchMusic.Queueing;
 
 public static class ServiceCollectionExtensions
 {

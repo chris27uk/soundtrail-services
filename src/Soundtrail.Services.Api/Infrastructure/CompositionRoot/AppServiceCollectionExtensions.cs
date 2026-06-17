@@ -1,8 +1,9 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Soundtrail.Services.Api.Features.Health;
 using Soundtrail.Services.Api.Features.Search;
-using Soundtrail.Services.Api.Features.Search.Queueing;
-using Soundtrail.Services.Api.Features.Search.TrackSearch;
+using Soundtrail.Services.Api.Features.Health.CompositionRoot;
+using Soundtrail.Services.Api.Features.SearchMusic.CompositionRoot;
+using Soundtrail.Services.Api.Features.SearchMusic.Queueing;
+using Soundtrail.Services.Api.Features.SearchMusic.TrackSearch;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Soundtrail.Services.Api.Infrastructure.Raven;
 using Soundtrail.Services.Api.Infrastructure.Time;

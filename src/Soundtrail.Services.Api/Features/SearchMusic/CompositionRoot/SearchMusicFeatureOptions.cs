@@ -1,6 +1,6 @@
-namespace Soundtrail.Services.Api.Features.Search
+namespace Soundtrail.Services.Api.Features.SearchMusic.CompositionRoot
 {
-    public sealed class SearchFeatureOptions
+    public sealed class SearchMusicFeatureOptions
     {
         public Action<IServiceCollection>? ConfigureQueueingDependencies { get; set; }
 

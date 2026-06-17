@@ -1,6 +1,6 @@
-using Soundtrail.Services.Api.Features.Search.Tracks;
+using Soundtrail.Services.Api.Features.SearchMusic.Tracks;
 
-namespace Soundtrail.Services.Api.Features.Search.TrackSearch;
+namespace Soundtrail.Services.Api.Features.SearchMusic.TrackSearch;
 
 public sealed record SearchResult(
     TrackTitle Title,

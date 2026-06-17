@@ -1,5 +1,5 @@
 using Soundtrail.Domain.Commands;
-using Soundtrail.Services.Api.Features.Search.Queueing;
+using Soundtrail.Services.Api.Features.SearchMusic.Queueing;
 using Wolverine;
 
 namespace Soundtrail.Services.Api.Infrastructure.Messaging;

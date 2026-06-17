@@ -1,18 +1,19 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Domain;
-using Soundtrail.Services.Api.Features.Search.Queueing;
-using Soundtrail.Services.Api.Features.Search.TrackSearch;
-using Soundtrail.Services.Api.Features.Search.Tracks;
+using Soundtrail.Services.Api.Features.SearchMusic;
+using Soundtrail.Services.Api.Features.SearchMusic.Queueing;
+using Soundtrail.Services.Api.Features.SearchMusic.TrackSearch;
+using Soundtrail.Services.Api.Features.SearchMusic.Tracks;
 
-namespace Soundtrail.Services.Api.Features.Search;
+namespace Soundtrail.Services.Api.Features.SearchMusic.CompositionRoot;
 
 public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddSearchFeature(
         this IServiceCollection services,
-        Action<SearchFeatureOptions>? configure = null)
+        Action<SearchMusicFeatureOptions>? configure = null)
     {
-        var options = new SearchFeatureOptions();
+        var options = new SearchMusicFeatureOptions();
         configure?.Invoke(options);
 
         services.AddSearchQueueingFeature(x => x.ConfigureDependencies = options.ConfigureQueueingDependencies);

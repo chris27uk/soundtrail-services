@@ -1,4 +1,6 @@
-namespace Soundtrail.Services.Api.Features.Health;
+using Soundtrail.Services.Api.Features.Health;
+
+namespace Soundtrail.Services.Api.Features.Health.CompositionRoot;
 
 public static class ServiceCollectionExtensions
 {

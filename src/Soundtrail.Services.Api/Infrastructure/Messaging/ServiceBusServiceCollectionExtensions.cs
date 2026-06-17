@@ -1,7 +1,7 @@
 using JasperFx.CodeGeneration.Model;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using Soundtrail.Services.Api.Features.Search.Queueing;
+using Soundtrail.Services.Api.Features.SearchMusic.Queueing;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Services.ServiceDefaults;
