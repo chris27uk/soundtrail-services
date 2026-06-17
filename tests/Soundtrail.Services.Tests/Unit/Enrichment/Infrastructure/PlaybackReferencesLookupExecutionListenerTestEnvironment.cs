@@ -25,7 +25,7 @@ internal sealed class PlaybackReferencesLookupExecutionListenerTestEnvironment
     private PlaybackReferencesLookupExecutionListenerTestEnvironment(LookupExecutionReceiptStoreFake.State state)
     {
         GetMusicTrackReference = new FakeGetMusicTrackReference();
-        DiscoveryStatus = new InMemoryUpsertCatalogSearchStatus();
+        DiscoveryRepository = new CatalogSearchDiscoveryRepositoryFake();
         var catalogSearchTrackings = new CatalogSearchTrackingStoreFake();
         catalogSearchTrackings.Seed(new CatalogSearchTracking(
             CatalogSearchCriteria.Search("track", "rare unknown song"),
@@ -36,14 +36,14 @@ internal sealed class PlaybackReferencesLookupExecutionListenerTestEnvironment
                 new LookupExecutionReceiptStoreFake(state),
                 GetMusicTrackReference),
             catalogSearchTrackings,
-            DiscoveryStatus);
+            DiscoveryRepository);
     }
 
     public PlaybackReferencesLookupExecutionListener Listener { get; }
 
     public FakeGetMusicTrackReference GetMusicTrackReference { get; }
 
-    public InMemoryUpsertCatalogSearchStatus DiscoveryStatus { get; }
+    public CatalogSearchDiscoveryRepositoryFake DiscoveryRepository { get; }
 
     public static PlaybackReferencesLookupExecutionListenerTestEnvironment WithANewExecutionCommandDto() =>
         new(new LookupExecutionReceiptStoreFake.State());

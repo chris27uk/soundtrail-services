@@ -13,6 +13,7 @@ using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
 using Soundtrail.Services.Api;
 using Soundtrail.Services.Api.Features.Search.SearchCatalog;
@@ -20,6 +21,7 @@ using Soundtrail.Services.Api.Features.Search.SearchCatalog.Adapters;
 using Soundtrail.Services.Api.Features.Search.SearchCatalog.Ports;
 using Soundtrail.Services.Api.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Wolverine;
 using Wolverine.Tracking;
@@ -254,33 +256,28 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
         session.SaveChanges();
     }
 
-    public static void SeedCatalogSearchStatus(
+    public static void SeedProjectedCatalogSearchStatusFromEvents(
         IDocumentStore store,
-        string normalizedQuery,
-        string types,
-        CatalogSearchLifecycleStatus status,
-        bool willBeLookedUp,
-        string reason,
-        int? retryAfterSeconds)
+        CatalogSearchCriteria criteria,
+        params IDomainEvent[] events)
     {
-        using var session = store.OpenSession();
-        session.Advanced.WaitForIndexesAfterSaveChanges();
+        var repository = new RavenCatalogSearchDiscoveryRepository(store);
+        repository.AppendAsync(criteria, 0, events, CancellationToken.None).GetAwaiter().GetResult();
 
-        var criteria = CatalogSearchCriteria.Search(types, normalizedQuery).Value;
-        var document = new CatalogSearchStatusRecordDto
+        using var session = store.OpenAsyncSession();
+        var storedEvents = session.Advanced.AsyncDocumentQuery<DiscoveryQueryStoredEventRecordDto>()
+            .WhereEquals(nameof(DiscoveryQueryStoredEventRecordDto.Criteria), criteria.Value)
+            .ToListAsync(CancellationToken.None)
+            .GetAwaiter()
+            .GetResult();
+        var applier = new DiscoveryLifecycleProjectionApplier();
+
+        foreach (var storedEvent in storedEvents.OrderBy(x => x.Version))
         {
-            Id = CatalogSearchStatusRecordDto.GetDocumentId(criteria),
-            Criteria = criteria,
-            Status = status.ToString(),
-            Priority = "High",
-            WillBeLookedUp = willBeLookedUp,
-            EstimatedRetryAfterSeconds = retryAfterSeconds,
-            EarliestExpectedCompletionAt = null,
-            Reason = reason,
-            UpdatedAt = DateTimeOffset.UtcNow
-        };
-        session.Store(document);
-        session.SaveChanges();
+            applier.ApplyStoredEventAsync(storedEvent, session, CancellationToken.None).GetAwaiter().GetResult();
+        }
+
+        session.SaveChangesAsync(CancellationToken.None).GetAwaiter().GetResult();
     }
 
     private static void Set(object target, Type targetType, string propertyName, object? value) =>

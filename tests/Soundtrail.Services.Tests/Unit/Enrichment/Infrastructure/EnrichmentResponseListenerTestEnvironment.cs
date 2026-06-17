@@ -16,13 +16,13 @@ internal sealed class EnrichmentResponseListenerTestEnvironment
         StreamStore = new MusicTrackStreamStoreFake();
         SnapshotStore = new ProviderSnapshotStoreFake();
         CatalogSearchTrackings = new CatalogSearchTrackingStoreFake();
-        DiscoveryStatus = new InMemoryUpsertCatalogSearchStatus();
+        DiscoveryRepository = new CatalogSearchDiscoveryRepositoryFake();
         Listener = new EnrichmentResponseListener(
             new ApplyEnrichmentResponseHandler(
                 StreamStore,
                 SnapshotStore,
                 CatalogSearchTrackings,
-                DiscoveryStatus));
+                DiscoveryRepository));
     }
 
     public EnrichmentResponseListener Listener { get; }
@@ -33,7 +33,7 @@ internal sealed class EnrichmentResponseListenerTestEnvironment
 
     public CatalogSearchTrackingStoreFake CatalogSearchTrackings { get; }
 
-    public InMemoryUpsertCatalogSearchStatus DiscoveryStatus { get; }
+    public CatalogSearchDiscoveryRepositoryFake DiscoveryRepository { get; }
 
     public static EnrichmentResponseListenerTestEnvironment WithAMusicBrainzResponseDto()
     {

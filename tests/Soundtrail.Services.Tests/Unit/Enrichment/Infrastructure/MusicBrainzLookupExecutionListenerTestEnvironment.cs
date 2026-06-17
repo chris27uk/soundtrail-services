@@ -29,7 +29,7 @@ internal sealed class MusicBrainzLookupExecutionListenerTestEnvironment
     private MusicBrainzLookupExecutionListenerTestEnvironment(LookupExecutionReceiptStoreFake.State state)
     {
         Metadata = new FakeGetCanonicalMusicMetadata();
-        DiscoveryStatus = new InMemoryUpsertCatalogSearchStatus();
+        DiscoveryRepository = new CatalogSearchDiscoveryRepositoryFake();
         var catalogSearchTrackings = new CatalogSearchTrackingStoreFake();
         catalogSearchTrackings.Seed(new CatalogSearchTracking(
             CatalogSearchCriteria.Search("track", "rare unknown song"),
@@ -40,14 +40,14 @@ internal sealed class MusicBrainzLookupExecutionListenerTestEnvironment
                 new LookupExecutionReceiptStoreFake(state),
                 Metadata),
             catalogSearchTrackings,
-            DiscoveryStatus);
+            DiscoveryRepository);
     }
 
     public MusicBrainzLookupExecutionListener Listener { get; }
 
     public FakeGetCanonicalMusicMetadata Metadata { get; }
 
-    public InMemoryUpsertCatalogSearchStatus DiscoveryStatus { get; }
+    public CatalogSearchDiscoveryRepositoryFake DiscoveryRepository { get; }
 
     public static MusicBrainzLookupExecutionListenerTestEnvironment WithANewExecutionCommandDto() =>
         new(new LookupExecutionReceiptStoreFake.State());

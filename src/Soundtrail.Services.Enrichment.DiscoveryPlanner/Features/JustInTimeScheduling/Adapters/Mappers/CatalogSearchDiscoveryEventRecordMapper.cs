@@ -24,6 +24,8 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
             nameof(DiscoveryDeferred) => ToDiscoveryDeferred(dto),
             nameof(DiscoveryRejected) => ToDiscoveryRejected(dto),
             nameof(DiscoveryFailed) => ToDiscoveryFailed(dto),
+            nameof(DiscoveryStarted) => ToDiscoveryStarted(dto),
+            nameof(DiscoveryCompleted) => ToDiscoveryCompleted(dto),
             _ => throw new ArgumentOutOfRangeException(nameof(dto.EventType), dto.EventType, "Unknown discovery event type.")
         };
 
@@ -35,6 +37,8 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
             DiscoveryDeferred deferred => deferred.DeferredAt,
             DiscoveryRejected rejected => rejected.RejectedAt,
             DiscoveryFailed failed => failed.FailedAt,
+            DiscoveryStarted started => started.StartedAt,
+            DiscoveryCompleted completed => completed.CompletedAt,
             _ => throw new ArgumentOutOfRangeException(nameof(@event), @event, "Unknown discovery event.")
         };
 
@@ -117,6 +121,34 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
                     failed.FailedAt)),
                 OccurredAtUtc = failed.FailedAt
             },
+            DiscoveryStarted started => new DiscoveryQueryStoredEventRecordDto
+            {
+                Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(criteria.Value, version),
+                Criteria = criteria.Value,
+                Version = version,
+                EventType = nameof(DiscoveryStarted),
+                Data = JsonSerializer.Serialize(new DiscoveryStartedEventDataRecordDto(
+                    started.Criteria.Value,
+                    started.Priority.ToString(),
+                    started.WillBeLookedUp,
+                    started.Reason,
+                    started.StartedAt)),
+                OccurredAtUtc = started.StartedAt
+            },
+            DiscoveryCompleted completed => new DiscoveryQueryStoredEventRecordDto
+            {
+                Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(criteria.Value, version),
+                Criteria = criteria.Value,
+                Version = version,
+                EventType = nameof(DiscoveryCompleted),
+                Data = JsonSerializer.Serialize(new DiscoveryCompletedEventDataRecordDto(
+                    completed.Criteria.Value,
+                    completed.Priority.ToString(),
+                    completed.WillBeLookedUp,
+                    completed.Reason,
+                    completed.CompletedAt)),
+                OccurredAtUtc = completed.CompletedAt
+            },
             _ => throw new ArgumentOutOfRangeException(nameof(@event), @event, "Unknown discovery event.")
         };
 
@@ -180,5 +212,29 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
             data.WillBeLookedUp,
             data.Reason,
             data.FailedAtUtc);
+    }
+
+    private static DiscoveryStarted ToDiscoveryStarted(DiscoveryQueryStoredEventRecordDto dto)
+    {
+        var data = JsonSerializer.Deserialize<DiscoveryStartedEventDataRecordDto>(dto.Data)
+            ?? throw new InvalidOperationException("Unable to deserialize discovery started event data.");
+        return new DiscoveryStarted(
+            CatalogSearchCriteria.From(data.Criteria),
+            Enum.Parse<LookupPriorityBand>(data.Priority, ignoreCase: true),
+            data.WillBeLookedUp,
+            data.Reason,
+            data.StartedAtUtc);
+    }
+
+    private static DiscoveryCompleted ToDiscoveryCompleted(DiscoveryQueryStoredEventRecordDto dto)
+    {
+        var data = JsonSerializer.Deserialize<DiscoveryCompletedEventDataRecordDto>(dto.Data)
+            ?? throw new InvalidOperationException("Unable to deserialize discovery completed event data.");
+        return new DiscoveryCompleted(
+            CatalogSearchCriteria.From(data.Criteria),
+            Enum.Parse<LookupPriorityBand>(data.Priority, ignoreCase: true),
+            data.WillBeLookedUp,
+            data.Reason,
+            data.CompletedAtUtc);
     }
 }

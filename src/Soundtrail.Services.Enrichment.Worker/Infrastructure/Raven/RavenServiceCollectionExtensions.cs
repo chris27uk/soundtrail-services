@@ -41,7 +41,7 @@ public static class RavenServiceCollectionExtensions
 
         services.TryAddScoped<ILookupExecutionReceiptStore, RavenLookupExecutionReceiptStore>();
         services.TryAddScoped<ICatalogSearchTrackingStore, RavenCatalogSearchTrackingStore>();
-        services.TryAddScoped<IUpsertCatalogSearchStatusPort, RavenUpsertCatalogSearchStatus>();
+        services.TryAddScoped<ICatalogSearchDiscoveryRepository, RavenCatalogSearchDiscoveryRepository>();
         return services;
     }
 }

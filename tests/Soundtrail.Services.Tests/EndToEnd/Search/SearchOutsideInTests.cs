@@ -2,6 +2,7 @@ using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Events;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
 namespace Soundtrail.Services.Tests.EndToEnd.Search;
@@ -54,14 +55,18 @@ public sealed class SearchOutsideInTests
                 "Test Artist",
                 "album_rare_album",
                 "Rare Album");
-            SearchOutsideInTestEnvironment.SeedCatalogSearchStatus(
+            var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
+            SearchOutsideInTestEnvironment.SeedProjectedCatalogSearchStatusFromEvents(
                 store,
-                "rare unknown song",
-                "track",
-                CatalogSearchLifecycleStatus.Planned,
-                true,
-                "Planner queued lookup",
-                30);
+                criteria,
+                new DiscoveryPlanned(
+                    criteria,
+                    LookupPriorityBand.High,
+                    true,
+                    30,
+                    null,
+                    "Planner queued lookup",
+                    DateTimeOffset.UtcNow));
         });
 
         var response = await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track");
@@ -107,14 +112,16 @@ public sealed class SearchOutsideInTests
     {
         await using var env = await SearchOutsideInTestEnvironment.CreateAsync(store =>
         {
-            SearchOutsideInTestEnvironment.SeedCatalogSearchStatus(
+            var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
+            SearchOutsideInTestEnvironment.SeedProjectedCatalogSearchStatusFromEvents(
                 store,
-                "rare unknown song",
-                "track",
-                CatalogSearchLifecycleStatus.InProgress,
-                true,
-                "Lookup started",
-                null);
+                criteria,
+                new DiscoveryStarted(
+                    criteria,
+                    LookupPriorityBand.High,
+                    true,
+                    "Lookup started",
+                    DateTimeOffset.UtcNow));
         });
 
         var response = await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track");
@@ -132,14 +139,15 @@ public sealed class SearchOutsideInTests
     {
         await using var env = await SearchOutsideInTestEnvironment.CreateAsync(store =>
         {
-            SearchOutsideInTestEnvironment.SeedCatalogSearchStatus(
+            var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
+            SearchOutsideInTestEnvironment.SeedProjectedCatalogSearchStatusFromEvents(
                 store,
-                "rare unknown song",
-                "track",
-                CatalogSearchLifecycleStatus.Failed,
-                false,
-                "Lookup failed",
-                null);
+                criteria,
+                new DiscoveryFailed(
+                    criteria,
+                    false,
+                    "Lookup failed",
+                    DateTimeOffset.UtcNow));
         });
 
         var response = await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track");
@@ -153,18 +161,74 @@ public sealed class SearchOutsideInTests
     }
 
     [Fact]
+    public async Task Given_A_Deferred_Discovery_Status_When_Searching_Then_The_Projected_Discovery_Is_Returned_Without_Requesting_Discovery()
+    {
+        await using var env = await SearchOutsideInTestEnvironment.CreateAsync(store =>
+        {
+            var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
+            SearchOutsideInTestEnvironment.SeedProjectedCatalogSearchStatusFromEvents(
+                store,
+                criteria,
+                new DiscoveryDeferred(
+                    criteria,
+                    true,
+                    60,
+                    null,
+                    "Budget temporarily exhausted",
+                    DateTimeOffset.UtcNow));
+        });
+
+        var response = await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track");
+
+        response.Results.Should().BeEmpty();
+        response.Discovery.WillBeLookedUp.Should().BeTrue();
+        response.Discovery.Reason.Should().Be("Budget temporarily exhausted");
+        response.Discovery.RetryAfterSeconds.Should().Be(60);
+        var receivedLookupRequest = await env.DidReceiveMessageAsync<CatalogSearchAttemptDto>(TimeSpan.FromMilliseconds(150));
+        receivedLookupRequest.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Given_A_Rejected_Discovery_Status_When_Searching_Then_The_Projected_Discovery_Is_Returned_Without_Requesting_Discovery()
+    {
+        await using var env = await SearchOutsideInTestEnvironment.CreateAsync(store =>
+        {
+            var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
+            SearchOutsideInTestEnvironment.SeedProjectedCatalogSearchStatusFromEvents(
+                store,
+                criteria,
+                new DiscoveryRejected(
+                    criteria,
+                    false,
+                    "Planner rejected lookup",
+                    DateTimeOffset.UtcNow));
+        });
+
+        var response = await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track");
+
+        response.Results.Should().BeEmpty();
+        response.Discovery.WillBeLookedUp.Should().BeFalse();
+        response.Discovery.Reason.Should().Be("Planner rejected lookup");
+        response.Discovery.RetryAfterSeconds.Should().BeNull();
+        var receivedLookupRequest = await env.DidReceiveMessageAsync<CatalogSearchAttemptDto>(TimeSpan.FromMilliseconds(150));
+        receivedLookupRequest.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task Given_A_Completed_Discovery_Status_When_Searching_Then_The_Projected_Discovery_Is_Returned_Without_Requesting_Discovery()
     {
         await using var env = await SearchOutsideInTestEnvironment.CreateAsync(store =>
         {
-            SearchOutsideInTestEnvironment.SeedCatalogSearchStatus(
+            var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
+            SearchOutsideInTestEnvironment.SeedProjectedCatalogSearchStatusFromEvents(
                 store,
-                "rare unknown song",
-                "track",
-                CatalogSearchLifecycleStatus.Completed,
-                false,
-                "Discovery completed",
-                null);
+                criteria,
+                new DiscoveryCompleted(
+                    criteria,
+                    LookupPriorityBand.High,
+                    false,
+                    "Discovery completed",
+                    DateTimeOffset.UtcNow));
         });
 
         var response = await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track");

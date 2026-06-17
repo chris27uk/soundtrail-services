@@ -8,6 +8,7 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Documents;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
@@ -65,6 +66,7 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
         }
 
         await ReplayProjectionsAsync(raven);
+        await ReplayDiscoveryLifecycleAsync(raven);
 
         using var verificationSession = raven.Store.OpenAsyncSession();
         var track = await verificationSession.LoadAsync<RavenTrackRecordDto>(
@@ -106,7 +108,7 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
             new RavenMusicTrackStreamStore(session),
             new RavenProviderSnapshotStore(session),
             new RavenCatalogSearchTrackingStore(session.Advanced.DocumentStore, session),
-            new RavenUpsertCatalogSearchStatus(session.Advanced.DocumentStore)));
+            new RavenCatalogSearchDiscoveryRepository(session.Advanced.DocumentStore)));
 
     private static async Task ReplayProjectionsAsync(RavenEmbeddedTestDatabase raven)
     {
@@ -116,6 +118,21 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
         var applier = new MusicTrackProjectionApplier();
 
         foreach (var storedEvent in events.OrderBy(x => x.Version))
+        {
+            await applier.ApplyStoredEventAsync(storedEvent, session, CancellationToken.None);
+        }
+
+        await session.SaveChangesAsync(CancellationToken.None);
+    }
+
+    private static async Task ReplayDiscoveryLifecycleAsync(RavenEmbeddedTestDatabase raven)
+    {
+        using var session = raven.Store.OpenAsyncSession();
+        var events = await session.Advanced.AsyncDocumentQuery<DiscoveryQueryStoredEventRecordDto>()
+            .ToListAsync(CancellationToken.None);
+        var applier = new DiscoveryLifecycleProjectionApplier();
+
+        foreach (var storedEvent in events.OrderBy(x => x.Criteria).ThenBy(x => x.Version))
         {
             await applier.ApplyStoredEventAsync(storedEvent, session, CancellationToken.None);
         }

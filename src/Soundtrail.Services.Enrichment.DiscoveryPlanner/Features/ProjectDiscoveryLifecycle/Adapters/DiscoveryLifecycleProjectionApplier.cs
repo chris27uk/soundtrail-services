@@ -53,6 +53,12 @@ public sealed class DiscoveryLifecycleProjectionApplier
             case "DiscoveryFailed":
                 ApplyFailed(status, Deserialize<DiscoveryFailedEventDataRecordDto>(storedEvent));
                 break;
+            case "DiscoveryStarted":
+                ApplyStarted(status, Deserialize<DiscoveryStartedEventDataRecordDto>(storedEvent));
+                break;
+            case "DiscoveryCompleted":
+                ApplyCompleted(status, Deserialize<DiscoveryCompletedEventDataRecordDto>(storedEvent));
+                break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(storedEvent.EventType), storedEvent.EventType, "Unknown discovery lifecycle event type.");
         }
@@ -126,6 +132,32 @@ public sealed class DiscoveryLifecycleProjectionApplier
         status.EarliestExpectedCompletionAt = null;
         status.Reason = data.Reason;
         status.UpdatedAt = data.FailedAtUtc;
+    }
+
+    private static void ApplyStarted(
+        CatalogSearchStatusRecordDto status,
+        DiscoveryStartedEventDataRecordDto data)
+    {
+        status.Status = CatalogSearchLifecycleStatus.InProgress.ToString();
+        status.Priority = data.Priority;
+        status.WillBeLookedUp = data.WillBeLookedUp;
+        status.EstimatedRetryAfterSeconds = null;
+        status.EarliestExpectedCompletionAt = null;
+        status.Reason = data.Reason;
+        status.UpdatedAt = data.StartedAtUtc;
+    }
+
+    private static void ApplyCompleted(
+        CatalogSearchStatusRecordDto status,
+        DiscoveryCompletedEventDataRecordDto data)
+    {
+        status.Status = CatalogSearchLifecycleStatus.Completed.ToString();
+        status.Priority = data.Priority;
+        status.WillBeLookedUp = data.WillBeLookedUp;
+        status.EstimatedRetryAfterSeconds = null;
+        status.EarliestExpectedCompletionAt = null;
+        status.Reason = data.Reason;
+        status.UpdatedAt = data.CompletedAtUtc;
     }
 
     private static T Deserialize<T>(DiscoveryQueryStoredEventRecordDto storedEvent) where T : class =>

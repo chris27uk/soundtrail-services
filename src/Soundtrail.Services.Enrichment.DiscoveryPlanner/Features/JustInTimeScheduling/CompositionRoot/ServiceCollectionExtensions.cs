@@ -18,7 +18,6 @@ public static class ServiceCollectionExtensions
 
         services.TryAddSingleton<MusicCatalogMatchResolver>();
         services.TryAddScoped<ICatalogSearchDiscoveryRepository, RavenCatalogSearchDiscoveryRepository>();
-        services.TryAddScoped<IUpsertCatalogSearchStatusPort, RavenUpsertCatalogSearchStatus>();
         services.TryAddScoped<CatalogSearchAttemptHandler>();
         services.TryAddScoped<CatalogSearchAttemptListener>();
         return services;

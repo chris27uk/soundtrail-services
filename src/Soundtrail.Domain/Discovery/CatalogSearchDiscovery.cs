@@ -166,6 +166,60 @@ public sealed class CatalogSearchDiscovery
         return true;
     }
 
+    public bool Start(
+        LookupPriorityBand priority,
+        string reason,
+        DateTimeOffset startedAt)
+    {
+        EnsureCanTransitionTo(CatalogSearchLifecycleStatus.InProgress);
+
+        if (status == CatalogSearchLifecycleStatus.InProgress
+            && this.priority == priority
+            && willBeLookedUp
+            && string.Equals(this.reason, reason, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        Apply(
+            new DiscoveryStarted(
+                RequireCriteria(),
+                priority,
+                true,
+                reason,
+                startedAt),
+            isNew: true);
+
+        return true;
+    }
+
+    public bool Complete(
+        LookupPriorityBand priority,
+        string reason,
+        DateTimeOffset completedAt)
+    {
+        EnsureCanTransitionTo(CatalogSearchLifecycleStatus.Completed);
+
+        if (status == CatalogSearchLifecycleStatus.Completed
+            && this.priority == priority
+            && !willBeLookedUp
+            && string.Equals(this.reason, reason, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        Apply(
+            new DiscoveryCompleted(
+                RequireCriteria(),
+                priority,
+                false,
+                reason,
+                completedAt),
+            isNew: true);
+
+        return true;
+    }
+
     public async Task<bool> SaveAsync(
         ICatalogSearchDiscoveryRepository repository,
         CancellationToken cancellationToken)
@@ -229,6 +283,8 @@ public sealed class CatalogSearchDiscovery
         handlers.Register<DiscoveryDeferred>(this.On);
         handlers.Register<DiscoveryRejected>(this.On);
         handlers.Register<DiscoveryFailed>(this.On);
+        handlers.Register<DiscoveryStarted>(this.On);
+        handlers.Register<DiscoveryCompleted>(this.On);
         return handlers;
     }
 
@@ -294,6 +350,32 @@ public sealed class CatalogSearchDiscovery
         earliestExpectedCompletionAt = null;
         reason = @event.Reason;
         updatedAt = @event.FailedAt;
+        hasRequested = true;
+    }
+
+    private void On(DiscoveryStarted @event)
+    {
+        criteria = @event.Criteria;
+        status = CatalogSearchLifecycleStatus.InProgress;
+        priority = @event.Priority;
+        willBeLookedUp = @event.WillBeLookedUp;
+        estimatedRetryAfterSeconds = null;
+        earliestExpectedCompletionAt = null;
+        reason = @event.Reason;
+        updatedAt = @event.StartedAt;
+        hasRequested = true;
+    }
+
+    private void On(DiscoveryCompleted @event)
+    {
+        criteria = @event.Criteria;
+        status = CatalogSearchLifecycleStatus.Completed;
+        priority = @event.Priority;
+        willBeLookedUp = @event.WillBeLookedUp;
+        estimatedRetryAfterSeconds = null;
+        earliestExpectedCompletionAt = null;
+        reason = @event.Reason;
+        updatedAt = @event.CompletedAt;
         hasRequested = true;
     }
 }

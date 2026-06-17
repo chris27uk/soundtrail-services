@@ -12,7 +12,7 @@ public sealed class ApplyEnrichmentResponseHandler(
     IMusicTrackEventRepository eventRepository,
     IProviderSnapshotStore snapshotStore,
     ICatalogSearchTrackingStore catalogSearchTrackingStore,
-    IUpsertCatalogSearchStatusPort upsertDiscoveryStatusPort)
+    ICatalogSearchDiscoveryRepository discoveryRepository)
 {
     public async Task<EnrichmentOrchestrationResult> Handle(
         Domain.Responses.EnrichmentResponse response,
@@ -52,17 +52,9 @@ public sealed class ApplyEnrichmentResponseHandler(
         var trackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(response.MusicCatalogId, cancellationToken);
         foreach (var tracking in trackings)
         {
-            await upsertDiscoveryStatusPort.UpsertAsync(
-                new CatalogSearchStatusUpdate(
-                    tracking.Criteria,
-                    CatalogSearchLifecycleStatus.Completed,
-                    response.Priority,
-                    WillBeLookedUp: false,
-                    EstimatedRetryAfterSeconds: null,
-                    EarliestExpectedCompletionAt: null,
-                    Reason: "Discovery completed",
-                    UpdatedAt: response.CreatedAt),
-                cancellationToken);
+            var discovery = await CatalogSearchDiscovery.LoadAsync(discoveryRepository, tracking.Criteria, cancellationToken);
+            discovery.Complete(response.Priority, "Discovery completed", response.CreatedAt);
+            await discovery.SaveAsync(discoveryRepository, cancellationToken);
         }
 
         return new EnrichmentOrchestrationResult(

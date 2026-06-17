@@ -3,6 +3,7 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
@@ -69,7 +70,9 @@ public sealed class PlaybackReferencesLookupExecutionListenerTests
 
         await env.HandleNewExecutionCommand();
 
-        env.DiscoveryStatus.Updates["search:track:rare unknown song"].Status.Should().Be(CatalogSearchLifecycleStatus.InProgress);
+        env.DiscoveryRepository
+            .GetStoredEvents(CatalogSearchCriteria.Search("track", "rare unknown song"))
+            .Last().Should().BeOfType<DiscoveryStarted>();
     }
 
     [Fact]
@@ -81,6 +84,8 @@ public sealed class PlaybackReferencesLookupExecutionListenerTests
         Func<Task> act = () => env.HandleNewExecutionCommand();
 
         await act.Should().ThrowAsync<InvalidOperationException>();
-        env.DiscoveryStatus.Updates["search:track:rare unknown song"].Status.Should().Be(CatalogSearchLifecycleStatus.Failed);
+        env.DiscoveryRepository
+            .GetStoredEvents(CatalogSearchCriteria.Search("track", "rare unknown song"))
+            .Last().Should().BeOfType<DiscoveryFailed>();
     }
 }

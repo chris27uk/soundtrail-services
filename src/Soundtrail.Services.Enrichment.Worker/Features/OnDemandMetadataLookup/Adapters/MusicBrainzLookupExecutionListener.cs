@@ -13,7 +13,7 @@ namespace Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.
 public sealed class MusicBrainzLookupExecutionListener(
     OnDemandLookupMetadataHandler handler,
     ICatalogSearchTrackingStore catalogSearchTrackingStore,
-    IUpsertCatalogSearchStatusPort upsertCatalogSearchStatusPort)
+    ICatalogSearchDiscoveryRepository discoveryRepository)
 {
     [WolverineHandler]
     [Transactional]
@@ -37,7 +37,7 @@ public sealed class MusicBrainzLookupExecutionListener(
 
             if (result.Started)
             {
-                await ProjectStatusAsync(
+                await AppendLifecycleEventsAsync(
                     MusicCatalogId.From(dto.MusicCatalogId),
                     dto.Priority,
                     CatalogSearchLifecycleStatus.InProgress,
@@ -75,7 +75,7 @@ public sealed class MusicBrainzLookupExecutionListener(
         }
         catch
         {
-            await ProjectStatusAsync(
+            await AppendLifecycleEventsAsync(
                 MusicCatalogId.From(dto.MusicCatalogId),
                 dto.Priority,
                 CatalogSearchLifecycleStatus.Failed,
@@ -86,7 +86,7 @@ public sealed class MusicBrainzLookupExecutionListener(
         }
     }
 
-    private async Task ProjectStatusAsync(
+    private async Task AppendLifecycleEventsAsync(
         MusicCatalogId musicCatalogId,
         LookupPriorityBand priority,
         CatalogSearchLifecycleStatus status,
@@ -97,17 +97,21 @@ public sealed class MusicBrainzLookupExecutionListener(
         var trackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(musicCatalogId, cancellationToken);
         foreach (var tracking in trackings)
         {
-            await upsertCatalogSearchStatusPort.UpsertAsync(
-                new CatalogSearchStatusUpdate(
-                    tracking.Criteria,
-                    status,
-                    priority,
-                    WillBeLookedUp: status == CatalogSearchLifecycleStatus.InProgress,
-                    EstimatedRetryAfterSeconds: null,
-                    EarliestExpectedCompletionAt: null,
-                    Reason: reason,
-                    UpdatedAt: updatedAt),
-                cancellationToken);
+            var discovery = await CatalogSearchDiscovery.LoadAsync(discoveryRepository, tracking.Criteria, cancellationToken);
+
+            switch (status)
+            {
+                case CatalogSearchLifecycleStatus.InProgress:
+                    discovery.Start(priority, reason, updatedAt);
+                    break;
+                case CatalogSearchLifecycleStatus.Failed:
+                    discovery.Fail(reason, updatedAt);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(status), status, null);
+            }
+
+            await discovery.SaveAsync(discoveryRepository, cancellationToken);
         }
     }
 

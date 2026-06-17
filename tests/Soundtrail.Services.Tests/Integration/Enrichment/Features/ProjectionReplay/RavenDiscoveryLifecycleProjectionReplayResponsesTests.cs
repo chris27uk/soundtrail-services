@@ -89,6 +89,52 @@ public sealed class RavenDiscoveryLifecycleProjectionReplayResponsesTests
         status.Reason.Should().Be("Planner queued lookup");
     }
 
+    [Fact]
+    public async Task Given_A_Started_Discovery_Event_When_Replayed_Then_The_Status_Document_Is_Projected_As_InProgress()
+    {
+        using var raven = RavenEmbeddedTestDatabase.Create();
+        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
+        var repository = new RavenCatalogSearchDiscoveryRepository(raven.Store);
+        var discovery = await CatalogSearchDiscovery.LoadAsync(repository, criteria, CancellationToken.None);
+        discovery.Start(LookupPriorityBand.High, "Lookup started", Clock);
+        await discovery.SaveAsync(repository, CancellationToken.None);
+
+        await ReplayAsync(raven.Store);
+
+        using var session = raven.Store.OpenAsyncSession();
+        var status = await session.LoadAsync<Soundtrail.Contracts.CatalogSearchStatusRecordDto>(
+            Soundtrail.Contracts.CatalogSearchStatusRecordDto.GetDocumentId(criteria.Value),
+            CancellationToken.None);
+
+        status.Should().NotBeNull();
+        status!.Status.Should().Be(CatalogSearchLifecycleStatus.InProgress.ToString());
+        status.WillBeLookedUp.Should().BeTrue();
+        status.Reason.Should().Be("Lookup started");
+    }
+
+    [Fact]
+    public async Task Given_A_Completed_Discovery_Event_When_Replayed_Then_The_Status_Document_Is_Projected_As_Completed()
+    {
+        using var raven = RavenEmbeddedTestDatabase.Create();
+        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
+        var repository = new RavenCatalogSearchDiscoveryRepository(raven.Store);
+        var discovery = await CatalogSearchDiscovery.LoadAsync(repository, criteria, CancellationToken.None);
+        discovery.Complete(LookupPriorityBand.High, "Discovery completed", Clock);
+        await discovery.SaveAsync(repository, CancellationToken.None);
+
+        await ReplayAsync(raven.Store);
+
+        using var session = raven.Store.OpenAsyncSession();
+        var status = await session.LoadAsync<Soundtrail.Contracts.CatalogSearchStatusRecordDto>(
+            Soundtrail.Contracts.CatalogSearchStatusRecordDto.GetDocumentId(criteria.Value),
+            CancellationToken.None);
+
+        status.Should().NotBeNull();
+        status!.Status.Should().Be(CatalogSearchLifecycleStatus.Completed.ToString());
+        status.WillBeLookedUp.Should().BeFalse();
+        status.Reason.Should().Be("Discovery completed");
+    }
+
     private static async Task ReplayAsync(Raven.Client.Documents.IDocumentStore store)
     {
         using var session = store.OpenAsyncSession();
