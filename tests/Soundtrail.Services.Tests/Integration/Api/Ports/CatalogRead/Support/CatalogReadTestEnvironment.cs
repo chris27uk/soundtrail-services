@@ -102,6 +102,7 @@ internal sealed class CatalogReadTestEnvironment : IDisposable
             ["DurationMs"] = 222000,
             ["AvailableProviders"] = new[] { "Spotify", "AppleMusic" },
             ["TerminallyUnavailableProviders"] = Array.Empty<string>(),
+            ["ProviderReferences"] = Array.CreateInstance(CatalogProviderReferenceType, 0),
             ["UpdatedAt"] = DateTimeOffset.UtcNow
         }));
 
@@ -123,4 +124,5 @@ internal sealed class CatalogReadTestEnvironment : IDisposable
     private static readonly Type ArtistType = ApiAssembly.GetType("Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogArtistRecordDto", true)!;
     private static readonly Type AlbumType = ApiAssembly.GetType("Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogAlbumRecordDto", true)!;
     private static readonly Type TrackType = ApiAssembly.GetType("Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogTrackRecordDto", true)!;
+    private static readonly Type CatalogProviderReferenceType = ApiAssembly.GetType("Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogProviderReferenceRecordDto", true)!;
 }

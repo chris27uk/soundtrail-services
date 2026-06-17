@@ -30,6 +30,8 @@ public sealed class CatalogTrackRecordDto
 
     public string[] TerminallyUnavailableProviders { get; set; } = [];
 
+    public CatalogProviderReferenceRecordDto[] ProviderReferences { get; set; } = [];
+
     public string? ArtworkUrl { get; set; }
 
     public DateTimeOffset UpdatedAt { get; set; }

@@ -13,4 +13,5 @@ public sealed record SearchCatalogResult(
     string? AlbumName,
     PlayabilityStatus PlayabilityStatus,
     IReadOnlyList<ProviderName> AvailableProviders,
-    IReadOnlyList<ProviderName> TerminallyUnavailableProviders);
+    IReadOnlyList<ProviderName> TerminallyUnavailableProviders,
+    IReadOnlyList<ProviderReference> ProviderReferences);

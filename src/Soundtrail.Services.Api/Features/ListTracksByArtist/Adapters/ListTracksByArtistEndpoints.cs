@@ -37,6 +37,16 @@ public static class ListTracksByArtistEndpoints
         durationMs = track.DurationMs,
         playabilityStatus = track.PlayabilityStatus.ToString(),
         availableProviders = track.AvailableProviders.Select(ProviderContract.ToValue),
-        terminallyUnavailableProviders = track.TerminallyUnavailableProviders.Select(ProviderContract.ToValue)
+        terminallyUnavailableProviders = track.TerminallyUnavailableProviders.Select(ProviderContract.ToValue),
+        providerReferences = track.ProviderReferences.Select(ToContract)
+    };
+
+    private static object ToContract(ProviderReference response) => new
+    {
+        provider = ProviderContract.ToValue(response.Provider),
+        providerEntityType = response.ProviderEntityType,
+        providerId = response.ProviderId,
+        url = response.Url,
+        discoveredAt = response.DiscoveredAt
     };
 }

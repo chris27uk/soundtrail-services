@@ -25,6 +25,7 @@ public sealed class CompletenessResponsesTests
                 "Rare Album",
                 PlayabilityStatus.NotYetDiscovered,
                 [],
+                [],
                 []));
 
         var actual = await env.Search.SearchAsync(

@@ -158,6 +158,16 @@ public sealed class CatalogBrowsingOutsideInTestEnvironment : IAsyncDisposable
                 DurationMs = track.DurationMs,
                 AvailableProviders = track.AvailableProviders.Select(x => x.Value).ToArray(),
                 TerminallyUnavailableProviders = track.TerminallyUnavailableProviders.Select(x => x.Value).ToArray(),
+                ProviderReferences = (track.ProviderReferences ?? [])
+                    .Select(reference => new CatalogProviderReferenceRecordDto
+                    {
+                        Provider = ToProviderName(reference.Provider).Value,
+                        ProviderEntityType = reference.ProviderEntityType,
+                        ProviderId = reference.ProviderId,
+                        Url = reference.Url.ToString(),
+                        DiscoveredAt = reference.DiscoveredAt
+                    })
+                    .ToArray(),
                 UpdatedAt = DateTimeOffset.UtcNow
             });
         }
@@ -176,7 +186,8 @@ public sealed class CatalogBrowsingOutsideInTestEnvironment : IAsyncDisposable
         int? DurationMs,
         DateOnly? ReleaseDate,
         IReadOnlyList<ProviderName> AvailableProviders,
-        IReadOnlyList<ProviderName> TerminallyUnavailableProviders);
+        IReadOnlyList<ProviderName> TerminallyUnavailableProviders,
+        IReadOnlyList<ProviderReferenceContract>? ProviderReferences = null);
 
     public sealed class ArtistResponseContract
     {
@@ -247,6 +258,8 @@ public sealed class CatalogBrowsingOutsideInTestEnvironment : IAsyncDisposable
         public List<string> AvailableProviders { get; set; } = [];
 
         public List<string> TerminallyUnavailableProviders { get; set; } = [];
+
+        public List<ProviderReferenceContract> ProviderReferences { get; set; } = [];
     }
 
     public sealed class AlbumSummaryContract
@@ -283,5 +296,29 @@ public sealed class CatalogBrowsingOutsideInTestEnvironment : IAsyncDisposable
         public List<string> AvailableProviders { get; set; } = [];
 
         public List<string> TerminallyUnavailableProviders { get; set; } = [];
+
+        public List<ProviderReferenceContract> ProviderReferences { get; set; } = [];
     }
+
+    public sealed class ProviderReferenceContract
+    {
+        public string Provider { get; set; } = string.Empty;
+
+        public string ProviderEntityType { get; set; } = string.Empty;
+
+        public string ProviderId { get; set; } = string.Empty;
+
+        public Uri Url { get; set; } = null!;
+
+        public DateTimeOffset DiscoveredAt { get; set; }
+    }
+
+    private static ProviderName ToProviderName(string value) =>
+        value switch
+        {
+            "spotify" => ProviderName.Spotify,
+            "appleMusic" => ProviderName.AppleMusic,
+            "youtubeMusic" => ProviderName.YoutubeMusic,
+            _ => ProviderName.From(value)
+        };
 }

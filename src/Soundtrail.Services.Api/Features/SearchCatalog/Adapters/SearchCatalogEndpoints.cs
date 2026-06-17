@@ -1,5 +1,6 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Search;
 
@@ -66,7 +67,17 @@ public static class SearchCatalogEndpoints
         albumName = result.AlbumName,
         playabilityStatus = result.PlayabilityStatus.ToString(),
         availableProviders = result.AvailableProviders.Select(ToContract),
-        terminallyUnavailableProviders = result.TerminallyUnavailableProviders.Select(ToContract)
+        terminallyUnavailableProviders = result.TerminallyUnavailableProviders.Select(ToContract),
+        providerReferences = result.ProviderReferences.Select(ToContract)
+    };
+
+    private static object ToContract(ProviderReference response) => new
+    {
+        provider = ToContract(response.Provider),
+        providerEntityType = response.ProviderEntityType,
+        providerId = response.ProviderId,
+        url = response.Url,
+        discoveredAt = response.DiscoveredAt
     };
 
     private static string ToContract(ProviderName provider) =>

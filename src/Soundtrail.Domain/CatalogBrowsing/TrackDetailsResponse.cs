@@ -14,4 +14,5 @@ public sealed record TrackDetailsResponse(
     int? DurationMs,
     PlayabilityStatus PlayabilityStatus,
     IReadOnlyList<ProviderName> AvailableProviders,
-    IReadOnlyList<ProviderName> TerminallyUnavailableProviders);
+    IReadOnlyList<ProviderName> TerminallyUnavailableProviders,
+    IReadOnlyList<ProviderReference> ProviderReferences);

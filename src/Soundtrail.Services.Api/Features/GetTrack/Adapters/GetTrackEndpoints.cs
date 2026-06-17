@@ -35,6 +35,16 @@ public static class GetTrackEndpoints
         durationMs = response.DurationMs,
         playabilityStatus = response.PlayabilityStatus.ToString(),
         availableProviders = response.AvailableProviders.Select(ProviderContract.ToValue),
-        terminallyUnavailableProviders = response.TerminallyUnavailableProviders.Select(ProviderContract.ToValue)
+        terminallyUnavailableProviders = response.TerminallyUnavailableProviders.Select(ProviderContract.ToValue),
+        providerReferences = response.ProviderReferences.Select(ToContract)
+    };
+
+    private static object ToContract(ProviderReference response) => new
+    {
+        provider = ProviderContract.ToValue(response.Provider),
+        providerEntityType = response.ProviderEntityType,
+        providerId = response.ProviderId,
+        url = response.Url,
+        discoveredAt = response.DiscoveredAt
     };
 }

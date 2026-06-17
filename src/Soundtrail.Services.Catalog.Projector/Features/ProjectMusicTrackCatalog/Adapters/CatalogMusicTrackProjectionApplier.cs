@@ -156,6 +156,16 @@ public sealed class CatalogMusicTrackProjectionApplier
     {
         track.AvailableProviders = AddProvider(track.AvailableProviders, data.Provider);
         track.TerminallyUnavailableProviders = RemoveProvider(track.TerminallyUnavailableProviders, data.Provider);
+        track.ProviderReferences = UpsertProviderReference(
+            track.ProviderReferences,
+            new CatalogProviderReferenceRecordDto
+            {
+                Provider = data.Provider,
+                ProviderEntityType = "track",
+                ProviderId = data.ExternalId ?? string.Empty,
+                Url = data.Url,
+                DiscoveredAt = data.ObservedAt
+            });
 
         if (!string.IsNullOrWhiteSpace(track.ArtistId))
         {
@@ -182,6 +192,7 @@ public sealed class CatalogMusicTrackProjectionApplier
     {
         track.TerminallyUnavailableProviders = AddProvider(track.TerminallyUnavailableProviders, data.Provider);
         track.AvailableProviders = RemoveProvider(track.AvailableProviders, data.Provider);
+        track.ProviderReferences = RemoveProviderReference(track.ProviderReferences, data.Provider);
 
         if (!string.IsNullOrWhiteSpace(track.ArtistId))
         {
@@ -291,6 +302,7 @@ public sealed class CatalogMusicTrackProjectionApplier
         {
             track.AvailableProviders ??= [];
             track.TerminallyUnavailableProviders ??= [];
+            track.ProviderReferences ??= [];
             return track;
         }
 
@@ -306,7 +318,8 @@ public sealed class CatalogMusicTrackProjectionApplier
             AlbumName = string.Empty,
             SearchText = string.Empty,
             AvailableProviders = [],
-            TerminallyUnavailableProviders = []
+            TerminallyUnavailableProviders = [],
+            ProviderReferences = []
         };
         await session.StoreAsync(track, cancellationToken);
         return track;
@@ -382,6 +395,21 @@ public sealed class CatalogMusicTrackProjectionApplier
 
     private static string[] MergeProviders(string[] current, string[] additions) =>
         additions.Aggregate(current, AddProvider);
+
+    private static CatalogProviderReferenceRecordDto[] UpsertProviderReference(
+        IEnumerable<CatalogProviderReferenceRecordDto>? current,
+        CatalogProviderReferenceRecordDto reference) =>
+        (current ?? [])
+        .Where(item => !string.Equals(item.Provider, reference.Provider, StringComparison.Ordinal))
+        .Append(reference)
+        .ToArray();
+
+    private static CatalogProviderReferenceRecordDto[] RemoveProviderReference(
+        IEnumerable<CatalogProviderReferenceRecordDto>? current,
+        string provider) =>
+        (current ?? [])
+        .Where(item => !string.Equals(item.Provider, provider, StringComparison.Ordinal))
+        .ToArray();
 
     private static string BuildSearchText(string title, string artistName) =>
         $"{title} {artistName}".Trim().ToLowerInvariant();

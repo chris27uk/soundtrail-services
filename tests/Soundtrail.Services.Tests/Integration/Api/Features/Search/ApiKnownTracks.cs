@@ -18,7 +18,13 @@ namespace Soundtrail.Services.Tests.Integration.Api.Features.Search
                 "Hot Fuss",
                 PlayabilityStatus.Playable,
                 [ProviderName.Spotify, ProviderName.AppleMusic],
-                []);
+                [],
+                [new ProviderReference(
+                    ProviderName.Spotify,
+                    "track",
+                    "spotify-track-1",
+                    new Uri("https://open.spotify.com/track/spotify-track-1"),
+                    new DateTimeOffset(2026, 6, 17, 12, 0, 0, TimeSpan.Zero))]);
 
         public static SearchCatalogResult TheKillersArtist() =>
             new(
@@ -31,6 +37,7 @@ namespace Soundtrail.Services.Tests.Integration.Api.Features.Search
                 null,
                 PlayabilityStatus.Playable,
                 [ProviderName.Spotify, ProviderName.AppleMusic],
+                [],
                 []);
 
         public static ArtistDetailsResponse TheKillersArtistDetails() =>
@@ -41,9 +48,9 @@ namespace Soundtrail.Services.Tests.Integration.Api.Features.Search
                     AlbumId.From("album_hot_fuss"),
                     "Hot Fuss",
                     new DateOnly(2004, 6, 7),
-                    PlayabilityStatus.Playable,
-                    [ProviderName.Spotify, ProviderName.AppleMusic],
-                    [])]);
+                PlayabilityStatus.Playable,
+                [ProviderName.Spotify, ProviderName.AppleMusic],
+                [])]);
 
         public static AlbumDetailsResponse HotFussAlbum() =>
             new(
@@ -64,7 +71,13 @@ namespace Soundtrail.Services.Tests.Integration.Api.Features.Search
                 222000,
                 PlayabilityStatus.Playable,
                 [ProviderName.Spotify, ProviderName.AppleMusic],
-                []);
+                [],
+                [new ProviderReference(
+                    ProviderName.Spotify,
+                    "track",
+                    "spotify-track-1",
+                    new Uri("https://open.spotify.com/track/spotify-track-1"),
+                    new DateTimeOffset(2026, 6, 17, 12, 0, 0, TimeSpan.Zero))]);
 
         public static TrackDetailsResponse MrBrightsideTrackDetails() =>
             new(
@@ -78,6 +91,12 @@ namespace Soundtrail.Services.Tests.Integration.Api.Features.Search
                 222000,
                 PlayabilityStatus.Playable,
                 [ProviderName.Spotify, ProviderName.AppleMusic],
-                []);
+                [],
+                [new ProviderReference(
+                    ProviderName.Spotify,
+                    "track",
+                    "spotify-track-1",
+                    new Uri("https://open.spotify.com/track/spotify-track-1"),
+                    new DateTimeOffset(2026, 6, 17, 12, 0, 0, TimeSpan.Zero))]);
     }
 }

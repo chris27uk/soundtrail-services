@@ -201,6 +201,23 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
         public string PlayabilityStatus { get; set; } = string.Empty;
 
         public List<string> AvailableProviders { get; set; } = [];
+
+        public List<string> TerminallyUnavailableProviders { get; set; } = [];
+
+        public List<ProviderReferenceContract> ProviderReferences { get; set; } = [];
+    }
+
+    public sealed class ProviderReferenceContract
+    {
+        public string Provider { get; set; } = string.Empty;
+
+        public string ProviderEntityType { get; set; } = string.Empty;
+
+        public string ProviderId { get; set; } = string.Empty;
+
+        public Uri Url { get; set; } = null!;
+
+        public DateTimeOffset DiscoveredAt { get; set; }
     }
 
     public sealed class SearchDiscoveryContract
@@ -250,6 +267,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
         Set(track, CatalogTrackRecordDtoType, "DurationMs", null);
         Set(track, CatalogTrackRecordDtoType, "AvailableProviders", availableProviders.Select(x => x.Value).ToArray());
         Set(track, CatalogTrackRecordDtoType, "TerminallyUnavailableProviders", Array.Empty<string>());
+        Set(track, CatalogTrackRecordDtoType, "ProviderReferences", Array.CreateInstance(CatalogProviderReferenceRecordDtoType, 0));
         Set(track, CatalogTrackRecordDtoType, "ArtworkUrl", null);
         Set(track, CatalogTrackRecordDtoType, "UpdatedAt", DateTimeOffset.UtcNow);
         session.Store(track);
@@ -306,6 +324,9 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
 
     private static readonly Type CatalogTrackRecordDtoType = ApiAssembly
         .GetType("Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogTrackRecordDto", true)!;
+
+    private static readonly Type CatalogProviderReferenceRecordDtoType = ApiAssembly
+        .GetType("Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogProviderReferenceRecordDto", true)!;
 
     private static readonly IReadOnlyList<Type> IndexTypes =
     [

@@ -88,6 +88,9 @@ public sealed class CatalogBrowsingOutsideInTests
         response.Isrc.Should().Be("USIR20400274");
         response.PlayabilityStatus.Should().Be("Playable");
         response.AvailableProviders.Should().BeEquivalentTo(["spotify", "appleMusic"]);
+        response.ProviderReferences.Should().ContainSingle();
+        response.ProviderReferences[0].Provider.Should().Be("spotify");
+        response.ProviderReferences[0].ProviderId.Should().Be("spotify-track-1");
     }
 
     [Fact]
@@ -115,7 +118,15 @@ public sealed class CatalogBrowsingOutsideInTests
             222000,
             new DateOnly(2004, 6, 7),
             [ProviderName.Spotify, ProviderName.AppleMusic],
-            []);
+            [],
+            [new CatalogBrowsingOutsideInTestEnvironment.ProviderReferenceContract
+            {
+                Provider = "spotify",
+                ProviderEntityType = "track",
+                ProviderId = "spotify-track-1",
+                Url = new Uri("https://open.spotify.com/track/spotify-track-1"),
+                DiscoveredAt = new DateTimeOffset(2026, 6, 17, 12, 0, 0, TimeSpan.Zero)
+            }]);
 
     private static CatalogBrowsingOutsideInTestEnvironment.CatalogSeedTrack SmileLikeYouMeanIt() =>
         new(

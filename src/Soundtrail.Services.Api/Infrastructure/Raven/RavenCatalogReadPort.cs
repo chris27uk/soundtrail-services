@@ -119,7 +119,8 @@ public sealed class RavenCatalogReadPort(IDocumentStore documentStore) : ICatalo
                 track.DurationMs,
                 ResolvePlayabilityStatus(track.AvailableProviders, track.TerminallyUnavailableProviders),
                 ToProviders(track.AvailableProviders),
-                ToProviders(track.TerminallyUnavailableProviders));
+                ToProviders(track.TerminallyUnavailableProviders),
+                ToProviderReferences(track.ProviderReferences));
     }
 
     private static AlbumSummary ToAlbumSummary(CatalogAlbumRecordDto album) =>
@@ -141,10 +142,22 @@ public sealed class RavenCatalogReadPort(IDocumentStore documentStore) : ICatalo
             track.DurationMs,
             ResolvePlayabilityStatus(track.AvailableProviders, track.TerminallyUnavailableProviders),
             ToProviders(track.AvailableProviders),
-            ToProviders(track.TerminallyUnavailableProviders));
+            ToProviders(track.TerminallyUnavailableProviders),
+            ToProviderReferences(track.ProviderReferences));
 
     private static IReadOnlyList<ProviderName> ToProviders(IEnumerable<string> values) =>
         values.Select(ProviderName.From).ToArray();
+
+    private static IReadOnlyList<ProviderReference> ToProviderReferences(IEnumerable<CatalogProviderReferenceRecordDto>? values) =>
+        (values ?? [])
+        .Where(value => !string.IsNullOrWhiteSpace(value.ProviderId) && !string.IsNullOrWhiteSpace(value.Url))
+        .Select(value => new ProviderReference(
+            ProviderName.From(value.Provider),
+            value.ProviderEntityType,
+            value.ProviderId,
+            new Uri(value.Url),
+            value.DiscoveredAt))
+        .ToArray();
 
     private static PlayabilityStatus ResolvePlayabilityStatus(
         IReadOnlyCollection<string> availableProviders,
