@@ -1,0 +1,19 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.4.3">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <UserSecretsId>d90eef79-ea8a-4b0a-b3c4-cf08923d2e4a</UserSecretsId>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\src\Soundtrail.Services.Api\Soundtrail.Services.Api.csproj" />
+      <ProjectReference Include="..\src\Soundtrail.Services.Enrichment.Cdc\Soundtrail.Services.Enrichment.Cdc.csproj" />
+      <ProjectReference Include="..\src\Soundtrail.Services.Enrichment.DiscoveryPlanner\Soundtrail.Services.Enrichment.DiscoveryPlanner.csproj" />
+      <ProjectReference Include="..\src\Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator\Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.csproj" />
+      <ProjectReference Include="..\src\Soundtrail.Services.Enrichment.Worker\Soundtrail.Services.Enrichment.Worker.csproj" />
+    </ItemGroup>
+
+</Project>

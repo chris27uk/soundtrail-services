@@ -1,0 +1,27 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/v1-user/links",
+    "queryParameters": {
+      "platform": {
+        "equalTo": "isrc"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "linksByPlatform": {
+        "youtubeMusic": {
+          "url": "https://music.youtube.com/watch?v=yt-track-1"
+        },
+        "appleMusic": {
+          "url": "https://music.apple.com/track/apple-track-1?i=apple-track-1"
+        }
+      }
+    }
+  }
+}

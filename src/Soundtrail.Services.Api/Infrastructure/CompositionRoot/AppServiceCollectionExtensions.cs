@@ -1,0 +1,59 @@
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Soundtrail.Services.Api.Features.Search;
+using Soundtrail.Services.Api.Features.Health.CompositionRoot;
+using Soundtrail.Services.Api.Features.SearchMusic.CompositionRoot;
+using Soundtrail.Services.Api.Features.SearchMusic.Queueing;
+using Soundtrail.Services.Api.Features.SearchMusic.TrackSearch;
+using Soundtrail.Services.Api.Infrastructure.Messaging;
+using Soundtrail.Services.Api.Infrastructure.Raven;
+using Soundtrail.Services.Api.Infrastructure.Time;
+
+namespace Soundtrail.Services.Api.Infrastructure.CompositionRoot;
+
+public static class AppServiceCollectionExtensions
+{
+    public static IServiceCollection AddApiAppServices(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IHostEnvironment environment,
+        Action<ApiAppServicesOptions>? configure = null)
+    {
+        var options = new ApiAppServicesOptions
+        {
+            UseInMemoryQueueing = environment.IsEnvironment("Testing")
+        };
+        configure?.Invoke(options);
+
+        options.ConfigureClockDependencies?.Invoke(services);
+        services.TryAddSingleton<IClockPort, SystemClock>();
+
+        services.AddHealthFeature();
+        services.AddSearchFeature(x =>
+        {
+            x.ConfigureQueueingDependencies = options.ConfigureQueueingDependencies ?? (svc =>
+            {
+                if (options.UseInMemoryQueueing)
+                {
+                    svc.TryAddSingleton<IEnqueueMusicRequest, InMemoryEnqueueMusicRequest>();
+                }
+                else
+                {
+                    svc.AddLookupMusicRequestQueue(configuration);
+                }
+            });
+
+            x.ConfigureTrackSearchDependencies = options.ConfigureTrackSearchDependencies ?? (svc =>
+            {
+                if (environment.IsEnvironment("Testing"))
+                {
+                    return;
+                }
+
+                svc.AddRavenDocumentStore(configuration);
+                svc.TryAddSingleton<ITrackSearchPort, RavenTrackSearchIndex>();
+            });
+        });
+
+        return services;
+    }
+}

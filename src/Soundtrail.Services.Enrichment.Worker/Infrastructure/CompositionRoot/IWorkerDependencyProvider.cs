@@ -1,0 +1,13 @@
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.CompositionRoot;
+
+public interface IWorkerDependencyProvider
+{
+    void AddSharedDependencies(IServiceCollection services, IConfiguration configuration);
+
+    void AddOnDemandMetadataLookupDependencies(IServiceCollection services, IConfiguration configuration);
+
+    void AddPlaybackReferencesLookupDependencies(IServiceCollection services, IConfiguration configuration);
+}

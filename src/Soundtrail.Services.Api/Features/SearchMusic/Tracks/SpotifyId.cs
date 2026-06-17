@@ -1,0 +1,10 @@
+namespace Soundtrail.Services.Api.Features.SearchMusic.Tracks;
+
+public sealed record SpotifyId
+{
+    private SpotifyId(string value) => Value = value;
+
+    public string Value { get; }
+
+    public static SpotifyId From(string value) => new(value.Trim());
+}
