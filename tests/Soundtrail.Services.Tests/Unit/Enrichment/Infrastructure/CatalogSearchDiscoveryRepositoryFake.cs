@@ -7,6 +7,13 @@ internal sealed class CatalogSearchDiscoveryRepositoryFake : ICatalogSearchDisco
 {
     private readonly Dictionary<string, List<IDomainEvent>> eventsByCriteria = [];
 
+    public void Seed(
+        CatalogSearchCriteria criteria,
+        params IDomainEvent[] events)
+    {
+        eventsByCriteria[criteria.Value] = events.ToList();
+    }
+
     public Task<CatalogSearchDiscoveryEventStream> LoadAsync(
         CatalogSearchCriteria criteria,
         CancellationToken cancellationToken)

@@ -5,6 +5,7 @@ using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
 using Wolverine.Attributes;
 

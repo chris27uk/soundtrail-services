@@ -1,5 +1,6 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
@@ -18,14 +19,14 @@ public sealed class ApplyEnrichmentResponseHandler(
         Domain.Responses.EnrichmentResponse response,
         CancellationToken cancellationToken = default)
     {
-        var stream = await eventRepository.LoadEventsAsync(response.MusicCatalogId, cancellationToken);
-        var events = BuildEvents(stream, response);
-
-        var append = await eventRepository.AppendEventsAsync(
+        var aggregate = await CatalogEntityAggregate.LoadAsync(
+            eventRepository,
             response.MusicCatalogId,
-            stream.Version,
+            cancellationToken);
+        aggregate.RecordEnrichmentResponse(response);
+        var append = await aggregate.SaveAsync(
+            eventRepository,
             response.CommandId,
-            events,
             cancellationToken);
 
         await snapshotStore.SaveAsync(
@@ -59,85 +60,6 @@ public sealed class ApplyEnrichmentResponseHandler(
 
         return new EnrichmentOrchestrationResult(
             append.Appended ? append.AppendedEvents : Array.Empty<IMusicTrackEvent>());
-    }
-
-    private static IReadOnlyList<IMusicTrackEvent> BuildEvents(
-        MusicTrackStream stream,
-        Domain.Responses.EnrichmentResponse response)
-    {
-        var events = new List<IMusicTrackEvent>();
-
-        if (response.SourceProvider == ProviderName.MusicBrainz && response.Metadata is not null)
-        {
-            if (response.Hierarchy?.ArtistId is not null || !string.IsNullOrWhiteSpace(response.Metadata.Artist))
-            {
-                events.Add(new ArtistDiscovered(
-                    response.Hierarchy?.ArtistId?.Value,
-                    response.Metadata.Artist,
-                    response.SourceProvider,
-                    response.CreatedAt));
-            }
-
-            if (response.Hierarchy?.AlbumId is not null)
-            {
-                events.Add(new AlbumDiscovered(
-                    response.Hierarchy?.AlbumId?.Value,
-                    null,
-                    response.SourceProvider,
-                    response.CreatedAt));
-            }
-
-            events.Add(new TrackDiscovered(
-                response.Metadata.Title,
-                response.Metadata.Artist,
-                response.Metadata.DurationMs,
-                response.Metadata.Isrc,
-                response.Metadata.Mbid,
-                response.SourceProvider,
-                response.CreatedAt));
-        }
-
-        foreach (var reference in response.References)
-        {
-            events.Add(new ProviderReferenceDiscovered(
-                reference.Provider,
-                reference.ExternalId,
-                reference.Url,
-                response.SourceProvider,
-                response.CreatedAt));
-        }
-
-        foreach (var failedProvider in response.FailedProviders)
-        {
-            events.Add(new ProviderReferenceLookupFailed(
-                failedProvider.Provider,
-                failedProvider.SourceProvider,
-                response.CreatedAt));
-        }
-
-        if (response.SourceProvider == ProviderName.MusicBrainz
-            && response.Metadata is not null
-            && !stream.Events.OfType<ProviderReferenceDiscovered>().Any()
-            && !stream.Events.OfType<PlaybackReferencesResolutionRequired>().Any())
-        {
-            var searchTerm = !string.IsNullOrWhiteSpace(response.Metadata.Isrc)
-                ? MusicSearchTerm.ByIsrc(response.Metadata.Isrc)
-                : MusicSearchTerm.ByTrackArtistAlbum(
-                    response.Metadata.Title,
-                    response.Metadata.Artist,
-                    album: null);
-
-            events.Add(new PlaybackReferencesResolutionRequired(
-                response.MusicCatalogId,
-                response.Priority,
-                response.CorrelationId,
-                response.SourceProvider,
-                response.CreatedAt,
-                searchTerm,
-                response.Hierarchy));
-        }
-
-        return events;
     }
 
     private static EnrichmentResponseDto ToDto(Domain.Responses.EnrichmentResponse response) =>
