@@ -110,6 +110,7 @@ internal sealed class CatalogSearchTestEnvironment : IDisposable
                     Set(track, CatalogTrackRecordDtoType, "DurationMs", null);
                     Set(track, CatalogTrackRecordDtoType, "AvailableProviders", result.AvailableProviders.Select(x => x.Value).ToArray());
                     Set(track, CatalogTrackRecordDtoType, "TerminallyUnavailableProviders", result.TerminallyUnavailableProviders.Select(x => x.Value).ToArray());
+                    Set(track, CatalogTrackRecordDtoType, "ProviderReferences", CreateProviderReferences(result.ProviderReferences));
                     Set(track, CatalogTrackRecordDtoType, "ArtworkUrl", null);
                     Set(track, CatalogTrackRecordDtoType, "UpdatedAt", DateTimeOffset.UtcNow);
                     session.Store(track);
@@ -133,6 +134,24 @@ internal sealed class CatalogSearchTestEnvironment : IDisposable
         targetType.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!
             .SetValue(target, value);
 
+    private static Array CreateProviderReferences(IReadOnlyList<Soundtrail.Domain.Catalog.ProviderReference> references)
+    {
+        var array = Array.CreateInstance(CatalogProviderReferenceRecordDtoType, references.Count);
+
+        for (var index = 0; index < references.Count; index++)
+        {
+            var dto = Activator.CreateInstance(CatalogProviderReferenceRecordDtoType)!;
+            Set(dto, CatalogProviderReferenceRecordDtoType, "Provider", references[index].Provider.Value);
+            Set(dto, CatalogProviderReferenceRecordDtoType, "ProviderEntityType", references[index].ProviderEntityType);
+            Set(dto, CatalogProviderReferenceRecordDtoType, "ProviderId", references[index].ProviderId);
+            Set(dto, CatalogProviderReferenceRecordDtoType, "Url", references[index].Url.ToString());
+            Set(dto, CatalogProviderReferenceRecordDtoType, "DiscoveredAt", references[index].DiscoveredAt);
+            array.SetValue(dto, index);
+        }
+
+        return array;
+    }
+
     private static readonly Assembly ApiAssembly = typeof(ApiAssemblyMarker).Assembly;
 
     private static readonly Type CatalogArtistRecordDtoType = ApiAssembly
@@ -143,6 +162,9 @@ internal sealed class CatalogSearchTestEnvironment : IDisposable
 
     private static readonly Type CatalogTrackRecordDtoType = ApiAssembly
         .GetType("Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogTrackRecordDto", true)!;
+
+    private static readonly Type CatalogProviderReferenceRecordDtoType = ApiAssembly
+        .GetType("Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogProviderReferenceRecordDto", true)!;
 
     private static readonly IReadOnlyList<Type> IndexTypes =
     [

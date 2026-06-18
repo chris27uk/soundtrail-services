@@ -267,7 +267,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
         Set(track, CatalogTrackRecordDtoType, "DurationMs", null);
         Set(track, CatalogTrackRecordDtoType, "AvailableProviders", availableProviders.Select(x => x.Value).ToArray());
         Set(track, CatalogTrackRecordDtoType, "TerminallyUnavailableProviders", Array.Empty<string>());
-        Set(track, CatalogTrackRecordDtoType, "ProviderReferences", Array.CreateInstance(CatalogProviderReferenceRecordDtoType, 0));
+        Set(track, CatalogTrackRecordDtoType, "ProviderReferences", CreateProviderReferences(availableProviders));
         Set(track, CatalogTrackRecordDtoType, "ArtworkUrl", null);
         Set(track, CatalogTrackRecordDtoType, "UpdatedAt", DateTimeOffset.UtcNow);
         session.Store(track);
@@ -301,6 +301,24 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
     private static void Set(object target, Type targetType, string propertyName, object? value) =>
         targetType.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!
             .SetValue(target, value);
+
+    private static Array CreateProviderReferences(IReadOnlyList<ProviderName> providers)
+    {
+        var array = Array.CreateInstance(CatalogProviderReferenceRecordDtoType, providers.Count);
+
+        for (var index = 0; index < providers.Count; index++)
+        {
+            var reference = Activator.CreateInstance(CatalogProviderReferenceRecordDtoType)!;
+            Set(reference, CatalogProviderReferenceRecordDtoType, "Provider", providers[index].Value);
+            Set(reference, CatalogProviderReferenceRecordDtoType, "ProviderEntityType", "track");
+            Set(reference, CatalogProviderReferenceRecordDtoType, "ProviderId", $"{providers[index].Value.ToLowerInvariant()}-{index + 1}");
+            Set(reference, CatalogProviderReferenceRecordDtoType, "Url", $"https://example.com/{providers[index].Value.ToLowerInvariant()}/{index + 1}");
+            Set(reference, CatalogProviderReferenceRecordDtoType, "DiscoveredAt", DateTimeOffset.UtcNow);
+            array.SetValue(reference, index);
+        }
+
+        return array;
+    }
 
     private sealed class NoOpCatalogReadPort : Soundtrail.Domain.CatalogBrowsing.ICatalogReadPort
     {

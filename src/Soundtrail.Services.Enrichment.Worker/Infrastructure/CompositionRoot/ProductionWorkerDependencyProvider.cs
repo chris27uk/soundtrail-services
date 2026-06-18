@@ -1,5 +1,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Soundtrail.Domain.Discovery;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.SourceBudgets.Adapters;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.SourceBudgets.Configuration;
 using Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.Adapters;
 using Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.Lookup;
 using Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution.Adapters;
@@ -13,6 +17,8 @@ public sealed class ProductionWorkerDependencyProvider : IWorkerDependencyProvid
     public void AddSharedDependencies(IServiceCollection services, IConfiguration configuration)
     {
         services.AddWorkerRavenDocumentStore(configuration);
+        services.Configure<SourceApiBudgetsOptions>(configuration.GetSection(SourceApiBudgetsOptions.SectionName));
+        services.TryAddScoped<IReserveSourceApiBudgetPort, RavenCompareExchangeSourceApiBudgetPort>();
     }
 
     public void AddOnDemandMetadataLookupDependencies(IServiceCollection services, IConfiguration configuration)

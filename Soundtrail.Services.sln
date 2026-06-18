@@ -27,10 +27,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Soundtrail.Services.Service
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Aspire", "Aspire", "{EFDBC273-3938-4AD3-85A1-37A5C2FA8E56}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ETL", "ETL", "{DE2AB29B-54C7-4C04-ADE2-D0133E945034}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Soundtrail.Services.Catalog.Projector", "src\Soundtrail.Services.Catalog.Projector\Soundtrail.Services.Catalog.Projector.csproj", "{824B53B0-0635-4146-9EE0-C2794E0470AC}"
 EndProject
 Global

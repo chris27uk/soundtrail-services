@@ -2,9 +2,11 @@ using Soundtrail.Domain.Responses;
 
 namespace Soundtrail.Domain.Responses;
 
-public sealed record LookupExecutionResult(bool Started, EnrichmentResponse? Response)
+public sealed record LookupExecutionResult(LookupExecutionOutcome Outcome, EnrichmentResponse? Response)
 {
-    public static LookupExecutionResult Completed(EnrichmentResponse response) => new(true, response);
+    public static LookupExecutionResult Completed(EnrichmentResponse response) => new(LookupExecutionOutcome.Completed, response);
 
-    public static LookupExecutionResult Duplicate() => new(false, (EnrichmentResponse?)null);
+    public static LookupExecutionResult Deferred() => new(LookupExecutionOutcome.Deferred, (EnrichmentResponse?)null);
+
+    public static LookupExecutionResult Duplicate() => new(LookupExecutionOutcome.Duplicate, (EnrichmentResponse?)null);
 }

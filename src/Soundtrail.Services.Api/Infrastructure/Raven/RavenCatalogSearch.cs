@@ -107,7 +107,7 @@ public sealed class RavenCatalogSearch(IDocumentStore documentStore) : ICatalogS
                     discoveryStatus.WillBeLookedUp,
                     discoveryStatus.Reason,
                     discoveryStatus.EstimatedRetryAfterSeconds),
-            IsComplete: pagedResults.Length > 0 && pagedResults.All(IsComplete));
+            IsComplete: pagedResults.Length > 0 && pagedResults.All(CatalogSearchCompletenessEvaluator.IsComplete));
     }
 
     private static IReadOnlyList<ProviderName> ToProviders(IEnumerable<string> values) =>
@@ -141,6 +141,4 @@ public sealed class RavenCatalogSearch(IDocumentStore documentStore) : ICatalogS
         return PlayabilityStatus.NotYetDiscovered;
     }
 
-    private static bool IsComplete(SearchCatalogResult result) =>
-        result.PlayabilityStatus != PlayabilityStatus.NotYetDiscovered;
 }

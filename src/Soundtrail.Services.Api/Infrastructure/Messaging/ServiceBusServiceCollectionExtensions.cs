@@ -1,6 +1,4 @@
 using JasperFx.CodeGeneration.Model;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Services.Api.Features.Search.SearchCatalog.Ports;

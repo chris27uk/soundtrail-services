@@ -31,9 +31,6 @@ internal sealed class FakeCatalogSearchPort : ICatalogSearchPort
         return Task.FromResult(new LocalCatalogSearchResponse(
             matches,
             null,
-            IsComplete: matches.Length > 0 && matches.All(IsComplete)));
+            IsComplete: matches.Length > 0 && matches.All(CatalogSearchCompletenessEvaluator.IsComplete)));
     }
-
-    private static bool IsComplete(SearchCatalogResult result) =>
-        result.PlayabilityStatus != PlayabilityStatus.NotYetDiscovered;
 }

@@ -223,6 +223,23 @@ Endpoints should not:
 - call infrastructure directly when a handler/port abstraction should own the behavior
 - construct provider-specific logic on the request path
 
+The same rule applies to other transport adapters such as Wolverine listeners, queue consumers, CDC subscribers, and projection triggers.
+
+These adapters should stay thin.
+
+They should:
+
+- parse transport contracts
+- convert contracts into domain commands or requests
+- delegate to a handler
+- translate handler output back into transport contracts when needed
+
+They should not:
+
+- reserve budgets
+- mutate discovery lifecycle state directly
+- contain retry, failure, or orchestration rules that belong in a handler
+
 ## Handlers
 
 Handlers are the default place for use-case behavior.
@@ -362,6 +379,7 @@ Good unit-test targets:
 - schedulers
 - domain models with invariants
 - request/response decision points
+- orchestration flows that react to adapter failures through ports
 
 ### Solitary Tests
 
