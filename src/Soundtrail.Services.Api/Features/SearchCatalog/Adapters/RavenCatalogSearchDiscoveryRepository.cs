@@ -1,11 +1,10 @@
 using Raven.Client.Documents;
 using Raven.Client.Exceptions;
-using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Services.Api.Features.Search.SearchCatalog.Adapters.Mappers;
+using Soundtrail.Services.Api.Features.SearchCatalog.Adapters.Mappers;
 
-namespace Soundtrail.Services.Api.Features.Search.SearchCatalog.Adapters;
+namespace Soundtrail.Services.Api.Features.SearchCatalog.Adapters;
 
 public sealed class RavenCatalogSearchDiscoveryRepository(IDocumentStore documentStore) : ICatalogSearchDiscoveryRepository
 {

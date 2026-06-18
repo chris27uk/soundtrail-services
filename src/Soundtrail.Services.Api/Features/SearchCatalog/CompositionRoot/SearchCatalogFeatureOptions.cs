@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Api.Features.Search.SearchCatalog.CompositionRoot;
+namespace Soundtrail.Services.Api.Features.SearchCatalog.CompositionRoot;
 
 public sealed class SearchCatalogFeatureOptions
 {

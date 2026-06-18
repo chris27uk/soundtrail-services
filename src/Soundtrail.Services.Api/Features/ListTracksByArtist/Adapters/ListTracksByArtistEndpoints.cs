@@ -3,7 +3,7 @@ using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.CatalogBrowsing;
 using Soundtrail.Services.Api.Shared;
 
-namespace Soundtrail.Services.Api.Features.Artists.ListTracksByArtist.Adapters;
+namespace Soundtrail.Services.Api.Features.ListTracksByArtist.Adapters;
 
 public static class ListTracksByArtistEndpoints
 {

@@ -1,6 +1,6 @@
 using Soundtrail.Domain.Commands;
 
-namespace Soundtrail.Services.Api.Features.Search.SearchCatalog.Ports;
+namespace Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 
 public interface IQueueCatalogSearchAttempt : IQueueCatalogSearchAttemptPort
 {

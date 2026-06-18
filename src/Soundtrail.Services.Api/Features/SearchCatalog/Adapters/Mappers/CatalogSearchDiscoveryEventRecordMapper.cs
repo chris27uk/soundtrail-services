@@ -5,7 +5,7 @@ using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
 using System.Text.Json;
 
-namespace Soundtrail.Services.Api.Features.Search.SearchCatalog.Adapters.Mappers;
+namespace Soundtrail.Services.Api.Features.SearchCatalog.Adapters.Mappers;
 
 internal static class CatalogSearchDiscoveryEventRecordMapper
 {

@@ -1,16 +1,11 @@
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Subscriptions;
-using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
-using Soundtrail.Contracts.IntegrationMessaging.Commands;
-using Soundtrail.Contracts.IntegrationMessaging.Events;
-using System.Text.Json;
-using Wolverine;
 
-namespace Soundtrail.Services.Enrichment.Cdc.Features.PublishMusicTrackEvents;
+namespace Soundtrail.Services.Enrichment.Cdc.Features.PublishMusicTrackEvents.Adapters;
 
 public sealed class MusicTrackEventSubscriptionHostedService(
     IDocumentStore documentStore,
@@ -18,7 +13,6 @@ public sealed class MusicTrackEventSubscriptionHostedService(
     ILogger<MusicTrackEventSubscriptionHostedService> logger) : BackgroundService
 {
     private const string SubscriptionName = "music-track-events-cdc";
-    private const string PlaybackReferencesResolutionRequiredEventType = "PlaybackReferencesResolutionRequired";
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -70,44 +64,9 @@ public sealed class MusicTrackEventSubscriptionHostedService(
         CancellationToken cancellationToken)
     {
         using var scope = serviceScopeFactory.CreateScope();
-        var messageBus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
-
-        foreach (var item in batch.Items)
-        {
-            var integrationEvent = ToIntegrationEvent(item.Result);
-            if (integrationEvent is not null)
-            {
-                await messageBus.SendAsync(integrationEvent);
-            }
-        }
-    }
-
-    private static object? ToIntegrationEvent(MusicTrackStoredEventRecordDto @event)
-    {
-        return @event.EventType switch
-            {
-                PlaybackReferencesResolutionRequiredEventType => PlaybackReferencesResolutionRequiredDto(@event),
-                _ => null
-            };
-    }
-
-    private static PlaybackReferencesResolutionRequiredMessageDto PlaybackReferencesResolutionRequiredDto(MusicTrackStoredEventRecordDto @event)
-    {
-        var data = JsonSerializer.Deserialize<PlaybackReferencesResolutionRequiredEventDataRecordDto>(@event.Data)
-            ?? throw new InvalidOperationException("Unable to deserialize playback references resolution required event data.");
-
-        return new PlaybackReferencesResolutionRequiredMessageDto(
-            data.MusicCatalogId,
-            Enum.Parse<LookupPriorityBand>(data.Priority, ignoreCase: true),
-            data.CorrelationId,
-            data.SourceProvider,
-            data.ObservedAt,
-            new PlaybackReferenceSearchTermDto(
-                data.Isrc,
-                data.Title,
-                data.Artist,
-                data.Album),
-            data.ArtistId,
-            data.AlbumId);
+        var handler = scope.ServiceProvider.GetRequiredService<PublishMusicTrackEventsHandler>();
+        await handler.HandleAsync(
+            batch.Items.Select(x => x.Result).ToArray(),
+            cancellationToken);
     }
 }

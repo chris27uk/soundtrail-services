@@ -3,10 +3,10 @@ using Soundtrail.Domain;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Api.Features.Search.SearchCatalog.Adapters;
-using Soundtrail.Services.Api.Features.Search.SearchCatalog.Ports;
+using Soundtrail.Services.Api.Features.SearchCatalog.Adapters;
+using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 
-namespace Soundtrail.Services.Api.Features.Search.SearchCatalog.CompositionRoot;
+namespace Soundtrail.Services.Api.Features.SearchCatalog.CompositionRoot;
 
 public static class ServiceCollectionExtensions
 {

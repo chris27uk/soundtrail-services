@@ -7,8 +7,7 @@ using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
-using Soundtrail.Services.Api.Features.Search.SearchCatalog.Adapters;
-using Soundtrail.Services.Api.Features.Search.SearchCatalog.Ports;
+using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Wolverine;
 using Wolverine.Logging;
@@ -59,7 +58,7 @@ internal sealed class CatalogSearchAttemptQueueTestEnvironment : IAsyncDisposabl
                 _ => Task.FromException<object>(new InvalidOperationException("No fake route configured.")));
         }
 
-        var queue = new InMemoryEnqueueCatalogSearchAttempt();
+        var queue = new TestInMemoryEnqueueCatalogSearchAttempt();
         return new CatalogSearchAttemptQueueTestEnvironment(
             host,
             scope: null,
@@ -143,7 +142,7 @@ internal sealed class CatalogSearchAttemptQueueTestEnvironment : IAsyncDisposabl
             CorrelationId: CorrelationId.New());
 
     private static async Task<object> WaitForCapturedRequestAsync(
-        InMemoryEnqueueCatalogSearchAttempt queue,
+        TestInMemoryEnqueueCatalogSearchAttempt queue,
         TimeSpan timeout)
     {
         using var cts = new CancellationTokenSource(timeout);
@@ -160,5 +159,18 @@ internal sealed class CatalogSearchAttemptQueueTestEnvironment : IAsyncDisposabl
         }
 
         throw new TimeoutException("CatalogSearchAttempt was not captured.");
+    }
+
+    private sealed class TestInMemoryEnqueueCatalogSearchAttempt : IEnqueueCatalogSearchAttempt
+    {
+        private readonly Queue<CatalogSearchAttemptDto> requests = new();
+
+        public List<CatalogSearchAttemptDto> Requests => requests.ToList();
+
+        public Task EnqueueAsync(CatalogSearchAttempt request, CancellationToken cancellationToken)
+        {
+            requests.Enqueue(CatalogSearchAttemptMapper.ToDto(request));
+            return Task.CompletedTask;
+        }
     }
 }

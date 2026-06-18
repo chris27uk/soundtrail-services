@@ -1,14 +1,14 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Domain.CatalogBrowsing;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Api.Features.Albums.GetAlbum.CompositionRoot;
-using Soundtrail.Services.Api.Features.Albums.ListTracksByAlbum.CompositionRoot;
-using Soundtrail.Services.Api.Features.Artists.GetArtist.CompositionRoot;
-using Soundtrail.Services.Api.Features.Artists.ListTracksByArtist.CompositionRoot;
-using Soundtrail.Services.Api.Features.Search.SearchCatalog.Adapters;
-using Soundtrail.Services.Api.Features.Search.SearchCatalog.CompositionRoot;
-using Soundtrail.Services.Api.Features.Search.SearchCatalog.Ports;
-using Soundtrail.Services.Api.Features.Tracks.GetTrack.CompositionRoot;
+using Soundtrail.Services.Api.Features.GetAlbum.CompositionRoot;
+using Soundtrail.Services.Api.Features.GetArtist.CompositionRoot;
+using Soundtrail.Services.Api.Features.GetTrack.CompositionRoot;
+using Soundtrail.Services.Api.Features.ListTracksByAlbum.CompositionRoot;
+using Soundtrail.Services.Api.Features.ListTracksByArtist.CompositionRoot;
+using Soundtrail.Services.Api.Features.SearchCatalog.Adapters;
+using Soundtrail.Services.Api.Features.SearchCatalog.CompositionRoot;
+using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Soundtrail.Services.Api.Infrastructure.Raven;
 using Soundtrail.Services.Api.Infrastructure.Time;
@@ -23,10 +23,7 @@ public static class AppServiceCollectionExtensions
         IHostEnvironment environment,
         Action<ApiAppServicesOptions>? configure = null)
     {
-        var options = new ApiAppServicesOptions
-        {
-            UseInMemoryQueueing = environment.IsEnvironment("Testing")
-        };
+        var options = new ApiAppServicesOptions();
         configure?.Invoke(options);
 
         options.ConfigureClockDependencies?.Invoke(services);
@@ -39,28 +36,10 @@ public static class AppServiceCollectionExtensions
         services.AddGetTrackFeature();
         services.AddSearchCatalogFeature(x =>
         {
-            x.ConfigureQueueingDependencies = options.ConfigureQueueingDependencies ?? (svc =>
-            {
-                if (options.UseInMemoryQueueing)
-                {
-                    svc.TryAddSingleton<IEnqueueCatalogSearchAttempt, InMemoryEnqueueCatalogSearchAttempt>();
-                    svc.TryAddSingleton<IQueueCatalogSearchAttempt>(sp => sp.GetRequiredService<IEnqueueCatalogSearchAttempt>());
-                    svc.TryAddSingleton<Soundtrail.Domain.Commands.IQueueCatalogSearchAttemptPort>(sp => sp.GetRequiredService<IQueueCatalogSearchAttempt>());
-                }
-                else
-                {
-                    svc.AddCatalogSearchAttemptQueue(configuration);
-                }
-            });
+            x.ConfigureQueueingDependencies = options.ConfigureQueueingDependencies ?? (svc => svc.AddCatalogSearchAttemptQueue(configuration));
 
             x.ConfigureCatalogSearchDependencies = options.ConfigureCatalogSearchDependencies ?? (svc =>
             {
-                if (environment.IsEnvironment("Testing"))
-                {
-                    svc.TryAddSingleton<ICatalogSearchPort, TestingNoOpCatalogSearchPort>();
-                    return;
-                }
-
                 svc.AddRavenDocumentStore(configuration);
                 svc.TryAddSingleton<ICatalogSearchPort, RavenCatalogSearch>();
             });
@@ -68,12 +47,6 @@ public static class AppServiceCollectionExtensions
 
         (options.ConfigureCatalogReadDependencies ?? (svc =>
         {
-            if (environment.IsEnvironment("Testing"))
-            {
-                svc.TryAddSingleton<ICatalogReadPort, TestingNoOpCatalogReadPort>();
-                return;
-            }
-
             svc.AddRavenDocumentStore(configuration);
             svc.TryAddSingleton<ICatalogReadPort, RavenCatalogReadPort>();
         })).Invoke(services);

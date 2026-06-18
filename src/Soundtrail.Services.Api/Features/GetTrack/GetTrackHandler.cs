@@ -1,7 +1,7 @@
 using Soundtrail.Domain;
 using Soundtrail.Domain.CatalogBrowsing;
 
-namespace Soundtrail.Services.Api.Features.Tracks.GetTrack;
+namespace Soundtrail.Services.Api.Features.GetTrack;
 
 public sealed class GetTrackHandler(ICatalogReadPort catalogReadPort) : IHandler<GetTrackCommand, TrackDetailsResponse?>
 {

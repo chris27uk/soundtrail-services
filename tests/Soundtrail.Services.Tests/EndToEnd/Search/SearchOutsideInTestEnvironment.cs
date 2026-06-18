@@ -16,9 +16,8 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
 using Soundtrail.Services.Api;
-using Soundtrail.Services.Api.Features.Search.SearchCatalog;
-using Soundtrail.Services.Api.Features.Search.SearchCatalog.Adapters;
-using Soundtrail.Services.Api.Features.Search.SearchCatalog.Ports;
+using Soundtrail.Services.Api.Features.SearchCatalog.Adapters;
+using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 using Soundtrail.Services.Api.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Adapters;
@@ -79,7 +78,6 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
 
         builder.Services.AddApiAppServices(builder.Configuration, builder.Environment, options =>
         {
-            options.UseInMemoryQueueing = false;
             options.ConfigureQueueingDependencies = services => services.TryAddScoped<IEnqueueCatalogSearchAttempt, WolverineEnqueueCatalogSearchAttempt>();
             options.ConfigureCatalogSearchDependencies = services =>
             {

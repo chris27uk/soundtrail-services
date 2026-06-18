@@ -1,8 +1,7 @@
-using Raven.Client.Documents;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
 
-namespace Soundtrail.Services.Api.Features.Search.SearchCatalog.Adapters;
+namespace Soundtrail.Services.Api.Features.SearchCatalog.Adapters;
 
 public sealed class RavenRecordCatalogSearchAttempt(
     ICatalogSearchDiscoveryRepository discoveryRepository,

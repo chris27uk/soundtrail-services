@@ -2,7 +2,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Domain;
 using Soundtrail.Domain.CatalogBrowsing;
 
-namespace Soundtrail.Services.Api.Features.Artists.GetArtist.CompositionRoot;
+namespace Soundtrail.Services.Api.Features.GetArtist.CompositionRoot;
 
 public static class ServiceCollectionExtensions
 {

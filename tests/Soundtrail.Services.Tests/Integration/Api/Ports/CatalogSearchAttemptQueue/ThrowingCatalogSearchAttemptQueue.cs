@@ -1,5 +1,5 @@
 using Soundtrail.Domain.Commands;
-using Soundtrail.Services.Api.Features.Search.SearchCatalog.Ports;
+using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 
 namespace Soundtrail.Services.Tests.Integration.Api.Ports.CatalogSearchAttemptQueue
 {

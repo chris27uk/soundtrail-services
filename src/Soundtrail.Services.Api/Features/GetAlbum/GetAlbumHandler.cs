@@ -1,7 +1,7 @@
 using Soundtrail.Domain;
 using Soundtrail.Domain.CatalogBrowsing;
 
-namespace Soundtrail.Services.Api.Features.Albums.GetAlbum;
+namespace Soundtrail.Services.Api.Features.GetAlbum;
 
 public sealed class GetAlbumHandler(ICatalogReadPort catalogReadPort) : IHandler<GetAlbumCommand, AlbumDetailsResponse?>
 {

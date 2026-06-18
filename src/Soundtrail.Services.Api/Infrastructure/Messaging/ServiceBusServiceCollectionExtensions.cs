@@ -1,7 +1,7 @@
 using JasperFx.CodeGeneration.Model;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
-using Soundtrail.Services.Api.Features.Search.SearchCatalog.Ports;
+using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 using Soundtrail.Services.ServiceDefaults;
 using Wolverine;
 using Wolverine.AzureServiceBus;

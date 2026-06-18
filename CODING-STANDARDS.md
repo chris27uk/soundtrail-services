@@ -13,6 +13,7 @@ The goal is consistency more than cleverness. New code should fit the existing s
 - Follow outside-in TDD.
 - Use custom fakes and sociable unit tests by default.
 - Add integration tests where they prove a fake matches a real adapter or where infrastructure behavior matters.
+- Do not ship in-memory fakes or no-op adapters inside production app code.
 
 ## Solution Shape
 
@@ -125,6 +126,10 @@ Dependencies should point inward toward business behavior.
 - shared domain objects belong in `Soundtrail.Domain`, not `Soundtrail.Contracts`
 
 If a type only exists to satisfy HTTP, Raven, Azure Service Bus, or host startup, it should not live in a core business project.
+
+Test-only fakes, no-op adapters, and in-memory harnesses must live in test projects, not under `src`.
+
+If an app or integration test needs simulated external provider behavior, prefer a WireMock-style test server or another explicit test harness over hidden in-process fake runtime wiring.
 
 ## Feature Placement
 
