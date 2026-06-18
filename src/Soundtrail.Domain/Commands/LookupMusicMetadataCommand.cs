@@ -11,4 +11,4 @@ public sealed record LookupMusicMetadataCommand(
     DateTimeOffset CreatedAt,
     CorrelationId CorrelationId,
     MusicSearchTerm SearchTerm,
-    CatalogTrackHierarchy? Hierarchy = null) : LookupPhaseCommand(CommandId, MusicCatalogId, Priority, CreatedAt, CorrelationId);
+    CatalogTrackHierarchy? Hierarchy = null) : IMusicCatalogLookupCommand;

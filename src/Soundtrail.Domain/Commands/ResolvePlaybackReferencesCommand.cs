@@ -11,7 +11,7 @@ public sealed record ResolvePlaybackReferencesCommand(
     DateTimeOffset CreatedAt,
     CorrelationId CorrelationId,
     MusicSearchTerm LookupKey,
-    CatalogTrackHierarchy? Hierarchy = null) : LookupPhaseCommand(CommandId, MusicCatalogId, Priority, CreatedAt, CorrelationId)
+    CatalogTrackHierarchy? Hierarchy = null) : IMusicCatalogLookupCommand
 {
     public ProviderName TargetProvider => ProviderName.Odesli;
 }

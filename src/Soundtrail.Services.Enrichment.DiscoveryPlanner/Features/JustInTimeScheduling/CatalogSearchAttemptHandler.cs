@@ -9,6 +9,7 @@ using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search.Resolution;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Scheduling;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling;
 
@@ -68,8 +69,8 @@ public sealed class CatalogSearchAttemptHandler(
             request.OccurredAt,
             cancellationToken);
 
-        var command = BuildCommand(request, musicCatalogId, plan.Priority!.Value, localTrack);
-        if (command is null)
+        var plannedLookup = BuildCommand(request, musicCatalogId, plan.Priority!.Value, localTrack);
+        if (plannedLookup is null)
         {
             var deferred = PriorityPlan.Defer(request.OccurredAt);
             return LookupSchedulingResult.DoNotSchedule(
@@ -79,7 +80,7 @@ public sealed class CatalogSearchAttemptHandler(
         }
 
         var budgetReservation = await reserveSourceApiBudgetPort.TryReserveAsync(
-            new SourceApiBudgetReservationRequest(GetSource(command), request.OccurredAt),
+            new SourceApiBudgetReservationRequest(plannedLookup.Source, request.OccurredAt),
             cancellationToken);
         if (!budgetReservation.Accepted)
         {
@@ -90,7 +91,7 @@ public sealed class CatalogSearchAttemptHandler(
         }
 
         var acquired = await activeLookupWorkStore.TryAcquireAsync(
-            command.CommandId,
+            plannedLookup.Command.CommandId,
             request.OccurredAt.Add(ActiveReservationDuration),
             cancellationToken);
 
@@ -100,7 +101,7 @@ public sealed class CatalogSearchAttemptHandler(
                 plan.EstimatedRetryAfterSeconds,
                 plan.EarliestExpectedCompletionAt,
                 plan.Reason,
-                command);
+                plannedLookup.Command);
         }
 
         var deferredByReservation = PriorityPlan.Defer(request.OccurredAt);
@@ -109,14 +110,6 @@ public sealed class CatalogSearchAttemptHandler(
             deferredByReservation.EarliestExpectedCompletionAt,
             deferredByReservation.Reason);
     }
-
-    private static ProviderName GetSource(LookupPhaseCommand command) =>
-        command switch
-        {
-            LookupMusicMetadataCommand => ProviderName.MusicBrainz,
-            ResolvePlaybackReferencesCommand => ProviderName.Odesli,
-            _ => throw new ArgumentOutOfRangeException(nameof(command), command, "Unsupported lookup phase command.")
-        };
 
     private async Task UpsertTrackingsAsync(
         IReadOnlyList<CatalogSearchCriteria> criteria,
@@ -132,7 +125,7 @@ public sealed class CatalogSearchAttemptHandler(
         }
     }
 
-    private static LookupPhaseCommand? BuildCommand(
+    private static PlannedLookupWork? BuildCommand(
         CatalogSearchAttempt request,
         MusicCatalogId musicCatalogId,
         LookupPriorityBand priority,
@@ -146,14 +139,16 @@ public sealed class CatalogSearchAttemptHandler(
         var searchTerm = localTrack?.GetSearchTerm();
         if ((localTrack != null ? !string.IsNullOrWhiteSpace(localTrack.Isrc) : null) == true && searchTerm is not null)
         {
-            return new ResolvePlaybackReferencesCommand(
-                CommandId.For($"ResolvePlaybackReferences:{musicCatalogId.Value}"),
-                musicCatalogId,
-                priority,
-                request.OccurredAt,
-                request.CorrelationId,
-                searchTerm,
-                ToHierarchy(localTrack));
+            return new PlannedLookupWork(
+                new ResolvePlaybackReferencesCommand(
+                    CommandId.For($"ResolvePlaybackReferences:{musicCatalogId.Value}"),
+                    musicCatalogId,
+                    priority,
+                    request.OccurredAt,
+                    request.CorrelationId,
+                    searchTerm,
+                    ToHierarchy(localTrack)),
+                ProviderName.Odesli);
         }
 
         if (searchTerm is null)
@@ -161,14 +156,16 @@ public sealed class CatalogSearchAttemptHandler(
             return null;
         }
 
-        return new LookupMusicMetadataCommand(
-            CommandId.For($"LookupCanonicalMusicMetadata:{musicCatalogId.Value}"),
-            musicCatalogId,
-            priority,
-            request.OccurredAt,
-            request.CorrelationId,
-            searchTerm,
-            ToHierarchy(localTrack));
+        return new PlannedLookupWork(
+            new LookupMusicMetadataCommand(
+                CommandId.For($"LookupCanonicalMusicMetadata:{musicCatalogId.Value}"),
+                musicCatalogId,
+                priority,
+                request.OccurredAt,
+                request.CorrelationId,
+                searchTerm,
+                ToHierarchy(localTrack)),
+            ProviderName.MusicBrainz);
     }
 
     private static CatalogTrackHierarchy? ToHierarchy(LocalMusicTrackSearchResult? localTrack) =>

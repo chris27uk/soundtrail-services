@@ -11,7 +11,7 @@ public sealed record LookupSchedulingResult(
 {
     public bool ShouldSchedule => Commands.Count > 0;
 
-    public LookupPhaseCommand? Command => Commands.OfType<LookupPhaseCommand>().SingleOrDefault();
+    public IMusicCatalogLookupCommand? Command => Commands.OfType<IMusicCatalogLookupCommand>().SingleOrDefault();
 
     public static LookupSchedulingResult DoNotSchedule(
         int? estimatedRetryAfterSeconds,

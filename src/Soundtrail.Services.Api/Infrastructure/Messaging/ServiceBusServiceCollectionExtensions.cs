@@ -37,7 +37,7 @@ public static class ServiceBusServiceCollectionExtensions
         var transport = opts.UseAzureServiceBus(options.ConnectionString)
             .SystemQueuesAreEnabled(false);
 
-        if (environment.IsDevelopment() || environment.IsEnvironment("Testing"))
+        if (environment.IsEnvironment("Testing"))
         {
             opts.StubAllExternalTransports();
         }

@@ -386,6 +386,10 @@ Good unit-test targets:
 - request/response decision points
 - orchestration flows that react to adapter failures through ports
 
+Unit tests should not target transport adapters such as listeners, endpoints, hosted services, CDC subscribers, or projection subscription services.
+
+Those adapters belong in integration coverage.
+
 ### Solitary Tests
 
 Solitary tests are acceptable when a type has meaningful standalone behavior that would become awkward or noisy to prove indirectly.

@@ -92,5 +92,5 @@ internal sealed class DiscoveryBacklogSchedulerTestEnvironment
 
     public LocalMusicTrackSearchFake LocalSearch => localSearch;
 
-    public Task<IReadOnlyList<LookupPhaseCommand>> RunSweep(int take = 10) => Scheduler.RunOnceAsync(Now, take);
+    public Task<IReadOnlyList<IMusicCatalogLookupCommand>> RunSweep(int take = 10) => Scheduler.RunOnceAsync(Now, take);
 }
