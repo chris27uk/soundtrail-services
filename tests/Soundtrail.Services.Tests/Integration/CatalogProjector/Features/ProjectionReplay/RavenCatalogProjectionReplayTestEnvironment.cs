@@ -8,6 +8,7 @@ using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog;
 using Soundtrail.Services.Api.Infrastructure.Raven;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog.Adapters;
+using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog.Support;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using System.Reflection;
 
@@ -20,7 +21,9 @@ internal sealed class RavenCatalogProjectionReplayTestEnvironment : IAsyncDispos
     private RavenCatalogProjectionReplayTestEnvironment(RavenEmbeddedTestDatabase raven)
     {
         this.raven = raven;
-        Handler = new ProjectMusicTrackCatalogHandler(raven.Store, new CatalogMusicTrackProjectionApplier());
+        Handler = new ProjectMusicTrackCatalogHandler(
+            raven.Store,
+            new CatalogMusicTrackProjectionApplier(new CatalogProjectionMutationService()));
         Search = new RavenCatalogSearch(raven.Store);
     }
 

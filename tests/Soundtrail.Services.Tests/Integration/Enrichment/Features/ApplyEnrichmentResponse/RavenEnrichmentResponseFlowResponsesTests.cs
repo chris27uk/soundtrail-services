@@ -7,6 +7,7 @@ using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Support;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Documents;
@@ -105,10 +106,12 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
 
     private static EnrichmentResponseListener CreateListener(Raven.Client.Documents.Session.IAsyncDocumentSession session) =>
         new(new ApplyEnrichmentResponseHandler(
-            new RavenMusicTrackStreamStore(session),
-            new RavenProviderSnapshotStore(session),
-            new RavenCatalogSearchTrackingStore(session.Advanced.DocumentStore, session),
-            new RavenCatalogSearchDiscoveryRepository(session.Advanced.DocumentStore)));
+            new AppendCatalogEnrichmentResponse(new RavenMusicTrackStreamStore(session)),
+            new CaptureProviderSnapshot(new RavenProviderSnapshotStore(session)),
+            new ProjectCatalogSearchTrackings(new RavenCatalogSearchTrackingStore(session.Advanced.DocumentStore, session)),
+            new CompleteTrackedDiscoveries(
+                new RavenCatalogSearchTrackingStore(session.Advanced.DocumentStore, session),
+                new RavenCatalogSearchDiscoveryRepository(session.Advanced.DocumentStore))));
 
     private static async Task ReplayProjectionsAsync(RavenEmbeddedTestDatabase raven)
     {

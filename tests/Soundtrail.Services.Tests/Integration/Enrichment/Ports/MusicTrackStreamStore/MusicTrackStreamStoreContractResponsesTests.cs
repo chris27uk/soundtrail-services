@@ -1,8 +1,9 @@
 using FluentAssertions;
-using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
@@ -85,6 +86,57 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
         loaded.Events[1].Should().BeOfType<MetadataCorrected>();
     }
 
+    [Theory]
+    [MemberData(nameof(AllModes))]
+    public async Task Given_A_Metadata_Response_With_References_When_Recorded_Through_The_Aggregate_Then_No_Playback_Follow_Up_Is_Stored(StreamStoreMode mode)
+    {
+        await using var env = StreamStoreTestEnvironment.Create(mode);
+        var musicCatalogId = MusicCatalogId.From("mc_track_1");
+        await env.RecordAsync(
+            musicCatalogId,
+            MusicBrainzResponse() with
+            {
+                References =
+                [
+                    new ExternalReference(
+                        ProviderName.Spotify,
+                        new Uri("https://open.spotify.com/track/spotify-1"),
+                        "spotify-1")
+                ]
+            });
+
+        var loaded = await env.LoadAsync(musicCatalogId);
+
+        loaded.Events.Should().Contain(x => x is ProviderReferenceDiscovered);
+        loaded.Events.Should().NotContain(x => x is PlaybackReferencesResolutionRequired);
+    }
+
+    [Theory]
+    [MemberData(nameof(AllModes))]
+    public async Task Given_A_Rehydrated_Aggregate_When_Metadata_Is_Recorded_Again_Then_Playback_Follow_Up_Is_Not_Duplicated(StreamStoreMode mode)
+    {
+        await using var env = StreamStoreTestEnvironment.Create(mode);
+        var musicCatalogId = MusicCatalogId.From("mc_track_1");
+
+        await env.RecordAsync(
+            musicCatalogId,
+            MusicBrainzResponse() with
+            {
+                CommandId = CommandId.For("ResolveCanonicalMetadata:mc_track_1:first")
+            });
+        await env.RecordAsync(
+            musicCatalogId,
+            MusicBrainzResponse() with
+            {
+                CommandId = CommandId.For("ResolveCanonicalMetadata:mc_track_1:second"),
+                CreatedAt = new DateTimeOffset(2026, 6, 6, 12, 5, 0, TimeSpan.Zero)
+            });
+
+        var loaded = await env.LoadAsync(musicCatalogId);
+
+        loaded.Events.OfType<PlaybackReferencesResolutionRequired>().Should().ContainSingle();
+    }
+
     public static IEnumerable<object[]> AllModes()
     {
         yield return [StreamStoreMode.InProcessFake];
@@ -115,6 +167,23 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
                 StreamStoreMode.RavenEmbedded => new(null, RavenEmbeddedTestDatabase.Create()),
                 _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
             };
+
+        public async Task RecordAsync(MusicCatalogId musicCatalogId, EnrichmentResponse response)
+        {
+            if (fake is not null)
+            {
+                var aggregate = await CatalogEntityAggregate.LoadAsync(fake, musicCatalogId, CancellationToken.None);
+                aggregate.RecordEnrichmentResponse(response);
+                await aggregate.SaveAsync(fake, response.CommandId, CancellationToken.None);
+                return;
+            }
+
+            using var session = raven!.Store.OpenAsyncSession();
+            var store = new RavenMusicTrackStreamStore(session);
+            var ravenAggregate = await CatalogEntityAggregate.LoadAsync(store, musicCatalogId, CancellationToken.None);
+            ravenAggregate.RecordEnrichmentResponse(response);
+            await ravenAggregate.SaveAsync(store, response.CommandId, CancellationToken.None);
+        }
 
         public Task<AppendMusicTrackStreamResult> AppendAsync(MusicCatalogId musicCatalogId, int expectedVersion, CommandId commandId, IReadOnlyList<IMusicTrackEvent> events)
         {
@@ -156,4 +225,17 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
             return ValueTask.CompletedTask;
         }
     }
+
+    private static EnrichmentResponse MusicBrainzResponse() =>
+        new(
+            CommandId.For("ResolveCanonicalMetadata:mc_track_1"),
+            MusicCatalogId.From("mc_track_1"),
+            ProviderName.MusicBrainz,
+            LookupPriorityBand.High,
+            new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero),
+            new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000),
+            [],
+            [],
+            new CatalogTrackHierarchy(ArtistId.From("artist_test_artist"), AlbumId.From("album_hot_fuss")),
+            CorrelationId.From("corr-1"));
 }

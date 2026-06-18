@@ -5,6 +5,7 @@ using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Events;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog.Adapters;
+using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog.Support;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ImportMusicTrackEvents;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
@@ -40,7 +41,7 @@ internal sealed class RavenMusicTrackEventImportTestEnvironment : IAsyncDisposab
     public async Task ReplayCatalogProjectionAsync()
     {
         using var session = raven.Store.OpenAsyncSession();
-        var applier = new CatalogMusicTrackProjectionApplier();
+        var applier = new CatalogMusicTrackProjectionApplier(new CatalogProjectionMutationService());
         var events = await session.Advanced.AsyncDocumentQuery<MusicTrackStoredEventRecordDto>()
             .ToListAsync(CancellationToken.None);
 
