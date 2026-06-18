@@ -17,18 +17,10 @@ internal sealed class MusicBrainzLookupExecutionHandlerTestEnvironment
         state = new LookupExecutionReceiptStoreFake.State();
         Metadata = new FakeGetCanonicalMusicMetadata();
         SourceBudget = new SourceApiBudgetPortFake();
-        DiscoveryRepository = new CatalogSearchDiscoveryRepositoryFake();
-        var catalogSearchTrackings = new CatalogSearchTrackingStoreFake();
-        catalogSearchTrackings.Seed(new CatalogSearchTracking(
-            CatalogSearchCriteria.Search("track", "rare unknown song"),
-            MusicCatalogId.From("mc_track_1"),
-            DefaultCreatedAt));
         Handler = new OnDemandLookupMetadataHandler(
             new LookupExecutionReceiptStoreFake(state),
             Metadata,
-            SourceBudget,
-            catalogSearchTrackings,
-            DiscoveryRepository);
+            SourceBudget);
     }
 
     public OnDemandLookupMetadataHandler Handler { get; }
@@ -36,8 +28,6 @@ internal sealed class MusicBrainzLookupExecutionHandlerTestEnvironment
     public FakeGetCanonicalMusicMetadata Metadata { get; }
 
     public SourceApiBudgetPortFake SourceBudget { get; }
-
-    public CatalogSearchDiscoveryRepositoryFake DiscoveryRepository { get; }
 
     public static MusicBrainzLookupExecutionHandlerTestEnvironment Create() => new();
 

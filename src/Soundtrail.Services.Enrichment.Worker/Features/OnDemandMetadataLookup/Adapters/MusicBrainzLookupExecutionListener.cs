@@ -5,6 +5,7 @@ using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Model;
+using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
 using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.Adapters;
@@ -29,9 +30,18 @@ public sealed class MusicBrainzLookupExecutionListener(OnDemandLookupMetadataHan
                 ToHierarchy(dto)),
             cancellationToken);
 
-        return result.Response is null
-            ? []
-            : [new EnrichmentResponseDto(
+        var command = new LookupMusicMetadataCommand(
+            CommandId.From(dto.CommandId),
+            MusicCatalogId.From(dto.MusicCatalogId),
+            dto.Priority,
+            dto.CreatedAt,
+            CorrelationId.From(dto.CorrelationId),
+            ToSearchTerm(dto),
+            ToHierarchy(dto));
+        var messages = new List<object>();
+        if (result.Response is not null)
+        {
+            messages.Add(new EnrichmentResponseDto(
                 result.Response.CommandId.Value,
                 result.Response.MusicCatalogId.Value,
                 result.Response.SourceProvider.Value,
@@ -54,7 +64,15 @@ public sealed class MusicBrainzLookupExecutionListener(OnDemandLookupMetadataHan
                     failure.SourceProvider.Value)).ToArray(),
                 result.Response.Hierarchy?.ArtistId?.Value,
                 result.Response.Hierarchy?.AlbumId?.Value,
-                result.Response.CorrelationId.Value)];
+                result.Response.CorrelationId.Value));
+        }
+
+        if (result.Outcome is LookupExecutionOutcome.Deferred or LookupExecutionOutcome.Failed)
+        {
+            messages.Add(result.ToReport(command, ProviderName.MusicBrainz.Value));
+        }
+
+        return messages.ToArray();
     }
 
     private static MusicSearchTerm ToSearchTerm(LookupCanonicalMusicMetadataCommandDto dto) =>

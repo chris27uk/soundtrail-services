@@ -62,6 +62,9 @@ public static class ServiceBusServiceCollectionExtensions
         opts.PublishMessage<EnrichmentResponseDto>()
             .ToAzureServiceBusQueue(serviceBusOptions.EnrichmentResponsesQueueName);
 
+        opts.PublishMessage<LookupExecutionReportDto>()
+            .ToAzureServiceBusQueue(serviceBusOptions.EnrichmentResponsesQueueName);
+
         return opts;
     }
 }

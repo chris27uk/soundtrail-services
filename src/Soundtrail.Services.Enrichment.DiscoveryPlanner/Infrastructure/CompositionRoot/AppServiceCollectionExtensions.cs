@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ApplyLookupExecutionReport.CompositionRoot;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.CompositionRoot;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.CompositionRoot;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ImportCatalogSearchDiscoveryEvents.CompositionRoot;
@@ -32,6 +33,7 @@ public static class AppServiceCollectionExtensions
 
         services.AddImportMusicTrackEventsFeature();
         services.AddImportCatalogSearchDiscoveryEventsFeature();
+        services.AddApplyLookupExecutionReportFeature();
         services.AddJustInTimeSchedulingFeature(x =>
             x.ConfigureDependencies = svc => dependencyProvider.AddJustInTimeSchedulingDependencies(svc, configuration));
         services.AddProjectDiscoveryLifecycleFeature();

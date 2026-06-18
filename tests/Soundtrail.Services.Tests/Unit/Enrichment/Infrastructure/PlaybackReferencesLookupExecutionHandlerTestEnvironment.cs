@@ -14,18 +14,10 @@ internal sealed class PlaybackReferencesLookupExecutionHandlerTestEnvironment
     {
         GetMusicTrackReference = new FakeGetMusicTrackReference();
         SourceBudget = new SourceApiBudgetPortFake();
-        DiscoveryRepository = new CatalogSearchDiscoveryRepositoryFake();
-        var catalogSearchTrackings = new CatalogSearchTrackingStoreFake();
-        catalogSearchTrackings.Seed(new CatalogSearchTracking(
-            CatalogSearchCriteria.Search("track", "rare unknown song"),
-            MusicCatalogId.From("mc_track_1"),
-            DefaultCreatedAt));
         Handler = new ExecutePlaybackReferencesLookupHandler(
             new LookupExecutionReceiptStoreFake(new LookupExecutionReceiptStoreFake.State()),
             GetMusicTrackReference,
-            SourceBudget,
-            catalogSearchTrackings,
-            DiscoveryRepository);
+            SourceBudget);
     }
 
     public ExecutePlaybackReferencesLookupHandler Handler { get; }
@@ -33,8 +25,6 @@ internal sealed class PlaybackReferencesLookupExecutionHandlerTestEnvironment
     public FakeGetMusicTrackReference GetMusicTrackReference { get; }
 
     public SourceApiBudgetPortFake SourceBudget { get; }
-
-    public CatalogSearchDiscoveryRepositoryFake DiscoveryRepository { get; }
 
     public static PlaybackReferencesLookupExecutionHandlerTestEnvironment Create() => new();
 

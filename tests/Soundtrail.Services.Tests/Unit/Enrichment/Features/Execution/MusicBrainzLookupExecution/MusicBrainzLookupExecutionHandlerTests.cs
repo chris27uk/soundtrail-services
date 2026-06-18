@@ -1,7 +1,5 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
@@ -33,9 +31,6 @@ public sealed class MusicBrainzLookupExecutionHandlerTests
         result.Outcome.Should().Be(LookupExecutionOutcome.Duplicate);
         result.Response.Should().BeNull();
         env.SourceBudget.Requests.Should().ContainSingle();
-        env.DiscoveryRepository
-            .GetStoredEvents(CatalogSearchCriteria.Search("track", "rare unknown song"))
-            .Should().ContainSingle().Which.Should().BeOfType<DiscoveryStarted>();
     }
 
     [Fact]
@@ -75,35 +70,20 @@ public sealed class MusicBrainzLookupExecutionHandlerTests
 
         result.Outcome.Should().Be(LookupExecutionOutcome.Deferred);
         result.Response.Should().BeNull();
+        result.Reason.Should().Be("MusicBrainz budget temporarily unavailable");
         env.Metadata.Lookups.Should().BeEmpty();
-        env.DiscoveryRepository
-            .GetStoredEvents(CatalogSearchCriteria.Search("track", "rare unknown song"))
-            .Last().Should().BeOfType<DiscoveryDeferred>();
     }
 
     [Fact]
-    public async Task Given_A_New_Execution_Command_When_Handled_Then_CatalogSearch_Status_Is_Projected_As_InProgress()
-    {
-        var env = MusicBrainzLookupExecutionHandlerTestEnvironment.Create();
-
-        await env.HandleNewExecutionCommand();
-
-        env.DiscoveryRepository
-            .GetStoredEvents(CatalogSearchCriteria.Search("track", "rare unknown song"))
-            .Last().Should().BeOfType<DiscoveryStarted>();
-    }
-
-    [Fact]
-    public async Task Given_A_Failing_Execution_Command_When_Handled_Then_CatalogSearch_Status_Is_Projected_As_Failed()
+    public async Task Given_A_Failing_Execution_Command_When_Handled_Then_A_Failed_Outcome_Is_Returned()
     {
         var env = MusicBrainzLookupExecutionHandlerTestEnvironment.Create();
         env.Throw(new InvalidOperationException("boom"));
 
-        Func<Task> act = async () => await env.HandleNewExecutionCommand();
+        var result = await env.HandleNewExecutionCommand();
 
-        await act.Should().ThrowAsync<InvalidOperationException>();
-        env.DiscoveryRepository
-            .GetStoredEvents(CatalogSearchCriteria.Search("track", "rare unknown song"))
-            .Last().Should().BeOfType<DiscoveryFailed>();
+        result.Outcome.Should().Be(LookupExecutionOutcome.Failed);
+        result.Reason.Should().Be("Lookup failed");
+        result.Response.Should().BeNull();
     }
 }

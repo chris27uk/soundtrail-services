@@ -1,7 +1,6 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution.GetReference;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency;
@@ -12,9 +11,7 @@ namespace Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLooku
 public sealed class ExecutePlaybackReferencesLookupHandler(
     ILookupExecutionReceiptStore lookupExecutionReceiptStore,
     IGetMusicTrackReference getMusicTrackReference,
-    IReserveSourceApiBudgetPort reserveSourceApiBudgetPort,
-    ICatalogSearchTrackingStore catalogSearchTrackingStore,
-    ICatalogSearchDiscoveryRepository discoveryRepository)
+    IReserveSourceApiBudgetPort reserveSourceApiBudgetPort)
 {
     private static readonly ProviderName[] SupportedPlaybackProviders =
     [
@@ -40,21 +37,11 @@ public sealed class ExecutePlaybackReferencesLookupHandler(
 
         if (!reservation.Accepted)
         {
-            await UpdateDiscoveryAsync(
-                command.MusicCatalogId,
-                discovery => discovery.Defer(
-                    reservation.RetryAfterSecondsFrom(command.CreatedAt),
-                    reservation.RetryAt,
-                    reservation.Reason,
-                    command.CreatedAt),
-                cancellationToken);
-            return LookupExecutionResult.Deferred();
+            return LookupExecutionResult.Deferred(
+                reservation.Reason,
+                reservation.RetryAt,
+                reservation.RetryAfterSecondsFrom(command.CreatedAt));
         }
-
-        await UpdateDiscoveryAsync(
-            command.MusicCatalogId,
-            discovery => discovery.Start(command.Priority, "Lookup started", command.CreatedAt),
-            cancellationToken);
 
         try
         {
@@ -67,25 +54,7 @@ public sealed class ExecutePlaybackReferencesLookupHandler(
         }
         catch
         {
-            await UpdateDiscoveryAsync(
-                command.MusicCatalogId,
-                discovery => discovery.Fail("Lookup failed", command.CreatedAt),
-                cancellationToken);
-            throw;
-        }
-    }
-
-    private async Task UpdateDiscoveryAsync(
-        MusicCatalogId musicCatalogId,
-        Func<CatalogSearchDiscovery, bool> transition,
-        CancellationToken cancellationToken)
-    {
-        var trackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(musicCatalogId, cancellationToken);
-        foreach (var tracking in trackings)
-        {
-            var discovery = await CatalogSearchDiscovery.LoadAsync(discoveryRepository, tracking.Criteria, cancellationToken);
-            transition(discovery);
-            await discovery.SaveAsync(discoveryRepository, cancellationToken);
+            return LookupExecutionResult.Failed("Lookup failed");
         }
     }
 }

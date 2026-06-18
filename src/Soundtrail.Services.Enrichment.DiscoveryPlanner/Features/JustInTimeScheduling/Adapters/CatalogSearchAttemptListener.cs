@@ -39,12 +39,19 @@ public sealed class CatalogSearchAttemptListener(
             {
                 if (result.ShouldSchedule)
                 {
-                    return discovery.Plan(
+                    var planned = discovery.Plan(
                         result.Command?.Priority ?? throw new InvalidOperationException("Scheduled discovery must include a priority."),
                         result.EstimatedRetryAfterSeconds,
                         result.EarliestExpectedCompletionAt,
                         result.Reason,
                         plannedAt: request.OccurredAt);
+
+                    var started = discovery.Start(
+                        result.Command?.Priority ?? throw new InvalidOperationException("Scheduled discovery must include a priority."),
+                        "Lookup started",
+                        request.OccurredAt);
+
+                    return planned || started;
                 }
 
                 return discovery.Defer(
