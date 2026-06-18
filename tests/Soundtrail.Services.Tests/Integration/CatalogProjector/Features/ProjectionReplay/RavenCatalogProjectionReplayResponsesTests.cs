@@ -87,6 +87,30 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
     }
 
     [Fact]
+    public async Task Given_An_Out_Of_Order_Batch_When_Projecting_Then_The_Handler_Orders_Events_Before_Applying_Them()
+    {
+        await using var env = RavenCatalogProjectionReplayTestEnvironment.Create();
+
+        await env.ApplyAsync(
+            ProviderResolved("mc_track_1", 4, ProviderName.Spotify, "spotify-1"),
+            AlbumDiscovered("mc_track_1", 3, "album_hot_fuss", "Hot Fuss"),
+            MinimalTrackInfo("mc_track_1", 1, "Mr. Brightside", "The Killers"),
+            ArtistDiscovered("mc_track_1", 2, "artist_the_killers", "The Killers"));
+
+        var track = await env.LoadTrackAsync("mc_track_1");
+        var artist = await env.LoadArtistAsync("artist_the_killers");
+        var album = await env.LoadAlbumAsync("album_hot_fuss");
+
+        track.Should().NotBeNull();
+        track!.ArtistId.Should().Be("artist_the_killers");
+        track.AlbumId.Should().Be("album_hot_fuss");
+        track.AvailableProviders.Should().Contain(ProviderName.Spotify.Value);
+
+        artist.Should().NotBeNull();
+        album.Should().NotBeNull();
+    }
+
+    [Fact]
     public async Task Given_A_Provider_Failure_Event_When_Projecting_Then_The_Provider_Becomes_Terminally_Unavailable()
     {
         await using var env = RavenCatalogProjectionReplayTestEnvironment.Create();

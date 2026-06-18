@@ -3,13 +3,13 @@ using Microsoft.Extensions.Logging;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Subscriptions;
 using Soundtrail.Contracts.EventSourcing;
-using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog.Adapters;
+using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog;
 
-namespace Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog;
+namespace Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog.Adapters;
 
 public sealed class ProjectMusicTrackCatalogSubscriptionHostedService(
     IDocumentStore documentStore,
-    CatalogMusicTrackProjectionApplier projectionApplier,
+    ProjectMusicTrackCatalogHandler handler,
     ILogger<ProjectMusicTrackCatalogSubscriptionHostedService> logger) : BackgroundService
 {
     private const string SubscriptionName = "catalog-music-track-projections";
@@ -24,7 +24,11 @@ public sealed class ProjectMusicTrackCatalogSubscriptionHostedService(
             {
                 var options = new SubscriptionWorkerOptions(SubscriptionName);
                 await using var worker = documentStore.Subscriptions.GetSubscriptionWorker<MusicTrackStoredEventRecordDto>(options);
-                await worker.Run(batch => ProcessBatchAsync(batch, stoppingToken), stoppingToken);
+                await worker.Run(
+                    batch => handler.HandleAsync(
+                        batch.Items.Select(item => item.Result).ToArray(),
+                        stoppingToken),
+                    stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -57,22 +61,5 @@ public sealed class ProjectMusicTrackCatalogSubscriptionHostedService(
         {
             // ignored
         }
-    }
-
-    private async Task ProcessBatchAsync(
-        SubscriptionBatch<MusicTrackStoredEventRecordDto> batch,
-        CancellationToken cancellationToken)
-    {
-        using var session = documentStore.OpenAsyncSession();
-
-        foreach (var storedEvent in batch.Items
-                     .Select(item => item.Result)
-                     .OrderBy(item => item.MusicCatalogId, StringComparer.Ordinal)
-                     .ThenBy(item => item.Version))
-        {
-            await projectionApplier.ApplyStoredEventAsync(storedEvent, session, cancellationToken);
-        }
-
-        await session.SaveChangesAsync(cancellationToken);
     }
 }
