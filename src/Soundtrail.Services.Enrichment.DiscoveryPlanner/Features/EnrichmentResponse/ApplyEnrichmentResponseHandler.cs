@@ -19,10 +19,7 @@ public sealed class ApplyEnrichmentResponseHandler(
         Domain.Responses.EnrichmentResponse response,
         CancellationToken cancellationToken = default)
     {
-        var aggregate = await CatalogEntityAggregate.LoadAsync(
-            eventRepository,
-            response.MusicCatalogId,
-            cancellationToken);
+        var aggregate = await CatalogEntityAggregate.LoadAsync(eventRepository, response.MusicCatalogId, cancellationToken);
         aggregate.RecordEnrichmentResponse(response);
         var append = await aggregate.SaveAsync(
             eventRepository,
