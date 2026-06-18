@@ -1,7 +1,9 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ApplyLookupExecutionReport.Support;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
 
@@ -14,6 +16,8 @@ internal sealed class DiscoveryBacklogSchedulerTestEnvironment
     private readonly PotentialCatalogLookupWorkStoreFake store;
     private readonly LocalMusicTrackSearchFake localSearch;
     private readonly SourceApiBudgetPortFake sourceBudget;
+    private readonly CatalogSearchTrackingStoreFake catalogSearchTrackingStoreFake;
+    private readonly CatalogSearchDiscoveryRepositoryFake catalogSearchDiscoveryRepositoryFake;
 
     private DiscoveryBacklogSchedulerTestEnvironment(params Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence.PotentialCatalogLookupWork[] candidates)
     {
@@ -26,6 +30,8 @@ internal sealed class DiscoveryBacklogSchedulerTestEnvironment
         ActiveWorkStore = new ActiveLookupWorkStoreFake();
         localSearch = new LocalMusicTrackSearchFake();
         sourceBudget = new SourceApiBudgetPortFake();
+        catalogSearchTrackingStoreFake = new CatalogSearchTrackingStoreFake();
+        catalogSearchDiscoveryRepositoryFake = new CatalogSearchDiscoveryRepositoryFake();
         foreach (var candidate in candidates)
         {
             localSearch.Seed(new LocalMusicTrackSearchResult(
@@ -37,9 +43,21 @@ internal sealed class DiscoveryBacklogSchedulerTestEnvironment
                 null,
                 null,
                 IsPlayable: false));
+            catalogSearchTrackingStoreFake.Seed(new CatalogSearchTracking(
+                CatalogSearchCriteria.Track(TrackId.From(candidate.MusicCatalogId.Value)),
+                candidate.MusicCatalogId,
+                DefaultNow));
         }
 
-        Scheduler = new DiscoveryBacklogScheduler(this.store, ActiveWorkStore, new DiscoveryPriorityPolicy(), sourceBudget, localSearch);
+        Scheduler = new DiscoveryBacklogScheduler(
+            this.store,
+            ActiveWorkStore,
+            new DiscoveryPriorityPolicy(),
+            sourceBudget,
+            localSearch,
+            new CatalogSearchDiscoveryByMusicCatalogIdTransitionApplier(
+                catalogSearchTrackingStoreFake,
+                catalogSearchDiscoveryRepositoryFake));
         Now = DefaultNow;
     }
 

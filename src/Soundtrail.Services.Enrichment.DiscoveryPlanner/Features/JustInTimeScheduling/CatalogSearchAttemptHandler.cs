@@ -17,6 +17,7 @@ public sealed class CatalogSearchAttemptHandler(
     IMusicCatalogCandidateSearch musicCatalogCandidateSearch,
     IPotentialCatalogLookupWorkStore potentialCatalogLookupWorkStore,
     ICatalogSearchTrackingStore catalogSearchTrackingStore,
+    ICatalogSearchDiscoveryRepository discoveryRepository,
     DiscoveryPriorityPolicy discoveryPriorityPolicy,
     IReserveSourceApiBudgetPort reserveSourceApiBudgetPort,
     MusicCatalogMatchResolver musicCatalogMatchResolver,
@@ -28,7 +29,27 @@ public sealed class CatalogSearchAttemptHandler(
     public Task<LookupSchedulingResult> Handle(
         CatalogSearchAttempt request,
         CancellationToken cancellationToken = default) =>
-        ScheduleAsync(request, cancellationToken);
+        HandleInternalAsync(request, cancellationToken);
+
+    private async Task<LookupSchedulingResult> HandleInternalAsync(
+        CatalogSearchAttempt request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await ScheduleAsync(request, cancellationToken);
+            await PersistLifecycleAsync(request, result, cancellationToken);
+            return result;
+        }
+        catch (ResolutionFailedException ex)
+        {
+            await PersistRejectedAsync(request, ex.Outcome, cancellationToken);
+            return LookupSchedulingResult.DoNotSchedule(
+                estimatedRetryAfterSeconds: null,
+                earliestExpectedCompletionAt: null,
+                reason: ToRejectedReason(ex.Outcome));
+        }
+    }
 
     public async Task<LookupSchedulingResult> ScheduleAsync(
         CatalogSearchAttempt request,
@@ -111,6 +132,72 @@ public sealed class CatalogSearchAttemptHandler(
             deferredByReservation.Reason);
     }
 
+    private async Task PersistLifecycleAsync(
+        CatalogSearchAttempt request,
+        LookupSchedulingResult result,
+        CancellationToken cancellationToken)
+    {
+        await PersistDiscoveryAsync(
+            request.Criteria,
+            discovery =>
+            {
+                if (result.ShouldSchedule)
+                {
+                    var planned = discovery.Plan(
+                        result.Command?.Priority ?? throw new InvalidOperationException("Scheduled discovery must include a priority."),
+                        result.EstimatedRetryAfterSeconds,
+                        result.EarliestExpectedCompletionAt,
+                        result.Reason,
+                        request.OccurredAt);
+
+                    var started = discovery.Start(
+                        result.Command?.Priority ?? throw new InvalidOperationException("Scheduled discovery must include a priority."),
+                        "Lookup started",
+                        request.OccurredAt);
+
+                    return planned || started;
+                }
+
+                return discovery.Defer(
+                    result.EstimatedRetryAfterSeconds,
+                    result.EarliestExpectedCompletionAt,
+                    result.Reason,
+                    request.OccurredAt);
+            },
+            cancellationToken);
+    }
+
+    private Task PersistRejectedAsync(
+        CatalogSearchAttempt request,
+        MusicCatalogResolutionOutcome outcome,
+        CancellationToken cancellationToken) =>
+        PersistDiscoveryAsync(
+            request.Criteria,
+            discovery => discovery.Reject(ToRejectedReason(outcome), request.OccurredAt),
+            cancellationToken);
+
+    private async Task PersistDiscoveryAsync(
+        CatalogSearchCriteria criteria,
+        Func<CatalogSearchDiscovery, bool> apply,
+        CancellationToken cancellationToken)
+    {
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            var discovery = await CatalogSearchDiscovery.LoadAsync(discoveryRepository, criteria, cancellationToken);
+            if (!apply(discovery))
+            {
+                return;
+            }
+
+            if (await discovery.SaveAsync(discoveryRepository, cancellationToken))
+            {
+                return;
+            }
+        }
+
+        throw new InvalidOperationException($"Unable to persist discovery lifecycle for {criteria.Value} after retry.");
+    }
+
     private async Task UpsertTrackingsAsync(
         IReadOnlyList<CatalogSearchCriteria> criteria,
         MusicCatalogId musicCatalogId,
@@ -172,4 +259,12 @@ public sealed class CatalogSearchAttemptHandler(
         localTrack?.ArtistId is null && localTrack?.AlbumId is null
             ? null
             : new CatalogTrackHierarchy(localTrack?.ArtistId, localTrack?.AlbumId);
+
+    private static string ToRejectedReason(MusicCatalogResolutionOutcome outcome) =>
+        outcome switch
+        {
+            MusicCatalogResolutionOutcome.NotFound => "Planner rejected lookup",
+            MusicCatalogResolutionOutcome.Ambiguous => "Planner rejected lookup",
+            _ => "Planner rejected lookup"
+        };
 }

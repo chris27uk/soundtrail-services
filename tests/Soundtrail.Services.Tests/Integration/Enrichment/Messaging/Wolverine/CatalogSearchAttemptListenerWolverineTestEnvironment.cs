@@ -36,12 +36,12 @@ internal sealed class CatalogSearchAttemptListenerWolverineTestEnvironment
                 search,
                 new PotentialCatalogLookupWorkStoreFake(),
                 new CatalogSearchTrackingStoreFake(),
+                discoveryRepository,
                 new DiscoveryPriorityPolicy(),
                 sourceBudgetFake,
                 new MusicCatalogMatchResolver(),
                 new ActiveLookupWorkStoreFake(),
-                localSearchFake),
-            discoveryRepository);
+                localSearchFake));
     }
 
     public CatalogSearchAttemptListener Listener { get; }

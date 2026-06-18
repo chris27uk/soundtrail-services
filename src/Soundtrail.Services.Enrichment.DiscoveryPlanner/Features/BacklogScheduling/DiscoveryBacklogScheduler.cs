@@ -2,6 +2,7 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ApplyLookupExecutionReport.Support;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Idempotency;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
@@ -14,7 +15,8 @@ public sealed class DiscoveryBacklogScheduler(
     IActiveLookupWorkStore activeLookupWorkStore,
     DiscoveryPriorityPolicy discoveryPriorityPolicy,
     IReserveSourceApiBudgetPort reserveSourceApiBudgetPort,
-    ILocalMusicTrackSearch localMusicTrackSearch)
+    ILocalMusicTrackSearch localMusicTrackSearch,
+    CatalogSearchDiscoveryByMusicCatalogIdTransitionApplier transitionApplier)
 {
     private static readonly TimeSpan ActiveReservationDuration = TimeSpan.FromMinutes(15);
 
@@ -55,6 +57,11 @@ public sealed class DiscoveryBacklogScheduler(
             {
                 continue;
             }
+
+            await transitionApplier.ApplyAsync(
+                plannedLookup.Command.MusicCatalogId,
+                discovery => discovery.Start(plannedLookup.Command.Priority, "Lookup started", now),
+                cancellationToken);
 
             commands.Add(plannedLookup.Command);
         }

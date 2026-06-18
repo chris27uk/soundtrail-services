@@ -16,6 +16,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
         private readonly ActiveLookupWorkStoreFake activeLookupWorkStoreFake;
         private readonly LocalMusicTrackSearchFake localMusicTrackSearchFake;
         private readonly CatalogSearchTrackingStoreFake catalogSearchTrackingStoreFake;
+        private readonly CatalogSearchDiscoveryRepositoryFake catalogSearchDiscoveryRepositoryFake;
         private readonly SourceApiBudgetPortFake sourceApiBudgetPortFake;
 
         private CatalogSearchAttemptHandlerTestEnvironment(
@@ -27,6 +28,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
             this.activeLookupWorkStoreFake = new ActiveLookupWorkStoreFake();
             this.localMusicTrackSearchFake = new LocalMusicTrackSearchFake();
             this.catalogSearchTrackingStoreFake = new CatalogSearchTrackingStoreFake();
+            this.catalogSearchDiscoveryRepositoryFake = new CatalogSearchDiscoveryRepositoryFake();
             this.sourceApiBudgetPortFake = new SourceApiBudgetPortFake();
             this.Planner = new DiscoveryPriorityPolicy();
             this.ResolutionPolicy = new MusicCatalogMatchResolver();
@@ -34,6 +36,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
                 search,
                 potentialCatalogLookupWorkStoreFake,
                 this.catalogSearchTrackingStoreFake,
+                this.catalogSearchDiscoveryRepositoryFake,
                 this.Planner,
                 this.sourceApiBudgetPortFake,
                 this.ResolutionPolicy,
@@ -65,6 +68,8 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
         public IReadOnlyList<PotentialCatalogLookupWork> PotentialCatalogLookupWorks => this.potentialCatalogLookupWorkStoreFake.All;
 
         public IReadOnlyList<CatalogSearchTracking> CatalogSearchTrackings => this.catalogSearchTrackingStoreFake.All;
+
+        public CatalogSearchDiscoveryRepositoryFake DiscoveryRepository => this.catalogSearchDiscoveryRepositoryFake;
 
         public static CatalogSearchAttemptHandlerTestEnvironment WithNoExistingCandidates() =>
             new(
