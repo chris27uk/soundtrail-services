@@ -1,3 +1,3 @@
 namespace Soundtrail.Domain.Events;
 
-public interface IMusicTrackEvent;
+public interface IMusicTrackEvent : IDomainEvent;

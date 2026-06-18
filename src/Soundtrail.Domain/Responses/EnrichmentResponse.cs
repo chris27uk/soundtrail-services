@@ -1,4 +1,5 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog;
 
 namespace Soundtrail.Domain.Responses;
 
@@ -10,4 +11,6 @@ public sealed record EnrichmentResponse(
     DateTimeOffset CreatedAt,
     SongMetadata? Metadata,
     IReadOnlyList<ExternalReference> References,
+    IReadOnlyList<ProviderLookupFailure> FailedProviders,
+    CatalogTrackHierarchy? Hierarchy,
     CorrelationId CorrelationId);

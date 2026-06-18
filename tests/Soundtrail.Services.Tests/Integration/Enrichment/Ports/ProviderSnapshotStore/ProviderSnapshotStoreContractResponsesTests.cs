@@ -92,8 +92,8 @@ public sealed class ProviderSnapshotStoreContractResponsesTests
             }
 
             using var session = raven!.Store.OpenAsyncSession();
-            var document = await session.LoadAsync<RavenProviderSnapshotDocument>(
-                RavenProviderSnapshotDocument.GetDocumentId(musicCatalogId.Value, provider.ToString()));
+            var document = await session.LoadAsync<RavenProviderSnapshotRecordDto>(
+                RavenProviderSnapshotRecordDto.GetDocumentId(musicCatalogId.Value, provider.ToString()));
             return document is null
                 ? null
                 : new ProviderSnapshot(

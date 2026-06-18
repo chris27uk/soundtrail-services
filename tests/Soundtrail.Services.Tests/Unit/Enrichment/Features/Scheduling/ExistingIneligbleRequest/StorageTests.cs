@@ -9,7 +9,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.Existing
         public async Task Given_A_Resolved_Request_That_Is_Not_Yet_Eligible_When_Handled_Then_A_Candidate_Is_Stored()
         {
             const string musicCatalogId = "mc_track_1";
-            var env = LookupMusicRequestHandlerTestEnvironment.WithExistingNotYetEligibleCandidate(musicCatalogId);
+            var env = CatalogSearchAttemptHandlerTestEnvironment.WithExistingNotYetEligibleCandidate(musicCatalogId);
 
             await env.Handler.Handle(env.Request(
                 "rare unknown song",
@@ -17,14 +17,14 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.Existing
                 riskScore: 0,
                 occurredAt: new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero)));
 
-            env.RankedMusicCandidates.Should().ContainSingle();
+            env.PotentialCatalogLookupWorks.Should().ContainSingle();
         }
         
         [Fact]
         public async Task Given_A_Resolved_Request_That_Is_Not_Yet_Eligible_When_Handled_Then_RequestCount_Is_Incremented()
         {
             const string musicCatalogId = "mc_track_1";
-            var env = LookupMusicRequestHandlerTestEnvironment.WithExistingNotYetEligibleCandidate(musicCatalogId);
+            var env = CatalogSearchAttemptHandlerTestEnvironment.WithExistingNotYetEligibleCandidate(musicCatalogId);
 
             await env.Handler.Handle(env.Request(
                 "rare unknown song",
@@ -32,7 +32,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.Existing
                 riskScore: 0,
                 occurredAt: new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero)));
 
-            env.RankedMusicCandidates[0].RequestCount.Should().Be(2);
+            env.PotentialCatalogLookupWorks[0].RequestCount.Should().Be(2);
         }
     }
 }

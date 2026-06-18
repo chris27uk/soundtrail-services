@@ -47,7 +47,7 @@ public sealed class RavenEmbeddedResponsesTests
         }
 
         using var verificationSession = raven.Store.OpenAsyncSession();
-        var document = await verificationSession.LoadAsync<RavenProviderSnapshotDocument>(
+        var document = await verificationSession.LoadAsync<RavenProviderSnapshotRecordDto>(
             "provider-snapshots/mc_track_1/MusicBrainz");
 
         document!.PayloadJson.Should().Be("{\"value\":\"second\"}");

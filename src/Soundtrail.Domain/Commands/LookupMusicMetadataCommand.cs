@@ -1,4 +1,5 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Domain.Commands;
@@ -9,4 +10,5 @@ public sealed record LookupMusicMetadataCommand(
     LookupPriorityBand Priority,
     DateTimeOffset CreatedAt,
     CorrelationId CorrelationId,
-    MusicSearchTerm SearchTerm);
+    MusicSearchTerm SearchTerm,
+    CatalogTrackHierarchy? Hierarchy = null) : IMusicCatalogLookupCommand;

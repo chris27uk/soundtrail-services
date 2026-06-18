@@ -8,7 +8,7 @@ namespace Soundtrail.Services.Tests.EndToEnd.Search;
 public sealed class PipelineMessageCaptureHandler(PipelineMessageCapture capture)
 {
     [WolverineHandler]
-    public Task Handle(LookupMusicRequestDto message, CancellationToken cancellationToken)
+    public Task Handle(CatalogSearchAttemptDto message, CancellationToken cancellationToken)
     {
         capture.Record(message);
         return Task.CompletedTask;

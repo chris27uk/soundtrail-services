@@ -1,9 +1,10 @@
 using FluentAssertions;
 using Microsoft.Extensions.Hosting;
-using Soundtrail.Services.Api.Features.Search;
+using Soundtrail.Services.Api.Features.SearchCatalog.Adapters;
 using Soundtrail.Services.Api.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Cdc;
+using Soundtrail.Services.Enrichment.Cdc.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Enrichment.Cdc.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Messaging;
@@ -41,7 +42,7 @@ public sealed class DeployableStartupSmokeTests
             app =>
             {
                 app.MapDefaultEndpoints();
-                app.MapSearchEndpoints();
+                app.MapSearchCatalogEndpoints();
             },
             useEmbeddedRaven: true);
 

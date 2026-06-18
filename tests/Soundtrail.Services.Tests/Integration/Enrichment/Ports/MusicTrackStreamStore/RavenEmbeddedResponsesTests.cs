@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
@@ -24,7 +25,7 @@ public sealed class RavenEmbeddedResponsesTests
             expectedVersion: 0,
             CommandId.For("ResolveCanonicalMetadata:mc_track_1"),
             [
-                new MinimalTrackInfoDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))
+                new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))
             ],
             CancellationToken.None);
 
@@ -35,10 +36,42 @@ public sealed class RavenEmbeddedResponsesTests
         var loaded = await verificationStore.LoadEventsAsync(musicCatalogId, CancellationToken.None);
 
         loaded.Version.Should().Be(1);
-        loaded.Events.Should().ContainItemsAssignableTo<MinimalTrackInfoDiscovered>();
+        loaded.Events.Should().ContainItemsAssignableTo<TrackDiscovered>();
         var fact = loaded.Events.Should().ContainSingle().Subject;
-        fact.Should().BeOfType<MinimalTrackInfoDiscovered>();
-        ((MinimalTrackInfoDiscovered)fact).Mbid.Should().Be("mbid-1");
+        fact.Should().BeOfType<TrackDiscovered>();
+        ((TrackDiscovered)fact).Mbid.Should().Be("mbid-1");
+    }
+
+    [Fact]
+    public async Task Given_A_New_Stream_When_Appending_Then_Separate_Metadata_And_Event_Documents_Are_Persisted()
+    {
+        using var raven = RavenEmbeddedTestDatabase.Create();
+        var musicCatalogId = MusicCatalogId.From("mc_track_1");
+
+        using (var session = raven.Store.OpenAsyncSession())
+        {
+            var store = CreateStore(session);
+            await store.AppendEventsAsync(
+                musicCatalogId,
+                expectedVersion: 0,
+                CommandId.For("ResolveCanonicalMetadata:mc_track_1"),
+                [new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))],
+                CancellationToken.None);
+        }
+
+        using var verificationSession = raven.Store.OpenAsyncSession();
+        var metadata = await verificationSession.LoadAsync<MusicTrackEventStreamMetadataRecordDto>(
+            MusicTrackEventStreamMetadataRecordDto.GetDocumentId(musicCatalogId.Value),
+            CancellationToken.None);
+        var storedEvent = await verificationSession.LoadAsync<MusicTrackStoredEventRecordDto>(
+            MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId.Value, 1),
+            CancellationToken.None);
+
+        metadata.Should().NotBeNull();
+        metadata!.Version.Should().Be(1);
+        storedEvent.Should().NotBeNull();
+        storedEvent!.Version.Should().Be(1);
+        storedEvent.EventType.Should().Be(nameof(TrackDiscovered));
     }
 
     [Fact]
@@ -55,7 +88,7 @@ public sealed class RavenEmbeddedResponsesTests
                 musicCatalogId,
                 expectedVersion: 0,
                 commandId,
-                [new MinimalTrackInfoDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))],
+                [new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))],
                 CancellationToken.None);
         }
 
@@ -65,7 +98,7 @@ public sealed class RavenEmbeddedResponsesTests
             musicCatalogId,
             expectedVersion: 1,
             commandId,
-            [new MinimalTrackInfoDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))],
+            [new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))],
             CancellationToken.None);
 
         duplicate.Appended.Should().BeFalse();

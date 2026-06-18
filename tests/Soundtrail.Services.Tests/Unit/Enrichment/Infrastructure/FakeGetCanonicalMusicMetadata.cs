@@ -8,6 +8,7 @@ public sealed class FakeGetCanonicalMusicMetadata : IGetCanonicalMusicMetadata
 {
     private readonly Dictionary<string, SongMetadata> byIsrc = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, SongMetadata> byNames = new(StringComparer.OrdinalIgnoreCase);
+    private Exception? exception;
 
     public List<string> Lookups { get; } = [];
 
@@ -15,6 +16,11 @@ public sealed class FakeGetCanonicalMusicMetadata : IGetCanonicalMusicMetadata
         MusicSearchTerm searchTerm,
         CancellationToken cancellationToken)
     {
+        if (exception is not null)
+        {
+            throw exception;
+        }
+
         return searchTerm.Match((track, artist, album) =>
         {
             var key = Key(track, artist, album);
@@ -33,6 +39,8 @@ public sealed class FakeGetCanonicalMusicMetadata : IGetCanonicalMusicMetadata
 
     public void SeedNames(string title, string artist, string? albumName, SongMetadata metadata) =>
         byNames[Key(title, artist, albumName)] = metadata;
+
+    public void Throw(Exception ex) => exception = ex;
 
     private static string Key(string title, string artist, string? albumName) =>
         $"{MusicMetadataLookupMatch.Normalize(title)}::{MusicMetadataLookupMatch.Normalize(artist)}::{MusicMetadataLookupMatch.Normalize(albumName)}";

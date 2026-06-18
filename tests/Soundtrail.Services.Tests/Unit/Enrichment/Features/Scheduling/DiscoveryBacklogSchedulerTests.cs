@@ -109,4 +109,18 @@ public sealed class DiscoveryBacklogSchedulerTests
         var commands = await env.RunSweep();
         commands[0].CommandId.Should().Be(CommandId.For("LookupCanonicalMusicMetadata:mc_track_1"));
     }
+
+    [Fact]
+    public async Task Given_A_Source_Budget_Rejection_When_Scheduling_Backlog_Then_No_Command_Is_Returned()
+    {
+        var env = DiscoveryBacklogSchedulerTestEnvironment.WithScheduledCandidate();
+        env.SourceBudget.Reject(
+            ProviderName.MusicBrainz,
+            env.Now.AddMinutes(1),
+            "MusicBrainz budget temporarily unavailable");
+
+        var commands = await env.RunSweep();
+
+        commands.Should().BeEmpty();
+    }
 }

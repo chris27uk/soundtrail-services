@@ -6,7 +6,7 @@ public sealed class ServiceBusOptions
 
     public string ConnectionString { get; init; } = string.Empty;
 
-    public string LookupMusicRequestsQueueName { get; init; } = "lookup-music-requests";
+    public string CatalogSearchAttemptsQueueName { get; init; } = "lookup-music-requests";
 
     public string MusicBrainzLookupQueueName { get; init; } = "lookup-musicbrainz";
 

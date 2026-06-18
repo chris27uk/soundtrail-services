@@ -46,7 +46,7 @@ public sealed class AppHostCompositionTests
     {
         var source = File.ReadAllText(Path.Combine(AppHostProjectDirectory, "AppHostComposition.cs"));
 
-        source.Should().Contain("ServiceBus__LookupMusicRequestsQueueName");
+        source.Should().Contain("ServiceBus__CatalogSearchAttemptsQueueName");
         source.Should().Contain("ServiceBus__MusicBrainzLookupQueueName");
         source.Should().Contain("ServiceBus__PlaybackReferencesLookupQueueName");
         source.Should().Contain("ServiceBus__EnrichmentResponsesQueueName");

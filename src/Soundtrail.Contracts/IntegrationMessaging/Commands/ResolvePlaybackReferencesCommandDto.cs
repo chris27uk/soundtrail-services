@@ -8,4 +8,6 @@ public sealed record ResolvePlaybackReferencesCommandDto(
     LookupPriorityBand Priority,
     DateTimeOffset CreatedAt,
     string CorrelationId,
-    PlaybackReferenceSearchTermDto SearchTerm);
+    PlaybackReferenceSearchTermDto SearchTerm,
+    string? ArtistId,
+    string? AlbumId);

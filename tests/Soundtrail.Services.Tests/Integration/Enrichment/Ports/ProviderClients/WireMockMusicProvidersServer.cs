@@ -1,18 +1,30 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
-using WireMock.Matchers;
-using WireMock.RequestBuilders;
-using WireMock.ResponseBuilders;
-using WireMock.Server;
+using System.Collections.Concurrent;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.ProviderClients;
 
 internal sealed class WireMockMusicProvidersServer : IDisposable
 {
-    private readonly WireMockServer server = WireMockServer.Start();
+    private readonly ConcurrentDictionary<string, ConcurrentQueue<StubResponse>> responsesByPath = new();
+    private readonly HttpListener server = new();
+    private readonly CancellationTokenSource shutdown = new();
+    private readonly Task serverLoop;
 
-    public string BaseUrl => server.Urls[0];
+    public WireMockMusicProvidersServer()
+    {
+        var port = GetAvailablePort();
+        BaseUrl = $"http://127.0.0.1:{port}";
+        server.Prefixes.Add($"{BaseUrl}/");
+        server.Start();
+        serverLoop = Task.Run(() => RunServerLoopAsync(shutdown.Token));
+    }
+
+    public string BaseUrl { get; }
 
     public static WireMockMusicProvidersServer Create() => new();
 
@@ -28,60 +40,25 @@ internal sealed class WireMockMusicProvidersServer : IDisposable
         lookup.Match(
             (track, artist, album) =>
             {
-                server
-                    .Given(Request.Create()
-                        .UsingGet()
-                        .WithPath("/ws/2/recording"))
-                    .RespondWith(Response.Create()
-                        .WithStatusCode(200)
-                        .WithHeader("Content-Type", "application/json")
-                        .WithBody($$"""
-                        {
-                          "recordings": [
-                            {
-                              "id": "{{metadata.Mbid}}",
-                              "title": "{{metadata.Title}}",
-                              "length": {{metadata.DurationMs?.ToString() ?? "null"}},
-                              "score": "100",
-                              "isrcs": [],
-                              "artist-credit": [
-                                { "name": "{{metadata.Artist}}" }
-                              ]
-                            }
-                          ]
-                        }
-                        """));
+                EnqueueResponse("/ws/2/recording", BuildRecordingSearchResponse(
+                    (metadata.Mbid, metadata.Title, metadata.DurationMs, "100", Array.Empty<string>(), metadata.Artist, album, null)));
 
                 return 0;
             },
             isrc =>
             {
-                server
-                    .Given(Request.Create()
-                        .UsingGet()
-                        .WithPath($"/ws/2/isrc/{Uri.EscapeDataString(isrc)}"))
-                    .RespondWith(Response.Create()
-                        .WithStatusCode(200)
-                        .WithHeader("Content-Type", "application/json")
-                        .WithBody($$"""
-                        {
-                          "recordings": [
-                            {
-                              "id": "{{metadata.Mbid}}",
-                              "title": "{{metadata.Title}}",
-                              "length": {{metadata.DurationMs?.ToString() ?? "null"}},
-                              "isrcs": ["{{metadata.Isrc}}"],
-                              "artist-credit": [
-                                { "name": "{{metadata.Artist}}" }
-                              ]
-                            }
-                          ]
-                        }
-                        """));
+                EnqueueResponse($"/ws/2/isrc/{Uri.EscapeDataString(isrc)}", BuildIsrcLookupResponse(
+                    (metadata.Mbid, metadata.Title, metadata.DurationMs, new[] { metadata.Isrc ?? isrc }, metadata.Artist)));
 
                 return 0;
             });
     }
+
+    public void SeedMusicBrainzSearchResponse(params (string? Mbid, string Title, int? DurationMs, string Score, string[] Isrcs, string Artist, string? ReleaseTitle, string? ReleaseDate)[] recordings) =>
+        EnqueueResponse("/ws/2/recording", BuildRecordingSearchResponse(recordings));
+
+    public void SeedMusicBrainzIsrcResponse(string isrc, params (string? Mbid, string Title, int? DurationMs, string[] Isrcs, string Artist)[] recordings) =>
+        EnqueueResponse($"/ws/2/isrc/{Uri.EscapeDataString(isrc)}", BuildIsrcLookupResponse(recordings));
 
     public void SeedOdesli(MusicSearchTerm searchTerm, IReadOnlyList<ExternalReference> references, string userCountry = "US")
     {
@@ -100,19 +77,27 @@ internal sealed class WireMockMusicProvidersServer : IDisposable
         }
         """;
 
-        server
-            .Given(Request.Create()
-                .UsingGet()
-                .WithPath("/v1-user/links"))
-            .RespondWith(Response.Create()
-                .WithStatusCode(200)
-                .WithHeader("Content-Type", "application/json")
-                .WithBody(body));
+        EnqueueResponse("/v1-user/links", body);
     }
 
     public void Dispose()
     {
-        server.Dispose();
+        shutdown.Cancel();
+        server.Stop();
+        server.Close();
+
+        try
+        {
+            serverLoop.GetAwaiter().GetResult();
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (HttpListenerException)
+        {
+        }
+
+        shutdown.Dispose();
     }
 
     private void SeedAsyncLookupHappyPath()
@@ -143,4 +128,122 @@ internal sealed class WireMockMusicProvidersServer : IDisposable
         SeedOdesli(MusicSearchTerm.ByTrackArtistAlbum("Rare Unknown Song", "Test Artist", "Rare Album"), references);
         SeedOdesli(MusicSearchTerm.ByTrackArtistAlbum("Rare Unknown Song", "Test Artist", null), references);
     }
+
+    private void EnqueueResponse(string path, string body)
+    {
+        var queue = responsesByPath.GetOrAdd(path, _ => new ConcurrentQueue<StubResponse>());
+        queue.Enqueue(new StubResponse(HttpStatusCode.OK, "application/json", body));
+    }
+
+    private static string BuildRecordingSearchResponse(
+        params (string? Mbid, string Title, int? DurationMs, string Score, string[] Isrcs, string Artist, string? ReleaseTitle, string? ReleaseDate)[] recordings) =>
+        $$"""
+        {
+          "recordings": [
+            {{string.Join(",",
+                recordings.Select(recording =>
+                    $$"""
+                    {
+                      "id": "{{recording.Mbid}}",
+                      "title": "{{recording.Title}}",
+                      "length": {{recording.DurationMs?.ToString() ?? "null"}},
+                      "score": "{{recording.Score}}",
+                      "isrcs": [{{string.Join(",", recording.Isrcs.Select(isrc => $"\"{isrc}\""))}}],
+                      "artist-credit": [
+                        { "name": "{{recording.Artist}}" }
+                      ],
+                      "releases": [{{BuildRelease(recording.ReleaseTitle, recording.ReleaseDate)}}]
+                    }
+                    """))}}
+          ]
+        }
+        """;
+
+    private static string BuildIsrcLookupResponse(
+        params (string? Mbid, string Title, int? DurationMs, string[] Isrcs, string Artist)[] recordings) =>
+        $$"""
+        {
+          "recordings": [
+            {{string.Join(",",
+                recordings.Select(recording =>
+                    $$"""
+                    {
+                      "id": "{{recording.Mbid}}",
+                      "title": "{{recording.Title}}",
+                      "length": {{recording.DurationMs?.ToString() ?? "null"}},
+                      "isrcs": [{{string.Join(",", recording.Isrcs.Select(isrc => $"\"{isrc}\""))}}],
+                      "artist-credit": [
+                        { "name": "{{recording.Artist}}" }
+                      ]
+                    }
+                    """))}}
+          ]
+        }
+        """;
+
+    private static string BuildRelease(string? releaseTitle, string? releaseDate)
+    {
+        if (string.IsNullOrWhiteSpace(releaseTitle))
+        {
+            return string.Empty;
+        }
+
+        return $$"""
+        {
+          "title": "{{releaseTitle}}",
+          "date": {{(string.IsNullOrWhiteSpace(releaseDate) ? "null" : $"\"{releaseDate}\"")}}
+        }
+        """;
+    }
+
+    private async Task RunServerLoopAsync(CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            HttpListenerContext context;
+
+            try
+            {
+                context = await server.GetContextAsync();
+            }
+            catch (HttpListenerException) when (cancellationToken.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)
+            {
+                break;
+            }
+
+            await WriteResponseAsync(context, cancellationToken);
+        }
+    }
+
+    private async Task WriteResponseAsync(HttpListenerContext context, CancellationToken cancellationToken)
+    {
+        var path = context.Request.Url?.AbsolutePath ?? "/";
+
+        if (!responsesByPath.TryGetValue(path, out var queue) || !queue.TryDequeue(out var response))
+        {
+            context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+            context.Response.Close();
+            return;
+        }
+
+        var bytes = Encoding.UTF8.GetBytes(response.Body);
+        context.Response.StatusCode = (int)response.StatusCode;
+        context.Response.ContentType = response.ContentType;
+        context.Response.ContentLength64 = bytes.Length;
+        await context.Response.OutputStream.WriteAsync(bytes, cancellationToken);
+        context.Response.Close();
+    }
+
+    private static int GetAvailablePort()
+    {
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        return ((IPEndPoint)listener.LocalEndpoint).Port;
+    }
+
+    private sealed record StubResponse(HttpStatusCode StatusCode, string ContentType, string Body);
 }

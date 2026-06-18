@@ -60,7 +60,7 @@ public static class AppHostComposition
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
-            .WithEnvironment("ServiceBus__LookupMusicRequestsQueueName", "lookup-music-requests")
+            .WithEnvironment("ServiceBus__CatalogSearchAttemptsQueueName", "lookup-music-requests")
             .WithEnvironment("RavenDb__Urls__0", ravenDb.GetEndpoint("http"))
             .WithEnvironment("RavenDb__Database", "soundtrail");
 
@@ -88,12 +88,18 @@ public static class AppHostComposition
             cdc = cdc.WaitFor(serviceBusEmulator);
         }
 
+        var catalogProjector = builder.AddProject<Projects.Soundtrail_Services_Catalog_Projector>("soundtrail-services-catalog-projector")
+            .WithHttpEndpoint(name: "http")
+            .WaitFor(ravenDb)
+            .WithEnvironment("RavenDb__Urls__0", ravenDb.GetEndpoint("http"))
+            .WithEnvironment("RavenDb__Database", "soundtrail");
+
         var discoveryPlanner = builder.AddProject<Projects.Soundtrail_Services_Enrichment_DiscoveryPlanner>("soundtrail-services-enrichment-discoveryplanner")
             .WithHttpEndpoint(name: "http")
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
-            .WithEnvironment("ServiceBus__LookupMusicRequestsQueueName", "lookup-music-requests")
+            .WithEnvironment("ServiceBus__CatalogSearchAttemptsQueueName", "lookup-music-requests")
             .WithEnvironment("ServiceBus__MusicBrainzLookupQueueName", "lookup-musicbrainz")
             .WithEnvironment("ServiceBus__PlaybackReferencesLookupQueueName", "lookup-playback-references")
             .WithEnvironment("ServiceBus__EnrichmentResponsesQueueName", "enrichment-responses")

@@ -22,15 +22,15 @@ public sealed class RavenActiveLookupWorkStore(
         {
             activeSession.Advanced.UseOptimisticConcurrency = true;
 
-            var documentId = RavenActiveLookupWorkDocument.GetDocumentId(commandId.Value);
-            var existing = await activeSession.LoadAsync<RavenActiveLookupWorkDocument>(documentId, cancellationToken);
+            var documentId = RavenActiveLookupWorkRecordDto.GetDocumentId(commandId.Value);
+            var existing = await activeSession.LoadAsync<RavenActiveLookupWorkRecordDto>(documentId, cancellationToken);
 
             if (existing is not null && existing.ExpiresAt > DateTimeOffset.UtcNow)
             {
                 return false;
             }
 
-            var activeLock = new RavenActiveLookupWorkDocument
+            var activeLock = new RavenActiveLookupWorkRecordDto
             {
                 Id = documentId,
                 CommandId = commandId.Value,
@@ -55,8 +55,8 @@ public sealed class RavenActiveLookupWorkStore(
         var (activeSession, dispose) = OpenSession();
         using (dispose)
         {
-            var documentId = RavenActiveLookupWorkDocument.GetDocumentId(commandId.Value);
-            var existing = await activeSession.LoadAsync<RavenActiveLookupWorkDocument>(documentId, cancellationToken);
+            var documentId = RavenActiveLookupWorkRecordDto.GetDocumentId(commandId.Value);
+            var existing = await activeSession.LoadAsync<RavenActiveLookupWorkRecordDto>(documentId, cancellationToken);
             if (existing is null || existing.CommandId != commandId.Value)
             {
                 return;

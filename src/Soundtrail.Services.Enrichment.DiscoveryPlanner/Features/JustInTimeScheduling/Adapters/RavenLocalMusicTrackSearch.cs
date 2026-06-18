@@ -1,6 +1,7 @@
 using Raven.Client.Documents;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
+using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Documents;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
@@ -12,8 +13,8 @@ public sealed class RavenLocalMusicTrackSearch(IDocumentStore documentStore) : I
         CancellationToken cancellationToken)
     {
         using var session = documentStore.OpenAsyncSession();
-        var document = await session.LoadAsync<RavenTrackDocument>(
-            RavenTrackDocument.GetDocumentId(musicCatalogId.Value),
+        var document = await session.LoadAsync<RavenTrackRecordDto>(
+            RavenTrackRecordDto.GetDocumentId(musicCatalogId.Value),
             cancellationToken);
 
         if (document is null)
@@ -29,6 +30,8 @@ public sealed class RavenLocalMusicTrackSearch(IDocumentStore documentStore) : I
             document.CanonicalMetadata?.Isrc ?? document.Isrc,
             document.CanonicalMetadata?.Mbid ?? document.Mbid,
             document.CanonicalMetadata?.DurationMs ?? document.DurationMs,
-            document.IsPlayable);
+            document.IsPlayable,
+            string.IsNullOrWhiteSpace(document.ArtistId) ? null : ArtistId.From(document.ArtistId),
+            string.IsNullOrWhiteSpace(document.AlbumId) ? null : AlbumId.From(document.AlbumId));
     }
 }

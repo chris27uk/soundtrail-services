@@ -1,4 +1,5 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Domain.Commands;
@@ -9,7 +10,8 @@ public sealed record ResolvePlaybackReferencesCommand(
     LookupPriorityBand Priority,
     DateTimeOffset CreatedAt,
     CorrelationId CorrelationId,
-    MusicSearchTerm LookupKey)
+    MusicSearchTerm LookupKey,
+    CatalogTrackHierarchy? Hierarchy = null) : IMusicCatalogLookupCommand
 {
     public ProviderName TargetProvider => ProviderName.Odesli;
 }

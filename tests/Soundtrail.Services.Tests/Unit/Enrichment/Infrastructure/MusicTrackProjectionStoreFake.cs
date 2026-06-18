@@ -33,6 +33,8 @@ public sealed class MusicTrackProjectionStoreFake : IMusicTrackProjectionStore
 
         public ProviderReference? Spotify { get; private set; }
 
+        public string? ArtworkUrl { get; private set; }
+
         public bool IsPlayable { get; private set; }
 
         public void Apply(MusicTrackStream stream)
@@ -46,7 +48,7 @@ public sealed class MusicTrackProjectionStoreFake : IMusicTrackProjectionStore
             {
                 switch (fact)
                 {
-                    case MinimalTrackInfoDiscovered minimalTrackInfoDiscovered:
+                    case TrackDiscovered minimalTrackInfoDiscovered:
                         canonicalMetadata = new ProjectedSongMetadata(
                             minimalTrackInfoDiscovered.Title,
                             minimalTrackInfoDiscovered.Artist,
@@ -54,7 +56,7 @@ public sealed class MusicTrackProjectionStoreFake : IMusicTrackProjectionStore
                             minimalTrackInfoDiscovered.Mbid,
                             minimalTrackInfoDiscovered.DurationMs);
                         break;
-                    case ProviderPlaybackReferenceResolved providerPlaybackReferenceResolved:
+                    case ProviderReferenceDiscovered providerPlaybackReferenceResolved:
                         var reference = new ProviderReference(
                             providerPlaybackReferenceResolved.Provider,
                             providerPlaybackReferenceResolved.Url,
@@ -79,6 +81,17 @@ public sealed class MusicTrackProjectionStoreFake : IMusicTrackProjectionStore
                                     null);
                         }
 
+                        break;
+                    case ArtworkDiscovered artworkDiscovered when artworkDiscovered.EntityKind == global::Soundtrail.Domain.Catalog.CatalogEntityKind.Track:
+                        ArtworkUrl = artworkDiscovered.Url.ToString();
+                        break;
+                    case MetadataCorrected metadataCorrected:
+                        canonicalMetadata = new ProjectedSongMetadata(
+                            metadataCorrected.Title,
+                            metadataCorrected.ArtistName,
+                            metadataCorrected.Isrc,
+                            metadataCorrected.Mbid,
+                            metadataCorrected.DurationMs);
                         break;
                 }
             }

@@ -2,6 +2,8 @@ using JasperFx.CodeGeneration.Model;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Contracts.IntegrationMessaging.Responses;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ApplyLookupExecutionReport.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
@@ -29,9 +31,10 @@ public static class ServiceBusServiceCollectionExtensions
         opts.UseRuntimeCompilation();
         opts.ServiceLocationPolicy = ServiceLocationPolicy.AllowedButWarn;
         opts.Discovery.DisableConventionalDiscovery();
-        opts.Discovery.IncludeType<LookupMusicRequestListener>();
+        opts.Discovery.IncludeType<CatalogSearchAttemptListener>();
         opts.Discovery.IncludeType<DiscoveryBacklogSchedulingListener>();
         opts.Discovery.IncludeType<EnrichmentResponseListener>();
+        opts.Discovery.IncludeType<LookupExecutionReportListener>();
         opts.Policies.AutoApplyTransactions();
 
         var serviceBusOptions = configuration
@@ -55,7 +58,7 @@ public static class ServiceBusServiceCollectionExtensions
                 .EnableWolverineControlQueues();
         }
 
-        opts.ListenToAzureServiceBusQueue(serviceBusOptions.LookupMusicRequestsQueueName)
+        opts.ListenToAzureServiceBusQueue(serviceBusOptions.CatalogSearchAttemptsQueueName)
             .ProcessInline();
 
         opts.ListenToAzureServiceBusQueue(serviceBusOptions.EnrichmentResponsesQueueName)

@@ -11,9 +11,9 @@ public sealed class RavenProviderSnapshotStore(
         ProviderSnapshot snapshot,
         CancellationToken cancellationToken) =>
         session.StoreAsync(
-            new RavenProviderSnapshotDocument
+            new RavenProviderSnapshotRecordDto
             {
-                Id = RavenProviderSnapshotDocument.GetDocumentId(snapshot.MusicCatalogId.Value, snapshot.Provider.ToString()),
+                Id = RavenProviderSnapshotRecordDto.GetDocumentId(snapshot.MusicCatalogId.Value, snapshot.Provider.ToString()),
                 MusicCatalogId = snapshot.MusicCatalogId.Value,
                 Provider = snapshot.Provider.ToString(),
                 CapturedAt = snapshot.CapturedAt,

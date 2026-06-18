@@ -6,13 +6,13 @@ using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
 using Raven.Client.Documents.Session;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Idempotency;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
 using Soundtrail.Contracts;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Domain.Model;
 
@@ -44,11 +44,13 @@ public static class RavenServiceCollectionExtensions
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, RavenDatabaseHostedService>());
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, RavenIndexesHostedService>());
 
-        services.TryAddScoped<IRankedMusicCandidateStore, RavenRankedMusicCandidateStore>();
+        services.TryAddScoped<IPotentialCatalogLookupWorkStore, RavenPotentialCatalogLookupWorkStore>();
+        services.TryAddScoped<ICatalogSearchTrackingStore, RavenCatalogSearchTrackingStore>();
         services.TryAddScoped<IActiveLookupWorkStore, RavenActiveLookupWorkStore>();
         services.TryAddScoped<IMusicTrackEventRepository, RavenMusicTrackStreamStore>();
         services.TryAddScoped<IMusicTrackProjectionStore, RavenMusicTrackProjectionStore>();
         services.TryAddScoped<IProviderSnapshotStore, RavenProviderSnapshotStore>();
+        services.TryAddSingleton<MusicTrackProjectionApplier>();
         services.TryAddSingleton<IMusicCatalogCandidateSearch, RavenMusicCatalogCandidateSearch>();
         services.TryAddSingleton<ILocalMusicTrackSearch, RavenLocalMusicTrackSearch>();
         return services;

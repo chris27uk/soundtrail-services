@@ -1,7 +1,7 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Documents;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -54,19 +54,21 @@ internal sealed class LocalMusicTrackSearchTestEnvironment : IDisposable
     private static void SeedRaven(RavenEmbeddedTestDatabase raven, LocalMusicTrackSearchResult result)
     {
         using var session = raven.Store.OpenSession();
-        session.Store(new RavenTrackDocument
+        session.Store(new RavenTrackRecordDto
         {
-            Id = RavenTrackDocument.GetDocumentId(result.MusicCatalogId.Value),
+            Id = RavenTrackRecordDto.GetDocumentId(result.MusicCatalogId.Value),
+            ArtistId = result.ArtistId?.Value,
+            AlbumId = result.AlbumId?.Value,
             Title = result.Title ?? string.Empty,
             Artist = result.Artist ?? string.Empty,
             AlbumTitle = result.AlbumTitle,
-            SearchText = RavenTrackDocument.BuildSearchText(result.Title ?? string.Empty, result.Artist ?? string.Empty),
+            SearchText = RavenTrackRecordDto.BuildSearchText(result.Title ?? string.Empty, result.Artist ?? string.Empty),
             Isrc = result.Isrc,
             Mbid = result.Mbid,
             DurationMs = result.DurationMs,
             CanonicalMetadata = !string.IsNullOrWhiteSpace(result.Title)
                                 && !string.IsNullOrWhiteSpace(result.Artist)
-                ? new RavenSongMetadataDocument
+                ? new RavenSongMetadataRecordDto
                 {
                     Title = result.Title!,
                     Artist = result.Artist!,

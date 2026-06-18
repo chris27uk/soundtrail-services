@@ -2,15 +2,14 @@ namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.EventSo
 
 public sealed class EventHandlers
 {
-    private readonly Dictionary<Type, Action<IDomainEvent>> handlers = [];
+    private readonly Dictionary<Type, Action<object>> handlers = [];
 
     public void Register<TEvent>(Action<TEvent> handler)
-        where TEvent : IDomainEvent
     {
         this.handlers[typeof(TEvent)] = @event => handler((TEvent)@event);
     }
 
-    public void Handle(IDomainEvent @event)
+    public void Handle(object @event)
     {
         var eventType = @event.GetType();
         if (!this.handlers.TryGetValue(eventType, out var handler))

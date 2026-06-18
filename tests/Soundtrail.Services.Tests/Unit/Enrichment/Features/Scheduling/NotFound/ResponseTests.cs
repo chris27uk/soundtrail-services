@@ -13,7 +13,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.NotFound
         [Fact]
         public async Task Given_A_Request_That_Cannot_Be_Resolved_When_Handled_Then_ResolutionFailedException_Is_Thrown()
         {
-            var env = LookupMusicRequestHandlerTestEnvironment.WithNoExistingCandidates();
+            var env = CatalogSearchAttemptHandlerTestEnvironment.WithNoExistingCandidates();
             env.Search.Fails();
 
             var act = async () => await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 0, riskScore: 100));
@@ -25,7 +25,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.NotFound
         [Fact]
         public async Task Given_A_Request_With_A_Weak_Top_Match_When_Handled_Then_ResolutionFailedException_Is_Thrown()
         {
-            var env = LookupMusicRequestHandlerTestEnvironment.WithNoExistingCandidates();
+            var env = CatalogSearchAttemptHandlerTestEnvironment.WithNoExistingCandidates();
             env.Search.ReturnMatches(
                 new MusicCatalogMatch(MusicCatalogId.From("mc_track_1"), 0.79m));
 
@@ -38,7 +38,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.NotFound
         [Fact]
         public async Task Given_A_Request_With_Ambiguous_Matches_When_Handled_Then_ResolutionFailedException_Is_Thrown()
         {
-            var env = LookupMusicRequestHandlerTestEnvironment.WithNoExistingCandidates();
+            var env = CatalogSearchAttemptHandlerTestEnvironment.WithNoExistingCandidates();
             env.Search.ReturnMatches(
                 new MusicCatalogMatch(MusicCatalogId.From("mc_track_1"), 0.92m),
                 new MusicCatalogMatch(MusicCatalogId.From("mc_track_2"), 0.85m));

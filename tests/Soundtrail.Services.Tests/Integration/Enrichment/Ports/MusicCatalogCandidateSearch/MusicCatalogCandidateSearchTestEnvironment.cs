@@ -12,11 +12,11 @@ namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicCatalogCan
 internal sealed class MusicCatalogCandidateSearchTestEnvironment : IDisposable
 {
     private readonly RavenEmbeddedTestDatabase? raven;
-    private readonly Action<string, string> seed;
+    private readonly Action<string, string, string?, string?, string?, string?, string?> seed;
 
     private MusicCatalogCandidateSearchTestEnvironment(
         IMusicCatalogCandidateSearch search,
-        Action<string, string> seed,
+        Action<string, string, string?, string?, string?, string?, string?> seed,
         RavenEmbeddedTestDatabase? raven)
     {
         Search = search;
@@ -36,7 +36,15 @@ internal sealed class MusicCatalogCandidateSearchTestEnvironment : IDisposable
         };
     }
 
-    public void Seed(string musicCatalogId, string searchText) => this.seed(musicCatalogId, searchText);
+    public void Seed(
+        string musicCatalogId,
+        string searchText,
+        string? title = null,
+        string? artist = null,
+        string? albumTitle = null,
+        string? isrc = null,
+        string? mbid = null) =>
+        this.seed(musicCatalogId, searchText, title, artist, albumTitle, isrc, mbid);
 
     public void Dispose() => this.raven?.Dispose();
 
@@ -55,23 +63,36 @@ internal sealed class MusicCatalogCandidateSearchTestEnvironment : IDisposable
         ExecuteTrackCatalogueIndex(raven.Store);
         return new MusicCatalogCandidateSearchTestEnvironment(
             new RavenMusicCatalogCandidateSearch(raven.Store),
-            (musicCatalogId, searchText) => SeedRaven(raven, musicCatalogId, searchText),
+            (musicCatalogId, searchText, title, artist, albumTitle, isrc, mbid) => SeedRaven(raven, musicCatalogId, searchText, title, artist, albumTitle, isrc, mbid),
             raven);
     }
 
-    private static void SeedRaven(RavenEmbeddedTestDatabase raven, string musicCatalogId, string searchText)
+    private static void SeedRaven(
+        RavenEmbeddedTestDatabase raven,
+        string musicCatalogId,
+        string searchText,
+        string? title,
+        string? artist,
+        string? albumTitle,
+        string? isrc,
+        string? mbid)
     {
         using var session = raven.Store.OpenSession();
         session.Advanced.WaitForIndexesAfterSaveChanges();
 
-        var document = new RavenTrackDocument
+        var document = new RavenTrackRecordDto
         {
             Id = $"track-catalogue/{musicCatalogId}",
-            Title = "Fixture Track",
-            Artist = "Fixture Artist",
+            Title = title ?? "Fixture Track",
+            Artist = artist ?? "Fixture Artist",
+            NormalizedArtist = Domain.Model.MusicIdentityText.NormalizeFreeText(artist ?? "Fixture Artist"),
+            AlbumTitle = albumTitle,
+            NormalizedAlbumTitle = Domain.Model.MusicIdentityText.NormalizeFreeText(albumTitle),
             SearchText = searchText,
-            Isrc = null,
-            Mbid = null,
+            Isrc = isrc,
+            NormalizedIsrc = Domain.Model.MusicIdentityText.NormalizeCompact(isrc),
+            Mbid = mbid,
+            NormalizedMbid = Domain.Model.MusicIdentityText.NormalizeCompact(mbid),
             AppleId = null,
             SpotifyId = null,
             DurationMs = null

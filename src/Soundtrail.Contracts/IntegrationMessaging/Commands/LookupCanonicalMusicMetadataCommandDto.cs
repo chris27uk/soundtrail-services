@@ -11,4 +11,6 @@ public sealed record LookupCanonicalMusicMetadataCommandDto(
     string? Isrc,
     string? TrackName,
     string? ArtistName,
-    string? AlbumName);
+    string? AlbumName,
+    string? ArtistId,
+    string? AlbumId);

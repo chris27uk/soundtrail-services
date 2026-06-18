@@ -21,8 +21,8 @@ public sealed class MusicTrackProjectionStoreResponsesTests
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
         var stream = new MusicTrackStream(2,
         [
-            new MinimalTrackInfoDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero)),
-            new ProviderPlaybackReferenceResolved(ProviderName.AppleMusic, "apple-1", new Uri("https://music.apple.com/us/song/song-a?i=apple-1"), ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero))
+            new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero)),
+            new ProviderReferenceDiscovered(ProviderName.AppleMusic, "apple-1", new Uri("https://music.apple.com/us/song/song-a?i=apple-1"), ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero))
         ]);
 
         await env.StoreAsync(musicCatalogId, stream);
@@ -78,7 +78,7 @@ public sealed class MusicTrackProjectionStoreResponsesTests
         private async Task StoreRavenAsync(MusicCatalogId musicCatalogId, MusicTrackStream stream)
         {
             using var session = raven!.Store.OpenAsyncSession();
-            var store = new RavenMusicTrackProjectionStore(session);
+            var store = new RavenMusicTrackProjectionStore(session, new MusicTrackProjectionApplier());
             await store.StoreAsync(musicCatalogId, stream, CancellationToken.None);
             await session.SaveChangesAsync();
         }
@@ -98,7 +98,7 @@ public sealed class MusicTrackProjectionStoreResponsesTests
             }
 
             using var session = raven!.Store.OpenAsyncSession();
-            var document = await session.LoadAsync<RavenTrackDocument>(RavenTrackDocument.GetDocumentId(musicCatalogId.Value));
+            var document = await session.LoadAsync<RavenTrackRecordDto>(RavenTrackRecordDto.GetDocumentId(musicCatalogId.Value));
             return document is null
                 ? null
                 : new ProjectedTrack(document.Title, document.Artist, document.AppleId, document.IsPlayable);

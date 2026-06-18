@@ -1,0 +1,82 @@
+using FluentAssertions;
+using Soundtrail.Contracts.Common;
+using Soundtrail.Contracts.IntegrationMessaging.Responses;
+using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Events;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ApplyLookupExecutionReport;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ApplyLookupExecutionReport.Support;
+using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
+
+namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Execution.ApplyLookupExecutionReport;
+
+public sealed class ApplyLookupExecutionReportHandlerTests
+{
+    [Fact]
+    public async Task Given_A_Deferred_Report_When_Handled_Then_All_Tracked_Discoveries_Are_Deferred()
+    {
+        var env = ApplyLookupExecutionReportHandlerTestEnvironment.Create();
+
+        await env.Handler.Handle(
+            new LookupExecutionReportDto(
+                "LookupCanonicalMusicMetadata:mc_track_1",
+                "mc_track_1",
+                ProviderName.MusicBrainz.Value,
+                LookupPriorityBand.High,
+                env.Now,
+                "corr-1",
+                "Deferred",
+                "MusicBrainz budget temporarily unavailable",
+                env.Now.AddMinutes(1),
+                60),
+            CancellationToken.None);
+
+        env.StoredEvents("search:track:rare unknown song").Last().Should().BeOfType<DiscoveryDeferred>();
+        env.StoredEvents("artist:artist_1").Last().Should().BeOfType<DiscoveryDeferred>();
+    }
+
+    [Fact]
+    public async Task Given_A_Failed_Report_When_Handled_Then_All_Tracked_Discoveries_Are_Failed()
+    {
+        var env = ApplyLookupExecutionReportHandlerTestEnvironment.Create();
+
+        await env.Handler.Handle(
+            new LookupExecutionReportDto(
+                "LookupCanonicalMusicMetadata:mc_track_1",
+                "mc_track_1",
+                ProviderName.MusicBrainz.Value,
+                LookupPriorityBand.High,
+                env.Now,
+                "corr-1",
+                "Failed",
+                "Lookup failed",
+                null,
+                null),
+            CancellationToken.None);
+
+        env.StoredEvents("search:track:rare unknown song").Last().Should().BeOfType<DiscoveryFailed>();
+        env.StoredEvents("artist:artist_1").Last().Should().BeOfType<DiscoveryFailed>();
+    }
+
+    [Fact]
+    public async Task Given_A_Completed_Report_When_Handled_Then_No_Discovery_Lifecycle_Event_Is_Added()
+    {
+        var env = ApplyLookupExecutionReportHandlerTestEnvironment.Create();
+        var before = env.StoredEvents("search:track:rare unknown song").Count;
+
+        await env.Handler.Handle(
+            new LookupExecutionReportDto(
+                "LookupCanonicalMusicMetadata:mc_track_1",
+                "mc_track_1",
+                ProviderName.MusicBrainz.Value,
+                LookupPriorityBand.High,
+                env.Now,
+                "corr-1",
+                "Completed",
+                null,
+                null,
+                null),
+            CancellationToken.None);
+
+        env.StoredEvents("search:track:rare unknown song").Should().HaveCount(before);
+    }
+}

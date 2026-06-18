@@ -1,5 +1,6 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Discovery;
 
 namespace Soundtrail.Domain.Model;
 
@@ -14,24 +15,13 @@ public sealed record NormalizedSearchQuery
 
     public static NormalizedSearchQuery FromText(string value)
     {
-        var sanitized = new string(
-            value
-                .Trim()
-                .Select(character => char.IsLetterOrDigit(character) || char.IsWhiteSpace(character)
-                    ? char.ToLowerInvariant(character)
-                    : ' ')
-                .ToArray());
-
-        var normalized = string.Join(
-            ' ',
-            sanitized.Split(' ', StringSplitOptions.RemoveEmptyEntries));
-
-        return new NormalizedSearchQuery(normalized);
+        return new NormalizedSearchQuery(MusicIdentityText.NormalizeFreeText(value));
     }
 
-    public LookupMusicRequest ToNewLookupRequest()
+    public CatalogSearchAttempt ToNewCatalogSearchAttempt(CatalogSearchCriteria criteria)
     {
-        return new LookupMusicRequest(
+        return new CatalogSearchAttempt(
+            criteria,
             this.Value,
             TrustLevel: 0,
             RiskScore: 0,

@@ -1,9 +1,13 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ApplyLookupExecutionReport.CompositionRoot;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.CompositionRoot;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.CompositionRoot;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ImportCatalogSearchDiscoveryEvents.CompositionRoot;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ImportMusicTrackEvents.CompositionRoot;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.CompositionRoot;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.CompositionRoot;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Scheduling;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
@@ -27,8 +31,12 @@ public static class AppServiceCollectionExtensions
         var dependencyProvider = options.DependencyProvider ?? new ProductionDiscoveryPlannerDependencyProvider();
         dependencyProvider.AddSharedDependencies(services, configuration);
 
+        services.AddImportMusicTrackEventsFeature();
+        services.AddImportCatalogSearchDiscoveryEventsFeature();
+        services.AddApplyLookupExecutionReportFeature();
         services.AddJustInTimeSchedulingFeature(x =>
             x.ConfigureDependencies = svc => dependencyProvider.AddJustInTimeSchedulingDependencies(svc, configuration));
+        services.AddProjectDiscoveryLifecycleFeature();
         services.AddBacklogSchedulingFeature(x =>
         {
             x.IncludeHostedService = options.IncludeBacklogHostedService;

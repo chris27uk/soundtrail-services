@@ -1,48 +1,102 @@
-using Soundtrail.Services.Api.Features.SearchMusic.Tracks;
-using Soundtrail.Services.Api.Features.SearchMusic.TrackSearch;
+using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.CatalogBrowsing;
+using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Services.Tests.Integration.Api.Features.Search
 {
     internal static class ApiKnownTracks
     {
-        public static SearchResult MrBrightside() =>
+        public static SearchCatalogResult MrBrightsideCatalogTrack() =>
             new(
-                TrackTitle.From("Mr. Brightside"),
-                ArtistName.From("The Killers"),
-                Isrc.From("USIR20400274"),
-                Mbid.From("mr-brightside-mbid"),
-                AppleId.From("apple-mr-brightside"),
-                SpotifyId.From("spotify-mr-brightside"),
-                ConfidenceScore.From(0.98));
+                SearchResultType.Track,
+                "track_mr_brightside",
+                "Mr. Brightside",
+                "artist_the_killers",
+                "The Killers",
+                "album_hot_fuss",
+                "Hot Fuss",
+                PlayabilityStatus.Playable,
+                [ProviderName.Spotify, ProviderName.AppleMusic],
+                [],
+                [new ProviderReference(
+                    ProviderName.Spotify,
+                    "track",
+                    "spotify-track-1",
+                    new Uri("https://open.spotify.com/track/spotify-track-1"),
+                    new DateTimeOffset(2026, 6, 17, 12, 0, 0, TimeSpan.Zero))]);
 
-        public static SearchResult Track(string title) =>
+        public static SearchCatalogResult TheKillersArtist() =>
             new(
-                TrackTitle.From(title),
-                ArtistName.From("Search Fixture Artist"),
-                Isrc.From($"USFIX{title.Replace(" ", string.Empty).PadLeft(7, '0')}"),
-                Mbid.From($"mbid-{title.Replace(" ", "-")}"),
-                AppleId.From($"apple-{title.Replace(" ", "-")}"),
-                SpotifyId.From($"spotify-{title.Replace(" ", "-")}"),
-                ConfidenceScore.From(0.75));
+                SearchResultType.Artist,
+                "artist_the_killers",
+                "The Killers",
+                "artist_the_killers",
+                "The Killers",
+                null,
+                null,
+                PlayabilityStatus.Playable,
+                [ProviderName.Spotify, ProviderName.AppleMusic],
+                [],
+                []);
 
-        public static SearchResult SongWithConfidence(string title, double confidence) =>
+        public static ArtistDetailsResponse TheKillersArtistDetails() =>
             new(
-                TrackTitle.From(title),
-                ArtistName.From("Confidence Fixture Artist"),
-                Isrc.From($"USCF{title.Replace(" ", string.Empty).PadLeft(8, '0')}"),
-                Mbid.From($"mbid-{title.Replace(" ", "-")}"),
-                AppleId.From($"apple-{title.Replace(" ", "-")}"),
-                SpotifyId.From($"spotify-{title.Replace(" ", "-")}"),
-                ConfidenceScore.From(confidence));
+                ArtistId.From("artist_the_killers"),
+                "The Killers",
+                [new AlbumSummary(
+                    AlbumId.From("album_hot_fuss"),
+                    "Hot Fuss",
+                    new DateOnly(2004, 6, 7),
+                PlayabilityStatus.Playable,
+                [ProviderName.Spotify, ProviderName.AppleMusic],
+                [])]);
 
-        public static Track MrBrightsideTrack() =>
+        public static AlbumDetailsResponse HotFussAlbum() =>
             new(
-                TrackTitle.From("Mr. Brightside"),
-                ArtistName.From("The Killers"),
-                Isrc.From("USIR20400274"),
-                Mbid.From("mr-brightside-mbid"),
-                AppleId.From("apple-mr-brightside"),
-                SpotifyId.From("spotify-mr-brightside"),
-                DurationMs.From(222000));
+                ArtistId.From("artist_the_killers"),
+                "The Killers",
+                AlbumId.From("album_hot_fuss"),
+                "Hot Fuss",
+                new DateOnly(2004, 6, 7),
+                [MrBrightsideTrackSummary()]);
+
+        public static TrackSummary MrBrightsideTrackSummary() =>
+            new(
+                TrackId.From("track_mr_brightside"),
+                "Mr. Brightside",
+                AlbumId.From("album_hot_fuss"),
+                "Hot Fuss",
+                "USIR20400274",
+                222000,
+                PlayabilityStatus.Playable,
+                [ProviderName.Spotify, ProviderName.AppleMusic],
+                [],
+                [new ProviderReference(
+                    ProviderName.Spotify,
+                    "track",
+                    "spotify-track-1",
+                    new Uri("https://open.spotify.com/track/spotify-track-1"),
+                    new DateTimeOffset(2026, 6, 17, 12, 0, 0, TimeSpan.Zero))]);
+
+        public static TrackDetailsResponse MrBrightsideTrackDetails() =>
+            new(
+                ArtistId.From("artist_the_killers"),
+                "The Killers",
+                AlbumId.From("album_hot_fuss"),
+                "Hot Fuss",
+                TrackId.From("track_mr_brightside"),
+                "Mr. Brightside",
+                "USIR20400274",
+                222000,
+                PlayabilityStatus.Playable,
+                [ProviderName.Spotify, ProviderName.AppleMusic],
+                [],
+                [new ProviderReference(
+                    ProviderName.Spotify,
+                    "track",
+                    "spotify-track-1",
+                    new Uri("https://open.spotify.com/track/spotify-track-1"),
+                    new DateTimeOffset(2026, 6, 17, 12, 0, 0, TimeSpan.Zero))]);
     }
 }

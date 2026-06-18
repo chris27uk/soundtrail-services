@@ -1,5 +1,5 @@
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
+using Soundtrail.Domain.Commands;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Messaging;
 
@@ -8,7 +8,7 @@ internal static class LookupCommandMappings
     public static object ToMessage(this object command) =>
         command switch
         {
-            LookupCanonicalMusicMetadataCommand musicBrainz => new LookupCanonicalMusicMetadataCommandDto(
+            LookupMusicMetadataCommand musicBrainz => new LookupCanonicalMusicMetadataCommandDto(
                 musicBrainz.CommandId.Value,
                 musicBrainz.MusicCatalogId.Value,
                 musicBrainz.Priority,
@@ -17,7 +17,9 @@ internal static class LookupCommandMappings
                 musicBrainz.SearchTerm.Isrc,
                 musicBrainz.SearchTerm.Title,
                 musicBrainz.SearchTerm.Artist,
-                musicBrainz.SearchTerm.Album
+                musicBrainz.SearchTerm.Album,
+                musicBrainz.Hierarchy?.ArtistId?.Value,
+                musicBrainz.Hierarchy?.AlbumId?.Value
             ),
             ResolvePlaybackReferencesCommand playback => new ResolvePlaybackReferencesCommandDto(
                 playback.CommandId.Value,
@@ -26,10 +28,12 @@ internal static class LookupCommandMappings
                 playback.CreatedAt,
                 playback.CorrelationId.Value,
                 new PlaybackReferenceSearchTermDto(
-                    playback.SearchTerm.Isrc,
-                    playback.SearchTerm.Title,
-                    playback.SearchTerm.Artist,
-                    playback.SearchTerm.Album)),
+                    playback.LookupKey.Isrc,
+                    playback.LookupKey.Title,
+                    playback.LookupKey.Artist,
+                    playback.LookupKey.Album),
+                playback.Hierarchy?.ArtistId?.Value,
+                playback.Hierarchy?.AlbumId?.Value),
             _ => throw new ArgumentOutOfRangeException(nameof(command), command, null)
         };
 }

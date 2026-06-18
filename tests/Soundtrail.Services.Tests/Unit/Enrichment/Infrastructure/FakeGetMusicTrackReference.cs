@@ -8,6 +8,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 public sealed class FakeGetMusicTrackReference : IGetMusicTrackReference
 {
     private readonly Dictionary<MusicSearchTerm, IReadOnlyList<ExternalReference>> responses = [];
+    private Exception? exception;
 
     public List<MusicSearchTerm> SearchTerms { get; } = [];
 
@@ -15,6 +16,11 @@ public sealed class FakeGetMusicTrackReference : IGetMusicTrackReference
         MusicSearchTerm searchTerm,
         CancellationToken cancellationToken)
     {
+        if (exception is not null)
+        {
+            throw exception;
+        }
+
         SearchTerms.Add(searchTerm);
         return Task.FromResult(
             responses.TryGetValue(searchTerm, out var references)
@@ -24,4 +30,6 @@ public sealed class FakeGetMusicTrackReference : IGetMusicTrackReference
 
     public void Seed(MusicSearchTerm lookupKey, params ExternalReference[] references) =>
         responses[lookupKey] = references;
+
+    public void Throw(Exception ex) => exception = ex;
 }

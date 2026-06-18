@@ -1,8 +1,8 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain;
+using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.LocalSearch;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Model;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
@@ -11,12 +11,13 @@ internal sealed class DiscoveryBacklogSchedulerTestEnvironment
 {
     private static readonly DateTimeOffset DefaultNow = new(2026, 5, 31, 12, 0, 0, TimeSpan.Zero);
 
-    private readonly RankedMusicCandidateStoreFake store;
+    private readonly PotentialCatalogLookupWorkStoreFake store;
     private readonly LocalMusicTrackSearchFake localSearch;
+    private readonly SourceApiBudgetPortFake sourceBudget;
 
-    private DiscoveryBacklogSchedulerTestEnvironment(params Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence.RankedMusicCandidate[] candidates)
+    private DiscoveryBacklogSchedulerTestEnvironment(params Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence.PotentialCatalogLookupWork[] candidates)
     {
-        this.store = new RankedMusicCandidateStoreFake();
+        this.store = new PotentialCatalogLookupWorkStoreFake();
         foreach (var candidate in candidates)
         {
             this.store.Seed(candidate);
@@ -24,6 +25,7 @@ internal sealed class DiscoveryBacklogSchedulerTestEnvironment
 
         ActiveWorkStore = new ActiveLookupWorkStoreFake();
         localSearch = new LocalMusicTrackSearchFake();
+        sourceBudget = new SourceApiBudgetPortFake();
         foreach (var candidate in candidates)
         {
             localSearch.Seed(new LocalMusicTrackSearchResult(
@@ -37,7 +39,7 @@ internal sealed class DiscoveryBacklogSchedulerTestEnvironment
                 IsPlayable: false));
         }
 
-        Scheduler = new DiscoveryBacklogScheduler(this.store, ActiveWorkStore, new DiscoveryPriorityPolicy(), localSearch);
+        Scheduler = new DiscoveryBacklogScheduler(this.store, ActiveWorkStore, new DiscoveryPriorityPolicy(), sourceBudget, localSearch);
         Now = DefaultNow;
     }
 
@@ -46,6 +48,8 @@ internal sealed class DiscoveryBacklogSchedulerTestEnvironment
     public ActiveLookupWorkStoreFake ActiveWorkStore { get; }
 
     public DateTimeOffset Now { get; }
+
+    public SourceApiBudgetPortFake SourceBudget => sourceBudget;
 
     public static DiscoveryBacklogSchedulerTestEnvironment WithHighAndLowPriorityEligibleCandidates() =>
         new(
@@ -88,5 +92,5 @@ internal sealed class DiscoveryBacklogSchedulerTestEnvironment
 
     public LocalMusicTrackSearchFake LocalSearch => localSearch;
 
-    public Task<IReadOnlyList<LookupPhaseCommand>> RunSweep(int take = 10) => Scheduler.RunOnceAsync(Now, take);
+    public Task<IReadOnlyList<IMusicCatalogLookupCommand>> RunSweep(int take = 10) => Scheduler.RunOnceAsync(Now, take);
 }
