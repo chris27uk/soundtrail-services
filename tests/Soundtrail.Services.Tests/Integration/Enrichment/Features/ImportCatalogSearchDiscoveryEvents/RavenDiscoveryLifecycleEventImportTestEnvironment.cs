@@ -6,6 +6,7 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ImportCatalogSearchDiscoveryEvents;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Adapters;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Support;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ImportCatalogSearchDiscoveryEvents;
@@ -38,7 +39,7 @@ internal sealed class RavenDiscoveryLifecycleEventImportTestEnvironment : IAsync
     public async Task ReplayDiscoveryProjectionAsync()
     {
         using var session = raven.Store.OpenAsyncSession();
-        var applier = new DiscoveryLifecycleProjectionApplier();
+        var applier = new DiscoveryLifecycleProjectionApplier(new DiscoveryLifecycleProjectionMutationService());
         var events = await session.Advanced.AsyncDocumentQuery<DiscoveryQueryStoredEventRecordDto>()
             .ToListAsync(CancellationToken.None);
 

@@ -8,6 +8,7 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Adapters;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Support;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ProjectionReplay;
@@ -140,7 +141,7 @@ public sealed class RavenDiscoveryLifecycleProjectionReplayResponsesTests
         using var session = store.OpenAsyncSession();
         var events = await session.Advanced.AsyncDocumentQuery<DiscoveryQueryStoredEventRecordDto>()
             .ToListAsync(CancellationToken.None);
-        var applier = new DiscoveryLifecycleProjectionApplier();
+        var applier = new DiscoveryLifecycleProjectionApplier(new DiscoveryLifecycleProjectionMutationService());
 
         foreach (var storedEvent in events.OrderBy(x => x.Criteria).ThenBy(x => x.Version))
         {

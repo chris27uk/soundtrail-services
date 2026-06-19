@@ -21,6 +21,7 @@ using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 using Soundtrail.Services.Api.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Adapters;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Support;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Wolverine;
 using Wolverine.Tracking;
@@ -286,7 +287,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
             .ToListAsync(CancellationToken.None)
             .GetAwaiter()
             .GetResult();
-        var applier = new DiscoveryLifecycleProjectionApplier();
+        var applier = new DiscoveryLifecycleProjectionApplier(new DiscoveryLifecycleProjectionMutationService());
 
         foreach (var storedEvent in storedEvents.OrderBy(x => x.Version))
         {

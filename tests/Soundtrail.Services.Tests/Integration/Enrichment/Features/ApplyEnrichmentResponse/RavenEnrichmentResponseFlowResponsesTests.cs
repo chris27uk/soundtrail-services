@@ -10,6 +10,7 @@ using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentRespons
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Support;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Adapters;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Support;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Documents;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
@@ -133,7 +134,7 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
         using var session = raven.Store.OpenAsyncSession();
         var events = await session.Advanced.AsyncDocumentQuery<DiscoveryQueryStoredEventRecordDto>()
             .ToListAsync(CancellationToken.None);
-        var applier = new DiscoveryLifecycleProjectionApplier();
+        var applier = new DiscoveryLifecycleProjectionApplier(new DiscoveryLifecycleProjectionMutationService());
 
         foreach (var storedEvent in events.OrderBy(x => x.Criteria).ThenBy(x => x.Version))
         {
