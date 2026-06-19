@@ -2,10 +2,10 @@ using Soundtrail.Contracts.Common;
 
 namespace Soundtrail.Domain.Model;
 
-public interface IMusicTrackProjectionStore
+public interface ISaveMusicTrackProjectionPort
 {
-    Task StoreAsync(
+    Task SaveAsync(
         MusicCatalogId musicCatalogId,
-        MusicTrackStream stream,
+        MusicTrackProjection projection,
         CancellationToken cancellationToken);
 }

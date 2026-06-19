@@ -22,12 +22,6 @@ public static class ServiceCollectionExtensions
         services.TryAddScoped<ProjectCatalogSearchTrackings>();
         services.TryAddScoped<CompleteTrackedDiscoveries>();
         services.TryAddScoped<EnrichmentResponseListener>();
-        services.TryAddSingleton<MusicTrackProjectionApplier>();
-
-        if (options.IncludeProjectionHostedService)
-        {
-            services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, MusicTrackProjectionSubscriptionHostedService>());
-        }
 
         return services;
     }

@@ -8,6 +8,7 @@ using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ImportCatalogSear
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ImportMusicTrackEvents.CompositionRoot;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.CompositionRoot;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.CompositionRoot;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection.CompositionRoot;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Scheduling;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
@@ -37,6 +38,7 @@ public static class AppServiceCollectionExtensions
         services.AddJustInTimeSchedulingFeature(x =>
             x.ConfigureDependencies = svc => dependencyProvider.AddJustInTimeSchedulingDependencies(svc, configuration));
         services.AddProjectDiscoveryLifecycleFeature();
+        services.AddProjectMusicTrackProjectionFeature();
         services.AddBacklogSchedulingFeature(x =>
         {
             x.IncludeHostedService = options.IncludeBacklogHostedService;

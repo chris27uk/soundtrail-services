@@ -2,8 +2,12 @@ using FluentAssertions;
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
+using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Events;
+using Soundtrail.Domain.Model;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Documents;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
@@ -17,7 +21,9 @@ public sealed class MusicTrackProjectionReplayResponsesTests
     {
         using var raven = RavenEmbeddedTestDatabase.Create();
         using var session = raven.Store.OpenAsyncSession();
-        var applier = new MusicTrackProjectionApplier();
+        var handler = new ProjectMusicTrackProjectionHandler(
+            new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
+            new RavenSaveMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()));
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
         var commandId = CommandId.For("ResolveCanonicalMetadata:mc_track_1");
 
@@ -59,10 +65,7 @@ public sealed class MusicTrackProjectionReplayResponsesTests
             }
         };
 
-        foreach (var storedEvent in storedEvents)
-        {
-            await applier.ApplyStoredEventAsync(storedEvent, session, CancellationToken.None);
-        }
+        await handler.Handle(ToCommand(musicCatalogId, storedEvents), CancellationToken.None);
 
         await session.SaveChangesAsync(CancellationToken.None);
 
@@ -79,11 +82,10 @@ public sealed class MusicTrackProjectionReplayResponsesTests
         projection.ProjectionVersion.Should().Be(2);
     }
 
-    [Fact]
+        [Fact]
     public async Task Given_An_Already_Applied_Event_Version_When_Projecting_Then_The_Duplicate_Is_Ignored()
     {
         using var raven = RavenEmbeddedTestDatabase.Create();
-        var applier = new MusicTrackProjectionApplier();
         var storedEvent = new MusicTrackStoredEventRecordDto
         {
             Id = MusicTrackStoredEventRecordDto.GetDocumentId("mc_track_1", 1),
@@ -104,8 +106,11 @@ public sealed class MusicTrackProjectionReplayResponsesTests
 
         using (var session = raven.Store.OpenAsyncSession())
         {
-            await applier.ApplyStoredEventAsync(storedEvent, session, CancellationToken.None);
-            await applier.ApplyStoredEventAsync(storedEvent, session, CancellationToken.None);
+            var handler = new ProjectMusicTrackProjectionHandler(
+                new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
+                new RavenSaveMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()));
+            await handler.Handle(ToCommand(MusicCatalogId.From("mc_track_1"), [storedEvent]), CancellationToken.None);
+            await handler.Handle(ToCommand(MusicCatalogId.From("mc_track_1"), [storedEvent]), CancellationToken.None);
             await session.SaveChangesAsync(CancellationToken.None);
         }
 
@@ -123,7 +128,9 @@ public sealed class MusicTrackProjectionReplayResponsesTests
     {
         using var raven = RavenEmbeddedTestDatabase.Create();
         using var session = raven.Store.OpenAsyncSession();
-        var applier = new MusicTrackProjectionApplier();
+        var handler = new ProjectMusicTrackProjectionHandler(
+            new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
+            new RavenSaveMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()));
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
 
         var storedEvents = new MusicTrackStoredEventRecordDto[]
@@ -165,10 +172,7 @@ public sealed class MusicTrackProjectionReplayResponsesTests
             }
         };
 
-        foreach (var storedEvent in storedEvents)
-        {
-            await applier.ApplyStoredEventAsync(storedEvent, session, CancellationToken.None);
-        }
+        await handler.Handle(ToCommand(musicCatalogId, storedEvents), CancellationToken.None);
 
         await session.SaveChangesAsync(CancellationToken.None);
 
@@ -186,4 +190,14 @@ public sealed class MusicTrackProjectionReplayResponsesTests
         projection.ArtworkUrl.Should().Be("https://images.example.com/track.png");
         projection.ProjectionVersion.Should().Be(2);
     }
+
+    private static ProjectMusicTrackProjectionCommand ToCommand(
+        MusicCatalogId musicCatalogId,
+        IReadOnlyList<MusicTrackStoredEventRecordDto> storedEvents) =>
+        new(
+            musicCatalogId,
+            storedEvents
+                .OrderBy(x => x.Version)
+                .Select(x => new VersionedMusicTrackEvent(x.Version, x.ToDomainEvent()))
+                .ToArray());
 }

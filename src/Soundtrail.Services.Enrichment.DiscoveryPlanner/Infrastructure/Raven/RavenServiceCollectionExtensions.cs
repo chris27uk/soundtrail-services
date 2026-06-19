@@ -13,6 +13,7 @@ using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
 using Soundtrail.Contracts;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Domain.Model;
 
@@ -48,9 +49,9 @@ public static class RavenServiceCollectionExtensions
         services.TryAddScoped<ICatalogSearchTrackingStore, RavenCatalogSearchTrackingStore>();
         services.TryAddScoped<IActiveLookupWorkStore, RavenActiveLookupWorkStore>();
         services.TryAddScoped<IMusicTrackEventRepository, RavenMusicTrackStreamStore>();
-        services.TryAddScoped<IMusicTrackProjectionStore, RavenMusicTrackProjectionStore>();
+        services.TryAddScoped<ILoadMusicTrackProjectionPort, RavenLoadMusicTrackProjection>();
+        services.TryAddScoped<ISaveMusicTrackProjectionPort, RavenSaveMusicTrackProjection>();
         services.TryAddScoped<IProviderSnapshotStore, RavenProviderSnapshotStore>();
-        services.TryAddSingleton<MusicTrackProjectionApplier>();
         services.TryAddSingleton<IMusicCatalogCandidateSearch, RavenMusicCatalogCandidateSearch>();
         services.TryAddSingleton<ILocalMusicTrackSearch, RavenLocalMusicTrackSearch>();
         return services;

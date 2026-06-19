@@ -3,12 +3,15 @@ using Microsoft.Extensions.Logging;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Subscriptions;
 using Soundtrail.Contracts.EventSourcing;
+using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Model;
 
-namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
+namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection.Adapters;
 
 public sealed class MusicTrackProjectionSubscriptionHostedService(
     IDocumentStore documentStore,
-    MusicTrackProjectionApplier projectionApplier,
+    ProjectMusicTrackProjectionHandler handler,
     ILogger<MusicTrackProjectionSubscriptionHostedService> logger) : BackgroundService
 {
     private const string SubscriptionName = "music-track-projections";
@@ -62,16 +65,17 @@ public sealed class MusicTrackProjectionSubscriptionHostedService(
         SubscriptionBatch<MusicTrackStoredEventRecordDto> batch,
         CancellationToken cancellationToken)
     {
-        using var session = documentStore.OpenAsyncSession();
-
-        foreach (var storedEvent in batch.Items
+        foreach (var stream in batch.Items
                      .Select(item => item.Result)
-                     .OrderBy(item => item.MusicCatalogId, StringComparer.Ordinal)
-                     .ThenBy(item => item.Version))
+                     .GroupBy(item => item.MusicCatalogId, StringComparer.Ordinal))
         {
-            await projectionApplier.ApplyStoredEventAsync(storedEvent, session, cancellationToken);
-        }
+            var command = new ProjectMusicTrackProjectionCommand(
+                MusicCatalogId.From(stream.Key),
+                stream.OrderBy(item => item.Version)
+                    .Select(item => new VersionedMusicTrackEvent(item.Version, item.ToDomainEvent()))
+                    .ToArray());
 
-        await session.SaveChangesAsync(cancellationToken);
+            await handler.Handle(command, cancellationToken);
+        }
     }
 }

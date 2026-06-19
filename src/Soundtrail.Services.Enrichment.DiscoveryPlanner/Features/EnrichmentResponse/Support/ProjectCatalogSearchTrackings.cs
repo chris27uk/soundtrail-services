@@ -4,9 +4,7 @@ namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentRes
 
 public sealed class ProjectCatalogSearchTrackings(ICatalogSearchTrackingStore catalogSearchTrackingStore)
 {
-    public async Task ProjectAsync(
-        Soundtrail.Domain.Responses.EnrichmentResponse response,
-        CancellationToken cancellationToken)
+    public async Task ProjectAsync(Domain.Responses.EnrichmentResponse response, CancellationToken cancellationToken)
     {
         foreach (var criteria in CatalogSearchCriteriaSet.ForResolvedTrack(
                      response.MusicCatalogId,

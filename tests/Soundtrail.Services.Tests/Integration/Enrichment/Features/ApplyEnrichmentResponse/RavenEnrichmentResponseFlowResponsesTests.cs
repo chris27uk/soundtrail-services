@@ -4,13 +4,17 @@ using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Contracts;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Model;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Support;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Support;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Documents;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
@@ -119,11 +123,19 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
         using var session = raven.Store.OpenAsyncSession();
         var events = await session.Advanced.AsyncDocumentQuery<MusicTrackStoredEventRecordDto>()
             .ToListAsync(CancellationToken.None);
-        var applier = new MusicTrackProjectionApplier();
+        var handler = new ProjectMusicTrackProjectionHandler(
+            new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
+            new RavenSaveMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()));
 
-        foreach (var storedEvent in events.OrderBy(x => x.Version))
+        foreach (var stream in events.GroupBy(x => x.MusicCatalogId, StringComparer.Ordinal))
         {
-            await applier.ApplyStoredEventAsync(storedEvent, session, CancellationToken.None);
+            await handler.Handle(
+                new ProjectMusicTrackProjectionCommand(
+                    MusicCatalogId.From(stream.Key),
+                    stream.OrderBy(x => x.Version)
+                        .Select(x => new VersionedMusicTrackEvent(x.Version, x.ToDomainEvent()))
+                        .ToArray()),
+                CancellationToken.None);
         }
 
         await session.SaveChangesAsync(CancellationToken.None);

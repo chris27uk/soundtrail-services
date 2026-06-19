@@ -1,4 +1,3 @@
-using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Support;
 
@@ -14,9 +13,7 @@ public sealed class ApplyEnrichmentResponseHandler(
         Domain.Responses.EnrichmentResponse response,
         CancellationToken cancellationToken = default)
     {
-        var events = await appendCatalogEnrichmentResponse.AppendAsync(
-            response,
-            cancellationToken);
+        var events = await appendCatalogEnrichmentResponse.AppendAsync(response, cancellationToken);
         await captureProviderSnapshot.CaptureAsync(response, cancellationToken);
         await projectCatalogSearchTrackings.ProjectAsync(response, cancellationToken);
         await completeTrackedDiscoveries.CompleteAsync(response, cancellationToken);
