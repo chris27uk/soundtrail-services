@@ -13,11 +13,14 @@ using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentRespons
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Adapters;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ReplayDiscoveryLifecycleProjection;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ReplayDiscoveryLifecycleProjection.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Documents;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
+using System.Linq;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ApplyEnrichmentResponse;
 
@@ -142,20 +145,21 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
     private static async Task ReplayDiscoveryLifecycleAsync(RavenEmbeddedTestDatabase raven)
     {
         using var querySession = raven.Store.OpenAsyncSession();
-        var events = await querySession.Advanced.AsyncDocumentQuery<DiscoveryQueryStoredEventRecordDto>()
+        var storedEvents = await querySession.Advanced.AsyncDocumentQuery<DiscoveryQueryStoredEventRecordDto>()
             .ToListAsync(CancellationToken.None);
+        var criteriaValues = storedEvents.Select(x => x.Criteria).ToList();
 
         using var session = raven.Store.OpenAsyncSession();
-        var handler = new ProjectDiscoveryLifecycleHandler(
-            new RavenLoadDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()),
-            new RavenSaveDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()));
+        var replayHandler = new ReplayDiscoveryLifecycleProjectionHandler(
+            new RavenLoadStoredDiscoveryLifecycleEvents(session),
+            new ProjectDiscoveryLifecycleHandler(
+                new RavenLoadDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()),
+                new RavenSaveDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper())));
 
-        foreach (var stream in events.OrderBy(x => x.Criteria).ThenBy(x => x.Version).GroupBy(x => x.Criteria, StringComparer.Ordinal))
+        foreach (var criteria in criteriaValues.Distinct(StringComparer.Ordinal))
         {
-            await handler.Handle(
-                new ProjectDiscoveryLifecycleCommand(
-                    CatalogSearchCriteria.From(stream.Key),
-                    stream.Select(item => item.ToDomainEvent()).ToArray()),
+            await replayHandler.Handle(
+                new ReplayDiscoveryLifecycleProjectionCommand(CatalogSearchCriteria.From(criteria)),
                 CancellationToken.None);
         }
     }
