@@ -169,10 +169,10 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
     public async Task<int> CountDiscoveryRequestEventsAsync(string criteria)
     {
         using var session = raven.Store.OpenAsyncSession();
-        var events = await session.Advanced.AsyncDocumentQuery<DiscoveryQueryStoredEventRecordDto>()
-            .WhereEquals(nameof(DiscoveryQueryStoredEventRecordDto.Criteria), criteria)
-            .ToListAsync(CancellationToken.None);
-        return events.Count;
+        var metadata = await session.LoadAsync<DiscoveryQueryEventStreamMetadataRecordDto>(
+            DiscoveryQueryEventStreamMetadataRecordDto.GetDocumentId(criteria),
+            CancellationToken.None);
+        return metadata?.Version ?? 0;
     }
 
     public async ValueTask DisposeAsync()

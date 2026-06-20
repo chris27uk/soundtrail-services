@@ -42,9 +42,9 @@ internal sealed class RavenDiscoveryLifecycleEventImportTestEnvironment : IAsync
     public async Task ReplayDiscoveryProjectionAsync()
     {
         using var querySession = raven.Store.OpenAsyncSession();
-        var storedEvents = await querySession.Advanced.AsyncDocumentQuery<DiscoveryQueryStoredEventRecordDto>()
-            .ToListAsync(CancellationToken.None);
-        var criteriaValues = storedEvents.Select(x => x.Criteria).ToList();
+        var streamMetadata = await querySession.Advanced.LoadStartingWithAsync<DiscoveryQueryEventStreamMetadataRecordDto>(
+            "discovery-query-streams/");
+        var criteriaValues = streamMetadata.Select(x => x.Criteria).ToList();
 
         using var session = raven.Store.OpenAsyncSession();
         var replayHandler = new ReplayDiscoveryLifecycleProjectionHandler(

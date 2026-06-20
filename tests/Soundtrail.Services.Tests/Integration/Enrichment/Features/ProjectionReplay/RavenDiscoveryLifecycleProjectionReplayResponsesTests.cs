@@ -142,9 +142,9 @@ public sealed class RavenDiscoveryLifecycleProjectionReplayResponsesTests
     private static async Task ReplayAsync(Raven.Client.Documents.IDocumentStore store)
     {
         using var querySession = store.OpenAsyncSession();
-        var storedEvents = await querySession.Advanced.AsyncDocumentQuery<DiscoveryQueryStoredEventRecordDto>()
-            .ToListAsync(CancellationToken.None);
-        var criteriaValues = storedEvents.Select(x => x.Criteria).ToList();
+        var streamMetadata = await querySession.Advanced.LoadStartingWithAsync<DiscoveryQueryEventStreamMetadataRecordDto>(
+            "discovery-query-streams/");
+        var criteriaValues = streamMetadata.Select(x => x.Criteria).ToList();
 
         using var session = store.OpenAsyncSession();
         var replayHandler = new ReplayDiscoveryLifecycleProjectionHandler(

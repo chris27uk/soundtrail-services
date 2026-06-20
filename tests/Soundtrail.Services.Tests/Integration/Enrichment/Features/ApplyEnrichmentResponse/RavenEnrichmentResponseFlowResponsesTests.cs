@@ -108,9 +108,9 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
     private static async Task ReplayProjectionsAsync(RavenEmbeddedTestDatabase raven)
     {
         using var querySession = raven.Store.OpenAsyncSession();
-        var events = await querySession.Advanced.AsyncDocumentQuery<MusicTrackStoredEventRecordDto>()
-            .ToListAsync(CancellationToken.None);
-        var musicCatalogIds = events.Select(x => x.MusicCatalogId).Distinct(StringComparer.Ordinal).ToList();
+        var streamMetadata = await querySession.Advanced.LoadStartingWithAsync<MusicTrackEventStreamMetadataRecordDto>(
+            "music-track-streams/");
+        var musicCatalogIds = streamMetadata.Select(x => x.MusicCatalogId).Distinct(StringComparer.Ordinal).ToList();
 
         using var session = raven.Store.OpenAsyncSession();
         var replayHandler = new ReplayMusicTrackProjectionHandler(
@@ -130,9 +130,9 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
     private static async Task ReplayDiscoveryLifecycleAsync(RavenEmbeddedTestDatabase raven)
     {
         using var querySession = raven.Store.OpenAsyncSession();
-        var storedEvents = await querySession.Advanced.AsyncDocumentQuery<DiscoveryQueryStoredEventRecordDto>()
-            .ToListAsync(CancellationToken.None);
-        var criteriaValues = storedEvents.Select(x => x.Criteria).ToList();
+        var streamMetadata = await querySession.Advanced.LoadStartingWithAsync<DiscoveryQueryEventStreamMetadataRecordDto>(
+            "discovery-query-streams/");
+        var criteriaValues = streamMetadata.Select(x => x.Criteria).ToList();
 
         using var session = raven.Store.OpenAsyncSession();
         var replayHandler = new ReplayDiscoveryLifecycleProjectionHandler(

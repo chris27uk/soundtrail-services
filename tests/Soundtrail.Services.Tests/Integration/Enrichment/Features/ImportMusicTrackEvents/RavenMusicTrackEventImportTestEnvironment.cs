@@ -50,9 +50,9 @@ internal sealed class RavenMusicTrackEventImportTestEnvironment : IAsyncDisposab
             new ProjectMusicTrackCatalogHandler(
                 new RavenLoadMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()),
                 new RavenSaveMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper())));
-        var storedEvents = await session.Advanced.AsyncDocumentQuery<MusicTrackStoredEventRecordDto>()
-            .ToListAsync(CancellationToken.None);
-        var musicCatalogIds = storedEvents.Select(x => x.MusicCatalogId).ToList();
+        var streamMetadata = await session.Advanced.LoadStartingWithAsync<MusicTrackEventStreamMetadataRecordDto>(
+            "music-track-streams/");
+        var musicCatalogIds = streamMetadata.Select(x => x.MusicCatalogId).ToList();
 
         foreach (var musicCatalogId in musicCatalogIds.Distinct(StringComparer.Ordinal))
         {
