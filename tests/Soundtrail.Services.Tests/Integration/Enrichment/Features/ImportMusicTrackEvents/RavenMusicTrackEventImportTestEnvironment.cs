@@ -28,6 +28,7 @@ internal sealed class RavenMusicTrackEventImportTestEnvironment : IAsyncDisposab
         using var session = raven.Store.OpenAsyncSession();
         var handler = new ImportMusicTrackEventsHandler(new RavenMusicTrackStreamStore(session));
         await handler.Handle(command, CancellationToken.None);
+        await session.SaveChangesAsync(CancellationToken.None);
     }
 
     public async Task<CatalogTrackRecordDto?> LoadCatalogTrackAsync(string trackId)

@@ -1,15 +1,17 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Subscriptions;
 using Soundtrail.Contracts.EventSourcing;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Adapters;
+using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Discovery;
 
-namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle;
+namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Adapters;
 
 public sealed class ProjectDiscoveryLifecycleSubscriptionHostedService(
     IDocumentStore documentStore,
-    DiscoveryLifecycleProjectionApplier projectionApplier,
+    IServiceScopeFactory scopeFactory,
     ILogger<ProjectDiscoveryLifecycleSubscriptionHostedService> logger) : BackgroundService
 {
     private const string SubscriptionName = "discovery-lifecycle-projections";
@@ -63,16 +65,20 @@ public sealed class ProjectDiscoveryLifecycleSubscriptionHostedService(
         SubscriptionBatch<DiscoveryQueryStoredEventRecordDto> batch,
         CancellationToken cancellationToken)
     {
-        using var session = documentStore.OpenAsyncSession();
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var handler = scope.ServiceProvider.GetRequiredService<ProjectDiscoveryLifecycleHandler>();
 
-        foreach (var storedEvent in batch.Items
+        foreach (var stream in batch.Items
                      .Select(item => item.Result)
-                     .OrderBy(item => item.Criteria, StringComparer.Ordinal)
-                     .ThenBy(item => item.Version))
+                     .GroupBy(item => item.Criteria, StringComparer.Ordinal))
         {
-            await projectionApplier.ApplyStoredEventAsync(storedEvent, session, cancellationToken);
-        }
+            var command = new ProjectDiscoveryLifecycleCommand(
+                CatalogSearchCriteria.From(stream.Key),
+                stream.OrderBy(item => item.Version)
+                    .Select(item => item.ToDomainEvent())
+                    .ToArray());
 
-        await session.SaveChangesAsync(cancellationToken);
+            await handler.Handle(command, cancellationToken);
+        }
     }
 }

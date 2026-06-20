@@ -5,8 +5,8 @@ using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ImportCatalogSearchDiscoveryEvents;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Support;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ImportCatalogSearchDiscoveryEvents;
@@ -38,17 +38,23 @@ internal sealed class RavenDiscoveryLifecycleEventImportTestEnvironment : IAsync
 
     public async Task ReplayDiscoveryProjectionAsync()
     {
-        using var session = raven.Store.OpenAsyncSession();
-        var applier = new DiscoveryLifecycleProjectionApplier(new DiscoveryLifecycleProjectionMutationService());
-        var events = await session.Advanced.AsyncDocumentQuery<DiscoveryQueryStoredEventRecordDto>()
+        using var querySession = raven.Store.OpenAsyncSession();
+        var events = await querySession.Advanced.AsyncDocumentQuery<DiscoveryQueryStoredEventRecordDto>()
             .ToListAsync(CancellationToken.None);
 
-        foreach (var storedEvent in events.OrderBy(x => x.Criteria, StringComparer.Ordinal).ThenBy(x => x.Version))
-        {
-            await applier.ApplyStoredEventAsync(storedEvent, session, CancellationToken.None);
-        }
+        using var session = raven.Store.OpenAsyncSession();
+        var handler = new ProjectDiscoveryLifecycleHandler(
+            new RavenLoadDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()),
+            new RavenSaveDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()));
 
-        await session.SaveChangesAsync(CancellationToken.None);
+        foreach (var stream in events.OrderBy(x => x.Criteria, StringComparer.Ordinal).ThenBy(x => x.Version).GroupBy(x => x.Criteria, StringComparer.Ordinal))
+        {
+            await handler.Handle(
+                new ProjectDiscoveryLifecycleCommand(
+                    CatalogSearchCriteria.From(stream.Key),
+                    stream.Select(item => item.ToDomainEvent()).ToArray()),
+                CancellationToken.None);
+        }
     }
 
     public ValueTask DisposeAsync()

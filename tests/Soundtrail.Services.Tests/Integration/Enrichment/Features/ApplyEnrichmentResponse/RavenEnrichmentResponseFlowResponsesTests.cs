@@ -11,8 +11,8 @@ using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentRespons
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Support;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Support;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Documents;
@@ -116,7 +116,7 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
             new ProjectCatalogSearchTrackings(new RavenCatalogSearchTrackingStore(session.Advanced.DocumentStore, session)),
             new CompleteTrackedDiscoveries(
                 new RavenCatalogSearchTrackingStore(session.Advanced.DocumentStore, session),
-                new RavenCatalogSearchDiscoveryRepository(session.Advanced.DocumentStore))));
+                new RavenEnrichmentResponseCatalogSearchDiscoveryRepository(session))));
 
     private static async Task ReplayProjectionsAsync(RavenEmbeddedTestDatabase raven)
     {
@@ -143,17 +143,23 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
 
     private static async Task ReplayDiscoveryLifecycleAsync(RavenEmbeddedTestDatabase raven)
     {
-        using var session = raven.Store.OpenAsyncSession();
-        var events = await session.Advanced.AsyncDocumentQuery<DiscoveryQueryStoredEventRecordDto>()
+        using var querySession = raven.Store.OpenAsyncSession();
+        var events = await querySession.Advanced.AsyncDocumentQuery<DiscoveryQueryStoredEventRecordDto>()
             .ToListAsync(CancellationToken.None);
-        var applier = new DiscoveryLifecycleProjectionApplier(new DiscoveryLifecycleProjectionMutationService());
 
-        foreach (var storedEvent in events.OrderBy(x => x.Criteria).ThenBy(x => x.Version))
+        using var session = raven.Store.OpenAsyncSession();
+        var handler = new ProjectDiscoveryLifecycleHandler(
+            new RavenLoadDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()),
+            new RavenSaveDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()));
+
+        foreach (var stream in events.OrderBy(x => x.Criteria).ThenBy(x => x.Version).GroupBy(x => x.Criteria, StringComparer.Ordinal))
         {
-            await applier.ApplyStoredEventAsync(storedEvent, session, CancellationToken.None);
+            await handler.Handle(
+                new ProjectDiscoveryLifecycleCommand(
+                    CatalogSearchCriteria.From(stream.Key),
+                    stream.Select(item => item.ToDomainEvent()).ToArray()),
+                CancellationToken.None);
         }
-
-        await session.SaveChangesAsync(CancellationToken.None);
     }
 
     private static EnrichmentResponseDto CanonicalResponseDto() =>

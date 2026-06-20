@@ -183,6 +183,7 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
             var ravenAggregate = await CatalogEntityAggregate.LoadAsync(store, musicCatalogId, CancellationToken.None);
             ravenAggregate.RecordEnrichmentResponse(response);
             await ravenAggregate.SaveAsync(store, response.CommandId, CancellationToken.None);
+            await session.SaveChangesAsync(CancellationToken.None);
         }
 
         public Task<AppendMusicTrackStreamResult> AppendAsync(MusicCatalogId musicCatalogId, int expectedVersion, CommandId commandId, IReadOnlyList<IMusicTrackEvent> events)
@@ -199,7 +200,9 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
         {
             using var session = raven!.Store.OpenAsyncSession();
             var store = new RavenMusicTrackStreamStore(session);
-            return await store.AppendEventsAsync(musicCatalogId, expectedVersion, commandId, events, CancellationToken.None);
+            var append = await store.AppendEventsAsync(musicCatalogId, expectedVersion, commandId, events, CancellationToken.None);
+            await session.SaveChangesAsync(CancellationToken.None);
+            return append;
         }
 
         public Task<MusicTrackStream> LoadAsync(MusicCatalogId musicCatalogId)

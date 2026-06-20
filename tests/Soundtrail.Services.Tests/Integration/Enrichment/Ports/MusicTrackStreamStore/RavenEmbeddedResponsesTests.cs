@@ -28,6 +28,7 @@ public sealed class RavenEmbeddedResponsesTests
                 new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))
             ],
             CancellationToken.None);
+        await session.SaveChangesAsync(CancellationToken.None);
 
         append.Appended.Should().BeTrue();
 
@@ -57,6 +58,7 @@ public sealed class RavenEmbeddedResponsesTests
                 CommandId.For("ResolveCanonicalMetadata:mc_track_1"),
                 [new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))],
                 CancellationToken.None);
+            await session.SaveChangesAsync(CancellationToken.None);
         }
 
         using var verificationSession = raven.Store.OpenAsyncSession();
@@ -90,6 +92,7 @@ public sealed class RavenEmbeddedResponsesTests
                 commandId,
                 [new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))],
                 CancellationToken.None);
+            await firstSession.SaveChangesAsync(CancellationToken.None);
         }
 
         using var secondSession = raven.Store.OpenAsyncSession();
@@ -100,6 +103,7 @@ public sealed class RavenEmbeddedResponsesTests
             commandId,
             [new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))],
             CancellationToken.None);
+        await secondSession.SaveChangesAsync(CancellationToken.None);
 
         duplicate.Appended.Should().BeFalse();
 

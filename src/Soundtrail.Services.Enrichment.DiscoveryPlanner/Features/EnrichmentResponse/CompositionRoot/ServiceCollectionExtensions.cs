@@ -20,6 +20,8 @@ public static class ServiceCollectionExtensions
         services.TryAddScoped<AppendCatalogEnrichmentResponse>();
         services.TryAddScoped<CaptureProviderSnapshot>();
         services.TryAddScoped<ProjectCatalogSearchTrackings>();
+        services.TryAddScoped<RavenEnrichmentResponseCatalogSearchDiscoveryRepository>();
+        services.TryAddScoped<ICompleteTrackedDiscoveriesRepository>(sp => sp.GetRequiredService<RavenEnrichmentResponseCatalogSearchDiscoveryRepository>());
         services.TryAddScoped<CompleteTrackedDiscoveries>();
         services.TryAddScoped<EnrichmentResponseListener>();
 

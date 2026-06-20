@@ -70,32 +70,6 @@ public sealed class RavenMusicTrackStreamStore(
             await session.StoreAsync(storedEvent, cancellationToken);
         }
 
-        try
-        {
-            await session.SaveChangesAsync(cancellationToken);
-        }
-        catch (ConcurrencyException)
-        {
-            var applied = await WasCommandAppliedByAnotherSessionAsync(streamId, commandId, cancellationToken);
-            if (applied)
-            {
-                return new AppendMusicTrackStreamResult(false, expectedVersion, []);
-            }
-
-            throw;
-        }
-
         return new AppendMusicTrackStreamResult(true, metadata.Version, events.ToArray());
-    }
-
-    private async Task<bool> WasCommandAppliedByAnotherSessionAsync(
-        string streamId,
-        CommandId commandId,
-        CancellationToken cancellationToken)
-    {
-        var store = session.Advanced.DocumentStore;
-        using var verificationSession = store.OpenAsyncSession();
-        var metadata = await verificationSession.LoadAsync<MusicTrackEventStreamMetadataRecordDto>(streamId, cancellationToken);
-        return metadata?.AppliedCommandIds.Contains(commandId.Value) == true;
     }
 }

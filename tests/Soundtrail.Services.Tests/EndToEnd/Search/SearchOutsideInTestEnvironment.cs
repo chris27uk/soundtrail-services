@@ -12,6 +12,7 @@ using Soundtrail.Contracts;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain;
+using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
@@ -20,8 +21,8 @@ using Soundtrail.Services.Api.Features.SearchCatalog.Adapters;
 using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 using Soundtrail.Services.Api.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Support;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Wolverine;
 using Wolverine.Tracking;
@@ -281,20 +282,24 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
         var repository = new RavenCatalogSearchDiscoveryRepository(store);
         repository.AppendAsync(criteria, 0, events, CancellationToken.None).GetAwaiter().GetResult();
 
-        using var session = store.OpenAsyncSession();
-        var storedEvents = session.Advanced.AsyncDocumentQuery<DiscoveryQueryStoredEventRecordDto>()
+        using var querySession = store.OpenAsyncSession();
+        var storedEvents = querySession.Advanced.AsyncDocumentQuery<DiscoveryQueryStoredEventRecordDto>()
             .WhereEquals(nameof(DiscoveryQueryStoredEventRecordDto.Criteria), criteria.Value)
             .ToListAsync(CancellationToken.None)
             .GetAwaiter()
             .GetResult();
-        var applier = new DiscoveryLifecycleProjectionApplier(new DiscoveryLifecycleProjectionMutationService());
 
-        foreach (var storedEvent in storedEvents.OrderBy(x => x.Version))
-        {
-            applier.ApplyStoredEventAsync(storedEvent, session, CancellationToken.None).GetAwaiter().GetResult();
-        }
-
-        session.SaveChangesAsync(CancellationToken.None).GetAwaiter().GetResult();
+        using var session = store.OpenAsyncSession();
+        var handler = new ProjectDiscoveryLifecycleHandler(
+            new RavenLoadDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()),
+            new RavenSaveDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()));
+        handler.Handle(
+                new ProjectDiscoveryLifecycleCommand(
+                    criteria,
+                    storedEvents.OrderBy(x => x.Version).Select(item => item.ToDomainEvent()).ToArray()),
+                CancellationToken.None)
+            .GetAwaiter()
+            .GetResult();
     }
 
     private static void Set(object target, Type targetType, string propertyName, object? value) =>

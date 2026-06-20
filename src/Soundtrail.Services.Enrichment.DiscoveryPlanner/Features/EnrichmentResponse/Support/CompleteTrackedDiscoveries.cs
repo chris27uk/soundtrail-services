@@ -1,10 +1,11 @@
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Support;
 
 public sealed class CompleteTrackedDiscoveries(
     ICatalogSearchTrackingStore catalogSearchTrackingStore,
-    ICatalogSearchDiscoveryRepository discoveryRepository)
+    ICompleteTrackedDiscoveriesRepository discoveryRepository)
 {
     public async Task CompleteAsync(
         Soundtrail.Domain.Responses.EnrichmentResponse response,

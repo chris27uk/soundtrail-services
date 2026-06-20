@@ -8,7 +8,7 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Support;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ProjectionReplay;
@@ -138,17 +138,23 @@ public sealed class RavenDiscoveryLifecycleProjectionReplayResponsesTests
 
     private static async Task ReplayAsync(Raven.Client.Documents.IDocumentStore store)
     {
-        using var session = store.OpenAsyncSession();
-        var events = await session.Advanced.AsyncDocumentQuery<DiscoveryQueryStoredEventRecordDto>()
+        using var querySession = store.OpenAsyncSession();
+        var events = await querySession.Advanced.AsyncDocumentQuery<DiscoveryQueryStoredEventRecordDto>()
             .ToListAsync(CancellationToken.None);
-        var applier = new DiscoveryLifecycleProjectionApplier(new DiscoveryLifecycleProjectionMutationService());
 
-        foreach (var storedEvent in events.OrderBy(x => x.Criteria).ThenBy(x => x.Version))
+        using var session = store.OpenAsyncSession();
+        var handler = new ProjectDiscoveryLifecycleHandler(
+            new RavenLoadDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()),
+            new RavenSaveDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()));
+
+        foreach (var stream in events.OrderBy(x => x.Criteria).ThenBy(x => x.Version).GroupBy(x => x.Criteria, StringComparer.Ordinal))
         {
-            await applier.ApplyStoredEventAsync(storedEvent, session, CancellationToken.None);
+            await handler.Handle(
+                new ProjectDiscoveryLifecycleCommand(
+                    CatalogSearchCriteria.From(stream.Key),
+                    stream.Select(item => item.ToDomainEvent()).ToArray()),
+                CancellationToken.None);
         }
-
-        await session.SaveChangesAsync(CancellationToken.None);
     }
 
     private static CatalogSearchAttempt Request(CatalogSearchCriteria criteria) =>
