@@ -2,10 +2,10 @@ using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Model;
-using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog.Adapters;
-using Soundtrail.Services.Catalog.Projector.Features.ReplayMusicTrackCatalogProjection.StoredEvents;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection.Adapters;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ReplayMusicTrackProjection.StoredEvents;
 
-namespace Soundtrail.Services.Catalog.Projector.Features.ReplayMusicTrackCatalogProjection.Adapters;
+namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ReplayMusicTrackProjection.Adapters;
 
 public sealed class RavenLoadStoredMusicTrackEvents(
     IAsyncDocumentSession session) : ILoadStoredMusicTrackEventsPort

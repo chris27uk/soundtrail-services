@@ -17,6 +17,8 @@ using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ReplayDiscoveryLi
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ReplayDiscoveryLifecycleProjection.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection.Adapters;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ReplayMusicTrackProjection;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ReplayMusicTrackProjection.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Documents;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
@@ -34,22 +36,6 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
 
         using (var seedSession = raven.Store.OpenAsyncSession())
         {
-            await seedSession.StoreAsync(new RavenTrackRecordDto
-            {
-                Id = RavenTrackRecordDto.GetDocumentId("mc_track_1"),
-                ArtistId = "artist_test_artist",
-                AlbumId = "album_rare_album",
-                Title = "Rare Unknown Song",
-                Artist = "Test Artist",
-                AlbumTitle = "Rare Album",
-                SearchText = RavenTrackRecordDto.BuildSearchText("Rare Unknown Song", "Test Artist"),
-                CanonicalMetadata = new RavenSongMetadataRecordDto
-                {
-                    Title = "Rare Unknown Song",
-                    Artist = "Test Artist"
-                },
-                IsPlayable = false
-            });
             var trackingStore = new RavenCatalogSearchTrackingStore(raven.Store, seedSession);
             await trackingStore.UpsertAsync(
                 new CatalogSearchTracking(
@@ -83,8 +69,8 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
             CancellationToken.None);
 
         track.Should().NotBeNull();
-        track!.IsPlayable.Should().BeTrue();
-        track.AppleId.Should().Be("apple-track-1");
+        track!.AppleId.Should().Be("apple-track-1");
+        track.IsPlayable.Should().BeTrue();
         track.Title.Should().Be("Rare Unknown Song");
         track.Artist.Should().Be("Test Artist");
 
@@ -121,25 +107,24 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
 
     private static async Task ReplayProjectionsAsync(RavenEmbeddedTestDatabase raven)
     {
-        using var session = raven.Store.OpenAsyncSession();
-        var events = await session.Advanced.AsyncDocumentQuery<MusicTrackStoredEventRecordDto>()
+        using var querySession = raven.Store.OpenAsyncSession();
+        var events = await querySession.Advanced.AsyncDocumentQuery<MusicTrackStoredEventRecordDto>()
             .ToListAsync(CancellationToken.None);
-        var handler = new ProjectMusicTrackProjectionHandler(
-            new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
-            new RavenSaveMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()));
+        var musicCatalogIds = events.Select(x => x.MusicCatalogId).Distinct(StringComparer.Ordinal).ToList();
 
-        foreach (var stream in events.GroupBy(x => x.MusicCatalogId, StringComparer.Ordinal))
+        using var session = raven.Store.OpenAsyncSession();
+        var replayHandler = new ReplayMusicTrackProjectionHandler(
+            new RavenLoadStoredMusicTrackEvents(session),
+            new ProjectMusicTrackProjectionHandler(
+                new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
+                new RavenSaveMusicTrackProjection(session, new RavenMusicTrackProjectionMapper())));
+
+        foreach (var musicCatalogId in musicCatalogIds)
         {
-            await handler.Handle(
-                new ProjectMusicTrackProjectionCommand(
-                    MusicCatalogId.From(stream.Key),
-                    stream.OrderBy(x => x.Version)
-                        .Select(x => new VersionedMusicTrackEvent(x.Version, x.ToDomainEvent()))
-                        .ToArray()),
+            await replayHandler.Handle(
+                new ReplayMusicTrackProjectionCommand(MusicCatalogId.From(musicCatalogId)),
                 CancellationToken.None);
         }
-
-        await session.SaveChangesAsync(CancellationToken.None);
     }
 
     private static async Task ReplayDiscoveryLifecycleAsync(RavenEmbeddedTestDatabase raven)

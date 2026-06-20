@@ -23,5 +23,6 @@ public sealed class RavenSaveMusicTrackProjection(
 
         mapper.MapOntoDocument(document, projection);
         await session.StoreAsync(document, cancellationToken);
+        await session.SaveChangesAsync(cancellationToken);
     }
 }

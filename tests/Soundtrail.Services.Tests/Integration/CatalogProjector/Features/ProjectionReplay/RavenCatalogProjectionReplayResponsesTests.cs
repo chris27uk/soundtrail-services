@@ -48,6 +48,60 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
     }
 
     [Fact]
+    public async Task Given_Persisted_MusicTrack_Stored_Events_When_Replaying_Then_Catalog_Documents_Are_Rebuilt_From_The_Event_Stream()
+    {
+        await using var env = RavenCatalogProjectionReplayTestEnvironment.Create();
+
+        await env.AppendStoredEventsAsync(
+            MinimalTrackInfo("mc_track_1", 1, "Mr. Brightside", "The Killers"),
+            ArtistDiscovered("mc_track_1", 2, "artist_the_killers", "The Killers"),
+            AlbumDiscovered("mc_track_1", 3, "album_hot_fuss", "Hot Fuss"),
+            ProviderResolved("mc_track_1", 4, ProviderName.Spotify, "spotify-1"));
+
+        var replayedEventCount = await env.ReplayAsync(MusicCatalogId.From("mc_track_1"));
+        var track = await env.LoadTrackAsync("mc_track_1");
+        var artist = await env.LoadArtistAsync("artist_the_killers");
+        var album = await env.LoadAlbumAsync("album_hot_fuss");
+        var search = await env.SearchAsync("mr brightside", types: "track", playback: "spotify");
+
+        replayedEventCount.Should().Be(4);
+
+        track.Should().NotBeNull();
+        track!.ArtistId.Should().Be("artist_the_killers");
+        track.AlbumId.Should().Be("album_hot_fuss");
+        track.AvailableProviders.Should().Contain(ProviderName.Spotify.Value);
+
+        artist.Should().NotBeNull();
+        artist!.AvailableProviders.Should().Contain(ProviderName.Spotify.Value);
+
+        album.Should().NotBeNull();
+        album!.AvailableProviders.Should().Contain(ProviderName.Spotify.Value);
+
+        search.Results.Should().ContainSingle();
+        search.Results[0].Id.Should().Be("mc_track_1");
+    }
+
+    [Fact]
+    public async Task Given_Persisted_MusicTrack_Stored_Events_For_Multiple_Streams_When_Replaying_One_Stream_Then_Only_That_Stream_Is_Rebuilt()
+    {
+        await using var env = RavenCatalogProjectionReplayTestEnvironment.Create();
+
+        await env.AppendStoredEventsAsync(
+            MinimalTrackInfo("mc_track_1", 1, "Mr. Brightside", "The Killers"),
+            ArtistDiscovered("mc_track_1", 2, "artist_the_killers", "The Killers"),
+            MinimalTrackInfo("mc_track_2", 1, "Smile Like You Mean It", "The Killers"),
+            ArtistDiscovered("mc_track_2", 2, "artist_the_killers", "The Killers"));
+
+        var replayedEventCount = await env.ReplayAsync(MusicCatalogId.From("mc_track_1"));
+        var firstTrack = await env.LoadTrackAsync("mc_track_1");
+        var secondTrack = await env.LoadTrackAsync("mc_track_2");
+
+        replayedEventCount.Should().Be(2);
+        firstTrack.Should().NotBeNull();
+        secondTrack.Should().BeNull();
+    }
+
+    [Fact]
     public async Task Given_Album_Linked_Before_Artist_Linked_When_Projecting_Then_The_Album_Hierarchy_Is_Repaired_When_Artist_Arrives()
     {
         await using var env = RavenCatalogProjectionReplayTestEnvironment.Create();

@@ -13,9 +13,9 @@ public sealed class RavenLoadStoredDiscoveryLifecycleEvents(
         CatalogSearchCriteria criteria,
         CancellationToken cancellationToken)
     {
-        var events = await session.Advanced.AsyncDocumentQuery<DiscoveryQueryStoredEventRecordDto>()
-            .WhereEquals(nameof(DiscoveryQueryStoredEventRecordDto.Criteria), criteria.Value)
-            .ToListAsync(cancellationToken);
+        var events = (await session.Advanced.LoadStartingWithAsync<DiscoveryQueryStoredEventRecordDto>(
+                $"discovery-query-events/{criteria.Value}/"))
+            .ToList();
 
         return events
             .OrderBy(x => x.Version)

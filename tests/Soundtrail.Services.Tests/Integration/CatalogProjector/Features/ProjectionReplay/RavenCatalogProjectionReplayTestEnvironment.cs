@@ -9,6 +9,8 @@ using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog;
 using Soundtrail.Services.Api.Infrastructure.Raven;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog.Adapters;
+using Soundtrail.Services.Catalog.Projector.Features.ReplayMusicTrackCatalogProjection;
+using Soundtrail.Services.Catalog.Projector.Features.ReplayMusicTrackCatalogProjection.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using System.Reflection;
 
@@ -36,6 +38,7 @@ internal sealed class RavenCatalogProjectionReplayTestEnvironment : IAsyncDispos
     public async Task ApplyAsync(params MusicTrackStoredEventRecordDto[] storedEvents)
     {
         using var session = raven.Store.OpenAsyncSession();
+        session.Advanced.WaitForIndexesAfterSaveChanges();
         var handler = new ProjectMusicTrackCatalogHandler(
             new RavenLoadMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()),
             new RavenSaveMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()));
@@ -48,6 +51,36 @@ internal sealed class RavenCatalogProjectionReplayTestEnvironment : IAsyncDispos
                     stream.Select(item => new VersionedMusicTrackEvent(item.Version, item.ToDomainEvent())).ToArray()),
                 CancellationToken.None);
         }
+    }
+
+    public async Task AppendStoredEventsAsync(params MusicTrackStoredEventRecordDto[] storedEvents)
+    {
+        using var session = raven.Store.OpenAsyncSession();
+        session.Advanced.WaitForIndexesAfterSaveChanges();
+
+        foreach (var storedEvent in storedEvents)
+        {
+            await session.StoreAsync(storedEvent, storedEvent.Id, CancellationToken.None);
+        }
+
+        await session.SaveChangesAsync(CancellationToken.None);
+    }
+
+    public async Task<int> ReplayAsync(MusicCatalogId musicCatalogId)
+    {
+        using var session = raven.Store.OpenAsyncSession();
+        session.Advanced.WaitForIndexesAfterSaveChanges();
+        var handler = new ReplayMusicTrackCatalogProjectionHandler(
+            new RavenLoadStoredMusicTrackEvents(session),
+            new ProjectMusicTrackCatalogHandler(
+                new RavenLoadMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()),
+                new RavenSaveMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper())));
+
+        var result = await handler.Handle(
+            new ReplayMusicTrackCatalogProjectionCommand(musicCatalogId),
+            CancellationToken.None);
+
+        return result.ReplayedEventCount;
     }
 
     public async Task<CatalogTrackRecordDto?> LoadTrackAsync(string trackId)

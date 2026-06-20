@@ -9,6 +9,8 @@ using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentRespons
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Documents;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ReplayMusicTrackProjection;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ReplayMusicTrackProjection.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ProjectionReplay;
@@ -68,6 +70,80 @@ public sealed class MusicTrackProjectionReplayResponsesTests
         await handler.Handle(ToCommand(musicCatalogId, storedEvents), CancellationToken.None);
 
         await session.SaveChangesAsync(CancellationToken.None);
+
+        using var verificationSession = raven.Store.OpenAsyncSession();
+        var projection = await verificationSession.LoadAsync<RavenTrackRecordDto>(
+            RavenTrackRecordDto.GetDocumentId(musicCatalogId.Value),
+            CancellationToken.None);
+
+        projection.Should().NotBeNull();
+        projection!.Title.Should().Be("Song A");
+        projection.Artist.Should().Be("Artist A");
+        projection.AppleId.Should().Be("apple-1");
+        projection.IsPlayable.Should().BeTrue();
+        projection.ProjectionVersion.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Given_Persisted_MusicTrack_Stored_Events_When_Replaying_Then_The_Track_Projection_Is_Rebuilt_From_The_Event_Stream()
+    {
+        using var raven = RavenEmbeddedTestDatabase.Create();
+        var musicCatalogId = MusicCatalogId.From("mc_track_1");
+        var commandId = CommandId.For("ResolveCanonicalMetadata:mc_track_1");
+
+        using (var seedSession = raven.Store.OpenAsyncSession())
+        {
+            await seedSession.StoreAsync(new MusicTrackStoredEventRecordDto
+            {
+                Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId.Value, 1),
+                MusicCatalogId = musicCatalogId.Value,
+                Version = 1,
+                EventType = nameof(TrackDiscovered),
+                Data = System.Text.Json.JsonSerializer.Serialize(
+                    new TrackDiscoveredEventDataRecordDto(
+                        "Song A",
+                        "Artist A",
+                        123000,
+                        "isrc-1",
+                        "mbid-1",
+                        ProviderName.MusicBrainz.Value,
+                        new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))),
+                OccurredAtUtc = new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero),
+                CausationId = commandId.Value
+            });
+            await seedSession.StoreAsync(new MusicTrackStoredEventRecordDto
+            {
+                Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId.Value, 2),
+                MusicCatalogId = musicCatalogId.Value,
+                Version = 2,
+                EventType = nameof(ProviderReferenceDiscovered),
+                Data = System.Text.Json.JsonSerializer.Serialize(
+                    new ProviderReferenceDiscoveredEventDataRecordDto(
+                        ProviderName.AppleMusic.Value,
+                        "apple-1",
+                        "https://music.apple.com/us/song/song-a?i=apple-1",
+                        ProviderName.Odesli.Value,
+                        new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero))),
+                OccurredAtUtc = new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero),
+                CausationId = commandId.Value
+            });
+            await seedSession.SaveChangesAsync(CancellationToken.None);
+        }
+
+        using (var replaySession = raven.Store.OpenAsyncSession())
+        {
+            var replayHandler = new ReplayMusicTrackProjectionHandler(
+                new RavenLoadStoredMusicTrackEvents(replaySession),
+                new ProjectMusicTrackProjectionHandler(
+                    new RavenLoadMusicTrackProjection(replaySession, new RavenMusicTrackProjectionMapper()),
+                    new RavenSaveMusicTrackProjection(replaySession, new RavenMusicTrackProjectionMapper())));
+
+            var result = await replayHandler.Handle(
+                new ReplayMusicTrackProjectionCommand(musicCatalogId),
+                CancellationToken.None);
+
+            result.ReplayedEventCount.Should().Be(2);
+        }
 
         using var verificationSession = raven.Store.OpenAsyncSession();
         var projection = await verificationSession.LoadAsync<RavenTrackRecordDto>(
