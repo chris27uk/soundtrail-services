@@ -14,7 +14,8 @@ internal sealed class TrackCatalogue_BySearchText : AbstractIndexCreationTask<Ra
                             track.NormalizedArtist,
                             track.NormalizedAlbumTitle,
                             track.NormalizedIsrc,
-                            track.NormalizedMbid
+                            track.NormalizedMbid,
+                            track.ReleaseDate
                         };
 
         Index(x => x.SearchText, FieldIndexing.Search);

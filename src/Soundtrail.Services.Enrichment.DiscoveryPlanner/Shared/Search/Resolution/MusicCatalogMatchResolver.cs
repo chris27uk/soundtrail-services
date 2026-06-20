@@ -7,6 +7,22 @@ public sealed class MusicCatalogMatchResolver
 
     public MusicCatalogResolution Resolve(IReadOnlyList<MusicCatalogMatch> matches)
     {
+        var exactIdentityMatches = matches
+            .Where(static match => match.HasExactIdentityMatch())
+            .OrderByDescending(static match => match.Score)
+            .Take(2)
+            .ToArray();
+
+        if (exactIdentityMatches.Length == 1)
+        {
+            return MusicCatalogResolution.Resolved(exactIdentityMatches[0].MusicCatalogId);
+        }
+
+        if (exactIdentityMatches.Length > 1)
+        {
+            return MusicCatalogResolution.Ambiguous();
+        }
+
         var topMatches = matches
             .OrderByDescending(static match => match.Score)
             .Take(2)

@@ -20,7 +20,20 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
             CreateResolvingAs(MusicCatalogId.From("mc_track_1"));
 
         public void ResolveAs(MusicCatalogId musicCatalogId) =>
-            this.matches = [new MusicCatalogMatch(musicCatalogId, 1.00m)];
+            this.matches =
+            [
+                new MusicCatalogMatch(
+                    musicCatalogId,
+                    1.00m,
+                    new MusicCatalogMatchEvidence(
+                        true,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null))
+            ];
 
         public void ReturnMatches(params MusicCatalogMatch[] matches) => this.matches = matches;
 
