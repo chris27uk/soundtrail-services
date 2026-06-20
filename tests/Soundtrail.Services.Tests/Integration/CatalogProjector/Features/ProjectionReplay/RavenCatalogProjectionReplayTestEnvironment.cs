@@ -2,13 +2,13 @@ using Raven.Client.Documents;
 using Raven.Client.Documents.Indexes;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
+using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog;
 using Soundtrail.Services.Api.Infrastructure.Raven;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog.Adapters;
-using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog.Support;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using System.Reflection;
 
@@ -21,13 +21,8 @@ internal sealed class RavenCatalogProjectionReplayTestEnvironment : IAsyncDispos
     private RavenCatalogProjectionReplayTestEnvironment(RavenEmbeddedTestDatabase raven)
     {
         this.raven = raven;
-        Handler = new ProjectMusicTrackCatalogHandler(
-            raven.Store,
-            new CatalogMusicTrackProjectionApplier(new CatalogProjectionMutationService()));
         Search = new RavenCatalogSearch(raven.Store);
     }
-
-    public ProjectMusicTrackCatalogHandler Handler { get; }
 
     public RavenCatalogSearch Search { get; }
 
@@ -40,9 +35,19 @@ internal sealed class RavenCatalogProjectionReplayTestEnvironment : IAsyncDispos
 
     public async Task ApplyAsync(params MusicTrackStoredEventRecordDto[] storedEvents)
     {
-        using var session = raven.Store.OpenSession();
-        session.Advanced.WaitForIndexesAfterSaveChanges();
-        await Handler.HandleAsync(storedEvents, CancellationToken.None);
+        using var session = raven.Store.OpenAsyncSession();
+        var handler = new ProjectMusicTrackCatalogHandler(
+            new RavenLoadMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()),
+            new RavenSaveMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()));
+
+        foreach (var stream in storedEvents.OrderBy(x => x.MusicCatalogId, StringComparer.Ordinal).ThenBy(x => x.Version).GroupBy(x => x.MusicCatalogId, StringComparer.Ordinal))
+        {
+            await handler.Handle(
+                new ProjectMusicTrackCatalogCommand(
+                    MusicCatalogId.From(stream.Key),
+                    stream.Select(item => new VersionedMusicTrackEvent(item.Version, item.ToDomainEvent())).ToArray()),
+                CancellationToken.None);
+        }
     }
 
     public async Task<CatalogTrackRecordDto?> LoadTrackAsync(string trackId)

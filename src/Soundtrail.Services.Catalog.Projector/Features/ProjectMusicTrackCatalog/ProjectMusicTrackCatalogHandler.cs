@@ -1,27 +1,31 @@
-using Raven.Client.Documents;
-using Soundtrail.Contracts.EventSourcing;
-using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog.Adapters;
+using Soundtrail.Domain;
+using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Responses;
+using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog.ProjectionModel;
 
 namespace Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog;
 
 public sealed class ProjectMusicTrackCatalogHandler(
-    IDocumentStore documentStore,
-    CatalogMusicTrackProjectionApplier projectionApplier)
+    ILoadMusicTrackCatalogProjectionPort loadPort,
+    ISaveMusicTrackCatalogProjectionPort savePort)
 {
-    public async Task HandleAsync(
-        IReadOnlyCollection<MusicTrackStoredEventRecordDto> storedEvents,
-        CancellationToken cancellationToken)
+    public async Task<ProjectMusicTrackCatalogResult> Handle(
+        ProjectMusicTrackCatalogCommand command,
+        CancellationToken cancellationToken = default)
     {
-        using var session = documentStore.OpenAsyncSession();
-        session.Advanced.WaitForIndexesAfterSaveChanges();
+        var projection = await loadPort.LoadAsync(command.MusicCatalogId, cancellationToken);
 
-        foreach (var storedEvent in storedEvents
-                     .OrderBy(item => item.MusicCatalogId, StringComparer.Ordinal)
-                     .ThenBy(item => item.Version))
+        foreach (var item in command.Events.OrderBy(x => x.Version))
         {
-            await projectionApplier.ApplyStoredEventAsync(storedEvent, session, cancellationToken);
+            if (projection.ProjectionVersion >= item.Version)
+            {
+                continue;
+            }
+
+            projection.Apply(item.Event, item.Version);
         }
 
-        await session.SaveChangesAsync(cancellationToken);
+        await savePort.SaveAsync(projection, cancellationToken);
+        return new ProjectMusicTrackCatalogResult(command.Events.Count);
     }
 }

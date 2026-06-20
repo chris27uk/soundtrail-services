@@ -111,12 +111,10 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
 
     private static EnrichmentResponseListener CreateListener(Raven.Client.Documents.Session.IAsyncDocumentSession session) =>
         new(new ApplyEnrichmentResponseHandler(
-            new AppendCatalogEnrichmentResponse(new RavenMusicTrackStreamStore(session)),
             new CaptureProviderSnapshot(new RavenProviderSnapshotStore(session)),
-            new ProjectCatalogSearchTrackings(new RavenCatalogSearchTrackingStore(session.Advanced.DocumentStore, session)),
-            new CompleteTrackedDiscoveries(
-                new RavenCatalogSearchTrackingStore(session.Advanced.DocumentStore, session),
-                new RavenEnrichmentResponseCatalogSearchDiscoveryRepository(session))));
+            new RavenMusicTrackStreamStore(session),
+            new RavenCatalogSearchTrackingStore(session.Advanced.DocumentStore, session),
+            new RavenEnrichmentResponseCatalogSearchDiscoveryRepository(session)));
 
     private static async Task ReplayProjectionsAsync(RavenEmbeddedTestDatabase raven)
     {

@@ -17,12 +17,9 @@ public static class ServiceCollectionExtensions
         options.ConfigureDependencies?.Invoke(services);
 
         services.TryAddScoped<ApplyEnrichmentResponseHandler>();
-        services.TryAddScoped<AppendCatalogEnrichmentResponse>();
         services.TryAddScoped<CaptureProviderSnapshot>();
-        services.TryAddScoped<ProjectCatalogSearchTrackings>();
         services.TryAddScoped<RavenEnrichmentResponseCatalogSearchDiscoveryRepository>();
         services.TryAddScoped<ICompleteTrackedDiscoveriesRepository>(sp => sp.GetRequiredService<RavenEnrichmentResponseCatalogSearchDiscoveryRepository>());
-        services.TryAddScoped<CompleteTrackedDiscoveries>();
         services.TryAddScoped<EnrichmentResponseListener>();
 
         return services;

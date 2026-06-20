@@ -17,10 +17,10 @@ internal sealed class ApplyEnrichmentResponseHandlerTestEnvironment
         CatalogSearchTrackings = new CatalogSearchTrackingStoreFake();
         DiscoveryRepository = new CatalogSearchDiscoveryRepositoryFake();
         Handler = new ApplyEnrichmentResponseHandler(
-            new AppendCatalogEnrichmentResponse(StreamStore),
             new CaptureProviderSnapshot(SnapshotStore),
-            new ProjectCatalogSearchTrackings(CatalogSearchTrackings),
-            new CompleteTrackedDiscoveries(CatalogSearchTrackings, DiscoveryRepository));
+            StreamStore,
+            CatalogSearchTrackings,
+            DiscoveryRepository);
     }
 
     public ApplyEnrichmentResponseHandler Handler { get; }
