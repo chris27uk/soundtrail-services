@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Events;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using System.Net;
 
@@ -104,6 +105,37 @@ public sealed class CatalogBrowsingOutsideInTests
         var response = await env.GetTrackRawAsync("artist_someone_else", "album_hot_fuss", "track_mr_brightside");
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Given_Imported_Events_When_Catalog_Projection_Is_Rebuilt_Then_Catalog_Routes_Return_Rebuilt_Read_Models()
+    {
+        await using var env = await CatalogBrowsingOutsideInTestEnvironment.CreateAsync(store =>
+            CatalogBrowsingOutsideInTestEnvironment.SeedRebuiltCatalogFromImportedEvents(
+                store,
+                MusicCatalogId.From("mc_track_1"),
+                new TrackDiscovered("Mr. Brightside", "The Killers", 222000, "USIR20400274", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero)),
+                new ArtistDiscovered("artist_the_killers", "The Killers", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 1, 0, TimeSpan.Zero)),
+                new AlbumDiscovered("album_hot_fuss", "Hot Fuss", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 2, 0, TimeSpan.Zero)),
+                new ProviderReferenceDiscovered(ProviderName.Spotify, "spotify-track-1", new Uri("https://open.spotify.com/track/spotify-track-1"), ProviderName.Odesli, new DateTimeOffset(2026, 6, 16, 12, 3, 0, TimeSpan.Zero))));
+
+        var artist = await env.GetArtistAsync("artist_the_killers");
+        var album = await env.GetAlbumAsync("artist_the_killers", "album_hot_fuss");
+        var track = await env.GetTrackAsync("artist_the_killers", "album_hot_fuss", "mc_track_1");
+
+        artist.Id.Should().Be("artist_the_killers");
+        artist.Name.Should().Be("The Killers");
+        artist.Albums.Select(x => x.Id).Should().Contain("album_hot_fuss");
+
+        album.Id.Should().Be("album_hot_fuss");
+        album.Name.Should().Be("Hot Fuss");
+        album.Tracks.Select(x => x.Id).Should().Contain("mc_track_1");
+
+        track.Id.Should().Be("mc_track_1");
+        track.Title.Should().Be("Mr. Brightside");
+        track.Isrc.Should().Be("USIR20400274");
+        track.PlayabilityStatus.Should().Be("Playable");
+        track.AvailableProviders.Should().Contain("spotify");
     }
 
     private static CatalogBrowsingOutsideInTestEnvironment.CatalogSeedTrack MrBrightside() =>

@@ -277,4 +277,49 @@ public sealed class SearchOutsideInTests
         env.CountMessages<CatalogSearchAttemptDto>().Should().Be(1);
         (await env.CountDiscoveryRequestEventsAsync(criteria)).Should().Be(1);
     }
+
+    [Fact]
+    public async Task Given_Imported_Events_When_Catalog_And_Discovery_Projections_Are_Rebuilt_Then_Search_Returns_Rebuilt_Read_Models()
+    {
+        await using var env = await SearchOutsideInTestEnvironment.CreateAsync(store =>
+        {
+            SearchOutsideInTestEnvironment.SeedRebuiltCatalogProjectionFromImportedEvents(
+                store,
+                MusicCatalogId.From("mc_track_1"),
+                new TrackDiscovered("Rare Unknown Song", "Test Artist", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero)),
+                new ArtistDiscovered("artist_test_artist", "Test Artist", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 1, 0, TimeSpan.Zero)),
+                new AlbumDiscovered("album_rare_album", "Rare Album", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 2, 0, TimeSpan.Zero)),
+                new ProviderReferenceDiscovered(ProviderName.AppleMusic, "apple-track-1", new Uri("https://music.apple.com/track/1"), ProviderName.Odesli, new DateTimeOffset(2026, 6, 16, 12, 3, 0, TimeSpan.Zero)));
+
+            var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
+            SearchOutsideInTestEnvironment.SeedRebuiltDiscoveryProjectionFromImportedEvents(
+                store,
+                criteria,
+                new DiscoveryRequested(
+                    criteria,
+                    Domain.Model.NormalizedSearchQuery.FromText("rare unknown song"),
+                    1,
+                    10,
+                    new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero),
+                    CorrelationId.From("corr-1")),
+                new DiscoveryCompleted(
+                    criteria,
+                    LookupPriorityBand.High,
+                    false,
+                    "Discovery completed",
+                    new DateTimeOffset(2026, 6, 16, 12, 5, 0, TimeSpan.Zero)));
+        });
+
+        var response = await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track", playback: "appleMusic");
+
+        response.Results.Should().ContainSingle();
+        response.Results[0].Id.Should().Be("mc_track_1");
+        response.Results[0].Name.Should().Be("Rare Unknown Song");
+        response.Results[0].ArtistName.Should().Be("Test Artist");
+        response.Results[0].AlbumName.Should().Be("Rare Album");
+        response.Results[0].PlayabilityStatus.Should().Be("Playable");
+        response.Results[0].AvailableProviders.Should().ContainSingle().Which.Should().Be("appleMusic");
+        response.Discovery.WillBeLookedUp.Should().BeFalse();
+        response.Discovery.Reason.Should().Be("Discovery completed");
+    }
 }
