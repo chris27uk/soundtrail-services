@@ -246,10 +246,13 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
 
         artist.Should().NotBeNull();
         artist!.Name.Should().Be("The Killers");
+        artist.MusicBrainzArtistId.Should().Be("mb-artist-the-killers");
 
         album.Should().NotBeNull();
         album!.Name.Should().Be("Hot Fuss");
         album.ArtistId.Should().Be("artist_the_killers");
+        album.MusicBrainzReleaseId.Should().Be("mb-release-hot-fuss");
+        album.ReleaseDate.Should().Be(new DateOnly(2004, 6, 7));
 
         search.Results.Should().ContainSingle();
         search.Results[0].Name.Should().Be("Mr. Brightside");
@@ -458,8 +461,11 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
                 title,
                 artistName,
                 artistId,
+                "mb-artist-the-killers",
                 albumTitle,
                 albumId,
+                "mb-release-hot-fuss",
+                new DateOnly(2004, 6, 7),
                 222000,
                 "USIR20400274",
                 "mbid-1",

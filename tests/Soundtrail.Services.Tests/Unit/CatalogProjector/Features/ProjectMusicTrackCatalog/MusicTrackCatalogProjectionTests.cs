@@ -108,8 +108,11 @@ public sealed class MusicTrackCatalogProjectionTests
                 "Mr. Brightside",
                 "The Killers",
                 "artist_the_killers",
+                "mb-artist-the-killers",
                 "Hot Fuss",
                 "album_hot_fuss",
+                "mb-release-hot-fuss",
+                new DateOnly(2004, 6, 7),
                 222000,
                 "USIR20400274",
                 "mbid-1",
@@ -124,8 +127,11 @@ public sealed class MusicTrackCatalogProjectionTests
         projection.Track.AlbumName.Should().Be("Hot Fuss");
         projection.Track.SearchText.Should().Be("mr. brightside the killers");
         projection.Artist!.Name.Should().Be("The Killers");
+        projection.Artist.MusicBrainzArtistId.Should().Be("mb-artist-the-killers");
         projection.Album!.Name.Should().Be("Hot Fuss");
         projection.Album.ArtistId.Should().Be("artist_the_killers");
+        projection.Album.MusicBrainzReleaseId.Should().Be("mb-release-hot-fuss");
+        projection.Album.ReleaseDate.Should().Be(new DateOnly(2004, 6, 7));
     }
 
     [Fact]
