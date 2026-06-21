@@ -1,6 +1,8 @@
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search.Resolution;
 
-public sealed record MusicCatalogResolutionContext(DateOnly? ReleaseDate)
+public sealed record MusicCatalogResolutionContext(
+    string? NormalizedQuery,
+    DateOnly? ReleaseDate)
 {
-    public static MusicCatalogResolutionContext Empty { get; } = new((DateOnly?)null);
+    public static MusicCatalogResolutionContext Empty { get; } = new(null, null);
 }

@@ -59,7 +59,7 @@ public sealed class CatalogSearchAttemptHandler(
         var localTrackForResolution = await TryLoadResolutionTrackAsync(request.Criteria, cancellationToken);
         var resolution = musicCatalogMatchResolver.Resolve(
             matches,
-            new MusicCatalogResolutionContext(localTrackForResolution?.ReleaseDate));
+            new MusicCatalogResolutionContext(request.Query.Value, localTrackForResolution?.ReleaseDate));
         if (!resolution.IsResolved)
         {
             throw new ResolutionFailedException(resolution.Outcome);

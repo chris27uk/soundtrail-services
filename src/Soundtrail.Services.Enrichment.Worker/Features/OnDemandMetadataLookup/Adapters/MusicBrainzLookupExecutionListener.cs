@@ -55,7 +55,9 @@ public sealed class MusicBrainzLookupExecutionListener(OnDemandLookupMetadataHan
                         result.Response.Metadata.Artist,
                         result.Response.Metadata.Isrc,
                         result.Response.Metadata.Mbid,
-                        result.Response.Metadata.DurationMs),
+                        result.Response.Metadata.DurationMs,
+                        result.Response.Metadata.AlbumTitle,
+                        result.Response.Metadata.ReleaseDate),
                 result.Response.References.Select(reference => new ExternalReferenceDto(
                     reference.Provider.Value,
                     reference.Url,

@@ -370,6 +370,7 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
             AlbumDiscovered = new AlbumDiscoveredEventDataRecordDto(
                 albumId,
                 albumName,
+                new DateOnly(2004, 6, 7),
                 ProviderName.MusicBrainz.Value,
                 new DateTimeOffset(2026, 6, 15, 12, 2, 0, TimeSpan.Zero)),
             OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 2, 0, TimeSpan.Zero)

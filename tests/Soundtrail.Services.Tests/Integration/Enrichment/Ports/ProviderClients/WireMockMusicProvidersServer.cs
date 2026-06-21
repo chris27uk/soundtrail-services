@@ -41,7 +41,15 @@ internal sealed class WireMockMusicProvidersServer : IDisposable
             (track, artist, album) =>
             {
                 EnqueueResponse("/ws/2/recording", BuildRecordingSearchResponse(
-                    (metadata.Mbid, metadata.Title, metadata.DurationMs, "100", Array.Empty<string>(), metadata.Artist, album, null)));
+                    (
+                        metadata.Mbid,
+                        metadata.Title,
+                        metadata.DurationMs,
+                        "100",
+                        Array.Empty<string>(),
+                        metadata.Artist,
+                        metadata.AlbumTitle ?? album,
+                        metadata.ReleaseDate?.ToString("yyyy-MM-dd"))));
 
                 return 0;
             },

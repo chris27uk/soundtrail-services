@@ -49,10 +49,10 @@ namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicCatalogCan
             }
 
             IReadOnlyList<MusicCatalogMatch> matches = this.entries
-                .Where(entry => entry.SearchText.Contains(query.Value, StringComparison.Ordinal))
+                .Where(entry => BuildSearchableText(entry).Contains(query.Value, StringComparison.Ordinal))
                 .Select(entry => new MusicCatalogMatch(
                     MusicCatalogId.From(entry.MusicCatalogId),
-                    string.Equals(entry.SearchText, query.Value, StringComparison.Ordinal) ? 1.00m : 0.90m,
+                    string.Equals(BuildSearchableText(entry), query.Value, StringComparison.Ordinal) ? 1.00m : 0.90m,
                     BuildEvidence(entry, isExactIdentityMatch: false)))
                 .ToArray();
 
@@ -70,6 +70,15 @@ namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicCatalogCan
                 Domain.Model.MusicIdentityText.NormalizeCompact(entry.Isrc),
                 Domain.Model.MusicIdentityText.NormalizeCompact(entry.Mbid),
                 entry.ReleaseDate);
+
+        private static string BuildSearchableText(Entry entry) =>
+            string.Join(
+                ' ',
+                new[]
+                {
+                    entry.SearchText,
+                    Domain.Model.MusicIdentityText.NormalizeFreeText(entry.AlbumTitle)
+                }.Where(static value => !string.IsNullOrWhiteSpace(value)));
 
         private sealed record Entry(
             string MusicCatalogId,

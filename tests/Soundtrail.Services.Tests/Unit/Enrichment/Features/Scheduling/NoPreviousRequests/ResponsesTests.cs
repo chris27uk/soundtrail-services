@@ -21,6 +21,39 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.NoPrevio
         }
 
         [Fact]
+        public async Task Given_A_Single_Exact_Query_Match_When_A_Close_Lower_Scoring_Match_Also_Exists_Then_The_Exact_Query_Match_Is_Selected()
+        {
+            var env = CatalogSearchAttemptHandlerTestEnvironment.WithNoExistingCandidates();
+            env.Search.ReturnMatches(
+                new MusicCatalogMatch(
+                    MusicCatalogId.From("mc_track_1"),
+                    0.90m,
+                    new MusicCatalogMatchEvidence(
+                        false,
+                        "rare unknown song",
+                        "test artist",
+                        null,
+                        null,
+                        null,
+                        null)),
+                new MusicCatalogMatch(
+                    MusicCatalogId.From("mc_track_2"),
+                    0.85m,
+                    new MusicCatalogMatchEvidence(
+                        false,
+                        "rare unknown song",
+                        "other artist",
+                        null,
+                        null,
+                        null,
+                        null)));
+
+            var result = await env.Handler.Handle(env.Request("rare unknown song test artist", trustLevel: 1, riskScore: 10));
+
+            result.Command?.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
+        }
+
+        [Fact]
         public async Task Given_Multiple_Exact_Identity_Matches_When_Only_One_Matches_The_Local_Release_Date_Then_That_Match_Is_Selected()
         {
             var env = CatalogSearchAttemptHandlerTestEnvironment.WithNoExistingCandidates();

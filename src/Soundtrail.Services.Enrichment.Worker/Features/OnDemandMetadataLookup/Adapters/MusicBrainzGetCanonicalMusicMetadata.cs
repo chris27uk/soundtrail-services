@@ -32,7 +32,9 @@ public sealed class MusicBrainzGetCanonicalMusicMetadata(HttpClient httpClient) 
             recording.ArtistCredit?.FirstOrDefault()?.Name ?? fallbackArtist,
             recording.Isrcs?.FirstOrDefault() ?? fallbackIsrc,
             recording.Id,
-            recording.Length);
+            recording.Length,
+            recording.Releases?.FirstOrDefault(static release => !string.IsNullOrWhiteSpace(release.Title))?.Title,
+            ParseReleaseDate(recording.Releases));
     }
 
     private async Task<MusicBrainzRecordingDto?> LookupByIsrcAsync(
@@ -40,7 +42,7 @@ public sealed class MusicBrainzGetCanonicalMusicMetadata(HttpClient httpClient) 
         CancellationToken cancellationToken)
     {
         var response = await httpClient.GetFromJsonAsync<MusicBrainzIsrcLookupResponse>(
-            $"/ws/2/isrc/{Uri.EscapeDataString(isrc)}?fmt=json&inc=artist-credits+isrcs",
+            $"/ws/2/isrc/{Uri.EscapeDataString(isrc)}?fmt=json&inc=artist-credits+isrcs+releases",
             cancellationToken);
 
         var exactMatches = response?.Recordings?
@@ -149,6 +151,17 @@ public sealed class MusicBrainzGetCanonicalMusicMetadata(HttpClient httpClient) 
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Skip(1)
             .Any();
+
+    private static DateOnly? ParseReleaseDate(IReadOnlyList<MusicBrainzReleaseDto>? releases)
+    {
+        var releaseDate = releases?
+            .Select(static release => release.Date)
+            .FirstOrDefault(static value => !string.IsNullOrWhiteSpace(value));
+
+        return DateOnly.TryParse(releaseDate, out var parsedDate)
+            ? parsedDate
+            : null;
+    }
 
     public static void ConfigureHttpClient(
         HttpClient httpClient,

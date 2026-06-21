@@ -22,6 +22,8 @@ public sealed class CatalogEntityAggregateTests
         append.AppendedEvents.Should().ContainItemsAssignableTo<ArtistDiscovered>();
         append.AppendedEvents.Should().ContainItemsAssignableTo<AlbumDiscovered>();
         append.AppendedEvents.Should().ContainItemsAssignableTo<TrackDiscovered>();
+        append.AppendedEvents.OfType<AlbumDiscovered>().Single().AlbumTitle.Should().Be("Rare Album");
+        append.AppendedEvents.OfType<AlbumDiscovered>().Single().ReleaseDate.Should().Be(new DateOnly(2004, 6, 7));
     }
 
     [Fact]
@@ -135,7 +137,7 @@ public sealed class CatalogEntityAggregateTests
             ProviderName.MusicBrainz,
             LookupPriorityBand.High,
             Clock,
-            new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000),
+            new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000, "Rare Album", new DateOnly(2004, 6, 7)),
             [],
             [],
             new CatalogTrackHierarchy(ArtistId.From("artist_test_artist"), AlbumId.From("album_rare_album")),

@@ -75,6 +75,7 @@ public static class MusicTrackStoredEventRecordMapper
         return new AlbumDiscovered(
             data.AlbumId,
             data.AlbumTitle,
+            data.ReleaseDate,
             ProviderName.From(data.SourceProvider),
             data.ObservedAt);
     }

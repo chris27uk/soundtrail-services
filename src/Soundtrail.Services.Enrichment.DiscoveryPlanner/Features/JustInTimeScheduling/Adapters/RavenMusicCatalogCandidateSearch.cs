@@ -80,7 +80,9 @@ public sealed class RavenMusicCatalogCandidateSearch(IDocumentStore documentStor
 
     private static decimal Score(RavenTrackRecordDto document, string query)
     {
-        if (string.Equals(document.SearchText, query, StringComparison.Ordinal))
+        var searchableText = BuildSearchableText(document);
+
+        if (string.Equals(searchableText, query, StringComparison.Ordinal))
         {
             return 1.00m;
         }
@@ -90,7 +92,7 @@ public sealed class RavenMusicCatalogCandidateSearch(IDocumentStore documentStor
             return 0.96m;
         }
 
-        if (document.SearchText.Contains(query, StringComparison.Ordinal))
+        if (searchableText.Contains(query, StringComparison.Ordinal))
         {
             return 0.90m;
         }
@@ -117,15 +119,18 @@ public sealed class RavenMusicCatalogCandidateSearch(IDocumentStore documentStor
             return 0m;
         }
 
-        var candidate = string.Join(
+        var candidate = BuildSearchableText(document);
+
+        var matchedCount = queryTokens.Count(token => candidate.Contains(token, StringComparison.Ordinal));
+        return matchedCount / (decimal)queryTokens.Length;
+    }
+
+    private static string BuildSearchableText(RavenTrackRecordDto document) =>
+        string.Join(
             ' ',
             new[]
             {
                 document.SearchText,
                 document.NormalizedAlbumTitle
             }.Where(static value => !string.IsNullOrWhiteSpace(value)));
-
-        var matchedCount = queryTokens.Count(token => candidate.Contains(token, StringComparison.Ordinal));
-        return matchedCount / (decimal)queryTokens.Length;
-    }
 }

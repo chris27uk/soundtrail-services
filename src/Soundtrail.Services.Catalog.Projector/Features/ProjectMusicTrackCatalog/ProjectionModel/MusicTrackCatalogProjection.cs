@@ -131,6 +131,7 @@ public sealed class MusicTrackCatalogProjection
                     NormalizedName = Normalize(Coalesce(albumTitle, Album.Name)),
                     ArtistId = Coalesce(Track.ArtistId, Album.ArtistId),
                     ArtistName = Coalesce(Track.ArtistName, Album.ArtistName),
+                    ReleaseDate = @event.ReleaseDate ?? Album.ReleaseDate,
                     AvailableProviders = MergeProviders(Album.AvailableProviders, Track.AvailableProviders),
                     TerminallyUnavailableProviders = MergeProviders(Album.TerminallyUnavailableProviders, Track.TerminallyUnavailableProviders),
                     ArtworkUrl = CoalesceNullable(Track.ArtworkUrl, Album.ArtworkUrl),

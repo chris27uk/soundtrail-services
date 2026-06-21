@@ -154,11 +154,12 @@ public sealed class MusicTrackCatalogProjectionTests
         projection.Apply(new ProviderReferenceDiscovered(ProviderName.Spotify, "spotify-1", new Uri("https://example.com/spotify-1"), ProviderName.Odesli, Clock), 2);
         projection.Apply(new ArtworkDiscovered(CatalogEntityKind.Track, null, new Uri("https://images.example.com/track.png"), "worker/musicbrainz", Clock), 3);
 
-        projection.Apply(new AlbumDiscovered("album_hot_fuss", "Hot Fuss", ProviderName.MusicBrainz, Clock), 4);
+        projection.Apply(new AlbumDiscovered("album_hot_fuss", "Hot Fuss", new DateOnly(2004, 6, 7), ProviderName.MusicBrainz, Clock), 4);
 
         projection.Album.Should().NotBeNull();
         projection.Album!.AvailableProviders.Should().Contain(ProviderName.Spotify.Value);
         projection.Album.ArtworkUrl.Should().Be("https://images.example.com/track.png");
+        projection.Album.ReleaseDate.Should().Be(new DateOnly(2004, 6, 7));
     }
 
     private static readonly DateTimeOffset Clock = new(2026, 6, 18, 12, 0, 0, TimeSpan.Zero);

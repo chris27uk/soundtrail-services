@@ -6,7 +6,6 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Model;
-using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog;
 
 namespace Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog.Adapters;
 

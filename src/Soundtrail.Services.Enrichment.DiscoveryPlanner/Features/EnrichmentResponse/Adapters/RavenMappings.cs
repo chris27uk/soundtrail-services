@@ -105,6 +105,7 @@ internal static class RavenMappings
                 AlbumDiscovered = new AlbumDiscoveredEventDataRecordDto(
                     trackLinkedToAlbum.AlbumId,
                     trackLinkedToAlbum.AlbumTitle,
+                    trackLinkedToAlbum.ReleaseDate,
                     trackLinkedToAlbum.SourceProvider.Value,
                     trackLinkedToAlbum.ObservedAt),
                 OccurredAtUtc = trackLinkedToAlbum.ObservedAt,
@@ -242,6 +243,7 @@ internal static class RavenMappings
         return new AlbumDiscovered(
             data.AlbumId,
             data.AlbumTitle,
+            data.ReleaseDate,
             ProviderName.From(data.SourceProvider),
             data.ObservedAt);
     }

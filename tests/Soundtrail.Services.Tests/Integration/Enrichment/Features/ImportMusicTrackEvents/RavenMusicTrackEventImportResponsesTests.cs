@@ -37,7 +37,7 @@ public sealed class RavenMusicTrackEventImportResponsesTests
             [
                 new TrackDiscovered("Mr. Brightside", "The Killers", 222000, "USIR20400274", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero)),
                 new ArtistDiscovered("artist_the_killers", "The Killers", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 1, 0, TimeSpan.Zero)),
-                new AlbumDiscovered("album_hot_fuss", "Hot Fuss", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 2, 0, TimeSpan.Zero))
+                new AlbumDiscovered("album_hot_fuss", "Hot Fuss", new DateOnly(2004, 6, 7), ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 2, 0, TimeSpan.Zero))
             ]);
 
         await env.ImportAsync(command);
@@ -49,5 +49,6 @@ public sealed class RavenMusicTrackEventImportResponsesTests
         track!.Title.Should().Be("Mr. Brightside");
         track.ArtistId.Should().Be("artist_the_killers");
         track.AlbumId.Should().Be("album_hot_fuss");
+        track.AlbumName.Should().Be("Hot Fuss");
     }
 }

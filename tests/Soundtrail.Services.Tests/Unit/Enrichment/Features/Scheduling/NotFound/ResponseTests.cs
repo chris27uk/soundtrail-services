@@ -56,6 +56,42 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.NotFound
         }
 
         [Fact]
+        public async Task Given_Multiple_Exact_Query_Matches_When_Handled_Then_No_Work_Is_Scheduled_And_Discovery_Is_Rejected()
+        {
+            var env = CatalogSearchAttemptHandlerTestEnvironment.WithNoExistingCandidates();
+            env.Search.ReturnMatches(
+                new MusicCatalogMatch(
+                    MusicCatalogId.From("mc_track_1"),
+                    0.91m,
+                    new MusicCatalogMatchEvidence(
+                        false,
+                        "rare unknown song",
+                        "test artist",
+                        null,
+                        null,
+                        null,
+                        null)),
+                new MusicCatalogMatch(
+                    MusicCatalogId.From("mc_track_2"),
+                    0.90m,
+                    new MusicCatalogMatchEvidence(
+                        false,
+                        "rare unknown song",
+                        "test artist",
+                        null,
+                        null,
+                        null,
+                        null)));
+
+            var result = await env.Handler.Handle(env.Request("rare unknown song test artist", trustLevel: 0, riskScore: 10));
+
+            result.ShouldSchedule.Should().BeFalse();
+            env.DiscoveryRepository
+                .GetStoredEvents(CatalogSearchCriteria.Search("track", "rare unknown song test artist"))
+                .Last().Should().BeOfType<DiscoveryRejected>();
+        }
+
+        [Fact]
         public async Task Given_Multiple_Exact_Identity_Matches_With_The_Same_Local_Release_Date_When_Handled_Then_No_Work_Is_Scheduled_And_Discovery_Is_Rejected()
         {
             var env = CatalogSearchAttemptHandlerTestEnvironment.WithNoExistingCandidates();

@@ -60,7 +60,8 @@ public sealed class CatalogEntityAggregate
             {
                 Apply(new AlbumDiscovered(
                     response.Hierarchy.AlbumId!.Value,
-                    null,
+                    response.Metadata.AlbumTitle,
+                    response.Metadata.ReleaseDate,
                     response.SourceProvider,
                     response.CreatedAt), isNew: true);
             }

@@ -154,7 +154,7 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
             ProviderName.MusicBrainz.Value,
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero),
-            new SongMetadataDto("Rare Unknown Song", "Test Artist", "isrc-1", "mbid-1", 123000),
+            new SongMetadataDto("Rare Unknown Song", "Test Artist", "isrc-1", "mbid-1", 123000, "Rare Album", new DateOnly(2026, 1, 1)),
             [],
             [],
             "artist_test_artist",
