@@ -66,6 +66,7 @@ internal sealed class LocalMusicTrackSearchTestEnvironment : IDisposable
             Isrc = result.Isrc,
             Mbid = result.Mbid,
             DurationMs = result.DurationMs,
+            ReleaseDate = result.ReleaseDate,
             CanonicalMetadata = !string.IsNullOrWhiteSpace(result.Title)
                                 && !string.IsNullOrWhiteSpace(result.Artist)
                 ? new RavenSongMetadataRecordDto

@@ -56,7 +56,10 @@ public sealed class CatalogSearchAttemptHandler(
         CancellationToken cancellationToken = default)
     {
         var matches = await musicCatalogCandidateSearch.SearchAsync(request.Query, cancellationToken);
-        var resolution = musicCatalogMatchResolver.Resolve(matches);
+        var localTrackForResolution = await TryLoadResolutionTrackAsync(request.Criteria, cancellationToken);
+        var resolution = musicCatalogMatchResolver.Resolve(
+            matches,
+            new MusicCatalogResolutionContext(localTrackForResolution?.ReleaseDate));
         if (!resolution.IsResolved)
         {
             throw new ResolutionFailedException(resolution.Outcome);
@@ -130,6 +133,20 @@ public sealed class CatalogSearchAttemptHandler(
             deferredByReservation.EstimatedRetryAfterSeconds,
             deferredByReservation.EarliestExpectedCompletionAt,
             deferredByReservation.Reason);
+    }
+
+    private async Task<LocalMusicTrackSearchResult?> TryLoadResolutionTrackAsync(
+        CatalogSearchCriteria criteria,
+        CancellationToken cancellationToken)
+    {
+        const string trackPrefix = "track:";
+        if (!criteria.Value.StartsWith(trackPrefix, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var trackId = criteria.Value[trackPrefix.Length..];
+        return await localMusicTrackSearch.GetByMusicCatalogIdAsync(MusicCatalogId.From(trackId), cancellationToken);
     }
 
     private async Task PersistLifecycleAsync(

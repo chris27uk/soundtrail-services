@@ -1,15 +1,14 @@
 using Soundtrail.Domain;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Responses;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle;
 
 public sealed class ProjectDiscoveryLifecycleHandler(
     ILoadDiscoveryLifecycleProjectionPort loadPort,
-    ISaveDiscoveryLifecycleProjectionPort savePort) : IHandler<ProjectDiscoveryLifecycleCommand, ProjectDiscoveryLifecycleResult>
+    ISaveDiscoveryLifecycleProjectionPort savePort) : IHandler<ProjectDiscoveryLifecycleCommand>
 {
-    public async Task<ProjectDiscoveryLifecycleResult> Handle(
+    public async Task Handle(
         ProjectDiscoveryLifecycleCommand request,
         CancellationToken cancellationToken = default)
     {
@@ -26,6 +25,5 @@ public sealed class ProjectDiscoveryLifecycleHandler(
         }
 
         await savePort.SaveAsync(projection, cancellationToken);
-        return new ProjectDiscoveryLifecycleResult(request.Events.Count);
     }
 }

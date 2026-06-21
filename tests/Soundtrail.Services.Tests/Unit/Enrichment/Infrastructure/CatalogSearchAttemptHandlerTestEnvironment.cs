@@ -125,6 +125,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
                 null,
                 null,
                 null,
-                IsPlayable: false));
+                IsPlayable: false,
+                ReleaseDate: null));
     }
 }

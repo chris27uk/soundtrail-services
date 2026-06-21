@@ -27,7 +27,15 @@ internal sealed class RavenDiscoveryLifecycleEventImportTestEnvironment : IAsync
 
     public async Task ImportAsync(ImportCatalogSearchDiscoveryEventsCommand command)
     {
-        var handler = new ImportCatalogSearchDiscoveryEventsHandler(new RavenCatalogSearchDiscoveryRepository(raven.Store));
+        using var session = raven.Store.OpenAsyncSession();
+        var mapper = new RavenDiscoveryLifecycleProjectionMapper();
+        var handler = new ImportCatalogSearchDiscoveryEventsHandler(
+            new RavenCatalogSearchDiscoveryRepository(raven.Store),
+            new ReplayDiscoveryLifecycleProjectionHandler(
+                new RavenLoadStoredDiscoveryLifecycleEvents(session),
+                new ProjectDiscoveryLifecycleHandler(
+                    new RavenLoadDiscoveryLifecycleProjection(session, mapper),
+                    new RavenSaveDiscoveryLifecycleProjection(session, mapper))));
         await handler.Handle(command, CancellationToken.None);
     }
 

@@ -35,19 +35,18 @@ internal sealed class PublishMusicTrackEventsHandlerTestEnvironment
             MusicCatalogId = musicCatalogId,
             Version = version,
             EventType = nameof(PlaybackReferencesResolutionRequired),
-            Data = System.Text.Json.JsonSerializer.Serialize(
-                new PlaybackReferencesResolutionRequiredEventDataRecordDto(
-                    musicCatalogId,
-                    LookupPriorityBand.High.ToString(),
-                    "corr-1",
-                    ProviderName.MusicBrainz.Value,
-                    new DateTimeOffset(2026, 6, 18, 12, version, 0, TimeSpan.Zero),
-                    isrc,
-                    title,
-                    artist,
-                    album,
-                    "artist_1",
-                    "album_1")),
+            PlaybackReferencesResolutionRequired = new PlaybackReferencesResolutionRequiredEventDataRecordDto(
+                musicCatalogId,
+                LookupPriorityBand.High.ToString(),
+                "corr-1",
+                ProviderName.MusicBrainz.Value,
+                new DateTimeOffset(2026, 6, 18, 12, version, 0, TimeSpan.Zero),
+                isrc,
+                title,
+                artist,
+                album,
+                "artist_1",
+                "album_1"),
             OccurredAtUtc = new DateTimeOffset(2026, 6, 18, 12, version, 0, TimeSpan.Zero)
         };
 
@@ -60,15 +59,14 @@ internal sealed class PublishMusicTrackEventsHandlerTestEnvironment
             MusicCatalogId = musicCatalogId,
             Version = version,
             EventType = nameof(TrackDiscovered),
-            Data = System.Text.Json.JsonSerializer.Serialize(
-                new TrackDiscoveredEventDataRecordDto(
-                    "Song A",
-                    "Artist A",
-                    123000,
-                    "isrc-1",
-                    "mbid-1",
-                    ProviderName.MusicBrainz.Value,
-                    new DateTimeOffset(2026, 6, 18, 12, version, 0, TimeSpan.Zero))),
+            TrackDiscovered = new TrackDiscoveredEventDataRecordDto(
+                "Song A",
+                "Artist A",
+                123000,
+                "isrc-1",
+                "mbid-1",
+                ProviderName.MusicBrainz.Value,
+                new DateTimeOffset(2026, 6, 18, 12, version, 0, TimeSpan.Zero)),
             OccurredAtUtc = new DateTimeOffset(2026, 6, 18, 12, version, 0, TimeSpan.Zero)
         };
 }

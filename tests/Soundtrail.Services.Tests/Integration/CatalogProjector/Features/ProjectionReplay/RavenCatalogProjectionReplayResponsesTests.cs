@@ -326,15 +326,14 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
             MusicCatalogId = musicCatalogId,
             Version = version,
             EventType = nameof(TrackDiscovered),
-            Data = System.Text.Json.JsonSerializer.Serialize(
-                new TrackDiscoveredEventDataRecordDto(
-                    title,
-                    artist,
-                    222000,
-                    "USIR20400274",
-                    "mbid-1",
-                    ProviderName.MusicBrainz.Value,
-                    new DateTimeOffset(2026, 6, 15, 12, 0, 0, TimeSpan.Zero))),
+            TrackDiscovered = new TrackDiscoveredEventDataRecordDto(
+                title,
+                artist,
+                222000,
+                "USIR20400274",
+                "mbid-1",
+                ProviderName.MusicBrainz.Value,
+                new DateTimeOffset(2026, 6, 15, 12, 0, 0, TimeSpan.Zero)),
             OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 0, 0, TimeSpan.Zero)
         };
 
@@ -349,12 +348,11 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
             MusicCatalogId = musicCatalogId,
             Version = version,
             EventType = nameof(ArtistDiscovered),
-            Data = System.Text.Json.JsonSerializer.Serialize(
-                new ArtistDiscoveredEventDataRecordDto(
-                    artistId,
-                    artistName,
-                    ProviderName.MusicBrainz.Value,
-                    new DateTimeOffset(2026, 6, 15, 12, 1, 0, TimeSpan.Zero))),
+            ArtistDiscovered = new ArtistDiscoveredEventDataRecordDto(
+                artistId,
+                artistName,
+                ProviderName.MusicBrainz.Value,
+                new DateTimeOffset(2026, 6, 15, 12, 1, 0, TimeSpan.Zero)),
             OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 1, 0, TimeSpan.Zero)
         };
 
@@ -369,12 +367,11 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
             MusicCatalogId = musicCatalogId,
             Version = version,
             EventType = nameof(AlbumDiscovered),
-            Data = System.Text.Json.JsonSerializer.Serialize(
-                new AlbumDiscoveredEventDataRecordDto(
-                    albumId,
-                    albumName,
-                    ProviderName.MusicBrainz.Value,
-                    new DateTimeOffset(2026, 6, 15, 12, 2, 0, TimeSpan.Zero))),
+            AlbumDiscovered = new AlbumDiscoveredEventDataRecordDto(
+                albumId,
+                albumName,
+                ProviderName.MusicBrainz.Value,
+                new DateTimeOffset(2026, 6, 15, 12, 2, 0, TimeSpan.Zero)),
             OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 2, 0, TimeSpan.Zero)
         };
 
@@ -389,13 +386,12 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
             MusicCatalogId = musicCatalogId,
             Version = version,
             EventType = nameof(ProviderReferenceDiscovered),
-            Data = System.Text.Json.JsonSerializer.Serialize(
-                new ProviderReferenceDiscoveredEventDataRecordDto(
-                    provider.Value,
-                    externalId,
-                    $"https://example.com/{externalId}",
-                    ProviderName.Odesli.Value,
-                    new DateTimeOffset(2026, 6, 15, 12, 3, 0, TimeSpan.Zero))),
+            ProviderReferenceDiscovered = new ProviderReferenceDiscoveredEventDataRecordDto(
+                provider.Value,
+                externalId,
+                $"https://example.com/{externalId}",
+                ProviderName.Odesli.Value,
+                new DateTimeOffset(2026, 6, 15, 12, 3, 0, TimeSpan.Zero)),
             OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 3, 0, TimeSpan.Zero)
         };
 
@@ -409,11 +405,10 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
             MusicCatalogId = musicCatalogId,
             Version = version,
             EventType = nameof(ProviderReferenceLookupFailed),
-            Data = System.Text.Json.JsonSerializer.Serialize(
-                new ProviderReferenceLookupFailedEventDataRecordDto(
-                    provider.Value,
-                    ProviderName.Odesli.Value,
-                    new DateTimeOffset(2026, 6, 15, 12, 4, 0, TimeSpan.Zero))),
+            ProviderReferenceLookupFailed = new ProviderReferenceLookupFailedEventDataRecordDto(
+                provider.Value,
+                ProviderName.Odesli.Value,
+                new DateTimeOffset(2026, 6, 15, 12, 4, 0, TimeSpan.Zero)),
             OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 4, 0, TimeSpan.Zero)
         };
 
@@ -429,13 +424,12 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
             MusicCatalogId = musicCatalogId,
             Version = version,
             EventType = nameof(ArtworkDiscovered),
-            Data = System.Text.Json.JsonSerializer.Serialize(
-                new ArtworkDiscoveredEventDataRecordDto(
-                    entityKind,
-                    entityId,
-                    url,
-                    "worker/musicbrainz",
-                    new DateTimeOffset(2026, 6, 15, 12, version, 0, TimeSpan.Zero))),
+            ArtworkDiscovered = new ArtworkDiscoveredEventDataRecordDto(
+                entityKind,
+                entityId,
+                url,
+                "worker/musicbrainz",
+                new DateTimeOffset(2026, 6, 15, 12, version, 0, TimeSpan.Zero)),
             OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, version, 0, TimeSpan.Zero)
         };
 
@@ -453,18 +447,17 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
             MusicCatalogId = musicCatalogId,
             Version = version,
             EventType = nameof(MetadataCorrected),
-            Data = System.Text.Json.JsonSerializer.Serialize(
-                new MetadataCorrectedEventDataRecordDto(
-                    title,
-                    artistName,
-                    artistId,
-                    albumTitle,
-                    albumId,
-                    222000,
-                    "USIR20400274",
-                    "mbid-1",
-                    "admin/repair",
-                    new DateTimeOffset(2026, 6, 15, 12, 5, 0, TimeSpan.Zero))),
+            MetadataCorrected = new MetadataCorrectedEventDataRecordDto(
+                title,
+                artistName,
+                artistId,
+                albumTitle,
+                albumId,
+                222000,
+                "USIR20400274",
+                "mbid-1",
+                "admin/repair",
+                new DateTimeOffset(2026, 6, 15, 12, 5, 0, TimeSpan.Zero)),
             OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 5, 0, TimeSpan.Zero)
         };
 }

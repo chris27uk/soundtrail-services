@@ -29,7 +29,8 @@ public sealed class CatalogSearchAttemptListenerWolverineResponsesTests
             "isrc-1",
             "mbid-1",
             123000,
-            IsPlayable: false));
+            IsPlayable: false,
+            ReleaseDate: null));
 
         var message = (ResolvePlaybackReferencesCommandDto)(await env.HandleSchedulableRequest()).Single();
 

@@ -3,7 +3,6 @@ using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
-using System.Text.Json;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection.Adapters;
 
@@ -25,8 +24,8 @@ public static class MusicTrackStoredEventRecordMapper
 
     private static TrackDiscovered TrackDiscovered(MusicTrackStoredEventRecordDto dto)
     {
-        var data = JsonSerializer.Deserialize<TrackDiscoveredEventDataRecordDto>(dto.Data)
-            ?? throw new InvalidOperationException("Unable to deserialize minimal track info event data.");
+        var data = dto.TrackDiscovered
+            ?? throw new InvalidOperationException("Missing track discovered event data.");
         return new TrackDiscovered(
             data.Title,
             data.Artist,
@@ -39,8 +38,8 @@ public static class MusicTrackStoredEventRecordMapper
 
     private static ProviderReferenceDiscovered ProviderReferenceDiscovered(MusicTrackStoredEventRecordDto dto)
     {
-        var data = JsonSerializer.Deserialize<ProviderReferenceDiscoveredEventDataRecordDto>(dto.Data)
-            ?? throw new InvalidOperationException("Unable to deserialize provider playback reference event data.");
+        var data = dto.ProviderReferenceDiscovered
+            ?? throw new InvalidOperationException("Missing provider reference discovered event data.");
         return new ProviderReferenceDiscovered(
             ProviderName.From(data.Provider),
             data.ExternalId,
@@ -51,8 +50,8 @@ public static class MusicTrackStoredEventRecordMapper
 
     private static PlaybackReferencesResolutionRequired PlaybackReferencesResolutionRequired(MusicTrackStoredEventRecordDto dto)
     {
-        var data = JsonSerializer.Deserialize<PlaybackReferencesResolutionRequiredEventDataRecordDto>(dto.Data)
-            ?? throw new InvalidOperationException("Unable to deserialize playback references resolution required event data.");
+        var data = dto.PlaybackReferencesResolutionRequired
+            ?? throw new InvalidOperationException("Missing playback references resolution required event data.");
         return new PlaybackReferencesResolutionRequired(
             MusicCatalogId.From(data.MusicCatalogId),
             Enum.Parse<LookupPriorityBand>(data.Priority, ignoreCase: true),
@@ -71,8 +70,8 @@ public static class MusicTrackStoredEventRecordMapper
 
     private static AlbumDiscovered AlbumDiscovered(MusicTrackStoredEventRecordDto dto)
     {
-        var data = JsonSerializer.Deserialize<AlbumDiscoveredEventDataRecordDto>(dto.Data)
-            ?? throw new InvalidOperationException("Unable to deserialize track linked to album event data.");
+        var data = dto.AlbumDiscovered
+            ?? throw new InvalidOperationException("Missing album discovered event data.");
         return new AlbumDiscovered(
             data.AlbumId,
             data.AlbumTitle,
@@ -82,8 +81,8 @@ public static class MusicTrackStoredEventRecordMapper
 
     private static ArtistDiscovered ArtistDiscovered(MusicTrackStoredEventRecordDto dto)
     {
-        var data = JsonSerializer.Deserialize<ArtistDiscoveredEventDataRecordDto>(dto.Data)
-            ?? throw new InvalidOperationException("Unable to deserialize track linked to artist event data.");
+        var data = dto.ArtistDiscovered
+            ?? throw new InvalidOperationException("Missing artist discovered event data.");
         return new ArtistDiscovered(
             data.ArtistId,
             data.ArtistName,
@@ -93,8 +92,8 @@ public static class MusicTrackStoredEventRecordMapper
 
     private static ProviderReferenceLookupFailed ProviderReferenceLookupFailed(MusicTrackStoredEventRecordDto dto)
     {
-        var data = JsonSerializer.Deserialize<ProviderReferenceLookupFailedEventDataRecordDto>(dto.Data)
-            ?? throw new InvalidOperationException("Unable to deserialize provider reference lookup failed event data.");
+        var data = dto.ProviderReferenceLookupFailed
+            ?? throw new InvalidOperationException("Missing provider reference lookup failed event data.");
         return new ProviderReferenceLookupFailed(
             ProviderName.From(data.Provider),
             ProviderName.From(data.SourceProvider),
@@ -103,8 +102,8 @@ public static class MusicTrackStoredEventRecordMapper
 
     private static ArtworkDiscovered ArtworkDiscovered(MusicTrackStoredEventRecordDto dto)
     {
-        var data = JsonSerializer.Deserialize<ArtworkDiscoveredEventDataRecordDto>(dto.Data)
-            ?? throw new InvalidOperationException("Unable to deserialize artwork discovered event data.");
+        var data = dto.ArtworkDiscovered
+            ?? throw new InvalidOperationException("Missing artwork discovered event data.");
         return new ArtworkDiscovered(
             Enum.Parse<Domain.Catalog.CatalogEntityKind>(data.EntityKind, ignoreCase: true),
             data.EntityId,
@@ -115,8 +114,8 @@ public static class MusicTrackStoredEventRecordMapper
 
     private static MetadataCorrected MetadataCorrected(MusicTrackStoredEventRecordDto dto)
     {
-        var data = JsonSerializer.Deserialize<MetadataCorrectedEventDataRecordDto>(dto.Data)
-            ?? throw new InvalidOperationException("Unable to deserialize metadata corrected event data.");
+        var data = dto.MetadataCorrected
+            ?? throw new InvalidOperationException("Missing metadata corrected event data.");
         return new MetadataCorrected(
             data.Title,
             data.ArtistName,

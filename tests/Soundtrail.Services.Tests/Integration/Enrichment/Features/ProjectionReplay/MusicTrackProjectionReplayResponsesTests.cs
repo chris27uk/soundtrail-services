@@ -37,15 +37,14 @@ public sealed class MusicTrackProjectionReplayResponsesTests
                 MusicCatalogId = musicCatalogId.Value,
                 Version = 1,
                 EventType = nameof(TrackDiscovered),
-                Data = System.Text.Json.JsonSerializer.Serialize(
-                    new TrackDiscoveredEventDataRecordDto(
-                        "Song A",
-                        "Artist A",
-                        123000,
-                        "isrc-1",
-                        "mbid-1",
-                        ProviderName.MusicBrainz.Value,
-                        new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))),
+                TrackDiscovered = new TrackDiscoveredEventDataRecordDto(
+                    "Song A",
+                    "Artist A",
+                    123000,
+                    "isrc-1",
+                    "mbid-1",
+                    ProviderName.MusicBrainz.Value,
+                    new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero)),
                 OccurredAtUtc = new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero),
                 CausationId = commandId.Value
             },
@@ -55,13 +54,12 @@ public sealed class MusicTrackProjectionReplayResponsesTests
                 MusicCatalogId = musicCatalogId.Value,
                 Version = 2,
                 EventType = nameof(ProviderReferenceDiscovered),
-                Data = System.Text.Json.JsonSerializer.Serialize(
-                    new ProviderReferenceDiscoveredEventDataRecordDto(
-                        ProviderName.AppleMusic.Value,
-                        "apple-1",
-                        "https://music.apple.com/us/song/song-a?i=apple-1",
-                        ProviderName.Odesli.Value,
-                        new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero))),
+                ProviderReferenceDiscovered = new ProviderReferenceDiscoveredEventDataRecordDto(
+                    ProviderName.AppleMusic.Value,
+                    "apple-1",
+                    "https://music.apple.com/us/song/song-a?i=apple-1",
+                    ProviderName.Odesli.Value,
+                    new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero)),
                 OccurredAtUtc = new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero),
                 CausationId = commandId.Value
             }
@@ -99,15 +97,14 @@ public sealed class MusicTrackProjectionReplayResponsesTests
                 MusicCatalogId = musicCatalogId.Value,
                 Version = 1,
                 EventType = nameof(TrackDiscovered),
-                Data = System.Text.Json.JsonSerializer.Serialize(
-                    new TrackDiscoveredEventDataRecordDto(
-                        "Song A",
-                        "Artist A",
-                        123000,
-                        "isrc-1",
-                        "mbid-1",
-                        ProviderName.MusicBrainz.Value,
-                        new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))),
+                TrackDiscovered = new TrackDiscoveredEventDataRecordDto(
+                    "Song A",
+                    "Artist A",
+                    123000,
+                    "isrc-1",
+                    "mbid-1",
+                    ProviderName.MusicBrainz.Value,
+                    new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero)),
                 OccurredAtUtc = new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero),
                 CausationId = commandId.Value
             });
@@ -117,13 +114,12 @@ public sealed class MusicTrackProjectionReplayResponsesTests
                 MusicCatalogId = musicCatalogId.Value,
                 Version = 2,
                 EventType = nameof(ProviderReferenceDiscovered),
-                Data = System.Text.Json.JsonSerializer.Serialize(
-                    new ProviderReferenceDiscoveredEventDataRecordDto(
-                        ProviderName.AppleMusic.Value,
-                        "apple-1",
-                        "https://music.apple.com/us/song/song-a?i=apple-1",
-                        ProviderName.Odesli.Value,
-                        new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero))),
+                ProviderReferenceDiscovered = new ProviderReferenceDiscoveredEventDataRecordDto(
+                    ProviderName.AppleMusic.Value,
+                    "apple-1",
+                    "https://music.apple.com/us/song/song-a?i=apple-1",
+                    ProviderName.Odesli.Value,
+                    new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero)),
                 OccurredAtUtc = new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero),
                 CausationId = commandId.Value
             });
@@ -168,15 +164,14 @@ public sealed class MusicTrackProjectionReplayResponsesTests
             MusicCatalogId = "mc_track_1",
             Version = 1,
             EventType = nameof(TrackDiscovered),
-            Data = System.Text.Json.JsonSerializer.Serialize(
-                new TrackDiscoveredEventDataRecordDto(
-                    "Song A",
-                    "Artist A",
-                    123000,
-                    "isrc-1",
-                    "mbid-1",
-                    ProviderName.MusicBrainz.Value,
-                    new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))),
+            TrackDiscovered = new TrackDiscoveredEventDataRecordDto(
+                "Song A",
+                "Artist A",
+                123000,
+                "isrc-1",
+                "mbid-1",
+                ProviderName.MusicBrainz.Value,
+                new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero)),
             OccurredAtUtc = new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero)
         };
 
@@ -217,18 +212,17 @@ public sealed class MusicTrackProjectionReplayResponsesTests
                 MusicCatalogId = musicCatalogId.Value,
                 Version = 1,
                 EventType = nameof(MetadataCorrected),
-                Data = System.Text.Json.JsonSerializer.Serialize(
-                    new MetadataCorrectedEventDataRecordDto(
-                        "Song A (Remastered)",
-                        "Artist A",
-                        "artist_a",
-                        "Album A",
-                        "album_a",
-                        123000,
-                        "isrc-1",
-                        "mbid-1",
-                        "admin/repair",
-                        new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero))),
+                MetadataCorrected = new MetadataCorrectedEventDataRecordDto(
+                    "Song A (Remastered)",
+                    "Artist A",
+                    "artist_a",
+                    "Album A",
+                    "album_a",
+                    123000,
+                    "isrc-1",
+                    "mbid-1",
+                    "admin/repair",
+                    new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero)),
                 OccurredAtUtc = new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero)
             },
             new()
@@ -237,13 +231,12 @@ public sealed class MusicTrackProjectionReplayResponsesTests
                 MusicCatalogId = musicCatalogId.Value,
                 Version = 2,
                 EventType = nameof(ArtworkDiscovered),
-                Data = System.Text.Json.JsonSerializer.Serialize(
-                    new ArtworkDiscoveredEventDataRecordDto(
-                        "Track",
-                        null,
-                        "https://images.example.com/track.png",
-                        "worker/musicbrainz",
-                        new DateTimeOffset(2026, 6, 16, 12, 1, 0, TimeSpan.Zero))),
+                ArtworkDiscovered = new ArtworkDiscoveredEventDataRecordDto(
+                    "Track",
+                    null,
+                    "https://images.example.com/track.png",
+                    "worker/musicbrainz",
+                    new DateTimeOffset(2026, 6, 16, 12, 1, 0, TimeSpan.Zero)),
                 OccurredAtUtc = new DateTimeOffset(2026, 6, 16, 12, 1, 0, TimeSpan.Zero)
             }
         };

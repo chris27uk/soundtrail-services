@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Raven;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.SourceBudgets;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.SourceBudgets.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.SourceBudgets.Configuration;
 
@@ -14,7 +15,8 @@ public sealed class ProductionDiscoveryPlannerDependencyProvider : IDiscoveryPla
     {
         services.AddSchedulerRavenDocumentStore(configuration);
         services.Configure<SourceApiBudgetsOptions>(configuration.GetSection(SourceApiBudgetsOptions.SectionName));
-        services.TryAddScoped<IReserveSourceApiBudgetPort, RavenCompareExchangeSourceApiBudgetPort>();
+        services.TryAddScoped<ITryReserveSourceApiBudgetWindowPort, RavenCompareExchangeSourceApiBudgetPort>();
+        services.TryAddScoped<IReserveSourceApiBudgetPort, SourceApiBudgetReservationService>();
     }
 
     public void AddJustInTimeSchedulingDependencies(IServiceCollection services, IConfiguration configuration)

@@ -9,7 +9,6 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Support;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Adapters;
@@ -100,7 +99,6 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
 
     private static EnrichmentResponseListener CreateListener(Raven.Client.Documents.Session.IAsyncDocumentSession session) =>
         new(new ApplyEnrichmentResponseHandler(
-            new CaptureProviderSnapshot(new RavenProviderSnapshotStore(session)),
             new RavenMusicTrackStreamStore(session),
             new RavenCatalogSearchTrackingStore(session.Advanced.DocumentStore, session),
             new RavenEnrichmentResponseCatalogSearchDiscoveryRepository(session)));

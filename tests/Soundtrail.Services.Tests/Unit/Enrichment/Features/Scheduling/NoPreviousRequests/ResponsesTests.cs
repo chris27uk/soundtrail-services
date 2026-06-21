@@ -1,6 +1,8 @@
 using FluentAssertions;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.NoPreviousRequests
@@ -14,6 +16,39 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.NoPrevio
             env.Search.ResolveAs(MusicCatalogId.From("mc_track_1"));
 
             var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10));
+
+            result.Command?.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
+        }
+
+        [Fact]
+        public async Task Given_Multiple_Exact_Identity_Matches_When_Only_One_Matches_The_Local_Release_Date_Then_That_Match_Is_Selected()
+        {
+            var env = CatalogSearchAttemptHandlerTestEnvironment.WithNoExistingCandidates();
+            env.LocalSearch.Seed(new LocalMusicTrackSearchResult(
+                MusicCatalogId.From("mc_track_criteria"),
+                "Rare Unknown Song",
+                "Test Artist",
+                "Rare Album",
+                null,
+                null,
+                null,
+                IsPlayable: false,
+                ReleaseDate: new DateOnly(2004, 6, 7)));
+            env.Search.ReturnMatches(
+                new MusicCatalogMatch(
+                    MusicCatalogId.From("mc_track_1"),
+                    0.99m,
+                    new MusicCatalogMatchEvidence(true, null, null, null, null, "mbid-1", new DateOnly(2004, 6, 7))),
+                new MusicCatalogMatch(
+                    MusicCatalogId.From("mc_track_2"),
+                    1.00m,
+                    new MusicCatalogMatchEvidence(true, null, null, null, null, "mbid-2", new DateOnly(2005, 6, 7))));
+
+            var result = await env.Handler.Handle(
+                env.Request("rare unknown song", trustLevel: 1, riskScore: 10) with
+                {
+                    Criteria = CatalogSearchCriteria.Track(TrackId.From("mc_track_criteria"))
+                });
 
             result.Command?.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
         }

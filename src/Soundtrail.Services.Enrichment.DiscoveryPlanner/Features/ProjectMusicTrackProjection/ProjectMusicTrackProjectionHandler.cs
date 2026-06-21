@@ -1,15 +1,14 @@
 using Soundtrail.Domain;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Model;
-using Soundtrail.Domain.Responses;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection;
 
 public sealed class ProjectMusicTrackProjectionHandler(
     ILoadMusicTrackProjectionPort loadPort,
-    ISaveMusicTrackProjectionPort savePort) : IHandler<ProjectMusicTrackProjectionCommand, ProjectMusicTrackProjectionResult>
+    ISaveMusicTrackProjectionPort savePort) : IHandler<ProjectMusicTrackProjectionCommand>
 {
-    public async Task<ProjectMusicTrackProjectionResult> Handle(
+    public async Task Handle(
         ProjectMusicTrackProjectionCommand request,
         CancellationToken cancellationToken = default)
     {
@@ -26,6 +25,5 @@ public sealed class ProjectMusicTrackProjectionHandler(
         }
 
         await savePort.SaveAsync(request.MusicCatalogId, projection, cancellationToken);
-        return new ProjectMusicTrackProjectionResult(request.Events.Count);
     }
 }

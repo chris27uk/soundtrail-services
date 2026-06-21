@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.SourceBudgets;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.SourceBudgets.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.SourceBudgets.Configuration;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
@@ -43,7 +44,9 @@ internal sealed class SourceApiBudgetReservationTestEnvironment : IDisposable
         return mode switch
         {
             SourceApiBudgetReservationMode.InProcessFake => new SourceApiBudgetReservationTestEnvironment(
-                new InProcessSourceApiBudgetPort(options.Value)),
+                new SourceApiBudgetReservationService(
+                    new InProcessSourceApiBudgetPort(),
+                    options)),
             SourceApiBudgetReservationMode.RavenCompareExchange => CreateRaven(options),
             _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
         };
@@ -53,7 +56,9 @@ internal sealed class SourceApiBudgetReservationTestEnvironment : IDisposable
     {
         var raven = RavenEmbeddedTestDatabase.Create();
         return new SourceApiBudgetReservationTestEnvironment(
-            new RavenCompareExchangeSourceApiBudgetPort(raven.Store, options),
+            new SourceApiBudgetReservationService(
+                new RavenCompareExchangeSourceApiBudgetPort(raven.Store),
+                options),
             raven);
     }
 

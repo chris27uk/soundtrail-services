@@ -12,7 +12,7 @@ namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ImportCatalo
 public sealed class RavenDiscoveryLifecycleEventImportResponsesTests
 {
     [Fact]
-    public async Task Given_Imported_Discovery_Events_When_Projection_Has_Not_Replayed_Yet_Then_No_Status_Document_Is_Written_Directly()
+    public async Task Given_Imported_Discovery_Events_When_Import_Completes_Then_Status_Documents_Are_Built_Through_Replay()
     {
         await using var env = RavenDiscoveryLifecycleEventImportTestEnvironment.Create();
         var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
@@ -31,11 +31,13 @@ public sealed class RavenDiscoveryLifecycleEventImportResponsesTests
 
         var status = await env.LoadStatusAsync(criteria);
 
-        status.Should().BeNull();
+        status.Should().NotBeNull();
+        status!.Status.Should().Be("Requested");
+        status.WillBeLookedUp.Should().BeTrue();
     }
 
     [Fact]
-    public async Task Given_Imported_Discovery_Events_When_Projection_Replays_Then_Status_Documents_Are_Built_From_Stored_Events()
+    public async Task Given_Imported_Discovery_Events_When_Import_Completes_Then_Status_Documents_Are_Built_From_Stored_Events()
     {
         await using var env = RavenDiscoveryLifecycleEventImportTestEnvironment.Create();
         var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
@@ -59,10 +61,8 @@ public sealed class RavenDiscoveryLifecycleEventImportResponsesTests
                         30,
                         new DateTimeOffset(2026, 6, 16, 12, 5, 0, TimeSpan.Zero),
                         "Planner queued lookup",
-                        new DateTimeOffset(2026, 6, 16, 12, 1, 0, TimeSpan.Zero))
+                    new DateTimeOffset(2026, 6, 16, 12, 1, 0, TimeSpan.Zero))
                 ]));
-
-        await env.ReplayDiscoveryProjectionAsync();
 
         var status = await env.LoadStatusAsync(criteria);
 

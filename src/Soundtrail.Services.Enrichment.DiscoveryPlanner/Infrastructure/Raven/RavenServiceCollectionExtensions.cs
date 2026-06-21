@@ -54,7 +54,6 @@ public static class RavenServiceCollectionExtensions
         services.TryAddScoped<ISaveDiscoveryLifecycleProjectionPort, RavenSaveDiscoveryLifecycleProjection>();
         services.TryAddScoped<ILoadMusicTrackProjectionPort, RavenLoadMusicTrackProjection>();
         services.TryAddScoped<ISaveMusicTrackProjectionPort, RavenSaveMusicTrackProjection>();
-        services.TryAddScoped<IProviderSnapshotStore, RavenProviderSnapshotStore>();
         services.TryAddSingleton<IMusicCatalogCandidateSearch, RavenMusicCatalogCandidateSearch>();
         services.TryAddSingleton<ILocalMusicTrackSearch, RavenLocalMusicTrackSearch>();
         return services;

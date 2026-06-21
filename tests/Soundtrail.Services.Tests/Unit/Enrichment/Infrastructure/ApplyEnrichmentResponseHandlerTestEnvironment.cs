@@ -4,7 +4,6 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Support;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -13,11 +12,9 @@ internal sealed class ApplyEnrichmentResponseHandlerTestEnvironment
     private ApplyEnrichmentResponseHandlerTestEnvironment()
     {
         StreamStore = new MusicTrackStreamStoreFake();
-        SnapshotStore = new ProviderSnapshotStoreFake();
         CatalogSearchTrackings = new CatalogSearchTrackingStoreFake();
         DiscoveryRepository = new CatalogSearchDiscoveryRepositoryFake();
         Handler = new ApplyEnrichmentResponseHandler(
-            new CaptureProviderSnapshot(SnapshotStore),
             StreamStore,
             CatalogSearchTrackings,
             DiscoveryRepository);
@@ -26,8 +23,6 @@ internal sealed class ApplyEnrichmentResponseHandlerTestEnvironment
     public ApplyEnrichmentResponseHandler Handler { get; }
 
     public MusicTrackStreamStoreFake StreamStore { get; }
-
-    public ProviderSnapshotStoreFake SnapshotStore { get; }
 
     public CatalogSearchTrackingStoreFake CatalogSearchTrackings { get; }
 

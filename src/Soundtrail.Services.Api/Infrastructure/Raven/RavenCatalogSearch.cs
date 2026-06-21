@@ -140,5 +140,4 @@ public sealed class RavenCatalogSearch(IDocumentStore documentStore) : ICatalogS
 
         return PlayabilityStatus.NotYetDiscovered;
     }
-
 }

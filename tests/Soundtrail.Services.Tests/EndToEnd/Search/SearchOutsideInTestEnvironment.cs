@@ -343,22 +343,16 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
         CatalogSearchCriteria criteria,
         params IDomainEvent[] events)
     {
+        using var replaySession = store.OpenAsyncSession();
         var importHandler = new ImportCatalogSearchDiscoveryEventsHandler(
-            new Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.RavenCatalogSearchDiscoveryRepository(store));
+            new Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.RavenCatalogSearchDiscoveryRepository(store),
+            new ReplayDiscoveryLifecycleProjectionHandler(
+                new RavenLoadStoredDiscoveryLifecycleEvents(replaySession),
+                new ProjectDiscoveryLifecycleHandler(
+                    new RavenLoadDiscoveryLifecycleProjection(replaySession, new RavenDiscoveryLifecycleProjectionMapper()),
+                    new RavenSaveDiscoveryLifecycleProjection(replaySession, new RavenDiscoveryLifecycleProjectionMapper()))));
         importHandler.Handle(
                 new ImportCatalogSearchDiscoveryEventsCommand(criteria, 0, events),
-                CancellationToken.None)
-            .GetAwaiter()
-            .GetResult();
-
-        using var replaySession = store.OpenAsyncSession();
-        var replayHandler = new ReplayDiscoveryLifecycleProjectionHandler(
-            new RavenLoadStoredDiscoveryLifecycleEvents(replaySession),
-            new ProjectDiscoveryLifecycleHandler(
-                new RavenLoadDiscoveryLifecycleProjection(replaySession, new RavenDiscoveryLifecycleProjectionMapper()),
-                new RavenSaveDiscoveryLifecycleProjection(replaySession, new RavenDiscoveryLifecycleProjectionMapper())));
-        replayHandler.Handle(
-                new ReplayDiscoveryLifecycleProjectionCommand(criteria),
                 CancellationToken.None)
             .GetAwaiter()
             .GetResult();

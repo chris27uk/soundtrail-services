@@ -21,7 +21,8 @@ public sealed class KnownTrackResponsesTests
             "isrc-1",
             "mbid-1",
             123000,
-            IsPlayable: false));
+            IsPlayable: false,
+            ReleaseDate: new DateOnly(2004, 6, 7)));
 
         var actual = await env.Search.GetByMusicCatalogIdAsync(MusicCatalogId.From("mc_track_1"), CancellationToken.None);
 
@@ -33,6 +34,7 @@ public sealed class KnownTrackResponsesTests
             "isrc-1",
             "mbid-1",
             123000,
-            IsPlayable: false));
+            IsPlayable: false,
+            ReleaseDate: new DateOnly(2004, 6, 7)));
     }
 }

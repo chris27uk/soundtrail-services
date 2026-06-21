@@ -5,13 +5,35 @@ public sealed class MusicCatalogMatchResolver
     private const decimal MinimumAcceptedScore = 0.80m;
     private const decimal MinimumWinningMargin = 0.10m;
 
-    public MusicCatalogResolution Resolve(IReadOnlyList<MusicCatalogMatch> matches)
+    public MusicCatalogResolution Resolve(
+        IReadOnlyList<MusicCatalogMatch> matches,
+        MusicCatalogResolutionContext? context = null)
     {
+        context ??= MusicCatalogResolutionContext.Empty;
+
         var exactIdentityMatches = matches
             .Where(static match => match.HasExactIdentityMatch())
             .OrderByDescending(static match => match.Score)
-            .Take(2)
             .ToArray();
+
+        if (context.ReleaseDate is not null)
+        {
+            var releaseDateMatches = exactIdentityMatches
+                .Where(match => match.Evidence.ReleaseDate == context.ReleaseDate)
+                .OrderByDescending(static match => match.Score)
+                .Take(2)
+                .ToArray();
+
+            if (releaseDateMatches.Length == 1)
+            {
+                return MusicCatalogResolution.Resolved(releaseDateMatches[0].MusicCatalogId);
+            }
+
+            if (releaseDateMatches.Length > 1)
+            {
+                return MusicCatalogResolution.Ambiguous();
+            }
+        }
 
         if (exactIdentityMatches.Length == 1)
         {

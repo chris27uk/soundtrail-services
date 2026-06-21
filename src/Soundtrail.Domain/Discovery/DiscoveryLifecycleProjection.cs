@@ -1,4 +1,3 @@
-using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Events;
 
 namespace Soundtrail.Domain.Discovery;
