@@ -14,6 +14,8 @@ public sealed class CatalogAlbumRecordDto
 
     public string ArtistName { get; set; } = string.Empty;
 
+    public string SearchText { get; set; } = string.Empty;
+
     public string? MusicBrainzReleaseId { get; set; }
 
     public string[] AvailableProviders { get; set; } = [];

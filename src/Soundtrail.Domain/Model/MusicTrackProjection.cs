@@ -1,4 +1,3 @@
-using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Events;
 
@@ -41,6 +40,8 @@ public sealed class MusicTrackProjection
 
     public int? DurationMs { get; private set; }
 
+    public DateOnly? ReleaseDate { get; private set; }
+
     public string? ArtworkUrl { get; private set; }
 
     public ProjectedSongMetadata? CanonicalMetadata { get; private set; }
@@ -69,6 +70,7 @@ public sealed class MusicTrackProjection
             AppleId = snapshot.AppleId,
             SpotifyId = snapshot.SpotifyId,
             DurationMs = snapshot.DurationMs,
+            ReleaseDate = snapshot.ReleaseDate,
             ArtworkUrl = snapshot.ArtworkUrl,
             CanonicalMetadata = snapshot.CanonicalMetadata,
             AppleReference = snapshot.AppleReference,
@@ -92,6 +94,7 @@ public sealed class MusicTrackProjection
             AppleId,
             SpotifyId,
             DurationMs,
+            ReleaseDate,
             ArtworkUrl,
             CanonicalMetadata,
             AppleReference,
@@ -175,6 +178,7 @@ public sealed class MusicTrackProjection
         {
             AlbumId = @event.AlbumId;
             AlbumTitle = AlbumTitle.From(@event.AlbumTitle);
+            ReleaseDate = @event.ReleaseDate ?? ReleaseDate;
         });
 
         handlers.Register<ArtistDiscovered>(@event =>
@@ -216,6 +220,7 @@ public sealed class MusicTrackProjection
             Mbid = @event.Mbid;
             NormalizedMbid = NormalizeCompact(@event.Mbid);
             DurationMs = @event.DurationMs;
+            ReleaseDate = @event.ReleaseDate ?? ReleaseDate;
             SearchText = BuildSearchText(Title, Artist);
         });
 

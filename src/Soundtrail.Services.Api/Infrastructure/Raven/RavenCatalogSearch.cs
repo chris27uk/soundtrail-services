@@ -22,7 +22,7 @@ public sealed class RavenCatalogSearch(IDocumentStore documentStore) : ICatalogS
         {
             var artists = await session
                 .Query<CatalogArtistRecordDto, Indexes.Search_Artists>()
-                .Search(x => x.Name, command.Query.Value)
+                .Search(x => x.SearchText, command.Query.Value)
                 .Take(take)
                 .ToListAsync(cancellationToken);
 
@@ -46,7 +46,7 @@ public sealed class RavenCatalogSearch(IDocumentStore documentStore) : ICatalogS
         {
             var albums = await session
                 .Query<CatalogAlbumRecordDto, Indexes.Search_Albums>()
-                .Search(x => x.Name, command.Query.Value)
+                .Search(x => x.SearchText, command.Query.Value)
                 .Take(take)
                 .ToListAsync(cancellationToken);
 

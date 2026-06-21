@@ -14,6 +14,7 @@ public sealed record MusicTrackProjectionSnapshot(
     string? AppleId,
     string? SpotifyId,
     int? DurationMs,
+    DateOnly? ReleaseDate,
     string? ArtworkUrl,
     ProjectedSongMetadata? CanonicalMetadata,
     ProjectedProviderReference? AppleReference,

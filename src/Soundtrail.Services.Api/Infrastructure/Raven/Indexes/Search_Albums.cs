@@ -15,6 +15,7 @@ internal sealed class Search_Albums : AbstractIndexCreationTask<CatalogAlbumReco
                             album.Name,
                             album.NormalizedName,
                             album.ArtistName,
+                            album.SearchText,
                             album.MusicBrainzReleaseId,
                             album.AvailableProviders,
                             album.TerminallyUnavailableProviders
@@ -23,5 +24,6 @@ internal sealed class Search_Albums : AbstractIndexCreationTask<CatalogAlbumReco
         Index(x => x.Name, FieldIndexing.Search);
         Index(x => x.NormalizedName, FieldIndexing.Search);
         Index(x => x.ArtistName, FieldIndexing.Search);
+        Index(x => x.SearchText, FieldIndexing.Search);
     }
 }

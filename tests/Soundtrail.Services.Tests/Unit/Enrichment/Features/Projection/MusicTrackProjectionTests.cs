@@ -55,6 +55,7 @@ public sealed class MusicTrackProjectionTests
                 null,
                 null,
                 null,
+                null,
                 false,
                 0));
 
@@ -97,12 +98,34 @@ public sealed class MusicTrackProjectionTests
         projection.AlbumTitle.Value.Should().Be("Album A");
         projection.AlbumTitle.Canonical.Should().Be("album a");
         projection.AlbumId.Should().Be("album_a");
+        projection.ReleaseDate.Should().Be(new DateOnly(2004, 6, 7));
         projection.Isrc.Should().Be("isrc-1");
         projection.Mbid.Should().Be("mbid-1");
         projection.CanonicalMetadata.Should().NotBeNull();
         projection.CanonicalMetadata!.Title.Should().Be("Song A (Remastered)");
         projection.CanonicalMetadata.Artist.Value.Should().Be("Artist A");
         projection.ProjectionVersion.Should().Be(4);
+    }
+
+    [Fact]
+    public void Given_Album_Discovered_When_Applied_Then_Release_Date_Is_Recorded()
+    {
+        var projection = new MusicTrackProjection();
+
+        projection.Apply(
+            new AlbumDiscovered(
+                "album_a",
+                "Album A",
+                "mb-release-a",
+                new DateOnly(2004, 6, 7),
+                ProviderName.MusicBrainz,
+                Clock),
+            2);
+
+        projection.AlbumId.Should().Be("album_a");
+        projection.AlbumTitle.Value.Should().Be("Album A");
+        projection.ReleaseDate.Should().Be(new DateOnly(2004, 6, 7));
+        projection.ProjectionVersion.Should().Be(2);
     }
 
     [Fact]

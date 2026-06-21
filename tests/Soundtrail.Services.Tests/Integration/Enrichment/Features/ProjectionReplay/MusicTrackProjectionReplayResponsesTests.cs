@@ -259,6 +259,7 @@ public sealed class MusicTrackProjectionReplayResponsesTests
         projection.ArtistId.Should().Be("artist_a");
         projection.AlbumId.Should().Be("album_a");
         projection.AlbumTitle.Should().Be("Album A");
+        projection.ReleaseDate.Should().Be(new DateOnly(2004, 6, 7));
         projection.ArtworkUrl.Should().Be("https://images.example.com/track.png");
         projection.ProjectionVersion.Should().Be(2);
     }

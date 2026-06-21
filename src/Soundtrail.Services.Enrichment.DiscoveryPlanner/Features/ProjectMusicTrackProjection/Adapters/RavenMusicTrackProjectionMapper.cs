@@ -23,6 +23,7 @@ public sealed class RavenMusicTrackProjectionMapper
                 document.AppleId,
                 document.SpotifyId,
                 document.DurationMs,
+                document.ReleaseDate,
                 document.ArtworkUrl,
                 document.CanonicalMetadata is null
                     ? null
@@ -68,6 +69,7 @@ public sealed class RavenMusicTrackProjectionMapper
         document.AppleId = snapshot.AppleId;
         document.SpotifyId = snapshot.SpotifyId;
         document.DurationMs = snapshot.DurationMs;
+        document.ReleaseDate = snapshot.ReleaseDate;
         document.ArtworkUrl = snapshot.ArtworkUrl;
         document.CanonicalMetadata = snapshot.CanonicalMetadata is null
             ? null

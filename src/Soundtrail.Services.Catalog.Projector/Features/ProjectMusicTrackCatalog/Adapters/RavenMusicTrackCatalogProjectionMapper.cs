@@ -1,4 +1,5 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Model;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog.ProjectionModel;
 
@@ -99,6 +100,7 @@ public sealed class RavenMusicTrackCatalogProjectionMapper
         document.ArtistId = projection.ArtistId;
         document.Name = projection.Name;
         document.NormalizedName = projection.NormalizedName;
+        document.SearchText = MusicIdentityText.NormalizeFreeText(projection.Name);
         document.MusicBrainzArtistId = projection.MusicBrainzArtistId;
         document.AvailableProviders = projection.AvailableProviders.ToArray();
         document.TerminallyUnavailableProviders = projection.TerminallyUnavailableProviders.ToArray();
@@ -113,6 +115,7 @@ public sealed class RavenMusicTrackCatalogProjectionMapper
         document.Name = projection.Name;
         document.NormalizedName = projection.NormalizedName;
         document.ArtistName = projection.ArtistName;
+        document.SearchText = MusicIdentityText.NormalizeFreeText($"{projection.Name} {projection.ArtistName}".Trim());
         document.MusicBrainzReleaseId = projection.MusicBrainzReleaseId;
         document.AvailableProviders = projection.AvailableProviders.ToArray();
         document.TerminallyUnavailableProviders = projection.TerminallyUnavailableProviders.ToArray();

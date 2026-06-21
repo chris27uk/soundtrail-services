@@ -13,6 +13,7 @@ internal sealed class Search_Artists : AbstractIndexCreationTask<CatalogArtistRe
                              artist.ArtistId,
                              artist.Name,
                              artist.NormalizedName,
+                             artist.SearchText,
                              artist.MusicBrainzArtistId,
                              artist.AvailableProviders,
                              artist.TerminallyUnavailableProviders
@@ -20,5 +21,6 @@ internal sealed class Search_Artists : AbstractIndexCreationTask<CatalogArtistRe
 
         Index(x => x.Name, FieldIndexing.Search);
         Index(x => x.NormalizedName, FieldIndexing.Search);
+        Index(x => x.SearchText, FieldIndexing.Search);
     }
 }

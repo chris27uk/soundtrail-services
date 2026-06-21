@@ -69,6 +69,7 @@ internal sealed class CatalogSearchTestEnvironment : IDisposable
                     Set(artist, CatalogArtistRecordDtoType, "ArtistId", result.Id);
                     Set(artist, CatalogArtistRecordDtoType, "Name", result.Name);
                     Set(artist, CatalogArtistRecordDtoType, "NormalizedName", result.Name.ToLowerInvariant());
+                    Set(artist, CatalogArtistRecordDtoType, "SearchText", $"{result.Name}".ToLowerInvariant());
                     Set(artist, CatalogArtistRecordDtoType, "MusicBrainzArtistId", null);
                     Set(artist, CatalogArtistRecordDtoType, "AvailableProviders", result.AvailableProviders.Select(x => x.Value).ToArray());
                     Set(artist, CatalogArtistRecordDtoType, "TerminallyUnavailableProviders", result.TerminallyUnavailableProviders.Select(x => x.Value).ToArray());
@@ -85,6 +86,7 @@ internal sealed class CatalogSearchTestEnvironment : IDisposable
                     Set(album, CatalogAlbumRecordDtoType, "Name", result.Name);
                     Set(album, CatalogAlbumRecordDtoType, "NormalizedName", result.Name.ToLowerInvariant());
                     Set(album, CatalogAlbumRecordDtoType, "ArtistName", result.ArtistName!);
+                    Set(album, CatalogAlbumRecordDtoType, "SearchText", $"{result.Name} {result.ArtistName}".ToLowerInvariant());
                     Set(album, CatalogAlbumRecordDtoType, "MusicBrainzReleaseId", null);
                     Set(album, CatalogAlbumRecordDtoType, "AvailableProviders", result.AvailableProviders.Select(x => x.Value).ToArray());
                     Set(album, CatalogAlbumRecordDtoType, "TerminallyUnavailableProviders", result.TerminallyUnavailableProviders.Select(x => x.Value).ToArray());
