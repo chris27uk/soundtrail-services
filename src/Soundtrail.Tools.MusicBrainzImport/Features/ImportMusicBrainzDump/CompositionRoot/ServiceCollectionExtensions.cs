@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog;
 using Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump.Adapters;
+using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump.CompositionRoot;
 
