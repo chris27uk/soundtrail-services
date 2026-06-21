@@ -6,8 +6,6 @@ using Soundtrail.Domain.Model;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog;
 using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog.Adapters;
-using Soundtrail.Services.Catalog.Projector.Features.ReplayMusicTrackCatalogProjection;
-using Soundtrail.Services.Catalog.Projector.Features.ReplayMusicTrackCatalogProjection.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ImportMusicTrackEvents;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
@@ -61,19 +59,22 @@ internal sealed class RavenMusicTrackEventImportTestEnvironment : IAsyncDisposab
     public async Task ReplayCatalogProjectionAsync()
     {
         using var session = raven.Store.OpenAsyncSession();
-        var replayHandler = new ReplayMusicTrackCatalogProjectionHandler(
-            new RavenLoadStoredMusicTrackEvents(session),
-            new ProjectMusicTrackCatalogHandler(
-                new RavenLoadMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()),
-                new RavenSaveMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper())));
+        var projectHandler = new ProjectMusicTrackCatalogHandler(
+            new RavenLoadMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()),
+            new RavenSaveMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()));
         var streamMetadata = await session.Advanced.LoadStartingWithAsync<MusicTrackEventStreamMetadataRecordDto>(
             "music-track-streams/");
         var musicCatalogIds = streamMetadata.Select(x => x.MusicCatalogId).ToList();
 
         foreach (var musicCatalogId in musicCatalogIds.Distinct(StringComparer.Ordinal))
         {
-            await replayHandler.Handle(
-                new ReplayMusicTrackCatalogProjectionCommand(MusicCatalogId.From(musicCatalogId)),
+            var eventsToReplay = (await session.Advanced.LoadStartingWithAsync<MusicTrackStoredEventRecordDto>(
+                    $"music-track-events/{musicCatalogId}/"))
+                .OrderBy(x => x.Version)
+                .Select(x => new VersionedMusicTrackEvent(x.Version, x.ToDomainEvent()))
+                .ToArray();
+            await projectHandler.Handle(
+                new ProjectMusicTrackCatalogCommand(MusicCatalogId.From(musicCatalogId), eventsToReplay),
                 CancellationToken.None);
         }
     }

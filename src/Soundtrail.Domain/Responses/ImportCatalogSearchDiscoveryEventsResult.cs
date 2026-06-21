@@ -1,5 +1,3 @@
 namespace Soundtrail.Domain.Responses;
 
-public sealed record ImportCatalogSearchDiscoveryEventsResult(
-    bool Appended,
-    int ImportedEventCount);
+public sealed record ImportCatalogSearchDiscoveryEventsResult(bool Appended, int ImportedEventCount);

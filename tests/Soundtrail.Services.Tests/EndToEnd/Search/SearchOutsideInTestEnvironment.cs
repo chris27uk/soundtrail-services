@@ -23,8 +23,6 @@ using Soundtrail.Services.Api.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog;
 using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog.Adapters;
-using Soundtrail.Services.Catalog.Projector.Features.ReplayMusicTrackCatalogProjection;
-using Soundtrail.Services.Catalog.Projector.Features.ReplayMusicTrackCatalogProjection.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ImportCatalogSearchDiscoveryEvents;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ImportMusicTrackEvents;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
@@ -326,13 +324,18 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
         }
 
         using var replaySession = store.OpenAsyncSession();
-        var replayHandler = new ReplayMusicTrackCatalogProjectionHandler(
-            new RavenLoadStoredMusicTrackEvents(replaySession),
-            new ProjectMusicTrackCatalogHandler(
-                new RavenLoadMusicTrackCatalogProjection(replaySession, new RavenMusicTrackCatalogProjectionMapper()),
-                new RavenSaveMusicTrackCatalogProjection(replaySession, new RavenMusicTrackCatalogProjectionMapper())));
-        replayHandler.Handle(
-                new ReplayMusicTrackCatalogProjectionCommand(musicCatalogId),
+        var eventsToReplay = replaySession.Advanced.LoadStartingWithAsync<MusicTrackStoredEventRecordDto>(
+                $"music-track-events/{musicCatalogId.Value}/")
+            .GetAwaiter()
+            .GetResult()
+            .OrderBy(x => x.Version)
+            .Select(x => new VersionedMusicTrackEvent(x.Version, x.ToDomainEvent()))
+            .ToArray();
+        var projectHandler = new ProjectMusicTrackCatalogHandler(
+            new RavenLoadMusicTrackCatalogProjection(replaySession, new RavenMusicTrackCatalogProjectionMapper()),
+            new RavenSaveMusicTrackCatalogProjection(replaySession, new RavenMusicTrackCatalogProjectionMapper()));
+        projectHandler.Handle(
+                new ProjectMusicTrackCatalogCommand(musicCatalogId, eventsToReplay),
                 CancellationToken.None)
             .GetAwaiter()
             .GetResult();

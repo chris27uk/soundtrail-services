@@ -1,7 +1,6 @@
 using Soundtrail.Domain;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.CatalogBrowsing;
-using Soundtrail.Services.Api.Shared;
 
 namespace Soundtrail.Services.Api.Features.ListTracksByArtist.Adapters;
 
@@ -36,14 +35,14 @@ public static class ListTracksByArtistEndpoints
         isrc = track.Isrc,
         durationMs = track.DurationMs,
         playabilityStatus = track.PlayabilityStatus.ToString(),
-        availableProviders = track.AvailableProviders.Select(ProviderContract.ToValue),
-        terminallyUnavailableProviders = track.TerminallyUnavailableProviders.Select(ProviderContract.ToValue),
+        availableProviders = track.AvailableProviders.Select(providerName => providerName.ToPersistentId()),
+        terminallyUnavailableProviders = track.TerminallyUnavailableProviders.Select(providerName => providerName.ToPersistentId()),
         providerReferences = track.ProviderReferences.Select(ToContract)
     };
 
     private static object ToContract(ProviderReference response) => new
     {
-        provider = ProviderContract.ToValue(response.Provider),
+        provider = response.Provider.ToPersistentId(),
         providerEntityType = response.ProviderEntityType,
         providerId = response.ProviderId,
         url = response.Url,

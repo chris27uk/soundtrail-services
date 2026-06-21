@@ -9,8 +9,6 @@ using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog;
 using Soundtrail.Services.Api.Infrastructure.Raven;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog.Adapters;
-using Soundtrail.Services.Catalog.Projector.Features.ReplayMusicTrackCatalogProjection;
-using Soundtrail.Services.Catalog.Projector.Features.ReplayMusicTrackCatalogProjection.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using System.Reflection;
 
@@ -70,17 +68,20 @@ internal sealed class RavenCatalogProjectionReplayTestEnvironment : IAsyncDispos
     {
         using var session = raven.Store.OpenAsyncSession();
         session.Advanced.WaitForIndexesAfterSaveChanges();
-        var handler = new ReplayMusicTrackCatalogProjectionHandler(
-            new RavenLoadStoredMusicTrackEvents(session),
-            new ProjectMusicTrackCatalogHandler(
-                new RavenLoadMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()),
-                new RavenSaveMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper())));
+        var eventsToReplay = (await session.Advanced.LoadStartingWithAsync<MusicTrackStoredEventRecordDto>(
+                $"music-track-events/{musicCatalogId.Value}/"))
+            .OrderBy(x => x.Version)
+            .Select(x => new VersionedMusicTrackEvent(x.Version, x.ToDomainEvent()))
+            .ToArray();
+        var handler = new ProjectMusicTrackCatalogHandler(
+            new RavenLoadMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()),
+            new RavenSaveMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()));
 
-        var result = await handler.Handle(
-            new ReplayMusicTrackCatalogProjectionCommand(musicCatalogId),
+        await handler.Handle(
+            new ProjectMusicTrackCatalogCommand(musicCatalogId, eventsToReplay),
             CancellationToken.None);
 
-        return result.ReplayedEventCount;
+        return eventsToReplay.Length;
     }
 
     public async Task<CatalogTrackRecordDto?> LoadTrackAsync(string trackId)
