@@ -1,11 +1,11 @@
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
 
-namespace Soundtrail.Services.Api.Features.SearchCatalog.Adapters;
+namespace Soundtrail.Services.Api.Features.SearchCatalog.Support;
 
-public sealed class RavenRecordCatalogSearchAttempt(
+public sealed class CatalogSearchAttemptRecorder(
     ICatalogSearchDiscoveryRepository discoveryRepository,
-    IQueueCatalogSearchAttemptPort queueCatalogSearchAttemptPort) : IRecordCatalogSearchAttemptPort
+    IQueueCatalogSearchAttemptPort queueCatalogSearchAttemptPort)
 {
     public async Task<bool> TryRequestAsync(
         RecordCatalogSearchAttemptCommand command,

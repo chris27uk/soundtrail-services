@@ -2,12 +2,13 @@ using Soundtrail.Domain;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Search;
+using Soundtrail.Services.Api.Features.SearchCatalog.Support;
 
 namespace Soundtrail.Services.Api.Features.SearchCatalog;
 
 public sealed class SearchCatalogHandler(
     ICatalogSearchPort catalogSearch,
-    IRecordCatalogSearchAttemptPort requestDiscoveryPort) : IHandler<SearchCatalogCommand, SearchCatalogResponse>
+    CatalogSearchAttemptRecorder catalogSearchAttemptRecorder) : IHandler<SearchCatalogCommand, SearchCatalogResponse>
 {
     public async Task<SearchCatalogResponse> Handle(
         SearchCatalogCommand command,
@@ -19,7 +20,7 @@ public sealed class SearchCatalogHandler(
         if (!local.IsComplete && discovery is null)
         {
             var criteria = command.ToCatalogSearchCriteria();
-            await requestDiscoveryPort.TryRequestAsync(
+            await catalogSearchAttemptRecorder.TryRequestAsync(
                 new RecordCatalogSearchAttemptCommand(
                     criteria,
                     command.Query.ToNewCatalogSearchAttempt(criteria)),

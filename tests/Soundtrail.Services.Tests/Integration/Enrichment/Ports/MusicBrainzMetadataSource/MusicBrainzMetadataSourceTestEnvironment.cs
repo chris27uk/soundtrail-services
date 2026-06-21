@@ -56,7 +56,20 @@ internal sealed class MusicBrainzMetadataSourceTestEnvironment : IDisposable
                     (track, artist, album) => fake.SeedNames(track, artist, album, metadata),
                     isrc => fake.SeedIsrc(isrc, metadata));
             },
-            seedAmbiguous: _ => { },
+            seedAmbiguous: searchTerm =>
+            {
+                searchTerm.Match(
+                    (track, artist, album) =>
+                    {
+                        fake.SeedAmbiguousNames(track, artist, album);
+                        return 0;
+                    },
+                    isrc =>
+                    {
+                        fake.SeedAmbiguousIsrc(isrc);
+                        return 0;
+                    });
+            },
             seedPreferredMatch: (searchTerm, metadata) =>
             {
                 searchTerm.Match(

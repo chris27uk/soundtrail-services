@@ -32,6 +32,26 @@ internal sealed class CatalogReadTestEnvironment : IDisposable
 
     public void Seed() => this.seed();
 
+    public void SeedCrossArtistAlbumTrackScenario()
+    {
+        switch (Port)
+        {
+            case FakeCatalogReadPort fake:
+                fake.Seed(
+                    ApiKnownTracks.TheKillersArtistDetails(),
+                    ApiKnownTracks.HotFussAlbum(),
+                    ApiKnownTracks.MrBrightsideTrackDetails(),
+                    [ApiKnownTracks.MrBrightsideTrackSummary()],
+                    [ApiKnownTracks.MrBrightsideTrackSummary()]);
+                break;
+            case RavenCatalogReadPort:
+                SeedCrossArtistAlbumTrackScenarioRaven(this.raven!.Store);
+                break;
+            default:
+                throw new InvalidOperationException($"Unsupported port type: {Port.GetType().FullName}");
+        }
+    }
+
     public void Dispose() => this.raven?.Dispose();
 
     private static CatalogReadTestEnvironment CreateFake()
@@ -101,6 +121,35 @@ internal sealed class CatalogReadTestEnvironment : IDisposable
             ["Isrc"] = "USIR20400274",
             ["DurationMs"] = 222000,
             ["AvailableProviders"] = new[] { "Spotify", "AppleMusic" },
+            ["TerminallyUnavailableProviders"] = Array.Empty<string>(),
+            ["ProviderReferences"] = Array.CreateInstance(CatalogProviderReferenceType, 0),
+            ["UpdatedAt"] = DateTimeOffset.UtcNow
+        }));
+
+        session.SaveChanges();
+    }
+
+    private static void SeedCrossArtistAlbumTrackScenarioRaven(IDocumentStore store)
+    {
+        SeedRaven(store);
+
+        using var session = store.OpenSession();
+        session.Advanced.WaitForIndexesAfterSaveChanges();
+
+        session.Store(Create(TrackType, new Dictionary<string, object?>
+        {
+            ["Id"] = "catalog/tracks/track_wrong_artist_same_album",
+            ["ArtistId"] = "artist_someone_else",
+            ["AlbumId"] = "album_hot_fuss",
+            ["TrackId"] = "track_wrong_artist_same_album",
+            ["Title"] = "Leaked Track",
+            ["NormalizedTitle"] = "leaked track",
+            ["ArtistName"] = "Someone Else",
+            ["AlbumName"] = "Hot Fuss",
+            ["SearchText"] = "leaked track someone else",
+            ["Isrc"] = "USIR20999999",
+            ["DurationMs"] = 111000,
+            ["AvailableProviders"] = Array.Empty<string>(),
             ["TerminallyUnavailableProviders"] = Array.Empty<string>(),
             ["ProviderReferences"] = Array.CreateInstance(CatalogProviderReferenceType, 0),
             ["UpdatedAt"] = DateTimeOffset.UtcNow

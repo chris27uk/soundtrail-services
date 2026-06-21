@@ -59,7 +59,7 @@ public sealed class RavenCatalogReadPort(IDocumentStore documentStore) : ICatalo
         }
 
         var tracks = await session.Query<CatalogTrackRecordDto>()
-            .Where(x => x.AlbumId == albumId.Value)
+            .Where(x => x.AlbumId == albumId.Value && x.ArtistId == artistId.Value)
             .OrderBy(x => x.Title)
             .ToListAsync(cancellationToken);
 
