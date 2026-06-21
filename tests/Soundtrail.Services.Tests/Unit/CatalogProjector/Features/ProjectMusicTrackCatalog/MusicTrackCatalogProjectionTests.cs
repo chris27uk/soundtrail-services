@@ -46,12 +46,13 @@ public sealed class MusicTrackCatalogProjectionTests
                     Clock),
                 1));
 
-        projection.Apply(new ArtistDiscovered("artist_the_killers", "The Killers", ProviderName.MusicBrainz, Clock), 2);
+        projection.Apply(new ArtistDiscovered("artist_the_killers", "The Killers", "mb-artist-the-killers", ProviderName.MusicBrainz, Clock), 2);
 
         projection.Track.ArtistId.Should().Be("artist_the_killers");
         projection.Track.ArtistName.Should().Be("The Killers");
         projection.Artist.Should().NotBeNull();
         projection.Artist!.AvailableProviders.Should().Contain(ProviderName.Spotify.Value);
+        projection.Artist.MusicBrainzArtistId.Should().Be("mb-artist-the-killers");
         projection.Artist.ArtworkUrl.Should().Be("https://images.example.com/track.png");
         projection.Album.Should().NotBeNull();
         projection.Album!.ArtistId.Should().Be("artist_the_killers");
@@ -154,10 +155,11 @@ public sealed class MusicTrackCatalogProjectionTests
         projection.Apply(new ProviderReferenceDiscovered(ProviderName.Spotify, "spotify-1", new Uri("https://example.com/spotify-1"), ProviderName.Odesli, Clock), 2);
         projection.Apply(new ArtworkDiscovered(CatalogEntityKind.Track, null, new Uri("https://images.example.com/track.png"), "worker/musicbrainz", Clock), 3);
 
-        projection.Apply(new AlbumDiscovered("album_hot_fuss", "Hot Fuss", new DateOnly(2004, 6, 7), ProviderName.MusicBrainz, Clock), 4);
+        projection.Apply(new AlbumDiscovered("album_hot_fuss", "Hot Fuss", "mb-release-hot-fuss", new DateOnly(2004, 6, 7), ProviderName.MusicBrainz, Clock), 4);
 
         projection.Album.Should().NotBeNull();
         projection.Album!.AvailableProviders.Should().Contain(ProviderName.Spotify.Value);
+        projection.Album.MusicBrainzReleaseId.Should().Be("mb-release-hot-fuss");
         projection.Album.ArtworkUrl.Should().Be("https://images.example.com/track.png");
         projection.Album.ReleaseDate.Should().Be(new DateOnly(2004, 6, 7));
     }

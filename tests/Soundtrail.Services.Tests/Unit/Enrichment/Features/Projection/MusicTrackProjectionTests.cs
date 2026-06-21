@@ -59,7 +59,7 @@ public sealed class MusicTrackProjectionTests
                 0));
 
         projection.Apply(
-            new ArtistDiscovered("artist_a", "Artist A", ProviderName.MusicBrainz, Clock),
+            new ArtistDiscovered("artist_a", "Artist A", "mb-artist-a", ProviderName.MusicBrainz, Clock),
             3);
 
         projection.ArtistId.Should().Be("artist_a");

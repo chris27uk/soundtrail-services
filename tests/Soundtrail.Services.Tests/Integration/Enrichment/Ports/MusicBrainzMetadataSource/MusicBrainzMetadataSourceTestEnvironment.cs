@@ -81,16 +81,16 @@ internal sealed class MusicBrainzMetadataSourceTestEnvironment : IDisposable
                     (track, artist, album) =>
                     {
                         server.SeedMusicBrainzSearchResponse(
-                            ("mbid-a", track, 123000, "100", Array.Empty<string>(), artist, album, "2004-06-07"),
-                            ("mbid-b", track, 123000, "99", Array.Empty<string>(), artist, album, "2004-06-08"));
+                            ("mbid-a", track, 123000, "100", Array.Empty<string>(), artist, "mb-artist-a", album, "mb-release-a", "2004-06-07"),
+                            ("mbid-b", track, 123000, "99", Array.Empty<string>(), artist, "mb-artist-b", album, "mb-release-b", "2004-06-08"));
                         return 0;
                     },
                     isrc =>
                     {
                         server.SeedMusicBrainzIsrcResponse(
                             isrc,
-                            ("mbid-a", "Song A", 123000, new[] { isrc }, "Artist A"),
-                            ("mbid-b", "Song A", 123000, new[] { isrc }, "Artist A"));
+                            ("mbid-a", "Song A", 123000, new[] { isrc }, "Artist A", "mb-artist-a", "Album A", "mb-release-a", "2004-06-07"),
+                            ("mbid-b", "Song A", 123000, new[] { isrc }, "Artist A", "mb-artist-b", "Album B", "mb-release-b", "2004-06-08"));
                         return 0;
                     });
             },
@@ -100,8 +100,8 @@ internal sealed class MusicBrainzMetadataSourceTestEnvironment : IDisposable
                     (track, artist, album) =>
                     {
                         server.SeedMusicBrainzSearchResponse(
-                            ("mbid-other", track, metadata.DurationMs, "100", Array.Empty<string>(), artist, "Different Album", "2005-01-01"),
-                            (metadata.Mbid, metadata.Title, metadata.DurationMs, "95", Array.Empty<string>(), metadata.Artist, album, "2004-06-07"));
+                            ("mbid-other", track, metadata.DurationMs, "100", Array.Empty<string>(), artist, "mb-artist-other", "Different Album", "mb-release-other", "2005-01-01"),
+                            (metadata.Mbid, metadata.Title, metadata.DurationMs, "95", Array.Empty<string>(), metadata.Artist, metadata.SourceArtistId, album, metadata.SourceAlbumId, "2004-06-07"));
                         return 0;
                     },
                     isrc =>

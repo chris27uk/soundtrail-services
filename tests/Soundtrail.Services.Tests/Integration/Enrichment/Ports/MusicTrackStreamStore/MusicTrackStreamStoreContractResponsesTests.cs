@@ -236,7 +236,7 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
             ProviderName.MusicBrainz,
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero),
-            new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000),
+            new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000, "Album A", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"),
             [],
             [],
             new CatalogTrackHierarchy(ArtistId.From("artist_test_artist"), AlbumId.From("album_hot_fuss")),

@@ -34,11 +34,13 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
 
         artist.Should().NotBeNull();
         artist!.Name.Should().Be("The Killers");
+        artist.MusicBrainzArtistId.Should().Be("mb-artist-the-killers");
         artist.AvailableProviders.Should().Contain(ProviderName.Spotify.Value);
 
         album.Should().NotBeNull();
         album!.ArtistId.Should().Be("artist_the_killers");
         album.Name.Should().Be("Hot Fuss");
+        album.MusicBrainzReleaseId.Should().Be("mb-release-hot-fuss");
         album.AvailableProviders.Should().Contain(ProviderName.Spotify.Value);
 
         search.Results.Should().ContainSingle();
@@ -72,9 +74,11 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
         track.AvailableProviders.Should().Contain(ProviderName.Spotify.Value);
 
         artist.Should().NotBeNull();
+        artist!.MusicBrainzArtistId.Should().Be("mb-artist-the-killers");
         artist!.AvailableProviders.Should().Contain(ProviderName.Spotify.Value);
 
         album.Should().NotBeNull();
+        album!.MusicBrainzReleaseId.Should().Be("mb-release-hot-fuss");
         album!.AvailableProviders.Should().Contain(ProviderName.Spotify.Value);
 
         search.Results.Should().ContainSingle();
@@ -351,6 +355,7 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
             ArtistDiscovered = new ArtistDiscoveredEventDataRecordDto(
                 artistId,
                 artistName,
+                "mb-artist-the-killers",
                 ProviderName.MusicBrainz.Value,
                 new DateTimeOffset(2026, 6, 15, 12, 1, 0, TimeSpan.Zero)),
             OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 1, 0, TimeSpan.Zero)
@@ -370,6 +375,7 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
             AlbumDiscovered = new AlbumDiscoveredEventDataRecordDto(
                 albumId,
                 albumName,
+                "mb-release-hot-fuss",
                 new DateOnly(2004, 6, 7),
                 ProviderName.MusicBrainz.Value,
                 new DateTimeOffset(2026, 6, 15, 12, 2, 0, TimeSpan.Zero)),

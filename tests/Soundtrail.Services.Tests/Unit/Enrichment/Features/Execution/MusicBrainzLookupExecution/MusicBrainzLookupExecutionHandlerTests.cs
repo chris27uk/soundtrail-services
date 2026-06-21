@@ -37,11 +37,11 @@ public sealed class MusicBrainzLookupExecutionHandlerTests
     public async Task Given_An_Isrc_Lookup_When_Handled_Then_MusicBrainz_Is_Queried_By_Isrc()
     {
         var env = MusicBrainzLookupExecutionHandlerTestEnvironment.Create();
-        env.SeedMusicBrainzIsrc("isrc-1", new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000));
+        env.SeedMusicBrainzIsrc("isrc-1", new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000, "Album A", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"));
 
         var result = await env.HandleNewExecutionCommand(MusicSearchTerm.ByIsrc("isrc-1"));
 
-        result.Response!.Metadata.Should().BeEquivalentTo(new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000));
+        result.Response!.Metadata.Should().BeEquivalentTo(new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000, "Album A", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"));
         env.Metadata.Lookups.Should().ContainSingle().Which.Should().Be("isrc:isrc-1");
     }
 
@@ -49,11 +49,11 @@ public sealed class MusicBrainzLookupExecutionHandlerTests
     public async Task Given_A_Track_Artist_And_Album_Lookup_When_Handled_Then_MusicBrainz_Is_Queried_By_Names()
     {
         var env = MusicBrainzLookupExecutionHandlerTestEnvironment.Create();
-        env.SeedMusicBrainzNames("Song A", "Artist A", "Album A", new SongMetadata("Song A", "Artist A", null, "mbid-1", 123000, "Album A", new DateOnly(2004, 6, 7)));
+        env.SeedMusicBrainzNames("Song A", "Artist A", "Album A", new SongMetadata("Song A", "Artist A", null, "mbid-1", 123000, "Album A", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"));
 
         var result = await env.HandleNewExecutionCommand(MusicSearchTerm.ByTrackArtistAlbum("Song A", "Artist A", "Album A"));
 
-        result.Response!.Metadata.Should().BeEquivalentTo(new SongMetadata("Song A", "Artist A", null, "mbid-1", 123000, "Album A", new DateOnly(2004, 6, 7)));
+        result.Response!.Metadata.Should().BeEquivalentTo(new SongMetadata("Song A", "Artist A", null, "mbid-1", 123000, "Album A", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"));
         env.Metadata.Lookups.Should().ContainSingle().Which.Should().StartWith("names:");
     }
 

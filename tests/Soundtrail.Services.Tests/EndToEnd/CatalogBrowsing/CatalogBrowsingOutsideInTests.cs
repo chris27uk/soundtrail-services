@@ -115,8 +115,8 @@ public sealed class CatalogBrowsingOutsideInTests
                 store,
                 MusicCatalogId.From("mc_track_1"),
                 new TrackDiscovered("Mr. Brightside", "The Killers", 222000, "USIR20400274", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero)),
-                new ArtistDiscovered("artist_the_killers", "The Killers", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 1, 0, TimeSpan.Zero)),
-                new AlbumDiscovered("album_hot_fuss", "Hot Fuss", new DateOnly(2004, 6, 7), ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 2, 0, TimeSpan.Zero)),
+                new ArtistDiscovered("artist_the_killers", "The Killers", "mb-artist-the-killers", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 1, 0, TimeSpan.Zero)),
+                new AlbumDiscovered("album_hot_fuss", "Hot Fuss", "mb-release-hot-fuss", new DateOnly(2004, 6, 7), ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 2, 0, TimeSpan.Zero)),
                 new ProviderReferenceDiscovered(ProviderName.Spotify, "spotify-track-1", new Uri("https://open.spotify.com/track/spotify-track-1"), ProviderName.Odesli, new DateTimeOffset(2026, 6, 16, 12, 3, 0, TimeSpan.Zero))));
 
         var artist = await env.GetArtistAsync("artist_the_killers");

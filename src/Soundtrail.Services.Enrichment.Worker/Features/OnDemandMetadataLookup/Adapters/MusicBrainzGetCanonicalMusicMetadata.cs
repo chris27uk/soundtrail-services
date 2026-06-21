@@ -34,7 +34,9 @@ public sealed class MusicBrainzGetCanonicalMusicMetadata(HttpClient httpClient) 
             recording.Id,
             recording.Length,
             recording.Releases?.FirstOrDefault(static release => !string.IsNullOrWhiteSpace(release.Title))?.Title,
-            ParseReleaseDate(recording.Releases));
+            ParseReleaseDate(recording.Releases),
+            recording.ArtistCredit?.FirstOrDefault()?.Artist?.Id,
+            recording.Releases?.FirstOrDefault(static release => !string.IsNullOrWhiteSpace(release.Id))?.Id);
     }
 
     private async Task<MusicBrainzRecordingDto?> LookupByIsrcAsync(
@@ -211,15 +213,27 @@ public sealed class MusicBrainzGetCanonicalMusicMetadata(HttpClient httpClient) 
     {
         [JsonPropertyName("name")]
         public string? Name { get; init; }
+
+        [JsonPropertyName("artist")]
+        public MusicBrainzArtistDto? Artist { get; init; }
     }
 
     private sealed class MusicBrainzReleaseDto
     {
+        [JsonPropertyName("id")]
+        public string? Id { get; init; }
+
         [JsonPropertyName("title")]
         public string? Title { get; init; }
 
         [JsonPropertyName("date")]
         public string? Date { get; init; }
+    }
+
+    private sealed class MusicBrainzArtistDto
+    {
+        [JsonPropertyName("id")]
+        public string? Id { get; init; }
     }
 
     private sealed record RankedRecording(MusicBrainzRecordingDto Recording, int Score);

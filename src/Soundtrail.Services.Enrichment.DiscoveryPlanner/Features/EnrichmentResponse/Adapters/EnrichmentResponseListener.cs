@@ -34,7 +34,9 @@ public sealed class EnrichmentResponseListener(ApplyEnrichmentResponseHandler ha
                         dto.Metadata.Mbid,
                         dto.Metadata.DurationMs,
                         dto.Metadata.AlbumTitle,
-                        dto.Metadata.ReleaseDate),
+                        dto.Metadata.ReleaseDate,
+                        dto.Metadata.SourceArtistId,
+                        dto.Metadata.SourceAlbumId),
                 dto.References.Select(reference => new ExternalReference(
                     ProviderName.From(reference.Provider),
                     reference.Url,

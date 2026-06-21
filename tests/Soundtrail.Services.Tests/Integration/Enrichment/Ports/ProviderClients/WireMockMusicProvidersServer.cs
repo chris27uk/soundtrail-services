@@ -48,7 +48,9 @@ internal sealed class WireMockMusicProvidersServer : IDisposable
                         "100",
                         Array.Empty<string>(),
                         metadata.Artist,
+                        metadata.SourceArtistId,
                         metadata.AlbumTitle ?? album,
+                        metadata.SourceAlbumId,
                         metadata.ReleaseDate?.ToString("yyyy-MM-dd"))));
 
                 return 0;
@@ -56,16 +58,16 @@ internal sealed class WireMockMusicProvidersServer : IDisposable
             isrc =>
             {
                 EnqueueResponse($"/ws/2/isrc/{Uri.EscapeDataString(isrc)}", BuildIsrcLookupResponse(
-                    (metadata.Mbid, metadata.Title, metadata.DurationMs, new[] { metadata.Isrc ?? isrc }, metadata.Artist)));
+                    (metadata.Mbid, metadata.Title, metadata.DurationMs, new[] { metadata.Isrc ?? isrc }, metadata.Artist, metadata.SourceArtistId, metadata.AlbumTitle, metadata.SourceAlbumId, metadata.ReleaseDate?.ToString("yyyy-MM-dd"))));
 
                 return 0;
             });
     }
 
-    public void SeedMusicBrainzSearchResponse(params (string? Mbid, string Title, int? DurationMs, string Score, string[] Isrcs, string Artist, string? ReleaseTitle, string? ReleaseDate)[] recordings) =>
+    public void SeedMusicBrainzSearchResponse(params (string? Mbid, string Title, int? DurationMs, string Score, string[] Isrcs, string Artist, string? ArtistSourceId, string? ReleaseTitle, string? ReleaseSourceId, string? ReleaseDate)[] recordings) =>
         EnqueueResponse("/ws/2/recording", BuildRecordingSearchResponse(recordings));
 
-    public void SeedMusicBrainzIsrcResponse(string isrc, params (string? Mbid, string Title, int? DurationMs, string[] Isrcs, string Artist)[] recordings) =>
+    public void SeedMusicBrainzIsrcResponse(string isrc, params (string? Mbid, string Title, int? DurationMs, string[] Isrcs, string Artist, string? ArtistSourceId, string? ReleaseTitle, string? ReleaseSourceId, string? ReleaseDate)[] recordings) =>
         EnqueueResponse($"/ws/2/isrc/{Uri.EscapeDataString(isrc)}", BuildIsrcLookupResponse(recordings));
 
     public void SeedOdesli(MusicSearchTerm searchTerm, IReadOnlyList<ExternalReference> references, string userCountry = "US")
@@ -115,7 +117,11 @@ internal sealed class WireMockMusicProvidersServer : IDisposable
             "Test Artist",
             "isrc-rare-1",
             "mbid-rare-1",
-            123000);
+            123000,
+            "Rare Album",
+            new DateOnly(2026, 1, 1),
+            "mb-artist-rare-1",
+            "mb-release-rare-1");
         var references =
             new ExternalReference[]
             {
@@ -144,7 +150,7 @@ internal sealed class WireMockMusicProvidersServer : IDisposable
     }
 
     private static string BuildRecordingSearchResponse(
-        params (string? Mbid, string Title, int? DurationMs, string Score, string[] Isrcs, string Artist, string? ReleaseTitle, string? ReleaseDate)[] recordings) =>
+        params (string? Mbid, string Title, int? DurationMs, string Score, string[] Isrcs, string Artist, string? ArtistSourceId, string? ReleaseTitle, string? ReleaseSourceId, string? ReleaseDate)[] recordings) =>
         $$"""
         {
           "recordings": [
@@ -158,9 +164,9 @@ internal sealed class WireMockMusicProvidersServer : IDisposable
                       "score": "{{recording.Score}}",
                       "isrcs": [{{string.Join(",", recording.Isrcs.Select(isrc => $"\"{isrc}\""))}}],
                       "artist-credit": [
-                        { "name": "{{recording.Artist}}" }
+                        { "name": "{{recording.Artist}}", "artist": { "id": "{{recording.ArtistSourceId}}" } }
                       ],
-                      "releases": [{{BuildRelease(recording.ReleaseTitle, recording.ReleaseDate)}}]
+                      "releases": [{{BuildRelease(recording.ReleaseTitle, recording.ReleaseSourceId, recording.ReleaseDate)}}]
                     }
                     """))}}
           ]
@@ -168,7 +174,7 @@ internal sealed class WireMockMusicProvidersServer : IDisposable
         """;
 
     private static string BuildIsrcLookupResponse(
-        params (string? Mbid, string Title, int? DurationMs, string[] Isrcs, string Artist)[] recordings) =>
+        params (string? Mbid, string Title, int? DurationMs, string[] Isrcs, string Artist, string? ArtistSourceId, string? ReleaseTitle, string? ReleaseSourceId, string? ReleaseDate)[] recordings) =>
         $$"""
         {
           "recordings": [
@@ -181,15 +187,16 @@ internal sealed class WireMockMusicProvidersServer : IDisposable
                       "length": {{recording.DurationMs?.ToString() ?? "null"}},
                       "isrcs": [{{string.Join(",", recording.Isrcs.Select(isrc => $"\"{isrc}\""))}}],
                       "artist-credit": [
-                        { "name": "{{recording.Artist}}" }
-                      ]
+                        { "name": "{{recording.Artist}}", "artist": { "id": "{{recording.ArtistSourceId}}" } }
+                      ],
+                      "releases": [{{BuildRelease(recording.ReleaseTitle, recording.ReleaseSourceId, recording.ReleaseDate)}}]
                     }
                     """))}}
           ]
         }
         """;
 
-    private static string BuildRelease(string? releaseTitle, string? releaseDate)
+    private static string BuildRelease(string? releaseTitle, string? releaseSourceId, string? releaseDate)
     {
         if (string.IsNullOrWhiteSpace(releaseTitle))
         {
@@ -198,6 +205,7 @@ internal sealed class WireMockMusicProvidersServer : IDisposable
 
         return $$"""
         {
+          "id": "{{releaseSourceId}}",
           "title": "{{releaseTitle}}",
           "date": {{(string.IsNullOrWhiteSpace(releaseDate) ? "null" : $"\"{releaseDate}\"")}}
         }

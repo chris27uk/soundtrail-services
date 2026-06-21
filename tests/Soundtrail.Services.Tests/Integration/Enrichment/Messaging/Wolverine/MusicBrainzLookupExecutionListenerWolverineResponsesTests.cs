@@ -15,7 +15,7 @@ public sealed class MusicBrainzLookupExecutionListenerWolverineResponsesTests
     public async Task Given_A_Successful_Metadata_Lookup_When_Handled_Then_An_Enrichment_Response_Message_Is_Returned()
     {
         var env = MusicBrainzLookupExecutionHandlerTestEnvironment.Create();
-        env.SeedMusicBrainzIsrc("isrc-1", new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000));
+        env.SeedMusicBrainzIsrc("isrc-1", new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000, "Album A", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"));
         var listener = new MusicBrainzLookupExecutionListener(env.Handler);
 
         var messages = await listener.Handle(Command(), null!);

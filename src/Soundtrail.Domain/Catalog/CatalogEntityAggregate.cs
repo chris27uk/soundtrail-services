@@ -52,6 +52,7 @@ public sealed class CatalogEntityAggregate
                 Apply(new ArtistDiscovered(
                     response.Hierarchy?.ArtistId?.Value,
                     response.Metadata.Artist,
+                    response.Metadata.SourceArtistId,
                     response.SourceProvider,
                     response.CreatedAt), isNew: true);
             }
@@ -61,6 +62,7 @@ public sealed class CatalogEntityAggregate
                 Apply(new AlbumDiscovered(
                     response.Hierarchy.AlbumId!.Value,
                     response.Metadata.AlbumTitle,
+                    response.Metadata.SourceAlbumId,
                     response.Metadata.ReleaseDate,
                     response.SourceProvider,
                     response.CreatedAt), isNew: true);

@@ -89,6 +89,9 @@ public sealed class MusicTrackCatalogProjection
                     ArtistId = artistId,
                     Name = Coalesce(artistName, Artist.Name),
                     NormalizedName = Normalize(Coalesce(artistName, Artist.Name)),
+                    MusicBrainzArtistId = @event.SourceProvider == ProviderName.MusicBrainz
+                        ? CoalesceNullable(@event.SourceArtistId, Artist.MusicBrainzArtistId)
+                        : Artist.MusicBrainzArtistId,
                     AvailableProviders = MergeProviders(Artist.AvailableProviders, Track.AvailableProviders),
                     TerminallyUnavailableProviders = MergeProviders(Artist.TerminallyUnavailableProviders, Track.TerminallyUnavailableProviders),
                     ArtworkUrl = CoalesceNullable(Track.ArtworkUrl, Artist.ArtworkUrl),
@@ -131,6 +134,9 @@ public sealed class MusicTrackCatalogProjection
                     NormalizedName = Normalize(Coalesce(albumTitle, Album.Name)),
                     ArtistId = Coalesce(Track.ArtistId, Album.ArtistId),
                     ArtistName = Coalesce(Track.ArtistName, Album.ArtistName),
+                    MusicBrainzReleaseId = @event.SourceProvider == ProviderName.MusicBrainz
+                        ? CoalesceNullable(@event.SourceAlbumId, Album.MusicBrainzReleaseId)
+                        : Album.MusicBrainzReleaseId,
                     ReleaseDate = @event.ReleaseDate ?? Album.ReleaseDate,
                     AvailableProviders = MergeProviders(Album.AvailableProviders, Track.AvailableProviders),
                     TerminallyUnavailableProviders = MergeProviders(Album.TerminallyUnavailableProviders, Track.TerminallyUnavailableProviders),

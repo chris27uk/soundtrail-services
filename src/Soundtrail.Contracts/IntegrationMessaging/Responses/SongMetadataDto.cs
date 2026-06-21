@@ -7,4 +7,6 @@ public sealed record SongMetadataDto(
     string? Mbid,
     int? DurationMs,
     string? AlbumTitle = null,
-    DateOnly? ReleaseDate = null);
+    DateOnly? ReleaseDate = null,
+    string? SourceArtistId = null,
+    string? SourceAlbumId = null);
