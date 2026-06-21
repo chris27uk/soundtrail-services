@@ -42,6 +42,22 @@ internal sealed class RavenMusicTrackEventImportTestEnvironment : IAsyncDisposab
             CancellationToken.None);
     }
 
+    public async Task<CatalogArtistRecordDto?> LoadCatalogArtistAsync(string artistId)
+    {
+        using var session = raven.Store.OpenAsyncSession();
+        return await session.LoadAsync<CatalogArtistRecordDto>(
+            CatalogArtistRecordDto.GetDocumentId(artistId),
+            CancellationToken.None);
+    }
+
+    public async Task<CatalogAlbumRecordDto?> LoadCatalogAlbumAsync(string albumId)
+    {
+        using var session = raven.Store.OpenAsyncSession();
+        return await session.LoadAsync<CatalogAlbumRecordDto>(
+            CatalogAlbumRecordDto.GetDocumentId(albumId),
+            CancellationToken.None);
+    }
+
     public async Task ReplayCatalogProjectionAsync()
     {
         using var session = raven.Store.OpenAsyncSession();

@@ -94,6 +94,53 @@ public sealed class RavenDiscoveryLifecycleProjectionReplayResponsesTests
     }
 
     [Fact]
+    public async Task Given_An_Album_Criteria_Discovery_Event_When_Replayed_Then_The_Album_Status_Document_Is_Projected()
+    {
+        using var raven = RavenEmbeddedTestDatabase.Create();
+        var criteria = CatalogSearchCriteria.Album(AlbumId.From("album_test_album"));
+        var repository = new RavenCatalogSearchDiscoveryRepository(raven.Store);
+        var discovery = await CatalogSearchDiscovery.LoadAsync(repository, criteria, CancellationToken.None);
+        discovery.Plan(LookupPriorityBand.High, 45, null, "Planner queued album lookup", Clock);
+        await discovery.SaveAsync(repository, CancellationToken.None);
+
+        await ReplayAsync(raven.Store);
+
+        using var session = raven.Store.OpenAsyncSession();
+        var status = await session.LoadAsync<Soundtrail.Contracts.CatalogSearchStatusRecordDto>(
+            Soundtrail.Contracts.CatalogSearchStatusRecordDto.GetDocumentId(criteria.Value),
+            CancellationToken.None);
+
+        status.Should().NotBeNull();
+        status!.Status.Should().Be(CatalogSearchLifecycleStatus.Planned.ToString());
+        status.WillBeLookedUp.Should().BeTrue();
+        status.EstimatedRetryAfterSeconds.Should().Be(45);
+        status.Reason.Should().Be("Planner queued album lookup");
+    }
+
+    [Fact]
+    public async Task Given_A_Track_Criteria_Discovery_Event_When_Replayed_Then_The_Track_Status_Document_Is_Projected()
+    {
+        using var raven = RavenEmbeddedTestDatabase.Create();
+        var criteria = CatalogSearchCriteria.Track(TrackId.From("mc_track_1"));
+        var repository = new RavenCatalogSearchDiscoveryRepository(raven.Store);
+        var discovery = await CatalogSearchDiscovery.LoadAsync(repository, criteria, CancellationToken.None);
+        discovery.Start(LookupPriorityBand.High, "Track lookup started", Clock);
+        await discovery.SaveAsync(repository, CancellationToken.None);
+
+        await ReplayAsync(raven.Store);
+
+        using var session = raven.Store.OpenAsyncSession();
+        var status = await session.LoadAsync<Soundtrail.Contracts.CatalogSearchStatusRecordDto>(
+            Soundtrail.Contracts.CatalogSearchStatusRecordDto.GetDocumentId(criteria.Value),
+            CancellationToken.None);
+
+        status.Should().NotBeNull();
+        status!.Status.Should().Be(CatalogSearchLifecycleStatus.InProgress.ToString());
+        status.WillBeLookedUp.Should().BeTrue();
+        status.Reason.Should().Be("Track lookup started");
+    }
+
+    [Fact]
     public async Task Given_A_Started_Discovery_Event_When_Replayed_Then_The_Status_Document_Is_Projected_As_InProgress()
     {
         using var raven = RavenEmbeddedTestDatabase.Create();

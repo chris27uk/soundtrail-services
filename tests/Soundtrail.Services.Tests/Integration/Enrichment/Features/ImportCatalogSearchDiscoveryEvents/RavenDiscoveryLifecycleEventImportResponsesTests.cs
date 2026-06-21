@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Events;
@@ -71,5 +72,69 @@ public sealed class RavenDiscoveryLifecycleEventImportResponsesTests
         status.WillBeLookedUp.Should().BeTrue();
         status.EstimatedRetryAfterSeconds.Should().Be(30);
         status.Reason.Should().Be("Planner queued lookup");
+    }
+
+    [Fact]
+    public async Task Given_Imported_Album_Criteria_Discovery_Events_When_Import_Completes_Then_The_Album_Status_Document_Is_Built()
+    {
+        await using var env = RavenDiscoveryLifecycleEventImportTestEnvironment.Create();
+        var criteria = CatalogSearchCriteria.Album(AlbumId.From("album_test_album"));
+
+        await env.ImportAsync(
+            new ImportCatalogSearchDiscoveryEventsCommand(
+                criteria,
+                0,
+                [
+                    new DiscoveryRequested(
+                        criteria,
+                        NormalizedSearchQuery.FromText("test album"),
+                        1,
+                        10,
+                        new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero),
+                        CorrelationId.From("corr-album")),
+                    new DiscoveryPlanned(
+                        criteria,
+                        LookupPriorityBand.High,
+                        true,
+                        60,
+                        new DateTimeOffset(2026, 6, 16, 12, 6, 0, TimeSpan.Zero),
+                        "Planner queued album lookup",
+                        new DateTimeOffset(2026, 6, 16, 12, 1, 0, TimeSpan.Zero))
+                ]));
+
+        var status = await env.LoadStatusAsync(criteria);
+
+        status.Should().NotBeNull();
+        status!.Status.Should().Be("Planned");
+        status.WillBeLookedUp.Should().BeTrue();
+        status.EstimatedRetryAfterSeconds.Should().Be(60);
+        status.Reason.Should().Be("Planner queued album lookup");
+    }
+
+    [Fact]
+    public async Task Given_Imported_Track_Criteria_Discovery_Events_When_Import_Completes_Then_The_Track_Status_Document_Is_Built()
+    {
+        await using var env = RavenDiscoveryLifecycleEventImportTestEnvironment.Create();
+        var criteria = CatalogSearchCriteria.Track(TrackId.From("mc_track_1"));
+
+        await env.ImportAsync(
+            new ImportCatalogSearchDiscoveryEventsCommand(
+                criteria,
+                0,
+                [
+                    new DiscoveryStarted(
+                        criteria,
+                        LookupPriorityBand.High,
+                        true,
+                        "Track lookup started",
+                        new DateTimeOffset(2026, 6, 16, 12, 2, 0, TimeSpan.Zero))
+                ]));
+
+        var status = await env.LoadStatusAsync(criteria);
+
+        status.Should().NotBeNull();
+        status!.Status.Should().Be("InProgress");
+        status.WillBeLookedUp.Should().BeTrue();
+        status.Reason.Should().Be("Track lookup started");
     }
 }
