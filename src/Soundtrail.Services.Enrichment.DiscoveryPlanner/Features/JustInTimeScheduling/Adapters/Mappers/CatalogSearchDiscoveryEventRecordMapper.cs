@@ -3,7 +3,6 @@ using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
-using System.Text.Json;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Mappers;
 
@@ -54,13 +53,13 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
                 Criteria = criteria.Value,
                 Version = version,
                 EventType = nameof(DiscoveryRequested),
-                Data = JsonSerializer.Serialize(new DiscoveryRequestedEventDataRecordDto(
+                DiscoveryRequested = new DiscoveryRequestedEventDataRecordDto(
                     requested.Criteria.Value,
                     requested.Query.Value,
                     requested.TrustLevel,
                     requested.RiskScore,
                     requested.RequestedAt,
-                    requested.CorrelationId.Value)),
+                    requested.CorrelationId.Value),
                 OccurredAtUtc = requested.RequestedAt,
                 CorrelationId = requested.CorrelationId.Value
             },
@@ -70,14 +69,14 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
                 Criteria = criteria.Value,
                 Version = version,
                 EventType = nameof(DiscoveryPlanned),
-                Data = JsonSerializer.Serialize(new DiscoveryPlannedEventDataRecordDto(
+                DiscoveryPlanned = new DiscoveryPlannedEventDataRecordDto(
                     planned.Criteria.Value,
                     planned.Priority.ToString(),
                     planned.WillBeLookedUp,
                     planned.EstimatedRetryAfterSeconds,
                     planned.EarliestExpectedCompletionAt,
                     planned.Reason,
-                    planned.PlannedAt)),
+                    planned.PlannedAt),
                 OccurredAtUtc = planned.PlannedAt
             },
             DiscoveryDeferred deferred => new DiscoveryQueryStoredEventRecordDto
@@ -86,13 +85,13 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
                 Criteria = criteria.Value,
                 Version = version,
                 EventType = nameof(DiscoveryDeferred),
-                Data = JsonSerializer.Serialize(new DiscoveryDeferredEventDataRecordDto(
+                DiscoveryDeferred = new DiscoveryDeferredEventDataRecordDto(
                     deferred.Criteria.Value,
                     deferred.WillBeLookedUp,
                     deferred.EstimatedRetryAfterSeconds,
                     deferred.EarliestExpectedCompletionAt,
                     deferred.Reason,
-                    deferred.DeferredAt)),
+                    deferred.DeferredAt),
                 OccurredAtUtc = deferred.DeferredAt
             },
             DiscoveryRejected rejected => new DiscoveryQueryStoredEventRecordDto
@@ -101,11 +100,11 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
                 Criteria = criteria.Value,
                 Version = version,
                 EventType = nameof(DiscoveryRejected),
-                Data = JsonSerializer.Serialize(new DiscoveryRejectedEventDataRecordDto(
+                DiscoveryRejected = new DiscoveryRejectedEventDataRecordDto(
                     rejected.Criteria.Value,
                     rejected.WillBeLookedUp,
                     rejected.Reason,
-                    rejected.RejectedAt)),
+                    rejected.RejectedAt),
                 OccurredAtUtc = rejected.RejectedAt
             },
             DiscoveryFailed failed => new DiscoveryQueryStoredEventRecordDto
@@ -114,11 +113,11 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
                 Criteria = criteria.Value,
                 Version = version,
                 EventType = nameof(DiscoveryFailed),
-                Data = JsonSerializer.Serialize(new DiscoveryFailedEventDataRecordDto(
+                DiscoveryFailed = new DiscoveryFailedEventDataRecordDto(
                     failed.Criteria.Value,
                     failed.WillBeLookedUp,
                     failed.Reason,
-                    failed.FailedAt)),
+                    failed.FailedAt),
                 OccurredAtUtc = failed.FailedAt
             },
             DiscoveryStarted started => new DiscoveryQueryStoredEventRecordDto
@@ -127,12 +126,12 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
                 Criteria = criteria.Value,
                 Version = version,
                 EventType = nameof(DiscoveryStarted),
-                Data = JsonSerializer.Serialize(new DiscoveryStartedEventDataRecordDto(
+                DiscoveryStarted = new DiscoveryStartedEventDataRecordDto(
                     started.Criteria.Value,
                     started.Priority.ToString(),
                     started.WillBeLookedUp,
                     started.Reason,
-                    started.StartedAt)),
+                    started.StartedAt),
                 OccurredAtUtc = started.StartedAt
             },
             DiscoveryCompleted completed => new DiscoveryQueryStoredEventRecordDto
@@ -141,12 +140,12 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
                 Criteria = criteria.Value,
                 Version = version,
                 EventType = nameof(DiscoveryCompleted),
-                Data = JsonSerializer.Serialize(new DiscoveryCompletedEventDataRecordDto(
+                DiscoveryCompleted = new DiscoveryCompletedEventDataRecordDto(
                     completed.Criteria.Value,
                     completed.Priority.ToString(),
                     completed.WillBeLookedUp,
                     completed.Reason,
-                    completed.CompletedAt)),
+                    completed.CompletedAt),
                 OccurredAtUtc = completed.CompletedAt
             },
             _ => throw new ArgumentOutOfRangeException(nameof(@event), @event, "Unknown discovery event.")
@@ -154,8 +153,8 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
 
     private static DiscoveryRequested ToDiscoveryRequested(DiscoveryQueryStoredEventRecordDto dto)
     {
-        var data = JsonSerializer.Deserialize<DiscoveryRequestedEventDataRecordDto>(dto.Data)
-            ?? throw new InvalidOperationException("Unable to deserialize discovery requested event data.");
+        var data = dto.DiscoveryRequested
+            ?? throw new InvalidOperationException("Missing discovery requested event data.");
         return new DiscoveryRequested(
             CatalogSearchCriteria.From(data.Criteria),
             NormalizedSearchQuery.FromText(data.Query),
@@ -167,8 +166,8 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
 
     private static DiscoveryPlanned ToDiscoveryPlanned(DiscoveryQueryStoredEventRecordDto dto)
     {
-        var data = JsonSerializer.Deserialize<DiscoveryPlannedEventDataRecordDto>(dto.Data)
-            ?? throw new InvalidOperationException("Unable to deserialize discovery planned event data.");
+        var data = dto.DiscoveryPlanned
+            ?? throw new InvalidOperationException("Missing discovery planned event data.");
         return new DiscoveryPlanned(
             CatalogSearchCriteria.From(data.Criteria),
             Enum.Parse<LookupPriorityBand>(data.Priority, ignoreCase: true),
@@ -181,8 +180,8 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
 
     private static DiscoveryDeferred ToDiscoveryDeferred(DiscoveryQueryStoredEventRecordDto dto)
     {
-        var data = JsonSerializer.Deserialize<DiscoveryDeferredEventDataRecordDto>(dto.Data)
-            ?? throw new InvalidOperationException("Unable to deserialize discovery deferred event data.");
+        var data = dto.DiscoveryDeferred
+            ?? throw new InvalidOperationException("Missing discovery deferred event data.");
         return new DiscoveryDeferred(
             CatalogSearchCriteria.From(data.Criteria),
             data.WillBeLookedUp,
@@ -194,8 +193,8 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
 
     private static DiscoveryRejected ToDiscoveryRejected(DiscoveryQueryStoredEventRecordDto dto)
     {
-        var data = JsonSerializer.Deserialize<DiscoveryRejectedEventDataRecordDto>(dto.Data)
-            ?? throw new InvalidOperationException("Unable to deserialize discovery rejected event data.");
+        var data = dto.DiscoveryRejected
+            ?? throw new InvalidOperationException("Missing discovery rejected event data.");
         return new DiscoveryRejected(
             CatalogSearchCriteria.From(data.Criteria),
             data.WillBeLookedUp,
@@ -205,8 +204,8 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
 
     private static DiscoveryFailed ToDiscoveryFailed(DiscoveryQueryStoredEventRecordDto dto)
     {
-        var data = JsonSerializer.Deserialize<DiscoveryFailedEventDataRecordDto>(dto.Data)
-            ?? throw new InvalidOperationException("Unable to deserialize discovery failed event data.");
+        var data = dto.DiscoveryFailed
+            ?? throw new InvalidOperationException("Missing discovery failed event data.");
         return new DiscoveryFailed(
             CatalogSearchCriteria.From(data.Criteria),
             data.WillBeLookedUp,
@@ -216,8 +215,8 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
 
     private static DiscoveryStarted ToDiscoveryStarted(DiscoveryQueryStoredEventRecordDto dto)
     {
-        var data = JsonSerializer.Deserialize<DiscoveryStartedEventDataRecordDto>(dto.Data)
-            ?? throw new InvalidOperationException("Unable to deserialize discovery started event data.");
+        var data = dto.DiscoveryStarted
+            ?? throw new InvalidOperationException("Missing discovery started event data.");
         return new DiscoveryStarted(
             CatalogSearchCriteria.From(data.Criteria),
             Enum.Parse<LookupPriorityBand>(data.Priority, ignoreCase: true),
@@ -228,8 +227,8 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
 
     private static DiscoveryCompleted ToDiscoveryCompleted(DiscoveryQueryStoredEventRecordDto dto)
     {
-        var data = JsonSerializer.Deserialize<DiscoveryCompletedEventDataRecordDto>(dto.Data)
-            ?? throw new InvalidOperationException("Unable to deserialize discovery completed event data.");
+        var data = dto.DiscoveryCompleted
+            ?? throw new InvalidOperationException("Missing discovery completed event data.");
         return new DiscoveryCompleted(
             CatalogSearchCriteria.From(data.Criteria),
             Enum.Parse<LookupPriorityBand>(data.Priority, ignoreCase: true),

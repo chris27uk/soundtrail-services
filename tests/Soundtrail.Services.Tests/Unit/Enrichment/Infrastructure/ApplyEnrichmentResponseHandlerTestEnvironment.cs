@@ -12,12 +12,10 @@ internal sealed class ApplyEnrichmentResponseHandlerTestEnvironment
     private ApplyEnrichmentResponseHandlerTestEnvironment()
     {
         StreamStore = new MusicTrackStreamStoreFake();
-        SnapshotStore = new ProviderSnapshotStoreFake();
         CatalogSearchTrackings = new CatalogSearchTrackingStoreFake();
         DiscoveryRepository = new CatalogSearchDiscoveryRepositoryFake();
         Handler = new ApplyEnrichmentResponseHandler(
             StreamStore,
-            SnapshotStore,
             CatalogSearchTrackings,
             DiscoveryRepository);
     }
@@ -25,8 +23,6 @@ internal sealed class ApplyEnrichmentResponseHandlerTestEnvironment
     public ApplyEnrichmentResponseHandler Handler { get; }
 
     public MusicTrackStreamStoreFake StreamStore { get; }
-
-    public ProviderSnapshotStoreFake SnapshotStore { get; }
 
     public CatalogSearchTrackingStoreFake CatalogSearchTrackings { get; }
 
@@ -80,7 +76,7 @@ internal sealed class ApplyEnrichmentResponseHandlerTestEnvironment
             ProviderName.MusicBrainz,
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero),
-            new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000),
+            new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000, "Album A", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"),
             [],
             [],
             new CatalogTrackHierarchy(ArtistId.From("artist_test_artist"), AlbumId.From("album_rare_album")),
@@ -93,7 +89,7 @@ internal sealed class ApplyEnrichmentResponseHandlerTestEnvironment
             ProviderName.MusicBrainz,
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero),
-            new SongMetadata("Canonical Song", "Canonical Artist", "isrc-1", "mbid-1", 123000),
+            new SongMetadata("Canonical Song", "Canonical Artist", "isrc-1", "mbid-1", 123000, "Canonical Album", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"),
             [],
             [],
             new CatalogTrackHierarchy(ArtistId.From("artist_test_artist"), AlbumId.From("album_rare_album")),

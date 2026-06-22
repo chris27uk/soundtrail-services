@@ -3,7 +3,6 @@ using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
-using System.Text.Json;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
 
@@ -49,14 +48,14 @@ internal static class RavenMappings
                 MusicCatalogId = musicCatalogId.Value,
                 Version = version,
                 EventType = nameof(TrackDiscovered),
-                Data = JsonSerializer.Serialize(new TrackDiscoveredEventDataRecordDto(
+                TrackDiscovered = new TrackDiscoveredEventDataRecordDto(
                     minimalTrackInfoDiscovered.Title,
                     minimalTrackInfoDiscovered.Artist,
                     minimalTrackInfoDiscovered.DurationMs,
                     minimalTrackInfoDiscovered.Isrc,
                     minimalTrackInfoDiscovered.Mbid,
                     minimalTrackInfoDiscovered.SourceProvider.Value,
-                    minimalTrackInfoDiscovered.ObservedAt)),
+                    minimalTrackInfoDiscovered.ObservedAt),
                 OccurredAtUtc = minimalTrackInfoDiscovered.ObservedAt,
                 CausationId = commandId.Value
             },
@@ -66,12 +65,12 @@ internal static class RavenMappings
                 MusicCatalogId = musicCatalogId.Value,
                 Version = version,
                 EventType = nameof(ProviderReferenceDiscovered),
-                Data = JsonSerializer.Serialize(new ProviderReferenceDiscoveredEventDataRecordDto(
+                ProviderReferenceDiscovered = new ProviderReferenceDiscoveredEventDataRecordDto(
                     providerPlaybackReferenceResolved.Provider.Value,
                     providerPlaybackReferenceResolved.ExternalId,
                     providerPlaybackReferenceResolved.Url.ToString(),
                     providerPlaybackReferenceResolved.SourceProvider.Value,
-                    providerPlaybackReferenceResolved.ObservedAt)),
+                    providerPlaybackReferenceResolved.ObservedAt),
                 OccurredAtUtc = providerPlaybackReferenceResolved.ObservedAt,
                 CausationId = commandId.Value
             },
@@ -81,7 +80,7 @@ internal static class RavenMappings
                 MusicCatalogId = musicCatalogId.Value,
                 Version = version,
                 EventType = nameof(PlaybackReferencesResolutionRequired),
-                Data = JsonSerializer.Serialize(new PlaybackReferencesResolutionRequiredEventDataRecordDto(
+                PlaybackReferencesResolutionRequired = new PlaybackReferencesResolutionRequiredEventDataRecordDto(
                     playbackReferencesResolutionRequired.MusicCatalogId.Value,
                     playbackReferencesResolutionRequired.Priority.ToString(),
                     playbackReferencesResolutionRequired.CorrelationId.Value,
@@ -92,7 +91,7 @@ internal static class RavenMappings
                     playbackReferencesResolutionRequired.SearchTerm.Artist,
                     playbackReferencesResolutionRequired.SearchTerm.Album,
                     playbackReferencesResolutionRequired.Hierarchy?.ArtistId?.Value,
-                    playbackReferencesResolutionRequired.Hierarchy?.AlbumId?.Value)),
+                    playbackReferencesResolutionRequired.Hierarchy?.AlbumId?.Value),
                 OccurredAtUtc = playbackReferencesResolutionRequired.ObservedAt,
                 CorrelationId = playbackReferencesResolutionRequired.CorrelationId.Value,
                 CausationId = commandId.Value
@@ -103,11 +102,13 @@ internal static class RavenMappings
                 MusicCatalogId = musicCatalogId.Value,
                 Version = version,
                 EventType = nameof(AlbumDiscovered),
-                Data = JsonSerializer.Serialize(new AlbumDiscoveredEventDataRecordDto(
+                AlbumDiscovered = new AlbumDiscoveredEventDataRecordDto(
                     trackLinkedToAlbum.AlbumId,
                     trackLinkedToAlbum.AlbumTitle,
+                    trackLinkedToAlbum.SourceAlbumId,
+                    trackLinkedToAlbum.ReleaseDate,
                     trackLinkedToAlbum.SourceProvider.Value,
-                    trackLinkedToAlbum.ObservedAt)),
+                    trackLinkedToAlbum.ObservedAt),
                 OccurredAtUtc = trackLinkedToAlbum.ObservedAt,
                 CausationId = commandId.Value
             },
@@ -117,11 +118,12 @@ internal static class RavenMappings
                 MusicCatalogId = musicCatalogId.Value,
                 Version = version,
                 EventType = nameof(ArtistDiscovered),
-                Data = JsonSerializer.Serialize(new ArtistDiscoveredEventDataRecordDto(
+                ArtistDiscovered = new ArtistDiscoveredEventDataRecordDto(
                     trackLinkedToArtist.ArtistId,
                     trackLinkedToArtist.ArtistName,
+                    trackLinkedToArtist.SourceArtistId,
                     trackLinkedToArtist.SourceProvider.Value,
-                    trackLinkedToArtist.ObservedAt)),
+                    trackLinkedToArtist.ObservedAt),
                 OccurredAtUtc = trackLinkedToArtist.ObservedAt,
                 CausationId = commandId.Value
             },
@@ -131,10 +133,10 @@ internal static class RavenMappings
                 MusicCatalogId = musicCatalogId.Value,
                 Version = version,
                 EventType = nameof(ProviderReferenceLookupFailed),
-                Data = JsonSerializer.Serialize(new ProviderReferenceLookupFailedEventDataRecordDto(
+                ProviderReferenceLookupFailed = new ProviderReferenceLookupFailedEventDataRecordDto(
                     providerReferenceLookupFailed.Provider.Value,
                     providerReferenceLookupFailed.SourceProvider.Value,
-                    providerReferenceLookupFailed.ObservedAt)),
+                    providerReferenceLookupFailed.ObservedAt),
                 OccurredAtUtc = providerReferenceLookupFailed.ObservedAt,
                 CausationId = commandId.Value
             },
@@ -144,12 +146,12 @@ internal static class RavenMappings
                 MusicCatalogId = musicCatalogId.Value,
                 Version = version,
                 EventType = nameof(ArtworkDiscovered),
-                Data = JsonSerializer.Serialize(new ArtworkDiscoveredEventDataRecordDto(
+                ArtworkDiscovered = new ArtworkDiscoveredEventDataRecordDto(
                     artworkDiscovered.EntityKind.ToString(),
                     artworkDiscovered.EntityId,
                     artworkDiscovered.Url.ToString(),
                     artworkDiscovered.Source,
-                    artworkDiscovered.ObservedAt)),
+                    artworkDiscovered.ObservedAt),
                 OccurredAtUtc = artworkDiscovered.ObservedAt,
                 CausationId = commandId.Value
             },
@@ -159,17 +161,20 @@ internal static class RavenMappings
                 MusicCatalogId = musicCatalogId.Value,
                 Version = version,
                 EventType = nameof(MetadataCorrected),
-                Data = JsonSerializer.Serialize(new MetadataCorrectedEventDataRecordDto(
+                MetadataCorrected = new MetadataCorrectedEventDataRecordDto(
                     metadataCorrected.Title,
                     metadataCorrected.ArtistName,
                     metadataCorrected.ArtistId,
+                    metadataCorrected.SourceArtistId,
                     metadataCorrected.AlbumTitle,
                     metadataCorrected.AlbumId,
+                    metadataCorrected.SourceAlbumId,
+                    metadataCorrected.ReleaseDate,
                     metadataCorrected.DurationMs,
                     metadataCorrected.Isrc,
                     metadataCorrected.Mbid,
                     metadataCorrected.Source,
-                    metadataCorrected.CorrectedAt)),
+                    metadataCorrected.CorrectedAt),
                 OccurredAtUtc = metadataCorrected.CorrectedAt,
                 CausationId = commandId.Value
             },
@@ -192,8 +197,8 @@ internal static class RavenMappings
 
     private static TrackDiscovered TrackDiscovered(MusicTrackStoredEventRecordDto dto)
     {
-        var data = JsonSerializer.Deserialize<TrackDiscoveredEventDataRecordDto>(dto.Data)
-            ?? throw new InvalidOperationException("Unable to deserialize minimal track info event data.");
+        var data = dto.TrackDiscovered
+            ?? throw new InvalidOperationException("Missing track discovered event data.");
         return new TrackDiscovered(
             data.Title,
             data.Artist,
@@ -206,8 +211,8 @@ internal static class RavenMappings
 
     private static ProviderReferenceDiscovered ProviderReferenceDiscovered(MusicTrackStoredEventRecordDto dto)
     {
-        var data = JsonSerializer.Deserialize<ProviderReferenceDiscoveredEventDataRecordDto>(dto.Data)
-            ?? throw new InvalidOperationException("Unable to deserialize provider playback reference event data.");
+        var data = dto.ProviderReferenceDiscovered
+            ?? throw new InvalidOperationException("Missing provider reference discovered event data.");
         return new ProviderReferenceDiscovered(
             ProviderName.From(data.Provider),
             data.ExternalId,
@@ -218,8 +223,8 @@ internal static class RavenMappings
 
     private static PlaybackReferencesResolutionRequired PlaybackReferencesResolutionRequired(MusicTrackStoredEventRecordDto dto)
     {
-        var data = JsonSerializer.Deserialize<PlaybackReferencesResolutionRequiredEventDataRecordDto>(dto.Data)
-            ?? throw new InvalidOperationException("Unable to deserialize playback references resolution required event data.");
+        var data = dto.PlaybackReferencesResolutionRequired
+            ?? throw new InvalidOperationException("Missing playback references resolution required event data.");
         return new PlaybackReferencesResolutionRequired(
             MusicCatalogId.From(data.MusicCatalogId),
             Enum.Parse<LookupPriorityBand>(data.Priority, ignoreCase: true),
@@ -238,30 +243,33 @@ internal static class RavenMappings
 
     private static AlbumDiscovered AlbumDiscovered(MusicTrackStoredEventRecordDto dto)
     {
-        var data = JsonSerializer.Deserialize<AlbumDiscoveredEventDataRecordDto>(dto.Data)
-            ?? throw new InvalidOperationException("Unable to deserialize track linked to album event data.");
+        var data = dto.AlbumDiscovered
+            ?? throw new InvalidOperationException("Missing album discovered event data.");
         return new AlbumDiscovered(
             data.AlbumId,
             data.AlbumTitle,
+            data.SourceAlbumId,
+            data.ReleaseDate,
             ProviderName.From(data.SourceProvider),
             data.ObservedAt);
     }
 
     private static ArtistDiscovered ArtistDiscovered(MusicTrackStoredEventRecordDto dto)
     {
-        var data = JsonSerializer.Deserialize<ArtistDiscoveredEventDataRecordDto>(dto.Data)
-            ?? throw new InvalidOperationException("Unable to deserialize track linked to artist event data.");
+        var data = dto.ArtistDiscovered
+            ?? throw new InvalidOperationException("Missing artist discovered event data.");
         return new ArtistDiscovered(
             data.ArtistId,
             data.ArtistName,
+            data.SourceArtistId,
             ProviderName.From(data.SourceProvider),
             data.ObservedAt);
     }
 
     private static ProviderReferenceLookupFailed ProviderReferenceLookupFailed(MusicTrackStoredEventRecordDto dto)
     {
-        var data = JsonSerializer.Deserialize<ProviderReferenceLookupFailedEventDataRecordDto>(dto.Data)
-            ?? throw new InvalidOperationException("Unable to deserialize provider reference lookup failed event data.");
+        var data = dto.ProviderReferenceLookupFailed
+            ?? throw new InvalidOperationException("Missing provider reference lookup failed event data.");
         return new ProviderReferenceLookupFailed(
             ProviderName.From(data.Provider),
             ProviderName.From(data.SourceProvider),
@@ -270,8 +278,8 @@ internal static class RavenMappings
 
     private static ArtworkDiscovered ArtworkDiscovered(MusicTrackStoredEventRecordDto dto)
     {
-        var data = JsonSerializer.Deserialize<ArtworkDiscoveredEventDataRecordDto>(dto.Data)
-            ?? throw new InvalidOperationException("Unable to deserialize artwork discovered event data.");
+        var data = dto.ArtworkDiscovered
+            ?? throw new InvalidOperationException("Missing artwork discovered event data.");
         return new ArtworkDiscovered(
             Enum.Parse<Domain.Catalog.CatalogEntityKind>(data.EntityKind, ignoreCase: true),
             data.EntityId,
@@ -282,14 +290,17 @@ internal static class RavenMappings
 
     private static MetadataCorrected MetadataCorrected(MusicTrackStoredEventRecordDto dto)
     {
-        var data = JsonSerializer.Deserialize<MetadataCorrectedEventDataRecordDto>(dto.Data)
-            ?? throw new InvalidOperationException("Unable to deserialize metadata corrected event data.");
+        var data = dto.MetadataCorrected
+            ?? throw new InvalidOperationException("Missing metadata corrected event data.");
         return new MetadataCorrected(
             data.Title,
             data.ArtistName,
             data.ArtistId,
+            data.SourceArtistId,
             data.AlbumTitle,
             data.AlbumId,
+            data.SourceAlbumId,
+            data.ReleaseDate,
             data.DurationMs,
             data.Isrc,
             data.Mbid,

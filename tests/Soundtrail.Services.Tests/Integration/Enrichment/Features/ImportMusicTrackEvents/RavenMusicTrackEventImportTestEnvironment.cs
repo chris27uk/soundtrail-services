@@ -2,12 +2,14 @@ using Raven.Client.Documents;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Events;
+using Soundtrail.Domain.Model;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
+using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog;
 using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ImportMusicTrackEvents;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
+using System.Linq;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ImportMusicTrackEvents;
 
@@ -27,6 +29,7 @@ internal sealed class RavenMusicTrackEventImportTestEnvironment : IAsyncDisposab
         using var session = raven.Store.OpenAsyncSession();
         var handler = new ImportMusicTrackEventsHandler(new RavenMusicTrackStreamStore(session));
         await handler.Handle(command, CancellationToken.None);
+        await session.SaveChangesAsync(CancellationToken.None);
     }
 
     public async Task<CatalogTrackRecordDto?> LoadCatalogTrackAsync(string trackId)
@@ -37,19 +40,43 @@ internal sealed class RavenMusicTrackEventImportTestEnvironment : IAsyncDisposab
             CancellationToken.None);
     }
 
+    public async Task<CatalogArtistRecordDto?> LoadCatalogArtistAsync(string artistId)
+    {
+        using var session = raven.Store.OpenAsyncSession();
+        return await session.LoadAsync<CatalogArtistRecordDto>(
+            CatalogArtistRecordDto.GetDocumentId(artistId),
+            CancellationToken.None);
+    }
+
+    public async Task<CatalogAlbumRecordDto?> LoadCatalogAlbumAsync(string albumId)
+    {
+        using var session = raven.Store.OpenAsyncSession();
+        return await session.LoadAsync<CatalogAlbumRecordDto>(
+            CatalogAlbumRecordDto.GetDocumentId(albumId),
+            CancellationToken.None);
+    }
+
     public async Task ReplayCatalogProjectionAsync()
     {
         using var session = raven.Store.OpenAsyncSession();
-        var applier = new CatalogMusicTrackProjectionApplier();
-        var events = await session.Advanced.AsyncDocumentQuery<MusicTrackStoredEventRecordDto>()
-            .ToListAsync(CancellationToken.None);
+        var projectHandler = new ProjectMusicTrackCatalogHandler(
+            new RavenLoadMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()),
+            new RavenSaveMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()));
+        var streamMetadata = await session.Advanced.LoadStartingWithAsync<MusicTrackEventStreamMetadataRecordDto>(
+            "music-track-streams/");
+        var musicCatalogIds = streamMetadata.Select(x => x.MusicCatalogId).ToList();
 
-        foreach (var storedEvent in events.OrderBy(x => x.MusicCatalogId, StringComparer.Ordinal).ThenBy(x => x.Version))
+        foreach (var musicCatalogId in musicCatalogIds.Distinct(StringComparer.Ordinal))
         {
-            await applier.ApplyStoredEventAsync(storedEvent, session, CancellationToken.None);
+            var eventsToReplay = (await session.Advanced.LoadStartingWithAsync<MusicTrackStoredEventRecordDto>(
+                    $"music-track-events/{musicCatalogId}/"))
+                .OrderBy(x => x.Version)
+                .Select(x => new VersionedMusicTrackEvent(x.Version, x.ToDomainEvent()))
+                .ToArray();
+            await projectHandler.Handle(
+                new ProjectMusicTrackCatalogCommand(MusicCatalogId.From(musicCatalogId), eventsToReplay),
+                CancellationToken.None);
         }
-
-        await session.SaveChangesAsync(CancellationToken.None);
     }
 
     public ValueTask DisposeAsync()

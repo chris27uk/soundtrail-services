@@ -1,19 +1,16 @@
-using Soundtrail.Contracts.Common;
-using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
-using System.Text.Json;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Support;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse;
 
 public sealed class ApplyEnrichmentResponseHandler(
     IMusicTrackEventRepository eventRepository,
-    IProviderSnapshotStore snapshotStore,
     ICatalogSearchTrackingStore catalogSearchTrackingStore,
-    ICatalogSearchDiscoveryRepository discoveryRepository)
+    ICompleteTrackedDiscoveriesRepository discoveryRepository)
 {
     public async Task<EnrichmentOrchestrationResult> Handle(
         Domain.Responses.EnrichmentResponse response,
@@ -24,23 +21,14 @@ public sealed class ApplyEnrichmentResponseHandler(
             response.MusicCatalogId,
             cancellationToken);
         aggregate.RecordEnrichmentResponse(response);
-        var append = await aggregate.SaveAsync(
-            eventRepository,
-            response.CommandId,
-            cancellationToken);
+        var append = await aggregate.SaveAsync(eventRepository, response.CommandId, cancellationToken);
 
-        await snapshotStore.SaveAsync(
-            new ProviderSnapshot(
-                response.MusicCatalogId,
-                response.SourceProvider,
-                response.CreatedAt,
-                JsonSerializer.Serialize(ToDto(response))),
-            cancellationToken);
+        var resolvedCriteria = CatalogSearchCriteriaSet.ForResolvedTrack(
+            response.MusicCatalogId,
+            response.Hierarchy?.ArtistId,
+            response.Hierarchy?.AlbumId);
 
-        foreach (var criteria in CatalogSearchCriteriaSet.ForResolvedTrack(
-                     response.MusicCatalogId,
-                     response.Hierarchy?.ArtistId,
-                     response.Hierarchy?.AlbumId))
+        foreach (var criteria in resolvedCriteria)
         {
             await catalogSearchTrackingStore.UpsertAsync(
                 new CatalogSearchTracking(
@@ -51,40 +39,21 @@ public sealed class ApplyEnrichmentResponseHandler(
         }
 
         var trackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(response.MusicCatalogId, cancellationToken);
-        foreach (var tracking in trackings)
+        var discoveryCriteria = resolvedCriteria
+            .Concat(trackings.Select(static tracking => tracking.Criteria))
+            .DistinctBy(static criteria => criteria.Value);
+
+        foreach (var criteria in discoveryCriteria)
         {
-            var discovery = await CatalogSearchDiscovery.LoadAsync(discoveryRepository, tracking.Criteria, cancellationToken);
-            discovery.Complete(response.Priority, "Discovery completed", response.CreatedAt);
+            var discovery = await CatalogSearchDiscovery.LoadAsync(discoveryRepository, criteria, cancellationToken);
+            if (!discovery.Complete(response.Priority, "Discovery completed", response.CreatedAt))
+            {
+                continue;
+            }
+
             await discovery.SaveAsync(discoveryRepository, cancellationToken);
         }
 
-        return new EnrichmentOrchestrationResult(
-            append.Appended ? append.AppendedEvents : Array.Empty<IMusicTrackEvent>());
+        return new EnrichmentOrchestrationResult(append.Appended ? append.AppendedEvents : Array.Empty<IMusicTrackEvent>());
     }
-
-    private static EnrichmentResponseDto ToDto(Domain.Responses.EnrichmentResponse response) =>
-        new(
-            response.CommandId.Value,
-            response.MusicCatalogId.Value,
-            response.SourceProvider.Value,
-            response.Priority,
-            response.CreatedAt,
-            response.Metadata is null
-                ? null
-                : new SongMetadataDto(
-                    response.Metadata.Title,
-                    response.Metadata.Artist,
-                    response.Metadata.Isrc,
-                    response.Metadata.Mbid,
-                    response.Metadata.DurationMs),
-            response.References.Select(reference => new ExternalReferenceDto(
-                reference.Provider.Value,
-                reference.Url,
-                reference.ExternalId)).ToArray(),
-            response.FailedProviders.Select(failure => new ProviderLookupFailureDto(
-                failure.Provider.Value,
-                failure.SourceProvider.Value)).ToArray(),
-            response.Hierarchy?.ArtistId?.Value,
-            response.Hierarchy?.AlbumId?.Value,
-            response.CorrelationId.Value);
 }

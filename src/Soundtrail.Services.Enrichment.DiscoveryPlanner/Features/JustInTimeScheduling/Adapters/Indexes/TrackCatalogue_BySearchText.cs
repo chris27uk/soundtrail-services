@@ -10,11 +10,14 @@ internal sealed class TrackCatalogue_BySearchText : AbstractIndexCreationTask<Ra
         Map = tracks => from track in tracks
                         select new
                         {
-                            track.SearchText,
+                            SearchText = string.IsNullOrWhiteSpace(track.NormalizedAlbumTitle)
+                                ? track.SearchText
+                                : track.SearchText + " " + track.NormalizedAlbumTitle,
                             track.NormalizedArtist,
                             track.NormalizedAlbumTitle,
                             track.NormalizedIsrc,
-                            track.NormalizedMbid
+                            track.NormalizedMbid,
+                            track.ReleaseDate
                         };
 
         Index(x => x.SearchText, FieldIndexing.Search);

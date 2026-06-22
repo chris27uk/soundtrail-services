@@ -1,6 +1,5 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
-using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ApplyLookupExecutionReport.Support;
 

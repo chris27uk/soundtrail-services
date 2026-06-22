@@ -2,7 +2,6 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Contracts.IntegrationMessaging.Events;
-using System.Text.Json;
 
 namespace Soundtrail.Services.Enrichment.Cdc.Features.PublishMusicTrackEvents.Publishing;
 
@@ -22,8 +21,8 @@ internal static class MusicTrackIntegrationEventMapper
     private static PlaybackReferencesResolutionRequiredMessageDto ToPlaybackReferencesResolutionRequired(
         MusicTrackStoredEventRecordDto storedEvent)
     {
-        var data = JsonSerializer.Deserialize<PlaybackReferencesResolutionRequiredEventDataRecordDto>(storedEvent.Data)
-            ?? throw new InvalidOperationException("Unable to deserialize playback references resolution required event data.");
+        var data = storedEvent.PlaybackReferencesResolutionRequired
+            ?? throw new InvalidOperationException("Missing playback references resolution required event data.");
 
         return new PlaybackReferencesResolutionRequiredMessageDto(
             data.MusicCatalogId,

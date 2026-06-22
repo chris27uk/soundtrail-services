@@ -9,7 +9,8 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddProjectDiscoveryLifecycleFeature(this IServiceCollection services)
     {
-        services.TryAddSingleton<DiscoveryLifecycleProjectionApplier>();
+        services.TryAddScoped<ProjectDiscoveryLifecycleHandler>();
+        services.TryAddSingleton<RavenDiscoveryLifecycleProjectionMapper>();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, ProjectDiscoveryLifecycleSubscriptionHostedService>());
         return services;
     }

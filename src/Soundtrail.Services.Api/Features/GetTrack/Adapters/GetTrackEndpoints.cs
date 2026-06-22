@@ -1,7 +1,6 @@
 using Soundtrail.Domain;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.CatalogBrowsing;
-using Soundtrail.Services.Api.Shared;
 
 namespace Soundtrail.Services.Api.Features.GetTrack.Adapters;
 
@@ -34,14 +33,14 @@ public static class GetTrackEndpoints
         isrc = response.Isrc,
         durationMs = response.DurationMs,
         playabilityStatus = response.PlayabilityStatus.ToString(),
-        availableProviders = response.AvailableProviders.Select(ProviderContract.ToValue),
-        terminallyUnavailableProviders = response.TerminallyUnavailableProviders.Select(ProviderContract.ToValue),
+        availableProviders = response.AvailableProviders.Select(providerName => providerName.ToPersistentId()),
+        terminallyUnavailableProviders = response.TerminallyUnavailableProviders.Select(providerName => providerName.ToPersistentId()),
         providerReferences = response.ProviderReferences.Select(ToContract)
     };
 
     private static object ToContract(ProviderReference response) => new
     {
-        provider = ProviderContract.ToValue(response.Provider),
+        provider = response.Provider.ToPersistentId(),
         providerEntityType = response.ProviderEntityType,
         providerId = response.ProviderId,
         url = response.Url,

@@ -1,9 +1,11 @@
 using FluentAssertions;
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Documents;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
@@ -65,21 +67,33 @@ public sealed class MusicTrackProjectionStoreResponsesTests
                 _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
             };
 
-        public Task StoreAsync(MusicCatalogId musicCatalogId, MusicTrackStream stream)
+        public async Task StoreAsync(MusicCatalogId musicCatalogId, MusicTrackStream stream)
         {
             if (fake is not null)
             {
-                return fake.StoreAsync(musicCatalogId, stream, CancellationToken.None);
+                var handler = new ProjectMusicTrackProjectionHandler(fake, fake);
+                await handler.Handle(
+                    new ProjectMusicTrackProjectionCommand(
+                        musicCatalogId,
+                        stream.Events.Select((@event, index) => new VersionedMusicTrackEvent(index + 1, @event)).ToArray()),
+                    CancellationToken.None);
+                return;
             }
 
-            return StoreRavenAsync(musicCatalogId, stream);
+            await StoreRavenAsync(musicCatalogId, stream);
         }
 
         private async Task StoreRavenAsync(MusicCatalogId musicCatalogId, MusicTrackStream stream)
         {
             using var session = raven!.Store.OpenAsyncSession();
-            var store = new RavenMusicTrackProjectionStore(session, new MusicTrackProjectionApplier());
-            await store.StoreAsync(musicCatalogId, stream, CancellationToken.None);
+            var handler = new ProjectMusicTrackProjectionHandler(
+                new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
+                new RavenSaveMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()));
+            await handler.Handle(
+                new ProjectMusicTrackProjectionCommand(
+                    musicCatalogId,
+                    stream.Events.Select((@event, index) => new VersionedMusicTrackEvent(index + 1, @event)).ToArray()),
+                CancellationToken.None);
             await session.SaveChangesAsync();
         }
 
@@ -92,8 +106,8 @@ public sealed class MusicTrackProjectionStoreResponsesTests
                     ? null
                     : new ProjectedTrack(
                         projection.CanonicalMetadata?.Title,
-                        projection.CanonicalMetadata?.Artist,
-                        projection.Apple?.ExternalId,
+                        projection.CanonicalMetadata?.Artist.Value,
+                        projection.AppleReference?.ExternalId,
                         projection.IsPlayable);
             }
 

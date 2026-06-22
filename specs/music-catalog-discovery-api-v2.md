@@ -355,6 +355,24 @@ Responsibilities:
 - Azure Service Bus publication
 - outboxing if required using Wolverine
 
+### DiscoveryOrchestration
+
+Responsibilities:
+
+- append discovery lifecycle domain events to discovery event streams
+- own discovery planning decisions and retry timing
+- translate execution outcomes into discovery lifecycle transitions
+- publish planned discovery work through CDC or boundary messaging
+
+### DiscoveryExecution
+
+Responsibilities:
+
+- execute external metadata and playback reference lookups
+- enforce source API budgets for concrete executions
+- return execution outcomes only
+- never mutate discovery read models or discovery aggregates directly
+
 ## Source API Budgets
 
 Consumer API rate limiting is out of scope.
@@ -429,9 +447,10 @@ Outside-in sociable TDD.
 Required test categories:
 
 - API feature tests
-- Planner tests
-- Worker tests
+- discovery orchestration tests
+- discovery execution tests
 - Projection tests
+- aggregate tests
 
 Key scenarios:
 
@@ -451,12 +470,14 @@ Key scenarios:
 - Tracks can be listed across all albums for an artist.
 - Discovery is asynchronous.
 - API never calls external metadata providers.
-- Planner owns retry estimates.
+- Discovery orchestration owns retry estimates.
 - Event store is source of truth.
 - RavenDB contains projections only.
 - MusicBrainz dump import emits events.
 - Provider failures are tracked per provider.
 - Artwork can be added without redesigning existing entities.
+- Discovery lifecycle state is derived from discovery event streams only.
+- Catalog browse state is derived from catalog event streams only.
 
 ## Implementation Constraints for Codex
 
@@ -490,18 +511,16 @@ Suggested projects:
 src/
   MusicCatalog.Api/
   MusicCatalog.Domain/
-  MusicCatalog.Events/
-  MusicCatalog.Projections/
-  MusicCatalog.Infrastructure.RavenDb/
-  MusicCatalog.Infrastructure.ServiceBus/
-  MusicCatalog.Discovery.Planner/
-  MusicCatalog.Discovery.Worker/
+  MusicCatalog.Contracts/
+  MusicCatalog.Catalog.Projector/
+  MusicCatalog.Discovery.Orchestration/
+  MusicCatalog.Discovery.Execution/
   MusicCatalog.IntegrationEvents.Cdc/
 
 tests/
   MusicCatalog.Api.Tests/
-  MusicCatalog.Planner.Tests/
-  MusicCatalog.Worker.Tests/
+  MusicCatalog.Discovery.Orchestration.Tests/
+  MusicCatalog.Discovery.Execution.Tests/
   MusicCatalog.Projection.Tests/
 ```
 
@@ -516,7 +535,29 @@ namespace MusicCatalog.Api.Features.Search;
 namespace MusicCatalog.Api.Features.Artists;
 namespace MusicCatalog.Domain.Discovery;
 namespace MusicCatalog.Projections.Artists;
+namespace MusicCatalog.Discovery.Orchestration.Features.RequestDiscovery;
+namespace MusicCatalog.Discovery.Execution.Features.LookupMetadata;
 ```
+
+### Transaction and Persistence Guidance
+
+Avoid handlers that combine:
+
+- aggregate decision-making
+- projection updates
+- snapshot writes
+- discovery lifecycle mutation
+- integration message publication
+
+Those concerns should be separated.
+
+Repositories should own domain-event persistence and mapping to storage DTOs.
+
+Projectors should own read-model updates.
+
+CDC should own integration publication.
+
+If a handler appears to perform many writes across multiple concerns, that is usually a sign that aggregate, projector, or CDC boundaries are being bypassed.
 
 ### Feature Folder Rules
 
@@ -630,14 +671,50 @@ Use aggregates to protect business invariants, not to mirror read models.
 Suggested aggregates:
 
 ```text
-CatalogEntityAggregate
+ArtistCatalogAggregate
 DiscoveryRequestAggregate
 SourceBudgetAggregate
 ```
 
-Do not force all artist, album, and track data into one large aggregate.
+Discovery lifecycle and catalog facts are separate concerns and must not share a stream.
+
+`DiscoveryRequestAggregate` is keyed by normalized discovery/search criteria and owns only discovery lifecycle state.
+
+`ArtistCatalogAggregate` is the target catalog write model boundary. It owns artist, album, and track facts within a single artist catalog and protects hierarchy and correction invariants across that boundary.
+
+Do not choose aggregate boundaries to mirror RavenDB read models.
+
+The previous guidance to avoid one large aggregate should be interpreted as a warning about hot paths, contention, and oversized consistency boundaries, not as a ban on artist-root aggregates. One aggregate per artist catalog is acceptable when the business invariants are artist-centered.
+
+Compilation albums, collaborations, and future artist-membership relationships must be handled explicitly. In MVP, collaboration albums may be represented as separate artists. Later revisions may model artist membership or artist-to-artist relationships without changing the separation between discovery streams and catalog streams.
 
 The event stream should allow replay into RavenDB projections without calling external APIs.
+
+Catalog projections for artist, album, and track reads must be fully rebuildable from persisted catalog domain events alone.
+
+Discovery status projections must be fully rebuildable from persisted discovery domain events alone.
+
+### Stream Identity Guidance
+
+Discovery stream identity:
+
+```text
+one stream per normalized discovery/search criteria
+```
+
+Catalog stream identity target:
+
+```text
+one stream per artist catalog
+```
+
+Track- and album-shaped read models remain projections. They are not independent write-model aggregates by default.
+
+Where a track is discovered before a stable artist identity is available, the system may use a provisional artist-catalog identity strategy, provided that:
+
+- the strategy is deterministic
+- later correction or reconciliation is possible through domain events
+- replay remains possible without external lookups
 
 ### Event Append Rules
 
@@ -647,15 +724,20 @@ API may append:
 DiscoveryRequested
 ```
 
-Planner may append:
+Discovery orchestration may append:
 
 ```text
 DiscoveryPlanned
 DiscoveryDeferred
 DiscoveryRejected
+DiscoveryStarted
+DiscoveryCompleted
+DiscoveryFailed
 ```
 
-Worker may append:
+Discovery execution may append no discovery lifecycle events directly. It returns execution outcomes to orchestration.
+
+Catalog write flows may append:
 
 ```text
 ArtistDiscovered
@@ -664,7 +746,7 @@ TrackDiscovered
 ProviderReferenceDiscovered
 ProviderReferenceLookupFailed
 ArtworkDiscovered
-DiscoveryFailed
+MetadataCorrected
 ```
 
 Manual/admin repair flows may append:
@@ -674,6 +756,8 @@ MetadataCorrected
 ```
 
 Import tool may append discovery events directly and must bypass planner and worker.
+
+Import tool may also append catalog domain events directly when rebuilding or importing catalog history.
 
 ### Azure Service Bus Naming
 
@@ -707,6 +791,16 @@ Event Store -> CDC -> Wolverine Outbox -> Azure Service Bus
 ```
 
 Do not publish Azure Service Bus messages directly from aggregates.
+
+Application handlers should prefer:
+
+```text
+load aggregate -> invoke domain method -> save aggregate
+```
+
+Handlers and listeners must not construct long lists of domain events inline when that logic belongs in an aggregate.
+
+Discovery status documents, search status documents, and catalog browse documents are projection-only. They are never the source of truth.
 
 ### Source API Budget Safety
 

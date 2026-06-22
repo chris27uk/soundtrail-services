@@ -20,11 +20,13 @@ public sealed class ApplyEnrichmentResponseHandlerTests
     }
 
     [Fact]
-    public async Task Given_A_MusicBrainz_Response_When_Handled_Then_A_MusicBrainz_Snapshot_Is_Saved()
+    public async Task Given_A_MusicBrainz_Response_When_Handled_Then_Durable_Facts_Are_Stored_Without_A_Transient_Response_Snapshot()
     {
         var env = ApplyEnrichmentResponseHandlerTestEnvironment.WithAMusicBrainzResponse();
+
         await env.HandleMusicBrainzResponse();
-        env.SnapshotStore.Snapshots.Should().ContainKey("mc_track_1:MusicBrainz");
+
+        env.StreamStore.Streams["mc_track_1"].Events.Should().ContainItemsAssignableTo<TrackDiscovered>();
     }
 
     [Fact]

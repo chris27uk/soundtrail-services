@@ -1,5 +1,4 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Catalog;
 
 namespace Soundtrail.Domain.Search;
 

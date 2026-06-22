@@ -10,6 +10,8 @@ public sealed class CatalogArtistRecordDto
 
     public string NormalizedName { get; set; } = string.Empty;
 
+    public string SearchText { get; set; } = string.Empty;
+
     public string? MusicBrainzArtistId { get; set; }
 
     public string[] AvailableProviders { get; set; } = [];

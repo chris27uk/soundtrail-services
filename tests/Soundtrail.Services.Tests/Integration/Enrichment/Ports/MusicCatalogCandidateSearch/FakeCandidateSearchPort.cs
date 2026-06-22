@@ -16,7 +16,8 @@ namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicCatalogCan
             string? artist = null,
             string? albumTitle = null,
             string? isrc = null,
-            string? mbid = null) =>
+            string? mbid = null,
+            DateOnly? releaseDate = null) =>
             this.entries.Add(new Entry(
                 musicCatalogId,
                 searchText,
@@ -24,7 +25,8 @@ namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicCatalogCan
                 artist,
                 albumTitle,
                 isrc,
-                mbid));
+                mbid,
+                releaseDate));
 
         public Task<IReadOnlyList<MusicCatalogMatch>> SearchAsync(
             NormalizedSearchQuery query,
@@ -35,7 +37,10 @@ namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicCatalogCan
                 .Where(entry =>
                     Domain.Model.MusicIdentityText.NormalizeCompact(entry.Isrc) == compactQuery
                     || Domain.Model.MusicIdentityText.NormalizeCompact(entry.Mbid) == compactQuery)
-                .Select(entry => new MusicCatalogMatch(MusicCatalogId.From(entry.MusicCatalogId), 1.00m))
+                .Select(entry => new MusicCatalogMatch(
+                    MusicCatalogId.From(entry.MusicCatalogId),
+                    1.00m,
+                    BuildEvidence(entry, isExactIdentityMatch: true)))
                 .ToArray();
 
             if (exactIdentity.Length > 0)
@@ -44,14 +49,36 @@ namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicCatalogCan
             }
 
             IReadOnlyList<MusicCatalogMatch> matches = this.entries
-                .Where(entry => entry.SearchText.Contains(query.Value, StringComparison.Ordinal))
+                .Where(entry => BuildSearchableText(entry).Contains(query.Value, StringComparison.Ordinal))
                 .Select(entry => new MusicCatalogMatch(
                     MusicCatalogId.From(entry.MusicCatalogId),
-                    string.Equals(entry.SearchText, query.Value, StringComparison.Ordinal) ? 1.00m : 0.90m))
+                    string.Equals(BuildSearchableText(entry), query.Value, StringComparison.Ordinal) ? 1.00m : 0.90m,
+                    BuildEvidence(entry, isExactIdentityMatch: false)))
                 .ToArray();
 
             return Task.FromResult(matches);
         }
+
+        private static MusicCatalogMatchEvidence BuildEvidence(
+            Entry entry,
+            bool isExactIdentityMatch) =>
+            new(
+                isExactIdentityMatch,
+                Domain.Model.MusicIdentityText.NormalizeFreeText(entry.Title),
+                Domain.Model.MusicIdentityText.NormalizeFreeText(entry.Artist),
+                Domain.Model.MusicIdentityText.NormalizeFreeText(entry.AlbumTitle),
+                Domain.Model.MusicIdentityText.NormalizeCompact(entry.Isrc),
+                Domain.Model.MusicIdentityText.NormalizeCompact(entry.Mbid),
+                entry.ReleaseDate);
+
+        private static string BuildSearchableText(Entry entry) =>
+            string.Join(
+                ' ',
+                new[]
+                {
+                    entry.SearchText,
+                    Domain.Model.MusicIdentityText.NormalizeFreeText(entry.AlbumTitle)
+                }.Where(static value => !string.IsNullOrWhiteSpace(value)));
 
         private sealed record Entry(
             string MusicCatalogId,
@@ -60,6 +87,7 @@ namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicCatalogCan
             string? Artist,
             string? AlbumTitle,
             string? Isrc,
-            string? Mbid);
+            string? Mbid,
+            DateOnly? ReleaseDate);
     }
 }

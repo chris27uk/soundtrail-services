@@ -30,5 +30,16 @@ namespace Soundtrail.Contracts.Common
         public static ProviderName Odesli { get; } = new("Odesli");
 
         public override string ToString() => Value;
+
+        public string ToPersistentId()
+        {
+            return this.Value switch
+            {
+                "Spotify" => "spotify",
+                "AppleMusic" => "appleMusic",
+                "YoutubeMusic" => "youtubeMusic",
+                _ => throw new ArgumentException($"Unknown provider name '{this.Value}'.", nameof(this.Value))
+            };
+        }
     }
 }

@@ -1,0 +1,69 @@
+using FluentAssertions;
+using Soundtrail.Contracts.Common;
+using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Contracts.IntegrationMessaging.Responses;
+using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Responses;
+using Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution.Adapters;
+using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
+
+namespace Soundtrail.Services.Tests.Integration.Enrichment.Messaging.Wolverine;
+
+public sealed class PlaybackReferencesLookupExecutionListenerWolverineResponsesTests
+{
+    [Fact]
+    public async Task Given_A_Successful_Playback_Reference_Lookup_When_Handled_Then_An_Enrichment_Response_Message_Is_Returned()
+    {
+        var env = PlaybackReferencesLookupExecutionHandlerTestEnvironment.Create();
+        env.Seed(
+            MusicSearchTerm.ByIsrc("isrc-1"),
+            new ExternalReference(ProviderName.AppleMusic, new Uri("https://music.apple.com/us/song/apple-1?i=apple-1"), "apple-1"));
+        var listener = new PlaybackReferencesLookupExecutionListener(env.Handler);
+
+        var messages = await listener.Handle(Command(), null!);
+
+        messages.Should().ContainSingle().Which.Should().BeOfType<EnrichmentResponseDto>();
+    }
+
+    [Fact]
+    public async Task Given_A_Budget_Deferred_Playback_Reference_Lookup_When_Handled_Then_A_Lookup_Execution_Report_Is_Returned()
+    {
+        var env = PlaybackReferencesLookupExecutionHandlerTestEnvironment.Create();
+        env.SourceBudget.Reject(
+            ProviderName.Odesli,
+            new DateTimeOffset(2026, 6, 18, 12, 1, 0, TimeSpan.Zero),
+            "Odesli budget temporarily unavailable");
+        var listener = new PlaybackReferencesLookupExecutionListener(env.Handler);
+
+        var message = (LookupExecutionReportDto)(await listener.Handle(Command(), null!)).Single();
+
+        message.Outcome.Should().Be("Deferred");
+        message.SourceProvider.Should().Be(ProviderName.Odesli.Value);
+        message.Reason.Should().Be("Odesli budget temporarily unavailable");
+    }
+
+    [Fact]
+    public async Task Given_A_Failed_Playback_Reference_Lookup_When_Handled_Then_A_Lookup_Execution_Report_Is_Returned()
+    {
+        var env = PlaybackReferencesLookupExecutionHandlerTestEnvironment.Create();
+        env.Throw(new InvalidOperationException("boom"));
+        var listener = new PlaybackReferencesLookupExecutionListener(env.Handler);
+
+        var message = (LookupExecutionReportDto)(await listener.Handle(Command(), null!)).Single();
+
+        message.Outcome.Should().Be("Failed");
+        message.SourceProvider.Should().Be(ProviderName.Odesli.Value);
+        message.Reason.Should().Be("Lookup failed");
+    }
+
+    private static ResolvePlaybackReferencesCommandDto Command() =>
+        new(
+            CommandId.For("ResolvePlaybackReferences:mc_track_1").Value,
+            "mc_track_1",
+            LookupPriorityBand.High,
+            new DateTimeOffset(2026, 6, 18, 12, 0, 0, TimeSpan.Zero),
+            "corr-1",
+            new PlaybackReferenceSearchTermDto("isrc-1", null, null, null),
+            null,
+            null);
+}

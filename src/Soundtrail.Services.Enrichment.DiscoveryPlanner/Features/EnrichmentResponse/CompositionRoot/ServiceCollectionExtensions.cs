@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Support;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.CompositionRoot;
 
@@ -16,13 +17,9 @@ public static class ServiceCollectionExtensions
         options.ConfigureDependencies?.Invoke(services);
 
         services.TryAddScoped<ApplyEnrichmentResponseHandler>();
+        services.TryAddScoped<RavenEnrichmentResponseCatalogSearchDiscoveryRepository>();
+        services.TryAddScoped<ICompleteTrackedDiscoveriesRepository>(sp => sp.GetRequiredService<RavenEnrichmentResponseCatalogSearchDiscoveryRepository>());
         services.TryAddScoped<EnrichmentResponseListener>();
-        services.TryAddSingleton<MusicTrackProjectionApplier>();
-
-        if (options.IncludeProjectionHostedService)
-        {
-            services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, MusicTrackProjectionSubscriptionHostedService>());
-        }
 
         return services;
     }

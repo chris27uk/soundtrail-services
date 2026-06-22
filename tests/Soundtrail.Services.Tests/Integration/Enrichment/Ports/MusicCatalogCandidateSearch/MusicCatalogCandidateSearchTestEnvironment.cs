@@ -12,11 +12,11 @@ namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicCatalogCan
 internal sealed class MusicCatalogCandidateSearchTestEnvironment : IDisposable
 {
     private readonly RavenEmbeddedTestDatabase? raven;
-    private readonly Action<string, string, string?, string?, string?, string?, string?> seed;
+    private readonly Action<string, string, string?, string?, string?, string?, string?, DateOnly?> seed;
 
     private MusicCatalogCandidateSearchTestEnvironment(
         IMusicCatalogCandidateSearch search,
-        Action<string, string, string?, string?, string?, string?, string?> seed,
+        Action<string, string, string?, string?, string?, string?, string?, DateOnly?> seed,
         RavenEmbeddedTestDatabase? raven)
     {
         Search = search;
@@ -43,8 +43,9 @@ internal sealed class MusicCatalogCandidateSearchTestEnvironment : IDisposable
         string? artist = null,
         string? albumTitle = null,
         string? isrc = null,
-        string? mbid = null) =>
-        this.seed(musicCatalogId, searchText, title, artist, albumTitle, isrc, mbid);
+        string? mbid = null,
+        DateOnly? releaseDate = null) =>
+        this.seed(musicCatalogId, searchText, title, artist, albumTitle, isrc, mbid, releaseDate);
 
     public void Dispose() => this.raven?.Dispose();
 
@@ -63,7 +64,7 @@ internal sealed class MusicCatalogCandidateSearchTestEnvironment : IDisposable
         ExecuteTrackCatalogueIndex(raven.Store);
         return new MusicCatalogCandidateSearchTestEnvironment(
             new RavenMusicCatalogCandidateSearch(raven.Store),
-            (musicCatalogId, searchText, title, artist, albumTitle, isrc, mbid) => SeedRaven(raven, musicCatalogId, searchText, title, artist, albumTitle, isrc, mbid),
+            (musicCatalogId, searchText, title, artist, albumTitle, isrc, mbid, releaseDate) => SeedRaven(raven, musicCatalogId, searchText, title, artist, albumTitle, isrc, mbid, releaseDate),
             raven);
     }
 
@@ -75,7 +76,8 @@ internal sealed class MusicCatalogCandidateSearchTestEnvironment : IDisposable
         string? artist,
         string? albumTitle,
         string? isrc,
-        string? mbid)
+        string? mbid,
+        DateOnly? releaseDate)
     {
         using var session = raven.Store.OpenSession();
         session.Advanced.WaitForIndexesAfterSaveChanges();
@@ -93,6 +95,7 @@ internal sealed class MusicCatalogCandidateSearchTestEnvironment : IDisposable
             NormalizedIsrc = Domain.Model.MusicIdentityText.NormalizeCompact(isrc),
             Mbid = mbid,
             NormalizedMbid = Domain.Model.MusicIdentityText.NormalizeCompact(mbid),
+            ReleaseDate = releaseDate,
             AppleId = null,
             SpotifyId = null,
             DurationMs = null

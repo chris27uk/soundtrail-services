@@ -32,6 +32,7 @@ public sealed class RavenLocalMusicTrackSearch(IDocumentStore documentStore) : I
             document.CanonicalMetadata?.DurationMs ?? document.DurationMs,
             document.IsPlayable,
             string.IsNullOrWhiteSpace(document.ArtistId) ? null : ArtistId.From(document.ArtistId),
-            string.IsNullOrWhiteSpace(document.AlbumId) ? null : AlbumId.From(document.AlbumId));
+            string.IsNullOrWhiteSpace(document.AlbumId) ? null : AlbumId.From(document.AlbumId),
+            document.ReleaseDate);
     }
 }

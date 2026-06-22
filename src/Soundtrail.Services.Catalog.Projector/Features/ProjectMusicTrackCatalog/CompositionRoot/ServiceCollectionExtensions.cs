@@ -9,8 +9,8 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddProjectMusicTrackCatalogFeature(this IServiceCollection services)
     {
-        services.TryAddSingleton<ProjectMusicTrackCatalogHandler>();
-        services.TryAddSingleton<CatalogMusicTrackProjectionApplier>();
+        services.TryAddScoped<ProjectMusicTrackCatalogHandler>();
+        services.TryAddSingleton<RavenMusicTrackCatalogProjectionMapper>();
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<IHostedService, ProjectMusicTrackCatalogSubscriptionHostedService>());
 

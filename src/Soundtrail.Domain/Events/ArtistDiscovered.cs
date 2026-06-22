@@ -5,5 +5,6 @@ namespace Soundtrail.Domain.Events;
 public sealed record ArtistDiscovered(
     string? ArtistId,
     string? ArtistName,
+    string? SourceArtistId,
     ProviderName SourceProvider,
     DateTimeOffset ObservedAt) : IMusicTrackEvent;

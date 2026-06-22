@@ -2,66 +2,18 @@ using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Session;
 using Raven.Client.Exceptions;
-using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.SourceBudgets.Configuration;
 
 namespace Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.SourceBudgets.Adapters;
 
 public sealed class RavenCompareExchangeSourceApiBudgetPort(
-    IDocumentStore documentStore,
-    IOptions<SourceApiBudgetsOptions> options) : IReserveSourceApiBudgetPort
+    IDocumentStore documentStore) : ITryReserveSourceApiBudgetWindowPort
 {
-    private readonly SourceApiBudgetsOptions options = options.Value;
-
-    public async Task<SourceApiBudgetReservationResult> TryReserveAsync(
-        SourceApiBudgetReservationRequest request,
+    public async Task<TryReserveSourceApiBudgetWindowResult> TryReserveAsync(
+        TryReserveSourceApiBudgetWindowRequest request,
         CancellationToken cancellationToken)
     {
-        var policy = GetPolicy(request.Source);
-
-        if (policy.MinimumSpacingSeconds is { } minimumSpacingSeconds)
-        {
-            var spacingResult = await TryReserveWindowAsync(
-                request.Source,
-                request.RequestedAt,
-                request.RequestedAmount,
-                maxRequests: 1,
-                safetyMarginPercent: 0,
-                windowSeconds: minimumSpacingSeconds,
-                keyPrefix: "source-budget-spacing",
-                cancellationToken);
-
-            if (!spacingResult.Accepted)
-            {
-                return spacingResult;
-            }
-        }
-
-        return await TryReserveWindowAsync(
-            request.Source,
-            request.RequestedAt,
-            request.RequestedAmount,
-            policy.MaxRequests,
-            policy.SafetyMarginPercent,
-            policy.WindowSeconds,
-            keyPrefix: "source-budget",
-            cancellationToken);
-    }
-
-    private async Task<SourceApiBudgetReservationResult> TryReserveWindowAsync(
-        ProviderName source,
-        DateTimeOffset requestedAt,
-        int requestedAmount,
-        int maxRequests,
-        int safetyMarginPercent,
-        int windowSeconds,
-        string keyPrefix,
-        CancellationToken cancellationToken)
-    {
-        var windowStartedAt = AlignToWindow(requestedAt, windowSeconds);
-        var windowEndsAt = windowStartedAt.AddSeconds(windowSeconds);
-        var key = $"{keyPrefix}/{source.Value.ToLowerInvariant()}/{windowStartedAt.UtcDateTime:yyyy-MM-ddTHH:mm:ssZ}";
+        var key = $"{request.KeyPrefix}/{request.Source.Value.ToLowerInvariant()}/{request.WindowStartedAt.UtcDateTime:yyyy-MM-ddTHH:mm:ssZ}";
 
         for (var attempt = 0; attempt < 5; attempt++)
         {
@@ -74,20 +26,18 @@ public sealed class RavenCompareExchangeSourceApiBudgetPort(
 
             var record = current?.Value ?? new SourceApiBudgetWindowRecordDto
             {
-                Source = source.Value,
-                WindowStartedAt = windowStartedAt,
-                WindowEndsAt = windowEndsAt,
-                MaxRequests = maxRequests,
+                Source = request.Source.Value,
+                WindowStartedAt = request.WindowStartedAt,
+                WindowEndsAt = request.WindowEndsAt,
+                MaxRequests = request.MaxRequests,
                 ReservedRequests = 0,
-                SafetyMarginPercent = safetyMarginPercent
+                SafetyMarginPercent = request.SafetyMarginPercent
             };
 
             var safeMax = Math.Max(0, record.MaxRequests - (int)Math.Ceiling(record.MaxRequests * (record.SafetyMarginPercent / 100m)));
-            if (record.ReservedRequests + requestedAmount > safeMax)
+            if (record.ReservedRequests + request.RequestedAmount > safeMax)
             {
-                return SourceApiBudgetReservationResult.Deferred(
-                    windowEndsAt,
-                    $"{source.Value} budget temporarily unavailable");
+                return TryReserveSourceApiBudgetWindowResult.Rejected(request.WindowEndsAt);
             }
 
             var updated = new SourceApiBudgetWindowRecordDto
@@ -96,7 +46,7 @@ public sealed class RavenCompareExchangeSourceApiBudgetPort(
                 WindowStartedAt = record.WindowStartedAt,
                 WindowEndsAt = record.WindowEndsAt,
                 MaxRequests = record.MaxRequests,
-                ReservedRequests = record.ReservedRequests + requestedAmount,
+                ReservedRequests = record.ReservedRequests + request.RequestedAmount,
                 SafetyMarginPercent = record.SafetyMarginPercent
             };
 
@@ -112,30 +62,14 @@ public sealed class RavenCompareExchangeSourceApiBudgetPort(
                 }
 
                 await session.SaveChangesAsync(cancellationToken);
-                return SourceApiBudgetReservationResult.Reserved();
+                return TryReserveSourceApiBudgetWindowResult.Success(request.WindowEndsAt);
             }
             catch (ConcurrencyException)
             {
             }
         }
 
-        return SourceApiBudgetReservationResult.Deferred(
-            windowEndsAt,
-            $"{source.Value} budget temporarily unavailable");
-    }
-
-    private SourceApiBudgetPolicyOptions GetPolicy(ProviderName source) =>
-        source == ProviderName.MusicBrainz
-            ? options.MusicBrainz
-            : source == ProviderName.Odesli
-                ? options.Odesli
-                : throw new ArgumentOutOfRangeException(nameof(source), source, "Unsupported source budget.");
-
-    private static DateTimeOffset AlignToWindow(DateTimeOffset timestamp, int windowSeconds)
-    {
-        var utc = timestamp.ToUniversalTime();
-        var ticks = utc.Ticks - (utc.Ticks % TimeSpan.FromSeconds(windowSeconds).Ticks);
-        return new DateTimeOffset(ticks, TimeSpan.Zero);
+        return TryReserveSourceApiBudgetWindowResult.Rejected(request.WindowEndsAt);
     }
 
     public sealed class SourceApiBudgetWindowRecordDto

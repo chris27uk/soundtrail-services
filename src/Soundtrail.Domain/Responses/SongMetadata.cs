@@ -5,4 +5,8 @@ public sealed record SongMetadata(
     string Artist,
     string? Isrc,
     string? Mbid,
-    int? DurationMs);
+    int? DurationMs,
+    string? AlbumTitle = null,
+    DateOnly? ReleaseDate = null,
+    string? SourceArtistId = null,
+    string? SourceAlbumId = null);

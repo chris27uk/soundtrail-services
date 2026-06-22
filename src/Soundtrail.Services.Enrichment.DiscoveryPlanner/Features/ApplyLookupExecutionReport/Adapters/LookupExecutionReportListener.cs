@@ -8,9 +8,5 @@ public sealed class LookupExecutionReportListener(ApplyLookupExecutionReportHand
 {
     [WolverineHandler]
     [Transactional]
-    public Task Handle(
-        LookupExecutionReportDto dto,
-        IAsyncDocumentSession _,
-        CancellationToken cancellationToken = default) =>
-        handler.Handle(dto, cancellationToken);
+    public Task Handle(LookupExecutionReportDto dto, IAsyncDocumentSession _, CancellationToken cancellationToken = default) => handler.Handle(dto, cancellationToken);
 }

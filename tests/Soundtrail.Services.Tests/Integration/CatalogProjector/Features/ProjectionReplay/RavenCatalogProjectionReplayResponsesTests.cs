@@ -34,17 +34,75 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
 
         artist.Should().NotBeNull();
         artist!.Name.Should().Be("The Killers");
+        artist.MusicBrainzArtistId.Should().Be("mb-artist-the-killers");
         artist.AvailableProviders.Should().Contain(ProviderName.Spotify.Value);
 
         album.Should().NotBeNull();
         album!.ArtistId.Should().Be("artist_the_killers");
         album.Name.Should().Be("Hot Fuss");
+        album.MusicBrainzReleaseId.Should().Be("mb-release-hot-fuss");
         album.AvailableProviders.Should().Contain(ProviderName.Spotify.Value);
 
         search.Results.Should().ContainSingle();
         search.Results[0].Id.Should().Be("mc_track_1");
         search.Results[0].PlayabilityStatus.Should().Be(PlayabilityStatus.Playable);
         search.Results[0].AvailableProviders.Should().ContainSingle().Which.Should().Be(ProviderName.Spotify);
+    }
+
+    [Fact]
+    public async Task Given_Persisted_MusicTrack_Stored_Events_When_Replaying_Then_Catalog_Documents_Are_Rebuilt_From_The_Event_Stream()
+    {
+        await using var env = RavenCatalogProjectionReplayTestEnvironment.Create();
+
+        await env.AppendStoredEventsAsync(
+            MinimalTrackInfo("mc_track_1", 1, "Mr. Brightside", "The Killers"),
+            ArtistDiscovered("mc_track_1", 2, "artist_the_killers", "The Killers"),
+            AlbumDiscovered("mc_track_1", 3, "album_hot_fuss", "Hot Fuss"),
+            ProviderResolved("mc_track_1", 4, ProviderName.Spotify, "spotify-1"));
+
+        var replayedEventCount = await env.ReplayAsync(MusicCatalogId.From("mc_track_1"));
+        var track = await env.LoadTrackAsync("mc_track_1");
+        var artist = await env.LoadArtistAsync("artist_the_killers");
+        var album = await env.LoadAlbumAsync("album_hot_fuss");
+        var search = await env.SearchAsync("mr brightside", types: "track", playback: "spotify");
+
+        replayedEventCount.Should().Be(4);
+
+        track.Should().NotBeNull();
+        track!.ArtistId.Should().Be("artist_the_killers");
+        track.AlbumId.Should().Be("album_hot_fuss");
+        track.AvailableProviders.Should().Contain(ProviderName.Spotify.Value);
+
+        artist.Should().NotBeNull();
+        artist!.MusicBrainzArtistId.Should().Be("mb-artist-the-killers");
+        artist!.AvailableProviders.Should().Contain(ProviderName.Spotify.Value);
+
+        album.Should().NotBeNull();
+        album!.MusicBrainzReleaseId.Should().Be("mb-release-hot-fuss");
+        album!.AvailableProviders.Should().Contain(ProviderName.Spotify.Value);
+
+        search.Results.Should().ContainSingle();
+        search.Results[0].Id.Should().Be("mc_track_1");
+    }
+
+    [Fact]
+    public async Task Given_Persisted_MusicTrack_Stored_Events_For_Multiple_Streams_When_Replaying_One_Stream_Then_Only_That_Stream_Is_Rebuilt()
+    {
+        await using var env = RavenCatalogProjectionReplayTestEnvironment.Create();
+
+        await env.AppendStoredEventsAsync(
+            MinimalTrackInfo("mc_track_1", 1, "Mr. Brightside", "The Killers"),
+            ArtistDiscovered("mc_track_1", 2, "artist_the_killers", "The Killers"),
+            MinimalTrackInfo("mc_track_2", 1, "Smile Like You Mean It", "The Killers"),
+            ArtistDiscovered("mc_track_2", 2, "artist_the_killers", "The Killers"));
+
+        var replayedEventCount = await env.ReplayAsync(MusicCatalogId.From("mc_track_1"));
+        var firstTrack = await env.LoadTrackAsync("mc_track_1");
+        var secondTrack = await env.LoadTrackAsync("mc_track_2");
+
+        replayedEventCount.Should().Be(2);
+        firstTrack.Should().NotBeNull();
+        secondTrack.Should().BeNull();
     }
 
     [Fact]
@@ -188,10 +246,13 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
 
         artist.Should().NotBeNull();
         artist!.Name.Should().Be("The Killers");
+        artist.MusicBrainzArtistId.Should().Be("mb-artist-the-killers");
 
         album.Should().NotBeNull();
         album!.Name.Should().Be("Hot Fuss");
         album.ArtistId.Should().Be("artist_the_killers");
+        album.MusicBrainzReleaseId.Should().Be("mb-release-hot-fuss");
+        album.ReleaseDate.Should().Be(new DateOnly(2004, 6, 7));
 
         search.Results.Should().ContainSingle();
         search.Results[0].Name.Should().Be("Mr. Brightside");
@@ -272,15 +333,14 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
             MusicCatalogId = musicCatalogId,
             Version = version,
             EventType = nameof(TrackDiscovered),
-            Data = System.Text.Json.JsonSerializer.Serialize(
-                new TrackDiscoveredEventDataRecordDto(
-                    title,
-                    artist,
-                    222000,
-                    "USIR20400274",
-                    "mbid-1",
-                    ProviderName.MusicBrainz.Value,
-                    new DateTimeOffset(2026, 6, 15, 12, 0, 0, TimeSpan.Zero))),
+            TrackDiscovered = new TrackDiscoveredEventDataRecordDto(
+                title,
+                artist,
+                222000,
+                "USIR20400274",
+                "mbid-1",
+                ProviderName.MusicBrainz.Value,
+                new DateTimeOffset(2026, 6, 15, 12, 0, 0, TimeSpan.Zero)),
             OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 0, 0, TimeSpan.Zero)
         };
 
@@ -295,12 +355,12 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
             MusicCatalogId = musicCatalogId,
             Version = version,
             EventType = nameof(ArtistDiscovered),
-            Data = System.Text.Json.JsonSerializer.Serialize(
-                new ArtistDiscoveredEventDataRecordDto(
-                    artistId,
-                    artistName,
-                    ProviderName.MusicBrainz.Value,
-                    new DateTimeOffset(2026, 6, 15, 12, 1, 0, TimeSpan.Zero))),
+            ArtistDiscovered = new ArtistDiscoveredEventDataRecordDto(
+                artistId,
+                artistName,
+                "mb-artist-the-killers",
+                ProviderName.MusicBrainz.Value,
+                new DateTimeOffset(2026, 6, 15, 12, 1, 0, TimeSpan.Zero)),
             OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 1, 0, TimeSpan.Zero)
         };
 
@@ -315,12 +375,13 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
             MusicCatalogId = musicCatalogId,
             Version = version,
             EventType = nameof(AlbumDiscovered),
-            Data = System.Text.Json.JsonSerializer.Serialize(
-                new AlbumDiscoveredEventDataRecordDto(
-                    albumId,
-                    albumName,
-                    ProviderName.MusicBrainz.Value,
-                    new DateTimeOffset(2026, 6, 15, 12, 2, 0, TimeSpan.Zero))),
+            AlbumDiscovered = new AlbumDiscoveredEventDataRecordDto(
+                albumId,
+                albumName,
+                "mb-release-hot-fuss",
+                new DateOnly(2004, 6, 7),
+                ProviderName.MusicBrainz.Value,
+                new DateTimeOffset(2026, 6, 15, 12, 2, 0, TimeSpan.Zero)),
             OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 2, 0, TimeSpan.Zero)
         };
 
@@ -335,13 +396,12 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
             MusicCatalogId = musicCatalogId,
             Version = version,
             EventType = nameof(ProviderReferenceDiscovered),
-            Data = System.Text.Json.JsonSerializer.Serialize(
-                new ProviderReferenceDiscoveredEventDataRecordDto(
-                    provider.Value,
-                    externalId,
-                    $"https://example.com/{externalId}",
-                    ProviderName.Odesli.Value,
-                    new DateTimeOffset(2026, 6, 15, 12, 3, 0, TimeSpan.Zero))),
+            ProviderReferenceDiscovered = new ProviderReferenceDiscoveredEventDataRecordDto(
+                provider.Value,
+                externalId,
+                $"https://example.com/{externalId}",
+                ProviderName.Odesli.Value,
+                new DateTimeOffset(2026, 6, 15, 12, 3, 0, TimeSpan.Zero)),
             OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 3, 0, TimeSpan.Zero)
         };
 
@@ -355,11 +415,10 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
             MusicCatalogId = musicCatalogId,
             Version = version,
             EventType = nameof(ProviderReferenceLookupFailed),
-            Data = System.Text.Json.JsonSerializer.Serialize(
-                new ProviderReferenceLookupFailedEventDataRecordDto(
-                    provider.Value,
-                    ProviderName.Odesli.Value,
-                    new DateTimeOffset(2026, 6, 15, 12, 4, 0, TimeSpan.Zero))),
+            ProviderReferenceLookupFailed = new ProviderReferenceLookupFailedEventDataRecordDto(
+                provider.Value,
+                ProviderName.Odesli.Value,
+                new DateTimeOffset(2026, 6, 15, 12, 4, 0, TimeSpan.Zero)),
             OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 4, 0, TimeSpan.Zero)
         };
 
@@ -375,13 +434,12 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
             MusicCatalogId = musicCatalogId,
             Version = version,
             EventType = nameof(ArtworkDiscovered),
-            Data = System.Text.Json.JsonSerializer.Serialize(
-                new ArtworkDiscoveredEventDataRecordDto(
-                    entityKind,
-                    entityId,
-                    url,
-                    "worker/musicbrainz",
-                    new DateTimeOffset(2026, 6, 15, 12, version, 0, TimeSpan.Zero))),
+            ArtworkDiscovered = new ArtworkDiscoveredEventDataRecordDto(
+                entityKind,
+                entityId,
+                url,
+                "worker/musicbrainz",
+                new DateTimeOffset(2026, 6, 15, 12, version, 0, TimeSpan.Zero)),
             OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, version, 0, TimeSpan.Zero)
         };
 
@@ -399,18 +457,20 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
             MusicCatalogId = musicCatalogId,
             Version = version,
             EventType = nameof(MetadataCorrected),
-            Data = System.Text.Json.JsonSerializer.Serialize(
-                new MetadataCorrectedEventDataRecordDto(
-                    title,
-                    artistName,
-                    artistId,
-                    albumTitle,
-                    albumId,
-                    222000,
-                    "USIR20400274",
-                    "mbid-1",
-                    "admin/repair",
-                    new DateTimeOffset(2026, 6, 15, 12, 5, 0, TimeSpan.Zero))),
+            MetadataCorrected = new MetadataCorrectedEventDataRecordDto(
+                title,
+                artistName,
+                artistId,
+                "mb-artist-the-killers",
+                albumTitle,
+                albumId,
+                "mb-release-hot-fuss",
+                new DateOnly(2004, 6, 7),
+                222000,
+                "USIR20400274",
+                "mbid-1",
+                "admin/repair",
+                new DateTimeOffset(2026, 6, 15, 12, 5, 0, TimeSpan.Zero)),
             OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 5, 0, TimeSpan.Zero)
         };
 }

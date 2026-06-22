@@ -1,7 +1,6 @@
 using Soundtrail.Domain;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.CatalogBrowsing;
-using Soundtrail.Services.Api.Shared;
 
 namespace Soundtrail.Services.Api.Features.GetArtist.Adapters;
 
@@ -33,7 +32,7 @@ public static class GetArtistEndpoints
         name = album.Name,
         releaseDate = album.ReleaseDate,
         playabilityStatus = album.PlayabilityStatus.ToString(),
-        availableProviders = album.AvailableProviders.Select(ProviderContract.ToValue),
-        terminallyUnavailableProviders = album.TerminallyUnavailableProviders.Select(ProviderContract.ToValue)
+        availableProviders = album.AvailableProviders.Select(providerName => providerName.ToPersistentId()),
+        terminallyUnavailableProviders = album.TerminallyUnavailableProviders.Select(providerName => providerName.ToPersistentId())
     };
 }

@@ -12,10 +12,10 @@ public sealed class ByNamesResponsesTests
     {
         using var env = MusicBrainzMetadataSourceTestEnvironment.Create(mode);
         var lookup = MusicSearchTerm.ByTrackArtistAlbum("Song A", "Artist A", "Album A");
-        env.Seed(lookup, new SongMetadata("Song A", "Artist A", null, "mbid-1", 123000));
+        env.Seed(lookup, new SongMetadata("Song A", "Artist A", null, "mbid-1", 123000, "Album A", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"));
 
         var actual = await env.Source.GetMetadataAsync(lookup, CancellationToken.None);
 
-        actual.Should().Be(new SongMetadata("Song A", "Artist A", null, "mbid-1", 123000));
+        actual.Should().Be(new SongMetadata("Song A", "Artist A", null, "mbid-1", 123000, "Album A", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"));
     }
 }

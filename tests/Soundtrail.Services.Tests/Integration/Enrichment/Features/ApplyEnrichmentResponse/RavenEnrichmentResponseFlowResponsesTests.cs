@@ -4,14 +4,24 @@ using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Contracts;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Model;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling.Adapters;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Adapters;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ReplayDiscoveryLifecycleProjection;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ReplayDiscoveryLifecycleProjection.Adapters;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection.Adapters;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ReplayMusicTrackProjection;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ReplayMusicTrackProjection.Adapters;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Documents;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
+using System.Linq;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ApplyEnrichmentResponse;
 
@@ -25,22 +35,6 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
 
         using (var seedSession = raven.Store.OpenAsyncSession())
         {
-            await seedSession.StoreAsync(new RavenTrackRecordDto
-            {
-                Id = RavenTrackRecordDto.GetDocumentId("mc_track_1"),
-                ArtistId = "artist_test_artist",
-                AlbumId = "album_rare_album",
-                Title = "Rare Unknown Song",
-                Artist = "Test Artist",
-                AlbumTitle = "Rare Album",
-                SearchText = RavenTrackRecordDto.BuildSearchText("Rare Unknown Song", "Test Artist"),
-                CanonicalMetadata = new RavenSongMetadataRecordDto
-                {
-                    Title = "Rare Unknown Song",
-                    Artist = "Test Artist"
-                },
-                IsPlayable = false
-            });
             var trackingStore = new RavenCatalogSearchTrackingStore(raven.Store, seedSession);
             await trackingStore.UpsertAsync(
                 new CatalogSearchTracking(
@@ -74,8 +68,8 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
             CancellationToken.None);
 
         track.Should().NotBeNull();
-        track!.IsPlayable.Should().BeTrue();
-        track.AppleId.Should().Be("apple-track-1");
+        track!.AppleId.Should().Be("apple-track-1");
+        track.IsPlayable.Should().BeTrue();
         track.Title.Should().Be("Rare Unknown Song");
         track.Artist.Should().Be("Test Artist");
 
@@ -106,38 +100,51 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
     private static EnrichmentResponseListener CreateListener(Raven.Client.Documents.Session.IAsyncDocumentSession session) =>
         new(new ApplyEnrichmentResponseHandler(
             new RavenMusicTrackStreamStore(session),
-            new RavenProviderSnapshotStore(session),
             new RavenCatalogSearchTrackingStore(session.Advanced.DocumentStore, session),
-            new RavenCatalogSearchDiscoveryRepository(session.Advanced.DocumentStore)));
+            new RavenEnrichmentResponseCatalogSearchDiscoveryRepository(session)));
 
     private static async Task ReplayProjectionsAsync(RavenEmbeddedTestDatabase raven)
     {
+        using var querySession = raven.Store.OpenAsyncSession();
+        var streamMetadata = await querySession.Advanced.LoadStartingWithAsync<MusicTrackEventStreamMetadataRecordDto>(
+            "music-track-streams/");
+        var musicCatalogIds = streamMetadata.Select(x => x.MusicCatalogId).Distinct(StringComparer.Ordinal).ToList();
+
         using var session = raven.Store.OpenAsyncSession();
-        var events = await session.Advanced.AsyncDocumentQuery<MusicTrackStoredEventRecordDto>()
-            .ToListAsync(CancellationToken.None);
-        var applier = new MusicTrackProjectionApplier();
+        var replayHandler = new ReplayMusicTrackProjectionHandler(
+            new RavenLoadStoredMusicTrackEvents(session),
+            new ProjectMusicTrackProjectionHandler(
+                new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
+                new RavenSaveMusicTrackProjection(session, new RavenMusicTrackProjectionMapper())));
 
-        foreach (var storedEvent in events.OrderBy(x => x.Version))
+        foreach (var musicCatalogId in musicCatalogIds)
         {
-            await applier.ApplyStoredEventAsync(storedEvent, session, CancellationToken.None);
+            await replayHandler.Handle(
+                new ReplayMusicTrackProjectionCommand(MusicCatalogId.From(musicCatalogId)),
+                CancellationToken.None);
         }
-
-        await session.SaveChangesAsync(CancellationToken.None);
     }
 
     private static async Task ReplayDiscoveryLifecycleAsync(RavenEmbeddedTestDatabase raven)
     {
+        using var querySession = raven.Store.OpenAsyncSession();
+        var streamMetadata = await querySession.Advanced.LoadStartingWithAsync<DiscoveryQueryEventStreamMetadataRecordDto>(
+            "discovery-query-streams/");
+        var criteriaValues = streamMetadata.Select(x => x.Criteria).ToList();
+
         using var session = raven.Store.OpenAsyncSession();
-        var events = await session.Advanced.AsyncDocumentQuery<DiscoveryQueryStoredEventRecordDto>()
-            .ToListAsync(CancellationToken.None);
-        var applier = new DiscoveryLifecycleProjectionApplier();
+        var replayHandler = new ReplayDiscoveryLifecycleProjectionHandler(
+            new RavenLoadStoredDiscoveryLifecycleEvents(session),
+            new ProjectDiscoveryLifecycleHandler(
+                new RavenLoadDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()),
+                new RavenSaveDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper())));
 
-        foreach (var storedEvent in events.OrderBy(x => x.Criteria).ThenBy(x => x.Version))
+        foreach (var criteria in criteriaValues.Distinct(StringComparer.Ordinal))
         {
-            await applier.ApplyStoredEventAsync(storedEvent, session, CancellationToken.None);
+            await replayHandler.Handle(
+                new ReplayDiscoveryLifecycleProjectionCommand(CatalogSearchCriteria.From(criteria)),
+                CancellationToken.None);
         }
-
-        await session.SaveChangesAsync(CancellationToken.None);
     }
 
     private static EnrichmentResponseDto CanonicalResponseDto() =>
@@ -147,7 +154,7 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
             ProviderName.MusicBrainz.Value,
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero),
-            new SongMetadataDto("Rare Unknown Song", "Test Artist", "isrc-1", "mbid-1", 123000),
+            new SongMetadataDto("Rare Unknown Song", "Test Artist", "isrc-1", "mbid-1", 123000, "Rare Album", new DateOnly(2026, 1, 1)),
             [],
             [],
             "artist_test_artist",

@@ -34,6 +34,8 @@ public sealed class RavenTrackRecordDto
 
     public int? DurationMs { get; set; }
 
+    public DateOnly? ReleaseDate { get; set; }
+
     public string? ArtworkUrl { get; set; }
 
     public RavenSongMetadataRecordDto? CanonicalMetadata { get; set; }
