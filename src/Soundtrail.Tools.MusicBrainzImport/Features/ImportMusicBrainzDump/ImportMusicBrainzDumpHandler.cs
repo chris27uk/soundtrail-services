@@ -4,14 +4,12 @@ using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
-using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump;
 
 public sealed class ImportMusicBrainzDumpHandler(
     IReadMusicBrainzDumpPort readPort,
-    IMusicTrackEventRepository repository,
-    ProjectMusicTrackCatalogHandler projectMusicTrackCatalogHandler) : IHandler<ImportMusicBrainzDumpCommand, ImportMusicBrainzDumpResult>
+    IMusicTrackEventRepository repository) : IHandler<ImportMusicBrainzDumpCommand, ImportMusicBrainzDumpResult>
 {
     public async Task<ImportMusicBrainzDumpResult> Handle(
         ImportMusicBrainzDumpCommand command,
@@ -19,7 +17,6 @@ public sealed class ImportMusicBrainzDumpHandler(
     {
         var processed = 0;
         var imported = 0;
-        var projected = 0;
         var skipped = 0;
 
         await foreach (var record in readPort.ReadAsync(
@@ -71,24 +68,9 @@ public sealed class ImportMusicBrainzDumpHandler(
             }
 
             imported++;
-
-            if (!command.ProjectCatalogAfterImport)
-            {
-                continue;
-            }
-
-            var firstVersion = append.Version - append.AppendedEvents.Count + 1;
-            await projectMusicTrackCatalogHandler.Handle(
-                new(
-                    musicCatalogId,
-                    append.AppendedEvents
-                        .Select((@event, index) => new VersionedMusicTrackEvent(firstVersion + index, @event))
-                        .ToArray()),
-                cancellationToken);
-            projected++;
         }
 
-        return new ImportMusicBrainzDumpResult(processed, imported, projected, skipped);
+        return new ImportMusicBrainzDumpResult(processed, imported, skipped);
     }
 
     private static MusicCatalogId BuildMusicCatalogId(MusicBrainzCatalogSeedRecord record)

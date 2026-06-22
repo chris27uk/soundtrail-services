@@ -17,7 +17,7 @@ public sealed class ReplayCatalogProjectionResponsesTests
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
 
         var result = await env.Handler.Handle(
-            new ReplayCatalogProjectionCommand(true, []),
+            new ReplayCatalogProjectionCommand(),
             CancellationToken.None);
 
         result.ReplayedStreamCount.Should().Be(1);
@@ -31,5 +31,19 @@ public sealed class ReplayCatalogProjectionResponsesTests
 
         var checkpointVersion = await env.LoadCheckpointVersionAsync(musicCatalogId);
         checkpointVersion.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task Given_An_Existing_Catalog_Document_When_Replay_All_Is_Run_Then_The_Document_Is_Updated_In_Place()
+    {
+        await using var env = await ReplayCatalogProjectionTestEnvironment.CreateAsync(ReplayCatalogProjectionMode.RavenEmbedded);
+
+        await env.Handler.Handle(
+            new ReplayCatalogProjectionCommand(),
+            CancellationToken.None);
+
+        var trackDocumentCount = await env.CountTrackDocumentsAsync();
+
+        trackDocumentCount.Should().Be(1);
     }
 }

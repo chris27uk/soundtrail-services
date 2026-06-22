@@ -4,8 +4,6 @@ using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
-using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog;
-using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog.ProjectionModel;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 using Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump;
 
@@ -14,7 +12,7 @@ namespace Soundtrail.Services.Tests.Unit.MusicBrainzImport.Features.ImportMusicB
 public sealed class ImportMusicBrainzDumpHandlerTests
 {
     [Fact]
-    public async Task Given_A_Release_Record_When_Imported_Then_Catalog_Events_Are_Appended_And_Projected()
+    public async Task Given_A_Release_Record_When_Imported_Then_Catalog_Events_Are_Appended()
     {
         var env = ImportMusicBrainzDumpHandlerTestEnvironment.Create([
             new MusicBrainzCatalogSeedRecord(
@@ -32,12 +30,11 @@ public sealed class ImportMusicBrainzDumpHandlerTests
         ]);
 
         var result = await env.Handler.Handle(
-            new ImportMusicBrainzDumpCommand([], [], true, Clock),
+            new ImportMusicBrainzDumpCommand([], [], Clock),
             CancellationToken.None);
 
         result.ProcessedRecordCount.Should().Be(1);
         result.ImportedRecordCount.Should().Be(1);
-        result.ProjectedRecordCount.Should().Be(1);
         result.SkippedRecordCount.Should().Be(0);
 
         var stream = await env.StreamStore.LoadEventsAsync(MusicCatalogId.From("mc_track_mbrecording1"), CancellationToken.None);
@@ -45,13 +42,6 @@ public sealed class ImportMusicBrainzDumpHandlerTests
         stream.Events.Should().ContainItemsAssignableTo<ArtistDiscovered>();
         stream.Events.Should().ContainItemsAssignableTo<AlbumDiscovered>();
         stream.Events.Should().ContainSingle(x => x is PlaybackReferencesResolutionRequired);
-
-        var projection = env.ProjectionStore.Load(MusicCatalogId.From("mc_track_mbrecording1"));
-        projection.Should().NotBeNull();
-        projection!.Track.Title.Should().Be("Mr. Brightside");
-        projection.Track.ArtistId.Should().Be("artist_mbartist1");
-        projection.Track.AlbumId.Should().Be("album_mbrelease1");
-        projection.Track.MusicBrainzRecordingId.Should().Be("mb-recording-1");
     }
 
     [Fact]
@@ -70,7 +60,7 @@ public sealed class ImportMusicBrainzDumpHandlerTests
             123000,
             null);
         var env = ImportMusicBrainzDumpHandlerTestEnvironment.Create([record]);
-        var command = new ImportMusicBrainzDumpCommand([], [], false, Clock);
+        var command = new ImportMusicBrainzDumpCommand([], [], Clock);
 
         var first = await env.Handler.Handle(command, CancellationToken.None);
         var second = await env.Handler.Handle(command, CancellationToken.None);
@@ -91,32 +81,25 @@ public sealed class ImportMusicBrainzDumpHandlerTests
     {
         private ImportMusicBrainzDumpHandlerTestEnvironment(
             ImportMusicBrainzDumpHandler handler,
-            MusicTrackStreamStoreFake streamStore,
-            ProjectionStoreFake projectionStore)
+            MusicTrackStreamStoreFake streamStore)
         {
             Handler = handler;
             StreamStore = streamStore;
-            ProjectionStore = projectionStore;
         }
 
         public ImportMusicBrainzDumpHandler Handler { get; }
 
         public MusicTrackStreamStoreFake StreamStore { get; }
 
-        public ProjectionStoreFake ProjectionStore { get; }
-
         public static ImportMusicBrainzDumpHandlerTestEnvironment Create(
             IReadOnlyList<MusicBrainzCatalogSeedRecord> records)
         {
             var streamStore = new MusicTrackStreamStoreFake();
-            var projectionStore = new ProjectionStoreFake();
-            var projectionHandler = new ProjectMusicTrackCatalogHandler(projectionStore, projectionStore);
             var handler = new ImportMusicBrainzDumpHandler(
                 new FakeMusicBrainzDumpReader(records),
-                streamStore,
-                projectionHandler);
+                streamStore);
 
-            return new ImportMusicBrainzDumpHandlerTestEnvironment(handler, streamStore, projectionStore);
+            return new ImportMusicBrainzDumpHandlerTestEnvironment(handler, streamStore);
         }
     }
 
@@ -137,54 +120,4 @@ public sealed class ImportMusicBrainzDumpHandlerTests
         }
     }
 
-    private sealed class ProjectionStoreFake :
-        ILoadMusicTrackCatalogProjectionPort,
-        ISaveMusicTrackCatalogProjectionPort
-    {
-        private readonly Dictionary<string, MusicTrackCatalogProjectionSnapshot> projections = new(StringComparer.Ordinal);
-
-        public MusicTrackCatalogProjection? Load(MusicCatalogId musicCatalogId) =>
-            projections.TryGetValue(musicCatalogId.Value, out var snapshot)
-                ? MusicTrackCatalogProjection.Load(snapshot)
-                : null;
-
-        public Task<MusicTrackCatalogProjection> LoadAsync(
-            MusicCatalogId musicCatalogId,
-            CancellationToken cancellationToken)
-        {
-            var projection = Load(musicCatalogId)
-                ?? MusicTrackCatalogProjection.Load(
-                    new MusicTrackCatalogProjectionSnapshot(
-                        musicCatalogId,
-                        new CatalogTrackProjection(
-                            musicCatalogId.Value,
-                            string.Empty,
-                            string.Empty,
-                            string.Empty,
-                            string.Empty,
-                            string.Empty,
-                            string.Empty,
-                            string.Empty,
-                            null,
-                            null,
-                            null,
-                            [],
-                            [],
-                            [],
-                            null,
-                            default),
-                        null,
-                        null,
-                        0));
-            return Task.FromResult(projection);
-        }
-
-        public Task SaveAsync(
-            MusicTrackCatalogProjection projection,
-            CancellationToken cancellationToken)
-        {
-            projections[projection.MusicCatalogId.Value] = projection.ToSnapshot();
-            return Task.CompletedTask;
-        }
-    }
 }

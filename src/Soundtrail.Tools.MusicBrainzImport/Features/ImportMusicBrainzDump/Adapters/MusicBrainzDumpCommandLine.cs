@@ -1,5 +1,4 @@
 using Soundtrail.Domain.Commands;
-using Soundtrail.Contracts.Common;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump.Adapters;
 
@@ -23,6 +22,8 @@ public static class MusicBrainzDumpCommandLine
         {
             "import" => TryParseImport(args, offset, out command, out error),
             "replay-catalog" => TryParseReplayCatalog(args, offset, out command, out error),
+            "replay-discovery-lifecycle" => TryParseReplayDiscoveryLifecycle(args, offset, out command, out error),
+            "rebuild-all" => TryParseRebuildAllReadModels(args, offset, out command, out error),
             _ => UnknownAction(action, out command, out error)
         };
     }
@@ -30,16 +31,18 @@ public static class MusicBrainzDumpCommandLine
     public static string Usage() =>
         """
         Usage:
-          dotnet run --project src/Soundtrail.Tools.MusicBrainzImport -- import --recording-dump <path> [--recording-dump <path>] [--release-dump <path>] [--project-now]
-          dotnet run --project src/Soundtrail.Tools.MusicBrainzImport -- replay-catalog --all
-          dotnet run --project src/Soundtrail.Tools.MusicBrainzImport -- replay-catalog --music-catalog-id <id> [--music-catalog-id <id>]
+          dotnet run --project src/Soundtrail.Tools.MusicBrainzImport -- import --recording-dump <path> [--recording-dump <path>] [--release-dump <path>]
+          dotnet run --project src/Soundtrail.Tools.MusicBrainzImport -- replay-catalog
+          dotnet run --project src/Soundtrail.Tools.MusicBrainzImport -- replay-discovery-lifecycle
+          dotnet run --project src/Soundtrail.Tools.MusicBrainzImport -- rebuild-all
 
         Notes:
           - The importer expects extracted line-delimited MusicBrainz JSON dump files.
           - Release dumps are important because many recordings appear only inside release data.
-          - The importer appends catalog events to the music-track event store.
-          - Use --project-now to also rebuild catalog read models in-process for imported streams.
-          - replay-catalog resets the catalog track document and replay checkpoint, then rebuilds from persisted events.
+          - Import appends new catalog events when source data changes; projections update automatically from events.
+          - replay-catalog rebuilds the entire catalog projection model from persisted events after projection logic changes or repair scenarios.
+          - replay-discovery-lifecycle rebuilds the entire discovery lifecycle projection model from persisted events after projection logic changes or repair scenarios.
+          - rebuild-all clears planner operational state and rebuilds all persisted read models from events for operational recovery.
         """;
 
     private static bool TryParseImport(
@@ -50,8 +53,6 @@ public static class MusicBrainzDumpCommandLine
     {
         var recordingPaths = new List<string>();
         var releasePaths = new List<string>();
-        var projectCatalog = false;
-
         for (var index = offset; index < args.Count; index++)
         {
             switch (args[index])
@@ -73,9 +74,6 @@ public static class MusicBrainzDumpCommandLine
                     }
 
                     releasePaths.Add(releasePath);
-                    break;
-                case "--project-now":
-                    projectCatalog = true;
                     break;
                 case "--help":
                 case "-h":
@@ -100,7 +98,6 @@ public static class MusicBrainzDumpCommandLine
             new ImportMusicBrainzDumpCommand(
                 recordingPaths,
                 releasePaths,
-                projectCatalog,
                 DateTimeOffset.UtcNow));
         error = null;
         return true;
@@ -112,25 +109,10 @@ public static class MusicBrainzDumpCommandLine
         out MusicBrainzToolCommand? command,
         out string? error)
     {
-        var replayAll = false;
-        var musicCatalogIds = new List<MusicCatalogId>();
-
-        for (var index = offset; index < args.Count; index++)
+        if (offset < args.Count)
         {
-            switch (args[index])
+            switch (args[offset])
             {
-                case "--all":
-                    replayAll = true;
-                    break;
-                case "--music-catalog-id":
-                    if (!TryReadValue(args, ++index, out var musicCatalogId, out error))
-                    {
-                        command = null;
-                        return false;
-                    }
-
-                    musicCatalogIds.Add(MusicCatalogId.From(musicCatalogId));
-                    break;
                 case "--help":
                 case "-h":
                     command = null;
@@ -138,20 +120,68 @@ public static class MusicBrainzDumpCommandLine
                     return false;
                 default:
                     command = null;
-                    error = $"Unknown argument '{args[index]}'.";
+                    error = $"Unknown argument '{args[offset]}'.";
                     return false;
             }
         }
 
-        if (!replayAll && musicCatalogIds.Count == 0)
+        command = new MusicBrainzToolCommand.ReplayCatalog(
+            new ReplayCatalogProjectionCommand());
+        error = null;
+        return true;
+    }
+
+    private static bool TryParseReplayDiscoveryLifecycle(
+        IReadOnlyList<string> args,
+        int offset,
+        out MusicBrainzToolCommand? command,
+        out string? error)
+    {
+        if (offset < args.Count)
         {
-            command = null;
-            error = "replay-catalog requires --all or at least one --music-catalog-id.";
-            return false;
+            switch (args[offset])
+            {
+                case "--help":
+                case "-h":
+                    command = null;
+                    error = null;
+                    return false;
+                default:
+                    command = null;
+                    error = $"Unknown argument '{args[offset]}'.";
+                    return false;
+            }
         }
 
-        command = new MusicBrainzToolCommand.ReplayCatalog(
-            new ReplayCatalogProjectionCommand(replayAll, musicCatalogIds));
+        command = new MusicBrainzToolCommand.ReplayDiscoveryLifecycle(
+            new ReplayDiscoveryLifecycleProjectionBatchCommand());
+        error = null;
+        return true;
+    }
+
+    private static bool TryParseRebuildAllReadModels(
+        IReadOnlyList<string> args,
+        int offset,
+        out MusicBrainzToolCommand? command,
+        out string? error)
+    {
+        if (offset < args.Count)
+        {
+            switch (args[offset])
+            {
+                case "--help":
+                case "-h":
+                    command = null;
+                    error = null;
+                    return false;
+                default:
+                    command = null;
+                    error = $"Unknown argument '{args[offset]}'.";
+                    return false;
+            }
+        }
+
+        command = new MusicBrainzToolCommand.RebuildAllReadModels(new RebuildAllReadModelsCommand());
         error = null;
         return true;
     }

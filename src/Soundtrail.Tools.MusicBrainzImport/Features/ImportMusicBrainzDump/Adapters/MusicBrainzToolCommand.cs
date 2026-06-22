@@ -11,4 +11,8 @@ public abstract record MusicBrainzToolCommand
     public sealed record Import(ImportMusicBrainzDumpCommand Command) : MusicBrainzToolCommand;
 
     public sealed record ReplayCatalog(ReplayCatalogProjectionCommand Command) : MusicBrainzToolCommand;
+
+    public sealed record ReplayDiscoveryLifecycle(ReplayDiscoveryLifecycleProjectionBatchCommand Command) : MusicBrainzToolCommand;
+
+    public sealed record RebuildAllReadModels(RebuildAllReadModelsCommand Command) : MusicBrainzToolCommand;
 }

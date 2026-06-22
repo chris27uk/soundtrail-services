@@ -1,4 +1,7 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Raven.Client.Documents;
+using Raven.Client.Documents.Session;
 using Soundtrail.Contracts;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Commands;
@@ -10,33 +13,73 @@ using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryL
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ReplayDiscoveryLifecycleProjection;
 using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ReplayDiscoveryLifecycleProjection.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
-using System.Linq;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ImportCatalogSearchDiscoveryEvents;
 
 internal sealed class RavenDiscoveryLifecycleEventImportTestEnvironment : IAsyncDisposable
 {
     private readonly RavenEmbeddedTestDatabase raven;
+    private readonly ServiceProvider serviceProvider;
+    private readonly ProjectDiscoveryLifecycleSubscriptionHostedService hostedService;
 
-    private RavenDiscoveryLifecycleEventImportTestEnvironment(RavenEmbeddedTestDatabase raven)
+    private RavenDiscoveryLifecycleEventImportTestEnvironment(
+        RavenEmbeddedTestDatabase raven,
+        ServiceProvider serviceProvider,
+        ProjectDiscoveryLifecycleSubscriptionHostedService hostedService)
     {
         this.raven = raven;
+        this.serviceProvider = serviceProvider;
+        this.hostedService = hostedService;
     }
 
-    public static RavenDiscoveryLifecycleEventImportTestEnvironment Create() => new(RavenEmbeddedTestDatabase.Create());
+    public static async Task<RavenDiscoveryLifecycleEventImportTestEnvironment> CreateAsync()
+    {
+        var raven = RavenEmbeddedTestDatabase.Create();
+
+        var services = new ServiceCollection();
+        services.AddSingleton<IDocumentStore>(raven.Store);
+        services.AddScoped<IAsyncDocumentSession>(_ => raven.Store.OpenAsyncSession());
+        services.AddScoped<ProjectDiscoveryLifecycleHandler>();
+        services.AddScoped<ILoadDiscoveryLifecycleProjectionPort, RavenLoadDiscoveryLifecycleProjection>();
+        services.AddScoped<ISaveDiscoveryLifecycleProjectionPort, RavenSaveDiscoveryLifecycleProjection>();
+        services.AddSingleton<RavenDiscoveryLifecycleProjectionMapper>();
+
+        var serviceProvider = services.BuildServiceProvider();
+        var hostedService = new ProjectDiscoveryLifecycleSubscriptionHostedService(
+            raven.Store,
+            serviceProvider.GetRequiredService<IServiceScopeFactory>(),
+            NullLogger<ProjectDiscoveryLifecycleSubscriptionHostedService>.Instance);
+
+        await hostedService.StartAsync(CancellationToken.None);
+
+        return new RavenDiscoveryLifecycleEventImportTestEnvironment(raven, serviceProvider, hostedService);
+    }
 
     public async Task ImportAsync(ImportCatalogSearchDiscoveryEventsCommand command)
     {
-        using var session = raven.Store.OpenAsyncSession();
-        var mapper = new RavenDiscoveryLifecycleProjectionMapper();
         var handler = new ImportCatalogSearchDiscoveryEventsHandler(
-            new RavenCatalogSearchDiscoveryRepository(raven.Store),
-            new ReplayDiscoveryLifecycleProjectionHandler(
-                new RavenLoadStoredDiscoveryLifecycleEvents(session),
-                new ProjectDiscoveryLifecycleHandler(
-                    new RavenLoadDiscoveryLifecycleProjection(session, mapper),
-                    new RavenSaveDiscoveryLifecycleProjection(session, mapper))));
+            new RavenCatalogSearchDiscoveryRepository(raven.Store));
         await handler.Handle(command, CancellationToken.None);
+    }
+
+    public async Task<CatalogSearchStatusRecordDto?> WaitForStatusAsync(
+        CatalogSearchCriteria criteria,
+        TimeSpan timeout)
+    {
+        var startedAt = DateTimeOffset.UtcNow;
+
+        while (DateTimeOffset.UtcNow - startedAt < timeout)
+        {
+            var status = await LoadStatusAsync(criteria);
+            if (status is not null)
+            {
+                return status;
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(100));
+        }
+
+        return await LoadStatusAsync(criteria);
     }
 
     public async Task<CatalogSearchStatusRecordDto?> LoadStatusAsync(CatalogSearchCriteria criteria)
@@ -69,9 +112,10 @@ internal sealed class RavenDiscoveryLifecycleEventImportTestEnvironment : IAsync
         }
     }
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
+        await hostedService.StopAsync(CancellationToken.None);
+        await serviceProvider.DisposeAsync();
         raven.Dispose();
-        return ValueTask.CompletedTask;
     }
 }

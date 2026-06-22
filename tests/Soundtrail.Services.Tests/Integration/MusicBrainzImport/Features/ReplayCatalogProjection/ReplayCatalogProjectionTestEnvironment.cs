@@ -20,16 +20,19 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
         ReplayCatalogProjectionHandler handler,
         Func<MusicCatalogId, Task<CatalogTrackRecordDto?>> loadTrackAsync,
         Func<MusicCatalogId, Task<int>> loadCheckpointVersionAsync,
+        Func<Task<int>> countTrackDocumentsAsync,
         IAsyncDisposable? asyncDisposable = null)
     {
         Handler = handler;
         this.loadTrackAsync = loadTrackAsync;
         this.loadCheckpointVersionAsync = loadCheckpointVersionAsync;
+        this.countTrackDocumentsAsync = countTrackDocumentsAsync;
         this.asyncDisposable = asyncDisposable;
     }
 
     private readonly Func<MusicCatalogId, Task<CatalogTrackRecordDto?>> loadTrackAsync;
     private readonly Func<MusicCatalogId, Task<int>> loadCheckpointVersionAsync;
+    private readonly Func<Task<int>> countTrackDocumentsAsync;
     private readonly IAsyncDisposable? asyncDisposable;
 
     public ReplayCatalogProjectionHandler Handler { get; }
@@ -82,6 +85,9 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
     public Task<int> LoadCheckpointVersionAsync(MusicCatalogId musicCatalogId) =>
         loadCheckpointVersionAsync(musicCatalogId);
 
+    public Task<int> CountTrackDocumentsAsync() =>
+        countTrackDocumentsAsync();
+
     public async ValueTask DisposeAsync()
     {
         if (asyncDisposable is not null)
@@ -110,7 +116,8 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
         return new ReplayCatalogProjectionTestEnvironment(
             handler,
             id => Task.FromResult(projectionStore.LoadTrackDocument(id)),
-            id => Task.FromResult(projectionStore.LoadCheckpointVersion(id)));
+            id => Task.FromResult(projectionStore.LoadCheckpointVersion(id)),
+            () => Task.FromResult(projectionStore.TrackDocumentCount));
     }
 
     private static async Task<ReplayCatalogProjectionTestEnvironment> CreateRavenAsync(
@@ -227,6 +234,12 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
                     CancellationToken.None);
                 return checkpoint?.LastAppliedVersion ?? 0;
             },
+            async () =>
+            {
+                using var verificationSession = raven.Store.OpenAsyncSession();
+                var tracks = await verificationSession.Advanced.LoadStartingWithAsync<CatalogTrackRecordDto>("catalog/tracks/");
+                return tracks.Count();
+            },
             new AsyncDisposableAggregate(session, raven));
     }
 
@@ -253,6 +266,8 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
         IResetCatalogProjectionCheckpointPort
     {
         private readonly Dictionary<string, MusicTrackCatalogProjectionSnapshot> projections = new(StringComparer.Ordinal);
+
+        public int TrackDocumentCount => projections.Count;
 
         public void SeedStale(MusicCatalogId musicCatalogId)
         {

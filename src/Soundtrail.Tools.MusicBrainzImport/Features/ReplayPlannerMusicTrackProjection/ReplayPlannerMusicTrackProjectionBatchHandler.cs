@@ -1,18 +1,19 @@
 using Soundtrail.Domain;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Responses;
-using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog;
+using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection;
+using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection;
 
-namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection;
+namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayPlannerMusicTrackProjection;
 
-public sealed class ReplayCatalogProjectionHandler(
+public sealed class ReplayPlannerMusicTrackProjectionBatchHandler(
     ILoadCatalogProjectionReplayTargetsPort loadTargetsPort,
     ILoadMusicTrackEventsForCatalogReplayPort loadEventsPort,
-    IResetCatalogProjectionCheckpointPort resetPort,
-    ProjectMusicTrackCatalogHandler projectHandler) : IHandler<ReplayCatalogProjectionCommand, ReplayCatalogProjectionResult>
+    IResetPlannerMusicTrackProjectionPort resetPort,
+    ProjectMusicTrackProjectionHandler projectHandler) : IHandler<ReplayMusicTrackProjectionBatchCommand, ReplayMusicTrackProjectionBatchResult>
 {
-    public async Task<ReplayCatalogProjectionResult> Handle(
-        ReplayCatalogProjectionCommand command,
+    public async Task<ReplayMusicTrackProjectionBatchResult> Handle(
+        ReplayMusicTrackProjectionBatchCommand command,
         CancellationToken cancellationToken = default)
     {
         var musicCatalogIds = await loadTargetsPort.LoadAsync(cancellationToken);
@@ -31,13 +32,13 @@ public sealed class ReplayCatalogProjectionHandler(
             }
 
             await projectHandler.Handle(
-                new(musicCatalogId, events),
+                new ProjectMusicTrackProjectionCommand(musicCatalogId, events),
                 cancellationToken);
 
             replayedStreams++;
             replayedEvents += events.Count;
         }
 
-        return new ReplayCatalogProjectionResult(replayedStreams, replayedEvents);
+        return new ReplayMusicTrackProjectionBatchResult(replayedStreams, replayedEvents);
     }
 }
