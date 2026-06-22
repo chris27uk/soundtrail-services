@@ -4,19 +4,19 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.ApplyLookupExecutionReport;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ApplyLookupExecutionReport.Support;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 internal sealed class ApplyLookupExecutionReportHandlerTestEnvironment
 {
     private readonly CatalogSearchDiscoveryRepositoryFake discoveryRepository;
+    private readonly CatalogSearchTrackingStoreFake trackingStore;
 
     private ApplyLookupExecutionReportHandlerTestEnvironment()
     {
         Now = new DateTimeOffset(2026, 6, 18, 12, 0, 0, TimeSpan.Zero);
         discoveryRepository = new CatalogSearchDiscoveryRepositoryFake();
-        var trackingStore = new CatalogSearchTrackingStoreFake();
+        trackingStore = new CatalogSearchTrackingStoreFake();
         trackingStore.Seed(new CatalogSearchTracking(
             CatalogSearchCriteria.Search("track", "rare unknown song"),
             MusicCatalogId.From("mc_track_1"),
@@ -30,9 +30,8 @@ internal sealed class ApplyLookupExecutionReportHandlerTestEnvironment
         SeedDiscovery(CatalogSearchCriteria.Artist(ArtistId.From("artist_1")));
 
         Handler = new ApplyLookupExecutionReportHandler(
-            new CatalogSearchDiscoveryByMusicCatalogIdTransitionApplier(
-                trackingStore,
-                discoveryRepository));
+            trackingStore,
+            discoveryRepository);
     }
 
     public ApplyLookupExecutionReportHandler Handler { get; }

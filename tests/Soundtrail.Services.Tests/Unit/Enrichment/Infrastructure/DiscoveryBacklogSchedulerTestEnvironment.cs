@@ -3,8 +3,8 @@ using Soundtrail.Domain;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ApplyLookupExecutionReport.Support;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.BacklogScheduling;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.BacklogScheduling.Support;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Prioritisation;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
@@ -55,7 +55,8 @@ internal sealed class DiscoveryBacklogSchedulerTestEnvironment
             new DiscoveryPriorityPolicy(),
             sourceBudget,
             localSearch,
-            new CatalogSearchDiscoveryByMusicCatalogIdTransitionApplier(
+            new DiscoveryBacklogLookupPlanner(),
+            new TrackedDiscoveryStartMarker(
                 catalogSearchTrackingStoreFake,
                 catalogSearchDiscoveryRepositoryFake));
         Now = DefaultNow;

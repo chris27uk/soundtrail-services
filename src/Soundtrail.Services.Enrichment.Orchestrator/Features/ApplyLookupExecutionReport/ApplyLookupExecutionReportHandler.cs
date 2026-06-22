@@ -1,35 +1,54 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Responses;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ApplyLookupExecutionReport.Support;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.ApplyLookupExecutionReport;
 
 public sealed class ApplyLookupExecutionReportHandler(
-    CatalogSearchDiscoveryByMusicCatalogIdTransitionApplier transitionApplier)
+    ICatalogSearchTrackingStore catalogSearchTrackingStore,
+    ICatalogSearchDiscoveryRepository discoveryRepository)
 {
-    public Task Handle(
+    public async Task Handle(
         LookupExecutionReportDto report,
         CancellationToken cancellationToken = default)
     {
         var outcome = Enum.Parse<LookupExecutionOutcome>(report.Outcome);
-        return outcome switch
+        if (outcome is not (LookupExecutionOutcome.Deferred or LookupExecutionOutcome.Failed))
         {
-            LookupExecutionOutcome.Deferred => transitionApplier.ApplyAsync(
-                MusicCatalogId.From(report.MusicCatalogId),
-                discovery => discovery.Defer(
+            return;
+        }
+
+        var trackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(
+            MusicCatalogId.From(report.MusicCatalogId),
+            cancellationToken);
+
+        foreach (var tracking in trackings)
+        {
+            var discovery = await CatalogSearchDiscovery.LoadAsync(
+                discoveryRepository,
+                tracking.Criteria,
+                cancellationToken);
+
+            var changed = outcome switch
+            {
+                LookupExecutionOutcome.Deferred => discovery.Defer(
                     report.RetryAfterSeconds,
                     report.RetryAt,
                     report.Reason ?? "Lookup deferred",
                     report.CreatedAt),
-                cancellationToken),
-            LookupExecutionOutcome.Failed => transitionApplier.ApplyAsync(
-                MusicCatalogId.From(report.MusicCatalogId),
-                discovery => discovery.Fail(
+                LookupExecutionOutcome.Failed => discovery.Fail(
                     report.Reason ?? "Lookup failed",
                     report.CreatedAt),
-                cancellationToken),
-            _ => Task.CompletedTask
-        };
+                _ => false
+            };
+
+            if (!changed)
+            {
+                continue;
+            }
+
+            await discovery.SaveAsync(discoveryRepository, cancellationToken);
+        }
     }
 }

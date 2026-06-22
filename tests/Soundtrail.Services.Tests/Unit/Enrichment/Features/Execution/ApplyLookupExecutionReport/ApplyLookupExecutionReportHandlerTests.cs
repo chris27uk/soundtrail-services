@@ -4,7 +4,6 @@ using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Events;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.ApplyLookupExecutionReport;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ApplyLookupExecutionReport.Support;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Execution.ApplyLookupExecutionReport;

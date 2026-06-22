@@ -11,7 +11,7 @@ namespace Soundtrail.Services.Public.Projector.Infrastructure.Raven;
 
 public static class RavenServiceCollectionExtensions
 {
-    public static IServiceCollection AddCdcRavenDocumentStore(
+    public static IServiceCollection AddPublicProjectorRavenDocumentStore(
         this IServiceCollection services,
         IConfiguration configuration)
     {

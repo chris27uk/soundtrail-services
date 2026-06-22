@@ -74,7 +74,7 @@ public static class AppHostComposition
             api = api.WaitFor(serviceBusEmulator);
         }
 
-        var cdc = builder.AddProject<Projects.Soundtrail_Services_Enrichment_Cdc>("soundtrail-services-enrichment-cdc")
+        var publicProjector = builder.AddProject<Projects.Soundtrail_Services_Public_Projector>("soundtrail-services-public-projector")
             .WithHttpEndpoint(name: "http")
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
@@ -85,10 +85,10 @@ public static class AppHostComposition
 
         if (serviceBusEmulator is not null)
         {
-            cdc = cdc.WaitFor(serviceBusEmulator);
+            publicProjector = publicProjector.WaitFor(serviceBusEmulator);
         }
 
-        var catalogProjector = builder.AddProject<Projects.Soundtrail_Services_Catalog_Projector>("soundtrail-services-catalog-projector")
+        var internalProjector = builder.AddProject<Projects.Soundtrail_Services_Internal_Projector>("soundtrail-services-internal-projector")
             .WithHttpEndpoint(name: "http")
             .WaitFor(ravenDb)
             .WithEnvironment("RavenDb__Urls__0", ravenDb.GetEndpoint("http"))

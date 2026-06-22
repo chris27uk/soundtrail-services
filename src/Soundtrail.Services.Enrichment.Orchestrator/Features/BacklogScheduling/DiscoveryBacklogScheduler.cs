@@ -1,12 +1,9 @@
-using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ApplyLookupExecutionReport.Support;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.BacklogScheduling.Support;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Idempotency;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Prioritisation;
-using Soundtrail.Services.Enrichment.Orchestrator.Shared.Scheduling;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.BacklogScheduling;
 
@@ -16,7 +13,8 @@ public sealed class DiscoveryBacklogScheduler(
     DiscoveryPriorityPolicy discoveryPriorityPolicy,
     IReserveSourceApiBudgetPort reserveSourceApiBudgetPort,
     ILocalMusicTrackSearch localMusicTrackSearch,
-    CatalogSearchDiscoveryByMusicCatalogIdTransitionApplier transitionApplier)
+    DiscoveryBacklogLookupPlanner lookupPlanner,
+    TrackedDiscoveryStartMarker trackedDiscoveryStartMarker)
 {
     private static readonly TimeSpan ActiveReservationDuration = TimeSpan.FromMinutes(15);
 
@@ -37,7 +35,8 @@ public sealed class DiscoveryBacklogScheduler(
             }
 
             var localTrack = await localMusicTrackSearch.GetByMusicCatalogIdAsync(candidate.MusicCatalogId, cancellationToken);
-            var plannedLookup = BuildCommand(candidate, plan, now, localTrack);
+            var plannedLookup = lookupPlanner.Plan(candidate.MusicCatalogId, plan.Priority!.Value, now, localTrack);
+
             if (plannedLookup is null)
             {
                 continue;
@@ -58,9 +57,10 @@ public sealed class DiscoveryBacklogScheduler(
                 continue;
             }
 
-            await transitionApplier.ApplyAsync(
+            await trackedDiscoveryStartMarker.MarkAsync(
                 plannedLookup.Command.MusicCatalogId,
-                discovery => discovery.Start(plannedLookup.Command.Priority, "Lookup started", now),
+                plannedLookup.Command.Priority,
+                now,
                 cancellationToken);
 
             commands.Add(plannedLookup.Command);
@@ -68,52 +68,4 @@ public sealed class DiscoveryBacklogScheduler(
 
         return commands;
     }
-
-    private static PlannedLookupWork? BuildCommand(
-        PotentialCatalogLookupWork candidate,
-        PriorityPlan plan,
-        DateTimeOffset now,
-        LocalMusicTrackSearchResult? localTrack)
-    {
-        if (localTrack?.IsPlayable == true)
-        {
-            return null;
-        }
-
-        var playbackLookupKey = localTrack?.GetSearchTerm();
-        if ((localTrack != null ? !string.IsNullOrWhiteSpace(localTrack.Isrc) : null) == true && playbackLookupKey is not null)
-        {
-            return new PlannedLookupWork(
-                new ResolvePlaybackReferencesCommand(
-                    CommandId.For($"ResolvePlaybackReferences:{candidate.MusicCatalogId.Value}"),
-                    candidate.MusicCatalogId,
-                    plan.Priority!.Value,
-                    now,
-                    CorrelationId.New(),
-                    playbackLookupKey,
-                    ToHierarchy(localTrack)),
-                ProviderName.Odesli);
-        }
-
-        if (playbackLookupKey is null)
-        {
-            return null;
-        }
-
-        return new PlannedLookupWork(
-            new LookupMusicMetadataCommand(
-                CommandId.For($"LookupCanonicalMusicMetadata:{candidate.MusicCatalogId.Value}"),
-                candidate.MusicCatalogId,
-                plan.Priority!.Value,
-                now,
-                CorrelationId.New(),
-                playbackLookupKey,
-                ToHierarchy(localTrack)),
-            ProviderName.MusicBrainz);
-    }
-
-    private static CatalogTrackHierarchy? ToHierarchy(LocalMusicTrackSearchResult? localTrack) =>
-        localTrack?.ArtistId is null && localTrack?.AlbumId is null
-            ? null
-            : new CatalogTrackHierarchy(localTrack?.ArtistId, localTrack?.AlbumId);
 }

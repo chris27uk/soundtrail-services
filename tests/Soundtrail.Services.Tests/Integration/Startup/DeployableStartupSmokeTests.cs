@@ -3,7 +3,6 @@ using Microsoft.Extensions.Hosting;
 using Soundtrail.Services.Api.Features.SearchCatalog.Adapters;
 using Soundtrail.Services.Api.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
-using Soundtrail.Services.Public.Projector;
 using Soundtrail.Services.Public.Projector.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Public.Projector.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.CompositionRoot;
@@ -102,7 +101,7 @@ public sealed class DeployableStartupSmokeTests
     }
 
     [Fact]
-    public async Task Given_cdc_host_composition_when_starting_the_real_app_then_alive_endpoint_is_available()
+    public async Task Given_public_projector_host_composition_when_starting_the_real_app_then_alive_endpoint_is_available()
     {
         await using var host = await DeployableStartupSmokeTestHost.StartAsync(
             "src/Soundtrail.Services.Public.Projector",
@@ -111,13 +110,13 @@ public sealed class DeployableStartupSmokeTests
                 builder.AddServiceDefaults();
                 builder.Host.UseWolverine(opts =>
                 {
-                    opts.UseCdcServiceBusMessaging(builder.Configuration);
+                    opts.UsePublicProjectorServiceBusMessaging(builder.Configuration);
                     if (builder.Environment.IsDevelopment())
                     {
                         opts.StubAllExternalTransports();
                     }
                 });
-                builder.Services.AddCdcAppServices(builder.Configuration);
+                builder.Services.AddPublicProjectorAppServices(builder.Configuration);
             },
             app => app.MapDefaultEndpoints(),
             useEmbeddedRaven: true);

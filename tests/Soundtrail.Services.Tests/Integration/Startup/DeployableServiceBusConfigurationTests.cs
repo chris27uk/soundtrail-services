@@ -1,8 +1,8 @@
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using ApiServiceBusOptions = Soundtrail.Services.Api.Infrastructure.Messaging.ServiceBusOptions;
-using CdcServiceBusOptions = Soundtrail.Services.Public.Projector.Infrastructure.Messaging.ServiceBusOptions;
 using OrchestratorServiceBusOptions = Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Messaging.ServiceBusOptions;
+using PublicProjectorServiceBusOptions = Soundtrail.Services.Public.Projector.Infrastructure.Messaging.ServiceBusOptions;
 using WorkerServiceBusOptions = Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging.ServiceBusOptions;
 
 namespace Soundtrail.Services.Tests.Integration.Startup;
@@ -43,9 +43,9 @@ public sealed class DeployableServiceBusConfigurationTests
     }
 
     [Fact]
-    public void Given_cdc_appsettings_when_binding_service_bus_options_then_music_track_events_queue_name_is_present()
+    public void Given_public_projector_appsettings_when_binding_service_bus_options_then_music_track_events_queue_name_is_present()
     {
-        var options = BindOptions<CdcServiceBusOptions>("src/Soundtrail.Services.Public.Projector/appsettings.json");
+        var options = BindOptions<PublicProjectorServiceBusOptions>("src/Soundtrail.Services.Public.Projector/appsettings.json");
 
         options.MusicTrackEventsQueueName.Should().Be("music-track-events");
     }
