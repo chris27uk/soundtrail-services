@@ -1,4 +1,4 @@
-using Soundtrail.Services.Enrichment.Cdc.Features.PublishMusicTrackEvents.Publishing;
+using Soundtrail.Services.Public.Projector.Features.PublishMusicTrackEvents.Publishing;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 

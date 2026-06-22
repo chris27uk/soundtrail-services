@@ -13,7 +13,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "100 - Apps", "100 - Apps", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Soundtrail.Services.Enrichment.Worker", "src\Soundtrail.Services.Enrichment.Worker\Soundtrail.Services.Enrichment.Worker.csproj", "{98EA70CB-9E7A-4692-AFA1-D7B7205CD672}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Soundtrail.Services.Enrichment.Cdc", "src\Soundtrail.Services.Enrichment.Cdc\Soundtrail.Services.Enrichment.Cdc.csproj", "{38113B85-5CB4-46FA-B0FA-FA3935E474AA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Soundtrail.Services.Public.Projector", "src\Soundtrail.Services.Public.Projector\Soundtrail.Services.Public.Projector.csproj", "{38113B85-5CB4-46FA-B0FA-FA3935E474AA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Soundtrail.Domain", "src\Soundtrail.Domain\Soundtrail.Domain.csproj", "{2CD903C1-275A-4FDD-ABFD-E7512C1F8ED7}"
 EndProject
@@ -23,7 +23,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Soundtrail.Services.Service
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "300 - Deployment", "300 - Deployment", "{EFDBC273-3938-4AD3-85A1-37A5C2FA8E56}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Soundtrail.Services.Catalog.Projector", "src\Soundtrail.Services.Catalog.Projector\Soundtrail.Services.Catalog.Projector.csproj", "{824B53B0-0635-4146-9EE0-C2794E0470AC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Soundtrail.Services.Internal.Projector", "src\Soundtrail.Services.Internal.Projector\Soundtrail.Services.Internal.Projector.csproj", "{824B53B0-0635-4146-9EE0-C2794E0470AC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Soundtrail.Tools.MusicBrainzImport", "src\Soundtrail.Tools.MusicBrainzImport\Soundtrail.Tools.MusicBrainzImport.csproj", "{4FE7620C-4D97-4BA2-8B85-D10724B60EB2}"
 EndProject

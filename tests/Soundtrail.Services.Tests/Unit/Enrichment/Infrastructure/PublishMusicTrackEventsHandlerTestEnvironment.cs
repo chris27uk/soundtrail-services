@@ -1,7 +1,7 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Events;
-using Soundtrail.Services.Enrichment.Cdc.Features.PublishMusicTrackEvents;
+using Soundtrail.Services.Public.Projector.Features.PublishMusicTrackEvents;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 

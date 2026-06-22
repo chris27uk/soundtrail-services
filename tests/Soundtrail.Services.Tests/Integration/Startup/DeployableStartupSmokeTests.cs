@@ -3,9 +3,9 @@ using Microsoft.Extensions.Hosting;
 using Soundtrail.Services.Api.Features.SearchCatalog.Adapters;
 using Soundtrail.Services.Api.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
-using Soundtrail.Services.Enrichment.Cdc;
-using Soundtrail.Services.Enrichment.Cdc.Infrastructure.CompositionRoot;
-using Soundtrail.Services.Enrichment.Cdc.Infrastructure.Messaging;
+using Soundtrail.Services.Public.Projector;
+using Soundtrail.Services.Public.Projector.Infrastructure.CompositionRoot;
+using Soundtrail.Services.Public.Projector.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.CompositionRoot;
@@ -105,7 +105,7 @@ public sealed class DeployableStartupSmokeTests
     public async Task Given_cdc_host_composition_when_starting_the_real_app_then_alive_endpoint_is_available()
     {
         await using var host = await DeployableStartupSmokeTestHost.StartAsync(
-            "src/Soundtrail.Services.Enrichment.Cdc",
+            "src/Soundtrail.Services.Public.Projector",
             builder =>
             {
                 builder.AddServiceDefaults();
