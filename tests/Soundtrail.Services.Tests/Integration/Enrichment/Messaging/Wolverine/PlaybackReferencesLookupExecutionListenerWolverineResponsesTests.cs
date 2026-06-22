@@ -18,11 +18,12 @@ public sealed class PlaybackReferencesLookupExecutionListenerWolverineResponsesT
         env.Seed(
             MusicSearchTerm.ByIsrc("isrc-1"),
             new ExternalReference(ProviderName.AppleMusic, new Uri("https://music.apple.com/us/song/apple-1?i=apple-1"), "apple-1"));
-        var listener = new PlaybackReferencesLookupExecutionListener(env.Handler);
+        var bus = new WolverineMessageBusFake();
+        var listener = new PlaybackReferencesLookupExecutionListener(env.Handler, bus);
 
-        var messages = await listener.Handle(Command(), null!);
+        await listener.Handle(Command(), null!);
 
-        messages.Should().ContainSingle().Which.Should().BeOfType<EnrichmentResponseDto>();
+        bus.SentMessages.Should().ContainSingle().Which.Should().BeOfType<EnrichmentResponseDto>();
     }
 
     [Fact]
@@ -33,9 +34,11 @@ public sealed class PlaybackReferencesLookupExecutionListenerWolverineResponsesT
             ProviderName.Odesli,
             new DateTimeOffset(2026, 6, 18, 12, 1, 0, TimeSpan.Zero),
             "Odesli budget temporarily unavailable");
-        var listener = new PlaybackReferencesLookupExecutionListener(env.Handler);
+        var bus = new WolverineMessageBusFake();
+        var listener = new PlaybackReferencesLookupExecutionListener(env.Handler, bus);
 
-        var message = (LookupExecutionReportDto)(await listener.Handle(Command(), null!)).Single();
+        await listener.Handle(Command(), null!);
+        var message = bus.SentMessages.Single().Should().BeOfType<LookupExecutionReportDto>().Subject;
 
         message.Outcome.Should().Be("Deferred");
         message.SourceProvider.Should().Be(ProviderName.Odesli.Value);
@@ -47,9 +50,11 @@ public sealed class PlaybackReferencesLookupExecutionListenerWolverineResponsesT
     {
         var env = PlaybackReferencesLookupExecutionHandlerTestEnvironment.Create();
         env.Throw(new InvalidOperationException("boom"));
-        var listener = new PlaybackReferencesLookupExecutionListener(env.Handler);
+        var bus = new WolverineMessageBusFake();
+        var listener = new PlaybackReferencesLookupExecutionListener(env.Handler, bus);
 
-        var message = (LookupExecutionReportDto)(await listener.Handle(Command(), null!)).Single();
+        await listener.Handle(Command(), null!);
+        var message = bus.SentMessages.Single().Should().BeOfType<LookupExecutionReportDto>().Subject;
 
         message.Outcome.Should().Be("Failed");
         message.SourceProvider.Should().Be(ProviderName.Odesli.Value);

@@ -1,6 +1,6 @@
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Events;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Support;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.EnrichmentResponse.Support;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 

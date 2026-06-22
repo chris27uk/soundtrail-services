@@ -1,7 +1,7 @@
 using Soundtrail.Domain;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Responses;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.ProjectMusicTrackProjection;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayPlannerMusicTrackProjection;
@@ -10,16 +10,13 @@ public sealed class ReplayPlannerMusicTrackProjectionBatchHandler(
     ILoadCatalogProjectionReplayTargetsPort loadTargetsPort,
     ILoadMusicTrackEventsForCatalogReplayPort loadEventsPort,
     IResetPlannerMusicTrackProjectionPort resetPort,
-    ProjectMusicTrackProjectionHandler projectHandler) : IHandler<ReplayMusicTrackProjectionBatchCommand, ReplayMusicTrackProjectionBatchResult>
+    ProjectMusicTrackProjectionHandler projectHandler) : IHandler<ReplayMusicTrackProjectionBatchCommand>
 {
-    public async Task<ReplayMusicTrackProjectionBatchResult> Handle(
+    public async Task Handle(
         ReplayMusicTrackProjectionBatchCommand command,
         CancellationToken cancellationToken = default)
     {
         var musicCatalogIds = await loadTargetsPort.LoadAsync(cancellationToken);
-
-        var replayedStreams = 0;
-        var replayedEvents = 0;
 
         foreach (var musicCatalogId in musicCatalogIds)
         {
@@ -34,11 +31,6 @@ public sealed class ReplayPlannerMusicTrackProjectionBatchHandler(
             await projectHandler.Handle(
                 new ProjectMusicTrackProjectionCommand(musicCatalogId, events),
                 cancellationToken);
-
-            replayedStreams++;
-            replayedEvents += events.Count;
         }
-
-        return new ReplayMusicTrackProjectionBatchResult(replayedStreams, replayedEvents);
     }
 }

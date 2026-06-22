@@ -3,7 +3,7 @@ using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.EnrichmentResponse;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 

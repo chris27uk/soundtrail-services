@@ -3,9 +3,9 @@ using Soundtrail.Domain;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ApplyLookupExecutionReport.Support;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.BacklogScheduling;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.ApplyLookupExecutionReport.Support;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.BacklogScheduling;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Prioritisation;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -19,7 +19,7 @@ internal sealed class DiscoveryBacklogSchedulerTestEnvironment
     private readonly CatalogSearchTrackingStoreFake catalogSearchTrackingStoreFake;
     private readonly CatalogSearchDiscoveryRepositoryFake catalogSearchDiscoveryRepositoryFake;
 
-    private DiscoveryBacklogSchedulerTestEnvironment(params Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence.PotentialCatalogLookupWork[] candidates)
+    private DiscoveryBacklogSchedulerTestEnvironment(params Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence.PotentialCatalogLookupWork[] candidates)
     {
         this.store = new PotentialCatalogLookupWorkStoreFake();
         foreach (var candidate in candidates)

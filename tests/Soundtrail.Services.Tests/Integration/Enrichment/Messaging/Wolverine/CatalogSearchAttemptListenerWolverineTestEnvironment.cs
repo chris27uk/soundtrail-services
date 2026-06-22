@@ -2,10 +2,10 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Events;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search.Resolution;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Prioritisation;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search.Resolution;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Messaging.Wolverine;
@@ -16,12 +16,14 @@ internal sealed class CatalogSearchAttemptListenerWolverineTestEnvironment
     private readonly LocalMusicTrackSearchFake localSearchFake;
     private readonly CatalogSearchDiscoveryRepositoryFake discoveryRepository;
     private readonly SourceApiBudgetPortFake sourceBudgetFake;
+    private readonly WolverineMessageBusFake messageBusFake;
 
     private CatalogSearchAttemptListenerWolverineTestEnvironment(FakeMusicCatalogCandidateSearch search)
     {
         localSearchFake = new LocalMusicTrackSearchFake();
         discoveryRepository = new CatalogSearchDiscoveryRepositoryFake();
         sourceBudgetFake = new SourceApiBudgetPortFake();
+        messageBusFake = new WolverineMessageBusFake();
         localSearchFake.Seed(new LocalMusicTrackSearchResult(
             MusicCatalogId.From("mc_track_1"),
             "Song A",
@@ -41,7 +43,8 @@ internal sealed class CatalogSearchAttemptListenerWolverineTestEnvironment
                 sourceBudgetFake,
                 new MusicCatalogMatchResolver(),
                 new ActiveLookupWorkStoreFake(),
-                localSearchFake));
+                localSearchFake),
+            messageBusFake);
     }
 
     public CatalogSearchAttemptListener Listener { get; }
@@ -49,6 +52,8 @@ internal sealed class CatalogSearchAttemptListenerWolverineTestEnvironment
     public LocalMusicTrackSearchFake LocalSearch => localSearchFake;
 
     public CatalogSearchDiscoveryRepositoryFake DiscoveryRepository => discoveryRepository;
+
+    public IReadOnlyList<object> SentMessages => messageBusFake.SentMessages;
 
     public static CatalogSearchAttemptListenerWolverineTestEnvironment WithASchedulableRequest()
     {
@@ -71,12 +76,21 @@ internal sealed class CatalogSearchAttemptListenerWolverineTestEnvironment
         return new CatalogSearchAttemptListenerWolverineTestEnvironment(search);
     }
 
-    public Task<object[]> HandleSchedulableRequest() =>
-        Listener.Handle(new CatalogSearchAttemptDto("search:track:rare unknown song", "rare unknown song", 1, 10, DefaultOccurredAt, "corr-1"), null!);
+    public async Task<IReadOnlyList<object>> HandleSchedulableRequest()
+    {
+        await Listener.Handle(new CatalogSearchAttemptDto("search:track:rare unknown song", "rare unknown song", 1, 10, DefaultOccurredAt, "corr-1"), null!);
+        return SentMessages;
+    }
 
-    public Task<object[]> HandleUnschedulableRequest() =>
-        Listener.Handle(new CatalogSearchAttemptDto("search:track:rare unknown song", "rare unknown song", 0, 100, DefaultOccurredAt, "corr-1"), null!);
+    public async Task<IReadOnlyList<object>> HandleUnschedulableRequest()
+    {
+        await Listener.Handle(new CatalogSearchAttemptDto("search:track:rare unknown song", "rare unknown song", 0, 100, DefaultOccurredAt, "corr-1"), null!);
+        return SentMessages;
+    }
 
-    public Task<object[]> HandleDeferredRequest() =>
-        Listener.Handle(new CatalogSearchAttemptDto("search:track:rare unknown song", "rare unknown song", 0, 100, DefaultOccurredAt, "corr-1"), null!);
+    public async Task<IReadOnlyList<object>> HandleDeferredRequest()
+    {
+        await Listener.Handle(new CatalogSearchAttemptDto("search:track:rare unknown song", "rare unknown song", 0, 100, DefaultOccurredAt, "corr-1"), null!);
+        return SentMessages;
+    }
 }

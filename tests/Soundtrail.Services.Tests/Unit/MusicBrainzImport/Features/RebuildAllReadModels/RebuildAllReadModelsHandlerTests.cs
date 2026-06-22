@@ -7,8 +7,8 @@ using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
 using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog;
 using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog.ProjectionModel;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.ProjectDiscoveryLifecycle;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.ProjectMusicTrackProjection;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 using Soundtrail.Tools.MusicBrainzImport.Features.RebuildAllReadModels;
 using Soundtrail.Tools.MusicBrainzImport.Features.RebuildAllReadModels.Adapters;
@@ -94,17 +94,7 @@ public sealed class RebuildAllReadModelsHandlerTests
             discoveryReplayHandler,
             clearPlannerOperationalStatePort);
 
-        var result = await handler.Handle(new RebuildAllReadModelsCommand(), CancellationToken.None);
-
-        result.PlannerMusicTrackReplayedStreamCount.Should().Be(1);
-        result.PlannerMusicTrackReplayedEventCount.Should().Be(1);
-        result.CatalogReplayedStreamCount.Should().Be(1);
-        result.CatalogReplayedEventCount.Should().Be(1);
-        result.DiscoveryLifecycleReplayedCriteriaCount.Should().Be(1);
-        result.DiscoveryLifecycleReplayedEventCount.Should().Be(1);
-        result.ClearedPotentialCatalogLookupWorkCount.Should().Be(3);
-        result.ClearedCatalogSearchTrackingCount.Should().Be(4);
-        result.ClearedActiveLookupWorkCount.Should().Be(5);
+        await handler.Handle(new RebuildAllReadModelsCommand(), CancellationToken.None);
 
         plannerResetPort.ResetCatalogIds.Should().ContainSingle().Which.Should().Be(musicCatalogId);
         catalogProjectionStore.ResetCatalogIds.Should().ContainSingle().Which.Should().Be(musicCatalogId);
@@ -248,12 +238,18 @@ public sealed class RebuildAllReadModelsHandlerTests
         }
     }
 
-    private sealed class FakeClearPlannerOperationalStatePort(
-        int potentialCatalogLookupWorkCount,
-        int catalogSearchTrackingCount,
-        int activeLookupWorkCount) : IClearPlannerOperationalStatePort
+        private sealed class FakeClearPlannerOperationalStatePort(
+            int potentialCatalogLookupWorkCount,
+            int catalogSearchTrackingCount,
+            int activeLookupWorkCount) : IClearPlannerOperationalStatePort
     {
         public bool WasCalled { get; private set; }
+
+        public int PotentialCatalogLookupWorkCount => potentialCatalogLookupWorkCount;
+
+        public int CatalogSearchTrackingCount => catalogSearchTrackingCount;
+
+        public int ActiveLookupWorkCount => activeLookupWorkCount;
 
         public Task<ClearPlannerOperationalStateResult> ClearAsync(CancellationToken cancellationToken)
         {

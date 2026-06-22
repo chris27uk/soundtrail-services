@@ -3,7 +3,7 @@ using Soundtrail.Domain.CatalogBrowsing;
 
 namespace Soundtrail.Services.Api.Features.GetTrack;
 
-public sealed class GetTrackHandler(ICatalogReadPort catalogReadPort) : IHandler<GetTrackCommand, TrackDetailsResponse?>
+public sealed class GetTrackHandler(ICatalogReadPort catalogReadPort) : IApiHandler<GetTrackCommand, TrackDetailsResponse?>
 {
     public Task<TrackDetailsResponse?> Handle(GetTrackCommand request, CancellationToken cancellationToken = default) =>
         catalogReadPort.GetTrackAsync(request.ArtistId, request.AlbumId, request.TrackId, cancellationToken);

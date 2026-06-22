@@ -1,7 +1,7 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search.Resolution;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search.Resolution;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling;
 

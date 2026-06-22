@@ -4,7 +4,7 @@ using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Services.Tests.Integration.Api.Features.Search;
 
-public sealed class ApiFakeSearchCatalogHandler : IHandler<SearchCatalogCommand, SearchCatalogResponse>
+public sealed class ApiFakeSearchCatalogHandler : IApiHandler<SearchCatalogCommand, SearchCatalogResponse>
 {
     private readonly List<SearchCatalogCommand> requests = [];
     private SearchCatalogResponse response = new(

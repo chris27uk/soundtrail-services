@@ -7,15 +7,18 @@ using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
+using Wolverine;
 using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution.Adapters;
 
-public sealed class PlaybackReferencesLookupExecutionListener(ExecutePlaybackReferencesLookupHandler handler)
+public sealed class PlaybackReferencesLookupExecutionListener(
+    ExecutePlaybackReferencesLookupHandler handler,
+    IMessageBus messageBus)
 {
     [WolverineHandler]
     [Transactional]
-    public async Task<object[]> Handle(
+    public async Task Handle(
         ResolvePlaybackReferencesCommandDto dto,
         IAsyncDocumentSession _,
         CancellationToken cancellationToken = default)
@@ -66,7 +69,10 @@ public sealed class PlaybackReferencesLookupExecutionListener(ExecutePlaybackRef
             messages.Add(result.ToReport(command, ProviderName.Odesli.Value));
         }
 
-        return messages.ToArray();
+        foreach (var message in messages)
+        {
+            await messageBus.SendAsync(message);
+        }
     }
 
     private static CatalogTrackHierarchy? ToHierarchy(ResolvePlaybackReferencesCommandDto dto) =>

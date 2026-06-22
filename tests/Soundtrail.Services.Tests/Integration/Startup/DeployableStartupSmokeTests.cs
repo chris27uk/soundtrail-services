@@ -6,10 +6,8 @@ using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Cdc;
 using Soundtrail.Services.Enrichment.Cdc.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Enrichment.Cdc.Infrastructure.Messaging;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.CompositionRoot;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Infrastructure.Messaging;
-using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Infrastructure.CompositionRoot;
-using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Infrastructure.Messaging;
+using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.CompositionRoot;
+using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
 using Soundtrail.Services.ServiceDefaults;
@@ -52,22 +50,22 @@ public sealed class DeployableStartupSmokeTests
     }
 
     [Fact]
-    public async Task Given_discovery_planner_host_composition_when_starting_the_real_app_then_alive_endpoint_is_available()
+    public async Task Given_orchestrator_host_composition_when_starting_the_real_app_then_alive_endpoint_is_available()
     {
         await using var host = await DeployableStartupSmokeTestHost.StartAsync(
-            "src/Soundtrail.Services.Enrichment.DiscoveryPlanner",
+            "src/Soundtrail.Services.Enrichment.Orchestrator",
             builder =>
             {
                 builder.AddServiceDefaults();
                 builder.Host.UseWolverine(opts =>
                 {
-                    opts.UseDiscoveryPlannerServiceBusMessaging(builder.Configuration);
+                    opts.UseOrchestratorServiceBusMessaging(builder.Configuration);
                     if (builder.Environment.IsDevelopment())
                     {
                         opts.StubAllExternalTransports();
                     }
                 });
-                builder.Services.AddDiscoveryPlannerAppServices(builder.Configuration);
+                builder.Services.AddOrchestratorAppServices(builder.Configuration);
             },
             app => app.MapDefaultEndpoints(),
             useEmbeddedRaven: true);
@@ -123,32 +121,6 @@ public sealed class DeployableStartupSmokeTests
             },
             app => app.MapDefaultEndpoints(),
             useEmbeddedRaven: true);
-
-        using var response = await host.Client.GetAsync("/alive");
-
-        response.IsSuccessStatusCode.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task Given_music_track_lookup_coordinator_host_composition_when_starting_the_real_app_then_alive_endpoint_is_available()
-    {
-        await using var host = await DeployableStartupSmokeTestHost.StartAsync(
-            "src/Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator",
-            builder =>
-            {
-                builder.AddServiceDefaults();
-                builder.Host.UseWolverine(opts =>
-                {
-                    opts.UseMusicTrackLookupCoordinatorServiceBusMessaging(builder.Configuration);
-                    if (builder.Environment.IsDevelopment())
-                    {
-                        opts.StubAllExternalTransports();
-                    }
-                });
-                builder.Services.AddMusicTrackLookupCoordinatorAppServices(builder.Configuration);
-            },
-            app => app.MapDefaultEndpoints(),
-            useEmbeddedRaven: false);
 
         using var response = await host.Client.GetAsync("/alive");
 

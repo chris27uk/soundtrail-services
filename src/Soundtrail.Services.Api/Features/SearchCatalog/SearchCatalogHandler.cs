@@ -8,7 +8,7 @@ namespace Soundtrail.Services.Api.Features.SearchCatalog;
 
 public sealed class SearchCatalogHandler(
     ICatalogSearchPort catalogSearch,
-    CatalogSearchAttemptRecorder catalogSearchAttemptRecorder) : IHandler<SearchCatalogCommand, SearchCatalogResponse>
+    CatalogSearchAttemptRecorder catalogSearchAttemptRecorder) : IApiHandler<SearchCatalogCommand, SearchCatalogResponse>
 {
     public async Task<SearchCatalogResponse> Handle(
         SearchCatalogCommand command,

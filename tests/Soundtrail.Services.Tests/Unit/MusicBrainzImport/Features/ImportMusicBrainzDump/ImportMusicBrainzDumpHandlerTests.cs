@@ -29,13 +29,9 @@ public sealed class ImportMusicBrainzDumpHandlerTests
                 new DateOnly(2004, 6, 7))
         ]);
 
-        var result = await env.Handler.Handle(
+        await env.Handler.Handle(
             new ImportMusicBrainzDumpCommand([], [], Clock),
             CancellationToken.None);
-
-        result.ProcessedRecordCount.Should().Be(1);
-        result.ImportedRecordCount.Should().Be(1);
-        result.SkippedRecordCount.Should().Be(0);
 
         var stream = await env.StreamStore.LoadEventsAsync(MusicCatalogId.From("mc_track_mbrecording1"), CancellationToken.None);
         stream.Events.Should().ContainItemsAssignableTo<TrackDiscovered>();
@@ -62,12 +58,8 @@ public sealed class ImportMusicBrainzDumpHandlerTests
         var env = ImportMusicBrainzDumpHandlerTestEnvironment.Create([record]);
         var command = new ImportMusicBrainzDumpCommand([], [], Clock);
 
-        var first = await env.Handler.Handle(command, CancellationToken.None);
-        var second = await env.Handler.Handle(command, CancellationToken.None);
-
-        first.ImportedRecordCount.Should().Be(1);
-        second.ImportedRecordCount.Should().Be(0);
-        second.SkippedRecordCount.Should().Be(1);
+        await env.Handler.Handle(command, CancellationToken.None);
+        await env.Handler.Handle(command, CancellationToken.None);
 
         var stream = await env.StreamStore.LoadEventsAsync(MusicCatalogId.From("mc_track_mbrecording1"), CancellationToken.None);
         stream.Events.Should().ContainSingle(x => x is TrackDiscovered);

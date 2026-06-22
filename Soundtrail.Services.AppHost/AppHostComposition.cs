@@ -94,7 +94,7 @@ public static class AppHostComposition
             .WithEnvironment("RavenDb__Urls__0", ravenDb.GetEndpoint("http"))
             .WithEnvironment("RavenDb__Database", "soundtrail");
 
-        var discoveryPlanner = builder.AddProject<Projects.Soundtrail_Services_Enrichment_DiscoveryPlanner>("soundtrail-services-enrichment-discoveryplanner")
+        var orchestrator = builder.AddProject<Projects.Soundtrail_Services_Enrichment_Orchestrator>("soundtrail-services-enrichment-orchestrator")
             .WithHttpEndpoint(name: "http")
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
@@ -103,24 +103,13 @@ public static class AppHostComposition
             .WithEnvironment("ServiceBus__MusicBrainzLookupQueueName", "lookup-musicbrainz")
             .WithEnvironment("ServiceBus__PlaybackReferencesLookupQueueName", "lookup-playback-references")
             .WithEnvironment("ServiceBus__EnrichmentResponsesQueueName", "enrichment-responses")
+            .WithEnvironment("ServiceBus__MusicTrackEventsQueueName", "music-track-events")
             .WithEnvironment("RavenDb__Urls__0", ravenDb.GetEndpoint("http"))
             .WithEnvironment("RavenDb__Database", "soundtrail");
 
         if (serviceBusEmulator is not null)
         {
-            discoveryPlanner = discoveryPlanner.WaitFor(serviceBusEmulator);
-        }
-
-        var musicTrackLookupCoordinator = builder.AddProject<Projects.Soundtrail_Services_Enrichment_MusicTrackLookupCoordinator>("soundtrail-services-enrichment-musictracklookupcoordinator")
-            .WithHttpEndpoint(name: "http")
-            .WithReference(serviceBus)
-            .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
-            .WithEnvironment("ServiceBus__MusicTrackEventsQueueName", "music-track-events")
-            .WithEnvironment("ServiceBus__PlaybackReferencesLookupQueueName", "lookup-playback-references");
-
-        if (serviceBusEmulator is not null)
-        {
-            musicTrackLookupCoordinator = musicTrackLookupCoordinator.WaitFor(serviceBusEmulator);
+            orchestrator = orchestrator.WaitFor(serviceBusEmulator);
         }
 
         var worker = builder.AddProject<Projects.Soundtrail_Services_Enrichment_Worker>("soundtrail-services-enrichment-worker")

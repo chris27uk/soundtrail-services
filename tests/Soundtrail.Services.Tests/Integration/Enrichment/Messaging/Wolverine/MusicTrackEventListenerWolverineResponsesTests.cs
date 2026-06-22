@@ -3,17 +3,19 @@ using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Contracts.IntegrationMessaging.Events;
-using Soundtrail.Services.Enrichment.MusicTrackLookupCoordinator.Infrastructure.Messaging;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.SchedulePlaybackReferencesLookup;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.SchedulePlaybackReferencesLookup.Adapters;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Messaging.Wolverine;
 
 public sealed class MusicTrackEventListenerWolverineResponsesTests
 {
     [Fact]
-    public void Given_A_PlaybackReferencesResolutionRequired_Message_When_Handled_Then_A_PlaybackReferences_Command_Dto_Is_Returned()
+    public async Task Given_A_PlaybackReferencesResolutionRequired_Message_When_Handled_Then_A_PlaybackReferences_Command_Dto_Is_Sent()
     {
-        var listener = new MusicTrackEventListener();
-        var message = listener.Handle(
+        var bus = new WolverineMessageBusFake();
+        var listener = new MusicTrackEventListener(new SchedulePlaybackReferencesLookupHandler(bus));
+        await listener.Handle(
             new PlaybackReferencesResolutionRequiredMessageDto(
                 "mc_track_1",
                 LookupPriorityBand.High,
@@ -25,8 +27,7 @@ public sealed class MusicTrackEventListenerWolverineResponsesTests
                 "album_rare_album"),
             null!);
 
-        message.Should().BeOfType<ResolvePlaybackReferencesCommandDto>();
-        var dto = (ResolvePlaybackReferencesCommandDto)message;
+        var dto = bus.SentMessages.Single().Should().BeOfType<ResolvePlaybackReferencesCommandDto>().Subject;
         dto.CommandId.Should().Be(CommandId.For("ResolvePlaybackReferences:mc_track_1").Value);
         dto.MusicCatalogId.Should().Be("mc_track_1");
         dto.SearchTerm.Isrc.Should().Be("isrc-1");

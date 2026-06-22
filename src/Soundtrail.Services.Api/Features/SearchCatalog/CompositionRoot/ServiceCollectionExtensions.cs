@@ -24,7 +24,7 @@ public static class ServiceCollectionExtensions
         options.ConfigureCatalogSearchDependencies?.Invoke(services);
         services.TryAddScoped<ICatalogSearchDiscoveryRepository, RavenCatalogSearchDiscoveryRepository>();
         services.TryAddScoped<CatalogSearchAttemptRecorder>();
-        services.TryAddScoped<IHandler<SearchCatalogCommand, SearchCatalogResponse>, SearchCatalogHandler>();
+        services.TryAddScoped<IApiHandler<SearchCatalogCommand, SearchCatalogResponse>, SearchCatalogHandler>();
 
         return services;
     }

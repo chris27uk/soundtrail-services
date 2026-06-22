@@ -5,12 +5,12 @@ using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Documents;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ReplayMusicTrackProjection;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ReplayMusicTrackProjection.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.EnrichmentResponse.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.ProjectMusicTrackProjection;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.ProjectMusicTrackProjection.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.Adapters.Documents;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.ReplayMusicTrackProjection;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.ReplayMusicTrackProjection.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ProjectionReplay;
@@ -134,11 +134,9 @@ public sealed class MusicTrackProjectionReplayResponsesTests
                     new RavenLoadMusicTrackProjection(replaySession, new RavenMusicTrackProjectionMapper()),
                     new RavenSaveMusicTrackProjection(replaySession, new RavenMusicTrackProjectionMapper())));
 
-            var result = await replayHandler.Handle(
+            await replayHandler.Handle(
                 new ReplayMusicTrackProjectionCommand(musicCatalogId),
                 CancellationToken.None);
-
-            result.ReplayedEventCount.Should().Be(2);
         }
 
         using var verificationSession = raven.Store.OpenAsyncSession();

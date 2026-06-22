@@ -1,11 +1,11 @@
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Prioritisation;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search.Resolution;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Prioritisation;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search.Resolution;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
 {

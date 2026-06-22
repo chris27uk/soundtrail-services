@@ -11,33 +11,22 @@ public sealed class RebuildAllReadModelsHandler(
     ReplayPlannerMusicTrackProjectionBatchHandler replayPlannerMusicTrackProjectionBatchHandler,
     ReplayCatalogProjectionHandler replayCatalogProjectionHandler,
     ReplayDiscoveryLifecycleProjectionBatchHandler replayDiscoveryLifecycleProjectionBatchHandler,
-    IClearPlannerOperationalStatePort clearPlannerOperationalStatePort) : IHandler<RebuildAllReadModelsCommand, RebuildAllReadModelsResult>
+    IClearPlannerOperationalStatePort clearPlannerOperationalStatePort) : IHandler<RebuildAllReadModelsCommand>
 {
-    public async Task<RebuildAllReadModelsResult> Handle(
+    public async Task Handle(
         RebuildAllReadModelsCommand command,
         CancellationToken cancellationToken = default)
     {
-        var cleared = await clearPlannerOperationalStatePort.ClearAsync(cancellationToken);
+        await clearPlannerOperationalStatePort.ClearAsync(cancellationToken);
 
-        var plannerTrack = await replayPlannerMusicTrackProjectionBatchHandler.Handle(
+        await replayPlannerMusicTrackProjectionBatchHandler.Handle(
             new ReplayMusicTrackProjectionBatchCommand(),
             cancellationToken);
-        var catalog = await replayCatalogProjectionHandler.Handle(
+        await replayCatalogProjectionHandler.Handle(
             new ReplayCatalogProjectionCommand(),
             cancellationToken);
-        var discovery = await replayDiscoveryLifecycleProjectionBatchHandler.Handle(
+        await replayDiscoveryLifecycleProjectionBatchHandler.Handle(
             new ReplayDiscoveryLifecycleProjectionBatchCommand(),
             cancellationToken);
-
-        return new RebuildAllReadModelsResult(
-            plannerTrack.ReplayedStreamCount,
-            plannerTrack.ReplayedEventCount,
-            catalog.ReplayedStreamCount,
-            catalog.ReplayedEventCount,
-            discovery.ReplayedCriteriaCount,
-            discovery.ReplayedEventCount,
-            cleared.ClearedPotentialCatalogLookupWorkCount,
-            cleared.ClearedCatalogSearchTrackingCount,
-            cleared.ClearedActiveLookupWorkCount);
     }
 }

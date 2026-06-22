@@ -16,12 +16,9 @@ public sealed class ReplayCatalogProjectionResponsesTests
         await using var env = await ReplayCatalogProjectionTestEnvironment.CreateAsync(mode);
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
 
-        var result = await env.Handler.Handle(
+        await env.Handler.Handle(
             new ReplayCatalogProjectionCommand(),
             CancellationToken.None);
-
-        result.ReplayedStreamCount.Should().Be(1);
-        result.ReplayedEventCount.Should().Be(3);
 
         var track = await env.LoadTrackAsync(musicCatalogId);
         track.Should().NotBeNull();

@@ -1,0 +1,17 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.ProjectDiscoveryLifecycle.Adapters;
+
+namespace Soundtrail.Services.Enrichment.Orchestrator.Features.ProjectDiscoveryLifecycle.CompositionRoot;
+
+public static class ServiceCollectionExtensions
+{
+    public static IServiceCollection AddProjectDiscoveryLifecycleFeature(this IServiceCollection services)
+    {
+        services.TryAddScoped<ProjectDiscoveryLifecycleHandler>();
+        services.TryAddSingleton<RavenDiscoveryLifecycleProjectionMapper>();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, ProjectDiscoveryLifecycleSubscriptionHostedService>());
+        return services;
+    }
+}

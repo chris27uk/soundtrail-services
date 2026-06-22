@@ -3,7 +3,7 @@ using Soundtrail.Domain.CatalogBrowsing;
 
 namespace Soundtrail.Services.Api.Features.ListTracksByArtist;
 
-public sealed class ListTracksByArtistHandler(ICatalogReadPort catalogReadPort) : IHandler<ListTracksByArtistCommand, ArtistTracksResponse?>
+public sealed class ListTracksByArtistHandler(ICatalogReadPort catalogReadPort) : IApiHandler<ListTracksByArtistCommand, ArtistTracksResponse?>
 {
     public async Task<ArtistTracksResponse?> Handle(ListTracksByArtistCommand request, CancellationToken cancellationToken = default)
     {

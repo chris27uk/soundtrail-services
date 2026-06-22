@@ -17,12 +17,9 @@ public sealed class ReplayDiscoveryLifecycleProjectionResponsesTests
         await using var env = await ReplayDiscoveryLifecycleProjectionTestEnvironment.CreateAsync(mode);
         var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
 
-        var result = await env.Handler.Handle(
+        await env.Handler.Handle(
             new ReplayDiscoveryLifecycleProjectionBatchCommand(),
             CancellationToken.None);
-
-        result.ReplayedCriteriaCount.Should().Be(1);
-        result.ReplayedEventCount.Should().Be(2);
 
         var status = await env.LoadStatusAsync(criteria);
         status.Should().NotBeNull();

@@ -9,16 +9,13 @@ public sealed class ReplayCatalogProjectionHandler(
     ILoadCatalogProjectionReplayTargetsPort loadTargetsPort,
     ILoadMusicTrackEventsForCatalogReplayPort loadEventsPort,
     IResetCatalogProjectionCheckpointPort resetPort,
-    ProjectMusicTrackCatalogHandler projectHandler) : IHandler<ReplayCatalogProjectionCommand, ReplayCatalogProjectionResult>
+    ProjectMusicTrackCatalogHandler projectHandler) : IHandler<ReplayCatalogProjectionCommand>
 {
-    public async Task<ReplayCatalogProjectionResult> Handle(
+    public async Task Handle(
         ReplayCatalogProjectionCommand command,
         CancellationToken cancellationToken = default)
     {
         var musicCatalogIds = await loadTargetsPort.LoadAsync(cancellationToken);
-
-        var replayedStreams = 0;
-        var replayedEvents = 0;
 
         foreach (var musicCatalogId in musicCatalogIds)
         {
@@ -33,11 +30,6 @@ public sealed class ReplayCatalogProjectionHandler(
             await projectHandler.Handle(
                 new(musicCatalogId, events),
                 cancellationToken);
-
-            replayedStreams++;
-            replayedEvents += events.Count;
         }
-
-        return new ReplayCatalogProjectionResult(replayedStreams, replayedEvents);
     }
 }

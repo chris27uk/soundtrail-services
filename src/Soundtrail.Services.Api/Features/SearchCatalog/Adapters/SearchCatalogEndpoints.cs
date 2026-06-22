@@ -18,7 +18,7 @@ public static class SearchCatalogEndpoints
                 string? playback,
                 int? limit,
                 int? offset,
-                IHandler<SearchCatalogCommand, SearchCatalogResponse> handler,
+                IApiHandler<SearchCatalogCommand, SearchCatalogResponse> handler,
                 CancellationToken cancellationToken) =>
             {
                 SearchCatalogCommand request;

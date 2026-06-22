@@ -8,7 +8,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddGetArtistFeature(this IServiceCollection services)
     {
-        services.TryAddScoped<IHandler<GetArtistCommand, ArtistDetailsResponse?>, GetArtistHandler>();
+        services.TryAddScoped<IApiHandler<GetArtistCommand, ArtistDetailsResponse?>, GetArtistHandler>();
         return services;
     }
 }

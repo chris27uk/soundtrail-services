@@ -1,0 +1,15 @@
+namespace Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.Adapters.Documents
+{
+    public sealed class RavenSongMetadataRecordDto
+    {
+        public string Title { get; set; } = string.Empty;
+
+        public string Artist { get; set; } = string.Empty;
+
+        public string? Isrc { get; set; }
+
+        public string? Mbid { get; set; }
+
+        public int? DurationMs { get; set; }
+    }
+}

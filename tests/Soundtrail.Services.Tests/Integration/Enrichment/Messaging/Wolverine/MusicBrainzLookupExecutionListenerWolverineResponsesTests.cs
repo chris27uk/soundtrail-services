@@ -16,11 +16,12 @@ public sealed class MusicBrainzLookupExecutionListenerWolverineResponsesTests
     {
         var env = MusicBrainzLookupExecutionHandlerTestEnvironment.Create();
         env.SeedMusicBrainzIsrc("isrc-1", new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000, "Album A", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"));
-        var listener = new MusicBrainzLookupExecutionListener(env.Handler);
+        var bus = new WolverineMessageBusFake();
+        var listener = new MusicBrainzLookupExecutionListener(env.Handler, bus);
 
-        var messages = await listener.Handle(Command(), null!);
+        await listener.Handle(Command(), null!);
 
-        messages.Should().ContainSingle().Which.Should().BeOfType<EnrichmentResponseDto>();
+        bus.SentMessages.Should().ContainSingle().Which.Should().BeOfType<EnrichmentResponseDto>();
     }
 
     [Fact]
@@ -31,9 +32,11 @@ public sealed class MusicBrainzLookupExecutionListenerWolverineResponsesTests
             ProviderName.MusicBrainz,
             new DateTimeOffset(2026, 6, 18, 12, 1, 0, TimeSpan.Zero),
             "MusicBrainz budget temporarily unavailable");
-        var listener = new MusicBrainzLookupExecutionListener(env.Handler);
+        var bus = new WolverineMessageBusFake();
+        var listener = new MusicBrainzLookupExecutionListener(env.Handler, bus);
 
-        var message = (LookupExecutionReportDto)(await listener.Handle(Command(), null!)).Single();
+        await listener.Handle(Command(), null!);
+        var message = bus.SentMessages.Single().Should().BeOfType<LookupExecutionReportDto>().Subject;
 
         message.Outcome.Should().Be("Deferred");
         message.SourceProvider.Should().Be(ProviderName.MusicBrainz.Value);
@@ -45,9 +48,11 @@ public sealed class MusicBrainzLookupExecutionListenerWolverineResponsesTests
     {
         var env = MusicBrainzLookupExecutionHandlerTestEnvironment.Create();
         env.Throw(new InvalidOperationException("boom"));
-        var listener = new MusicBrainzLookupExecutionListener(env.Handler);
+        var bus = new WolverineMessageBusFake();
+        var listener = new MusicBrainzLookupExecutionListener(env.Handler, bus);
 
-        var message = (LookupExecutionReportDto)(await listener.Handle(Command(), null!)).Single();
+        await listener.Handle(Command(), null!);
+        var message = bus.SentMessages.Single().Should().BeOfType<LookupExecutionReportDto>().Subject;
 
         message.Outcome.Should().Be("Failed");
         message.SourceProvider.Should().Be(ProviderName.MusicBrainz.Value);
