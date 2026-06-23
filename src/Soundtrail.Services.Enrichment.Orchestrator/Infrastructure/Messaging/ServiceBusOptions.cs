@@ -8,6 +8,8 @@ public sealed class ServiceBusOptions
 
     public string CatalogSearchAttemptsQueueName { get; init; } = "lookup-music-requests";
 
+    public string DiscoveryBacklogSchedulingQueueName { get; init; } = "discovery-backlog-scheduling";
+
     public string MusicBrainzLookupQueueName { get; init; } = "lookup-musicbrainz";
 
     public string PlaybackReferencesLookupQueueName { get; init; } = "lookup-playback-references";

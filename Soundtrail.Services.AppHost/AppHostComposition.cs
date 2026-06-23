@@ -94,12 +94,24 @@ public static class AppHostComposition
             .WithEnvironment("RavenDb__Urls__0", ravenDb.GetEndpoint("http"))
             .WithEnvironment("RavenDb__Database", "soundtrail");
 
+        var scheduler = builder.AddProject<Projects.Soundtrail_Services_Enrichment_Scheduler>("soundtrail-services-enrichment-scheduler")
+            .WithHttpEndpoint(name: "http")
+            .WithReference(serviceBus)
+            .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
+            .WithEnvironment("ServiceBus__DiscoveryBacklogSchedulingQueueName", "discovery-backlog-scheduling");
+
+        if (serviceBusEmulator is not null)
+        {
+            scheduler = scheduler.WaitFor(serviceBusEmulator);
+        }
+
         var orchestrator = builder.AddProject<Projects.Soundtrail_Services_Enrichment_Orchestrator>("soundtrail-services-enrichment-orchestrator")
             .WithHttpEndpoint(name: "http")
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
             .WithEnvironment("ServiceBus__CatalogSearchAttemptsQueueName", "lookup-music-requests")
+            .WithEnvironment("ServiceBus__DiscoveryBacklogSchedulingQueueName", "discovery-backlog-scheduling")
             .WithEnvironment("ServiceBus__MusicBrainzLookupQueueName", "lookup-musicbrainz")
             .WithEnvironment("ServiceBus__PlaybackReferencesLookupQueueName", "lookup-playback-references")
             .WithEnvironment("ServiceBus__EnrichmentResponsesQueueName", "enrichment-responses")

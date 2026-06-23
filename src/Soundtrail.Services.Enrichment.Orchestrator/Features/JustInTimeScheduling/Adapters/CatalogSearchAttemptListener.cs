@@ -8,8 +8,7 @@ using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.Adapters;
 
-public sealed class CatalogSearchAttemptListener(
-    CatalogSearchAttemptHandler handler)
+public sealed class CatalogSearchAttemptListener(CatalogSearchAttemptHandler handler)
 {
     [WolverineHandler]
     [Transactional]

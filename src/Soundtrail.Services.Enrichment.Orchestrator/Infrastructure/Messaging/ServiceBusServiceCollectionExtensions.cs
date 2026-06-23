@@ -64,6 +64,9 @@ public static class ServiceBusServiceCollectionExtensions
         opts.ListenToAzureServiceBusQueue(serviceBusOptions.CatalogSearchAttemptsQueueName)
             .ProcessInline();
 
+        opts.ListenToAzureServiceBusQueue(serviceBusOptions.DiscoveryBacklogSchedulingQueueName)
+            .ProcessInline();
+
         opts.ListenToAzureServiceBusQueue(serviceBusOptions.EnrichmentResponsesQueueName)
             .ProcessInline();
 

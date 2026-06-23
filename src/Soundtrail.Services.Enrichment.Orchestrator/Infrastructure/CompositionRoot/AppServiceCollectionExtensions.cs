@@ -13,7 +13,6 @@ using Soundtrail.Services.Enrichment.Orchestrator.Features.ReplayDiscoveryLifecy
 using Soundtrail.Services.Enrichment.Orchestrator.Features.ReplayMusicTrackProjection.CompositionRoot;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.SchedulePlaybackReferencesLookup.CompositionRoot;
 using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Messaging;
-using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Scheduling;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Prioritisation;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.CompositionRoot;
@@ -29,8 +28,6 @@ public static class AppServiceCollectionExtensions
         configure?.Invoke(options);
 
         services.AddOrchestratorServiceBus(configuration);
-        services.Configure<DiscoveryBacklogSchedulingOptions>(
-            configuration.GetSection(DiscoveryBacklogSchedulingOptions.SectionName));
         services.TryAddSingleton<DiscoveryPriorityPolicy>();
         var dependencyProvider = options.DependencyProvider ?? new ProductionOrchestratorDependencyProvider();
         dependencyProvider.AddSharedDependencies(services, configuration);
@@ -45,11 +42,8 @@ public static class AppServiceCollectionExtensions
         services.AddReplayDiscoveryLifecycleProjectionFeature();
         services.AddProjectMusicTrackProjectionFeature();
         services.AddReplayMusicTrackProjectionFeature();
-        services.AddBacklogSchedulingFeature(x =>
-        {
-            x.IncludeHostedService = options.IncludeBacklogHostedService;
-            x.ConfigureDependencies = svc => dependencyProvider.AddBacklogSchedulingDependencies(svc, configuration);
-        });
+        services.AddBacklogSchedulingFeature(
+            x => x.ConfigureDependencies = svc => dependencyProvider.AddBacklogSchedulingDependencies(svc, configuration));
         services.AddEnrichmentResponseFeature(x =>
             x.ConfigureDependencies = svc => dependencyProvider.AddEnrichmentResponseDependencies(svc, configuration));
 

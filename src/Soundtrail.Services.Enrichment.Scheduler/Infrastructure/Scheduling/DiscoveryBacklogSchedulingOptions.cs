@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Scheduling;
+namespace Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Scheduling;
 
 public sealed class DiscoveryBacklogSchedulingOptions
 {

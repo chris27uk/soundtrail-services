@@ -1,6 +1,6 @@
+using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Raven.Client.Documents.Session;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.BacklogScheduling;
-using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Scheduling;
 using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.BacklogScheduling.Adapters;
@@ -11,7 +11,7 @@ public sealed class DiscoveryBacklogSchedulingListener(
     [WolverineHandler]
     [Transactional]
     public async Task Handle(
-        RunDiscoveryBacklogScheduling message,
+        RunDiscoveryBacklogSchedulingCommandDto message,
         IAsyncDocumentSession session,
         CancellationToken cancellationToken = default)
     {

@@ -9,9 +9,7 @@ public sealed class ApplyLookupExecutionReportHandler(
     ICatalogSearchTrackingStore catalogSearchTrackingStore,
     ICatalogSearchDiscoveryRepository discoveryRepository)
 {
-    public async Task Handle(
-        LookupExecutionReportDto report,
-        CancellationToken cancellationToken = default)
+    public async Task Handle(LookupExecutionReportDto report, CancellationToken cancellationToken = default)
     {
         var outcome = Enum.Parse<LookupExecutionOutcome>(report.Outcome);
         if (outcome is not (LookupExecutionOutcome.Deferred or LookupExecutionOutcome.Failed))
@@ -19,17 +17,11 @@ public sealed class ApplyLookupExecutionReportHandler(
             return;
         }
 
-        var trackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(
-            MusicCatalogId.From(report.MusicCatalogId),
-            cancellationToken);
+        var trackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(MusicCatalogId.From(report.MusicCatalogId), cancellationToken);
 
         foreach (var tracking in trackings)
         {
-            var discovery = await CatalogSearchDiscovery.LoadAsync(
-                discoveryRepository,
-                tracking.Criteria,
-                cancellationToken);
-
+            var discovery = await CatalogSearchDiscovery.LoadAsync(discoveryRepository, tracking.Criteria, cancellationToken);
             var changed = outcome switch
             {
                 LookupExecutionOutcome.Deferred => discovery.Defer(
