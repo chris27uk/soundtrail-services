@@ -6,11 +6,11 @@ using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.EnrichmentResponse.Adapters;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ProjectMusicTrackProjection;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ProjectMusicTrackProjection.Adapters;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.Adapters.Documents;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ReplayMusicTrackProjection;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ReplayMusicTrackProjection.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackProjection;
+using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackProjection.Adapters;
+using Soundtrail.Contracts.Persistence;
+using Soundtrail.Services.Internal.Projector.Features.ReplayMusicTrackProjection;
+using Soundtrail.Services.Internal.Projector.Features.ReplayMusicTrackProjection.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ProjectionReplay;

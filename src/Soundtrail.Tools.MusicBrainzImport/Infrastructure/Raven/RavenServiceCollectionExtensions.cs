@@ -6,13 +6,15 @@ using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
 using Raven.Client.Documents.Session;
+using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackProjection.Ports;
 using Soundtrail.Domain.Model;
 using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackCatalog.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackCatalog.ProjectionModel;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.EnrichmentResponse.Adapters;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ProjectMusicTrackProjection.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackProjection.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.ProjectDiscoveryLifecycle.Ports;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ProjectDiscoveryLifecycle.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.ProjectDiscoveryLifecycle.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Raven;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Infrastructure.Raven;

@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain;
+using Soundtrail.Services.Api.Infrastructure.Ports;
 using Soundtrail.Domain.CatalogBrowsing;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api;

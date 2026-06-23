@@ -18,7 +18,6 @@ public sealed class ApplyLookupExecutionReportHandler(
         }
 
         var trackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(MusicCatalogId.From(report.MusicCatalogId), cancellationToken);
-
         foreach (var tracking in trackings)
         {
             var discovery = await CatalogSearchDiscovery.LoadAsync(discoveryRepository, tracking.Criteria, cancellationToken);

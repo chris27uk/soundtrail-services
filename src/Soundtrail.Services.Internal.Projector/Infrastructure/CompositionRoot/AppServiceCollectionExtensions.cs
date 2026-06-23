@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Soundtrail.Services.Internal.Projector.Features.ProjectDiscoveryLifecycle.CompositionRoot;
+using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackProjection.CompositionRoot;
 using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackCatalog.CompositionRoot;
 using Soundtrail.Services.Internal.Projector.Infrastructure.Raven;
 
@@ -12,6 +14,8 @@ public static class AppServiceCollectionExtensions
         IConfiguration configuration)
     {
         services.AddRavenDocumentStore(configuration);
+        services.AddProjectDiscoveryLifecycleFeature();
+        services.AddProjectMusicTrackProjectionFeature();
         services.AddProjectMusicTrackCatalogFeature();
         return services;
     }

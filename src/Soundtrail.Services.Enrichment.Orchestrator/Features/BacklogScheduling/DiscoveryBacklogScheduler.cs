@@ -1,5 +1,5 @@
 using Soundtrail.Domain;
-using Soundtrail.Domain.Commands;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.BacklogScheduling.Support;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Idempotency;

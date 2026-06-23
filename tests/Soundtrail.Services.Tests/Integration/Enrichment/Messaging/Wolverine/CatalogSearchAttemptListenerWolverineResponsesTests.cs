@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Events;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search.Resolution;

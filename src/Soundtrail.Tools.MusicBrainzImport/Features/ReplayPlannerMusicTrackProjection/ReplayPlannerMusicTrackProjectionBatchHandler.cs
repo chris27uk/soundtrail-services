@@ -1,7 +1,7 @@
 using Soundtrail.Domain;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Responses;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ProjectMusicTrackProjection;
+using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackProjection;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayPlannerMusicTrackProjection;

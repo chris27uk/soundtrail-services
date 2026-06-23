@@ -1,7 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ProjectMusicTrackProjection;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ProjectMusicTrackProjection.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackProjection;
+using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackProjection.Adapters;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayPlannerMusicTrackProjection.Adapters;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayPlannerMusicTrackProjection.CompositionRoot;

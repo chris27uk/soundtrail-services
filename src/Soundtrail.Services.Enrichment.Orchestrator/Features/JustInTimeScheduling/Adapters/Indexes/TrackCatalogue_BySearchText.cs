@@ -1,5 +1,5 @@
 using Raven.Client.Documents.Indexes;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.Adapters.Documents;
+using Soundtrail.Contracts.Persistence;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.Adapters.Indexes;
 

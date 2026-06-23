@@ -23,14 +23,13 @@ using Soundtrail.Services.Api.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackCatalog;
 using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackCatalog.Adapters;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ImportCatalogSearchDiscoveryEvents;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.ImportMusicTrackEvents;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.Adapters;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ProjectDiscoveryLifecycle;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ProjectDiscoveryLifecycle.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.ProjectDiscoveryLifecycle;
+using Soundtrail.Services.Internal.Projector.Features.ProjectDiscoveryLifecycle.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.EnrichmentResponse.Adapters;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ReplayDiscoveryLifecycleProjection;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ReplayDiscoveryLifecycleProjection.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.ReplayDiscoveryLifecycleProjection;
+using Soundtrail.Services.Internal.Projector.Features.ReplayDiscoveryLifecycleProjection.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Wolverine;
 using Wolverine.Tracking;
@@ -92,11 +91,11 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
             options.ConfigureCatalogSearchDependencies = services =>
             {
                 services.AddEmbeddedRavenForTesting(raven.Store);
-                services.TryAddSingleton<Soundtrail.Domain.Search.ICatalogSearchPort, Soundtrail.Services.Api.Infrastructure.Raven.RavenCatalogSearch>();
+                services.TryAddSingleton<Soundtrail.Services.Api.Features.SearchCatalog.Ports.ICatalogSearchPort, Soundtrail.Services.Api.Infrastructure.Raven.RavenCatalogSearch>();
             };
             options.ConfigureCatalogReadDependencies = services =>
             {
-                services.TryAddSingleton<Soundtrail.Domain.CatalogBrowsing.ICatalogReadPort, NoOpCatalogReadPort>();
+                services.TryAddSingleton<Soundtrail.Services.Api.Infrastructure.Ports.ICatalogReadPort, NoOpCatalogReadPort>();
             };
         });
 
@@ -347,11 +346,8 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
         params IDomainEvent[] events)
     {
         using var replaySession = store.OpenAsyncSession();
-        var importHandler = new ImportCatalogSearchDiscoveryEventsHandler(
-            new Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.Adapters.RavenCatalogSearchDiscoveryRepository(store));
-        importHandler.Handle(
-                new ImportCatalogSearchDiscoveryEventsCommand(criteria, 0, events),
-                CancellationToken.None)
+        var repository = new Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.Adapters.RavenCatalogSearchDiscoveryRepository(store);
+        repository.AppendAsync(criteria, 0, events, CancellationToken.None)
             .GetAwaiter()
             .GetResult();
 
@@ -389,7 +385,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
         return array;
     }
 
-    private sealed class NoOpCatalogReadPort : Soundtrail.Domain.CatalogBrowsing.ICatalogReadPort
+    private sealed class NoOpCatalogReadPort : Soundtrail.Services.Api.Infrastructure.Ports.ICatalogReadPort
     {
         public Task<Soundtrail.Domain.CatalogBrowsing.ArtistDetailsResponse?> GetArtistAsync(Soundtrail.Domain.Catalog.ArtistId artistId, CancellationToken cancellationToken) =>
             Task.FromResult<Soundtrail.Domain.CatalogBrowsing.ArtistDetailsResponse?>(null);

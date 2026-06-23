@@ -7,10 +7,10 @@ using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.Adapters;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ProjectDiscoveryLifecycle.Adapters;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ProjectDiscoveryLifecycle;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ReplayDiscoveryLifecycleProjection;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ReplayDiscoveryLifecycleProjection.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.ProjectDiscoveryLifecycle.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.ProjectDiscoveryLifecycle;
+using Soundtrail.Services.Internal.Projector.Features.ReplayDiscoveryLifecycleProjection;
+using Soundtrail.Services.Internal.Projector.Features.ReplayDiscoveryLifecycleProjection.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using System.Linq;
 

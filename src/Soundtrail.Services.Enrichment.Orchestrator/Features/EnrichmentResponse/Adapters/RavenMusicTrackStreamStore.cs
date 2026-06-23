@@ -1,5 +1,4 @@
 using Raven.Client.Documents.Session;
-using Raven.Client.Exceptions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Events;

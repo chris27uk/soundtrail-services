@@ -6,6 +6,10 @@ using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
 using Raven.Client.Documents.Session;
+using Soundtrail.Services.Internal.Projector.Features.ProjectDiscoveryLifecycle.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.ProjectDiscoveryLifecycle.Ports;
+using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackProjection.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackProjection.Ports;
 using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackCatalog.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackCatalog.ProjectionModel;
 
@@ -35,6 +39,12 @@ public static class RavenServiceCollectionExtensions
             return store.Initialize();
         });
         services.TryAddScoped<IAsyncDocumentSession>(sp => sp.GetRequiredService<IDocumentStore>().OpenAsyncSession());
+        services.TryAddScoped<ILoadDiscoveryLifecycleProjectionPort, RavenLoadDiscoveryLifecycleProjection>();
+        services.TryAddScoped<ISaveDiscoveryLifecycleProjectionPort, RavenSaveDiscoveryLifecycleProjection>();
+        services.TryAddSingleton<RavenDiscoveryLifecycleProjectionMapper>();
+        services.TryAddScoped<ILoadMusicTrackProjectionPort, RavenLoadMusicTrackProjection>();
+        services.TryAddScoped<ISaveMusicTrackProjectionPort, RavenSaveMusicTrackProjection>();
+        services.TryAddSingleton<RavenMusicTrackProjectionMapper>();
         services.TryAddScoped<ILoadMusicTrackCatalogProjectionPort, RavenLoadMusicTrackCatalogProjection>();
         services.TryAddScoped<ISaveMusicTrackCatalogProjectionPort, RavenSaveMusicTrackCatalogProjection>();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, RavenDatabaseHostedService>());

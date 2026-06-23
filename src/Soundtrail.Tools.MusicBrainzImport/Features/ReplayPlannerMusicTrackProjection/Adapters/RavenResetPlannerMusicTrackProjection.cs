@@ -1,6 +1,6 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.Adapters.Documents;
+using Soundtrail.Contracts.Persistence;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayPlannerMusicTrackProjection.Adapters;
 

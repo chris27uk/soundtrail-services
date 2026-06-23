@@ -2,6 +2,7 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Domain;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Commands;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.BacklogScheduling;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.BacklogScheduling.Support;

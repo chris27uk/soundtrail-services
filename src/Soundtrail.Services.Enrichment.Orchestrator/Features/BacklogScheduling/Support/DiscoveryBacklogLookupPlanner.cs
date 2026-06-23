@@ -1,6 +1,7 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Scheduling;
 

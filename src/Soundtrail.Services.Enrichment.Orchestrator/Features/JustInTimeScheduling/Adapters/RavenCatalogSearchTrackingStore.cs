@@ -3,7 +3,7 @@ using Raven.Client.Documents.Linq;
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.Adapters.Documents;
+using Soundtrail.Contracts.Persistence;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.Adapters;
 

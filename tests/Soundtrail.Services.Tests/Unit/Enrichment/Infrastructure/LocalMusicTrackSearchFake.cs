@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 using Soundtrail.Domain.Discovery;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;

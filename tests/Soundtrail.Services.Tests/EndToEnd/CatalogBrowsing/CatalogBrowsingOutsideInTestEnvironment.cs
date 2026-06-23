@@ -60,7 +60,7 @@ public sealed class CatalogBrowsingOutsideInTestEnvironment : IAsyncDisposable
             options.ConfigureCatalogReadDependencies = services =>
             {
                 services.AddEmbeddedRavenForTesting(raven.Store);
-                services.AddSingleton<Soundtrail.Domain.CatalogBrowsing.ICatalogReadPort, RavenCatalogReadPort>();
+                services.AddSingleton<Soundtrail.Services.Api.Infrastructure.Ports.ICatalogReadPort, RavenCatalogReadPort>();
             };
         });
 

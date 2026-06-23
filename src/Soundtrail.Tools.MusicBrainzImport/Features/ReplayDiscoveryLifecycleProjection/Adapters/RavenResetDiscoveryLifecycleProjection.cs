@@ -1,7 +1,7 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ProjectDiscoveryLifecycle.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.ProjectDiscoveryLifecycle.Adapters;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.Adapters;
 

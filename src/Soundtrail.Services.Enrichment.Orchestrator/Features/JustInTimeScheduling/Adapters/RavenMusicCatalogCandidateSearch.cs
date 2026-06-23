@@ -4,7 +4,7 @@ using Raven.Client.Documents.Session;
 using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Model;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.Adapters.Documents;
+using Soundtrail.Contracts.Persistence;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.Adapters.Indexes;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 

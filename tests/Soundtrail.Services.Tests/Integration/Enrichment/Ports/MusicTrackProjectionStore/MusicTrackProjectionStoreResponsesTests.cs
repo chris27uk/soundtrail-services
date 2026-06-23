@@ -4,9 +4,9 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ProjectMusicTrackProjection;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ProjectMusicTrackProjection.Adapters;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.Adapters.Documents;
+using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackProjection;
+using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackProjection.Adapters;
+using Soundtrail.Contracts.Persistence;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 

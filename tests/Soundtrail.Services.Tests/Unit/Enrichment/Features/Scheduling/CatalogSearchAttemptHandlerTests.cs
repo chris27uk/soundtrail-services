@@ -2,9 +2,9 @@ using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Commands;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
-using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling;

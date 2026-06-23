@@ -2,13 +2,13 @@ using Soundtrail.Services.Enrichment.Orchestrator.Shared.Idempotency;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
 using Soundtrail.Domain;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Prioritisation;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.Model;
-using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search.Resolution;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Scheduling;
 

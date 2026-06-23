@@ -1,6 +1,7 @@
 using Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Commands;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
