@@ -18,6 +18,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
         private readonly CatalogSearchTrackingStoreFake catalogSearchTrackingStoreFake;
         private readonly CatalogSearchDiscoveryRepositoryFake catalogSearchDiscoveryRepositoryFake;
         private readonly SourceApiBudgetPortFake sourceApiBudgetPortFake;
+        private readonly CommandBusFake commandBusFake;
 
         private CatalogSearchAttemptHandlerTestEnvironment(
             FakeMusicCatalogCandidateSearch search,
@@ -30,6 +31,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
             this.catalogSearchTrackingStoreFake = new CatalogSearchTrackingStoreFake();
             this.catalogSearchDiscoveryRepositoryFake = new CatalogSearchDiscoveryRepositoryFake();
             this.sourceApiBudgetPortFake = new SourceApiBudgetPortFake();
+            this.commandBusFake = new CommandBusFake();
             this.Planner = new DiscoveryPriorityPolicy();
             this.ResolutionPolicy = new MusicCatalogMatchResolver();
             this.Handler = new CatalogSearchAttemptHandler(
@@ -41,7 +43,8 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
                 this.sourceApiBudgetPortFake,
                 this.ResolutionPolicy,
                 this.activeLookupWorkStoreFake,
-                this.localMusicTrackSearchFake);
+                this.localMusicTrackSearchFake,
+                this.commandBusFake);
 
             SeedDefaultLocalTrack("mc_track_1");
             SeedDefaultLocalTrack("mc_track_2");
@@ -70,6 +73,8 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
         public IReadOnlyList<CatalogSearchTracking> CatalogSearchTrackings => this.catalogSearchTrackingStoreFake.All;
 
         public CatalogSearchDiscoveryRepositoryFake DiscoveryRepository => this.catalogSearchDiscoveryRepositoryFake;
+
+        public CommandBusFake CommandBus => this.commandBusFake;
 
         public static CatalogSearchAttemptHandlerTestEnvironment WithNoExistingCandidates() =>
             new(

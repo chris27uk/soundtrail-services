@@ -18,6 +18,7 @@ internal sealed class DiscoveryBacklogSchedulerTestEnvironment
     private readonly SourceApiBudgetPortFake sourceBudget;
     private readonly CatalogSearchTrackingStoreFake catalogSearchTrackingStoreFake;
     private readonly CatalogSearchDiscoveryRepositoryFake catalogSearchDiscoveryRepositoryFake;
+    private readonly CommandBusFake commandBusFake;
 
     private DiscoveryBacklogSchedulerTestEnvironment(params Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence.PotentialCatalogLookupWork[] candidates)
     {
@@ -32,6 +33,7 @@ internal sealed class DiscoveryBacklogSchedulerTestEnvironment
         sourceBudget = new SourceApiBudgetPortFake();
         catalogSearchTrackingStoreFake = new CatalogSearchTrackingStoreFake();
         catalogSearchDiscoveryRepositoryFake = new CatalogSearchDiscoveryRepositoryFake();
+        commandBusFake = new CommandBusFake();
         foreach (var candidate in candidates)
         {
             localSearch.Seed(new LocalMusicTrackSearchResult(
@@ -58,7 +60,8 @@ internal sealed class DiscoveryBacklogSchedulerTestEnvironment
             new DiscoveryBacklogLookupPlanner(),
             new TrackedDiscoveryStartMarker(
                 catalogSearchTrackingStoreFake,
-                catalogSearchDiscoveryRepositoryFake));
+                catalogSearchDiscoveryRepositoryFake),
+            commandBusFake);
         Now = DefaultNow;
     }
 
@@ -69,6 +72,8 @@ internal sealed class DiscoveryBacklogSchedulerTestEnvironment
     public DateTimeOffset Now { get; }
 
     public SourceApiBudgetPortFake SourceBudget => sourceBudget;
+
+    public CommandBusFake CommandBus => commandBusFake;
 
     public static DiscoveryBacklogSchedulerTestEnvironment WithHighAndLowPriorityEligibleCandidates() =>
         new(
@@ -111,5 +116,5 @@ internal sealed class DiscoveryBacklogSchedulerTestEnvironment
 
     public LocalMusicTrackSearchFake LocalSearch => localSearch;
 
-    public Task<IReadOnlyList<IMusicCatalogLookupCommand>> RunSweep(int take = 10) => Scheduler.RunOnceAsync(Now, take);
+    public Task RunSweep(int take = 10) => Scheduler.RunOnceAsync(Now, take);
 }

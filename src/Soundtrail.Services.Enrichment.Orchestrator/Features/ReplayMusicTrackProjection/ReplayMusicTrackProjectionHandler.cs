@@ -15,8 +15,6 @@ public sealed class ReplayMusicTrackProjectionHandler(
         CancellationToken cancellationToken = default)
     {
         var events = await loadPort.LoadAsync(request.MusicCatalogId, cancellationToken);
-        await projectHandler.Handle(
-            new ProjectMusicTrackProjectionCommand(request.MusicCatalogId, events),
-            cancellationToken);
+        await projectHandler.Handle(new ProjectMusicTrackProjectionCommand(request.MusicCatalogId, events), cancellationToken);
     }
 }

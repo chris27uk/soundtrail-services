@@ -15,8 +15,6 @@ public sealed class ReplayDiscoveryLifecycleProjectionHandler(
         CancellationToken cancellationToken = default)
     {
         var events = await loadPort.LoadAsync(request.Criteria, cancellationToken);
-        await projectHandler.Handle(
-            new ProjectDiscoveryLifecycleCommand(request.Criteria, events),
-            cancellationToken);
+        await projectHandler.Handle(new ProjectDiscoveryLifecycleCommand(request.Criteria, events), cancellationToken);
     }
 }

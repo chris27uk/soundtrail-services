@@ -67,7 +67,7 @@ public class CatalogSearchAttemptHandlerTests
 
         var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10), CancellationToken.None);
 
-        result.Commands.Should().ContainSingle().Which.Should().BeOfType<ResolvePlaybackReferencesCommand>();
+        env.CommandBus.SentCommands.Should().ContainSingle().Which.Should().BeOfType<ResolvePlaybackReferencesCommand>();
     }
 
     [Fact]
@@ -96,9 +96,10 @@ public class CatalogSearchAttemptHandlerTests
         var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 15), CancellationToken.None);
 
         result.ShouldSchedule.Should().BeTrue();
-        result.Command.Should().NotBeNull();
-        result.Command!.MusicCatalogId.Should().Be(MusicCatalogId.From(musicCatalogId));
-        result.Command.Priority.Should().Be(LookupPriorityBand.High);
+        env.CommandBus.SentCommands.Should().ContainSingle();
+        var sentCommand = env.CommandBus.SentCommands.Single().Should().BeOfType<LookupMusicMetadataCommand>().Subject;
+        sentCommand.MusicCatalogId.Should().Be(MusicCatalogId.From(musicCatalogId));
+        sentCommand.Priority.Should().Be(LookupPriorityBand.High);
         env.PotentialCatalogLookupWorks.Should().ContainSingle();
         env.PotentialCatalogLookupWorks[0].MusicCatalogId.Should().Be(MusicCatalogId.From(musicCatalogId));
         env.PotentialCatalogLookupWorks[0].RequestCount.Should().Be(3);
@@ -185,12 +186,13 @@ public class CatalogSearchAttemptHandlerTests
             CancellationToken.None);
 
         result.ShouldSchedule.Should().BeTrue();
-        result.Command.Should().NotBeNull();
-        result.Command!.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
-        result.Command.Priority.Should().Be(LookupPriorityBand.Low);
-        result.Command.CreatedAt.Should().Be(occurredAt);
-        result.Command.CommandId.Should().Be(CommandId.For("LookupCanonicalMusicMetadata:mc_track_1"));
-        result.Command.CorrelationId.Value.Should().NotBeNullOrWhiteSpace();
+        env.CommandBus.SentCommands.Should().ContainSingle();
+        var sentCommand = env.CommandBus.SentCommands.Single().Should().BeOfType<LookupMusicMetadataCommand>().Subject;
+        sentCommand.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
+        sentCommand.Priority.Should().Be(LookupPriorityBand.Low);
+        sentCommand.CreatedAt.Should().Be(occurredAt);
+        sentCommand.CommandId.Should().Be(CommandId.For("LookupCanonicalMusicMetadata:mc_track_1"));
+        sentCommand.CorrelationId.Value.Should().NotBeNullOrWhiteSpace();
 
         env.PotentialCatalogLookupWorks.Should().ContainSingle();
         env.PotentialCatalogLookupWorks[0].MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
@@ -287,8 +289,8 @@ public class CatalogSearchAttemptHandlerTests
             CancellationToken.None);
 
         result.ShouldSchedule.Should().BeTrue();
-        result.Command.Should().NotBeNull();
-        result.Command!.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
+        env.CommandBus.SentCommands.Should().ContainSingle();
+        env.CommandBus.SentCommands.Single().Should().BeOfType<LookupMusicMetadataCommand>().Which.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
     }
 
     [Fact]
@@ -323,8 +325,8 @@ public class CatalogSearchAttemptHandlerTests
             CancellationToken.None);
 
         result.ShouldSchedule.Should().BeTrue();
-        result.Command.Should().NotBeNull();
-        result.Command!.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
+        env.CommandBus.SentCommands.Should().ContainSingle();
+        env.CommandBus.SentCommands.Single().Should().BeOfType<LookupMusicMetadataCommand>().Which.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
     }
 
     [Fact]
@@ -338,8 +340,8 @@ public class CatalogSearchAttemptHandlerTests
             CancellationToken.None);
 
         result.ShouldSchedule.Should().BeTrue();
-        result.Command.Should().NotBeNull();
-        result.Command!.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
+        env.CommandBus.SentCommands.Should().ContainSingle();
+        env.CommandBus.SentCommands.Single().Should().BeOfType<LookupMusicMetadataCommand>().Which.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
     }
 
     [Fact]
@@ -355,7 +357,7 @@ public class CatalogSearchAttemptHandlerTests
             CancellationToken.None);
 
         result.ShouldSchedule.Should().BeTrue();
-        result.Command.Should().NotBeNull();
-        result.Command!.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
+        env.CommandBus.SentCommands.Should().ContainSingle();
+        env.CommandBus.SentCommands.Single().Should().BeOfType<LookupMusicMetadataCommand>().Which.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
     }
 }

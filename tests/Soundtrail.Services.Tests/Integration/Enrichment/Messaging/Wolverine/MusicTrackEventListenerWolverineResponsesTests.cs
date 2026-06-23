@@ -5,6 +5,7 @@ using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Contracts.IntegrationMessaging.Events;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.SchedulePlaybackReferencesLookup;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.SchedulePlaybackReferencesLookup.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Messaging;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Messaging.Wolverine;
 
@@ -14,7 +15,7 @@ public sealed class MusicTrackEventListenerWolverineResponsesTests
     public async Task Given_A_PlaybackReferencesResolutionRequired_Message_When_Handled_Then_A_PlaybackReferences_Command_Dto_Is_Sent()
     {
         var bus = new WolverineMessageBusFake();
-        var listener = new MusicTrackEventListener(new SchedulePlaybackReferencesLookupHandler(bus));
+        var listener = new MusicTrackEventListener(new SchedulePlaybackReferencesLookupHandler(new WolverineCommandBus(bus)));
         await listener.Handle(
             new PlaybackReferencesResolutionRequiredMessageDto(
                 "mc_track_1",

@@ -12,9 +12,7 @@ using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution.Adapters;
 
-public sealed class PlaybackReferencesLookupExecutionListener(
-    ExecutePlaybackReferencesLookupHandler handler,
-    IMessageBus messageBus)
+public sealed class PlaybackReferencesLookupExecutionListener(ExecutePlaybackReferencesLookupHandler handler, IMessageBus messageBus)
 {
     [WolverineHandler]
     [Transactional]

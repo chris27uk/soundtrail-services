@@ -1,28 +1,24 @@
-using Soundtrail.Domain;
-using Soundtrail.Domain.Commands;
+using Soundtrail.Contracts.Common;
 
 namespace Soundtrail.Domain.Responses;
 
 public sealed record LookupSchedulingResult(
-    IReadOnlyList<ICommand> Commands,
+    bool ShouldSchedule,
+    LookupPriorityBand? Priority,
     int? EstimatedRetryAfterSeconds,
     DateTimeOffset? EarliestExpectedCompletionAt,
     string Reason)
 {
-    public bool ShouldSchedule => Commands.Count > 0;
-
-    public IMusicCatalogLookupCommand? Command => Commands.OfType<IMusicCatalogLookupCommand>().SingleOrDefault();
-
     public static LookupSchedulingResult DoNotSchedule(
         int? estimatedRetryAfterSeconds,
         DateTimeOffset? earliestExpectedCompletionAt,
         string reason) =>
-        new([], estimatedRetryAfterSeconds, earliestExpectedCompletionAt, reason);
+        new(false, null, estimatedRetryAfterSeconds, earliestExpectedCompletionAt, reason);
 
     public static LookupSchedulingResult Schedule(
+        LookupPriorityBand priority,
         int? estimatedRetryAfterSeconds,
         DateTimeOffset? earliestExpectedCompletionAt,
-        string reason,
-        params ICommand[] commands) =>
-        new(commands, estimatedRetryAfterSeconds, earliestExpectedCompletionAt, reason);
+        string reason) =>
+        new(true, priority, estimatedRetryAfterSeconds, earliestExpectedCompletionAt, reason);
 }

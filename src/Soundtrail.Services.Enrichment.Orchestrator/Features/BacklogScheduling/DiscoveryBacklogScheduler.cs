@@ -1,3 +1,4 @@
+using Soundtrail.Domain;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.BacklogScheduling.Support;
@@ -14,17 +15,14 @@ public sealed class DiscoveryBacklogScheduler(
     IReserveSourceApiBudgetPort reserveSourceApiBudgetPort,
     ILocalMusicTrackSearch localMusicTrackSearch,
     DiscoveryBacklogLookupPlanner lookupPlanner,
-    TrackedDiscoveryStartMarker trackedDiscoveryStartMarker)
+    TrackedDiscoveryStartMarker trackedDiscoveryStartMarker,
+    ICommandBus commandBus)
 {
     private static readonly TimeSpan ActiveReservationDuration = TimeSpan.FromMinutes(15);
 
-    public async Task<IReadOnlyList<IMusicCatalogLookupCommand>> RunOnceAsync(
-        DateTimeOffset now,
-        int take,
-        CancellationToken cancellationToken = default)
+    public async Task RunOnceAsync(DateTimeOffset now, int take, CancellationToken cancellationToken = default)
     {
         var candidates = await rankedMusicCandidateStore.GetPlanningCandidatesAsync(now, take, cancellationToken);
-        var commands = new List<IMusicCatalogLookupCommand>();
 
         foreach (var candidate in candidates)
         {
@@ -36,22 +34,18 @@ public sealed class DiscoveryBacklogScheduler(
 
             var localTrack = await localMusicTrackSearch.GetByMusicCatalogIdAsync(candidate.MusicCatalogId, cancellationToken);
             var plannedLookup = lookupPlanner.Plan(candidate.MusicCatalogId, plan.Priority!.Value, now, localTrack);
-
             if (plannedLookup is null)
             {
                 continue;
             }
 
-            var budgetReservation = await reserveSourceApiBudgetPort.TryReserveAsync(
-                new SourceApiBudgetReservationRequest(plannedLookup.Source, now),
-                cancellationToken);
+            var budgetReservation = await reserveSourceApiBudgetPort.TryReserveAsync(new SourceApiBudgetReservationRequest(plannedLookup.Source, now), cancellationToken);
             if (!budgetReservation.Accepted)
             {
                 continue;
             }
 
-            var acquired = await activeLookupWorkStore.TryAcquireAsync(
-                plannedLookup.Command.CommandId, now.Add(ActiveReservationDuration), cancellationToken);
+            var acquired = await activeLookupWorkStore.TryAcquireAsync(plannedLookup.Command.CommandId, now.Add(ActiveReservationDuration), cancellationToken);
             if (!acquired)
             {
                 continue;
@@ -62,10 +56,7 @@ public sealed class DiscoveryBacklogScheduler(
                 plannedLookup.Command.Priority,
                 now,
                 cancellationToken);
-
-            commands.Add(plannedLookup.Command);
+            await commandBus.SendAsync(plannedLookup.Command, cancellationToken);
         }
-
-        return commands;
     }
 }

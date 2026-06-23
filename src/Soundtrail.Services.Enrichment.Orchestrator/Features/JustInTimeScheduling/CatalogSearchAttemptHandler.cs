@@ -1,5 +1,6 @@
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Idempotency;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
+using Soundtrail.Domain;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Prioritisation;
@@ -22,7 +23,8 @@ public sealed class CatalogSearchAttemptHandler(
     IReserveSourceApiBudgetPort reserveSourceApiBudgetPort,
     MusicCatalogMatchResolver musicCatalogMatchResolver,
     IActiveLookupWorkStore activeLookupWorkStore,
-    ILocalMusicTrackSearch localMusicTrackSearch)
+    ILocalMusicTrackSearch localMusicTrackSearch,
+    ICommandBus commandBus)
 {
     private static readonly TimeSpan ActiveReservationDuration = TimeSpan.FromMinutes(15);
 
@@ -37,9 +39,23 @@ public sealed class CatalogSearchAttemptHandler(
     {
         try
         {
-            var result = await ScheduleAsync(request, cancellationToken);
-            await PersistLifecycleAsync(request, result, cancellationToken);
-            return result;
+            var decision = await ScheduleAsync(request, cancellationToken);
+            await PersistLifecycleAsync(request, decision, cancellationToken);
+            if (decision.Command is not null)
+            {
+                await commandBus.SendAsync(decision.Command, cancellationToken);
+            }
+
+            return decision.ShouldSchedule
+                ? LookupSchedulingResult.Schedule(
+                    decision.Command!.Priority,
+                    decision.EstimatedRetryAfterSeconds,
+                    decision.EarliestExpectedCompletionAt,
+                    decision.Reason)
+                : LookupSchedulingResult.DoNotSchedule(
+                    decision.EstimatedRetryAfterSeconds,
+                    decision.EarliestExpectedCompletionAt,
+                    decision.Reason);
         }
         catch (ResolutionFailedException ex)
         {
@@ -51,7 +67,7 @@ public sealed class CatalogSearchAttemptHandler(
         }
     }
 
-    public async Task<LookupSchedulingResult> ScheduleAsync(
+    private async Task<LookupSchedulingDecision> ScheduleAsync(
         CatalogSearchAttempt request,
         CancellationToken cancellationToken = default)
     {
@@ -80,7 +96,8 @@ public sealed class CatalogSearchAttemptHandler(
                 request.OccurredAt,
                 cancellationToken);
 
-            return LookupSchedulingResult.DoNotSchedule(
+            return new LookupSchedulingDecision(
+                null,
                 plan.EstimatedRetryAfterSeconds,
                 plan.EarliestExpectedCompletionAt,
                 plan.Reason);
@@ -97,7 +114,8 @@ public sealed class CatalogSearchAttemptHandler(
         if (plannedLookup is null)
         {
             var deferred = PriorityPlan.Defer(request.OccurredAt);
-            return LookupSchedulingResult.DoNotSchedule(
+            return new LookupSchedulingDecision(
+                null,
                 deferred.EstimatedRetryAfterSeconds,
                 deferred.EarliestExpectedCompletionAt,
                 deferred.Reason);
@@ -108,7 +126,8 @@ public sealed class CatalogSearchAttemptHandler(
             cancellationToken);
         if (!budgetReservation.Accepted)
         {
-            return LookupSchedulingResult.DoNotSchedule(
+            return new LookupSchedulingDecision(
+                null,
                 budgetReservation.RetryAfterSecondsFrom(request.OccurredAt),
                 budgetReservation.RetryAt,
                 budgetReservation.Reason);
@@ -121,15 +140,16 @@ public sealed class CatalogSearchAttemptHandler(
 
         if (acquired)
         {
-            return LookupSchedulingResult.Schedule(
+            return new LookupSchedulingDecision(
+                plannedLookup.Command,
                 plan.EstimatedRetryAfterSeconds,
                 plan.EarliestExpectedCompletionAt,
-                plan.Reason,
-                plannedLookup.Command);
+                plan.Reason);
         }
 
         var deferredByReservation = PriorityPlan.Defer(request.OccurredAt);
-        return LookupSchedulingResult.DoNotSchedule(
+        return new LookupSchedulingDecision(
+            null,
             deferredByReservation.EstimatedRetryAfterSeconds,
             deferredByReservation.EarliestExpectedCompletionAt,
             deferredByReservation.Reason);
@@ -151,7 +171,7 @@ public sealed class CatalogSearchAttemptHandler(
 
     private async Task PersistLifecycleAsync(
         CatalogSearchAttempt request,
-        LookupSchedulingResult result,
+        LookupSchedulingDecision result,
         CancellationToken cancellationToken)
     {
         await PersistDiscoveryAsync(

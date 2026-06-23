@@ -4,15 +4,12 @@ using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
-using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Messaging;
-using Wolverine;
 using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.Adapters;
 
 public sealed class CatalogSearchAttemptListener(
-    CatalogSearchAttemptHandler handler,
-    IMessageBus messageBus)
+    CatalogSearchAttemptHandler handler)
 {
     [WolverineHandler]
     [Transactional]
@@ -28,11 +25,6 @@ public sealed class CatalogSearchAttemptListener(
             requestDto.RiskScore,
             requestDto.OccurredAt,
             CorrelationId.From(requestDto.CorrelationId));
-        var result = await handler.Handle(request, cancellationToken);
-
-        foreach (var message in result.Commands.Select(command => command.ToMessage()))
-        {
-            await messageBus.SendAsync(message);
-        }
+        await handler.Handle(request, cancellationToken);
     }
 }

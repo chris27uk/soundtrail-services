@@ -4,6 +4,7 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Events;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Prioritisation;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search.Resolution;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
@@ -43,8 +44,8 @@ internal sealed class CatalogSearchAttemptListenerWolverineTestEnvironment
                 sourceBudgetFake,
                 new MusicCatalogMatchResolver(),
                 new ActiveLookupWorkStoreFake(),
-                localSearchFake),
-            messageBusFake);
+                localSearchFake,
+                new WolverineCommandBus(messageBusFake)));
     }
 
     public CatalogSearchAttemptListener Listener { get; }
