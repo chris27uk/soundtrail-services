@@ -10,7 +10,7 @@ public static class GetAlbumEndpoints
     {
         endpoints.MapGet(
             "/artists/{artistId}/albums/{albumId}",
-            async (string artistId, string albumId, IHandler<GetAlbumCommand, AlbumDetailsResponse?> handler, CancellationToken cancellationToken) =>
+            async (string artistId, string albumId, IApiHandler<GetAlbumCommand, AlbumDetailsResponse?> handler, CancellationToken cancellationToken) =>
             {
                 var response = await handler.Handle(new GetAlbumCommand(ArtistId.From(artistId), AlbumId.From(albumId)), cancellationToken);
                 return response is null ? Results.NotFound() : Results.Ok(ToContract(response));

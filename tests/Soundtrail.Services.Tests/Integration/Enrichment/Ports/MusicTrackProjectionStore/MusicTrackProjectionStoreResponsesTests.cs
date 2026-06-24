@@ -4,9 +4,9 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Documents;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
+using Soundtrail.Contracts.Persistence;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -71,9 +71,9 @@ public sealed class MusicTrackProjectionStoreResponsesTests
         {
             if (fake is not null)
             {
-                var handler = new ProjectMusicTrackProjectionHandler(fake, fake);
+                var handler = new MusicTrackChangedHandler(fake, fake);
                 await handler.Handle(
-                    new ProjectMusicTrackProjectionCommand(
+                    new MusicTrackChangedCommand(
                         musicCatalogId,
                         stream.Events.Select((@event, index) => new VersionedMusicTrackEvent(index + 1, @event)).ToArray()),
                     CancellationToken.None);
@@ -86,11 +86,11 @@ public sealed class MusicTrackProjectionStoreResponsesTests
         private async Task StoreRavenAsync(MusicCatalogId musicCatalogId, MusicTrackStream stream)
         {
             using var session = raven!.Store.OpenAsyncSession();
-            var handler = new ProjectMusicTrackProjectionHandler(
+            var handler = new MusicTrackChangedHandler(
                 new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
                 new RavenSaveMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()));
             await handler.Handle(
-                new ProjectMusicTrackProjectionCommand(
+                new MusicTrackChangedCommand(
                     musicCatalogId,
                     stream.Events.Select((@event, index) => new VersionedMusicTrackEvent(index + 1, @event)).ToArray()),
                 CancellationToken.None);

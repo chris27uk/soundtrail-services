@@ -74,6 +74,14 @@ Not allowed here:
 - configuration binding
 - transport concerns
 
+Foldering rules:
+
+- organize `Soundtrail.Domain` by business area or bounded context first, not by artifact kind
+- top-level folders should be business-owned areas such as catalog, discovery, search, enrichment, or shared abstractions
+- do not create horizontal catch-all top-level folders such as `Commands`, `Events`, `Responses`, or `Model`
+- place commands, events, responses, projections, value types, and ports inside their owning business area
+- only genuinely cross-cutting domain infrastructure, such as base abstractions or event-sourcing helpers, may live in a shared abstractions area
+
 ### `Soundtrail.Services.Api`
 
 Use this project for HTTP endpoints and infrastructure wiring for the public API.
@@ -304,6 +312,7 @@ Rules:
 - endpoints and adapters are responsible for mapping between DTOs and domain objects
 - shared domain commands, responses, events, value types, and port contracts must live in `Soundtrail.Domain`
 - persisted infrastructure DTOs should use a `RecordDto` suffix by default
+- do not place app-local ports in `Soundtrail.Domain`; keep them in the owning app or feature project when only that app's handlers use them
 
 If a type exists because JSON, RavenDB, or messaging needs a particular shape, it is a DTO and should not be passed through a business port.
 
@@ -314,6 +323,8 @@ Ports define what the business layer needs. Adapters satisfy those ports.
 Guidelines:
 
 - define ports in the business-owned project
+- only define a port in `Soundtrail.Domain` when it is a true shared business contract used across app boundaries
+- if a port is only used by handlers inside one app or one app-owned feature area, place it in that owning app project instead
 - keep port interfaces small and use-case oriented
 - keep adapter-specific mapping and SDK code in the API or worker infrastructure project
 - place concrete adapters in an `Adapters` folder under the owning feature when they are feature-specific

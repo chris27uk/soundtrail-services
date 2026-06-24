@@ -10,7 +10,7 @@ public static class GetTrackEndpoints
     {
         endpoints.MapGet(
             "/artists/{artistId}/albums/{albumId}/tracks/{trackId}",
-            async (string artistId, string albumId, string trackId, IHandler<GetTrackCommand, TrackDetailsResponse?> handler, CancellationToken cancellationToken) =>
+            async (string artistId, string albumId, string trackId, IApiHandler<GetTrackCommand, TrackDetailsResponse?> handler, CancellationToken cancellationToken) =>
             {
                 var response = await handler.Handle(
                     new GetTrackCommand(ArtistId.From(artistId), AlbumId.From(albumId), TrackId.From(trackId)),

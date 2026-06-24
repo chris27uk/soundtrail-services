@@ -1,7 +1,8 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Contracts.EventSourcing;
-using Soundtrail.Domain.Events;
-using Soundtrail.Services.Enrichment.Cdc.Features.PublishMusicTrackEvents;
+using Soundtrail.Domain.Catalog.IntegrationEvents;
+using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Model;
+using Soundtrail.Services.Public.Projector.Features.PublishMusicTrackEvents;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -19,54 +20,33 @@ internal sealed class PublishMusicTrackEventsHandlerTestEnvironment
 
     public static PublishMusicTrackEventsHandlerTestEnvironment Create() => new();
 
-    public Task HandleAsync(params MusicTrackStoredEventRecordDto[] storedEvents) =>
-        Handler.HandleAsync(storedEvents, CancellationToken.None);
+    public Task HandleAsync(params VersionedMusicTrackIntegrationEvent[] events) =>
+        Handler.Handle(new PublishMusicTrackEventsCommand(events), CancellationToken.None);
 
-    public static MusicTrackStoredEventRecordDto PlaybackReferencesResolutionRequired(
+    public static VersionedMusicTrackIntegrationEvent StreamingLocationsRequired(
         string musicCatalogId,
         int version,
         string? isrc = "isrc-1",
         string? title = null,
         string? artist = null,
         string? album = null) =>
-        new()
-        {
-            Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId, version),
-            MusicCatalogId = musicCatalogId,
-            Version = version,
-            EventType = nameof(PlaybackReferencesResolutionRequired),
-            PlaybackReferencesResolutionRequired = new PlaybackReferencesResolutionRequiredEventDataRecordDto(
-                musicCatalogId,
-                LookupPriorityBand.High.ToString(),
-                "corr-1",
-                ProviderName.MusicBrainz.Value,
+        new(
+            MusicCatalogId.From(musicCatalogId),
+            version,
+            new StreamingLocationsRequiredIntegrationEvent(
+                MusicCatalogId.From(musicCatalogId),
+                LookupPriorityBand.High,
+                CorrelationId.From("corr-1"),
+                ProviderName.MusicBrainz,
                 new DateTimeOffset(2026, 6, 18, 12, version, 0, TimeSpan.Zero),
-                isrc,
-                title,
-                artist,
-                album,
+                !string.IsNullOrWhiteSpace(isrc)
+                    ? MusicSearchTerm.ByIsrc(isrc)
+                    : MusicSearchTerm.ByTrackArtistAlbum(
+                        title ?? throw new InvalidOperationException("title is required when isrc is null"),
+                        artist ?? throw new InvalidOperationException("artist is required when isrc is null"),
+                        album),
                 "artist_1",
-                "album_1"),
-            OccurredAtUtc = new DateTimeOffset(2026, 6, 18, 12, version, 0, TimeSpan.Zero)
-        };
+                "album_1"));
 
-    public static MusicTrackStoredEventRecordDto TrackDiscovered(
-        string musicCatalogId,
-        int version) =>
-        new()
-        {
-            Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId, version),
-            MusicCatalogId = musicCatalogId,
-            Version = version,
-            EventType = nameof(TrackDiscovered),
-            TrackDiscovered = new TrackDiscoveredEventDataRecordDto(
-                "Song A",
-                "Artist A",
-                123000,
-                "isrc-1",
-                "mbid-1",
-                ProviderName.MusicBrainz.Value,
-                new DateTimeOffset(2026, 6, 18, 12, version, 0, TimeSpan.Zero)),
-            OccurredAtUtc = new DateTimeOffset(2026, 6, 18, 12, version, 0, TimeSpan.Zero)
-        };
+    public static PublishMusicTrackEventsCommand EmptyCommand() => new([]);
 }

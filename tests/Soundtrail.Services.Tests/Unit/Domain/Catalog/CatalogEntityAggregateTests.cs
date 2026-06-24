@@ -16,7 +16,7 @@ public sealed class CatalogEntityAggregateTests
         var store = new MusicTrackStreamStoreFake();
         var aggregate = await CatalogEntityAggregate.LoadAsync(store, MusicCatalogId.From("mc_track_1"), CancellationToken.None);
 
-        aggregate.RecordEnrichmentResponse(MusicBrainzResponse());
+        aggregate.RecordMusicCatalogMetadataFetched(MusicBrainzResponse());
         var append = await aggregate.SaveAsync(store, CommandId.For("ResolveCanonicalMetadata:mc_track_1"), CancellationToken.None);
 
         append.AppendedEvents.Should().ContainItemsAssignableTo<ArtistDiscovered>();
@@ -32,10 +32,10 @@ public sealed class CatalogEntityAggregateTests
         var store = new MusicTrackStreamStoreFake();
         var aggregate = await CatalogEntityAggregate.LoadAsync(store, MusicCatalogId.From("mc_track_1"), CancellationToken.None);
 
-        aggregate.RecordEnrichmentResponse(MusicBrainzResponse());
+        aggregate.RecordMusicCatalogMetadataFetched(MusicBrainzResponse());
         var append = await aggregate.SaveAsync(store, CommandId.For("ResolveCanonicalMetadata:mc_track_1"), CancellationToken.None);
 
-        append.AppendedEvents.Should().ContainSingle(x => x is PlaybackReferencesResolutionRequired);
+        append.AppendedEvents.Should().ContainSingle(x => x is StreamingLocationsRequired);
     }
 
     [Fact]
@@ -52,10 +52,10 @@ public sealed class CatalogEntityAggregateTests
                 Clock));
         var aggregate = await CatalogEntityAggregate.LoadAsync(store, MusicCatalogId.From("mc_track_1"), CancellationToken.None);
 
-        aggregate.RecordEnrichmentResponse(MusicBrainzResponse());
+        aggregate.RecordMusicCatalogMetadataFetched(MusicBrainzResponse());
         var append = await aggregate.SaveAsync(store, CommandId.For("ResolveCanonicalMetadata:mc_track_1"), CancellationToken.None);
 
-        append.AppendedEvents.Should().NotContain(x => x is PlaybackReferencesResolutionRequired);
+        append.AppendedEvents.Should().NotContain(x => x is StreamingLocationsRequired);
     }
 
     [Fact]
@@ -64,7 +64,7 @@ public sealed class CatalogEntityAggregateTests
         var store = new MusicTrackStreamStoreFake();
         var aggregate = await CatalogEntityAggregate.LoadAsync(store, MusicCatalogId.From("mc_track_1"), CancellationToken.None);
 
-        aggregate.RecordEnrichmentResponse(
+        aggregate.RecordMusicCatalogMetadataFetched(
             MusicBrainzResponse() with
             {
                 References =
@@ -78,7 +78,7 @@ public sealed class CatalogEntityAggregateTests
         var append = await aggregate.SaveAsync(store, CommandId.For("ResolveCanonicalMetadata:mc_track_1"), CancellationToken.None);
 
         append.AppendedEvents.Should().ContainSingle(x => x is ProviderReferenceDiscovered);
-        append.AppendedEvents.Should().NotContain(x => x is PlaybackReferencesResolutionRequired);
+        append.AppendedEvents.Should().NotContain(x => x is StreamingLocationsRequired);
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public sealed class CatalogEntityAggregateTests
         var store = new MusicTrackStreamStoreFake();
         store.Seed(
             MusicCatalogId.From("mc_track_1"),
-            new PlaybackReferencesResolutionRequired(
+            new StreamingLocationsRequired(
                 MusicCatalogId.From("mc_track_1"),
                 LookupPriorityBand.High,
                 CorrelationId.From("corr-seeded"),
@@ -97,10 +97,10 @@ public sealed class CatalogEntityAggregateTests
                 new CatalogTrackHierarchy(ArtistId.From("artist_test_artist"), AlbumId.From("album_rare_album"))));
         var aggregate = await CatalogEntityAggregate.LoadAsync(store, MusicCatalogId.From("mc_track_1"), CancellationToken.None);
 
-        aggregate.RecordEnrichmentResponse(MusicBrainzResponse());
+        aggregate.RecordMusicCatalogMetadataFetched(MusicBrainzResponse());
         var append = await aggregate.SaveAsync(store, CommandId.For("ResolveCanonicalMetadata:mc_track_1"), CancellationToken.None);
 
-        append.AppendedEvents.Should().NotContain(x => x is PlaybackReferencesResolutionRequired);
+        append.AppendedEvents.Should().NotContain(x => x is StreamingLocationsRequired);
     }
 
     [Fact]
@@ -109,9 +109,9 @@ public sealed class CatalogEntityAggregateTests
         var store = new MusicTrackStreamStoreFake();
         var aggregate = await CatalogEntityAggregate.LoadAsync(store, MusicCatalogId.From("mc_track_1"), CancellationToken.None);
 
-        aggregate.RecordEnrichmentResponse(
-            new EnrichmentResponse(
-                CommandId.For("ResolvePlaybackReferences:mc_track_1"),
+        aggregate.RecordMusicCatalogMetadataFetched(
+            new MusicCatalogMetadataFetched(
+                CommandId.For("LookupStreamingLocations:mc_track_1"),
                 MusicCatalogId.From("mc_track_1"),
                 ProviderName.Odesli,
                 LookupPriorityBand.High,
@@ -121,16 +121,16 @@ public sealed class CatalogEntityAggregateTests
                 [new ProviderLookupFailure(ProviderName.Spotify, ProviderName.Odesli)],
                 null,
                 CorrelationId.From("corr-2")));
-        var append = await aggregate.SaveAsync(store, CommandId.For("ResolvePlaybackReferences:mc_track_1"), CancellationToken.None);
+        var append = await aggregate.SaveAsync(store, CommandId.For("LookupStreamingLocations:mc_track_1"), CancellationToken.None);
 
         append.AppendedEvents.Should().ContainSingle(x => x is ProviderReferenceLookupFailed);
         append.AppendedEvents.Should().NotContainItemsAssignableTo<TrackDiscovered>();
         append.AppendedEvents.Should().NotContainItemsAssignableTo<ArtistDiscovered>();
         append.AppendedEvents.Should().NotContainItemsAssignableTo<AlbumDiscovered>();
-        append.AppendedEvents.Should().NotContainItemsAssignableTo<PlaybackReferencesResolutionRequired>();
+        append.AppendedEvents.Should().NotContainItemsAssignableTo<StreamingLocationsRequired>();
     }
 
-    private static EnrichmentResponse MusicBrainzResponse() =>
+    private static MusicCatalogMetadataFetched MusicBrainzResponse() =>
         new(
             CommandId.For("ResolveCanonicalMetadata:mc_track_1"),
             MusicCatalogId.From("mc_track_1"),

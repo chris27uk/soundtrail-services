@@ -2,18 +2,19 @@ using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Commands;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Ports;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
-using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog;
-using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog.ProjectionModel;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.ProjectionModel;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 using Soundtrail.Tools.MusicBrainzImport.Features.RebuildAllReadModels;
 using Soundtrail.Tools.MusicBrainzImport.Features.RebuildAllReadModels.Adapters;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection;
-using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection;
+using Soundtrail.Tools.MusicBrainzImport.Features.OnReplayCatalogSearchStatus;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayPlannerMusicTrackProjection;
 
 namespace Soundtrail.Services.Tests.Unit.MusicBrainzImport.Features.RebuildAllReadModels;
@@ -63,7 +64,7 @@ public sealed class RebuildAllReadModelsHandlerTests
             plannerEventStore,
             plannerEventStore,
             plannerResetPort,
-            new ProjectMusicTrackProjectionHandler(plannerProjectionStore, plannerProjectionStore));
+            new MusicTrackChangedHandler(plannerProjectionStore, plannerProjectionStore));
 
         var catalogEventStore = new FakeMusicTrackReplayEventStore(new Dictionary<string, IReadOnlyList<VersionedMusicTrackEvent>>
         {
@@ -74,7 +75,7 @@ public sealed class RebuildAllReadModelsHandlerTests
             catalogEventStore,
             catalogEventStore,
             catalogProjectionStore,
-            new ProjectMusicTrackCatalogHandler(catalogProjectionStore, catalogProjectionStore));
+            new MusicCatalogChangedHandler(catalogProjectionStore, catalogProjectionStore));
 
         var discoveryEventStore = new FakeDiscoveryReplayEventStore(new Dictionary<string, IReadOnlyList<VersionedCatalogSearchDiscoveryEvent>>
         {
@@ -85,7 +86,7 @@ public sealed class RebuildAllReadModelsHandlerTests
             discoveryEventStore,
             discoveryEventStore,
             discoveryProjectionStore,
-            new ProjectDiscoveryLifecycleHandler(discoveryProjectionStore, discoveryProjectionStore));
+            new CatalogSearchStatusChangedHandler(discoveryProjectionStore, discoveryProjectionStore));
 
         var clearPlannerOperationalStatePort = new FakeClearPlannerOperationalStatePort(3, 4, 5);
         var handler = new RebuildAllReadModelsHandler(
@@ -94,17 +95,7 @@ public sealed class RebuildAllReadModelsHandlerTests
             discoveryReplayHandler,
             clearPlannerOperationalStatePort);
 
-        var result = await handler.Handle(new RebuildAllReadModelsCommand(), CancellationToken.None);
-
-        result.PlannerMusicTrackReplayedStreamCount.Should().Be(1);
-        result.PlannerMusicTrackReplayedEventCount.Should().Be(1);
-        result.CatalogReplayedStreamCount.Should().Be(1);
-        result.CatalogReplayedEventCount.Should().Be(1);
-        result.DiscoveryLifecycleReplayedCriteriaCount.Should().Be(1);
-        result.DiscoveryLifecycleReplayedEventCount.Should().Be(1);
-        result.ClearedPotentialCatalogLookupWorkCount.Should().Be(3);
-        result.ClearedCatalogSearchTrackingCount.Should().Be(4);
-        result.ClearedActiveLookupWorkCount.Should().Be(5);
+        await handler.Handle(new RebuildAllReadModelsCommand(), CancellationToken.None);
 
         plannerResetPort.ResetCatalogIds.Should().ContainSingle().Which.Should().Be(musicCatalogId);
         catalogProjectionStore.ResetCatalogIds.Should().ContainSingle().Which.Should().Be(musicCatalogId);
@@ -248,12 +239,18 @@ public sealed class RebuildAllReadModelsHandlerTests
         }
     }
 
-    private sealed class FakeClearPlannerOperationalStatePort(
-        int potentialCatalogLookupWorkCount,
-        int catalogSearchTrackingCount,
-        int activeLookupWorkCount) : IClearPlannerOperationalStatePort
+        private sealed class FakeClearPlannerOperationalStatePort(
+            int potentialCatalogLookupWorkCount,
+            int catalogSearchTrackingCount,
+            int activeLookupWorkCount) : IClearPlannerOperationalStatePort
     {
         public bool WasCalled { get; private set; }
+
+        public int PotentialCatalogLookupWorkCount => potentialCatalogLookupWorkCount;
+
+        public int CatalogSearchTrackingCount => catalogSearchTrackingCount;
+
+        public int ActiveLookupWorkCount => activeLookupWorkCount;
 
         public Task<ClearPlannerOperationalStateResult> ClearAsync(CancellationToken cancellationToken)
         {

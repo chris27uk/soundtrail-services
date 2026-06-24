@@ -21,16 +21,15 @@ using Soundtrail.Services.Api.Features.SearchCatalog.Adapters;
 using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 using Soundtrail.Services.Api.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
-using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog;
-using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ImportCatalogSearchDiscoveryEvents;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ImportMusicTrackEvents;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectDiscoveryLifecycle.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ReplayDiscoveryLifecycleProjection;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ReplayDiscoveryLifecycleProjection.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicTrackEventsImported;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus;
+using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Wolverine;
 using Wolverine.Tracking;
@@ -92,11 +91,11 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
             options.ConfigureCatalogSearchDependencies = services =>
             {
                 services.AddEmbeddedRavenForTesting(raven.Store);
-                services.TryAddSingleton<Soundtrail.Domain.Search.ICatalogSearchPort, Soundtrail.Services.Api.Infrastructure.Raven.RavenCatalogSearch>();
+                services.TryAddSingleton<Soundtrail.Services.Api.Features.SearchCatalog.Ports.ICatalogSearchPort, Soundtrail.Services.Api.Infrastructure.Raven.RavenCatalogSearch>();
             };
             options.ConfigureCatalogReadDependencies = services =>
             {
-                services.TryAddSingleton<Soundtrail.Domain.CatalogBrowsing.ICatalogReadPort, NoOpCatalogReadPort>();
+                services.TryAddSingleton<Soundtrail.Services.Api.Infrastructure.Ports.ICatalogReadPort, NoOpCatalogReadPort>();
             };
         });
 
@@ -287,17 +286,17 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
         CatalogSearchCriteria criteria,
         params IDomainEvent[] events)
     {
-        var repository = new Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.RavenCatalogSearchDiscoveryRepository(store);
+        var repository = new Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters.RavenCatalogSearchDiscoveryRepository(store);
         repository.AppendAsync(criteria, 0, events, CancellationToken.None).GetAwaiter().GetResult();
 
         using var session = store.OpenAsyncSession();
-        var replayHandler = new ReplayDiscoveryLifecycleProjectionHandler(
+        var replayHandler = new ReplayCatalogSearchStatusHandler(
             new RavenLoadStoredDiscoveryLifecycleEvents(session),
-            new ProjectDiscoveryLifecycleHandler(
+            new CatalogSearchStatusChangedHandler(
                 new RavenLoadDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()),
                 new RavenSaveDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper())));
         replayHandler.Handle(
-                new ReplayDiscoveryLifecycleProjectionCommand(criteria),
+                new ReplayCatalogSearchStatusCommand(criteria),
                 CancellationToken.None)
             .GetAwaiter()
             .GetResult();
@@ -310,7 +309,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
     {
         using (var session = store.OpenAsyncSession())
         {
-            var importHandler = new ImportMusicTrackEventsHandler(new RavenMusicTrackStreamStore(session));
+            var importHandler = new MusicTrackEventsImportedHandler(new RavenMusicTrackStreamStore(session));
             importHandler.Handle(
                     new ImportMusicTrackEventsCommand(
                         musicCatalogId,
@@ -331,11 +330,11 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
             .OrderBy(x => x.Version)
             .Select(x => new VersionedMusicTrackEvent(x.Version, x.ToDomainEvent()))
             .ToArray();
-        var projectHandler = new ProjectMusicTrackCatalogHandler(
+        var projectHandler = new MusicCatalogChangedHandler(
             new RavenLoadMusicTrackCatalogProjection(replaySession, new RavenMusicTrackCatalogProjectionMapper()),
             new RavenSaveMusicTrackCatalogProjection(replaySession, new RavenMusicTrackCatalogProjectionMapper()));
         projectHandler.Handle(
-                new ProjectMusicTrackCatalogCommand(musicCatalogId, eventsToReplay),
+                new MusicCatalogChangedCommand(musicCatalogId, eventsToReplay),
                 CancellationToken.None)
             .GetAwaiter()
             .GetResult();
@@ -347,21 +346,18 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
         params IDomainEvent[] events)
     {
         using var replaySession = store.OpenAsyncSession();
-        var importHandler = new ImportCatalogSearchDiscoveryEventsHandler(
-            new Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.RavenCatalogSearchDiscoveryRepository(store));
-        importHandler.Handle(
-                new ImportCatalogSearchDiscoveryEventsCommand(criteria, 0, events),
-                CancellationToken.None)
+        var repository = new Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters.RavenCatalogSearchDiscoveryRepository(store);
+        repository.AppendAsync(criteria, 0, events, CancellationToken.None)
             .GetAwaiter()
             .GetResult();
 
-        var replayHandler = new ReplayDiscoveryLifecycleProjectionHandler(
+        var replayHandler = new ReplayCatalogSearchStatusHandler(
             new RavenLoadStoredDiscoveryLifecycleEvents(replaySession),
-            new ProjectDiscoveryLifecycleHandler(
+            new CatalogSearchStatusChangedHandler(
                 new RavenLoadDiscoveryLifecycleProjection(replaySession, new RavenDiscoveryLifecycleProjectionMapper()),
                 new RavenSaveDiscoveryLifecycleProjection(replaySession, new RavenDiscoveryLifecycleProjectionMapper())));
         replayHandler.Handle(
-                new ReplayDiscoveryLifecycleProjectionCommand(criteria),
+                new ReplayCatalogSearchStatusCommand(criteria),
                 CancellationToken.None)
             .GetAwaiter()
             .GetResult();
@@ -389,7 +385,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
         return array;
     }
 
-    private sealed class NoOpCatalogReadPort : Soundtrail.Domain.CatalogBrowsing.ICatalogReadPort
+    private sealed class NoOpCatalogReadPort : Soundtrail.Services.Api.Infrastructure.Ports.ICatalogReadPort
     {
         public Task<Soundtrail.Domain.CatalogBrowsing.ArtistDetailsResponse?> GetArtistAsync(Soundtrail.Domain.Catalog.ArtistId artistId, CancellationToken cancellationToken) =>
             Task.FromResult<Soundtrail.Domain.CatalogBrowsing.ArtistDetailsResponse?>(null);

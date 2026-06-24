@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain;
+using Soundtrail.Services.Api.Infrastructure.Ports;
 using Soundtrail.Domain.CatalogBrowsing;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api;
@@ -53,8 +54,8 @@ internal sealed class SearchWebApiTestEnvironment : IAsyncDisposable
                     services.Remove(descriptor);
                 }
 
-                services.RemoveAll<IHandler<SearchCatalogCommand, SearchCatalogResponse>>();
-                services.AddSingleton<IHandler<SearchCatalogCommand, SearchCatalogResponse>>(SearchHandler);
+                services.RemoveAll<IApiHandler<SearchCatalogCommand, SearchCatalogResponse>>();
+                services.AddSingleton<IApiHandler<SearchCatalogCommand, SearchCatalogResponse>>(SearchHandler);
                 services.RemoveAll<ICatalogReadPort>();
                 services.AddSingleton<ICatalogReadPort, NoOpCatalogReadPort>();
             });

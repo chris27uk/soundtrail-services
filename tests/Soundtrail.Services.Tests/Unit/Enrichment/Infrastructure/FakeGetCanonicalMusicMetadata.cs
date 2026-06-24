@@ -1,6 +1,6 @@
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
-using Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.Lookup;
+using Soundtrail.Services.Enrichment.Worker.Features.OnLookupCanonicalMusicMetadata.Lookup;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 

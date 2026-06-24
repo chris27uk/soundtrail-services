@@ -5,12 +5,12 @@ using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ProjectMusicTrackProjection.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Documents;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ReplayMusicTrackProjection;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ReplayMusicTrackProjection.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
+using Soundtrail.Contracts.Persistence;
+using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack;
+using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ProjectionReplay;
@@ -23,7 +23,7 @@ public sealed class MusicTrackProjectionReplayResponsesTests
     {
         using var raven = RavenEmbeddedTestDatabase.Create();
         using var session = raven.Store.OpenAsyncSession();
-        var handler = new ProjectMusicTrackProjectionHandler(
+        var handler = new MusicTrackChangedHandler(
             new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
             new RavenSaveMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()));
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
@@ -128,17 +128,15 @@ public sealed class MusicTrackProjectionReplayResponsesTests
 
         using (var replaySession = raven.Store.OpenAsyncSession())
         {
-            var replayHandler = new ReplayMusicTrackProjectionHandler(
+            var replayHandler = new ReplayMusicTrackHandler(
                 new RavenLoadStoredMusicTrackEvents(replaySession),
-                new ProjectMusicTrackProjectionHandler(
+                new MusicTrackChangedHandler(
                     new RavenLoadMusicTrackProjection(replaySession, new RavenMusicTrackProjectionMapper()),
                     new RavenSaveMusicTrackProjection(replaySession, new RavenMusicTrackProjectionMapper())));
 
-            var result = await replayHandler.Handle(
-                new ReplayMusicTrackProjectionCommand(musicCatalogId),
+            await replayHandler.Handle(
+                new ReplayMusicTrackCommand(musicCatalogId),
                 CancellationToken.None);
-
-            result.ReplayedEventCount.Should().Be(2);
         }
 
         using var verificationSession = raven.Store.OpenAsyncSession();
@@ -177,7 +175,7 @@ public sealed class MusicTrackProjectionReplayResponsesTests
 
         using (var session = raven.Store.OpenAsyncSession())
         {
-            var handler = new ProjectMusicTrackProjectionHandler(
+            var handler = new MusicTrackChangedHandler(
                 new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
                 new RavenSaveMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()));
             await handler.Handle(ToCommand(MusicCatalogId.From("mc_track_1"), [storedEvent]), CancellationToken.None);
@@ -199,7 +197,7 @@ public sealed class MusicTrackProjectionReplayResponsesTests
     {
         using var raven = RavenEmbeddedTestDatabase.Create();
         using var session = raven.Store.OpenAsyncSession();
-        var handler = new ProjectMusicTrackProjectionHandler(
+        var handler = new MusicTrackChangedHandler(
             new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
             new RavenSaveMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()));
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
@@ -264,7 +262,7 @@ public sealed class MusicTrackProjectionReplayResponsesTests
         projection.ProjectionVersion.Should().Be(2);
     }
 
-    private static ProjectMusicTrackProjectionCommand ToCommand(
+    private static MusicTrackChangedCommand ToCommand(
         MusicCatalogId musicCatalogId,
         IReadOnlyList<MusicTrackStoredEventRecordDto> storedEvents) =>
         new(

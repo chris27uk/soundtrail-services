@@ -4,7 +4,7 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
-namespace Soundtrail.Services.Tests.Integration.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection;
+namespace Soundtrail.Services.Tests.Integration.MusicBrainzImport.Features.OnReplayCatalogSearchStatus;
 
 [Collection(RavenEmbeddedCollection.Name)]
 public sealed class ReplayDiscoveryLifecycleProjectionResponsesTests
@@ -17,12 +17,9 @@ public sealed class ReplayDiscoveryLifecycleProjectionResponsesTests
         await using var env = await ReplayDiscoveryLifecycleProjectionTestEnvironment.CreateAsync(mode);
         var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
 
-        var result = await env.Handler.Handle(
+        await env.Handler.Handle(
             new ReplayDiscoveryLifecycleProjectionBatchCommand(),
             CancellationToken.None);
-
-        result.ReplayedCriteriaCount.Should().Be(1);
-        result.ReplayedEventCount.Should().Be(2);
 
         var status = await env.LoadStatusAsync(criteria);
         status.Should().NotBeNull();

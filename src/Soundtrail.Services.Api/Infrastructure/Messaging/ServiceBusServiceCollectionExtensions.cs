@@ -17,7 +17,7 @@ public static class ServiceBusServiceCollectionExtensions
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
         services.TryAddScoped<IEnqueueCatalogSearchAttempt, WolverineEnqueueCatalogSearchAttempt>();
         services.TryAddScoped<IQueueCatalogSearchAttempt>(sp => sp.GetRequiredService<IEnqueueCatalogSearchAttempt>());
-        services.TryAddScoped<Soundtrail.Domain.Commands.IQueueCatalogSearchAttemptPort>(sp => sp.GetRequiredService<IQueueCatalogSearchAttempt>());
+        services.TryAddScoped<Soundtrail.Services.Api.Features.SearchCatalog.Ports.IQueueCatalogSearchAttemptPort>(sp => sp.GetRequiredService<IQueueCatalogSearchAttempt>());
         return services;
     }
 

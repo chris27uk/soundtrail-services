@@ -148,9 +148,7 @@ public sealed class CatalogSearchDiscovery
     {
         EnsureCanTransitionTo(CatalogSearchLifecycleStatus.Failed);
 
-        if (status == CatalogSearchLifecycleStatus.Failed
-            && !willBeLookedUp
-            && string.Equals(this.reason, reason, StringComparison.Ordinal))
+        if (status == CatalogSearchLifecycleStatus.Failed && !willBeLookedUp && string.Equals(this.reason, reason, StringComparison.Ordinal))
         {
             return false;
         }
@@ -166,10 +164,7 @@ public sealed class CatalogSearchDiscovery
         return true;
     }
 
-    public bool Start(
-        LookupPriorityBand priority,
-        string reason,
-        DateTimeOffset startedAt)
+    public bool Start(LookupPriorityBand priority, string reason, DateTimeOffset startedAt)
     {
         EnsureCanTransitionTo(CatalogSearchLifecycleStatus.InProgress);
 

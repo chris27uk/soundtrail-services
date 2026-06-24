@@ -2,19 +2,20 @@ using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Commands;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Persistence;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
+using Soundtrail.Domain.Enrichment.Commands;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling;
 
-public class CatalogSearchAttemptHandlerTests
+public class CatalogSearchRequestedHandlerTests
 {
     [Fact]
     public async Task Given_No_Active_Work_When_Handling_A_Schedulable_Request_Then_ShouldSchedule_Is_True()
     {
-        var env = CatalogSearchAttemptHandlerTestEnvironment.WithNoExistingCandidates();
+        var env = CatalogSearchRequestedHandlerTestEnvironment.WithNoExistingCandidates();
         env.Search.ResolveAs(MusicCatalogId.From("mc_track_1"));
 
         var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10), CancellationToken.None);
@@ -27,7 +28,7 @@ public class CatalogSearchAttemptHandlerTests
     [Fact]
     public async Task Given_No_Active_Work_When_Handling_A_Schedulable_Request_Then_An_Active_Work_Lock_Is_Acquired()
     {
-        var env = CatalogSearchAttemptHandlerTestEnvironment.WithNoExistingCandidates();
+        var env = CatalogSearchRequestedHandlerTestEnvironment.WithNoExistingCandidates();
         env.Search.ResolveAs(MusicCatalogId.From("mc_track_1"));
 
         await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10), CancellationToken.None);
@@ -38,7 +39,7 @@ public class CatalogSearchAttemptHandlerTests
     [Fact]
     public async Task Given_Active_Work_Already_Exists_When_Handling_A_Schedulable_Request_Then_No_Command_Is_Returned()
     {
-        var env = CatalogSearchAttemptHandlerTestEnvironment.WithNoExistingCandidates();
+        var env = CatalogSearchRequestedHandlerTestEnvironment.WithNoExistingCandidates();
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
         env.Search.ResolveAs(musicCatalogId);
         await env.ActiveWorkStore.TryAcquireAsync(CommandId.For($"LookupCanonicalMusicMetadata:{musicCatalogId.Value}"), DateTimeOffset.UtcNow.AddMinutes(5), CancellationToken.None);
@@ -53,7 +54,7 @@ public class CatalogSearchAttemptHandlerTests
     [Fact]
     public async Task Given_Local_Search_Has_Isrc_When_Handling_A_Schedulable_Request_Then_Playback_References_Work_Is_Scheduled()
     {
-        var env = CatalogSearchAttemptHandlerTestEnvironment.WithNoExistingCandidates();
+        var env = CatalogSearchRequestedHandlerTestEnvironment.WithNoExistingCandidates();
         env.Search.ResolveAs(MusicCatalogId.From("mc_track_1"));
         env.LocalSearch.Seed(new LocalMusicTrackSearchResult(
             MusicCatalogId.From("mc_track_1"),
@@ -67,13 +68,13 @@ public class CatalogSearchAttemptHandlerTests
 
         var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10), CancellationToken.None);
 
-        result.Commands.Should().ContainSingle().Which.Should().BeOfType<ResolvePlaybackReferencesCommand>();
+        env.CommandBus.SentCommands.Should().ContainSingle().Which.Should().BeOfType<LookupStreamingLocationsCommand>();
     }
 
     [Fact]
     public async Task Given_A_MusicBrainz_Budget_Rejection_When_Handling_A_Schedulable_Request_Then_No_Command_Is_Returned()
     {
-        var env = CatalogSearchAttemptHandlerTestEnvironment.WithNoExistingCandidates();
+        var env = CatalogSearchRequestedHandlerTestEnvironment.WithNoExistingCandidates();
         env.Search.ResolveAs(MusicCatalogId.From("mc_track_1"));
         env.SourceBudget.Reject(
             ProviderName.MusicBrainz,
@@ -91,14 +92,15 @@ public class CatalogSearchAttemptHandlerTests
     public async Task Given_An_Existing_Eligible_Candidate_When_Handling_A_Low_Risk_Request_Then_It_Is_Updated_And_Scheduled()
     {
         const string musicCatalogId = "mc_track_1";
-        var env = CatalogSearchAttemptHandlerTestEnvironment.WithExistingEligibleCandidate(musicCatalogId);
+        var env = CatalogSearchRequestedHandlerTestEnvironment.WithExistingEligibleCandidate(musicCatalogId);
 
         var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 15), CancellationToken.None);
 
         result.ShouldSchedule.Should().BeTrue();
-        result.Command.Should().NotBeNull();
-        result.Command!.MusicCatalogId.Should().Be(MusicCatalogId.From(musicCatalogId));
-        result.Command.Priority.Should().Be(LookupPriorityBand.High);
+        env.CommandBus.SentCommands.Should().ContainSingle();
+        var sentCommand = env.CommandBus.SentCommands.Single().Should().BeOfType<LookupMusicMetadataCommand>().Subject;
+        sentCommand.MusicCatalogId.Should().Be(MusicCatalogId.From(musicCatalogId));
+        sentCommand.Priority.Should().Be(LookupPriorityBand.High);
         env.PotentialCatalogLookupWorks.Should().ContainSingle();
         env.PotentialCatalogLookupWorks[0].MusicCatalogId.Should().Be(MusicCatalogId.From(musicCatalogId));
         env.PotentialCatalogLookupWorks[0].RequestCount.Should().Be(3);
@@ -111,7 +113,7 @@ public class CatalogSearchAttemptHandlerTests
     public async Task Given_An_Existing_Eligible_Candidate_With_Stronger_History_When_Handling_A_Request_Then_The_Stronger_Trust_And_Risk_Are_Preserved()
     {
         const string musicCatalogId = "mc_track_1";
-        var env = CatalogSearchAttemptHandlerTestEnvironment.WithExistingCandidate(
+        var env = CatalogSearchRequestedHandlerTestEnvironment.WithExistingCandidate(
             Candidates.ExistingCandidate(
                 MusicCatalogId.From(musicCatalogId),
                 requestCount: 2,
@@ -133,7 +135,7 @@ public class CatalogSearchAttemptHandlerTests
     public async Task Given_An_Existing_Eligible_Candidate_When_Handling_A_High_Risk_Request_Then_It_Is_Not_Scheduled_And_Remains_Pending()
     {
         const string musicCatalogId = "mc_track_1";
-        var env = CatalogSearchAttemptHandlerTestEnvironment.WithExistingEligibleCandidate(musicCatalogId);
+        var env = CatalogSearchRequestedHandlerTestEnvironment.WithExistingEligibleCandidate(musicCatalogId);
 
         var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 2, riskScore: 60), CancellationToken.None);
 
@@ -148,7 +150,7 @@ public class CatalogSearchAttemptHandlerTests
     {
         const string musicCatalogId = "mc_track_1";
         var occurredAt = new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero);
-        var env = CatalogSearchAttemptHandlerTestEnvironment.WithExistingNotYetEligibleCandidate(musicCatalogId);
+        var env = CatalogSearchRequestedHandlerTestEnvironment.WithExistingNotYetEligibleCandidate(musicCatalogId);
 
         var result = await env.Handler.Handle(
             env.Request("rare unknown song", trustLevel: 1, riskScore: 0, occurredAt: occurredAt),
@@ -165,7 +167,7 @@ public class CatalogSearchAttemptHandlerTests
     [Fact]
     public async Task Given_A_Request_That_Cannot_Be_Resolved_When_Handling_Then_No_Candidate_Is_Stored()
     {
-        var env = CatalogSearchAttemptHandlerTestEnvironment.WithNoExistingCandidates();
+        var env = CatalogSearchRequestedHandlerTestEnvironment.WithNoExistingCandidates();
         env.Search.Fails();
 
         await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 0, riskScore: 100), CancellationToken.None);
@@ -176,7 +178,7 @@ public class CatalogSearchAttemptHandlerTests
     [Fact]
     public async Task Given_A_Resolved_Request_With_No_Previous_Candidate_When_Handling_A_Low_Risk_Request_Then_A_Pending_Candidate_And_Core_Trackings_Are_Stored()
     {
-        var env = CatalogSearchAttemptHandlerTestEnvironment.WithNoExistingCandidates();
+        var env = CatalogSearchRequestedHandlerTestEnvironment.WithNoExistingCandidates();
         env.Search.ResolveAs(MusicCatalogId.From("mc_track_1"));
         var occurredAt = new DateTimeOffset(2026, 5, 31, 12, 34, 56, TimeSpan.Zero);
 
@@ -185,12 +187,13 @@ public class CatalogSearchAttemptHandlerTests
             CancellationToken.None);
 
         result.ShouldSchedule.Should().BeTrue();
-        result.Command.Should().NotBeNull();
-        result.Command!.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
-        result.Command.Priority.Should().Be(LookupPriorityBand.Low);
-        result.Command.CreatedAt.Should().Be(occurredAt);
-        result.Command.CommandId.Should().Be(CommandId.For("LookupCanonicalMusicMetadata:mc_track_1"));
-        result.Command.CorrelationId.Value.Should().NotBeNullOrWhiteSpace();
+        env.CommandBus.SentCommands.Should().ContainSingle();
+        var sentCommand = env.CommandBus.SentCommands.Single().Should().BeOfType<LookupMusicMetadataCommand>().Subject;
+        sentCommand.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
+        sentCommand.Priority.Should().Be(LookupPriorityBand.Low);
+        sentCommand.CreatedAt.Should().Be(occurredAt);
+        sentCommand.CommandId.Should().Be(CommandId.For("LookupCanonicalMusicMetadata:mc_track_1"));
+        sentCommand.CorrelationId.Value.Should().NotBeNullOrWhiteSpace();
 
         env.PotentialCatalogLookupWorks.Should().ContainSingle();
         env.PotentialCatalogLookupWorks[0].MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
@@ -209,7 +212,7 @@ public class CatalogSearchAttemptHandlerTests
     [Fact]
     public async Task Given_A_Resolved_Request_With_Known_Hierarchy_When_Handling_Then_Artist_And_Album_Trackings_Are_Stored()
     {
-        var env = CatalogSearchAttemptHandlerTestEnvironment.WithNoExistingCandidates();
+        var env = CatalogSearchRequestedHandlerTestEnvironment.WithNoExistingCandidates();
         env.Search.ResolveAs(MusicCatalogId.From("mc_track_1"));
         env.LocalSearch.Seed(new LocalMusicTrackSearchResult(
             MusicCatalogId.From("mc_track_1"),
@@ -239,7 +242,7 @@ public class CatalogSearchAttemptHandlerTests
         int riskScore,
         PotentialCatalogLookupWorkStatus expectedStatus)
     {
-        var env = CatalogSearchAttemptHandlerTestEnvironment.WithNoExistingCandidates();
+        var env = CatalogSearchRequestedHandlerTestEnvironment.WithNoExistingCandidates();
         env.Search.ResolveAs(MusicCatalogId.From("mc_track_1"));
 
         var result = await env.Handler.Handle(
@@ -257,7 +260,7 @@ public class CatalogSearchAttemptHandlerTests
     [Fact]
     public async Task Given_A_Single_Exact_Query_Match_When_Handling_A_Request_With_A_Close_Alternative_Then_The_Exact_Query_Match_Is_Scheduled()
     {
-        var env = CatalogSearchAttemptHandlerTestEnvironment.WithNoExistingCandidates();
+        var env = CatalogSearchRequestedHandlerTestEnvironment.WithNoExistingCandidates();
         env.Search.ReturnMatches(
             new MusicCatalogMatch(
                 MusicCatalogId.From("mc_track_1"),
@@ -287,14 +290,14 @@ public class CatalogSearchAttemptHandlerTests
             CancellationToken.None);
 
         result.ShouldSchedule.Should().BeTrue();
-        result.Command.Should().NotBeNull();
-        result.Command!.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
+        env.CommandBus.SentCommands.Should().ContainSingle();
+        env.CommandBus.SentCommands.Single().Should().BeOfType<LookupMusicMetadataCommand>().Which.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
     }
 
     [Fact]
     public async Task Given_Multiple_Exact_Identity_Matches_When_Handling_A_Request_With_A_Local_Release_Date_Then_The_Matching_Release_Date_Is_Selected()
     {
-        var env = CatalogSearchAttemptHandlerTestEnvironment.WithNoExistingCandidates();
+        var env = CatalogSearchRequestedHandlerTestEnvironment.WithNoExistingCandidates();
         env.LocalSearch.Seed(new LocalMusicTrackSearchResult(
             MusicCatalogId.From("mc_track_criteria"),
             "Rare Unknown Song",
@@ -323,14 +326,14 @@ public class CatalogSearchAttemptHandlerTests
             CancellationToken.None);
 
         result.ShouldSchedule.Should().BeTrue();
-        result.Command.Should().NotBeNull();
-        result.Command!.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
+        env.CommandBus.SentCommands.Should().ContainSingle();
+        env.CommandBus.SentCommands.Single().Should().BeOfType<LookupMusicMetadataCommand>().Which.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
     }
 
     [Fact]
     public async Task Given_A_Resolved_Request_When_Handling_A_Request_At_The_Minimum_Accepted_Score_Then_It_Is_Scheduled()
     {
-        var env = CatalogSearchAttemptHandlerTestEnvironment.WithNoExistingCandidates();
+        var env = CatalogSearchRequestedHandlerTestEnvironment.WithNoExistingCandidates();
         env.Search.ReturnMatches(new MusicCatalogMatch(MusicCatalogId.From("mc_track_1"), 0.80m));
 
         var result = await env.Handler.Handle(
@@ -338,14 +341,14 @@ public class CatalogSearchAttemptHandlerTests
             CancellationToken.None);
 
         result.ShouldSchedule.Should().BeTrue();
-        result.Command.Should().NotBeNull();
-        result.Command!.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
+        env.CommandBus.SentCommands.Should().ContainSingle();
+        env.CommandBus.SentCommands.Single().Should().BeOfType<LookupMusicMetadataCommand>().Which.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
     }
 
     [Fact]
     public async Task Given_A_Resolved_Request_When_Handling_A_Request_At_The_Minimum_Winning_Margin_Then_It_Is_Scheduled()
     {
-        var env = CatalogSearchAttemptHandlerTestEnvironment.WithNoExistingCandidates();
+        var env = CatalogSearchRequestedHandlerTestEnvironment.WithNoExistingCandidates();
         env.Search.ReturnMatches(
             new MusicCatalogMatch(MusicCatalogId.From("mc_track_1"), 0.90m),
             new MusicCatalogMatch(MusicCatalogId.From("mc_track_2"), 0.80m));
@@ -355,7 +358,7 @@ public class CatalogSearchAttemptHandlerTests
             CancellationToken.None);
 
         result.ShouldSchedule.Should().BeTrue();
-        result.Command.Should().NotBeNull();
-        result.Command!.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
+        env.CommandBus.SentCommands.Should().ContainSingle();
+        env.CommandBus.SentCommands.Single().Should().BeOfType<LookupMusicMetadataCommand>().Which.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
     }
 }

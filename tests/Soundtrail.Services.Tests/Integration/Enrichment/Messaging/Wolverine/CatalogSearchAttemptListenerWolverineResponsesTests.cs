@@ -1,18 +1,19 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Events;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search.Resolution;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search.Resolution;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Messaging.Wolverine;
 
-public sealed class CatalogSearchAttemptListenerWolverineResponsesTests
+public sealed class CatalogSearchRequestedListenerWolverineResponsesTests
 {
     [Fact]
     public async Task Given_A_Schedulable_Request_When_Handled_Then_A_MusicBrainz_Command_Dto_Is_Returned()
     {
-        var env = CatalogSearchAttemptListenerWolverineTestEnvironment.WithASchedulableRequest();
+        var env = CatalogSearchRequestedListenerWolverineTestEnvironment.WithASchedulableRequest();
         var messages = await env.HandleSchedulableRequest();
         messages.Should().ContainSingle().Which.Should().BeOfType<LookupCanonicalMusicMetadataCommandDto>();
     }
@@ -20,7 +21,7 @@ public sealed class CatalogSearchAttemptListenerWolverineResponsesTests
     [Fact]
     public async Task Given_Local_Search_Has_Isrc_When_Handled_Then_A_Playback_References_Command_Dto_Is_Returned()
     {
-        var env = CatalogSearchAttemptListenerWolverineTestEnvironment.WithASchedulableRequest();
+        var env = CatalogSearchRequestedListenerWolverineTestEnvironment.WithASchedulableRequest();
         env.LocalSearch.Seed(new LocalMusicTrackSearchResult(
             MusicCatalogId.From("mc_track_1"),
             "Song A",
@@ -32,7 +33,7 @@ public sealed class CatalogSearchAttemptListenerWolverineResponsesTests
             IsPlayable: false,
             ReleaseDate: null));
 
-        var message = (ResolvePlaybackReferencesCommandDto)(await env.HandleSchedulableRequest()).Single();
+        var message = (LookupStreamingLocationsCommandDto)(await env.HandleSchedulableRequest()).Single();
 
         message.SearchTerm.Isrc.Should().Be("isrc-1");
     }
@@ -40,7 +41,7 @@ public sealed class CatalogSearchAttemptListenerWolverineResponsesTests
     [Fact]
     public async Task Given_A_Schedulable_Request_When_Handled_Then_Discovery_Is_Planned_And_Started()
     {
-        var env = CatalogSearchAttemptListenerWolverineTestEnvironment.WithASchedulableRequest();
+        var env = CatalogSearchRequestedListenerWolverineTestEnvironment.WithASchedulableRequest();
         var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
 
         await env.HandleSchedulableRequest();
@@ -58,7 +59,7 @@ public sealed class CatalogSearchAttemptListenerWolverineResponsesTests
     [Fact]
     public async Task Given_A_Deferred_Request_When_Handled_Then_Discovery_Status_Is_Projected_As_Deferred()
     {
-        var env = CatalogSearchAttemptListenerWolverineTestEnvironment.WithADeferredRequest();
+        var env = CatalogSearchRequestedListenerWolverineTestEnvironment.WithADeferredRequest();
         var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
 
         var messages = await env.HandleDeferredRequest();
@@ -73,7 +74,7 @@ public sealed class CatalogSearchAttemptListenerWolverineResponsesTests
     [Fact]
     public async Task Given_A_Request_That_Cannot_Be_Resolved_When_Handled_Then_Discovery_Status_Is_Projected_As_Rejected()
     {
-        var env = CatalogSearchAttemptListenerWolverineTestEnvironment.WithAnUnschedulableRequest();
+        var env = CatalogSearchRequestedListenerWolverineTestEnvironment.WithAnUnschedulableRequest();
         var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
 
         var messages = await env.HandleUnschedulableRequest();

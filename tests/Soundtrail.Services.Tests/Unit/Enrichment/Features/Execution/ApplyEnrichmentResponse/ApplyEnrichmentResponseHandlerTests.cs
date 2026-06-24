@@ -9,12 +9,12 @@ using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Execution.ApplyEnrichmentResponse;
 
-public sealed class ApplyEnrichmentResponseHandlerTests
+public sealed class MusicCatalogLookupAttemptedHandlerTests
 {
     [Fact]
     public async Task Given_A_MusicBrainz_Response_When_Handled_Then_A_Stream_Is_Created()
     {
-        var env = ApplyEnrichmentResponseHandlerTestEnvironment.WithAMusicBrainzResponse();
+        var env = MusicCatalogLookupAttemptedHandlerTestEnvironment.WithAMusicBrainzResponse();
         await env.HandleMusicBrainzResponse();
         env.StreamStore.Streams.Should().ContainKey("mc_track_1");
     }
@@ -22,7 +22,7 @@ public sealed class ApplyEnrichmentResponseHandlerTests
     [Fact]
     public async Task Given_A_MusicBrainz_Response_When_Handled_Then_Durable_Facts_Are_Stored_Without_A_Transient_Response_Snapshot()
     {
-        var env = ApplyEnrichmentResponseHandlerTestEnvironment.WithAMusicBrainzResponse();
+        var env = MusicCatalogLookupAttemptedHandlerTestEnvironment.WithAMusicBrainzResponse();
 
         await env.HandleMusicBrainzResponse();
 
@@ -32,7 +32,7 @@ public sealed class ApplyEnrichmentResponseHandlerTests
     [Fact]
     public async Task Given_A_MusicBrainz_Response_When_Handled_Then_A_TrackDiscovered_Fact_Is_Stored()
     {
-        var env = ApplyEnrichmentResponseHandlerTestEnvironment.WithAMusicBrainzResponse();
+        var env = MusicCatalogLookupAttemptedHandlerTestEnvironment.WithAMusicBrainzResponse();
         await env.HandleMusicBrainzResponse();
         env.StreamStore.Streams["mc_track_1"].Events.Should().ContainItemsAssignableTo<TrackDiscovered>();
     }
@@ -40,7 +40,7 @@ public sealed class ApplyEnrichmentResponseHandlerTests
     [Fact]
     public async Task Given_A_MusicBrainz_Response_When_Handled_Then_Artist_And_Album_Discovered_Facts_Are_Stored_From_Response_Hierarchy()
     {
-        var env = ApplyEnrichmentResponseHandlerTestEnvironment.WithAMusicBrainzResponse();
+        var env = MusicCatalogLookupAttemptedHandlerTestEnvironment.WithAMusicBrainzResponse();
 
         await env.HandleMusicBrainzResponse();
 
@@ -51,7 +51,7 @@ public sealed class ApplyEnrichmentResponseHandlerTests
     [Fact]
     public async Task Given_A_Duplicate_Response_When_Handled_Then_Only_A_Single_CommandId_Is_Recorded()
     {
-        var env = ApplyEnrichmentResponseHandlerTestEnvironment.WithADuplicateMusicBrainzResponse();
+        var env = MusicCatalogLookupAttemptedHandlerTestEnvironment.WithADuplicateMusicBrainzResponse();
         await env.HandleDuplicateMusicBrainzResponse();
         env.StreamStore.Streams["mc_track_1"].AppliedCommandIds.Should().ContainSingle();
     }
@@ -59,7 +59,7 @@ public sealed class ApplyEnrichmentResponseHandlerTests
     [Fact]
     public async Task Given_A_MusicBrainz_Response_When_Handled_Then_Discovery_Status_Is_Projected_As_Completed()
     {
-        var env = ApplyEnrichmentResponseHandlerTestEnvironment.WithAMusicBrainzResponse();
+        var env = MusicCatalogLookupAttemptedHandlerTestEnvironment.WithAMusicBrainzResponse();
 
         await env.HandleMusicBrainzResponse();
 
@@ -71,7 +71,7 @@ public sealed class ApplyEnrichmentResponseHandlerTests
     [Fact]
     public async Task Given_A_MusicBrainz_Response_When_Handled_Then_Entity_Criteria_Are_Also_Projected_As_Completed()
     {
-        var env = ApplyEnrichmentResponseHandlerTestEnvironment.WithAMusicBrainzResponse();
+        var env = MusicCatalogLookupAttemptedHandlerTestEnvironment.WithAMusicBrainzResponse();
 
         await env.HandleMusicBrainzResponse();
 
@@ -83,7 +83,7 @@ public sealed class ApplyEnrichmentResponseHandlerTests
     [Fact]
     public async Task Given_Multiple_Search_Trackings_For_The_Same_MusicCatalogId_When_Handled_Then_All_Tracked_Searches_Are_Projected_As_Completed()
     {
-        var env = ApplyEnrichmentResponseHandlerTestEnvironment.WithMultipleTrackingsForTheSameMusicCatalogId();
+        var env = MusicCatalogLookupAttemptedHandlerTestEnvironment.WithMultipleTrackingsForTheSameMusicCatalogId();
 
         await env.HandleMusicBrainzResponse();
 
@@ -97,11 +97,11 @@ public sealed class ApplyEnrichmentResponseHandlerTests
     [Fact]
     public async Task Given_A_Playback_References_Response_With_Failed_Providers_When_Handled_Then_ProviderReferenceLookupFailed_Facts_Are_Stored()
     {
-        var env = ApplyEnrichmentResponseHandlerTestEnvironment.WithAMusicBrainzResponse();
+        var env = MusicCatalogLookupAttemptedHandlerTestEnvironment.WithAMusicBrainzResponse();
 
         await env.Handle(
-            new EnrichmentResponse(
-                CommandId.For("ResolvePlaybackReferences:mc_track_1"),
+            new MusicCatalogMetadataFetched(
+                CommandId.For("LookupStreamingLocations:mc_track_1"),
                 MusicCatalogId.From("mc_track_1"),
                 ProviderName.Odesli,
                 LookupPriorityBand.High,

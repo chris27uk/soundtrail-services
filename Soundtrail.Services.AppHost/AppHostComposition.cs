@@ -74,7 +74,7 @@ public static class AppHostComposition
             api = api.WaitFor(serviceBusEmulator);
         }
 
-        var cdc = builder.AddProject<Projects.Soundtrail_Services_Enrichment_Cdc>("soundtrail-services-enrichment-cdc")
+        var publicProjector = builder.AddProject<Projects.Soundtrail_Services_Public_Projector>("soundtrail-services-public-projector")
             .WithHttpEndpoint(name: "http")
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
@@ -85,42 +85,43 @@ public static class AppHostComposition
 
         if (serviceBusEmulator is not null)
         {
-            cdc = cdc.WaitFor(serviceBusEmulator);
+            publicProjector = publicProjector.WaitFor(serviceBusEmulator);
         }
 
-        var catalogProjector = builder.AddProject<Projects.Soundtrail_Services_Catalog_Projector>("soundtrail-services-catalog-projector")
+        var internalProjector = builder.AddProject<Projects.Soundtrail_Services_Internal_Projector>("soundtrail-services-internal-projector")
             .WithHttpEndpoint(name: "http")
             .WaitFor(ravenDb)
             .WithEnvironment("RavenDb__Urls__0", ravenDb.GetEndpoint("http"))
             .WithEnvironment("RavenDb__Database", "soundtrail");
 
-        var discoveryPlanner = builder.AddProject<Projects.Soundtrail_Services_Enrichment_DiscoveryPlanner>("soundtrail-services-enrichment-discoveryplanner")
+        var scheduler = builder.AddProject<Projects.Soundtrail_Services_Enrichment_Scheduler>("soundtrail-services-enrichment-scheduler")
+            .WithHttpEndpoint(name: "http")
+            .WithReference(serviceBus)
+            .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
+            .WithEnvironment("ServiceBus__DiscoveryBacklogSchedulingQueueName", "discovery-backlog-scheduling");
+
+        if (serviceBusEmulator is not null)
+        {
+            scheduler = scheduler.WaitFor(serviceBusEmulator);
+        }
+
+        var orchestrator = builder.AddProject<Projects.Soundtrail_Services_Enrichment_Orchestrator>("soundtrail-services-enrichment-orchestrator")
             .WithHttpEndpoint(name: "http")
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
             .WithEnvironment("ServiceBus__CatalogSearchAttemptsQueueName", "lookup-music-requests")
+            .WithEnvironment("ServiceBus__DiscoveryBacklogSchedulingQueueName", "discovery-backlog-scheduling")
             .WithEnvironment("ServiceBus__MusicBrainzLookupQueueName", "lookup-musicbrainz")
             .WithEnvironment("ServiceBus__PlaybackReferencesLookupQueueName", "lookup-playback-references")
             .WithEnvironment("ServiceBus__EnrichmentResponsesQueueName", "enrichment-responses")
+            .WithEnvironment("ServiceBus__MusicTrackEventsQueueName", "music-track-events")
             .WithEnvironment("RavenDb__Urls__0", ravenDb.GetEndpoint("http"))
             .WithEnvironment("RavenDb__Database", "soundtrail");
 
         if (serviceBusEmulator is not null)
         {
-            discoveryPlanner = discoveryPlanner.WaitFor(serviceBusEmulator);
-        }
-
-        var musicTrackLookupCoordinator = builder.AddProject<Projects.Soundtrail_Services_Enrichment_MusicTrackLookupCoordinator>("soundtrail-services-enrichment-musictracklookupcoordinator")
-            .WithHttpEndpoint(name: "http")
-            .WithReference(serviceBus)
-            .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
-            .WithEnvironment("ServiceBus__MusicTrackEventsQueueName", "music-track-events")
-            .WithEnvironment("ServiceBus__PlaybackReferencesLookupQueueName", "lookup-playback-references");
-
-        if (serviceBusEmulator is not null)
-        {
-            musicTrackLookupCoordinator = musicTrackLookupCoordinator.WaitFor(serviceBusEmulator);
+            orchestrator = orchestrator.WaitFor(serviceBusEmulator);
         }
 
         var worker = builder.AddProject<Projects.Soundtrail_Services_Enrichment_Worker>("soundtrail-services-enrichment-worker")

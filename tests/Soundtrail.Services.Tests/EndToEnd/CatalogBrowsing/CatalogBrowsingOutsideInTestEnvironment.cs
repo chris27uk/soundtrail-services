@@ -17,10 +17,10 @@ using Soundtrail.Services.Api.Features.SearchCatalog.Adapters;
 using Soundtrail.Services.Api.Infrastructure.CompositionRoot;
 using Soundtrail.Services.Api.Infrastructure.Raven;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
-using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog;
-using Soundtrail.Services.Catalog.Projector.Features.ProjectMusicTrackCatalog.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.EnrichmentResponse.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.ImportMusicTrackEvents;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicTrackEventsImported;
 using Soundtrail.Services.Tests.EndToEnd.Search;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using System.Net.Http.Json;
@@ -60,7 +60,7 @@ public sealed class CatalogBrowsingOutsideInTestEnvironment : IAsyncDisposable
             options.ConfigureCatalogReadDependencies = services =>
             {
                 services.AddEmbeddedRavenForTesting(raven.Store);
-                services.AddSingleton<Soundtrail.Domain.CatalogBrowsing.ICatalogReadPort, RavenCatalogReadPort>();
+                services.AddSingleton<Soundtrail.Services.Api.Infrastructure.Ports.ICatalogReadPort, RavenCatalogReadPort>();
             };
         });
 
@@ -190,7 +190,7 @@ public sealed class CatalogBrowsingOutsideInTestEnvironment : IAsyncDisposable
     {
         using (var session = store.OpenAsyncSession())
         {
-            var importHandler = new ImportMusicTrackEventsHandler(new RavenMusicTrackStreamStore(session));
+            var importHandler = new MusicTrackEventsImportedHandler(new RavenMusicTrackStreamStore(session));
             importHandler.Handle(
                     new ImportMusicTrackEventsCommand(
                         musicCatalogId,
@@ -211,11 +211,11 @@ public sealed class CatalogBrowsingOutsideInTestEnvironment : IAsyncDisposable
             .OrderBy(x => x.Version)
             .Select(x => new VersionedMusicTrackEvent(x.Version, x.ToDomainEvent()))
             .ToArray();
-        var projectHandler = new ProjectMusicTrackCatalogHandler(
+        var projectHandler = new MusicCatalogChangedHandler(
             new RavenLoadMusicTrackCatalogProjection(replaySession, new RavenMusicTrackCatalogProjectionMapper()),
             new RavenSaveMusicTrackCatalogProjection(replaySession, new RavenMusicTrackCatalogProjectionMapper()));
         projectHandler.Handle(
-                new ProjectMusicTrackCatalogCommand(musicCatalogId, eventsToReplay),
+                new MusicCatalogChangedCommand(musicCatalogId, eventsToReplay),
                 CancellationToken.None)
             .GetAwaiter()
             .GetResult();

@@ -1,9 +1,9 @@
 using Raven.Client.Documents;
 using Raven.Client.Documents.Indexes;
 using Soundtrail.Contracts;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Documents;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.Search;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
+using Soundtrail.Contracts.Persistence;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using System.Reflection;
 
@@ -106,7 +106,7 @@ internal sealed class MusicCatalogCandidateSearchTestEnvironment : IDisposable
     }
 
     private static readonly Type TrackCatalogueIndexType = typeof(RavenMusicCatalogCandidateSearch).Assembly
-        .GetType("Soundtrail.Services.Enrichment.DiscoveryPlanner.Features.JustInTimeScheduling.Adapters.Indexes.TrackCatalogue_BySearchText", throwOnError: true)!;
+        .GetType("Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters.Indexes.TrackCatalogue_BySearchText", throwOnError: true)!;
 
     private static void ExecuteTrackCatalogueIndex(IDocumentStore store)
     {

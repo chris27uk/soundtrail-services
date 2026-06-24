@@ -1,3 +1,4 @@
+using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
 

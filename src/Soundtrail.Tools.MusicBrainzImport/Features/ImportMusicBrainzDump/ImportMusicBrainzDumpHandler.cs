@@ -9,26 +9,19 @@ namespace Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump;
 
 public sealed class ImportMusicBrainzDumpHandler(
     IReadMusicBrainzDumpPort readPort,
-    IMusicTrackEventRepository repository) : IHandler<ImportMusicBrainzDumpCommand, ImportMusicBrainzDumpResult>
+    IMusicTrackEventRepository repository) : IHandler<ImportMusicBrainzDumpCommand>
 {
-    public async Task<ImportMusicBrainzDumpResult> Handle(
+    public async Task Handle(
         ImportMusicBrainzDumpCommand command,
         CancellationToken cancellationToken = default)
     {
-        var processed = 0;
-        var imported = 0;
-        var skipped = 0;
-
         await foreach (var record in readPort.ReadAsync(
                            command.RecordingDumpPaths,
                            command.ReleaseDumpPaths,
                            cancellationToken))
         {
-            processed++;
-
             if (string.IsNullOrWhiteSpace(record.Title) || string.IsNullOrWhiteSpace(record.Artist))
             {
-                skipped++;
                 continue;
             }
 
@@ -36,8 +29,8 @@ public sealed class ImportMusicBrainzDumpHandler(
             var aggregate = await CatalogEntityAggregate.LoadAsync(repository, musicCatalogId, cancellationToken);
             var commandId = BuildCommandId(record);
 
-            aggregate.RecordEnrichmentResponse(
-                new EnrichmentResponse(
+            aggregate.RecordMusicCatalogMetadataFetched(
+                new MusicCatalogMetadataFetched(
                     commandId,
                     musicCatalogId,
                     ProviderName.MusicBrainz,
@@ -63,14 +56,9 @@ public sealed class ImportMusicBrainzDumpHandler(
             var append = await aggregate.SaveAsync(repository, commandId, cancellationToken);
             if (!append.Appended || append.AppendedEvents.Count == 0)
             {
-                skipped++;
                 continue;
             }
-
-            imported++;
         }
-
-        return new ImportMusicBrainzDumpResult(processed, imported, skipped);
     }
 
     private static MusicCatalogId BuildMusicCatalogId(MusicBrainzCatalogSeedRecord record)

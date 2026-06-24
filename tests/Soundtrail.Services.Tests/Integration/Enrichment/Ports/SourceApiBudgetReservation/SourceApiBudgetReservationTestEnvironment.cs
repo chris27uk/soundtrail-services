@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Options;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.SourceBudgets;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.SourceBudgets.Adapters;
-using Soundtrail.Services.Enrichment.DiscoveryPlanner.Shared.SourceBudgets.Configuration;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.SourceBudgets;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.SourceBudgets.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.SourceBudgets.Configuration;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.SourceApiBudgetReservation;

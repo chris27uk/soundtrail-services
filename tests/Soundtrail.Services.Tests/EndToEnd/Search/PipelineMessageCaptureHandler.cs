@@ -22,21 +22,21 @@ public sealed class PipelineMessageCaptureHandler(PipelineMessageCapture capture
     }
 
     [WolverineHandler]
-    public Task Handle(EnrichmentResponseDto message, CancellationToken cancellationToken)
+    public Task Handle(MusicCatalogMetadataFetchedDto message, CancellationToken cancellationToken)
     {
         capture.Record(message);
         return Task.CompletedTask;
     }
 
     [WolverineHandler]
-    public Task Handle(PlaybackReferencesResolutionRequiredMessageDto message, CancellationToken cancellationToken)
+    public Task Handle(StreamingLocationsRequiredMessageDto message, CancellationToken cancellationToken)
     {
         capture.Record(message);
         return Task.CompletedTask;
     }
 
     [WolverineHandler]
-    public Task Handle(ResolvePlaybackReferencesCommandDto message, CancellationToken cancellationToken)
+    public Task Handle(LookupStreamingLocationsCommandDto message, CancellationToken cancellationToken)
     {
         capture.Record(message);
         return Task.CompletedTask;
