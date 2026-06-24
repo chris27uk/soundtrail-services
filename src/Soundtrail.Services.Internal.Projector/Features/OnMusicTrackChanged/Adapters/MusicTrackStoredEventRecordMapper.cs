@@ -13,7 +13,7 @@ public static class MusicTrackStoredEventRecordMapper
         {
             nameof(TrackDiscovered) => TrackDiscovered(dto),
             nameof(ProviderReferenceDiscovered) => ProviderReferenceDiscovered(dto),
-            nameof(PlaybackReferencesResolutionRequired) => PlaybackReferencesResolutionRequired(dto),
+            nameof(StreamingLocationsRequired) => StreamingLocationsRequired(dto),
             nameof(AlbumDiscovered) => AlbumDiscovered(dto),
             nameof(ArtistDiscovered) => ArtistDiscovered(dto),
             nameof(ProviderReferenceLookupFailed) => ProviderReferenceLookupFailed(dto),
@@ -48,11 +48,11 @@ public static class MusicTrackStoredEventRecordMapper
             data.ObservedAt);
     }
 
-    private static PlaybackReferencesResolutionRequired PlaybackReferencesResolutionRequired(MusicTrackStoredEventRecordDto dto)
+    private static StreamingLocationsRequired StreamingLocationsRequired(MusicTrackStoredEventRecordDto dto)
     {
         var data = dto.StreamingLocationsRequired
-            ?? throw new InvalidOperationException("Missing playback references resolution required event data.");
-        return new PlaybackReferencesResolutionRequired(
+            ?? throw new InvalidOperationException("Missing streaming locations required event data.");
+        return new StreamingLocationsRequired(
             MusicCatalogId.From(data.MusicCatalogId),
             Enum.Parse<LookupPriorityBand>(data.Priority, ignoreCase: true),
             CorrelationId.From(data.CorrelationId),

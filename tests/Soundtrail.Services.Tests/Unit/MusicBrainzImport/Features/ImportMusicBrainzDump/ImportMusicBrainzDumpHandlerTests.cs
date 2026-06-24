@@ -37,7 +37,7 @@ public sealed class ImportMusicBrainzDumpHandlerTests
         stream.Events.Should().ContainItemsAssignableTo<TrackDiscovered>();
         stream.Events.Should().ContainItemsAssignableTo<ArtistDiscovered>();
         stream.Events.Should().ContainItemsAssignableTo<AlbumDiscovered>();
-        stream.Events.Should().ContainSingle(x => x is PlaybackReferencesResolutionRequired);
+        stream.Events.Should().ContainSingle(x => x is StreamingLocationsRequired);
     }
 
     [Fact]
@@ -64,7 +64,7 @@ public sealed class ImportMusicBrainzDumpHandlerTests
         var stream = await env.StreamStore.LoadEventsAsync(MusicCatalogId.From("mc_track_mbrecording1"), CancellationToken.None);
         stream.Events.Should().ContainSingle(x => x is TrackDiscovered);
         stream.Events.Should().ContainSingle(x => x is ArtistDiscovered);
-        stream.Events.Should().ContainSingle(x => x is PlaybackReferencesResolutionRequired);
+        stream.Events.Should().ContainSingle(x => x is StreamingLocationsRequired);
     }
 
     private static readonly DateTimeOffset Clock = new(2026, 6, 21, 12, 0, 0, TimeSpan.Zero);

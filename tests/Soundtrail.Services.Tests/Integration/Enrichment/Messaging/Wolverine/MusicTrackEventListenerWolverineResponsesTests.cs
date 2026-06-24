@@ -12,7 +12,7 @@ namespace Soundtrail.Services.Tests.Integration.Enrichment.Messaging.Wolverine;
 public sealed class StreamingLocationsRequiredListenerWolverineResponsesTests
 {
     [Fact]
-    public async Task Given_A_PlaybackReferencesResolutionRequired_Message_When_Handled_Then_A_PlaybackReferences_Command_Dto_Is_Sent()
+    public async Task Given_A_StreamingLocationsRequired_Message_When_Handled_Then_A_StreamingLocations_Command_Dto_Is_Sent()
     {
         var bus = new WolverineMessageBusFake();
         var listener = new StreamingLocationsRequiredListener(new StreamingLocationsRequiredHandler(new WolverineCommandBus(bus)));

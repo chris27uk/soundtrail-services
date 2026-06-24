@@ -11,7 +11,7 @@ public sealed class CatalogEntityAggregate
     private readonly List<IMusicTrackEvent> uncommittedEvents = [];
     private readonly HashSet<string> discoveredReferenceProviders = [];
     private MusicCatalogId? musicCatalogId;
-    private bool playbackReferencesResolutionRequired;
+    private bool streamingLocationsRequired;
     private int version;
 
     private CatalogEntityAggregate(
@@ -96,7 +96,7 @@ public sealed class CatalogEntityAggregate
                 response.CreatedAt), isNew: true);
         }
 
-        if (ShouldRequirePlaybackReferencesResolution(response))
+        if (ShouldRequireStreamingLocations(response))
         {
             var searchTerm = !string.IsNullOrWhiteSpace(response.Metadata!.Isrc)
                 ? MusicSearchTerm.ByIsrc(response.Metadata.Isrc)
@@ -105,7 +105,7 @@ public sealed class CatalogEntityAggregate
                     response.Metadata.Artist,
                     album: null);
 
-            Apply(new PlaybackReferencesResolutionRequired(
+            Apply(new StreamingLocationsRequired(
                 response.MusicCatalogId,
                 response.Priority,
                 response.CorrelationId,
@@ -150,11 +150,11 @@ public sealed class CatalogEntityAggregate
         return append;
     }
 
-    private bool ShouldRequirePlaybackReferencesResolution(MusicCatalogMetadataFetched response) =>
+    private bool ShouldRequireStreamingLocations(MusicCatalogMetadataFetched response) =>
         response.SourceProvider == ProviderName.MusicBrainz
         && response.Metadata is not null
         && discoveredReferenceProviders.Count == 0
-        && !playbackReferencesResolutionRequired;
+        && !streamingLocationsRequired;
 
     private void Apply(IMusicTrackEvent @event, bool isNew)
     {
@@ -172,7 +172,7 @@ public sealed class CatalogEntityAggregate
     private EventHandlers<CatalogEntityAggregate> CreateHandlers()
     {
         var handlers = new EventHandlers<CatalogEntityAggregate>();
-        handlers.Register<PlaybackReferencesResolutionRequired>(_ => playbackReferencesResolutionRequired = true);
+        handlers.Register<StreamingLocationsRequired>(_ => streamingLocationsRequired = true);
         handlers.Register<ProviderReferenceDiscovered>(@event => discoveredReferenceProviders.Add(@event.Provider.Value));
         handlers.Register<TrackDiscovered>(_ => { });
         handlers.Register<ArtistDiscovered>(_ => { });

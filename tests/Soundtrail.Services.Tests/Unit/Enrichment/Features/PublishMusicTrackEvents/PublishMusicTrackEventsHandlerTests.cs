@@ -15,7 +15,7 @@ public sealed class PublishMusicTrackEventsHandlerTests
             PublishMusicTrackEventsHandlerTestEnvironment.StreamingLocationsRequired("mc_track_1", 1));
 
         env.Publisher.PublishedBatches.Should().ContainSingle();
-        env.Publisher.PublishedBatches[0].Should().ContainSingle().Which.Should().BeOfType<PlaybackReferencesResolutionRequiredIntegrationEvent>();
+        env.Publisher.PublishedBatches[0].Should().ContainSingle().Which.Should().BeOfType<StreamingLocationsRequiredIntegrationEvent>();
     }
 
     [Fact]
@@ -40,7 +40,7 @@ public sealed class PublishMusicTrackEventsHandlerTests
             PublishMusicTrackEventsHandlerTestEnvironment.StreamingLocationsRequired("mc_track_1", 2));
 
         env.Publisher.PublishedBatches.Should().ContainSingle();
-        var batch = env.Publisher.PublishedBatches[0].OfType<PlaybackReferencesResolutionRequiredIntegrationEvent>().ToArray();
+        var batch = env.Publisher.PublishedBatches[0].OfType<StreamingLocationsRequiredIntegrationEvent>().ToArray();
         batch.Should().HaveCount(2);
         batch[0].MusicCatalogId.Value.Should().Be("mc_track_1");
         batch[1].MusicCatalogId.Value.Should().Be("mc_track_2");

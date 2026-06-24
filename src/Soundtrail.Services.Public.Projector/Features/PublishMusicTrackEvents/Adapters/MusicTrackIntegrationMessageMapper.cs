@@ -9,7 +9,7 @@ internal static class MusicTrackIntegrationMessageMapper
     public static object ToMessage(this MusicTrackIntegrationEvent integrationEvent) =>
         integrationEvent switch
         {
-            PlaybackReferencesResolutionRequiredIntegrationEvent playback => new StreamingLocationsRequiredMessageDto(
+            StreamingLocationsRequiredIntegrationEvent playback => new StreamingLocationsRequiredMessageDto(
                 playback.MusicCatalogId.Value,
                 playback.Priority,
                 playback.CorrelationId.Value,

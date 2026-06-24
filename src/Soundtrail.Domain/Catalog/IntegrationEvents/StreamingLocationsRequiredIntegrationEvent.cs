@@ -1,14 +1,14 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Model;
 
-namespace Soundtrail.Domain.Events;
+namespace Soundtrail.Domain.Catalog.IntegrationEvents;
 
-public sealed record PlaybackReferencesResolutionRequired(
+public sealed record StreamingLocationsRequiredIntegrationEvent(
     MusicCatalogId MusicCatalogId,
     LookupPriorityBand Priority,
     CorrelationId CorrelationId,
     ProviderName SourceProvider,
     DateTimeOffset ObservedAt,
     MusicSearchTerm SearchTerm,
-    CatalogTrackHierarchy? Hierarchy = null) : IMusicTrackEvent;
+    string? ArtistId,
+    string? AlbumId) : MusicTrackIntegrationEvent(MusicCatalogId);

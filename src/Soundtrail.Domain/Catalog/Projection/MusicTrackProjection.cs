@@ -172,7 +172,7 @@ public sealed class MusicTrackProjection
         });
 
         handlers.Register<ProviderReferenceLookupFailed>(_ => { });
-        handlers.Register<PlaybackReferencesResolutionRequired>(_ => { });
+        handlers.Register<StreamingLocationsRequired>(_ => { });
 
         handlers.Register<AlbumDiscovered>(@event =>
         {

@@ -8,7 +8,7 @@ namespace Soundtrail.Services.Public.Projector.Features.PublishMusicTrackEvents.
 
 internal static class MusicTrackStoredEventRecordDtoMapper
 {
-    private const string PlaybackReferencesResolutionRequiredEventType = "PlaybackReferencesResolutionRequired";
+    private const string StreamingLocationsRequiredEventType = "StreamingLocationsRequired";
 
     public static PublishMusicTrackEventsCommand ToCommand(
         this IReadOnlyCollection<MusicTrackStoredEventRecordDto> storedEvents)
@@ -25,21 +25,21 @@ internal static class MusicTrackStoredEventRecordDtoMapper
     private static VersionedMusicTrackIntegrationEvent? ToIntegrationEvent(MusicTrackStoredEventRecordDto storedEvent) =>
         storedEvent.EventType switch
         {
-            PlaybackReferencesResolutionRequiredEventType => ToPlaybackReferencesResolutionRequired(storedEvent),
+            StreamingLocationsRequiredEventType => ToStreamingLocationsRequired(storedEvent),
             _ => null
         };
 
-    private static VersionedMusicTrackIntegrationEvent ToPlaybackReferencesResolutionRequired(
+    private static VersionedMusicTrackIntegrationEvent ToStreamingLocationsRequired(
         MusicTrackStoredEventRecordDto storedEvent)
     {
         var data = storedEvent.StreamingLocationsRequired
-            ?? throw new InvalidOperationException("Missing playback references resolution required event data.");
+            ?? throw new InvalidOperationException("Missing streaming locations required event data.");
         var musicCatalogId = MusicCatalogId.From(data.MusicCatalogId);
 
         return new VersionedMusicTrackIntegrationEvent(
             musicCatalogId,
             storedEvent.Version,
-            new PlaybackReferencesResolutionRequiredIntegrationEvent(
+            new StreamingLocationsRequiredIntegrationEvent(
                 musicCatalogId,
                 Enum.Parse<LookupPriorityBand>(data.Priority, ignoreCase: true),
                 CorrelationId.From(data.CorrelationId),
@@ -48,8 +48,8 @@ internal static class MusicTrackStoredEventRecordDtoMapper
                 !string.IsNullOrWhiteSpace(data.Isrc)
                     ? MusicSearchTerm.ByIsrc(data.Isrc)
                     : MusicSearchTerm.ByTrackArtistAlbum(
-                        data.Title ?? throw new InvalidOperationException("Playback references resolution required event is missing title."),
-                        data.Artist ?? throw new InvalidOperationException("Playback references resolution required event is missing artist."),
+                        data.Title ?? throw new InvalidOperationException("Streaming locations required event is missing title."),
+                        data.Artist ?? throw new InvalidOperationException("Streaming locations required event is missing artist."),
                         data.Album),
                 data.ArtistId,
                 data.AlbumId));

@@ -26,7 +26,7 @@ internal static class RavenMappings
         {
             TrackDiscovered minimalTrackInfoDiscovered => minimalTrackInfoDiscovered.ObservedAt,
             ProviderReferenceDiscovered providerPlaybackReferenceResolved => providerPlaybackReferenceResolved.ObservedAt,
-            PlaybackReferencesResolutionRequired playbackReferencesResolutionRequired => playbackReferencesResolutionRequired.ObservedAt,
+            StreamingLocationsRequired streamingLocationsRequired => streamingLocationsRequired.ObservedAt,
             AlbumDiscovered trackLinkedToAlbum => trackLinkedToAlbum.ObservedAt,
             ArtistDiscovered trackLinkedToArtist => trackLinkedToArtist.ObservedAt,
             ProviderReferenceLookupFailed providerReferenceLookupFailed => providerReferenceLookupFailed.ObservedAt,
@@ -74,26 +74,26 @@ internal static class RavenMappings
                 OccurredAtUtc = providerPlaybackReferenceResolved.ObservedAt,
                 CausationId = commandId.Value
             },
-            PlaybackReferencesResolutionRequired playbackReferencesResolutionRequired => new MusicTrackStoredEventRecordDto
+            StreamingLocationsRequired streamingLocationsRequired => new MusicTrackStoredEventRecordDto
             {
                 Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId.Value, version),
                 MusicCatalogId = musicCatalogId.Value,
                 Version = version,
-                EventType = nameof(PlaybackReferencesResolutionRequired),
+                EventType = nameof(StreamingLocationsRequired),
                 StreamingLocationsRequired = new StreamingLocationsRequiredEventDataRecordDto(
-                    playbackReferencesResolutionRequired.MusicCatalogId.Value,
-                    playbackReferencesResolutionRequired.Priority.ToString(),
-                    playbackReferencesResolutionRequired.CorrelationId.Value,
-                    playbackReferencesResolutionRequired.SourceProvider.Value,
-                    playbackReferencesResolutionRequired.ObservedAt,
-                    playbackReferencesResolutionRequired.SearchTerm.Isrc,
-                    playbackReferencesResolutionRequired.SearchTerm.Title,
-                    playbackReferencesResolutionRequired.SearchTerm.Artist,
-                    playbackReferencesResolutionRequired.SearchTerm.Album,
-                    playbackReferencesResolutionRequired.Hierarchy?.ArtistId?.Value,
-                    playbackReferencesResolutionRequired.Hierarchy?.AlbumId?.Value),
-                OccurredAtUtc = playbackReferencesResolutionRequired.ObservedAt,
-                CorrelationId = playbackReferencesResolutionRequired.CorrelationId.Value,
+                    streamingLocationsRequired.MusicCatalogId.Value,
+                    streamingLocationsRequired.Priority.ToString(),
+                    streamingLocationsRequired.CorrelationId.Value,
+                    streamingLocationsRequired.SourceProvider.Value,
+                    streamingLocationsRequired.ObservedAt,
+                    streamingLocationsRequired.SearchTerm.Isrc,
+                    streamingLocationsRequired.SearchTerm.Title,
+                    streamingLocationsRequired.SearchTerm.Artist,
+                    streamingLocationsRequired.SearchTerm.Album,
+                    streamingLocationsRequired.Hierarchy?.ArtistId?.Value,
+                    streamingLocationsRequired.Hierarchy?.AlbumId?.Value),
+                OccurredAtUtc = streamingLocationsRequired.ObservedAt,
+                CorrelationId = streamingLocationsRequired.CorrelationId.Value,
                 CausationId = commandId.Value
             },
             AlbumDiscovered trackLinkedToAlbum => new MusicTrackStoredEventRecordDto
@@ -186,7 +186,7 @@ internal static class RavenMappings
         {
             nameof(TrackDiscovered) => TrackDiscovered(dto),
             nameof(ProviderReferenceDiscovered) => ProviderReferenceDiscovered(dto),
-            nameof(PlaybackReferencesResolutionRequired) => PlaybackReferencesResolutionRequired(dto),
+            nameof(StreamingLocationsRequired) => StreamingLocationsRequired(dto),
             nameof(AlbumDiscovered) => AlbumDiscovered(dto),
             nameof(ArtistDiscovered) => ArtistDiscovered(dto),
             nameof(ProviderReferenceLookupFailed) => ProviderReferenceLookupFailed(dto),
@@ -221,11 +221,11 @@ internal static class RavenMappings
             data.ObservedAt);
     }
 
-    private static PlaybackReferencesResolutionRequired PlaybackReferencesResolutionRequired(MusicTrackStoredEventRecordDto dto)
+    private static StreamingLocationsRequired StreamingLocationsRequired(MusicTrackStoredEventRecordDto dto)
     {
         var data = dto.StreamingLocationsRequired
-            ?? throw new InvalidOperationException("Missing playback references resolution required event data.");
-        return new PlaybackReferencesResolutionRequired(
+            ?? throw new InvalidOperationException("Missing streaming locations required event data.");
+        return new StreamingLocationsRequired(
             MusicCatalogId.From(data.MusicCatalogId),
             Enum.Parse<LookupPriorityBand>(data.Priority, ignoreCase: true),
             CorrelationId.From(data.CorrelationId),

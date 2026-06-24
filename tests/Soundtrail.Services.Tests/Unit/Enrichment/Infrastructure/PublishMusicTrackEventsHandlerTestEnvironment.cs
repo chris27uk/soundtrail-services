@@ -33,7 +33,7 @@ internal sealed class PublishMusicTrackEventsHandlerTestEnvironment
         new(
             MusicCatalogId.From(musicCatalogId),
             version,
-            new PlaybackReferencesResolutionRequiredIntegrationEvent(
+            new StreamingLocationsRequiredIntegrationEvent(
                 MusicCatalogId.From(musicCatalogId),
                 LookupPriorityBand.High,
                 CorrelationId.From("corr-1"),

@@ -316,7 +316,7 @@ public sealed class MusicTrackCatalogProjection
             }
         });
 
-        handlers.Register<PlaybackReferencesResolutionRequired>(_ => { });
+        handlers.Register<StreamingLocationsRequired>(_ => { });
         return handlers;
     }
 

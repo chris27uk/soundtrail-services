@@ -111,7 +111,7 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
         var loaded = await env.LoadAsync(musicCatalogId);
 
         loaded.Events.Should().Contain(x => x is ProviderReferenceDiscovered);
-        loaded.Events.Should().NotContain(x => x is PlaybackReferencesResolutionRequired);
+        loaded.Events.Should().NotContain(x => x is StreamingLocationsRequired);
     }
 
     [Theory]
@@ -137,7 +137,7 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
 
         var loaded = await env.LoadAsync(musicCatalogId);
 
-        loaded.Events.OfType<PlaybackReferencesResolutionRequired>().Should().ContainSingle();
+        loaded.Events.OfType<StreamingLocationsRequired>().Should().ContainSingle();
     }
 
     public static IEnumerable<object[]> AllModes()
