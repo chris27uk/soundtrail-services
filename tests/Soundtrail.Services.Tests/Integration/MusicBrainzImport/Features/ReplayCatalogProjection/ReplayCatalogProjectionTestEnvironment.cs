@@ -111,7 +111,7 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
             eventStore,
             eventStore,
             projectionStore,
-            new ProjectMusicTrackCatalogHandler(projectionStore, projectionStore));
+            new MusicCatalogChangedHandler(projectionStore, projectionStore));
 
         return new ReplayCatalogProjectionTestEnvironment(
             handler,
@@ -208,7 +208,7 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
         await seedSession.SaveChangesAsync();
 
         var session = raven.Store.OpenAsyncSession();
-        var projectionHandler = new ProjectMusicTrackCatalogHandler(
+        var projectionHandler = new MusicCatalogChangedHandler(
             new RavenLoadMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()),
             new RavenSaveMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()));
         var handler = new ReplayCatalogProjectionHandler(

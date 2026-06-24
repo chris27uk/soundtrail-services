@@ -1,6 +1,6 @@
 using Soundtrail.Domain.Discovery;
 
-namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection;
+namespace Soundtrail.Tools.MusicBrainzImport.Features.OnReplayCatalogSearchStatus;
 
 public interface ILoadDiscoveryLifecycleEventsForReplayPort
 {

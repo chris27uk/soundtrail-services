@@ -37,14 +37,14 @@ internal sealed class RavenCatalogProjectionReplayTestEnvironment : IAsyncDispos
     {
         using var session = raven.Store.OpenAsyncSession();
         session.Advanced.WaitForIndexesAfterSaveChanges();
-        var handler = new ProjectMusicTrackCatalogHandler(
+        var handler = new MusicCatalogChangedHandler(
             new RavenLoadMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()),
             new RavenSaveMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()));
 
         foreach (var stream in storedEvents.OrderBy(x => x.MusicCatalogId, StringComparer.Ordinal).ThenBy(x => x.Version).GroupBy(x => x.MusicCatalogId, StringComparer.Ordinal))
         {
             await handler.Handle(
-                new ProjectMusicTrackCatalogCommand(
+                new MusicCatalogChangedCommand(
                     MusicCatalogId.From(stream.Key),
                     stream.Select(item => new VersionedMusicTrackEvent(item.Version, item.ToDomainEvent())).ToArray()),
                 CancellationToken.None);
@@ -73,12 +73,12 @@ internal sealed class RavenCatalogProjectionReplayTestEnvironment : IAsyncDispos
             .OrderBy(x => x.Version)
             .Select(x => new VersionedMusicTrackEvent(x.Version, x.ToDomainEvent()))
             .ToArray();
-        var handler = new ProjectMusicTrackCatalogHandler(
+        var handler = new MusicCatalogChangedHandler(
             new RavenLoadMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()),
             new RavenSaveMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()));
 
         await handler.Handle(
-            new ProjectMusicTrackCatalogCommand(musicCatalogId, eventsToReplay),
+            new MusicCatalogChangedCommand(musicCatalogId, eventsToReplay),
             CancellationToken.None);
 
         return eventsToReplay.Length;

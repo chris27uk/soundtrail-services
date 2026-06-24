@@ -211,11 +211,11 @@ public sealed class CatalogBrowsingOutsideInTestEnvironment : IAsyncDisposable
             .OrderBy(x => x.Version)
             .Select(x => new VersionedMusicTrackEvent(x.Version, x.ToDomainEvent()))
             .ToArray();
-        var projectHandler = new ProjectMusicTrackCatalogHandler(
+        var projectHandler = new MusicCatalogChangedHandler(
             new RavenLoadMusicTrackCatalogProjection(replaySession, new RavenMusicTrackCatalogProjectionMapper()),
             new RavenSaveMusicTrackCatalogProjection(replaySession, new RavenMusicTrackCatalogProjectionMapper()));
         projectHandler.Handle(
-                new ProjectMusicTrackCatalogCommand(musicCatalogId, eventsToReplay),
+                new MusicCatalogChangedCommand(musicCatalogId, eventsToReplay),
                 CancellationToken.None)
             .GetAwaiter()
             .GetResult();

@@ -2,9 +2,9 @@ using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
-using Soundtrail.Services.Internal.Projector.Features.ReplayDiscoveryLifecycleProjection.StoredEvents;
+using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus.StoredEvents;
 
-namespace Soundtrail.Services.Internal.Projector.Features.ReplayDiscoveryLifecycleProjection.Adapters;
+namespace Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus.Adapters;
 
 public sealed class RavenLoadStoredDiscoveryLifecycleEvents(
     IAsyncDocumentSession session) : ILoadStoredDiscoveryLifecycleEventsPort

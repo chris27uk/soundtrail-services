@@ -14,9 +14,9 @@ public static class AppServiceCollectionExtensions
         IConfiguration configuration)
     {
         services.AddRavenDocumentStore(configuration);
-        services.AddProjectDiscoveryLifecycleFeature();
-        services.AddProjectMusicTrackProjectionFeature();
-        services.AddProjectMusicTrackCatalogFeature();
+        services.AddOnCatalogSearchStatusChangedFeature();
+        services.AddOnMusicTrackChangedFeature();
+        services.AddOnMusicCatalogChangedFeature();
         return services;
     }
 }

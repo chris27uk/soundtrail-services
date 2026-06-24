@@ -12,12 +12,12 @@ using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupA
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
-using Soundtrail.Services.Internal.Projector.Features.ReplayDiscoveryLifecycleProjection;
-using Soundtrail.Services.Internal.Projector.Features.ReplayDiscoveryLifecycleProjection.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus;
+using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
-using Soundtrail.Services.Internal.Projector.Features.ReplayMusicTrackProjection;
-using Soundtrail.Services.Internal.Projector.Features.ReplayMusicTrackProjection.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack;
+using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack.Adapters;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
@@ -111,16 +111,16 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
         var musicCatalogIds = streamMetadata.Select(x => x.MusicCatalogId).Distinct(StringComparer.Ordinal).ToList();
 
         using var session = raven.Store.OpenAsyncSession();
-        var replayHandler = new ReplayMusicTrackProjectionHandler(
+        var replayHandler = new ReplayMusicTrackHandler(
             new RavenLoadStoredMusicTrackEvents(session),
-            new ProjectMusicTrackProjectionHandler(
+            new MusicTrackChangedHandler(
                 new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
                 new RavenSaveMusicTrackProjection(session, new RavenMusicTrackProjectionMapper())));
 
         foreach (var musicCatalogId in musicCatalogIds)
         {
             await replayHandler.Handle(
-                new ReplayMusicTrackProjectionCommand(MusicCatalogId.From(musicCatalogId)),
+                new ReplayMusicTrackCommand(MusicCatalogId.From(musicCatalogId)),
                 CancellationToken.None);
         }
     }
@@ -133,16 +133,16 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
         var criteriaValues = streamMetadata.Select(x => x.Criteria).ToList();
 
         using var session = raven.Store.OpenAsyncSession();
-        var replayHandler = new ReplayDiscoveryLifecycleProjectionHandler(
+        var replayHandler = new ReplayCatalogSearchStatusHandler(
             new RavenLoadStoredDiscoveryLifecycleEvents(session),
-            new ProjectDiscoveryLifecycleHandler(
+            new CatalogSearchStatusChangedHandler(
                 new RavenLoadDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()),
                 new RavenSaveDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper())));
 
         foreach (var criteria in criteriaValues.Distinct(StringComparer.Ordinal))
         {
             await replayHandler.Handle(
-                new ReplayDiscoveryLifecycleProjectionCommand(CatalogSearchCriteria.From(criteria)),
+                new ReplayCatalogSearchStatusCommand(CatalogSearchCriteria.From(criteria)),
                 CancellationToken.None);
         }
     }

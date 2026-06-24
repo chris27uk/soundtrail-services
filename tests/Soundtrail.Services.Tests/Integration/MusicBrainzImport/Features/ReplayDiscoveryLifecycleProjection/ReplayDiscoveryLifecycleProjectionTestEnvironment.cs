@@ -11,10 +11,10 @@ using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchReques
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
-using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection;
-using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.Adapters;
+using Soundtrail.Tools.MusicBrainzImport.Features.OnReplayCatalogSearchStatus;
+using Soundtrail.Tools.MusicBrainzImport.Features.OnReplayCatalogSearchStatus.Adapters;
 
-namespace Soundtrail.Services.Tests.Integration.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection;
+namespace Soundtrail.Services.Tests.Integration.MusicBrainzImport.Features.OnReplayCatalogSearchStatus;
 
 internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsyncDisposable
 {
@@ -105,7 +105,7 @@ internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsync
             eventStore,
             eventStore,
             projectionStore,
-            new ProjectDiscoveryLifecycleHandler(projectionStore, projectionStore));
+            new CatalogSearchStatusChangedHandler(projectionStore, projectionStore));
 
         return new ReplayDiscoveryLifecycleProjectionTestEnvironment(
             handler,
@@ -161,7 +161,7 @@ internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsync
             new RavenLoadDiscoveryLifecycleReplayTargets(session),
             new RavenLoadDiscoveryLifecycleEventsForReplay(session),
             new RavenResetDiscoveryLifecycleProjection(session),
-            new ProjectDiscoveryLifecycleHandler(
+            new CatalogSearchStatusChangedHandler(
                 new RavenLoadDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()),
                 new RavenSaveDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper())));
 

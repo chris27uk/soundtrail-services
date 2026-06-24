@@ -71,9 +71,9 @@ public sealed class MusicTrackProjectionStoreResponsesTests
         {
             if (fake is not null)
             {
-                var handler = new ProjectMusicTrackProjectionHandler(fake, fake);
+                var handler = new MusicTrackChangedHandler(fake, fake);
                 await handler.Handle(
-                    new ProjectMusicTrackProjectionCommand(
+                    new MusicTrackChangedCommand(
                         musicCatalogId,
                         stream.Events.Select((@event, index) => new VersionedMusicTrackEvent(index + 1, @event)).ToArray()),
                     CancellationToken.None);
@@ -86,11 +86,11 @@ public sealed class MusicTrackProjectionStoreResponsesTests
         private async Task StoreRavenAsync(MusicCatalogId musicCatalogId, MusicTrackStream stream)
         {
             using var session = raven!.Store.OpenAsyncSession();
-            var handler = new ProjectMusicTrackProjectionHandler(
+            var handler = new MusicTrackChangedHandler(
                 new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
                 new RavenSaveMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()));
             await handler.Handle(
-                new ProjectMusicTrackProjectionCommand(
+                new MusicTrackChangedCommand(
                     musicCatalogId,
                     stream.Events.Select((@event, index) => new VersionedMusicTrackEvent(index + 1, @event)).ToArray()),
                 CancellationToken.None);

@@ -9,8 +9,8 @@ using Soundtrail.Domain.Model;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged;
-using Soundtrail.Services.Internal.Projector.Features.ReplayDiscoveryLifecycleProjection;
-using Soundtrail.Services.Internal.Projector.Features.ReplayDiscoveryLifecycleProjection.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus;
+using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using System.Linq;
 
@@ -194,16 +194,16 @@ public sealed class RavenDiscoveryLifecycleProjectionReplayResponsesTests
         var criteriaValues = streamMetadata.Select(x => x.Criteria).ToList();
 
         using var session = store.OpenAsyncSession();
-        var replayHandler = new ReplayDiscoveryLifecycleProjectionHandler(
+        var replayHandler = new ReplayCatalogSearchStatusHandler(
             new RavenLoadStoredDiscoveryLifecycleEvents(session),
-            new ProjectDiscoveryLifecycleHandler(
+            new CatalogSearchStatusChangedHandler(
                 new RavenLoadDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()),
                 new RavenSaveDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper())));
 
         foreach (var criteria in criteriaValues.Distinct(StringComparer.Ordinal))
         {
             await replayHandler.Handle(
-                new ReplayDiscoveryLifecycleProjectionCommand(CatalogSearchCriteria.From(criteria)),
+                new ReplayCatalogSearchStatusCommand(CatalogSearchCriteria.From(criteria)),
                 CancellationToken.None);
         }
     }

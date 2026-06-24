@@ -28,8 +28,8 @@ using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchReques
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
-using Soundtrail.Services.Internal.Projector.Features.ReplayDiscoveryLifecycleProjection;
-using Soundtrail.Services.Internal.Projector.Features.ReplayDiscoveryLifecycleProjection.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus;
+using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Wolverine;
 using Wolverine.Tracking;
@@ -290,13 +290,13 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
         repository.AppendAsync(criteria, 0, events, CancellationToken.None).GetAwaiter().GetResult();
 
         using var session = store.OpenAsyncSession();
-        var replayHandler = new ReplayDiscoveryLifecycleProjectionHandler(
+        var replayHandler = new ReplayCatalogSearchStatusHandler(
             new RavenLoadStoredDiscoveryLifecycleEvents(session),
-            new ProjectDiscoveryLifecycleHandler(
+            new CatalogSearchStatusChangedHandler(
                 new RavenLoadDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()),
                 new RavenSaveDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper())));
         replayHandler.Handle(
-                new ReplayDiscoveryLifecycleProjectionCommand(criteria),
+                new ReplayCatalogSearchStatusCommand(criteria),
                 CancellationToken.None)
             .GetAwaiter()
             .GetResult();
@@ -330,11 +330,11 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
             .OrderBy(x => x.Version)
             .Select(x => new VersionedMusicTrackEvent(x.Version, x.ToDomainEvent()))
             .ToArray();
-        var projectHandler = new ProjectMusicTrackCatalogHandler(
+        var projectHandler = new MusicCatalogChangedHandler(
             new RavenLoadMusicTrackCatalogProjection(replaySession, new RavenMusicTrackCatalogProjectionMapper()),
             new RavenSaveMusicTrackCatalogProjection(replaySession, new RavenMusicTrackCatalogProjectionMapper()));
         projectHandler.Handle(
-                new ProjectMusicTrackCatalogCommand(musicCatalogId, eventsToReplay),
+                new MusicCatalogChangedCommand(musicCatalogId, eventsToReplay),
                 CancellationToken.None)
             .GetAwaiter()
             .GetResult();
@@ -351,13 +351,13 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
             .GetAwaiter()
             .GetResult();
 
-        var replayHandler = new ReplayDiscoveryLifecycleProjectionHandler(
+        var replayHandler = new ReplayCatalogSearchStatusHandler(
             new RavenLoadStoredDiscoveryLifecycleEvents(replaySession),
-            new ProjectDiscoveryLifecycleHandler(
+            new CatalogSearchStatusChangedHandler(
                 new RavenLoadDiscoveryLifecycleProjection(replaySession, new RavenDiscoveryLifecycleProjectionMapper()),
                 new RavenSaveDiscoveryLifecycleProjection(replaySession, new RavenDiscoveryLifecycleProjectionMapper())));
         replayHandler.Handle(
-                new ReplayDiscoveryLifecycleProjectionCommand(criteria),
+                new ReplayCatalogSearchStatusCommand(criteria),
                 CancellationToken.None)
             .GetAwaiter()
             .GetResult();

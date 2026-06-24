@@ -7,12 +7,12 @@ namespace Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddProjectMusicTrackCatalogFeature(this IServiceCollection services)
+    public static IServiceCollection AddOnMusicCatalogChangedFeature(this IServiceCollection services)
     {
-        services.TryAddScoped<ProjectMusicTrackCatalogHandler>();
+        services.TryAddScoped<MusicCatalogChangedHandler>();
         services.TryAddSingleton<RavenMusicTrackCatalogProjectionMapper>();
         services.TryAddEnumerable(
-            ServiceDescriptor.Singleton<IHostedService, ProjectMusicTrackCatalogSubscriptionHostedService>());
+            ServiceDescriptor.Singleton<IHostedService, MusicCatalogChangedSubscriptionHostedService>());
 
         return services;
     }

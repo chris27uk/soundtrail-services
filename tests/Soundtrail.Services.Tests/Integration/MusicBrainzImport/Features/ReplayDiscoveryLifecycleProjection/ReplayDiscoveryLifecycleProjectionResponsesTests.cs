@@ -4,7 +4,7 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
-namespace Soundtrail.Services.Tests.Integration.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection;
+namespace Soundtrail.Services.Tests.Integration.MusicBrainzImport.Features.OnReplayCatalogSearchStatus;
 
 [Collection(RavenEmbeddedCollection.Name)]
 public sealed class ReplayDiscoveryLifecycleProjectionResponsesTests

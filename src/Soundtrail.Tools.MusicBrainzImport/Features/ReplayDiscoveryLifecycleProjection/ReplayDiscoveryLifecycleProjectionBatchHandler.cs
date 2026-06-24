@@ -3,13 +3,13 @@ using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged;
 
-namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection;
+namespace Soundtrail.Tools.MusicBrainzImport.Features.OnReplayCatalogSearchStatus;
 
 public sealed class ReplayDiscoveryLifecycleProjectionBatchHandler(
     ILoadDiscoveryLifecycleReplayTargetsPort loadTargetsPort,
     ILoadDiscoveryLifecycleEventsForReplayPort loadEventsPort,
     IResetDiscoveryLifecycleProjectionPort resetPort,
-    ProjectDiscoveryLifecycleHandler projectHandler) : IHandler<ReplayDiscoveryLifecycleProjectionBatchCommand>
+    CatalogSearchStatusChangedHandler projectHandler) : IHandler<ReplayDiscoveryLifecycleProjectionBatchCommand>
 {
     public async Task Handle(
         ReplayDiscoveryLifecycleProjectionBatchCommand command,
@@ -28,7 +28,7 @@ public sealed class ReplayDiscoveryLifecycleProjectionBatchHandler(
             }
 
             await projectHandler.Handle(
-                new ProjectDiscoveryLifecycleCommand(item, events),
+                new CatalogSearchStatusChangedCommand(item, events),
                 cancellationToken);
         }
     }

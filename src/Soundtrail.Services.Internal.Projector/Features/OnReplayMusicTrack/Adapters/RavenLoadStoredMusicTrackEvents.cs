@@ -3,9 +3,9 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Model;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
-using Soundtrail.Services.Internal.Projector.Features.ReplayMusicTrackProjection.StoredEvents;
+using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack.StoredEvents;
 
-namespace Soundtrail.Services.Internal.Projector.Features.ReplayMusicTrackProjection.Adapters;
+namespace Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack.Adapters;
 
 public sealed class RavenLoadStoredMusicTrackEvents(
     IAsyncDocumentSession session) : ILoadStoredMusicTrackEventsPort

@@ -2,7 +2,7 @@ using Soundtrail.Domain;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Responses;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection;
-using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection;
+using Soundtrail.Tools.MusicBrainzImport.Features.OnReplayCatalogSearchStatus;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayPlannerMusicTrackProjection;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.RebuildAllReadModels;

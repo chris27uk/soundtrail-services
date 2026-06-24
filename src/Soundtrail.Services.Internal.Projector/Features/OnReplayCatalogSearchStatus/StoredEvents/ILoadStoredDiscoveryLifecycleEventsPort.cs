@@ -1,6 +1,6 @@
 using Soundtrail.Domain.Discovery;
 
-namespace Soundtrail.Services.Internal.Projector.Features.ReplayDiscoveryLifecycleProjection.StoredEvents;
+namespace Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus.StoredEvents;
 
 public interface ILoadStoredDiscoveryLifecycleEventsPort
 {

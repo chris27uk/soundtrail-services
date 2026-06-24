@@ -4,12 +4,12 @@ using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChang
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged;
 
-public sealed class ProjectDiscoveryLifecycleHandler(
+public sealed class CatalogSearchStatusChangedHandler(
     ILoadDiscoveryLifecycleProjectionPort loadPort,
-    ISaveDiscoveryLifecycleProjectionPort savePort) : IHandler<ProjectDiscoveryLifecycleCommand>
+    ISaveDiscoveryLifecycleProjectionPort savePort) : IHandler<CatalogSearchStatusChangedCommand>
 {
     public async Task Handle(
-        ProjectDiscoveryLifecycleCommand request,
+        CatalogSearchStatusChangedCommand request,
         CancellationToken cancellationToken = default)
     {
         var projection = await loadPort.LoadAsync(request.Criteria, cancellationToken);

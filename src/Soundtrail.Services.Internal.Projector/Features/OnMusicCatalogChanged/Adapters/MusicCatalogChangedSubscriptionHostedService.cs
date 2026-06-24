@@ -9,10 +9,10 @@ using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adapters;
 
-public sealed class ProjectMusicTrackCatalogSubscriptionHostedService(
+public sealed class MusicCatalogChangedSubscriptionHostedService(
     IDocumentStore documentStore,
-    ProjectMusicTrackCatalogHandler handler,
-    ILogger<ProjectMusicTrackCatalogSubscriptionHostedService> logger) : BackgroundService
+    MusicCatalogChangedHandler handler,
+    ILogger<MusicCatalogChangedSubscriptionHostedService> logger) : BackgroundService
 {
     private const string SubscriptionName = "catalog-music-track-projections";
 
@@ -32,7 +32,7 @@ public sealed class ProjectMusicTrackCatalogSubscriptionHostedService(
                         foreach (var stream in batch.Items.Select(item => item.Result).GroupBy(x => x.MusicCatalogId, StringComparer.Ordinal))
                         {
                             await handler.Handle(
-                                new ProjectMusicTrackCatalogCommand(
+                                new MusicCatalogChangedCommand(
                                     MusicCatalogId.From(stream.Key),
                                     stream.OrderBy(x => x.Version)
                                         .Select(x => new VersionedMusicTrackEvent(x.Version, x.ToDomainEvent()))

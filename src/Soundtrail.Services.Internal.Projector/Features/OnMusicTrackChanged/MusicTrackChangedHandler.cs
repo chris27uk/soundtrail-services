@@ -4,12 +4,12 @@ using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Ports;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged;
 
-public sealed class ProjectMusicTrackProjectionHandler(
+public sealed class MusicTrackChangedHandler(
     ILoadMusicTrackProjectionPort loadPort,
-    ISaveMusicTrackProjectionPort savePort) : IHandler<ProjectMusicTrackProjectionCommand>
+    ISaveMusicTrackProjectionPort savePort) : IHandler<MusicTrackChangedCommand>
 {
     public async Task Handle(
-        ProjectMusicTrackProjectionCommand request,
+        MusicTrackChangedCommand request,
         CancellationToken cancellationToken = default)
     {
         var projection = await loadPort.LoadAsync(request.MusicCatalogId, cancellationToken);

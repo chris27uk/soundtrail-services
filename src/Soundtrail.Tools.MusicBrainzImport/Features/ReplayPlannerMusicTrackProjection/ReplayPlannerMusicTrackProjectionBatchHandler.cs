@@ -10,7 +10,7 @@ public sealed class ReplayPlannerMusicTrackProjectionBatchHandler(
     ILoadCatalogProjectionReplayTargetsPort loadTargetsPort,
     ILoadMusicTrackEventsForCatalogReplayPort loadEventsPort,
     IResetPlannerMusicTrackProjectionPort resetPort,
-    ProjectMusicTrackProjectionHandler projectHandler) : IHandler<ReplayMusicTrackProjectionBatchCommand>
+    MusicTrackChangedHandler projectHandler) : IHandler<ReplayMusicTrackProjectionBatchCommand>
 {
     public async Task Handle(
         ReplayMusicTrackProjectionBatchCommand command,
@@ -29,7 +29,7 @@ public sealed class ReplayPlannerMusicTrackProjectionBatchHandler(
             }
 
             await projectHandler.Handle(
-                new ProjectMusicTrackProjectionCommand(musicCatalogId, events),
+                new MusicTrackChangedCommand(musicCatalogId, events),
                 cancellationToken);
         }
     }

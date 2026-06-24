@@ -3,6 +3,6 @@ using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Domain.Commands;
 
-public sealed record ProjectMusicTrackProjectionCommand(
+public sealed record MusicCatalogChangedCommand(
     MusicCatalogId MusicCatalogId,
     IReadOnlyList<VersionedMusicTrackEvent> Events);

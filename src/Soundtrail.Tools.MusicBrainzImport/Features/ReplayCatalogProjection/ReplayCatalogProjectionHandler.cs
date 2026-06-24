@@ -9,7 +9,7 @@ public sealed class ReplayCatalogProjectionHandler(
     ILoadCatalogProjectionReplayTargetsPort loadTargetsPort,
     ILoadMusicTrackEventsForCatalogReplayPort loadEventsPort,
     IResetCatalogProjectionCheckpointPort resetPort,
-    ProjectMusicTrackCatalogHandler projectHandler) : IHandler<ReplayCatalogProjectionCommand>
+    MusicCatalogChangedHandler projectHandler) : IHandler<ReplayCatalogProjectionCommand>
 {
     public async Task Handle(
         ReplayCatalogProjectionCommand command,

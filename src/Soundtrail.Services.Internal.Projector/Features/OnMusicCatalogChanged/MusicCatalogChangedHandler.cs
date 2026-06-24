@@ -4,12 +4,12 @@ using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Proj
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged;
 
-public sealed class ProjectMusicTrackCatalogHandler(
+public sealed class MusicCatalogChangedHandler(
     ILoadMusicTrackCatalogProjectionPort loadPort,
     ISaveMusicTrackCatalogProjectionPort savePort)
 {
-    public async Task<ProjectMusicTrackCatalogResult> Handle(
-        ProjectMusicTrackCatalogCommand command,
+    public async Task<MusicCatalogChangedResult> Handle(
+        MusicCatalogChangedCommand command,
         CancellationToken cancellationToken = default)
     {
         var projection = await loadPort.LoadAsync(command.MusicCatalogId, cancellationToken);
@@ -25,6 +25,6 @@ public sealed class ProjectMusicTrackCatalogHandler(
         }
 
         await savePort.SaveAsync(projection, cancellationToken);
-        return new ProjectMusicTrackCatalogResult(command.Events.Count);
+        return new MusicCatalogChangedResult(command.Events.Count);
     }
 }

@@ -11,7 +11,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddReplayPlannerMusicTrackProjectionFeature(this IServiceCollection services)
     {
         services.TryAddScoped<ReplayPlannerMusicTrackProjectionBatchHandler>();
-        services.TryAddScoped<ProjectMusicTrackProjectionHandler>();
+        services.TryAddScoped<MusicTrackChangedHandler>();
         services.TryAddScoped<IResetPlannerMusicTrackProjectionPort, RavenResetPlannerMusicTrackProjection>();
         services.TryAddSingleton<RavenMusicTrackProjectionMapper>();
         return services;

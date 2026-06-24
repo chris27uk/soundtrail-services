@@ -7,11 +7,11 @@ namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusC
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddProjectDiscoveryLifecycleFeature(this IServiceCollection services)
+    public static IServiceCollection AddOnCatalogSearchStatusChangedFeature(this IServiceCollection services)
     {
-        services.TryAddScoped<ProjectDiscoveryLifecycleHandler>();
+        services.TryAddScoped<CatalogSearchStatusChangedHandler>();
         services.TryAddSingleton<RavenDiscoveryLifecycleProjectionMapper>();
-        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, ProjectDiscoveryLifecycleSubscriptionHostedService>());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, CatalogSearchStatusChangedSubscriptionHostedService>());
         return services;
     }
 }

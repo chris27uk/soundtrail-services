@@ -2,7 +2,7 @@ using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Discovery;
 
-namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.Adapters;
+namespace Soundtrail.Tools.MusicBrainzImport.Features.OnReplayCatalogSearchStatus.Adapters;
 
 public sealed class RavenLoadDiscoveryLifecycleReplayTargets(
     IAsyncDocumentSession session) : ILoadDiscoveryLifecycleReplayTargetsPort

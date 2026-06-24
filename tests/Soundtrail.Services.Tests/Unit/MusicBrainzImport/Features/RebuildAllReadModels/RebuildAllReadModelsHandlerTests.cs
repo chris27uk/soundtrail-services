@@ -14,7 +14,7 @@ using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 using Soundtrail.Tools.MusicBrainzImport.Features.RebuildAllReadModels;
 using Soundtrail.Tools.MusicBrainzImport.Features.RebuildAllReadModels.Adapters;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection;
-using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection;
+using Soundtrail.Tools.MusicBrainzImport.Features.OnReplayCatalogSearchStatus;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayPlannerMusicTrackProjection;
 
 namespace Soundtrail.Services.Tests.Unit.MusicBrainzImport.Features.RebuildAllReadModels;
@@ -64,7 +64,7 @@ public sealed class RebuildAllReadModelsHandlerTests
             plannerEventStore,
             plannerEventStore,
             plannerResetPort,
-            new ProjectMusicTrackProjectionHandler(plannerProjectionStore, plannerProjectionStore));
+            new MusicTrackChangedHandler(plannerProjectionStore, plannerProjectionStore));
 
         var catalogEventStore = new FakeMusicTrackReplayEventStore(new Dictionary<string, IReadOnlyList<VersionedMusicTrackEvent>>
         {
@@ -75,7 +75,7 @@ public sealed class RebuildAllReadModelsHandlerTests
             catalogEventStore,
             catalogEventStore,
             catalogProjectionStore,
-            new ProjectMusicTrackCatalogHandler(catalogProjectionStore, catalogProjectionStore));
+            new MusicCatalogChangedHandler(catalogProjectionStore, catalogProjectionStore));
 
         var discoveryEventStore = new FakeDiscoveryReplayEventStore(new Dictionary<string, IReadOnlyList<VersionedCatalogSearchDiscoveryEvent>>
         {
@@ -86,7 +86,7 @@ public sealed class RebuildAllReadModelsHandlerTests
             discoveryEventStore,
             discoveryEventStore,
             discoveryProjectionStore,
-            new ProjectDiscoveryLifecycleHandler(discoveryProjectionStore, discoveryProjectionStore));
+            new CatalogSearchStatusChangedHandler(discoveryProjectionStore, discoveryProjectionStore));
 
         var clearPlannerOperationalStatePort = new FakeClearPlannerOperationalStatePort(3, 4, 5);
         var handler = new RebuildAllReadModelsHandler(

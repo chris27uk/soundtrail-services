@@ -59,7 +59,7 @@ internal sealed class RavenMusicTrackEventImportTestEnvironment : IAsyncDisposab
     public async Task ReplayCatalogProjectionAsync()
     {
         using var session = raven.Store.OpenAsyncSession();
-        var projectHandler = new ProjectMusicTrackCatalogHandler(
+        var projectHandler = new MusicCatalogChangedHandler(
             new RavenLoadMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()),
             new RavenSaveMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()));
         var streamMetadata = await session.Advanced.LoadStartingWithAsync<MusicTrackEventStreamMetadataRecordDto>(
@@ -74,7 +74,7 @@ internal sealed class RavenMusicTrackEventImportTestEnvironment : IAsyncDisposab
                 .Select(x => new VersionedMusicTrackEvent(x.Version, x.ToDomainEvent()))
                 .ToArray();
             await projectHandler.Handle(
-                new ProjectMusicTrackCatalogCommand(MusicCatalogId.From(musicCatalogId), eventsToReplay),
+                new MusicCatalogChangedCommand(MusicCatalogId.From(musicCatalogId), eventsToReplay),
                 CancellationToken.None);
         }
     }
