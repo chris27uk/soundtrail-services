@@ -17,7 +17,7 @@ public sealed class MusicTrackProjectionStoreResponsesTests
 {
     [Theory]
     [MemberData(nameof(AllModes))]
-    public async Task Given_A_Stream_With_Canonical_Metadata_And_Apple_Reference_When_Projected_Then_The_Track_Becomes_Playable(ProjectionStoreMode mode)
+    public async Task Given_A_Stream_With_Resolved_Metadata_And_Apple_Reference_When_Projected_Then_The_Track_Becomes_Playable(ProjectionStoreMode mode)
     {
         await using var env = ProjectionStoreTestEnvironment.Create(mode);
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
@@ -105,8 +105,8 @@ public sealed class MusicTrackProjectionStoreResponsesTests
                 return projection is null
                     ? null
                     : new ProjectedTrack(
-                        projection.CanonicalMetadata?.Title,
-                        projection.CanonicalMetadata?.Artist.Value,
+                        projection.ResolvedMetadata?.Title,
+                        projection.ResolvedMetadata?.Artist.Value,
                         projection.AppleReference?.ExternalId,
                         projection.IsPlayable);
             }

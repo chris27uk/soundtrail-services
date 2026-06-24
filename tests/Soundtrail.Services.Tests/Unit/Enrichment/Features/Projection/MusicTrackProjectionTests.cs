@@ -9,7 +9,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Projection;
 public sealed class MusicTrackProjectionTests
 {
     [Fact]
-    public void Given_Canonical_Metadata_And_Apple_Reference_When_Applied_Then_The_Track_Becomes_Playable()
+    public void Given_Resolved_Metadata_And_Apple_Reference_When_Applied_Then_The_Track_Becomes_Playable()
     {
         var projection = new MusicTrackProjection();
 
@@ -27,7 +27,7 @@ public sealed class MusicTrackProjectionTests
 
         projection.Title.Should().Be("Song A");
         projection.Artist.Value.Should().Be("Artist A");
-        projection.Artist.Canonical.Should().Be("artist a");
+        projection.Artist.Normalized.Should().Be("artist a");
         projection.AppleId.Should().Be("apple-1");
         projection.IsPlayable.Should().BeTrue();
         projection.ProjectionVersion.Should().Be(2);
@@ -43,7 +43,7 @@ public sealed class MusicTrackProjectionTests
                 "Song A",
                 ArtistName.From("Wrong Artist"),
                 AlbumTitle.Empty,
-                ArtistName.From("Song A Wrong Artist").Canonical,
+                ArtistName.From("Song A Wrong Artist").Normalized,
                 null,
                 string.Empty,
                 null,
@@ -65,13 +65,13 @@ public sealed class MusicTrackProjectionTests
 
         projection.ArtistId.Should().Be("artist_a");
         projection.Artist.Value.Should().Be("Artist A");
-        projection.Artist.Canonical.Should().Be("artist a");
-        projection.SearchText.Should().Be(ArtistName.From("Song A Artist A").Canonical);
+        projection.Artist.Normalized.Should().Be("artist a");
+        projection.SearchText.Should().Be(ArtistName.From("Song A Artist A").Normalized);
         projection.ProjectionVersion.Should().Be(3);
     }
 
     [Fact]
-    public void Given_Metadata_Corrected_When_Applied_Then_All_Canonical_Fields_Are_Replaced()
+    public void Given_Metadata_Corrected_When_Applied_Then_All_Resolved_Metadata_Fields_Are_Replaced()
     {
         var projection = new MusicTrackProjection();
 
@@ -96,14 +96,14 @@ public sealed class MusicTrackProjectionTests
         projection.Artist.Value.Should().Be("Artist A");
         projection.ArtistId.Should().Be("artist_a");
         projection.AlbumTitle.Value.Should().Be("Album A");
-        projection.AlbumTitle.Canonical.Should().Be("album a");
+        projection.AlbumTitle.Normalized.Should().Be("album a");
         projection.AlbumId.Should().Be("album_a");
         projection.ReleaseDate.Should().Be(new DateOnly(2004, 6, 7));
         projection.Isrc.Should().Be("isrc-1");
         projection.Mbid.Should().Be("mbid-1");
-        projection.CanonicalMetadata.Should().NotBeNull();
-        projection.CanonicalMetadata!.Title.Should().Be("Song A (Remastered)");
-        projection.CanonicalMetadata.Artist.Value.Should().Be("Artist A");
+        projection.ResolvedMetadata.Should().NotBeNull();
+        projection.ResolvedMetadata!.Title.Should().Be("Song A (Remastered)");
+        projection.ResolvedMetadata.Artist.Value.Should().Be("Artist A");
         projection.ProjectionVersion.Should().Be(4);
     }
 
@@ -147,7 +147,7 @@ public sealed class MusicTrackProjectionTests
     }
 
     [Fact]
-    public void Given_Spotify_Only_Without_Canonical_Metadata_When_Applied_Then_The_Track_Is_Not_Playable()
+    public void Given_Spotify_Only_Without_Resolved_Metadata_When_Applied_Then_The_Track_Is_Not_Playable()
     {
         var projection = new MusicTrackProjection();
 

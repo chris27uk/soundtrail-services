@@ -42,7 +42,7 @@ public class CatalogSearchRequestedHandlerTests
         var env = CatalogSearchRequestedHandlerTestEnvironment.WithNoExistingCandidates();
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
         env.Search.ResolveAs(musicCatalogId);
-        await env.ActiveWorkStore.TryAcquireAsync(CommandId.For($"LookupCanonicalMusicMetadata:{musicCatalogId.Value}"), DateTimeOffset.UtcNow.AddMinutes(5), CancellationToken.None);
+        await env.ActiveWorkStore.TryAcquireAsync(CommandId.For($"LookupMusicMetadata:{musicCatalogId.Value}"), DateTimeOffset.UtcNow.AddMinutes(5), CancellationToken.None);
 
         var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10), CancellationToken.None);
 
@@ -192,7 +192,7 @@ public class CatalogSearchRequestedHandlerTests
         sentCommand.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
         sentCommand.Priority.Should().Be(LookupPriorityBand.Low);
         sentCommand.CreatedAt.Should().Be(occurredAt);
-        sentCommand.CommandId.Should().Be(CommandId.For("LookupCanonicalMusicMetadata:mc_track_1"));
+        sentCommand.CommandId.Should().Be(CommandId.For("LookupMusicMetadata:mc_track_1"));
         sentCommand.CorrelationId.Value.Should().NotBeNullOrWhiteSpace();
 
         env.PotentialCatalogLookupWorks.Should().ContainSingle();

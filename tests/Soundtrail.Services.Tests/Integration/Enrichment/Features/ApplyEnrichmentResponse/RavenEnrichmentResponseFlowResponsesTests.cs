@@ -31,7 +31,7 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
 {
     private static readonly IMusicTrackStoredEventRecordTranslator Translator = MusicTrackStoredEventRecordTranslator.Default;
     [Fact]
-    public async Task Given_Canonical_And_Playback_Responses_When_Applied_Then_The_Track_Becomes_Playable()
+    public async Task Given_Resolved_Metadata_And_Playback_Responses_When_Applied_Then_The_Track_Becomes_Playable()
     {
         using var raven = RavenEmbeddedTestDatabase.Create();
 
@@ -47,11 +47,11 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
             await seedSession.SaveChangesAsync();
         }
 
-        using (var canonicalSession = raven.Store.OpenAsyncSession())
+        using (var metadataSession = raven.Store.OpenAsyncSession())
         {
-            var listener = CreateListener(canonicalSession);
-            await listener.Handle(CanonicalAttemptDto(), null!);
-            await canonicalSession.SaveChangesAsync();
+            var listener = CreateListener(metadataSession);
+            await listener.Handle(ResolvedMetadataAttemptDto(), null!);
+            await metadataSession.SaveChangesAsync();
         }
 
         using (var playbackSession = raven.Store.OpenAsyncSession())
@@ -149,9 +149,9 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
         }
     }
 
-    private static MusicCatalogLookupAttemptedDto CanonicalAttemptDto() =>
+    private static MusicCatalogLookupAttemptedDto ResolvedMetadataAttemptDto() =>
         new(
-            CommandId.For("ResolveCanonicalMetadata:mc_track_1").Value,
+            CommandId.For("ResolveMusicMetadata:mc_track_1").Value,
             "mc_track_1",
             ProviderName.MusicBrainz.Value,
             LookupPriorityBand.High,
@@ -159,7 +159,7 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
             "corr-1",
             new MusicCatalogLookupOutcomeDto("Completed", null, null, null),
             new MusicCatalogMetadataFetchedDto(
-                CommandId.For("ResolveCanonicalMetadata:mc_track_1").Value,
+                CommandId.For("ResolveMusicMetadata:mc_track_1").Value,
                 "mc_track_1",
                 ProviderName.MusicBrainz.Value,
                 LookupPriorityBand.High,

@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupCanonicalMusicMetadata.Lookup;
+namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Lookup;
 
 public static class MusicMetadataLookupMatch
 {

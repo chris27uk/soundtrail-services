@@ -61,6 +61,38 @@ public sealed class LookupStreamingLocationsListenerWolverineResponsesTests
         message.Outcome.Reason.Should().Be("Lookup failed");
     }
 
+    [Fact]
+    public async Task Given_A_TrackArtistAlbum_StreamingLocations_Command_When_Isrc_Is_Also_Present_Then_The_Declared_Search_Kind_Is_Used()
+    {
+        var env = LookupStreamingLocationsHandlerTestEnvironment.Create();
+        env.Seed(
+            MusicSearchTerm.ByTrackArtistAlbum("Song A", "Artist A", "Album A"),
+            new ExternalReference(ProviderName.AppleMusic, new Uri("https://music.apple.com/us/song/apple-1?i=apple-1"), "apple-1"));
+        var bus = new WolverineMessageBusFake();
+        var listener = new LookupStreamingLocationsListener(env.Handler, bus);
+
+        await listener.Handle(
+            new LookupStreamingLocationsCommandDto(
+                CommandId.For("LookupStreamingLocations:mc_track_1").Value,
+                "mc_track_1",
+                LookupPriorityBand.High,
+                new DateTimeOffset(2026, 6, 18, 12, 0, 0, TimeSpan.Zero),
+                "corr-1",
+                new StreamingLocationSearchTermDto(
+                    MusicSearchKind.TrackArtistAlbum,
+                    null,
+                    "isrc-should-not-win",
+                    "Song A",
+                    "Artist A",
+                    "Album A"),
+                null,
+                null),
+            null!);
+
+        env.References.SearchTerms.Should().ContainSingle()
+            .Which.Should().Be(MusicSearchTerm.ByTrackArtistAlbum("Song A", "Artist A", "Album A"));
+    }
+
     private static LookupStreamingLocationsCommandDto Command() =>
         new(
             CommandId.For("LookupStreamingLocations:mc_track_1").Value,
@@ -68,7 +100,7 @@ public sealed class LookupStreamingLocationsListenerWolverineResponsesTests
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 18, 12, 0, 0, TimeSpan.Zero),
             "corr-1",
-            new StreamingLocationSearchTermDto("isrc-1", null, null, null),
+            new StreamingLocationSearchTermDto(MusicSearchKind.Isrc, null, "isrc-1", null, null, null),
             null,
             null);
 }

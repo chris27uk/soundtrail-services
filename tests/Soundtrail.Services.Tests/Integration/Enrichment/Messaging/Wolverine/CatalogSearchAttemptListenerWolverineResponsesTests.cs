@@ -15,7 +15,7 @@ public sealed class CatalogSearchRequestedListenerWolverineResponsesTests
     {
         var env = CatalogSearchRequestedListenerWolverineTestEnvironment.WithASchedulableRequest();
         var messages = await env.HandleSchedulableRequest();
-        messages.Should().ContainSingle().Which.Should().BeOfType<LookupCanonicalMusicMetadataCommandDto>();
+        messages.Should().ContainSingle().Which.Should().BeOfType<LookupMusicMetadataCommandDto>();
     }
 
     [Fact]
@@ -35,6 +35,7 @@ public sealed class CatalogSearchRequestedListenerWolverineResponsesTests
 
         var message = (LookupStreamingLocationsCommandDto)(await env.HandleSchedulableRequest()).Single();
 
+        message.SearchTerm.Kind.Should().Be(MusicSearchKind.Isrc);
         message.SearchTerm.Isrc.Should().Be("isrc-1");
     }
 

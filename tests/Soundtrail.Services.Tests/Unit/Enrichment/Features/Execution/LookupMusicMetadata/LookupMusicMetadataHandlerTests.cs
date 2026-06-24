@@ -4,14 +4,14 @@ using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
-namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Execution.MusicBrainzLookupExecution;
+namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Execution.LookupMusicMetadata;
 
-public sealed class MusicBrainzLookupExecutionHandlerTests
+public sealed class LookupMusicMetadataHandlerTests
 {
     [Fact]
     public async Task Given_A_New_Execution_Command_When_Handled_Then_A_Completed_Response_Is_Returned()
     {
-        var env = LookupCanonicalMusicMetadataHandlerTestEnvironment.Create();
+        var env = LookupMusicMetadataHandlerTestEnvironment.Create();
 
         var result = await env.HandleNewExecutionCommand();
 
@@ -24,7 +24,7 @@ public sealed class MusicBrainzLookupExecutionHandlerTests
     [Fact]
     public async Task Given_A_Duplicate_Execution_Command_When_Handled_Then_No_Budget_Is_Reserved_And_No_Response_Is_Returned()
     {
-        var env = LookupCanonicalMusicMetadataHandlerTestEnvironment.Create();
+        var env = LookupMusicMetadataHandlerTestEnvironment.Create();
 
         var result = await env.HandleDuplicateExecutionCommand();
 
@@ -36,7 +36,7 @@ public sealed class MusicBrainzLookupExecutionHandlerTests
     [Fact]
     public async Task Given_An_Isrc_Lookup_When_Handled_Then_MusicBrainz_Is_Queried_By_Isrc()
     {
-        var env = LookupCanonicalMusicMetadataHandlerTestEnvironment.Create();
+        var env = LookupMusicMetadataHandlerTestEnvironment.Create();
         env.SeedMusicBrainzIsrc("isrc-1", new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000, "Album A", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"));
 
         var result = await env.HandleNewExecutionCommand(MusicSearchTerm.ByIsrc("isrc-1"));
@@ -48,7 +48,7 @@ public sealed class MusicBrainzLookupExecutionHandlerTests
     [Fact]
     public async Task Given_A_Track_Artist_And_Album_Lookup_When_Handled_Then_MusicBrainz_Is_Queried_By_Names()
     {
-        var env = LookupCanonicalMusicMetadataHandlerTestEnvironment.Create();
+        var env = LookupMusicMetadataHandlerTestEnvironment.Create();
         env.SeedMusicBrainzNames("Song A", "Artist A", "Album A", new SongMetadata("Song A", "Artist A", null, "mbid-1", 123000, "Album A", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"));
 
         var result = await env.HandleNewExecutionCommand(MusicSearchTerm.ByTrackArtistAlbum("Song A", "Artist A", "Album A"));
@@ -60,7 +60,7 @@ public sealed class MusicBrainzLookupExecutionHandlerTests
     [Fact]
     public async Task Given_A_Budget_Rejection_When_Handled_Then_The_Lookup_Is_Deferred_And_The_Source_Is_Not_Called()
     {
-        var env = LookupCanonicalMusicMetadataHandlerTestEnvironment.Create();
+        var env = LookupMusicMetadataHandlerTestEnvironment.Create();
         env.SourceBudget.Reject(
             ProviderName.MusicBrainz,
             new DateTimeOffset(2026, 6, 8, 12, 1, 0, TimeSpan.Zero),
@@ -77,7 +77,7 @@ public sealed class MusicBrainzLookupExecutionHandlerTests
     [Fact]
     public async Task Given_A_Failing_Execution_Command_When_Handled_Then_A_Failed_Outcome_Is_Returned()
     {
-        var env = LookupCanonicalMusicMetadataHandlerTestEnvironment.Create();
+        var env = LookupMusicMetadataHandlerTestEnvironment.Create();
         env.Throw(new InvalidOperationException("boom"));
 
         var result = await env.HandleNewExecutionCommand();

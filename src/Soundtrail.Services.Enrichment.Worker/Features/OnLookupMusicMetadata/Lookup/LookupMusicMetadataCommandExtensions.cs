@@ -3,9 +3,9 @@ using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Domain.Responses;
 
-namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupCanonicalMusicMetadata.Lookup;
+namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Lookup;
 
-internal static class LookupCanonicalMusicMetadataCommandExtensions
+internal static class LookupMusicMetadataCommandExtensions
 {
     public static MusicCatalogMetadataFetched ToMusicCatalogMetadataFetched(
         this LookupMusicMetadataCommand command,

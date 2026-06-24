@@ -85,7 +85,7 @@ internal sealed class NextMusicTracksRequestedForLookupHandlerTestEnvironment
     {
         var env = new NextMusicTracksRequestedForLookupHandlerTestEnvironment(Candidates.PopularEligibleCandidate());
         env.ActiveWorkStore.TryAcquireAsync(
-            CommandId.For("LookupCanonicalMusicMetadata:mc_track_high"),
+            CommandId.For("LookupMusicMetadata:mc_track_high"),
             env.Now.AddMinutes(5),
             CancellationToken.None).GetAwaiter().GetResult();
         return env;

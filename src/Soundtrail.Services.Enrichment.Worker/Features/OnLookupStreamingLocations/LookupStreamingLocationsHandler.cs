@@ -1,15 +1,13 @@
-using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Domain.Responses;
+using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.Pipeline;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.GetReference;
-using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency;
-using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
+using Soundtrail.Contracts.Common;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations;
 
-public sealed class LookupStreamingLocationsHandler(ILookupExecutionReceiptStore lookupExecutionReceiptStore, IGetMusicTrackReference getMusicTrackReference, IReserveSourceApiBudgetPort reserveSourceApiBudgetPort)
+public sealed class LookupStreamingLocationsHandler(IGetMusicTrackReference getMusicTrackReference)
+    : ILookupStreamingLocationsHandler
 {
     private static readonly ProviderName[] SupportedPlaybackProviders =
     [
@@ -18,39 +16,10 @@ public sealed class LookupStreamingLocationsHandler(ILookupExecutionReceiptStore
         ProviderName.YoutubeMusic
     ];
 
-    public async Task<MusicCatalogLookupAttempted> Handle(LookupStreamingLocationsCommand command, CancellationToken cancellationToken = default)
+    public async Task<MusicCatalogLookupAttempted> Handle(
+        LookupStreamingLocationsCommand command,
+        CancellationToken cancellationToken = default)
     {
-        await using var idempotencySession = await IdempotencySession.StartAsync(lookupExecutionReceiptStore, command.CommandId, cancellationToken);
-
-        if (idempotencySession.ProcessedBefore)
-        {
-            return MusicCatalogLookupAttempted.Duplicate(
-                command.CommandId,
-                command.MusicCatalogId,
-                command.TargetProvider,
-                command.Priority,
-                command.CreatedAt,
-                command.CorrelationId);
-        }
-
-        var reservation = await reserveSourceApiBudgetPort.TryReserveAsync(
-            new SourceApiBudgetReservationRequest(command.TargetProvider, command.CreatedAt),
-            cancellationToken);
-
-        if (!reservation.Accepted)
-        {
-            return MusicCatalogLookupAttempted.Deferred(
-                command.CommandId,
-                command.MusicCatalogId,
-                command.TargetProvider,
-                command.Priority,
-                command.CreatedAt,
-                command.CorrelationId,
-                reservation.Reason,
-                reservation.RetryAt,
-                reservation.RetryAfterSecondsFrom(command.CreatedAt));
-        }
-
         try
         {
             var references = await getMusicTrackReference.GetReferenceToMusicTrack(command.LookupKey, cancellationToken);

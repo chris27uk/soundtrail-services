@@ -16,6 +16,8 @@ internal static class MusicTrackIntegrationMessageMapper
                 playback.SourceProvider.Value,
                 playback.ObservedAt,
                 new StreamingLocationSearchTermDto(
+                    playback.SearchTerm.Kind,
+                    playback.SearchTerm.Query,
                     playback.SearchTerm.Isrc,
                     playback.SearchTerm.Title,
                     playback.SearchTerm.Artist,

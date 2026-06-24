@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupCanonicalMusicMetadata.Adapters;
+namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Adapters;
 
 public sealed class MusicBrainzOptions
 {

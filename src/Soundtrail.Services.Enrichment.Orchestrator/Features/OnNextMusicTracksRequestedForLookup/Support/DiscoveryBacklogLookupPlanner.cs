@@ -43,7 +43,7 @@ public sealed class DiscoveryBacklogLookupPlanner
 
         return new PlannedLookupWork(
             new LookupMusicMetadataCommand(
-                CommandId.For($"LookupCanonicalMusicMetadata:{musicCatalogId.Value}"),
+                CommandId.For($"LookupMusicMetadata:{musicCatalogId.Value}"),
                 musicCatalogId,
                 priority,
                 now,

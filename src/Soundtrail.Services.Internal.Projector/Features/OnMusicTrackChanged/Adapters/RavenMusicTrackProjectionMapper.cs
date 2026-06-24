@@ -25,16 +25,16 @@ public sealed class RavenMusicTrackProjectionMapper
                 document.DurationMs,
                 document.ReleaseDate,
                 document.ArtworkUrl,
-                document.CanonicalMetadata is null
+                document.ResolvedMetadata is null
                     ? null
                     : new ProjectedSongMetadata(
-                        document.CanonicalMetadata.Title,
-                        ArtistName.From(document.CanonicalMetadata.Artist),
-                        document.CanonicalMetadata.Isrc,
-                        NormalizeCompact(document.CanonicalMetadata.Isrc),
-                        document.CanonicalMetadata.Mbid,
-                        NormalizeCompact(document.CanonicalMetadata.Mbid),
-                        document.CanonicalMetadata.DurationMs),
+                        document.ResolvedMetadata.Title,
+                        ArtistName.From(document.ResolvedMetadata.Artist),
+                        document.ResolvedMetadata.Isrc,
+                        NormalizeCompact(document.ResolvedMetadata.Isrc),
+                        document.ResolvedMetadata.Mbid,
+                        NormalizeCompact(document.ResolvedMetadata.Mbid),
+                        document.ResolvedMetadata.DurationMs),
                 document.AppleReference is null ? null : ToDomain(document.AppleReference),
                 document.YouTubeMusicReference is null ? null : ToDomain(document.YouTubeMusicReference),
                 document.IsPlayable,
@@ -58,9 +58,9 @@ public sealed class RavenMusicTrackProjectionMapper
         document.AlbumId = snapshot.AlbumId;
         document.Title = snapshot.Title;
         document.Artist = snapshot.Artist.Value;
-        document.NormalizedArtist = snapshot.Artist.Canonical;
+        document.NormalizedArtist = snapshot.Artist.Normalized;
         document.AlbumTitle = snapshot.AlbumTitle.HasValue ? snapshot.AlbumTitle.Value : null;
-        document.NormalizedAlbumTitle = snapshot.AlbumTitle.Canonical;
+        document.NormalizedAlbumTitle = snapshot.AlbumTitle.Normalized;
         document.SearchText = snapshot.SearchText;
         document.Isrc = snapshot.Isrc;
         document.NormalizedIsrc = snapshot.NormalizedIsrc;
@@ -71,15 +71,15 @@ public sealed class RavenMusicTrackProjectionMapper
         document.DurationMs = snapshot.DurationMs;
         document.ReleaseDate = snapshot.ReleaseDate;
         document.ArtworkUrl = snapshot.ArtworkUrl;
-        document.CanonicalMetadata = snapshot.CanonicalMetadata is null
+        document.ResolvedMetadata = snapshot.ResolvedMetadata is null
             ? null
             : new RavenSongMetadataRecordDto
             {
-                Title = snapshot.CanonicalMetadata.Title,
-                Artist = snapshot.CanonicalMetadata.Artist.Value,
-                Isrc = snapshot.CanonicalMetadata.Isrc,
-                Mbid = snapshot.CanonicalMetadata.Mbid,
-                DurationMs = snapshot.CanonicalMetadata.DurationMs
+                Title = snapshot.ResolvedMetadata.Title,
+                Artist = snapshot.ResolvedMetadata.Artist.Value,
+                Isrc = snapshot.ResolvedMetadata.Isrc,
+                Mbid = snapshot.ResolvedMetadata.Mbid,
+                DurationMs = snapshot.ResolvedMetadata.DurationMs
             };
         document.AppleReference = snapshot.AppleReference is null ? null : ToDocument(snapshot.AppleReference);
         document.YouTubeMusicReference = snapshot.YouTubeMusicReference is null ? null : ToDocument(snapshot.YouTubeMusicReference);

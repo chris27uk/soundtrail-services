@@ -16,7 +16,7 @@ public sealed class MusicCatalogLookupAttemptedHandlerTests
 
         await env.Handler.Handle(
             new MusicCatalogLookupAttempted(
-                CommandId.For("LookupCanonicalMusicMetadata:mc_track_1"),
+                CommandId.For("LookupMusicMetadata:mc_track_1"),
                 MusicCatalogId.From("mc_track_1"),
                 ProviderName.MusicBrainz,
                 LookupPriorityBand.High,
@@ -40,7 +40,7 @@ public sealed class MusicCatalogLookupAttemptedHandlerTests
 
         await env.Handler.Handle(
             new MusicCatalogLookupAttempted(
-                CommandId.For("LookupCanonicalMusicMetadata:mc_track_1"),
+                CommandId.For("LookupMusicMetadata:mc_track_1"),
                 MusicCatalogId.From("mc_track_1"),
                 ProviderName.MusicBrainz,
                 LookupPriorityBand.High,
@@ -62,7 +62,7 @@ public sealed class MusicCatalogLookupAttemptedHandlerTests
 
         await env.Handler.Handle(
             new MusicCatalogLookupAttempted(
-                CommandId.For("LookupCanonicalMusicMetadata:mc_track_1"),
+                CommandId.For("LookupMusicMetadata:mc_track_1"),
                 MusicCatalogId.From("mc_track_1"),
                 ProviderName.MusicBrainz,
                 LookupPriorityBand.High,
