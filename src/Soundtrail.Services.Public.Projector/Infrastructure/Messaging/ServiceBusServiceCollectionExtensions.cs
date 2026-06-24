@@ -46,7 +46,7 @@ public static class ServiceBusServiceCollectionExtensions
                 .EnableWolverineControlQueues();
         }
 
-        opts.PublishMessage<PlaybackReferencesResolutionRequiredMessageDto>()
+        opts.PublishMessage<StreamingLocationsRequiredMessageDto>()
             .ToAzureServiceBusQueue(serviceBusOptions.MusicTrackEventsQueueName);
 
         return opts;

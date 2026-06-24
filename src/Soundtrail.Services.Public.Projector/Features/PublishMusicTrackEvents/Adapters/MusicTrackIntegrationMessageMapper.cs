@@ -1,0 +1,27 @@
+using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Contracts.IntegrationMessaging.Events;
+using Soundtrail.Domain.Catalog.IntegrationEvents;
+
+namespace Soundtrail.Services.Public.Projector.Features.PublishMusicTrackEvents.Adapters;
+
+internal static class MusicTrackIntegrationMessageMapper
+{
+    public static object ToMessage(this MusicTrackIntegrationEvent integrationEvent) =>
+        integrationEvent switch
+        {
+            PlaybackReferencesResolutionRequiredIntegrationEvent playback => new StreamingLocationsRequiredMessageDto(
+                playback.MusicCatalogId.Value,
+                playback.Priority,
+                playback.CorrelationId.Value,
+                playback.SourceProvider.Value,
+                playback.ObservedAt,
+                new StreamingLocationSearchTermDto(
+                    playback.SearchTerm.Isrc,
+                    playback.SearchTerm.Title,
+                    playback.SearchTerm.Artist,
+                    playback.SearchTerm.Album),
+                playback.ArtistId,
+                playback.AlbumId),
+            _ => throw new ArgumentOutOfRangeException(nameof(integrationEvent), integrationEvent, null)
+        };
+}

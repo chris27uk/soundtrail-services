@@ -80,7 +80,7 @@ internal static class RavenMappings
                 MusicCatalogId = musicCatalogId.Value,
                 Version = version,
                 EventType = nameof(PlaybackReferencesResolutionRequired),
-                PlaybackReferencesResolutionRequired = new PlaybackReferencesResolutionRequiredEventDataRecordDto(
+                StreamingLocationsRequired = new StreamingLocationsRequiredEventDataRecordDto(
                     playbackReferencesResolutionRequired.MusicCatalogId.Value,
                     playbackReferencesResolutionRequired.Priority.ToString(),
                     playbackReferencesResolutionRequired.CorrelationId.Value,
@@ -223,7 +223,7 @@ internal static class RavenMappings
 
     private static PlaybackReferencesResolutionRequired PlaybackReferencesResolutionRequired(MusicTrackStoredEventRecordDto dto)
     {
-        var data = dto.PlaybackReferencesResolutionRequired
+        var data = dto.StreamingLocationsRequired
             ?? throw new InvalidOperationException("Missing playback references resolution required event data.");
         return new PlaybackReferencesResolutionRequired(
             MusicCatalogId.From(data.MusicCatalogId),

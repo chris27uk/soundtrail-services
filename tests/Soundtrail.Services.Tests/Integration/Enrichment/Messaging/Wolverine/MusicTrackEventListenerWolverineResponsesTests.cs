@@ -17,7 +17,7 @@ public sealed class StreamingLocationsRequiredListenerWolverineResponsesTests
         var bus = new WolverineMessageBusFake();
         var listener = new StreamingLocationsRequiredListener(new StreamingLocationsRequiredHandler(new WolverineCommandBus(bus)));
         await listener.Handle(
-            new PlaybackReferencesResolutionRequiredMessageDto(
+            new StreamingLocationsRequiredMessageDto(
                 "mc_track_1",
                 LookupPriorityBand.High,
                 "corr-1",

@@ -50,7 +50,7 @@ public static class MusicTrackStoredEventRecordMapper
 
     private static PlaybackReferencesResolutionRequired PlaybackReferencesResolutionRequired(MusicTrackStoredEventRecordDto dto)
     {
-        var data = dto.PlaybackReferencesResolutionRequired
+        var data = dto.StreamingLocationsRequired
             ?? throw new InvalidOperationException("Missing playback references resolution required event data.");
         return new PlaybackReferencesResolutionRequired(
             MusicCatalogId.From(data.MusicCatalogId),

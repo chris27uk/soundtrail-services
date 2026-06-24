@@ -1,9 +1,7 @@
 using FluentAssertions;
-using Microsoft.Extensions.Options;
 using Soundtrail.Services.Enrichment.Scheduler;
 using Soundtrail.Services.Enrichment.Scheduler.Features.SendDiscoveryBacklogMessage;
 using Soundtrail.Services.Enrichment.Scheduler.Features.SendDiscoveryBacklogMessage.Support;
-using Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Hosting;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Unit.Scheduler.Features.SendDiscoveryBacklogMessage;
@@ -15,14 +13,7 @@ public sealed class SendDiscoveryBacklogMessageHandlerTests
     {
         var bus = new CommandBusFake();
         var now = new DateTimeOffset(2026, 6, 24, 12, 0, 0, TimeSpan.Zero);
-        var handler = new SendDiscoveryBacklogMessageHandler(
-            bus,
-            new TestTimeProvider(now),
-            Options.Create(new SchedulerOptions
-            {
-                BatchSize = 25,
-                RunIntervalSeconds = 60
-            }));
+        var handler = new SendDiscoveryBacklogMessageHandler(bus, new TestTimeProvider(now));
 
         await handler.Handle(CancellationToken.None);
 

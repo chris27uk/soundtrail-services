@@ -13,7 +13,7 @@ public sealed class StreamingLocationsRequiredListener(StreamingLocationsRequire
     [WolverineHandler]
     [Transactional]
     public Task Handle(
-        PlaybackReferencesResolutionRequiredMessageDto dto,
+        StreamingLocationsRequiredMessageDto dto,
         IAsyncDocumentSession _,
         CancellationToken cancellationToken = default)
     {
@@ -29,7 +29,7 @@ public sealed class StreamingLocationsRequiredListener(StreamingLocationsRequire
             cancellationToken);
     }
 
-    private static MusicSearchTerm ToSearchTerm(PlaybackReferencesResolutionRequiredMessageDto dto) =>
+    private static MusicSearchTerm ToSearchTerm(StreamingLocationsRequiredMessageDto dto) =>
         !string.IsNullOrWhiteSpace(dto.SearchTerm.Isrc)
             ? MusicSearchTerm.ByIsrc(dto.SearchTerm.Isrc)
             : MusicSearchTerm.ByTrackArtistAlbum(

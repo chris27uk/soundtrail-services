@@ -1,21 +1,20 @@
-using Soundtrail.Contracts.EventSourcing;
+using Soundtrail.Domain;
+using Soundtrail.Domain.Commands;
 using Soundtrail.Services.Public.Projector.Features.PublishMusicTrackEvents.Publishing;
 
 namespace Soundtrail.Services.Public.Projector.Features.PublishMusicTrackEvents;
 
 public sealed class PublishMusicTrackEventsHandler(
-    IPublishMusicTrackIntegrationEvents publishMusicTrackIntegrationEvents)
+    IPublishMusicTrackIntegrationEvents publishMusicTrackIntegrationEvents) : IHandler<PublishMusicTrackEventsCommand>
 {
-    public async Task HandleAsync(
-        IReadOnlyCollection<MusicTrackStoredEventRecordDto> storedEvents,
-        CancellationToken cancellationToken)
+    public async Task Handle(
+        PublishMusicTrackEventsCommand request,
+        CancellationToken cancellationToken = default)
     {
-        var integrationEvents = storedEvents
-            .OrderBy(x => x.MusicCatalogId, StringComparer.Ordinal)
+        var integrationEvents = request.Events
+            .OrderBy(x => x.MusicCatalogId.Value, StringComparer.Ordinal)
             .ThenBy(x => x.Version)
-            .Select(MusicTrackIntegrationEventMapper.ToIntegrationEvent)
-            .Where(x => x is not null)
-            .Cast<object>()
+            .Select(x => x.Event)
             .ToArray();
 
         if (integrationEvents.Length == 0)

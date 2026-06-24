@@ -3,7 +3,7 @@ using Soundtrail.Contracts.IntegrationMessaging.Commands;
 
 namespace Soundtrail.Contracts.IntegrationMessaging.Events;
 
-public sealed record PlaybackReferencesResolutionRequiredMessageDto(
+public sealed record StreamingLocationsRequiredMessageDto(
     string MusicCatalogId,
     LookupPriorityBand Priority,
     string CorrelationId,

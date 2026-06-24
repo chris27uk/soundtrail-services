@@ -18,7 +18,7 @@ public sealed class MusicTrackStoredEventRecordDto
 
     public ProviderReferenceDiscoveredEventDataRecordDto? ProviderReferenceDiscovered { get; set; }
 
-    public PlaybackReferencesResolutionRequiredEventDataRecordDto? PlaybackReferencesResolutionRequired { get; set; }
+    public StreamingLocationsRequiredEventDataRecordDto? StreamingLocationsRequired { get; set; }
 
     public AlbumDiscoveredEventDataRecordDto? AlbumDiscovered { get; set; }
 
@@ -36,6 +36,5 @@ public sealed class MusicTrackStoredEventRecordDto
 
     public string? CausationId { get; set; }
 
-    public static string GetDocumentId(string musicCatalogId, int version) =>
-        $"music-track-events/{musicCatalogId}/{version:D10}";
+    public static string GetDocumentId(string musicCatalogId, int version) => $"music-track-events/{musicCatalogId}/{version:D10}";
 }

@@ -1,6 +1,6 @@
 namespace Soundtrail.Contracts.EventSourcing;
 
-public sealed record PlaybackReferencesResolutionRequiredEventDataRecordDto(
+public sealed record StreamingLocationsRequiredEventDataRecordDto(
     string MusicCatalogId,
     string Priority,
     string CorrelationId,

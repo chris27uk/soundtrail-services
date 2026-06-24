@@ -1,5 +1,5 @@
 using FluentAssertions;
-using Soundtrail.Contracts.IntegrationMessaging.Events;
+using Soundtrail.Domain.Catalog.IntegrationEvents;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.PublishMusicTrackEvents;
@@ -12,10 +12,10 @@ public sealed class PublishMusicTrackEventsHandlerTests
         var env = PublishMusicTrackEventsHandlerTestEnvironment.Create();
 
         await env.HandleAsync(
-            PublishMusicTrackEventsHandlerTestEnvironment.PlaybackReferencesResolutionRequired("mc_track_1", 1));
+            PublishMusicTrackEventsHandlerTestEnvironment.StreamingLocationsRequired("mc_track_1", 1));
 
         env.Publisher.PublishedBatches.Should().ContainSingle();
-        env.Publisher.PublishedBatches[0].Should().ContainSingle().Which.Should().BeOfType<PlaybackReferencesResolutionRequiredMessageDto>();
+        env.Publisher.PublishedBatches[0].Should().ContainSingle().Which.Should().BeOfType<PlaybackReferencesResolutionRequiredIntegrationEvent>();
     }
 
     [Fact]
@@ -23,26 +23,26 @@ public sealed class PublishMusicTrackEventsHandlerTests
     {
         var env = PublishMusicTrackEventsHandlerTestEnvironment.Create();
 
-        await env.HandleAsync(
-            PublishMusicTrackEventsHandlerTestEnvironment.TrackDiscovered("mc_track_1", 1));
+        await env.Handler.Handle(
+            PublishMusicTrackEventsHandlerTestEnvironment.EmptyCommand(),
+            CancellationToken.None);
 
         env.Publisher.PublishedBatches.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task Given_Multiple_Mixed_Events_When_Handled_Then_Only_Supported_Events_Are_Published_In_Stream_Order()
+    public async Task Given_Multiple_Events_When_Handled_Then_They_Are_Published_In_Stream_Order()
     {
         var env = PublishMusicTrackEventsHandlerTestEnvironment.Create();
 
         await env.HandleAsync(
-            PublishMusicTrackEventsHandlerTestEnvironment.PlaybackReferencesResolutionRequired("mc_track_2", 3, title: "Song B", artist: "Artist B"),
-            PublishMusicTrackEventsHandlerTestEnvironment.TrackDiscovered("mc_track_1", 1),
-            PublishMusicTrackEventsHandlerTestEnvironment.PlaybackReferencesResolutionRequired("mc_track_1", 2));
+            PublishMusicTrackEventsHandlerTestEnvironment.StreamingLocationsRequired("mc_track_2", 3, title: "Song B", artist: "Artist B"),
+            PublishMusicTrackEventsHandlerTestEnvironment.StreamingLocationsRequired("mc_track_1", 2));
 
         env.Publisher.PublishedBatches.Should().ContainSingle();
-        var batch = env.Publisher.PublishedBatches[0].OfType<PlaybackReferencesResolutionRequiredMessageDto>().ToArray();
+        var batch = env.Publisher.PublishedBatches[0].OfType<PlaybackReferencesResolutionRequiredIntegrationEvent>().ToArray();
         batch.Should().HaveCount(2);
-        batch[0].MusicCatalogId.Should().Be("mc_track_1");
-        batch[1].MusicCatalogId.Should().Be("mc_track_2");
+        batch[0].MusicCatalogId.Value.Should().Be("mc_track_1");
+        batch[1].MusicCatalogId.Value.Should().Be("mc_track_2");
     }
 }

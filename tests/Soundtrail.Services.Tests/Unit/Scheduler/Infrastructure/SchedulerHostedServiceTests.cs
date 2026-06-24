@@ -23,8 +23,7 @@ public sealed class SchedulerHostedServiceTests
             new TestServiceScopeFactory(provider),
             Options.Create(new SchedulerOptions
             {
-                RunIntervalSeconds = 60,
-                BatchSize = 25
+                RunIntervalSeconds = 60
             }),
             NullLogger<SchedulerHostedService>.Instance);
 

@@ -4,6 +4,8 @@ using Microsoft.Extensions.Logging;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Subscriptions;
 using Soundtrail.Contracts.EventSourcing;
+using Soundtrail.Domain;
+using Soundtrail.Domain.Commands;
 
 namespace Soundtrail.Services.Public.Projector.Features.PublishMusicTrackEvents.Adapters;
 
@@ -64,9 +66,9 @@ public sealed class MusicTrackEventSubscriptionHostedService(
         CancellationToken cancellationToken)
     {
         using var scope = serviceScopeFactory.CreateScope();
-        var handler = scope.ServiceProvider.GetRequiredService<PublishMusicTrackEventsHandler>();
-        await handler.HandleAsync(
-            batch.Items.Select(x => x.Result).ToArray(),
+        var handler = scope.ServiceProvider.GetRequiredService<IHandler<PublishMusicTrackEventsCommand>>();
+        await handler.Handle(
+            batch.Items.Select(x => x.Result).ToArray().ToCommand(),
             cancellationToken);
     }
 }
