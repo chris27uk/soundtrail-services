@@ -22,7 +22,7 @@ public sealed class PipelineMessageCaptureHandler(PipelineMessageCapture capture
     }
 
     [WolverineHandler]
-    public Task Handle(EnrichmentResponseDto message, CancellationToken cancellationToken)
+    public Task Handle(MusicCatalogMetadataFetchedDto message, CancellationToken cancellationToken)
     {
         capture.Record(message);
         return Task.CompletedTask;

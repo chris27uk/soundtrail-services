@@ -3,11 +3,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ApplyLookupExecutionReport.Adapters;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.BacklogScheduling.Adapters;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.EnrichmentResponse.Adapters;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.Adapters;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.SchedulePlaybackReferencesLookup.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnStreamingLocationsRequired.Adapters;
 using Soundtrail.Services.ServiceDefaults;
 using Wolverine;
 using Wolverine.AzureServiceBus;
@@ -33,11 +32,10 @@ public static class ServiceBusServiceCollectionExtensions
         opts.UseRuntimeCompilation();
         opts.ServiceLocationPolicy = ServiceLocationPolicy.AllowedButWarn;
         opts.Discovery.DisableConventionalDiscovery();
-        opts.Discovery.IncludeType<CatalogSearchAttemptListener>();
-        opts.Discovery.IncludeType<DiscoveryBacklogSchedulingListener>();
-        opts.Discovery.IncludeType<EnrichmentResponseListener>();
-        opts.Discovery.IncludeType<LookupExecutionReportListener>();
-        opts.Discovery.IncludeType<MusicTrackEventListener>();
+        opts.Discovery.IncludeType<CatalogSearchRequestedListener>();
+        opts.Discovery.IncludeType<NextMusicTracksRequestedForLookupListener>();
+        opts.Discovery.IncludeType<MusicCatalogLookupAttemptedListener>();
+        opts.Discovery.IncludeType<StreamingLocationsRequiredListener>();
         opts.Policies.AutoApplyTransactions();
 
         var serviceBusOptions = configuration

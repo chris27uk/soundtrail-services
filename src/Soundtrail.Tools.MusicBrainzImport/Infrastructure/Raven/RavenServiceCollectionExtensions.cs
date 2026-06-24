@@ -10,7 +10,7 @@ using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackProjectio
 using Soundtrail.Domain.Model;
 using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackCatalog.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackCatalog.ProjectionModel;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.EnrichmentResponse.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackProjection.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.ProjectDiscoveryLifecycle.Ports;
 using Soundtrail.Domain.Discovery;

@@ -6,12 +6,12 @@ using Soundtrail.Domain.Model;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackCatalog;
 using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackCatalog.Adapters;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.EnrichmentResponse.Adapters;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ImportMusicTrackEvents;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicTrackEventsImported;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using System.Linq;
 
-namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ImportMusicTrackEvents;
+namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.OnMusicTrackEventsImported;
 
 internal sealed class RavenMusicTrackEventImportTestEnvironment : IAsyncDisposable
 {
@@ -27,7 +27,7 @@ internal sealed class RavenMusicTrackEventImportTestEnvironment : IAsyncDisposab
     public async Task ImportAsync(ImportMusicTrackEventsCommand command)
     {
         using var session = raven.Store.OpenAsyncSession();
-        var handler = new ImportMusicTrackEventsHandler(new RavenMusicTrackStreamStore(session));
+        var handler = new MusicTrackEventsImportedHandler(new RavenMusicTrackStreamStore(session));
         await handler.Handle(command, CancellationToken.None);
         await session.SaveChangesAsync(CancellationToken.None);
     }

@@ -4,7 +4,7 @@ using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.EnrichmentResponse.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -171,12 +171,12 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
                 _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
             };
 
-        public async Task RecordAsync(MusicCatalogId musicCatalogId, EnrichmentResponse response)
+        public async Task RecordAsync(MusicCatalogId musicCatalogId, MusicCatalogMetadataFetched response)
         {
             if (fake is not null)
             {
                 var aggregate = await CatalogEntityAggregate.LoadAsync(fake, musicCatalogId, CancellationToken.None);
-                aggregate.RecordEnrichmentResponse(response);
+                aggregate.RecordMusicCatalogMetadataFetched(response);
                 await aggregate.SaveAsync(fake, response.CommandId, CancellationToken.None);
                 return;
             }
@@ -184,7 +184,7 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
             using var session = raven!.Store.OpenAsyncSession();
             var store = new RavenMusicTrackStreamStore(session);
             var ravenAggregate = await CatalogEntityAggregate.LoadAsync(store, musicCatalogId, CancellationToken.None);
-            ravenAggregate.RecordEnrichmentResponse(response);
+            ravenAggregate.RecordMusicCatalogMetadataFetched(response);
             await ravenAggregate.SaveAsync(store, response.CommandId, CancellationToken.None);
             await session.SaveChangesAsync(CancellationToken.None);
         }
@@ -232,7 +232,7 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
         }
     }
 
-    private static EnrichmentResponse MusicBrainzResponse() =>
+    private static MusicCatalogMetadataFetched MusicBrainzResponse() =>
         new(
             CommandId.For("ResolveCanonicalMetadata:mc_track_1"),
             MusicCatalogId.From("mc_track_1"),

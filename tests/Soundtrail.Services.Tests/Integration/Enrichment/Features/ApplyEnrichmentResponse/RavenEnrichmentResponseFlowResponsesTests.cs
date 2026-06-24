@@ -7,9 +7,9 @@ using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.EnrichmentResponse;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.EnrichmentResponse.Adapters;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.BacklogScheduling.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.ProjectDiscoveryLifecycle;
 using Soundtrail.Services.Internal.Projector.Features.ProjectDiscoveryLifecycle.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.ReplayDiscoveryLifecycleProjection;
@@ -19,14 +19,14 @@ using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackProjectio
 using Soundtrail.Services.Internal.Projector.Features.ReplayMusicTrackProjection;
 using Soundtrail.Services.Internal.Projector.Features.ReplayMusicTrackProjection.Adapters;
 using Soundtrail.Contracts.Persistence;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using System.Linq;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ApplyEnrichmentResponse;
 
 [Collection(RavenEmbeddedCollection.Name)]
-public sealed class RavenEnrichmentResponseFlowResponsesTests
+public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
 {
     [Fact]
     public async Task Given_Canonical_And_Playback_Responses_When_Applied_Then_The_Track_Becomes_Playable()
@@ -48,14 +48,14 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
         using (var canonicalSession = raven.Store.OpenAsyncSession())
         {
             var listener = CreateListener(canonicalSession);
-            await listener.Handle(CanonicalResponseDto(), null!);
+            await listener.Handle(CanonicalAttemptDto(), null!);
             await canonicalSession.SaveChangesAsync();
         }
 
         using (var playbackSession = raven.Store.OpenAsyncSession())
         {
             var listener = CreateListener(playbackSession);
-            await listener.Handle(PlaybackReferencesResponseDto(), null!);
+            await listener.Handle(PlaybackAttemptDto(), null!);
             await playbackSession.SaveChangesAsync();
         }
 
@@ -97,11 +97,11 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
         albumStatus!.Status.Should().Be("Completed");
     }
 
-    private static EnrichmentResponseListener CreateListener(Raven.Client.Documents.Session.IAsyncDocumentSession session) =>
-        new(new ApplyEnrichmentResponseHandler(
+    private static MusicCatalogLookupAttemptedListener CreateListener(Raven.Client.Documents.Session.IAsyncDocumentSession session) =>
+        new(new MusicCatalogLookupAttemptedHandler(
             new RavenMusicTrackStreamStore(session),
             new RavenCatalogSearchTrackingStore(session.Advanced.DocumentStore, session),
-            new RavenEnrichmentResponseCatalogSearchDiscoveryRepository(session)));
+            new RavenMusicCatalogMetadataFetchedCatalogSearchDiscoveryRepository(session)));
 
     private static async Task ReplayProjectionsAsync(RavenEmbeddedTestDatabase raven)
     {
@@ -147,31 +147,47 @@ public sealed class RavenEnrichmentResponseFlowResponsesTests
         }
     }
 
-    private static EnrichmentResponseDto CanonicalResponseDto() =>
+    private static MusicCatalogLookupAttemptedDto CanonicalAttemptDto() =>
         new(
             CommandId.For("ResolveCanonicalMetadata:mc_track_1").Value,
             "mc_track_1",
             ProviderName.MusicBrainz.Value,
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero),
-            new SongMetadataDto("Rare Unknown Song", "Test Artist", "isrc-1", "mbid-1", 123000, "Rare Album", new DateOnly(2026, 1, 1)),
-            [],
-            [],
-            "artist_test_artist",
-            "album_rare_album",
-            "corr-1");
+            "corr-1",
+            new MusicCatalogLookupOutcomeDto("Completed", null, null, null),
+            new MusicCatalogMetadataFetchedDto(
+                CommandId.For("ResolveCanonicalMetadata:mc_track_1").Value,
+                "mc_track_1",
+                ProviderName.MusicBrainz.Value,
+                LookupPriorityBand.High,
+                new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero),
+                new SongMetadataDto("Rare Unknown Song", "Test Artist", "isrc-1", "mbid-1", 123000, "Rare Album", new DateOnly(2026, 1, 1)),
+                [],
+                [],
+                "artist_test_artist",
+                "album_rare_album",
+                "corr-1"));
 
-    private static EnrichmentResponseDto PlaybackReferencesResponseDto() =>
+    private static MusicCatalogLookupAttemptedDto PlaybackAttemptDto() =>
         new(
             CommandId.For("ResolvePlaybackReferences:mc_track_1").Value,
             "mc_track_1",
             ProviderName.Odesli.Value,
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 8, 12, 2, 0, TimeSpan.Zero),
-            null,
-            [new ExternalReferenceDto(ProviderName.AppleMusic.Value, new Uri("https://music.apple.com/track/1"), "apple-track-1")],
-            [],
-            "artist_test_artist",
-            "album_rare_album",
-            "corr-2");
+            "corr-2",
+            new MusicCatalogLookupOutcomeDto("Completed", null, null, null),
+            new MusicCatalogMetadataFetchedDto(
+                CommandId.For("ResolvePlaybackReferences:mc_track_1").Value,
+                "mc_track_1",
+                ProviderName.Odesli.Value,
+                LookupPriorityBand.High,
+                new DateTimeOffset(2026, 6, 8, 12, 2, 0, TimeSpan.Zero),
+                null,
+                [new ExternalReferenceDto(ProviderName.AppleMusic.Value, new Uri("https://music.apple.com/track/1"), "apple-track-1")],
+                [],
+                "artist_test_artist",
+                "album_rare_album",
+                "corr-2"));
 }

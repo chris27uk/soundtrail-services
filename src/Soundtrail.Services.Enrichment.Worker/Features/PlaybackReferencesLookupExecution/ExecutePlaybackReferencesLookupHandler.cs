@@ -8,10 +8,7 @@ using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution;
 
-public sealed class ExecutePlaybackReferencesLookupHandler(
-    ILookupExecutionReceiptStore lookupExecutionReceiptStore,
-    IGetMusicTrackReference getMusicTrackReference,
-    IReserveSourceApiBudgetPort reserveSourceApiBudgetPort)
+public sealed class ExecutePlaybackReferencesLookupHandler(ILookupExecutionReceiptStore lookupExecutionReceiptStore, IGetMusicTrackReference getMusicTrackReference, IReserveSourceApiBudgetPort reserveSourceApiBudgetPort)
 {
     private static readonly ProviderName[] SupportedPlaybackProviders =
     [
@@ -20,15 +17,19 @@ public sealed class ExecutePlaybackReferencesLookupHandler(
         ProviderName.YoutubeMusic
     ];
 
-    public async Task<LookupExecutionResult> Handle(
-        ResolvePlaybackReferencesCommand command,
-        CancellationToken cancellationToken = default)
+    public async Task<MusicCatalogLookupAttempted> Handle(ResolvePlaybackReferencesCommand command, CancellationToken cancellationToken = default)
     {
         await using var idempotencySession = await IdempotencySession.StartAsync(lookupExecutionReceiptStore, command.CommandId, cancellationToken);
 
         if (idempotencySession.ProcessedBefore)
         {
-            return LookupExecutionResult.Duplicate();
+            return MusicCatalogLookupAttempted.Duplicate(
+                command.CommandId,
+                command.MusicCatalogId,
+                command.TargetProvider,
+                command.Priority,
+                command.CreatedAt,
+                command.CorrelationId);
         }
 
         var reservation = await reserveSourceApiBudgetPort.TryReserveAsync(
@@ -37,7 +38,13 @@ public sealed class ExecutePlaybackReferencesLookupHandler(
 
         if (!reservation.Accepted)
         {
-            return LookupExecutionResult.Deferred(
+            return MusicCatalogLookupAttempted.Deferred(
+                command.CommandId,
+                command.MusicCatalogId,
+                command.TargetProvider,
+                command.Priority,
+                command.CreatedAt,
+                command.CorrelationId,
                 reservation.Reason,
                 reservation.RetryAt,
                 reservation.RetryAfterSecondsFrom(command.CreatedAt));
@@ -50,11 +57,18 @@ public sealed class ExecutePlaybackReferencesLookupHandler(
                 .Where(provider => references.All(reference => reference.Provider != provider))
                 .Select(provider => new ProviderLookupFailure(provider, command.TargetProvider))
                 .ToArray();
-            return LookupExecutionResult.Completed(command.ToEnrichmentResponse(references, failures));
+            return MusicCatalogLookupAttempted.Completed(command.ToMusicCatalogMetadataFetched(references, failures));
         }
         catch
         {
-            return LookupExecutionResult.Failed("Lookup failed");
+            return MusicCatalogLookupAttempted.Failed(
+                command.CommandId,
+                command.MusicCatalogId,
+                command.TargetProvider,
+                command.Priority,
+                command.CreatedAt,
+                command.CorrelationId,
+                "Lookup failed");
         }
     }
 }

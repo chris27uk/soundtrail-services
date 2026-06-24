@@ -15,10 +15,10 @@ public sealed class MusicBrainzLookupExecutionHandlerTests
 
         var result = await env.HandleNewExecutionCommand();
 
-        result.Outcome.Should().Be(LookupExecutionOutcome.Completed);
-        result.Response.Should().NotBeNull();
-        result.Response!.SourceProvider.Should().Be(ProviderName.MusicBrainz);
-        result.Response.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
+        result.Outcome.Status.Should().Be(MusicCatalogLookupOutcomeStatus.Completed);
+        result.MusicCatalogMetadataFetched.Should().NotBeNull();
+        result.MusicCatalogMetadataFetched!.SourceProvider.Should().Be(ProviderName.MusicBrainz);
+        result.MusicCatalogMetadataFetched.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
     }
 
     [Fact]
@@ -28,8 +28,8 @@ public sealed class MusicBrainzLookupExecutionHandlerTests
 
         var result = await env.HandleDuplicateExecutionCommand();
 
-        result.Outcome.Should().Be(LookupExecutionOutcome.Duplicate);
-        result.Response.Should().BeNull();
+        result.Outcome.Status.Should().Be(MusicCatalogLookupOutcomeStatus.Duplicate);
+        result.MusicCatalogMetadataFetched.Should().BeNull();
         env.SourceBudget.Requests.Should().ContainSingle();
     }
 
@@ -41,7 +41,7 @@ public sealed class MusicBrainzLookupExecutionHandlerTests
 
         var result = await env.HandleNewExecutionCommand(MusicSearchTerm.ByIsrc("isrc-1"));
 
-        result.Response!.Metadata.Should().BeEquivalentTo(new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000, "Album A", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"));
+        result.MusicCatalogMetadataFetched!.Metadata.Should().BeEquivalentTo(new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000, "Album A", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"));
         env.Metadata.Lookups.Should().ContainSingle().Which.Should().Be("isrc:isrc-1");
     }
 
@@ -53,7 +53,7 @@ public sealed class MusicBrainzLookupExecutionHandlerTests
 
         var result = await env.HandleNewExecutionCommand(MusicSearchTerm.ByTrackArtistAlbum("Song A", "Artist A", "Album A"));
 
-        result.Response!.Metadata.Should().BeEquivalentTo(new SongMetadata("Song A", "Artist A", null, "mbid-1", 123000, "Album A", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"));
+        result.MusicCatalogMetadataFetched!.Metadata.Should().BeEquivalentTo(new SongMetadata("Song A", "Artist A", null, "mbid-1", 123000, "Album A", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"));
         env.Metadata.Lookups.Should().ContainSingle().Which.Should().StartWith("names:");
     }
 
@@ -68,9 +68,9 @@ public sealed class MusicBrainzLookupExecutionHandlerTests
 
         var result = await env.HandleNewExecutionCommand();
 
-        result.Outcome.Should().Be(LookupExecutionOutcome.Deferred);
-        result.Response.Should().BeNull();
-        result.Reason.Should().Be("MusicBrainz budget temporarily unavailable");
+        result.Outcome.Status.Should().Be(MusicCatalogLookupOutcomeStatus.Deferred);
+        result.MusicCatalogMetadataFetched.Should().BeNull();
+        result.Outcome.Reason.Should().Be("MusicBrainz budget temporarily unavailable");
         env.Metadata.Lookups.Should().BeEmpty();
     }
 
@@ -82,8 +82,8 @@ public sealed class MusicBrainzLookupExecutionHandlerTests
 
         var result = await env.HandleNewExecutionCommand();
 
-        result.Outcome.Should().Be(LookupExecutionOutcome.Failed);
-        result.Reason.Should().Be("Lookup failed");
-        result.Response.Should().BeNull();
+        result.Outcome.Status.Should().Be(MusicCatalogLookupOutcomeStatus.Failed);
+        result.Outcome.Reason.Should().Be("Lookup failed");
+        result.MusicCatalogMetadataFetched.Should().BeNull();
     }
 }

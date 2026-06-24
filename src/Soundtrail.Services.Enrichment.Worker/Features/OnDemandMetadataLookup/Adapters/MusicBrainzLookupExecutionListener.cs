@@ -42,48 +42,7 @@ public sealed class MusicBrainzLookupExecutionListener(
             CorrelationId.From(dto.CorrelationId),
             ToSearchTerm(dto),
             ToHierarchy(dto));
-        var messages = new List<object>();
-        if (result.Response is not null)
-        {
-            messages.Add(new EnrichmentResponseDto(
-                result.Response.CommandId.Value,
-                result.Response.MusicCatalogId.Value,
-                result.Response.SourceProvider.Value,
-                result.Response.Priority,
-                result.Response.CreatedAt,
-                result.Response.Metadata is null
-                    ? null
-                    : new SongMetadataDto(
-                        result.Response.Metadata.Title,
-                        result.Response.Metadata.Artist,
-                        result.Response.Metadata.Isrc,
-                        result.Response.Metadata.Mbid,
-                        result.Response.Metadata.DurationMs,
-                        result.Response.Metadata.AlbumTitle,
-                        result.Response.Metadata.ReleaseDate,
-                        result.Response.Metadata.SourceArtistId,
-                        result.Response.Metadata.SourceAlbumId),
-                result.Response.References.Select(reference => new ExternalReferenceDto(
-                    reference.Provider.Value,
-                    reference.Url,
-                    reference.ExternalId)).ToArray(),
-                result.Response.FailedProviders.Select(failure => new ProviderLookupFailureDto(
-                    failure.Provider.Value,
-                    failure.SourceProvider.Value)).ToArray(),
-                result.Response.Hierarchy?.ArtistId?.Value,
-                result.Response.Hierarchy?.AlbumId?.Value,
-                result.Response.CorrelationId.Value));
-        }
-
-        if (result.Outcome is LookupExecutionOutcome.Deferred or LookupExecutionOutcome.Failed)
-        {
-            messages.Add(result.ToReport(command, ProviderName.MusicBrainz.Value));
-        }
-
-        foreach (var message in messages)
-        {
-            await messageBus.SendAsync(message);
-        }
+        await messageBus.SendAsync(result.ToDto(command, ProviderName.MusicBrainz.Value));
     }
 
     private static MusicSearchTerm ToSearchTerm(LookupCanonicalMusicMetadataCommandDto dto) =>

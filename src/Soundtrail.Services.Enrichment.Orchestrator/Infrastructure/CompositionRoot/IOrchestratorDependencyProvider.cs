@@ -7,9 +7,7 @@ public interface IOrchestratorDependencyProvider
 {
     void AddSharedDependencies(IServiceCollection services, IConfiguration configuration);
 
-    void AddJustInTimeSchedulingDependencies(IServiceCollection services, IConfiguration configuration);
+    void AddOnCatalogSearchRequestedDependencies(IServiceCollection services, IConfiguration configuration);
 
-    void AddBacklogSchedulingDependencies(IServiceCollection services, IConfiguration configuration);
-
-    void AddEnrichmentResponseDependencies(IServiceCollection services, IConfiguration configuration);
+    void AddOnNextMusicTracksRequestedForLookupDependencies(IServiceCollection services, IConfiguration configuration);
 }

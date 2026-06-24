@@ -59,10 +59,7 @@ public static class ServiceBusServiceCollectionExtensions
         opts.ListenToAzureServiceBusQueue(serviceBusOptions.PlaybackReferencesLookupQueueName)
             .ProcessInline();
 
-        opts.PublishMessage<EnrichmentResponseDto>()
-            .ToAzureServiceBusQueue(serviceBusOptions.EnrichmentResponsesQueueName);
-
-        opts.PublishMessage<LookupExecutionReportDto>()
+        opts.PublishMessage<MusicCatalogLookupAttemptedDto>()
             .ToAzureServiceBusQueue(serviceBusOptions.EnrichmentResponsesQueueName);
 
         return opts;

@@ -38,7 +38,7 @@ public sealed class CatalogEntityAggregate
         return new CatalogEntityAggregate(musicCatalogId, stream.Events, stream.Version);
     }
 
-    public void RecordEnrichmentResponse(EnrichmentResponse response)
+    public void RecordMusicCatalogMetadataFetched(MusicCatalogMetadataFetched response)
     {
         if (musicCatalogId is null || musicCatalogId != response.MusicCatalogId)
         {
@@ -150,7 +150,7 @@ public sealed class CatalogEntityAggregate
         return append;
     }
 
-    private bool ShouldRequirePlaybackReferencesResolution(EnrichmentResponse response) =>
+    private bool ShouldRequirePlaybackReferencesResolution(MusicCatalogMetadataFetched response) =>
         response.SourceProvider == ProviderName.MusicBrainz
         && response.Metadata is not null
         && discoveredReferenceProviders.Count == 0

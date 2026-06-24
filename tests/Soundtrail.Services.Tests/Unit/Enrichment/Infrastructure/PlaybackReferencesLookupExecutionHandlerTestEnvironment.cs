@@ -31,7 +31,7 @@ internal sealed class PlaybackReferencesLookupExecutionHandlerTestEnvironment
     public void Seed(MusicSearchTerm lookupKey, params ExternalReference[] references) =>
         GetMusicTrackReference.Seed(lookupKey, references);
 
-    public Task<Soundtrail.Domain.Responses.LookupExecutionResult> HandleNewExecutionCommand(MusicSearchTerm? searchTerm = null) =>
+    public Task<Soundtrail.Domain.Responses.MusicCatalogLookupAttempted> HandleNewExecutionCommand(MusicSearchTerm? searchTerm = null) =>
         Handler.Handle(
             new Soundtrail.Domain.Commands.ResolvePlaybackReferencesCommand(
                 CommandId.For("ResolvePlaybackReferences:mc_track_1"),
@@ -42,7 +42,7 @@ internal sealed class PlaybackReferencesLookupExecutionHandlerTestEnvironment
                 searchTerm ?? MusicSearchTerm.ByIsrc("isrc-1")),
             CancellationToken.None);
 
-    public async Task<Soundtrail.Domain.Responses.LookupExecutionResult> HandleDuplicateExecutionCommand(MusicSearchTerm? searchTerm = null)
+    public async Task<Soundtrail.Domain.Responses.MusicCatalogLookupAttempted> HandleDuplicateExecutionCommand(MusicSearchTerm? searchTerm = null)
     {
         var command = new Soundtrail.Domain.Commands.ResolvePlaybackReferencesCommand(
             CommandId.For("ResolvePlaybackReferences:mc_track_1"),

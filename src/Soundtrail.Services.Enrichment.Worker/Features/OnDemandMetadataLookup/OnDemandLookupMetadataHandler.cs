@@ -13,7 +13,7 @@ public sealed class OnDemandLookupMetadataHandler(
     IGetCanonicalMusicMetadata getMetaData,
     IReserveSourceApiBudgetPort reserveSourceApiBudgetPort)
 {
-    public async Task<LookupExecutionResult> Handle(
+    public async Task<MusicCatalogLookupAttempted> Handle(
         LookupMusicMetadataCommand command,
         CancellationToken cancellationToken = default)
     {
@@ -24,7 +24,13 @@ public sealed class OnDemandLookupMetadataHandler(
 
         if (idempotencySession.ProcessedBefore)
         {
-            return LookupExecutionResult.Duplicate();
+            return MusicCatalogLookupAttempted.Duplicate(
+                command.CommandId,
+                command.MusicCatalogId,
+                ProviderName.MusicBrainz,
+                command.Priority,
+                command.CreatedAt,
+                command.CorrelationId);
         }
 
         var reservation = await reserveSourceApiBudgetPort.TryReserveAsync(
@@ -33,7 +39,13 @@ public sealed class OnDemandLookupMetadataHandler(
 
         if (!reservation.Accepted)
         {
-            return LookupExecutionResult.Deferred(
+            return MusicCatalogLookupAttempted.Deferred(
+                command.CommandId,
+                command.MusicCatalogId,
+                ProviderName.MusicBrainz,
+                command.Priority,
+                command.CreatedAt,
+                command.CorrelationId,
                 reservation.Reason,
                 reservation.RetryAt,
                 reservation.RetryAfterSecondsFrom(command.CreatedAt));
@@ -42,11 +54,18 @@ public sealed class OnDemandLookupMetadataHandler(
         try
         {
             var songMetadata = await getMetaData.GetMetadataAsync(command.SearchTerm, cancellationToken);
-            return LookupExecutionResult.Completed(command.ToEnrichmentResponse(songMetadata));
+            return MusicCatalogLookupAttempted.Completed(command.ToMusicCatalogMetadataFetched(songMetadata));
         }
         catch
         {
-            return LookupExecutionResult.Failed("Lookup failed");
+            return MusicCatalogLookupAttempted.Failed(
+                command.CommandId,
+                command.MusicCatalogId,
+                ProviderName.MusicBrainz,
+                command.Priority,
+                command.CreatedAt,
+                command.CorrelationId,
+                "Lookup failed");
         }
     }
 }

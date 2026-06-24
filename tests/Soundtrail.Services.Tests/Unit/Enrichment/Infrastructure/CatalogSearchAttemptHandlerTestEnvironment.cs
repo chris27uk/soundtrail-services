@@ -1,4 +1,4 @@
-using Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
@@ -10,7 +10,7 @@ using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search.Resolution;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
 {
-    internal sealed class CatalogSearchAttemptHandlerTestEnvironment
+    internal sealed class CatalogSearchRequestedHandlerTestEnvironment
     {
         private readonly FakeMusicCatalogCandidateSearch search;
         private readonly PotentialCatalogLookupWorkStoreFake potentialCatalogLookupWorkStoreFake;
@@ -21,7 +21,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
         private readonly SourceApiBudgetPortFake sourceApiBudgetPortFake;
         private readonly CommandBusFake commandBusFake;
 
-        private CatalogSearchAttemptHandlerTestEnvironment(
+        private CatalogSearchRequestedHandlerTestEnvironment(
             FakeMusicCatalogCandidateSearch search,
             PotentialCatalogLookupWorkStoreFake potentialCatalogLookupWorkStoreFake)
         {
@@ -35,7 +35,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
             this.commandBusFake = new CommandBusFake();
             this.Planner = new DiscoveryPriorityPolicy();
             this.ResolutionPolicy = new MusicCatalogMatchResolver();
-            this.Handler = new CatalogSearchAttemptHandler(
+            this.Handler = new CatalogSearchRequestedHandler(
                 search,
                 potentialCatalogLookupWorkStoreFake,
                 this.catalogSearchTrackingStoreFake,
@@ -55,7 +55,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
             SeedDefaultLocalTrack("mc_track_deferred");
         }
 
-        public CatalogSearchAttemptHandler Handler { get; }
+        public CatalogSearchRequestedHandler Handler { get; }
 
         public DiscoveryPriorityPolicy Planner { get; }
 
@@ -77,36 +77,36 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
 
         public CommandBusFake CommandBus => this.commandBusFake;
 
-        public static CatalogSearchAttemptHandlerTestEnvironment WithNoExistingCandidates() =>
+        public static CatalogSearchRequestedHandlerTestEnvironment WithNoExistingCandidates() =>
             new(
                 new FakeMusicCatalogCandidateSearch(),
                 new PotentialCatalogLookupWorkStoreFake());
 
-        public static CatalogSearchAttemptHandlerTestEnvironment WithExistingEligibleCandidate(string musicCatalogId = "SomeId")
+        public static CatalogSearchRequestedHandlerTestEnvironment WithExistingEligibleCandidate(string musicCatalogId = "SomeId")
         {
             var store = new PotentialCatalogLookupWorkStoreFake();
             var search = new FakeMusicCatalogCandidateSearch();
             store.Seed(Candidates.ExistingCandidate(musicCatalogId));
             search.ResolveAs(musicCatalogId);
-            return new CatalogSearchAttemptHandlerTestEnvironment(search, store);
+            return new CatalogSearchRequestedHandlerTestEnvironment(search, store);
         }
         
-        public static CatalogSearchAttemptHandlerTestEnvironment WithExistingNotYetEligibleCandidate(string musicCatalogId = "SomeId")
+        public static CatalogSearchRequestedHandlerTestEnvironment WithExistingNotYetEligibleCandidate(string musicCatalogId = "SomeId")
         {
             var store = new PotentialCatalogLookupWorkStoreFake();
             var search = new FakeMusicCatalogCandidateSearch();
             store.Seed(Candidates.NotYetEligibleCandidate(musicCatalogId));
             search.ResolveAs(musicCatalogId);
-            return new CatalogSearchAttemptHandlerTestEnvironment(search, store);
+            return new CatalogSearchRequestedHandlerTestEnvironment(search, store);
         }
 
-        public static CatalogSearchAttemptHandlerTestEnvironment WithExistingCandidate(PotentialCatalogLookupWork candidate)
+        public static CatalogSearchRequestedHandlerTestEnvironment WithExistingCandidate(PotentialCatalogLookupWork candidate)
         {
             var store = new PotentialCatalogLookupWorkStoreFake();
             var search = new FakeMusicCatalogCandidateSearch();
             store.Seed(candidate);
             search.ResolveAs(candidate.MusicCatalogId);
-            return new CatalogSearchAttemptHandlerTestEnvironment(search, store);
+            return new CatalogSearchRequestedHandlerTestEnvironment(search, store);
         }
 
         public CatalogSearchAttempt Request(

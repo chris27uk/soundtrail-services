@@ -5,7 +5,7 @@ using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Events;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
-namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ImportMusicTrackEvents;
+namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.OnMusicTrackEventsImported;
 
 [Collection(RavenEmbeddedCollection.Name)]
 public sealed class RavenMusicTrackEventImportResponsesTests

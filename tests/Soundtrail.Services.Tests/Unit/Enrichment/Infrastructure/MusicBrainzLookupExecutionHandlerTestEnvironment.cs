@@ -38,7 +38,7 @@ internal sealed class MusicBrainzLookupExecutionHandlerTestEnvironment
 
     public void Throw(Exception ex) => Metadata.Throw(ex);
 
-    public Task<Soundtrail.Domain.Responses.LookupExecutionResult> HandleNewExecutionCommand(MusicSearchTerm? searchTerm = null) =>
+    public Task<Soundtrail.Domain.Responses.MusicCatalogLookupAttempted> HandleNewExecutionCommand(MusicSearchTerm? searchTerm = null) =>
         Handler.Handle(
             new Soundtrail.Domain.Commands.LookupMusicMetadataCommand(
                 CommandId.For("LookupCanonicalMusicMetadata:mc_track_1"),
@@ -49,7 +49,7 @@ internal sealed class MusicBrainzLookupExecutionHandlerTestEnvironment
                 searchTerm ?? MusicSearchTerm.ByIsrc("isrc-1")),
             CancellationToken.None);
 
-    public async Task<Soundtrail.Domain.Responses.LookupExecutionResult> HandleDuplicateExecutionCommand(MusicSearchTerm? searchTerm = null)
+    public async Task<Soundtrail.Domain.Responses.MusicCatalogLookupAttempted> HandleDuplicateExecutionCommand(MusicSearchTerm? searchTerm = null)
     {
         var command = new Soundtrail.Domain.Commands.LookupMusicMetadataCommand(
             CommandId.For("LookupCanonicalMusicMetadata:mc_track_1"),

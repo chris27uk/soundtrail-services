@@ -5,7 +5,7 @@ namespace Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLooku
 
 internal static class ResolvePlaybackReferencesCommandExtensions
 {
-    public static EnrichmentResponse ToEnrichmentResponse(
+    public static MusicCatalogMetadataFetched ToMusicCatalogMetadataFetched(
         this ResolvePlaybackReferencesCommand command,
         IReadOnlyList<ExternalReference> references,
         IReadOnlyList<ProviderLookupFailure> failedProviders) =>

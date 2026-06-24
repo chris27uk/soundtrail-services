@@ -19,15 +19,11 @@ public sealed class ProductionOrchestratorDependencyProvider : IOrchestratorDepe
         services.TryAddScoped<IReserveSourceApiBudgetPort, SourceApiBudgetReservationService>();
     }
 
-    public void AddJustInTimeSchedulingDependencies(IServiceCollection services, IConfiguration configuration)
+    public void AddOnCatalogSearchRequestedDependencies(IServiceCollection services, IConfiguration configuration)
     {
     }
 
-    public void AddBacklogSchedulingDependencies(IServiceCollection services, IConfiguration configuration)
-    {
-    }
-
-    public void AddEnrichmentResponseDependencies(IServiceCollection services, IConfiguration configuration)
+    public void AddOnNextMusicTracksRequestedForLookupDependencies(IServiceCollection services, IConfiguration configuration)
     {
     }
 }

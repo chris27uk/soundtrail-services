@@ -23,7 +23,7 @@ public sealed class PlaybackReferencesLookupExecutionListenerWolverineResponsesT
 
         await listener.Handle(Command(), null!);
 
-        bus.SentMessages.Should().ContainSingle().Which.Should().BeOfType<EnrichmentResponseDto>();
+        bus.SentMessages.Should().ContainSingle().Which.Should().BeOfType<MusicCatalogLookupAttemptedDto>();
     }
 
     [Fact]
@@ -38,11 +38,11 @@ public sealed class PlaybackReferencesLookupExecutionListenerWolverineResponsesT
         var listener = new PlaybackReferencesLookupExecutionListener(env.Handler, bus);
 
         await listener.Handle(Command(), null!);
-        var message = bus.SentMessages.Single().Should().BeOfType<LookupExecutionReportDto>().Subject;
+        var message = bus.SentMessages.Single().Should().BeOfType<MusicCatalogLookupAttemptedDto>().Subject;
 
-        message.Outcome.Should().Be("Deferred");
+        message.Outcome.Status.Should().Be("Deferred");
         message.SourceProvider.Should().Be(ProviderName.Odesli.Value);
-        message.Reason.Should().Be("Odesli budget temporarily unavailable");
+        message.Outcome.Reason.Should().Be("Odesli budget temporarily unavailable");
     }
 
     [Fact]
@@ -54,11 +54,11 @@ public sealed class PlaybackReferencesLookupExecutionListenerWolverineResponsesT
         var listener = new PlaybackReferencesLookupExecutionListener(env.Handler, bus);
 
         await listener.Handle(Command(), null!);
-        var message = bus.SentMessages.Single().Should().BeOfType<LookupExecutionReportDto>().Subject;
+        var message = bus.SentMessages.Single().Should().BeOfType<MusicCatalogLookupAttemptedDto>().Subject;
 
-        message.Outcome.Should().Be("Failed");
+        message.Outcome.Status.Should().Be("Failed");
         message.SourceProvider.Should().Be(ProviderName.Odesli.Value);
-        message.Reason.Should().Be("Lookup failed");
+        message.Outcome.Reason.Should().Be("Lookup failed");
     }
 
     private static ResolvePlaybackReferencesCommandDto Command() =>

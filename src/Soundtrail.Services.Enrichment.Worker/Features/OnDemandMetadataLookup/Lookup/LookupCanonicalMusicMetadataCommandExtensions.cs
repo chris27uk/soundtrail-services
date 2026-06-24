@@ -6,7 +6,7 @@ namespace Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.
 
 internal static class LookupCanonicalMusicMetadataCommandExtensions
 {
-    public static EnrichmentResponse ToEnrichmentResponse(
+    public static MusicCatalogMetadataFetched ToMusicCatalogMetadataFetched(
         this LookupMusicMetadataCommand command,
         SongMetadata? metadata) =>
         new(

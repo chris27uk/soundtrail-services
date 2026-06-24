@@ -40,37 +40,7 @@ public sealed class PlaybackReferencesLookupExecutionListener(ExecutePlaybackRef
             CorrelationId.From(dto.CorrelationId),
             dto.SearchTerm.Isrc == null ? MusicSearchTerm.ByTrackArtistAlbum(dto.SearchTerm.Title!, dto.SearchTerm.Artist!, dto.SearchTerm.Album) : MusicSearchTerm.ByIsrc(dto.SearchTerm.Isrc),
             ToHierarchy(dto));
-        var messages = new List<object>();
-        if (result.Response is not null)
-        {
-            messages.Add(new EnrichmentResponseDto(
-                result.Response.CommandId.Value,
-                result.Response.MusicCatalogId.Value,
-                result.Response.SourceProvider.Value,
-                result.Response.Priority,
-                result.Response.CreatedAt,
-                null,
-                result.Response.References.Select(reference => new ExternalReferenceDto(
-                    reference.Provider.Value,
-                    reference.Url,
-                    reference.ExternalId)).ToArray(),
-                result.Response.FailedProviders.Select(failure => new ProviderLookupFailureDto(
-                    failure.Provider.Value,
-                    failure.SourceProvider.Value)).ToArray(),
-                result.Response.Hierarchy?.ArtistId?.Value,
-                result.Response.Hierarchy?.AlbumId?.Value,
-                result.Response.CorrelationId.Value));
-        }
-
-        if (result.Outcome is LookupExecutionOutcome.Deferred or LookupExecutionOutcome.Failed)
-        {
-            messages.Add(result.ToReport(command, ProviderName.Odesli.Value));
-        }
-
-        foreach (var message in messages)
-        {
-            await messageBus.SendAsync(message);
-        }
+        await messageBus.SendAsync(result.ToDto(command, ProviderName.Odesli.Value));
     }
 
     private static CatalogTrackHierarchy? ToHierarchy(ResolvePlaybackReferencesCommandDto dto) =>

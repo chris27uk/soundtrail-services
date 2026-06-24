@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Hosting;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Indexes;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.Adapters.Indexes;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters.Indexes;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Raven;
 

@@ -3,8 +3,8 @@ using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Events;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Prioritisation;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search.Resolution;
@@ -12,7 +12,7 @@ using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Messaging.Wolverine;
 
-internal sealed class CatalogSearchAttemptListenerWolverineTestEnvironment
+internal sealed class CatalogSearchRequestedListenerWolverineTestEnvironment
 {
     private static readonly DateTimeOffset DefaultOccurredAt = new(2026, 6, 8, 12, 0, 0, TimeSpan.Zero);
     private readonly LocalMusicTrackSearchFake localSearchFake;
@@ -20,7 +20,7 @@ internal sealed class CatalogSearchAttemptListenerWolverineTestEnvironment
     private readonly SourceApiBudgetPortFake sourceBudgetFake;
     private readonly WolverineMessageBusFake messageBusFake;
 
-    private CatalogSearchAttemptListenerWolverineTestEnvironment(FakeMusicCatalogCandidateSearch search)
+    private CatalogSearchRequestedListenerWolverineTestEnvironment(FakeMusicCatalogCandidateSearch search)
     {
         localSearchFake = new LocalMusicTrackSearchFake();
         discoveryRepository = new CatalogSearchDiscoveryRepositoryFake();
@@ -35,8 +35,8 @@ internal sealed class CatalogSearchAttemptListenerWolverineTestEnvironment
             null,
             null,
             IsPlayable: false));
-        Listener = new CatalogSearchAttemptListener(
-            new CatalogSearchAttemptHandler(
+        Listener = new CatalogSearchRequestedListener(
+            new CatalogSearchRequestedHandler(
                 search,
                 new PotentialCatalogLookupWorkStoreFake(),
                 new CatalogSearchTrackingStoreFake(),
@@ -49,7 +49,7 @@ internal sealed class CatalogSearchAttemptListenerWolverineTestEnvironment
                 new WolverineCommandBus(messageBusFake)));
     }
 
-    public CatalogSearchAttemptListener Listener { get; }
+    public CatalogSearchRequestedListener Listener { get; }
 
     public LocalMusicTrackSearchFake LocalSearch => localSearchFake;
 
@@ -57,25 +57,25 @@ internal sealed class CatalogSearchAttemptListenerWolverineTestEnvironment
 
     public IReadOnlyList<object> SentMessages => messageBusFake.SentMessages;
 
-    public static CatalogSearchAttemptListenerWolverineTestEnvironment WithASchedulableRequest()
+    public static CatalogSearchRequestedListenerWolverineTestEnvironment WithASchedulableRequest()
     {
         var search = new FakeMusicCatalogCandidateSearch();
         search.ResolveAs(MusicCatalogId.From("mc_track_1"));
-        return new CatalogSearchAttemptListenerWolverineTestEnvironment(search);
+        return new CatalogSearchRequestedListenerWolverineTestEnvironment(search);
     }
 
-    public static CatalogSearchAttemptListenerWolverineTestEnvironment WithAnUnschedulableRequest()
+    public static CatalogSearchRequestedListenerWolverineTestEnvironment WithAnUnschedulableRequest()
     {
         var search = new FakeMusicCatalogCandidateSearch();
         search.Fails();
-        return new CatalogSearchAttemptListenerWolverineTestEnvironment(search);
+        return new CatalogSearchRequestedListenerWolverineTestEnvironment(search);
     }
 
-    public static CatalogSearchAttemptListenerWolverineTestEnvironment WithADeferredRequest()
+    public static CatalogSearchRequestedListenerWolverineTestEnvironment WithADeferredRequest()
     {
         var search = new FakeMusicCatalogCandidateSearch();
         search.ResolveAs(MusicCatalogId.From("mc_track_1"));
-        return new CatalogSearchAttemptListenerWolverineTestEnvironment(search);
+        return new CatalogSearchRequestedListenerWolverineTestEnvironment(search);
     }
 
     public async Task<IReadOnlyList<object>> HandleSchedulableRequest()

@@ -6,7 +6,7 @@ using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.ProjectDiscoveryLifecycle.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.ProjectDiscoveryLifecycle;
 using Soundtrail.Services.Internal.Projector.Features.ReplayDiscoveryLifecycleProjection;

@@ -1,12 +1,11 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ApplyLookupExecutionReport.CompositionRoot;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.BacklogScheduling.CompositionRoot;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.EnrichmentResponse.CompositionRoot;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.ImportMusicTrackEvents.CompositionRoot;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.JustInTimeScheduling.CompositionRoot;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.SchedulePlaybackReferencesLookup.CompositionRoot;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.CompositionRoot;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup.CompositionRoot;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicTrackEventsImported.CompositionRoot;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.CompositionRoot;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnStreamingLocationsRequired.CompositionRoot;
 using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Prioritisation;
 
@@ -27,15 +26,13 @@ public static class AppServiceCollectionExtensions
         var dependencyProvider = options.DependencyProvider ?? new ProductionOrchestratorDependencyProvider();
         dependencyProvider.AddSharedDependencies(services, configuration);
 
-        services.AddImportMusicTrackEventsFeature();
-        services.AddApplyLookupExecutionReportFeature();
-        services.AddSchedulePlaybackReferencesLookupFeature();
-        services.AddJustInTimeSchedulingFeature(x =>
-            x.ConfigureDependencies = svc => dependencyProvider.AddJustInTimeSchedulingDependencies(svc, configuration));
-        services.AddBacklogSchedulingFeature(
-            x => x.ConfigureDependencies = svc => dependencyProvider.AddBacklogSchedulingDependencies(svc, configuration));
-        services.AddEnrichmentResponseFeature(x =>
-            x.ConfigureDependencies = svc => dependencyProvider.AddEnrichmentResponseDependencies(svc, configuration));
+        services.AddOnMusicTrackEventsImportedFeature();
+        services.AddOnMusicCatalogLookupAttemptedFeature();
+        services.AddOnStreamingLocationsRequiredFeature();
+        services.AddOnCatalogSearchRequestedFeature(x =>
+            x.ConfigureDependencies = svc => dependencyProvider.AddOnCatalogSearchRequestedDependencies(svc, configuration));
+        services.AddOnNextMusicTracksRequestedForLookupFeature(
+            x => x.ConfigureDependencies = svc => dependencyProvider.AddOnNextMusicTracksRequestedForLookupDependencies(svc, configuration));
 
         return services;
     }

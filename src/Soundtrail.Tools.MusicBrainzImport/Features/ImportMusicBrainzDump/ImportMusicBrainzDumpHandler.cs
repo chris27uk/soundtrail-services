@@ -29,8 +29,8 @@ public sealed class ImportMusicBrainzDumpHandler(
             var aggregate = await CatalogEntityAggregate.LoadAsync(repository, musicCatalogId, cancellationToken);
             var commandId = BuildCommandId(record);
 
-            aggregate.RecordEnrichmentResponse(
-                new EnrichmentResponse(
+            aggregate.RecordMusicCatalogMetadataFetched(
+                new MusicCatalogMetadataFetched(
                     commandId,
                     musicCatalogId,
                     ProviderName.MusicBrainz,
