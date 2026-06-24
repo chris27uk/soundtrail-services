@@ -6,12 +6,12 @@ using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
 using Raven.Client.Documents.Session;
-using Soundtrail.Services.Internal.Projector.Features.ProjectDiscoveryLifecycle.Adapters;
-using Soundtrail.Services.Internal.Projector.Features.ProjectDiscoveryLifecycle.Ports;
-using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackProjection.Adapters;
-using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackProjection.Ports;
-using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackCatalog.Adapters;
-using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackCatalog.ProjectionModel;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Ports;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Ports;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.ProjectionModel;
 
 namespace Soundtrail.Services.Internal.Projector.Infrastructure.Raven;
 

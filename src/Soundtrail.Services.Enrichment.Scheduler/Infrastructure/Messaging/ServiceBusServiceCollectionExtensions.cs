@@ -15,6 +15,7 @@ public static class ServiceBusServiceCollectionExtensions
         IConfiguration configuration)
     {
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
+        services.AddScoped<Soundtrail.Domain.ICommandBus, WolverineCommandBus>();
         return services;
     }
 

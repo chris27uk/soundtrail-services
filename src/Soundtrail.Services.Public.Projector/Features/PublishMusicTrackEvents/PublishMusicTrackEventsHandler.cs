@@ -1,5 +1,4 @@
 using Soundtrail.Contracts.EventSourcing;
-using Soundtrail.Contracts.IntegrationMessaging.Events;
 using Soundtrail.Services.Public.Projector.Features.PublishMusicTrackEvents.Publishing;
 
 namespace Soundtrail.Services.Public.Projector.Features.PublishMusicTrackEvents;

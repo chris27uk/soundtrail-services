@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Soundtrail.Services.Internal.Projector.Features.ProjectDiscoveryLifecycle.CompositionRoot;
-using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackProjection.CompositionRoot;
-using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackCatalog.CompositionRoot;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.CompositionRoot;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.CompositionRoot;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.CompositionRoot;
 using Soundtrail.Services.Internal.Projector.Infrastructure.Raven;
 
 namespace Soundtrail.Services.Internal.Projector.Infrastructure.CompositionRoot;

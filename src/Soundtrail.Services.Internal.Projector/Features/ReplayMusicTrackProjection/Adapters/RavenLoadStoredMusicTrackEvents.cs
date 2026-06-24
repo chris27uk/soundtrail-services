@@ -2,7 +2,7 @@ using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Model;
-using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackProjection.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.ReplayMusicTrackProjection.StoredEvents;
 
 namespace Soundtrail.Services.Internal.Projector.Features.ReplayMusicTrackProjection.Adapters;

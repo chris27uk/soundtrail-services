@@ -5,10 +5,10 @@ using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackCatalog;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged;
 using Soundtrail.Services.Api.Infrastructure.Raven;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
-using Soundtrail.Services.Internal.Projector.Features.ProjectMusicTrackCatalog.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using System.Reflection;
 

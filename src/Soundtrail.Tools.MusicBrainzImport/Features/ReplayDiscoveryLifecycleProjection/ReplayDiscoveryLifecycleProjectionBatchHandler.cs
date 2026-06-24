@@ -1,7 +1,7 @@
 using Soundtrail.Domain;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Responses;
-using Soundtrail.Services.Internal.Projector.Features.ProjectDiscoveryLifecycle;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection;
 

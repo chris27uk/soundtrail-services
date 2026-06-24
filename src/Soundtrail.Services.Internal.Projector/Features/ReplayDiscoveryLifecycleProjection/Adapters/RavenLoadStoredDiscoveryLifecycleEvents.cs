@@ -1,7 +1,7 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Services.Internal.Projector.Features.ProjectDiscoveryLifecycle.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.ReplayDiscoveryLifecycleProjection.StoredEvents;
 
 namespace Soundtrail.Services.Internal.Projector.Features.ReplayDiscoveryLifecycleProjection.Adapters;
