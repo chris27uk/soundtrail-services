@@ -31,7 +31,7 @@ public sealed class MusicTrackProjectionReplayResponsesTests
             new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
             new RavenSaveMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()));
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
-        var commandId = CommandId.For("ResolveCanonicalMetadata:mc_track_1");
+        var commandId = CommandId.For("ResolveMusicMetadata:mc_track_1");
 
         var storedEvents = new MusicTrackStoredEventRecordDto[]
         {
@@ -81,7 +81,7 @@ public sealed class MusicTrackProjectionReplayResponsesTests
     {
         using var raven = RavenEmbeddedTestDatabase.Create();
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
-        var commandId = CommandId.For("ResolveCanonicalMetadata:mc_track_1");
+        var commandId = CommandId.For("ResolveMusicMetadata:mc_track_1");
 
         using (var seedSession = raven.Store.OpenAsyncSession())
         {

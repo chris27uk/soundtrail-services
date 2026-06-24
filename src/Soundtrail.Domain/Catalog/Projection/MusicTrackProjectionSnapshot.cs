@@ -16,7 +16,7 @@ public sealed record MusicTrackProjectionSnapshot(
     int? DurationMs,
     DateOnly? ReleaseDate,
     string? ArtworkUrl,
-    ProjectedSongMetadata? CanonicalMetadata,
+    ProjectedSongMetadata? ResolvedMetadata,
     ProjectedProviderReference? AppleReference,
     ProjectedProviderReference? YouTubeMusicReference,
     bool IsPlayable,

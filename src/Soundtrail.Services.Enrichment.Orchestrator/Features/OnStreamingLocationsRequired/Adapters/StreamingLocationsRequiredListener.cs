@@ -30,10 +30,16 @@ public sealed class StreamingLocationsRequiredListener(StreamingLocationsRequire
     }
 
     private static MusicSearchTerm ToSearchTerm(StreamingLocationsRequiredMessageDto dto) =>
-        !string.IsNullOrWhiteSpace(dto.SearchTerm.Isrc)
-            ? MusicSearchTerm.ByIsrc(dto.SearchTerm.Isrc)
-            : MusicSearchTerm.ByTrackArtistAlbum(
-                dto.SearchTerm.Title ?? throw new InvalidOperationException("Streaming locations lookup requires a title when no ISRC is present."),
-                dto.SearchTerm.Artist ?? throw new InvalidOperationException("Streaming locations lookup requires an artist when no ISRC is present."),
-                dto.SearchTerm.Album);
+        dto.SearchTerm.Kind switch
+        {
+            MusicSearchKind.UnifiedSearch => MusicSearchTerm.ByQuery(
+                dto.SearchTerm.Query ?? throw new InvalidOperationException("Streaming locations lookup requires a query for unified search.")),
+            MusicSearchKind.Isrc => MusicSearchTerm.ByIsrc(
+                dto.SearchTerm.Isrc ?? throw new InvalidOperationException("Streaming locations lookup requires an ISRC for ISRC lookups.")),
+            MusicSearchKind.TrackArtistAlbum => MusicSearchTerm.ByTrackArtistAlbum(
+                dto.SearchTerm.Title ?? throw new InvalidOperationException("Streaming locations lookup requires a title for track/artist/album lookups."),
+                dto.SearchTerm.Artist ?? throw new InvalidOperationException("Streaming locations lookup requires an artist for track/artist/album lookups."),
+                dto.SearchTerm.Album),
+            _ => throw new InvalidOperationException($"Unsupported music search kind '{dto.SearchTerm.Kind}'.")
+        };
 }

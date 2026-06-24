@@ -2,7 +2,7 @@ using JasperFx.CodeGeneration.Model;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
-using Soundtrail.Services.Enrichment.Worker.Features.OnLookupCanonicalMusicMetadata.Adapters;
+using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Adapters;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.Adapters;
 using Soundtrail.Services.ServiceDefaults;
 using Wolverine;
@@ -28,7 +28,7 @@ public static class ServiceBusServiceCollectionExtensions
         opts.UseRuntimeCompilation();
         opts.ServiceLocationPolicy = ServiceLocationPolicy.AllowedButWarn;
         opts.Discovery.DisableConventionalDiscovery();
-        opts.Discovery.IncludeType<LookupCanonicalMusicMetadataListener>();
+        opts.Discovery.IncludeType<LookupMusicMetadataListener>();
         opts.Discovery.IncludeType<LookupStreamingLocationsListener>();
         opts.Policies.AutoApplyTransactions();
 

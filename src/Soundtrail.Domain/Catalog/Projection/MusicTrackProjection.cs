@@ -44,7 +44,7 @@ public sealed class MusicTrackProjection
 
     public string? ArtworkUrl { get; private set; }
 
-    public ProjectedSongMetadata? CanonicalMetadata { get; private set; }
+    public ProjectedSongMetadata? ResolvedMetadata { get; private set; }
 
     public ProjectedProviderReference? AppleReference { get; private set; }
 
@@ -72,7 +72,7 @@ public sealed class MusicTrackProjection
             DurationMs = snapshot.DurationMs,
             ReleaseDate = snapshot.ReleaseDate,
             ArtworkUrl = snapshot.ArtworkUrl,
-            CanonicalMetadata = snapshot.CanonicalMetadata,
+            ResolvedMetadata = snapshot.ResolvedMetadata,
             AppleReference = snapshot.AppleReference,
             YouTubeMusicReference = snapshot.YouTubeMusicReference,
             IsPlayable = snapshot.IsPlayable,
@@ -96,7 +96,7 @@ public sealed class MusicTrackProjection
             DurationMs,
             ReleaseDate,
             ArtworkUrl,
-            CanonicalMetadata,
+            ResolvedMetadata,
             AppleReference,
             YouTubeMusicReference,
             IsPlayable,
@@ -114,7 +114,7 @@ public sealed class MusicTrackProjection
     {
         eventHandlers.Handle(@event);
         IsPlayable =
-            CanonicalMetadata is not null
+            ResolvedMetadata is not null
             && (AppleReference is not null
                 || YouTubeMusicReference is not null
                 || !string.IsNullOrWhiteSpace(SpotifyId));
@@ -128,7 +128,7 @@ public sealed class MusicTrackProjection
         handlers.Register<TrackDiscovered>(@event =>
         {
             var artistName = ArtistName.From(@event.Artist);
-            CanonicalMetadata = new ProjectedSongMetadata(
+            ResolvedMetadata = new ProjectedSongMetadata(
                 @event.Title,
                 artistName,
                 @event.Isrc,
@@ -202,7 +202,7 @@ public sealed class MusicTrackProjection
         handlers.Register<MetadataCorrected>(@event =>
         {
             var artistName = ArtistName.From(@event.ArtistName);
-            CanonicalMetadata = new ProjectedSongMetadata(
+            ResolvedMetadata = new ProjectedSongMetadata(
                 @event.Title,
                 artistName,
                 @event.Isrc,
@@ -228,7 +228,7 @@ public sealed class MusicTrackProjection
     }
 
     private static string BuildSearchText(string title, ArtistName artist) =>
-        ArtistName.From($"{title} {artist.Value}".Trim()).Canonical;
+        ArtistName.From($"{title} {artist.Value}".Trim()).Normalized;
 
     private static string NormalizeCompact(string? value)
     {

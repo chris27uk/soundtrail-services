@@ -61,15 +61,15 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
         return env;
     }
 
-    public static MusicCatalogLookupAttemptedHandlerTestEnvironment WithAPlaybackReferencesResponseAfterCanonicalMetadata() => WithAMusicBrainzResponse();
+    public static MusicCatalogLookupAttemptedHandlerTestEnvironment WithAPlaybackReferencesResponseAfterResolvedMetadata() => WithAMusicBrainzResponse();
 
     public static MusicCatalogLookupAttemptedHandlerTestEnvironment WithADuplicateMusicBrainzResponse() => WithAMusicBrainzResponse();
 
     public Task HandleMusicBrainzResponse() => Handler.Handle(MusicCatalogLookupAttempted.Completed(MusicBrainzResponse()), CancellationToken.None);
 
-    public async Task HandlePlaybackReferencesResponseAfterCanonicalMetadata()
+    public async Task HandlePlaybackReferencesResponseAfterResolvedMetadata()
     {
-        await Handler.Handle(MusicCatalogLookupAttempted.Completed(CanonicalResponse()), CancellationToken.None);
+        await Handler.Handle(MusicCatalogLookupAttempted.Completed(ResolvedMetadataResponse()), CancellationToken.None);
         await Handler.Handle(MusicCatalogLookupAttempted.Completed(PlaybackReferencesResponse()), CancellationToken.None);
     }
 
@@ -88,7 +88,7 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
 
     public static MusicCatalogMetadataFetched MusicBrainzResponse() =>
         new(
-            CommandId.For("ResolveCanonicalMetadata:mc_track_1"),
+            CommandId.For("ResolveMusicMetadata:mc_track_1"),
             MusicCatalogId.From("mc_track_1"),
             ProviderName.MusicBrainz,
             LookupPriorityBand.High,
@@ -99,14 +99,14 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
             new CatalogTrackHierarchy(ArtistId.From("artist_test_artist"), AlbumId.From("album_rare_album")),
             CorrelationId.From("corr-1"));
 
-    private static MusicCatalogMetadataFetched CanonicalResponse() =>
+    private static MusicCatalogMetadataFetched ResolvedMetadataResponse() =>
         new(
-            CommandId.For("ResolveCanonicalMetadata:mc_track_1"),
+            CommandId.For("ResolveMusicMetadata:mc_track_1"),
             MusicCatalogId.From("mc_track_1"),
             ProviderName.MusicBrainz,
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero),
-            new SongMetadata("Canonical Song", "Canonical Artist", "isrc-1", "mbid-1", 123000, "Canonical Album", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"),
+            new SongMetadata("Resolved Song", "Resolved Artist", "isrc-1", "mbid-1", 123000, "Resolved Album", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"),
             [],
             [],
             new CatalogTrackHierarchy(ArtistId.From("artist_test_artist"), AlbumId.From("album_rare_album")),

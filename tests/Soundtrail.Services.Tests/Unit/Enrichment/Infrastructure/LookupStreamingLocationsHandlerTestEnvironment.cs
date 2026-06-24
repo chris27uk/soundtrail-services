@@ -4,6 +4,7 @@ using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations;
+using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.Pipeline;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -15,15 +16,18 @@ internal sealed class LookupStreamingLocationsHandlerTestEnvironment
     {
         GetMusicTrackReference = new FakeGetMusicTrackReference();
         SourceBudget = new SourceApiBudgetPortFake();
-        Handler = new LookupStreamingLocationsHandler(
+        var coreHandler = new LookupStreamingLocationsHandler(GetMusicTrackReference);
+        var budgetDecorator = new LookupStreamingLocationsBudgetReservationDecorator(SourceBudget, coreHandler);
+        Handler = new LookupStreamingLocationsIdempotencyDecorator(
             new LookupExecutionReceiptStoreFake(new LookupExecutionReceiptStoreFake.State()),
-            GetMusicTrackReference,
-            SourceBudget);
+            budgetDecorator);
     }
 
-    public LookupStreamingLocationsHandler Handler { get; }
+    public ILookupStreamingLocationsHandler Handler { get; }
 
     public FakeGetMusicTrackReference GetMusicTrackReference { get; }
+
+    public FakeGetMusicTrackReference References => GetMusicTrackReference;
 
     public SourceApiBudgetPortFake SourceBudget { get; }
 

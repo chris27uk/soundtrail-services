@@ -1,31 +1,34 @@
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
-using Soundtrail.Services.Enrichment.Worker.Features.OnLookupCanonicalMusicMetadata.Lookup;
+using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Lookup;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 
-namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupCanonicalMusicMetadata.Adapters;
+namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Adapters;
 
-public sealed class MusicBrainzGetCanonicalMusicMetadata(HttpClient httpClient) : IGetCanonicalMusicMetadata
+public sealed class MusicBrainzGetMusicMetadata(HttpClient httpClient) : IGetMusicMetadata
 {
     public async Task<SongMetadata?> GetMetadataAsync(
         MusicSearchTerm searchTerm,
         CancellationToken cancellationToken)
     {
-        var recording = await searchTerm.Match(async (track, artist, album) => await SearchByNamesAsync(
-            track,
-            artist,
-            album,
-            cancellationToken), async isrc => await LookupByIsrcAsync(isrc, cancellationToken));
+        var recording = await searchTerm.Match(
+            async query => await SearchByQueryAsync(query, cancellationToken),
+            async (track, artist, album) => await SearchByNamesAsync(
+                track,
+                artist,
+                album,
+                cancellationToken),
+            async isrc => await LookupByIsrcAsync(isrc, cancellationToken));
 
         if (recording is null)
         {
             return null;
         }
 
-        var fallbackTitle = searchTerm.Match((track, _, _) => track, __ => string.Empty);
-        var fallbackArtist = searchTerm.Match((_, artist, _) => artist, __ => string.Empty);
-        var fallbackIsrc = searchTerm.Match<string?>((_, _, _) => null, isrc => isrc);
+        var fallbackTitle = searchTerm.Match(query => query, (track, _, _) => track, __ => string.Empty);
+        var fallbackArtist = searchTerm.Match(_ => string.Empty, (_, artist, _) => artist, __ => string.Empty);
+        var fallbackIsrc = searchTerm.Match<string?>(_ => null, (_, _, _) => null, isrc => isrc);
 
         return new SongMetadata(
             recording.Title ?? fallbackTitle,
@@ -86,6 +89,18 @@ public sealed class MusicBrainzGetCanonicalMusicMetadata(HttpClient httpClient) 
         return SelectBestNameMatch(response?.Recordings, trackName, artist, albumName);
     }
 
+    private async Task<MusicBrainzRecordingDto?> SearchByQueryAsync(
+        string queryText,
+        CancellationToken cancellationToken)
+    {
+        var query = Uri.EscapeDataString(queryText);
+        var response = await httpClient.GetFromJsonAsync<MusicBrainzRecordingSearchResponse>(
+            $"/ws/2/recording?fmt=json&limit=5&query={query}&inc=artist-credits+isrcs+releases",
+            cancellationToken);
+
+        return SelectBestQueryMatch(response?.Recordings);
+    }
+
     private static MusicBrainzRecordingDto? SelectBestNameMatch(
         IReadOnlyList<MusicBrainzRecordingDto>? recordings,
         string trackName,
@@ -98,6 +113,27 @@ public sealed class MusicBrainzGetCanonicalMusicMetadata(HttpClient httpClient) 
             .ToArray();
 
         if (ranked.Length == 0 || ranked[0].Score < 100)
+        {
+            return null;
+        }
+
+        if (ranked.Length > 1 && ranked[0].Score - ranked[1].Score < 10)
+        {
+            return null;
+        }
+
+        return ranked[0].Recording;
+    }
+
+    private static MusicBrainzRecordingDto? SelectBestQueryMatch(
+        IReadOnlyList<MusicBrainzRecordingDto>? recordings)
+    {
+        var ranked = (recordings ?? [])
+            .Select(recording => new RankedRecording(recording, Score(recording)))
+            .OrderByDescending(item => item.Score)
+            .ToArray();
+
+        if (ranked.Length == 0 || ranked[0].Score < 90)
         {
             return null;
         }
@@ -143,6 +179,18 @@ public sealed class MusicBrainzGetCanonicalMusicMetadata(HttpClient httpClient) 
         }
 
         score += int.TryParse(recording.Score, out var musicBrainzScore) ? musicBrainzScore / 10 : 0;
+        return score;
+    }
+
+    private static int Score(MusicBrainzRecordingDto recording)
+    {
+        var score = int.TryParse(recording.Score, out var musicBrainzScore) ? musicBrainzScore / 10 : 0;
+
+        if (recording.Releases?.Any(static release => !string.IsNullOrWhiteSpace(release.Date)) == true)
+        {
+            score += 2;
+        }
+
         return score;
     }
 

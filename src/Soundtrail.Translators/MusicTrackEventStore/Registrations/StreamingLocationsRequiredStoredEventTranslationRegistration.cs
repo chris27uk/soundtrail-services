@@ -18,6 +18,8 @@ public sealed class StreamingLocationsRequiredStoredEventTranslationRegistration
                 domainEvent.CorrelationId.Value,
                 domainEvent.SourceProvider.Value,
                 domainEvent.ObservedAt,
+                domainEvent.SearchTerm.Kind,
+                domainEvent.SearchTerm.Query,
                 domainEvent.SearchTerm.Isrc,
                 domainEvent.SearchTerm.Title,
                 domainEvent.SearchTerm.Artist,
@@ -30,9 +32,18 @@ public sealed class StreamingLocationsRequiredStoredEventTranslationRegistration
                 CorrelationId.From(dto.CorrelationId),
                 ProviderName.From(dto.SourceProvider),
                 dto.ObservedAt,
-                dto.Isrc is null
-                    ? MusicSearchTerm.ByTrackArtistAlbum(dto.Title ?? string.Empty, dto.Artist ?? string.Empty, dto.Album)
-                    : MusicSearchTerm.ByIsrc(dto.Isrc),
+                dto.SearchKind switch
+                {
+                    MusicSearchKind.UnifiedSearch => MusicSearchTerm.ByQuery(
+                        dto.Query ?? throw new InvalidOperationException("Stored unified streaming locations event requires a query.")),
+                    MusicSearchKind.Isrc => MusicSearchTerm.ByIsrc(
+                        dto.Isrc ?? throw new InvalidOperationException("Stored ISRC streaming locations event requires an ISRC.")),
+                    MusicSearchKind.TrackArtistAlbum => MusicSearchTerm.ByTrackArtistAlbum(
+                        dto.Title ?? throw new InvalidOperationException("Stored track/artist/album streaming locations event requires a title."),
+                        dto.Artist ?? throw new InvalidOperationException("Stored track/artist/album streaming locations event requires an artist."),
+                        dto.Album),
+                    _ => throw new InvalidOperationException($"Unsupported music search kind '{dto.SearchKind}'.")
+                },
                 dto.ArtistId is null && dto.AlbumId is null
                     ? null
                     : new CatalogTrackHierarchy(

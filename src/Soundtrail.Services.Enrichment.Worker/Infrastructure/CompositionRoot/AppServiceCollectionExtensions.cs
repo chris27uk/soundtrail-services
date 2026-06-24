@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
-using Soundtrail.Services.Enrichment.Worker.Features.OnLookupCanonicalMusicMetadata.CompositionRoot;
+using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.CompositionRoot;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.CompositionRoot;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.CompositionRoot;
@@ -19,8 +19,8 @@ public static class AppServiceCollectionExtensions
         var dependencyProvider = options.DependencyProvider ?? new ProductionWorkerDependencyProvider();
         dependencyProvider.AddSharedDependencies(services, configuration);
 
-        services.AddLookupCanonicalMusicMetadataFeature(x =>
-            x.ConfigureDependencies = svc => dependencyProvider.AddLookupCanonicalMusicMetadataDependencies(svc, configuration));
+        services.AddLookupMusicMetadataFeature(x =>
+            x.ConfigureDependencies = svc => dependencyProvider.AddLookupMusicMetadataDependencies(svc, configuration));
         services.AddLookupStreamingLocationsFeature(x =>
             x.ConfigureDependencies = svc => dependencyProvider.AddLookupStreamingLocationsDependencies(svc, configuration));
 

@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Options;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
-using Soundtrail.Services.Enrichment.Worker.Features.OnLookupCanonicalMusicMetadata.Adapters;
-using Soundtrail.Services.Enrichment.Worker.Features.OnLookupCanonicalMusicMetadata.Lookup;
+using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Adapters;
+using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Lookup;
 using Soundtrail.Services.Tests.Integration.Enrichment.Ports.ProviderClients;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -16,7 +16,7 @@ internal sealed class MusicBrainzMetadataSourceTestEnvironment : IDisposable
     private readonly IDisposable? cleanup;
 
     private MusicBrainzMetadataSourceTestEnvironment(
-        IGetCanonicalMusicMetadata source,
+        IGetMusicMetadata source,
         Action<MusicSearchTerm, SongMetadata> seed,
         Action<MusicSearchTerm>? seedAmbiguous,
         Action<MusicSearchTerm, SongMetadata>? seedPreferredMatch,
@@ -29,7 +29,7 @@ internal sealed class MusicBrainzMetadataSourceTestEnvironment : IDisposable
         this.cleanup = cleanup;
     }
 
-    public IGetCanonicalMusicMetadata Source { get; }
+    public IGetMusicMetadata Source { get; }
 
     public static MusicBrainzMetadataSourceTestEnvironment Create(MusicBrainzMetadataSourceMode mode) =>
         mode switch
@@ -47,7 +47,7 @@ internal sealed class MusicBrainzMetadataSourceTestEnvironment : IDisposable
 
     private static MusicBrainzMetadataSourceTestEnvironment CreateFake()
     {
-        var fake = new FakeGetCanonicalMusicMetadata();
+        var fake = new FakeGetMusicMetadata();
         return new MusicBrainzMetadataSourceTestEnvironment(
             fake,
             (searchTerm, metadata) =>
@@ -83,10 +83,10 @@ internal sealed class MusicBrainzMetadataSourceTestEnvironment : IDisposable
         var server = new WireMockMusicProvidersServer();
         var options = Options.Create(new MusicBrainzOptions { BaseUrl = server.BaseUrl, UserAgent = "Soundtrail.Tests/1.0" });
         var client = new HttpClient();
-        MusicBrainzGetCanonicalMusicMetadata.ConfigureHttpClient(client, options.Value);
+        MusicBrainzGetMusicMetadata.ConfigureHttpClient(client, options.Value);
 
         return new MusicBrainzMetadataSourceTestEnvironment(
-            new MusicBrainzGetCanonicalMusicMetadata(client),
+            new MusicBrainzGetMusicMetadata(client),
             server.SeedMusicBrainz,
             seedAmbiguous: searchTerm =>
             {

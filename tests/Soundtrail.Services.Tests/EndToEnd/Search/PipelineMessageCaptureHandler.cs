@@ -15,7 +15,7 @@ public sealed class PipelineMessageCaptureHandler(PipelineMessageCapture capture
     }
 
     [WolverineHandler]
-    public Task Handle(LookupCanonicalMusicMetadataCommandDto message, CancellationToken cancellationToken)
+    public Task Handle(LookupMusicMetadataCommandDto message, CancellationToken cancellationToken)
     {
         capture.Record(message);
         return Task.CompletedTask;

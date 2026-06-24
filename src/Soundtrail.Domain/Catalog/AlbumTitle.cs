@@ -5,12 +5,12 @@ public readonly record struct AlbumTitle
     private AlbumTitle(string value)
     {
         Value = value;
-        Canonical = Normalize(value);
+        Normalized = Normalize(value);
     }
 
     public string Value { get; }
 
-    public string Canonical { get; }
+    public string Normalized { get; }
 
     public bool HasValue => !string.IsNullOrWhiteSpace(Value);
 

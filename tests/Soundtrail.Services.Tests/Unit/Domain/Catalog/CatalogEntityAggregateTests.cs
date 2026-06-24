@@ -17,7 +17,7 @@ public sealed class CatalogEntityAggregateTests
         var aggregate = await CatalogEntityAggregate.LoadAsync(store, MusicCatalogId.From("mc_track_1"), CancellationToken.None);
 
         aggregate.RecordMusicCatalogMetadataFetched(MusicBrainzResponse());
-        var append = await aggregate.SaveAsync(store, CommandId.For("ResolveCanonicalMetadata:mc_track_1"), CancellationToken.None);
+        var append = await aggregate.SaveAsync(store, CommandId.For("ResolveMusicMetadata:mc_track_1"), CancellationToken.None);
 
         append.AppendedEvents.Should().ContainItemsAssignableTo<ArtistDiscovered>();
         append.AppendedEvents.Should().ContainItemsAssignableTo<AlbumDiscovered>();
@@ -33,7 +33,7 @@ public sealed class CatalogEntityAggregateTests
         var aggregate = await CatalogEntityAggregate.LoadAsync(store, MusicCatalogId.From("mc_track_1"), CancellationToken.None);
 
         aggregate.RecordMusicCatalogMetadataFetched(MusicBrainzResponse());
-        var append = await aggregate.SaveAsync(store, CommandId.For("ResolveCanonicalMetadata:mc_track_1"), CancellationToken.None);
+        var append = await aggregate.SaveAsync(store, CommandId.For("ResolveMusicMetadata:mc_track_1"), CancellationToken.None);
 
         append.AppendedEvents.Should().ContainSingle(x => x is StreamingLocationsRequired);
     }
@@ -53,7 +53,7 @@ public sealed class CatalogEntityAggregateTests
         var aggregate = await CatalogEntityAggregate.LoadAsync(store, MusicCatalogId.From("mc_track_1"), CancellationToken.None);
 
         aggregate.RecordMusicCatalogMetadataFetched(MusicBrainzResponse());
-        var append = await aggregate.SaveAsync(store, CommandId.For("ResolveCanonicalMetadata:mc_track_1"), CancellationToken.None);
+        var append = await aggregate.SaveAsync(store, CommandId.For("ResolveMusicMetadata:mc_track_1"), CancellationToken.None);
 
         append.AppendedEvents.Should().NotContain(x => x is StreamingLocationsRequired);
     }
@@ -75,7 +75,7 @@ public sealed class CatalogEntityAggregateTests
                         "spotify-1")
                 ]
             });
-        var append = await aggregate.SaveAsync(store, CommandId.For("ResolveCanonicalMetadata:mc_track_1"), CancellationToken.None);
+        var append = await aggregate.SaveAsync(store, CommandId.For("ResolveMusicMetadata:mc_track_1"), CancellationToken.None);
 
         append.AppendedEvents.Should().ContainSingle(x => x is ProviderReferenceDiscovered);
         append.AppendedEvents.Should().NotContain(x => x is StreamingLocationsRequired);
@@ -98,7 +98,7 @@ public sealed class CatalogEntityAggregateTests
         var aggregate = await CatalogEntityAggregate.LoadAsync(store, MusicCatalogId.From("mc_track_1"), CancellationToken.None);
 
         aggregate.RecordMusicCatalogMetadataFetched(MusicBrainzResponse());
-        var append = await aggregate.SaveAsync(store, CommandId.For("ResolveCanonicalMetadata:mc_track_1"), CancellationToken.None);
+        var append = await aggregate.SaveAsync(store, CommandId.For("ResolveMusicMetadata:mc_track_1"), CancellationToken.None);
 
         append.AppendedEvents.Should().NotContain(x => x is StreamingLocationsRequired);
     }
@@ -132,7 +132,7 @@ public sealed class CatalogEntityAggregateTests
 
     private static MusicCatalogMetadataFetched MusicBrainzResponse() =>
         new(
-            CommandId.For("ResolveCanonicalMetadata:mc_track_1"),
+            CommandId.For("ResolveMusicMetadata:mc_track_1"),
             MusicCatalogId.From("mc_track_1"),
             ProviderName.MusicBrainz,
             LookupPriorityBand.High,

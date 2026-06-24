@@ -52,6 +52,8 @@ public sealed class OdesliStreamingReferences(
     private string BuildRequestUri(MusicSearchTerm searchTerm)
     {
         return searchTerm.Match(
+            query =>
+                throw new InvalidOperationException($"Streaming locations lookup does not support unified search queries. Query='{query}'."),
             (track, artist, album) =>
                 $"/v1-user/links?title={Uri.EscapeDataString(track)}&artist={Uri.EscapeDataString(artist)}&album={Uri.EscapeDataString(album ?? string.Empty)}&userCountry={Uri.EscapeDataString(options.UserCountry)}",
             isrc =>

@@ -283,7 +283,7 @@ public sealed class CatalogSearchRequestedHandler(
 
         return new PlannedLookupWork(
             new LookupMusicMetadataCommand(
-                CommandId.For($"LookupCanonicalMusicMetadata:{musicCatalogId.Value}"),
+                CommandId.For($"LookupMusicMetadata:{musicCatalogId.Value}"),
                 musicCatalogId,
                 priority,
                 request.OccurredAt,

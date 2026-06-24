@@ -25,7 +25,7 @@ public sealed class RavenEmbeddedResponsesTests
         var append = await store.AppendEventsAsync(
             musicCatalogId,
             expectedVersion: 0,
-            CommandId.For("ResolveCanonicalMetadata:mc_track_1"),
+            CommandId.For("ResolveMusicMetadata:mc_track_1"),
             [
                 new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))
             ],
@@ -57,7 +57,7 @@ public sealed class RavenEmbeddedResponsesTests
             await store.AppendEventsAsync(
                 musicCatalogId,
                 expectedVersion: 0,
-                CommandId.For("ResolveCanonicalMetadata:mc_track_1"),
+                CommandId.For("ResolveMusicMetadata:mc_track_1"),
                 [new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))],
                 CancellationToken.None);
             await session.SaveChangesAsync(CancellationToken.None);
@@ -84,7 +84,7 @@ public sealed class RavenEmbeddedResponsesTests
     {
         using var raven = RavenEmbeddedTestDatabase.Create();
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
-        var commandId = CommandId.For("ResolveCanonicalMetadata:mc_track_1");
+        var commandId = CommandId.For("ResolveMusicMetadata:mc_track_1");
 
         using (var firstSession = raven.Store.OpenAsyncSession())
         {

@@ -1,3 +1,5 @@
+using Soundtrail.Contracts.Common;
+
 namespace Soundtrail.Contracts.EventSourcing;
 
 public sealed record StreamingLocationsRequiredEventDataRecordDto(
@@ -6,6 +8,8 @@ public sealed record StreamingLocationsRequiredEventDataRecordDto(
     string CorrelationId,
     string SourceProvider,
     DateTimeOffset ObservedAt,
+    MusicSearchKind SearchKind,
+    string? Query,
     string? Isrc,
     string? Title,
     string? Artist,

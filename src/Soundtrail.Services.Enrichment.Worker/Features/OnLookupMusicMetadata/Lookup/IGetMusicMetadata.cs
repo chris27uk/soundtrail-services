@@ -1,9 +1,9 @@
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
 
-namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupCanonicalMusicMetadata.Lookup;
+namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Lookup;
 
-public interface IGetCanonicalMusicMetadata
+public interface IGetMusicMetadata
 {
     Task<SongMetadata?> GetMetadataAsync(
         MusicSearchTerm searchTerm,

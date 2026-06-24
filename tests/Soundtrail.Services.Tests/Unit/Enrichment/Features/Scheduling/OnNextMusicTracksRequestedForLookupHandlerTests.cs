@@ -112,7 +112,7 @@ public sealed class NextMusicTracksRequestedForLookupHandlerTests
     {
         var env = NextMusicTracksRequestedForLookupHandlerTestEnvironment.WithScheduledCandidate();
         await env.RunSweep();
-        env.CommandBus.SentCommands.OfType<IMusicCatalogLookupCommand>().Single().CommandId.Should().Be(CommandId.For("LookupCanonicalMusicMetadata:mc_track_1"));
+        env.CommandBus.SentCommands.OfType<IMusicCatalogLookupCommand>().Single().CommandId.Should().Be(CommandId.For("LookupMusicMetadata:mc_track_1"));
     }
 
     [Fact]

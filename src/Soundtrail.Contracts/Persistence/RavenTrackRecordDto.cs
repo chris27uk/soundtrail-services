@@ -38,7 +38,7 @@ public sealed class RavenTrackRecordDto
 
     public string? ArtworkUrl { get; set; }
 
-    public RavenSongMetadataRecordDto? CanonicalMetadata { get; set; }
+    public RavenSongMetadataRecordDto? ResolvedMetadata { get; set; }
 
     public RavenProviderReferenceRecordDto? AppleReference { get; set; }
 

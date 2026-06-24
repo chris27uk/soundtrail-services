@@ -25,12 +25,12 @@ public sealed class RavenLocalMusicTrackSearch(IDocumentStore documentStore) : I
 
         return new LocalMusicTrackSearchResult(
             musicCatalogId,
-            document.CanonicalMetadata?.Title ?? document.Title,
-            document.CanonicalMetadata?.Artist ?? document.Artist,
+            document.ResolvedMetadata?.Title ?? document.Title,
+            document.ResolvedMetadata?.Artist ?? document.Artist,
             document.AlbumTitle,
-            document.CanonicalMetadata?.Isrc ?? document.Isrc,
-            document.CanonicalMetadata?.Mbid ?? document.Mbid,
-            document.CanonicalMetadata?.DurationMs ?? document.DurationMs,
+            document.ResolvedMetadata?.Isrc ?? document.Isrc,
+            document.ResolvedMetadata?.Mbid ?? document.Mbid,
+            document.ResolvedMetadata?.DurationMs ?? document.DurationMs,
             document.IsPlayable,
             string.IsNullOrWhiteSpace(document.ArtistId) ? null : ArtistId.From(document.ArtistId),
             string.IsNullOrWhiteSpace(document.AlbumId) ? null : AlbumId.From(document.AlbumId),
