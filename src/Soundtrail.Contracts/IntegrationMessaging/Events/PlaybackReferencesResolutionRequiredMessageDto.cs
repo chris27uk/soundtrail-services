@@ -9,6 +9,6 @@ public sealed record PlaybackReferencesResolutionRequiredMessageDto(
     string CorrelationId,
     string SourceProvider,
     DateTimeOffset ObservedAt,
-    PlaybackReferenceSearchTermDto SearchTerm,
+    StreamingLocationSearchTermDto SearchTerm,
     string? ArtistId,
     string? AlbumId);

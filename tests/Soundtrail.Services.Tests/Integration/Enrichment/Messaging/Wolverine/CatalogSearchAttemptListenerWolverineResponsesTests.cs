@@ -33,7 +33,7 @@ public sealed class CatalogSearchRequestedListenerWolverineResponsesTests
             IsPlayable: false,
             ReleaseDate: null));
 
-        var message = (ResolvePlaybackReferencesCommandDto)(await env.HandleSchedulableRequest()).Single();
+        var message = (LookupStreamingLocationsCommandDto)(await env.HandleSchedulableRequest()).Single();
 
         message.SearchTerm.Isrc.Should().Be("isrc-1");
     }

@@ -36,7 +36,7 @@ public sealed class PipelineMessageCaptureHandler(PipelineMessageCapture capture
     }
 
     [WolverineHandler]
-    public Task Handle(ResolvePlaybackReferencesCommandDto message, CancellationToken cancellationToken)
+    public Task Handle(LookupStreamingLocationsCommandDto message, CancellationToken cancellationToken)
     {
         capture.Record(message);
         return Task.CompletedTask;

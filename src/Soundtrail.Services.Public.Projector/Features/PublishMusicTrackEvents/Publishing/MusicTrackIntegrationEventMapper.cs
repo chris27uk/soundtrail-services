@@ -30,7 +30,7 @@ internal static class MusicTrackIntegrationEventMapper
             data.CorrelationId,
             data.SourceProvider,
             data.ObservedAt,
-            new PlaybackReferenceSearchTermDto(
+            new StreamingLocationSearchTermDto(
                 data.Isrc,
                 data.Title,
                 data.Artist,

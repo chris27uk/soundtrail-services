@@ -74,7 +74,7 @@ public static class ServiceBusServiceCollectionExtensions
         opts.PublishMessage<LookupCanonicalMusicMetadataCommandDto>()
             .ToAzureServiceBusQueue(serviceBusOptions.MusicBrainzLookupQueueName);
 
-        opts.PublishMessage<ResolvePlaybackReferencesCommandDto>()
+        opts.PublishMessage<LookupStreamingLocationsCommandDto>()
             .ToAzureServiceBusQueue(serviceBusOptions.PlaybackReferencesLookupQueueName);
 
         return opts;

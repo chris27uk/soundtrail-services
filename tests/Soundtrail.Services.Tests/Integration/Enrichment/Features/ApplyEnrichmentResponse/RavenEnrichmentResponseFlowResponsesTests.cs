@@ -171,7 +171,7 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
 
     private static MusicCatalogLookupAttemptedDto PlaybackAttemptDto() =>
         new(
-            CommandId.For("ResolvePlaybackReferences:mc_track_1").Value,
+            CommandId.For("LookupStreamingLocations:mc_track_1").Value,
             "mc_track_1",
             ProviderName.Odesli.Value,
             LookupPriorityBand.High,
@@ -179,7 +179,7 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
             "corr-2",
             new MusicCatalogLookupOutcomeDto("Completed", null, null, null),
             new MusicCatalogMetadataFetchedDto(
-                CommandId.For("ResolvePlaybackReferences:mc_track_1").Value,
+                CommandId.For("LookupStreamingLocations:mc_track_1").Value,
                 "mc_track_1",
                 ProviderName.Odesli.Value,
                 LookupPriorityBand.High,

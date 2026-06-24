@@ -3,6 +3,7 @@ using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Scheduling;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup.Support;
@@ -24,8 +25,8 @@ public sealed class DiscoveryBacklogLookupPlanner
         if (!string.IsNullOrWhiteSpace(localTrack?.Isrc) && searchTerm is not null)
         {
             return new PlannedLookupWork(
-                new ResolvePlaybackReferencesCommand(
-                    CommandId.For($"ResolvePlaybackReferences:{musicCatalogId.Value}"),
+                new LookupStreamingLocationsCommand(
+                    CommandId.For($"LookupStreamingLocations:{musicCatalogId.Value}"),
                     musicCatalogId,
                     priority,
                     now,

@@ -5,10 +5,10 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.SourceBudgets;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.SourceBudgets.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.SourceBudgets.Configuration;
-using Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.Adapters;
-using Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.Lookup;
-using Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution.Adapters;
-using Soundtrail.Services.Enrichment.Worker.Features.PlaybackReferencesLookupExecution.GetReference;
+using Soundtrail.Services.Enrichment.Worker.Features.OnLookupCanonicalMusicMetadata.Adapters;
+using Soundtrail.Services.Enrichment.Worker.Features.OnLookupCanonicalMusicMetadata.Lookup;
+using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.Adapters;
+using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.GetReference;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.CompositionRoot;
@@ -23,7 +23,7 @@ public sealed class ProductionWorkerDependencyProvider : IWorkerDependencyProvid
         services.TryAddScoped<IReserveSourceApiBudgetPort, SourceApiBudgetReservationService>();
     }
 
-    public void AddOnDemandMetadataLookupDependencies(IServiceCollection services, IConfiguration configuration)
+    public void AddLookupCanonicalMusicMetadataDependencies(IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<MusicBrainzOptions>(configuration.GetSection(MusicBrainzOptions.SectionName));
         if (!services.Any(x => x.ServiceType == typeof(IGetCanonicalMusicMetadata)))
@@ -37,7 +37,7 @@ public sealed class ProductionWorkerDependencyProvider : IWorkerDependencyProvid
         }
     }
 
-    public void AddPlaybackReferencesLookupDependencies(IServiceCollection services, IConfiguration configuration)
+    public void AddLookupStreamingLocationsDependencies(IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<OdesliOptions>(configuration.GetSection(OdesliOptions.SectionName));
         if (!services.Any(x => x.ServiceType == typeof(IGetMusicTrackReference)))

@@ -1,6 +1,8 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Events;
+using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Model;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnStreamingLocationsRequired.Support;
 using Wolverine.Attributes;
 
@@ -21,9 +23,17 @@ public sealed class StreamingLocationsRequiredListener(StreamingLocationsRequire
                 dto.Priority,
                 dto.ObservedAt,
                 CorrelationId.From(dto.CorrelationId),
-                dto.SearchTerm,
-                dto.ArtistId,
-                dto.AlbumId),
+                ToSearchTerm(dto),
+                dto.ArtistId is null ? null : ArtistId.From(dto.ArtistId),
+                dto.AlbumId is null ? null : AlbumId.From(dto.AlbumId)),
             cancellationToken);
     }
+
+    private static MusicSearchTerm ToSearchTerm(PlaybackReferencesResolutionRequiredMessageDto dto) =>
+        !string.IsNullOrWhiteSpace(dto.SearchTerm.Isrc)
+            ? MusicSearchTerm.ByIsrc(dto.SearchTerm.Isrc)
+            : MusicSearchTerm.ByTrackArtistAlbum(
+                dto.SearchTerm.Title ?? throw new InvalidOperationException("Streaming locations lookup requires a title when no ISRC is present."),
+                dto.SearchTerm.Artist ?? throw new InvalidOperationException("Streaming locations lookup requires an artist when no ISRC is present."),
+                dto.SearchTerm.Album);
 }

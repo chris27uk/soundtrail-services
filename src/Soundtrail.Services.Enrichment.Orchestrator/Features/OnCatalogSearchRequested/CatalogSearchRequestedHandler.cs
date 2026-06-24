@@ -7,6 +7,7 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Prioritisation;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Model;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search.Resolution;
@@ -264,8 +265,8 @@ public sealed class CatalogSearchRequestedHandler(
         if ((localTrack != null ? !string.IsNullOrWhiteSpace(localTrack.Isrc) : null) == true && searchTerm is not null)
         {
             return new PlannedLookupWork(
-                new ResolvePlaybackReferencesCommand(
-                    CommandId.For($"ResolvePlaybackReferences:{musicCatalogId.Value}"),
+                new LookupStreamingLocationsCommand(
+                    CommandId.For($"LookupStreamingLocations:{musicCatalogId.Value}"),
                     musicCatalogId,
                     priority,
                     request.OccurredAt,

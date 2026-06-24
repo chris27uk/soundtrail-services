@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Options;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
-using Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.Adapters;
-using Soundtrail.Services.Enrichment.Worker.Features.OnDemandMetadataLookup.Lookup;
+using Soundtrail.Services.Enrichment.Worker.Features.OnLookupCanonicalMusicMetadata.Adapters;
+using Soundtrail.Services.Enrichment.Worker.Features.OnLookupCanonicalMusicMetadata.Lookup;
 using Soundtrail.Services.Tests.Integration.Enrichment.Ports.ProviderClients;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 

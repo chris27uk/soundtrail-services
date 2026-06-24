@@ -23,13 +23,13 @@ public sealed class StreamingLocationsRequiredListenerWolverineResponsesTests
                 "corr-1",
                 ProviderName.MusicBrainz.Value,
                 new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero),
-                new PlaybackReferenceSearchTermDto("isrc-1", null, null, null),
+                new StreamingLocationSearchTermDto("isrc-1", null, null, null),
                 "artist_test_artist",
                 "album_rare_album"),
             null!);
 
-        var dto = bus.SentMessages.Single().Should().BeOfType<ResolvePlaybackReferencesCommandDto>().Subject;
-        dto.CommandId.Should().Be(CommandId.For("ResolvePlaybackReferences:mc_track_1").Value);
+        var dto = bus.SentMessages.Single().Should().BeOfType<LookupStreamingLocationsCommandDto>().Subject;
+        dto.CommandId.Should().Be(CommandId.For("LookupStreamingLocations:mc_track_1").Value);
         dto.MusicCatalogId.Should().Be("mc_track_1");
         dto.SearchTerm.Isrc.Should().Be("isrc-1");
         dto.ArtistId.Should().Be("artist_test_artist");

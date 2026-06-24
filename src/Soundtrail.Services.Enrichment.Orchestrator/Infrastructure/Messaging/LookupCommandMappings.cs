@@ -1,5 +1,6 @@
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Enrichment.Commands;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Messaging;
 
@@ -21,13 +22,13 @@ internal static class LookupCommandMappings
                 musicBrainz.Hierarchy?.ArtistId?.Value,
                 musicBrainz.Hierarchy?.AlbumId?.Value
             ),
-            ResolvePlaybackReferencesCommand playback => new ResolvePlaybackReferencesCommandDto(
+            LookupStreamingLocationsCommand playback => new LookupStreamingLocationsCommandDto(
                 playback.CommandId.Value,
                 playback.MusicCatalogId.Value,
                 playback.Priority,
                 playback.CreatedAt,
                 playback.CorrelationId.Value,
-                new PlaybackReferenceSearchTermDto(
+                new StreamingLocationSearchTermDto(
                     playback.LookupKey.Isrc,
                     playback.LookupKey.Title,
                     playback.LookupKey.Artist,

@@ -114,7 +114,7 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
 
     public static MusicCatalogMetadataFetched PlaybackReferencesResponse() =>
         new(
-            CommandId.For("ResolvePlaybackReferences:mc_track_1"),
+            CommandId.For("LookupStreamingLocations:mc_track_1"),
             MusicCatalogId.From("mc_track_1"),
             ProviderName.Odesli,
             LookupPriorityBand.High,

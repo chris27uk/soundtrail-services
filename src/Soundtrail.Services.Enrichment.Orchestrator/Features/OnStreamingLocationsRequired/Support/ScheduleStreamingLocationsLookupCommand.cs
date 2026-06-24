@@ -1,5 +1,6 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnStreamingLocationsRequired.Support;
 
@@ -8,6 +9,6 @@ public sealed record ScheduleStreamingLocationsLookupCommand(
     LookupPriorityBand Priority,
     DateTimeOffset ObservedAt,
     CorrelationId CorrelationId,
-    PlaybackReferenceSearchTermDto SearchTerm,
-    string? ArtistId,
-    string? AlbumId);
+    MusicSearchTerm SearchTerm,
+    ArtistId? ArtistId,
+    AlbumId? AlbumId);

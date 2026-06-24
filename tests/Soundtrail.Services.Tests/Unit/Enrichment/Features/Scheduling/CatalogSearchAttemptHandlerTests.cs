@@ -4,6 +4,7 @@ using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -67,7 +68,7 @@ public class CatalogSearchRequestedHandlerTests
 
         var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10), CancellationToken.None);
 
-        env.CommandBus.SentCommands.Should().ContainSingle().Which.Should().BeOfType<ResolvePlaybackReferencesCommand>();
+        env.CommandBus.SentCommands.Should().ContainSingle().Which.Should().BeOfType<LookupStreamingLocationsCommand>();
     }
 
     [Fact]

@@ -18,7 +18,7 @@ public sealed class LookupExecutionReceiptStoreResponsesTests
     public async Task Given_A_New_CommandId_When_Beginning_Then_It_Is_Acquired_Once(ReceiptStoreMode mode)
     {
         await using var env = ReceiptStoreTestEnvironment.Create(mode);
-        var commandId = CommandId.For("ResolvePlaybackReferences:mc_track_1");
+        var commandId = CommandId.For("LookupStreamingLocations:mc_track_1");
 
         var first = await env.TryBeginAsync(commandId);
         var second = await env.TryBeginAsync(commandId);
@@ -32,7 +32,7 @@ public sealed class LookupExecutionReceiptStoreResponsesTests
     public async Task Given_A_Begun_CommandId_When_Marked_Completed_Then_It_Is_Recorded_As_Completed(ReceiptStoreMode mode)
     {
         await using var env = ReceiptStoreTestEnvironment.Create(mode);
-        var commandId = CommandId.For("ResolvePlaybackReferences:mc_track_1");
+        var commandId = CommandId.For("LookupStreamingLocations:mc_track_1");
 
         await env.TryBeginAsync(commandId);
         await env.MarkCompletedAsync(commandId);
