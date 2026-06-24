@@ -4,12 +4,15 @@ using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Events;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
+using Soundtrail.Translators.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Tests.Integration.CatalogProjector.Features.ProjectionReplay;
 
 [Collection(RavenEmbeddedCollection.Name)]
 public sealed class RavenCatalogProjectionReplayResponsesTests
 {
+    private static readonly IMusicTrackStoredEventRecordTranslator Translator = MusicTrackStoredEventRecordTranslator.Default;
+
     [Fact]
     public async Task Given_Replayable_MusicTrack_Events_When_Projecting_Then_Catalog_Documents_Are_Materialized_And_Searchable()
     {
@@ -327,100 +330,80 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
         int version,
         string title,
         string artist) =>
-        new()
-        {
-            Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId, version),
-            MusicCatalogId = musicCatalogId,
-            Version = version,
-            EventType = nameof(TrackDiscovered),
-            TrackDiscovered = new TrackDiscoveredEventDataRecordDto(
+        Translator.ToDto(
+            MusicCatalogId.From(musicCatalogId),
+            version,
+            CommandId.For($"CatalogReplay:{musicCatalogId}:{version}"),
+            new TrackDiscovered(
                 title,
                 artist,
                 222000,
                 "USIR20400274",
                 "mbid-1",
-                ProviderName.MusicBrainz.Value,
-                new DateTimeOffset(2026, 6, 15, 12, 0, 0, TimeSpan.Zero)),
-            OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 0, 0, TimeSpan.Zero)
-        };
+                ProviderName.MusicBrainz,
+                new DateTimeOffset(2026, 6, 15, 12, 0, 0, TimeSpan.Zero)));
 
     private static MusicTrackStoredEventRecordDto ArtistDiscovered(
         string musicCatalogId,
         int version,
         string artistId,
         string artistName) =>
-        new()
-        {
-            Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId, version),
-            MusicCatalogId = musicCatalogId,
-            Version = version,
-            EventType = nameof(ArtistDiscovered),
-            ArtistDiscovered = new ArtistDiscoveredEventDataRecordDto(
+        Translator.ToDto(
+            MusicCatalogId.From(musicCatalogId),
+            version,
+            CommandId.For($"CatalogReplay:{musicCatalogId}:{version}"),
+            new ArtistDiscovered(
                 artistId,
                 artistName,
                 "mb-artist-the-killers",
-                ProviderName.MusicBrainz.Value,
-                new DateTimeOffset(2026, 6, 15, 12, 1, 0, TimeSpan.Zero)),
-            OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 1, 0, TimeSpan.Zero)
-        };
+                ProviderName.MusicBrainz,
+                new DateTimeOffset(2026, 6, 15, 12, 1, 0, TimeSpan.Zero)));
 
     private static MusicTrackStoredEventRecordDto AlbumDiscovered(
         string musicCatalogId,
         int version,
         string albumId,
         string albumName) =>
-        new()
-        {
-            Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId, version),
-            MusicCatalogId = musicCatalogId,
-            Version = version,
-            EventType = nameof(AlbumDiscovered),
-            AlbumDiscovered = new AlbumDiscoveredEventDataRecordDto(
+        Translator.ToDto(
+            MusicCatalogId.From(musicCatalogId),
+            version,
+            CommandId.For($"CatalogReplay:{musicCatalogId}:{version}"),
+            new AlbumDiscovered(
                 albumId,
                 albumName,
                 "mb-release-hot-fuss",
                 new DateOnly(2004, 6, 7),
-                ProviderName.MusicBrainz.Value,
-                new DateTimeOffset(2026, 6, 15, 12, 2, 0, TimeSpan.Zero)),
-            OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 2, 0, TimeSpan.Zero)
-        };
+                ProviderName.MusicBrainz,
+                new DateTimeOffset(2026, 6, 15, 12, 2, 0, TimeSpan.Zero)));
 
     private static MusicTrackStoredEventRecordDto ProviderResolved(
         string musicCatalogId,
         int version,
         ProviderName provider,
         string externalId) =>
-        new()
-        {
-            Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId, version),
-            MusicCatalogId = musicCatalogId,
-            Version = version,
-            EventType = nameof(ProviderReferenceDiscovered),
-            ProviderReferenceDiscovered = new ProviderReferenceDiscoveredEventDataRecordDto(
-                provider.Value,
+        Translator.ToDto(
+            MusicCatalogId.From(musicCatalogId),
+            version,
+            CommandId.For($"CatalogReplay:{musicCatalogId}:{version}"),
+            new ProviderReferenceDiscovered(
+                provider,
                 externalId,
-                $"https://example.com/{externalId}",
-                ProviderName.Odesli.Value,
-                new DateTimeOffset(2026, 6, 15, 12, 3, 0, TimeSpan.Zero)),
-            OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 3, 0, TimeSpan.Zero)
-        };
+                new Uri($"https://example.com/{externalId}"),
+                ProviderName.Odesli,
+                new DateTimeOffset(2026, 6, 15, 12, 3, 0, TimeSpan.Zero)));
 
     private static MusicTrackStoredEventRecordDto ProviderFailed(
         string musicCatalogId,
         int version,
         ProviderName provider) =>
-        new()
-        {
-            Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId, version),
-            MusicCatalogId = musicCatalogId,
-            Version = version,
-            EventType = nameof(ProviderReferenceLookupFailed),
-            ProviderReferenceLookupFailed = new ProviderReferenceLookupFailedEventDataRecordDto(
-                provider.Value,
-                ProviderName.Odesli.Value,
-                new DateTimeOffset(2026, 6, 15, 12, 4, 0, TimeSpan.Zero)),
-            OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 4, 0, TimeSpan.Zero)
-        };
+        Translator.ToDto(
+            MusicCatalogId.From(musicCatalogId),
+            version,
+            CommandId.For($"CatalogReplay:{musicCatalogId}:{version}"),
+            new ProviderReferenceLookupFailed(
+                provider,
+                ProviderName.Odesli,
+                new DateTimeOffset(2026, 6, 15, 12, 4, 0, TimeSpan.Zero)));
 
     private static MusicTrackStoredEventRecordDto ArtworkDiscovered(
         string musicCatalogId,
@@ -428,20 +411,16 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
         string entityKind,
         string? entityId,
         string url) =>
-        new()
-        {
-            Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId, version),
-            MusicCatalogId = musicCatalogId,
-            Version = version,
-            EventType = nameof(ArtworkDiscovered),
-            ArtworkDiscovered = new ArtworkDiscoveredEventDataRecordDto(
-                entityKind,
+        Translator.ToDto(
+            MusicCatalogId.From(musicCatalogId),
+            version,
+            CommandId.For($"CatalogReplay:{musicCatalogId}:{version}"),
+            new ArtworkDiscovered(
+                Enum.Parse<CatalogEntityKind>(entityKind, ignoreCase: true),
                 entityId,
-                url,
+                new Uri(url),
                 "worker/musicbrainz",
-                new DateTimeOffset(2026, 6, 15, 12, version, 0, TimeSpan.Zero)),
-            OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, version, 0, TimeSpan.Zero)
-        };
+                new DateTimeOffset(2026, 6, 15, 12, version, 0, TimeSpan.Zero)));
 
     private static MusicTrackStoredEventRecordDto MetadataCorrected(
         string musicCatalogId,
@@ -451,13 +430,11 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
         string artistId,
         string albumTitle,
         string albumId) =>
-        new()
-        {
-            Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId, version),
-            MusicCatalogId = musicCatalogId,
-            Version = version,
-            EventType = nameof(MetadataCorrected),
-            MetadataCorrected = new MetadataCorrectedEventDataRecordDto(
+        Translator.ToDto(
+            MusicCatalogId.From(musicCatalogId),
+            version,
+            CommandId.For($"CatalogReplay:{musicCatalogId}:{version}"),
+            new MetadataCorrected(
                 title,
                 artistName,
                 artistId,
@@ -470,7 +447,5 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
                 "USIR20400274",
                 "mbid-1",
                 "admin/repair",
-                new DateTimeOffset(2026, 6, 15, 12, 5, 0, TimeSpan.Zero)),
-            OccurredAtUtc = new DateTimeOffset(2026, 6, 15, 12, 5, 0, TimeSpan.Zero)
-        };
+                new DateTimeOffset(2026, 6, 15, 12, 5, 0, TimeSpan.Zero)));
 }

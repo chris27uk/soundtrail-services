@@ -10,11 +10,13 @@ using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupA
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicTrackEventsImported;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using System.Linq;
+using Soundtrail.Translators.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.OnMusicTrackEventsImported;
 
 internal sealed class RavenMusicTrackEventImportTestEnvironment : IAsyncDisposable
 {
+    private static readonly IMusicTrackStoredEventRecordTranslator Translator = MusicTrackStoredEventRecordTranslator.Default;
     private readonly RavenEmbeddedTestDatabase raven;
 
     private RavenMusicTrackEventImportTestEnvironment(RavenEmbeddedTestDatabase raven)
@@ -27,7 +29,7 @@ internal sealed class RavenMusicTrackEventImportTestEnvironment : IAsyncDisposab
     public async Task ImportAsync(ImportMusicTrackEventsCommand command)
     {
         using var session = raven.Store.OpenAsyncSession();
-        var handler = new MusicTrackEventsImportedHandler(new RavenMusicTrackStreamStore(session));
+        var handler = new MusicTrackEventsImportedHandler(new RavenMusicTrackStreamStore(session, Translator));
         await handler.Handle(command, CancellationToken.None);
         await session.SaveChangesAsync(CancellationToken.None);
     }
@@ -71,7 +73,7 @@ internal sealed class RavenMusicTrackEventImportTestEnvironment : IAsyncDisposab
             var eventsToReplay = (await session.Advanced.LoadStartingWithAsync<MusicTrackStoredEventRecordDto>(
                     $"music-track-events/{musicCatalogId}/"))
                 .OrderBy(x => x.Version)
-                .Select(x => new VersionedMusicTrackEvent(x.Version, x.ToDomainEvent()))
+                .Select(x => new VersionedMusicTrackEvent(x.Version, Translator.ToDomainObject(x)))
                 .ToArray();
             await projectHandler.Handle(
                 new MusicCatalogChangedCommand(MusicCatalogId.From(musicCatalogId), eventsToReplay),

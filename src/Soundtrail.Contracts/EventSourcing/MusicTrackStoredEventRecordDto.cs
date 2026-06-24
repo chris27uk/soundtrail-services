@@ -14,21 +14,9 @@ public sealed class MusicTrackStoredEventRecordDto
 
     public string EventType { get; set; } = string.Empty;
 
-    public TrackDiscoveredEventDataRecordDto? TrackDiscovered { get; set; }
+    public int SchemaVersion { get; set; } = 1;
 
-    public ProviderReferenceDiscoveredEventDataRecordDto? ProviderReferenceDiscovered { get; set; }
-
-    public StreamingLocationsRequiredEventDataRecordDto? StreamingLocationsRequired { get; set; }
-
-    public AlbumDiscoveredEventDataRecordDto? AlbumDiscovered { get; set; }
-
-    public ArtistDiscoveredEventDataRecordDto? ArtistDiscovered { get; set; }
-
-    public ProviderReferenceLookupFailedEventDataRecordDto? ProviderReferenceLookupFailed { get; set; }
-
-    public ArtworkDiscoveredEventDataRecordDto? ArtworkDiscovered { get; set; }
-
-    public MetadataCorrectedEventDataRecordDto? MetadataCorrected { get; set; }
+    public string BodyJson { get; set; } = string.Empty;
 
     public DateTimeOffset OccurredAtUtc { get; set; }
 

@@ -21,6 +21,7 @@ using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack.Adapter
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
+using Soundtrail.Translators.MusicTrackEventStore;
 using System.Linq;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ApplyEnrichmentResponse;
@@ -28,6 +29,7 @@ namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ApplyEnrichm
 [Collection(RavenEmbeddedCollection.Name)]
 public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
 {
+    private static readonly IMusicTrackStoredEventRecordTranslator Translator = MusicTrackStoredEventRecordTranslator.Default;
     [Fact]
     public async Task Given_Canonical_And_Playback_Responses_When_Applied_Then_The_Track_Becomes_Playable()
     {
@@ -99,7 +101,7 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
 
     private static MusicCatalogLookupAttemptedListener CreateListener(Raven.Client.Documents.Session.IAsyncDocumentSession session) =>
         new(new MusicCatalogLookupAttemptedHandler(
-            new RavenMusicTrackStreamStore(session),
+            new RavenMusicTrackStreamStore(session, Translator),
             new RavenCatalogSearchTrackingStore(session.Advanced.DocumentStore, session),
             new RavenMusicCatalogMetadataFetchedCatalogSearchDiscoveryRepository(session)));
 
@@ -112,7 +114,7 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
 
         using var session = raven.Store.OpenAsyncSession();
         var replayHandler = new ReplayMusicTrackHandler(
-            new RavenLoadStoredMusicTrackEvents(session),
+            new RavenLoadStoredMusicTrackEvents(session, Translator),
             new MusicTrackChangedHandler(
                 new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
                 new RavenSaveMusicTrackProjection(session, new RavenMusicTrackProjectionMapper())));

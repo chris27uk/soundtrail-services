@@ -11,11 +11,14 @@ using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Proj
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.Adapters;
+using Soundtrail.Translators.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Tests.Integration.MusicBrainzImport.Features.ReplayCatalogProjection;
 
 internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
 {
+    private static readonly IMusicTrackStoredEventRecordTranslator Translator = MusicTrackStoredEventRecordTranslator.Default;
+
     private ReplayCatalogProjectionTestEnvironment(
         ReplayCatalogProjectionHandler handler,
         Func<MusicCatalogId, Task<CatalogTrackRecordDto?>> loadTrackAsync,
@@ -137,53 +140,12 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
 
         foreach (var item in events)
         {
-            var storedEvent = new MusicTrackStoredEventRecordDto
-            {
-                Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId.Value, item.Version),
-                MusicCatalogId = musicCatalogId.Value,
-                Version = item.Version
-            };
-
-            switch (item.Event)
-            {
-                case TrackDiscovered track:
-                    storedEvent.EventType = nameof(TrackDiscovered);
-                    storedEvent.OccurredAtUtc = track.ObservedAt;
-                    storedEvent.TrackDiscovered = new TrackDiscoveredEventDataRecordDto(
-                        track.Title,
-                        track.Artist,
-                        track.DurationMs,
-                        track.Isrc,
-                        track.Mbid,
-                        track.SourceProvider.Value,
-                        track.ObservedAt);
-                    break;
-                case ArtistDiscovered artist:
-                    storedEvent.EventType = nameof(ArtistDiscovered);
-                    storedEvent.OccurredAtUtc = artist.ObservedAt;
-                    storedEvent.ArtistDiscovered = new ArtistDiscoveredEventDataRecordDto(
-                        artist.ArtistId,
-                        artist.ArtistName,
-                        artist.SourceArtistId,
-                        artist.SourceProvider.Value,
-                        artist.ObservedAt);
-                    break;
-                case AlbumDiscovered album:
-                    storedEvent.EventType = nameof(AlbumDiscovered);
-                    storedEvent.OccurredAtUtc = album.ObservedAt;
-                    storedEvent.AlbumDiscovered = new AlbumDiscoveredEventDataRecordDto(
-                        album.AlbumId,
-                        album.AlbumTitle,
-                        album.SourceAlbumId,
-                        album.ReleaseDate,
-                        album.SourceProvider.Value,
-                        album.ObservedAt);
-                    break;
-                default:
-                    throw new InvalidOperationException($"Unsupported event type '{item.Event.GetType().Name}'.");
-            }
-
-            await seedSession.StoreAsync(storedEvent);
+            await seedSession.StoreAsync(
+                Translator.ToDto(
+                    musicCatalogId,
+                    item.Version,
+                    CommandId.For($"ReplayCatalogProjection:{musicCatalogId.Value}:{item.Version}"),
+                    item.Event));
         }
 
         await seedSession.StoreAsync(new CatalogTrackRecordDto
@@ -213,7 +175,7 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
             new RavenSaveMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()));
         var handler = new ReplayCatalogProjectionHandler(
             new RavenLoadCatalogProjectionReplayTargets(session),
-            new RavenLoadMusicTrackEventsForCatalogReplay(session),
+            new RavenLoadMusicTrackEventsForCatalogReplay(session, Translator),
             new RavenResetCatalogProjectionCheckpoint(session),
             projectionHandler);
 

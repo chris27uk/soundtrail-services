@@ -2,19 +2,20 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Catalog.IntegrationEvents;
 using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
+using Soundtrail.Translators.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Public.Projector.Features.PublishMusicTrackEvents.Adapters;
 
 internal static class MusicTrackStoredEventRecordDtoMapper
 {
-    private const string StreamingLocationsRequiredEventType = "StreamingLocationsRequired";
-
     public static PublishMusicTrackEventsCommand ToCommand(
-        this IReadOnlyCollection<MusicTrackStoredEventRecordDto> storedEvents)
+        this IReadOnlyCollection<MusicTrackStoredEventRecordDto> storedEvents,
+        IMusicTrackStoredEventRecordTranslator translator)
     {
         var events = storedEvents
-            .Select(ToIntegrationEvent)
+            .Select(storedEvent => ToIntegrationEvent(storedEvent, translator))
             .Where(x => x is not null)
             .Cast<VersionedMusicTrackIntegrationEvent>()
             .ToArray();
@@ -22,36 +23,31 @@ internal static class MusicTrackStoredEventRecordDtoMapper
         return new PublishMusicTrackEventsCommand(events);
     }
 
-    private static VersionedMusicTrackIntegrationEvent? ToIntegrationEvent(MusicTrackStoredEventRecordDto storedEvent) =>
-        storedEvent.EventType switch
+    private static VersionedMusicTrackIntegrationEvent? ToIntegrationEvent(
+        MusicTrackStoredEventRecordDto storedEvent,
+        IMusicTrackStoredEventRecordTranslator translator) =>
+        translator.ToDomainObject(storedEvent) switch
         {
-            StreamingLocationsRequiredEventType => ToStreamingLocationsRequired(storedEvent),
+            StreamingLocationsRequired streamingLocationsRequired => ToStreamingLocationsRequired(storedEvent, streamingLocationsRequired),
             _ => null
         };
 
     private static VersionedMusicTrackIntegrationEvent ToStreamingLocationsRequired(
-        MusicTrackStoredEventRecordDto storedEvent)
+        MusicTrackStoredEventRecordDto storedEvent,
+        StreamingLocationsRequired streamingLocationsRequired)
     {
-        var data = storedEvent.StreamingLocationsRequired
-            ?? throw new InvalidOperationException("Missing streaming locations required event data.");
-        var musicCatalogId = MusicCatalogId.From(data.MusicCatalogId);
-
+        var musicCatalogId = streamingLocationsRequired.MusicCatalogId;
         return new VersionedMusicTrackIntegrationEvent(
             musicCatalogId,
             storedEvent.Version,
             new StreamingLocationsRequiredIntegrationEvent(
                 musicCatalogId,
-                Enum.Parse<LookupPriorityBand>(data.Priority, ignoreCase: true),
-                CorrelationId.From(data.CorrelationId),
-                ProviderName.From(data.SourceProvider),
-                data.ObservedAt,
-                !string.IsNullOrWhiteSpace(data.Isrc)
-                    ? MusicSearchTerm.ByIsrc(data.Isrc)
-                    : MusicSearchTerm.ByTrackArtistAlbum(
-                        data.Title ?? throw new InvalidOperationException("Streaming locations required event is missing title."),
-                        data.Artist ?? throw new InvalidOperationException("Streaming locations required event is missing artist."),
-                        data.Album),
-                data.ArtistId,
-                data.AlbumId));
+                streamingLocationsRequired.Priority,
+                streamingLocationsRequired.CorrelationId,
+                streamingLocationsRequired.SourceProvider,
+                streamingLocationsRequired.ObservedAt,
+                streamingLocationsRequired.SearchTerm,
+                streamingLocationsRequired.Hierarchy?.ArtistId?.Value,
+                streamingLocationsRequired.Hierarchy?.AlbumId?.Value));
     }
 }

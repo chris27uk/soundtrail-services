@@ -33,6 +33,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "200 - Tools", "200 - Tools"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Soundtrail.Services.Enrichment.Orchestrator", "src\Soundtrail.Services.Enrichment.Orchestrator\Soundtrail.Services.Enrichment.Orchestrator.csproj", "{7FE27945-1172-4526-9A26-F44D770EE03C}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Soundtrail.Translators", "src\Soundtrail.Translators\Soundtrail.Translators.csproj", "{754D0DF5-0D25-452A-B3EB-A657DF699E9E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -187,6 +191,18 @@ Global
 		{7FE27945-1172-4526-9A26-F44D770EE03C}.Release|x64.Build.0 = Release|Any CPU
 		{7FE27945-1172-4526-9A26-F44D770EE03C}.Release|x86.ActiveCfg = Release|Any CPU
 		{7FE27945-1172-4526-9A26-F44D770EE03C}.Release|x86.Build.0 = Release|Any CPU
+		{754D0DF5-0D25-452A-B3EB-A657DF699E9E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{754D0DF5-0D25-452A-B3EB-A657DF699E9E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{754D0DF5-0D25-452A-B3EB-A657DF699E9E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{754D0DF5-0D25-452A-B3EB-A657DF699E9E}.Debug|x64.Build.0 = Debug|Any CPU
+		{754D0DF5-0D25-452A-B3EB-A657DF699E9E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{754D0DF5-0D25-452A-B3EB-A657DF699E9E}.Debug|x86.Build.0 = Debug|Any CPU
+		{754D0DF5-0D25-452A-B3EB-A657DF699E9E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{754D0DF5-0D25-452A-B3EB-A657DF699E9E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{754D0DF5-0D25-452A-B3EB-A657DF699E9E}.Release|x64.ActiveCfg = Release|Any CPU
+		{754D0DF5-0D25-452A-B3EB-A657DF699E9E}.Release|x64.Build.0 = Release|Any CPU
+		{754D0DF5-0D25-452A-B3EB-A657DF699E9E}.Release|x86.ActiveCfg = Release|Any CPU
+		{754D0DF5-0D25-452A-B3EB-A657DF699E9E}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -201,5 +217,6 @@ Global
 		{824B53B0-0635-4146-9EE0-C2794E0470AC} = {9A2D3D60-FB99-4E0F-9C5A-845ECD0ACFCF}
 		{4FE7620C-4D97-4BA2-8B85-D10724B60EB2} = {450B3778-DC6D-4912-8ACC-78EC9B004766}
 		{7FE27945-1172-4526-9A26-F44D770EE03C} = {9A2D3D60-FB99-4E0F-9C5A-845ECD0ACFCF}
+		{754D0DF5-0D25-452A-B3EB-A657DF699E9E} = {9A2D3D60-FB99-4E0F-9C5A-845ECD0ACFCF}
 	EndGlobalSection
 EndGlobal

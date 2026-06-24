@@ -23,12 +23,14 @@ using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupA
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicTrackEventsImported;
 using Soundtrail.Services.Tests.EndToEnd.Search;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
+using Soundtrail.Translators.MusicTrackEventStore;
 using System.Net.Http.Json;
 
 namespace Soundtrail.Services.Tests.EndToEnd.CatalogBrowsing;
 
 public sealed class CatalogBrowsingOutsideInTestEnvironment : IAsyncDisposable
 {
+    private static readonly IMusicTrackStoredEventRecordTranslator Translator = MusicTrackStoredEventRecordTranslator.Default;
     private readonly WebApplication app;
     private readonly HttpClient client;
     private readonly RavenEmbeddedTestDatabase raven;
@@ -190,7 +192,7 @@ public sealed class CatalogBrowsingOutsideInTestEnvironment : IAsyncDisposable
     {
         using (var session = store.OpenAsyncSession())
         {
-            var importHandler = new MusicTrackEventsImportedHandler(new RavenMusicTrackStreamStore(session));
+            var importHandler = new MusicTrackEventsImportedHandler(new RavenMusicTrackStreamStore(session, Translator));
             importHandler.Handle(
                     new ImportMusicTrackEventsCommand(
                         musicCatalogId,
@@ -209,7 +211,7 @@ public sealed class CatalogBrowsingOutsideInTestEnvironment : IAsyncDisposable
             .GetAwaiter()
             .GetResult()
             .OrderBy(x => x.Version)
-            .Select(x => new VersionedMusicTrackEvent(x.Version, x.ToDomainEvent()))
+            .Select(x => new VersionedMusicTrackEvent(x.Version, Translator.ToDomainObject(x)))
             .ToArray();
         var projectHandler = new MusicCatalogChangedHandler(
             new RavenLoadMusicTrackCatalogProjection(replaySession, new RavenMusicTrackCatalogProjectionMapper()),

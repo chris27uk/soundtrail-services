@@ -1,5 +1,4 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Domain.Responses;
