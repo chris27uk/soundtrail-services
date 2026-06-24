@@ -4,6 +4,7 @@ using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChang
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.CompositionRoot;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.CompositionRoot;
 using Soundtrail.Services.Internal.Projector.Infrastructure.Raven;
+using Soundtrail.Translators.MusicTrackEventStore.CompositionRoot;
 
 namespace Soundtrail.Services.Internal.Projector.Infrastructure.CompositionRoot;
 
@@ -13,6 +14,7 @@ public static class AppServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        services.AddMusicTrackStoredEventTranslations();
         services.AddRavenDocumentStore(configuration);
         services.AddOnCatalogSearchStatusChangedFeature();
         services.AddOnMusicTrackChangedFeature();

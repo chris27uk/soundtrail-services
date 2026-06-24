@@ -3,11 +3,13 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
+using Soundtrail.Translators.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
 
 public sealed class RavenMusicTrackStreamStore(
-    IAsyncDocumentSession session) : IMusicTrackEventRepository
+    IAsyncDocumentSession session,
+    IMusicTrackStoredEventRecordTranslator translator) : IMusicTrackEventRepository
 {
     public async Task<MusicTrackStream> LoadEventsAsync(
         MusicCatalogId musicCatalogId,
@@ -27,7 +29,9 @@ public sealed class RavenMusicTrackStreamStore(
 
         return storedEvents.Count == 0
             ? new MusicTrackStream(0, [])
-            : storedEvents.ToDomain(metadata.Version);
+            : new MusicTrackStream(
+                metadata.Version,
+                storedEvents.Select(translator.ToDomainObject).ToArray());
     }
 
     public async Task<AppendMusicTrackStreamResult> AppendEventsAsync(
@@ -37,6 +41,10 @@ public sealed class RavenMusicTrackStreamStore(
         IReadOnlyList<IMusicTrackEvent> events,
         CancellationToken cancellationToken)
     {
+        var storedEventsToAppend = events.Select((@event, index) =>
+                translator.ToDto(musicCatalogId, expectedVersion + index + 1, commandId, @event))
+            .ToArray();
+
         session.Advanced.UseOptimisticConcurrency = true;
         var streamId = MusicTrackEventStreamMetadataRecordDto.GetDocumentId(musicCatalogId.Value);
         var metadata = await session.LoadAsync<MusicTrackEventStreamMetadataRecordDto>(streamId, cancellationToken)
@@ -58,13 +66,13 @@ public sealed class RavenMusicTrackStreamStore(
 
         metadata.AppliedCommandIds.Add(commandId.Value);
         metadata.Version += events.Count;
-        metadata.UpdatedAtUtc = events.Count == 0
+        metadata.UpdatedAtUtc = storedEventsToAppend.Length == 0
             ? DateTimeOffset.UtcNow
-            : events.Max(x => x.OccurredAtUtc());
+            : storedEventsToAppend.Max(x => x.OccurredAtUtc);
 
         await session.StoreAsync(metadata, cancellationToken);
 
-        foreach (var storedEvent in events.ToStoredEventRecordDtos(musicCatalogId, expectedVersion, commandId))
+        foreach (var storedEvent in storedEventsToAppend)
         {
             await session.StoreAsync(storedEvent, cancellationToken);
         }

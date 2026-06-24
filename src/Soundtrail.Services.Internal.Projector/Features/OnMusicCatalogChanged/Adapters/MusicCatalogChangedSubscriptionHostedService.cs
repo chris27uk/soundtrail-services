@@ -6,13 +6,15 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Model;
+using Soundtrail.Translators.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adapters;
 
 public sealed class MusicCatalogChangedSubscriptionHostedService(
     IDocumentStore documentStore,
     MusicCatalogChangedHandler handler,
-    ILogger<MusicCatalogChangedSubscriptionHostedService> logger) : BackgroundService
+    ILogger<MusicCatalogChangedSubscriptionHostedService> logger,
+    IMusicTrackStoredEventRecordTranslator translator) : BackgroundService
 {
     private const string SubscriptionName = "catalog-music-track-projections";
 
@@ -35,7 +37,7 @@ public sealed class MusicCatalogChangedSubscriptionHostedService(
                                 new MusicCatalogChangedCommand(
                                     MusicCatalogId.From(stream.Key),
                                     stream.OrderBy(x => x.Version)
-                                        .Select(x => new VersionedMusicTrackEvent(x.Version, x.ToDomainEvent()))
+                                        .Select(x => new VersionedMusicTrackEvent(x.Version, translator.ToDomainObject(x)))
                                         .ToArray()),
                                 stoppingToken);
                         }

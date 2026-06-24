@@ -8,6 +8,7 @@ using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchReques
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnStreamingLocationsRequired.CompositionRoot;
 using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Prioritisation;
+using Soundtrail.Translators.MusicTrackEventStore.CompositionRoot;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.CompositionRoot;
 
@@ -21,6 +22,7 @@ public static class AppServiceCollectionExtensions
         var options = new OrchestratorAppServicesOptions();
         configure?.Invoke(options);
 
+        services.AddMusicTrackStoredEventTranslations();
         services.AddOrchestratorServiceBus(configuration);
         services.TryAddSingleton<DiscoveryPriorityPolicy>();
         var dependencyProvider = options.DependencyProvider ?? new ProductionOrchestratorDependencyProvider();

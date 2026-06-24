@@ -2,13 +2,14 @@ using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Model;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack.StoredEvents;
+using Soundtrail.Translators.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack.Adapters;
 
 public sealed class RavenLoadStoredMusicTrackEvents(
-    IAsyncDocumentSession session) : ILoadStoredMusicTrackEventsPort
+    IAsyncDocumentSession session,
+    IMusicTrackStoredEventRecordTranslator translator) : ILoadStoredMusicTrackEventsPort
 {
     public async Task<IReadOnlyList<VersionedMusicTrackEvent>> LoadAsync(
         MusicCatalogId musicCatalogId,
@@ -20,7 +21,7 @@ public sealed class RavenLoadStoredMusicTrackEvents(
 
         return events
             .OrderBy(x => x.Version)
-            .Select(item => new VersionedMusicTrackEvent(item.Version, item.ToDomainEvent()))
+            .Select(item => new VersionedMusicTrackEvent(item.Version, translator.ToDomainObject(item)))
             .ToArray();
     }
 }

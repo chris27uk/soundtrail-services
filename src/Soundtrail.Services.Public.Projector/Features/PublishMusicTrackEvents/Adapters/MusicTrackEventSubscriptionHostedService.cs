@@ -6,6 +6,7 @@ using Raven.Client.Documents.Subscriptions;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain;
 using Soundtrail.Domain.Commands;
+using Soundtrail.Translators.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Public.Projector.Features.PublishMusicTrackEvents.Adapters;
 
@@ -67,8 +68,9 @@ public sealed class MusicTrackEventSubscriptionHostedService(
     {
         using var scope = serviceScopeFactory.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<IHandler<PublishMusicTrackEventsCommand>>();
+        var translator = scope.ServiceProvider.GetRequiredService<IMusicTrackStoredEventRecordTranslator>();
         await handler.Handle(
-            batch.Items.Select(x => x.Result).ToArray().ToCommand(),
+            batch.Items.Select(x => x.Result).ToArray().ToCommand(translator),
             cancellationToken);
     }
 }

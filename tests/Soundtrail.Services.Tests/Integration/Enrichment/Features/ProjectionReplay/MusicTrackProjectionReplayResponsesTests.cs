@@ -2,6 +2,7 @@ using FluentAssertions;
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
@@ -12,12 +13,15 @@ using Soundtrail.Contracts.Persistence;
 using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack;
 using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
+using Soundtrail.Translators.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ProjectionReplay;
 
 [Collection(RavenEmbeddedCollection.Name)]
 public sealed class MusicTrackProjectionReplayResponsesTests
 {
+    private static readonly IMusicTrackStoredEventRecordTranslator Translator = MusicTrackStoredEventRecordTranslator.Default;
+
     [Fact]
     public async Task Given_Replayable_Stored_Events_When_Projecting_Then_The_Track_Becomes_Playable()
     {
@@ -31,38 +35,28 @@ public sealed class MusicTrackProjectionReplayResponsesTests
 
         var storedEvents = new MusicTrackStoredEventRecordDto[]
         {
-            new()
-            {
-                Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId.Value, 1),
-                MusicCatalogId = musicCatalogId.Value,
-                Version = 1,
-                EventType = nameof(TrackDiscovered),
-                TrackDiscovered = new TrackDiscoveredEventDataRecordDto(
+            Translator.ToDto(
+                musicCatalogId,
+                1,
+                commandId,
+                new TrackDiscovered(
                     "Song A",
                     "Artist A",
                     123000,
                     "isrc-1",
                     "mbid-1",
-                    ProviderName.MusicBrainz.Value,
-                    new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero)),
-                OccurredAtUtc = new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero),
-                CausationId = commandId.Value
-            },
-            new()
-            {
-                Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId.Value, 2),
-                MusicCatalogId = musicCatalogId.Value,
-                Version = 2,
-                EventType = nameof(ProviderReferenceDiscovered),
-                ProviderReferenceDiscovered = new ProviderReferenceDiscoveredEventDataRecordDto(
-                    ProviderName.AppleMusic.Value,
+                    ProviderName.MusicBrainz,
+                    new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))),
+            Translator.ToDto(
+                musicCatalogId,
+                2,
+                commandId,
+                new ProviderReferenceDiscovered(
+                    ProviderName.AppleMusic,
                     "apple-1",
-                    "https://music.apple.com/us/song/song-a?i=apple-1",
-                    ProviderName.Odesli.Value,
-                    new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero)),
-                OccurredAtUtc = new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero),
-                CausationId = commandId.Value
-            }
+                    new Uri("https://music.apple.com/us/song/song-a?i=apple-1"),
+                    ProviderName.Odesli,
+                    new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero)))
         };
 
         await handler.Handle(ToCommand(musicCatalogId, storedEvents), CancellationToken.None);
@@ -91,45 +85,35 @@ public sealed class MusicTrackProjectionReplayResponsesTests
 
         using (var seedSession = raven.Store.OpenAsyncSession())
         {
-            await seedSession.StoreAsync(new MusicTrackStoredEventRecordDto
-            {
-                Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId.Value, 1),
-                MusicCatalogId = musicCatalogId.Value,
-                Version = 1,
-                EventType = nameof(TrackDiscovered),
-                TrackDiscovered = new TrackDiscoveredEventDataRecordDto(
+            await seedSession.StoreAsync(Translator.ToDto(
+                musicCatalogId,
+                1,
+                commandId,
+                new TrackDiscovered(
                     "Song A",
                     "Artist A",
                     123000,
                     "isrc-1",
                     "mbid-1",
-                    ProviderName.MusicBrainz.Value,
-                    new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero)),
-                OccurredAtUtc = new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero),
-                CausationId = commandId.Value
-            });
-            await seedSession.StoreAsync(new MusicTrackStoredEventRecordDto
-            {
-                Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId.Value, 2),
-                MusicCatalogId = musicCatalogId.Value,
-                Version = 2,
-                EventType = nameof(ProviderReferenceDiscovered),
-                ProviderReferenceDiscovered = new ProviderReferenceDiscoveredEventDataRecordDto(
-                    ProviderName.AppleMusic.Value,
+                    ProviderName.MusicBrainz,
+                    new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))));
+            await seedSession.StoreAsync(Translator.ToDto(
+                musicCatalogId,
+                2,
+                commandId,
+                new ProviderReferenceDiscovered(
+                    ProviderName.AppleMusic,
                     "apple-1",
-                    "https://music.apple.com/us/song/song-a?i=apple-1",
-                    ProviderName.Odesli.Value,
-                    new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero)),
-                OccurredAtUtc = new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero),
-                CausationId = commandId.Value
-            });
+                    new Uri("https://music.apple.com/us/song/song-a?i=apple-1"),
+                    ProviderName.Odesli,
+                    new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero))));
             await seedSession.SaveChangesAsync(CancellationToken.None);
         }
 
         using (var replaySession = raven.Store.OpenAsyncSession())
         {
             var replayHandler = new ReplayMusicTrackHandler(
-                new RavenLoadStoredMusicTrackEvents(replaySession),
+                new RavenLoadStoredMusicTrackEvents(replaySession, Translator),
                 new MusicTrackChangedHandler(
                     new RavenLoadMusicTrackProjection(replaySession, new RavenMusicTrackProjectionMapper()),
                     new RavenSaveMusicTrackProjection(replaySession, new RavenMusicTrackProjectionMapper())));
@@ -152,26 +136,22 @@ public sealed class MusicTrackProjectionReplayResponsesTests
         projection.ProjectionVersion.Should().Be(2);
     }
 
-        [Fact]
+    [Fact]
     public async Task Given_An_Already_Applied_Event_Version_When_Projecting_Then_The_Duplicate_Is_Ignored()
     {
         using var raven = RavenEmbeddedTestDatabase.Create();
-        var storedEvent = new MusicTrackStoredEventRecordDto
-        {
-            Id = MusicTrackStoredEventRecordDto.GetDocumentId("mc_track_1", 1),
-            MusicCatalogId = "mc_track_1",
-            Version = 1,
-            EventType = nameof(TrackDiscovered),
-            TrackDiscovered = new TrackDiscoveredEventDataRecordDto(
+        var storedEvent = Translator.ToDto(
+            MusicCatalogId.From("mc_track_1"),
+            1,
+            CommandId.For("ProjectionReplay:mc_track_1"),
+            new TrackDiscovered(
                 "Song A",
                 "Artist A",
                 123000,
                 "isrc-1",
                 "mbid-1",
-                ProviderName.MusicBrainz.Value,
-                new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero)),
-            OccurredAtUtc = new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero)
-        };
+                ProviderName.MusicBrainz,
+                new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero)));
 
         using (var session = raven.Store.OpenAsyncSession())
         {
@@ -204,13 +184,11 @@ public sealed class MusicTrackProjectionReplayResponsesTests
 
         var storedEvents = new MusicTrackStoredEventRecordDto[]
         {
-            new()
-            {
-                Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId.Value, 1),
-                MusicCatalogId = musicCatalogId.Value,
-                Version = 1,
-                EventType = nameof(MetadataCorrected),
-                MetadataCorrected = new MetadataCorrectedEventDataRecordDto(
+            Translator.ToDto(
+                musicCatalogId,
+                1,
+                CommandId.For("ProjectionReplay:metadata"),
+                new MetadataCorrected(
                     "Song A (Remastered)",
                     "Artist A",
                     "artist_a",
@@ -223,23 +201,17 @@ public sealed class MusicTrackProjectionReplayResponsesTests
                     "isrc-1",
                     "mbid-1",
                     "admin/repair",
-                    new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero)),
-                OccurredAtUtc = new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero)
-            },
-            new()
-            {
-                Id = MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId.Value, 2),
-                MusicCatalogId = musicCatalogId.Value,
-                Version = 2,
-                EventType = nameof(ArtworkDiscovered),
-                ArtworkDiscovered = new ArtworkDiscoveredEventDataRecordDto(
-                    "Track",
+                    new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero))),
+            Translator.ToDto(
+                musicCatalogId,
+                2,
+                CommandId.For("ProjectionReplay:artwork"),
+                new ArtworkDiscovered(
+                    CatalogEntityKind.Track,
                     null,
-                    "https://images.example.com/track.png",
+                    new Uri("https://images.example.com/track.png"),
                     "worker/musicbrainz",
-                    new DateTimeOffset(2026, 6, 16, 12, 1, 0, TimeSpan.Zero)),
-                OccurredAtUtc = new DateTimeOffset(2026, 6, 16, 12, 1, 0, TimeSpan.Zero)
-            }
+                    new DateTimeOffset(2026, 6, 16, 12, 1, 0, TimeSpan.Zero)))
         };
 
         await handler.Handle(ToCommand(musicCatalogId, storedEvents), CancellationToken.None);
@@ -269,6 +241,6 @@ public sealed class MusicTrackProjectionReplayResponsesTests
             musicCatalogId,
             storedEvents
                 .OrderBy(x => x.Version)
-                .Select(x => new VersionedMusicTrackEvent(x.Version, x.ToDomainEvent()))
+                .Select(x => new VersionedMusicTrackEvent(x.Version, Translator.ToDomainObject(x)))
                 .ToArray());
 }

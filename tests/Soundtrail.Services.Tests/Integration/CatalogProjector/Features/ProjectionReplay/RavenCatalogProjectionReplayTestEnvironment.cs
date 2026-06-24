@@ -11,11 +11,13 @@ using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using System.Reflection;
+using Soundtrail.Translators.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Tests.Integration.CatalogProjector.Features.ProjectionReplay;
 
 internal sealed class RavenCatalogProjectionReplayTestEnvironment : IAsyncDisposable
 {
+    private static readonly IMusicTrackStoredEventRecordTranslator Translator = MusicTrackStoredEventRecordTranslator.Default;
     private readonly RavenEmbeddedTestDatabase raven;
 
     private RavenCatalogProjectionReplayTestEnvironment(RavenEmbeddedTestDatabase raven)
@@ -46,7 +48,7 @@ internal sealed class RavenCatalogProjectionReplayTestEnvironment : IAsyncDispos
             await handler.Handle(
                 new MusicCatalogChangedCommand(
                     MusicCatalogId.From(stream.Key),
-                    stream.Select(item => new VersionedMusicTrackEvent(item.Version, item.ToDomainEvent())).ToArray()),
+                    stream.Select(item => new VersionedMusicTrackEvent(item.Version, Translator.ToDomainObject(item))).ToArray()),
                 CancellationToken.None);
         }
     }
@@ -71,7 +73,7 @@ internal sealed class RavenCatalogProjectionReplayTestEnvironment : IAsyncDispos
         var eventsToReplay = (await session.Advanced.LoadStartingWithAsync<MusicTrackStoredEventRecordDto>(
                 $"music-track-events/{musicCatalogId.Value}/"))
             .OrderBy(x => x.Version)
-            .Select(x => new VersionedMusicTrackEvent(x.Version, x.ToDomainEvent()))
+            .Select(x => new VersionedMusicTrackEvent(x.Version, Translator.ToDomainObject(x)))
             .ToArray();
         var handler = new MusicCatalogChangedHandler(
             new RavenLoadMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()),

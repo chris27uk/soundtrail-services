@@ -6,12 +6,14 @@ using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
+using Soundtrail.Translators.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicTrackStreamStore;
 
 [Collection(RavenEmbeddedCollection.Name)]
 public sealed class RavenEmbeddedResponsesTests
 {
+    private static readonly IMusicTrackStoredEventRecordTranslator Translator = MusicTrackStoredEventRecordTranslator.Default;
     [Fact]
     public async Task Given_A_New_Stream_When_Appending_Facts_Then_They_Can_Be_Loaded_Back()
     {
@@ -74,6 +76,7 @@ public sealed class RavenEmbeddedResponsesTests
         storedEvent.Should().NotBeNull();
         storedEvent!.Version.Should().Be(1);
         storedEvent.EventType.Should().Be(nameof(TrackDiscovered));
+        storedEvent.BodyJson.Should().NotBeNullOrWhiteSpace();
     }
 
     [Fact]
@@ -115,5 +118,5 @@ public sealed class RavenEmbeddedResponsesTests
     }
 
     private static IMusicTrackEventRepository CreateStore(IAsyncDocumentSession session) =>
-        new RavenMusicTrackStreamStore(session);
+        new RavenMusicTrackStreamStore(session, Translator);
 }

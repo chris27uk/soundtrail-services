@@ -31,6 +31,7 @@ using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupA
 using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus;
 using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
+using Soundtrail.Translators.MusicTrackEventStore;
 using Wolverine;
 using Wolverine.Tracking;
 using System.Net.Http.Json;
@@ -40,6 +41,7 @@ namespace Soundtrail.Services.Tests.EndToEnd.Search;
 
 public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
 {
+    private static readonly IMusicTrackStoredEventRecordTranslator Translator = MusicTrackStoredEventRecordTranslator.Default;
     private readonly WebApplication app;
     private readonly HttpClient client;
     private readonly PipelineMessageCapture pipelineMessageCapture;
@@ -309,7 +311,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
     {
         using (var session = store.OpenAsyncSession())
         {
-            var importHandler = new MusicTrackEventsImportedHandler(new RavenMusicTrackStreamStore(session));
+            var importHandler = new MusicTrackEventsImportedHandler(new RavenMusicTrackStreamStore(session, Translator));
             importHandler.Handle(
                     new ImportMusicTrackEventsCommand(
                         musicCatalogId,
@@ -328,7 +330,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
             .GetAwaiter()
             .GetResult()
             .OrderBy(x => x.Version)
-            .Select(x => new VersionedMusicTrackEvent(x.Version, x.ToDomainEvent()))
+            .Select(x => new VersionedMusicTrackEvent(x.Version, Translator.ToDomainObject(x)))
             .ToArray();
         var projectHandler = new MusicCatalogChangedHandler(
             new RavenLoadMusicTrackCatalogProjection(replaySession, new RavenMusicTrackCatalogProjectionMapper()),
