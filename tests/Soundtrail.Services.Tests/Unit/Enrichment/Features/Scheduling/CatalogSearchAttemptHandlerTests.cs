@@ -72,20 +72,15 @@ public class CatalogSearchRequestedHandlerTests
     }
 
     [Fact]
-    public async Task Given_A_MusicBrainz_Budget_Rejection_When_Handling_A_Schedulable_Request_Then_No_Command_Is_Returned()
+    public async Task Given_A_Schedulable_Request_When_Handled_Then_Provider_Budget_Is_Not_Checked_In_The_Orchestrator()
     {
         var env = CatalogSearchRequestedHandlerTestEnvironment.WithNoExistingCandidates();
         env.Search.ResolveAs(MusicCatalogId.From("mc_track_1"));
-        env.SourceBudget.Reject(
-            ProviderName.MusicBrainz,
-            new DateTimeOffset(2026, 5, 31, 12, 1, 0, TimeSpan.Zero),
-            "MusicBrainz budget temporarily unavailable");
 
         var result = await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10), CancellationToken.None);
 
-        result.ShouldSchedule.Should().BeFalse();
-        result.Reason.Should().Be("MusicBrainz budget temporarily unavailable");
-        result.EstimatedRetryAfterSeconds.Should().Be(60);
+        result.ShouldSchedule.Should().BeTrue();
+        env.CommandBus.SentCommands.Should().ContainSingle().Which.Should().BeOfType<LookupMusicMetadataCommand>();
     }
 
     [Fact]

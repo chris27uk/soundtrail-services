@@ -17,14 +17,12 @@ internal sealed class CatalogSearchRequestedListenerWolverineTestEnvironment
     private static readonly DateTimeOffset DefaultOccurredAt = new(2026, 6, 8, 12, 0, 0, TimeSpan.Zero);
     private readonly LocalMusicTrackSearchFake localSearchFake;
     private readonly CatalogSearchDiscoveryRepositoryFake discoveryRepository;
-    private readonly SourceApiBudgetPortFake sourceBudgetFake;
     private readonly WolverineMessageBusFake messageBusFake;
 
     private CatalogSearchRequestedListenerWolverineTestEnvironment(FakeMusicCatalogCandidateSearch search)
     {
         localSearchFake = new LocalMusicTrackSearchFake();
         discoveryRepository = new CatalogSearchDiscoveryRepositoryFake();
-        sourceBudgetFake = new SourceApiBudgetPortFake();
         messageBusFake = new WolverineMessageBusFake();
         localSearchFake.Seed(new LocalMusicTrackSearchResult(
             MusicCatalogId.From("mc_track_1"),
@@ -42,7 +40,6 @@ internal sealed class CatalogSearchRequestedListenerWolverineTestEnvironment
                 new CatalogSearchTrackingStoreFake(),
                 discoveryRepository,
                 new DiscoveryPriorityPolicy(),
-                sourceBudgetFake,
                 new MusicCatalogMatchResolver(),
                 new ActiveLookupWorkStoreFake(),
                 localSearchFake,

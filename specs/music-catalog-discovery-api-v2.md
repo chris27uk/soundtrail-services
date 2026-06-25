@@ -814,6 +814,12 @@ Use one of these approaches:
 
 #### Recommended v1: RavenDB Compare-Exchange Budget Tokens
 
+See also the companion implementation note:
+
+```text
+specs/discovery-prioritisation-and-worker-admission-layering.md
+```
+
 Use RavenDB compare-exchange entries for source-budget coordination.
 
 Compare-exchange gives cluster-wide atomic key-value updates and is suitable for distributed coordination.

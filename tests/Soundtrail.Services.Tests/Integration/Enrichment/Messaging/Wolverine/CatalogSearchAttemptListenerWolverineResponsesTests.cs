@@ -40,7 +40,7 @@ public sealed class CatalogSearchRequestedListenerWolverineResponsesTests
     }
 
     [Fact]
-    public async Task Given_A_Schedulable_Request_When_Handled_Then_Discovery_Is_Planned_And_Started()
+    public async Task Given_A_Schedulable_Request_When_Handled_Then_Discovery_Is_Planned()
     {
         var env = CatalogSearchRequestedListenerWolverineTestEnvironment.WithASchedulableRequest();
         var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
@@ -49,12 +49,11 @@ public sealed class CatalogSearchRequestedListenerWolverineResponsesTests
 
         var events = env.DiscoveryRepository.GetStoredEvents(criteria);
         var planned = events.OfType<DiscoveryPlanned>().Single();
-        var started = events.OfType<DiscoveryStarted>().Single();
 
         planned.WillBeLookedUp.Should().BeTrue();
         planned.EstimatedRetryAfterSeconds.Should().Be(30);
         planned.Reason.Should().Be("Planner queued lookup");
-        started.Reason.Should().Be("Lookup started");
+        events.Should().NotContainItemsAssignableTo<DiscoveryStarted>();
     }
 
     [Fact]

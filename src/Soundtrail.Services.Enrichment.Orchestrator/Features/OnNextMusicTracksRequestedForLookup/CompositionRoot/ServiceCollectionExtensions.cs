@@ -17,7 +17,6 @@ public static class ServiceCollectionExtensions
 
         services.TryAddScoped<NextMusicTracksRequestedForLookupHandler>();
         services.TryAddScoped<DiscoveryBacklogLookupPlanner>();
-        services.TryAddScoped<TrackedDiscoveryStartMarker>();
         services.TryAddScoped<NextMusicTracksRequestedForLookupListener>();
 
         return services;

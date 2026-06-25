@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling;
@@ -116,16 +117,12 @@ public sealed class NextMusicTracksRequestedForLookupHandlerTests
     }
 
     [Fact]
-    public async Task Given_A_Source_Budget_Rejection_When_Scheduling_Backlog_Then_No_Command_Is_Returned()
+    public async Task Given_A_Scheduled_Candidate_When_Scheduling_Backlog_Then_Provider_Budget_Is_Not_Checked_In_The_Orchestrator()
     {
         var env = NextMusicTracksRequestedForLookupHandlerTestEnvironment.WithScheduledCandidate();
-        env.SourceBudget.Reject(
-            ProviderName.MusicBrainz,
-            env.Now.AddMinutes(1),
-            "MusicBrainz budget temporarily unavailable");
 
         await env.RunSweep();
 
-        env.CommandBus.SentCommands.Should().BeEmpty();
+        env.CommandBus.SentCommands.Should().ContainSingle().Which.Should().BeOfType<LookupMusicMetadataCommand>();
     }
 }

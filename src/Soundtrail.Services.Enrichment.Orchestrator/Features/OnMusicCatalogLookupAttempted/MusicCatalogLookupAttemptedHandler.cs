@@ -16,6 +16,8 @@ public sealed class MusicCatalogLookupAttemptedHandler(
         MusicCatalogLookupAttempted attempted,
         CancellationToken cancellationToken = default)
     {
+        await ApplyStartedAsync(attempted, cancellationToken);
+
         if (attempted.MusicCatalogMetadataFetched is not null)
         {
             await ApplyFetchedMetadataAsync(attempted.MusicCatalogMetadataFetched, cancellationToken);
@@ -24,6 +26,28 @@ public sealed class MusicCatalogLookupAttemptedHandler(
         await ApplyOutcomeAsync(attempted, cancellationToken);
 
         return new EnrichmentOrchestrationResult(Array.Empty<IMusicTrackEvent>());
+    }
+
+    private async Task ApplyStartedAsync(
+        MusicCatalogLookupAttempted attempted,
+        CancellationToken cancellationToken)
+    {
+        if (attempted.Outcome.Status is MusicCatalogLookupOutcomeStatus.Deferred or MusicCatalogLookupOutcomeStatus.Duplicate)
+        {
+            return;
+        }
+
+        var trackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(attempted.MusicCatalogId, cancellationToken);
+        foreach (var tracking in trackings)
+        {
+            var discovery = await CatalogSearchDiscovery.LoadAsync(discoveryRepository, tracking.Criteria, cancellationToken);
+            if (!discovery.Start(attempted.Priority, "Lookup started", attempted.CreatedAt))
+            {
+                continue;
+            }
+
+            await discovery.SaveAsync(discoveryRepository, cancellationToken);
+        }
     }
 
     private async Task ApplyFetchedMetadataAsync(

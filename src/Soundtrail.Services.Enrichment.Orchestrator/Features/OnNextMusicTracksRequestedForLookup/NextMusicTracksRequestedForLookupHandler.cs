@@ -12,10 +12,8 @@ public sealed class NextMusicTracksRequestedForLookupHandler(
     IPotentialCatalogLookupWorkStore rankedMusicCandidateStore,
     IActiveLookupWorkStore activeLookupWorkStore,
     DiscoveryPriorityPolicy discoveryPriorityPolicy,
-    IReserveSourceApiBudgetPort reserveSourceApiBudgetPort,
     ILocalMusicTrackSearch localMusicTrackSearch,
     DiscoveryBacklogLookupPlanner lookupPlanner,
-    TrackedDiscoveryStartMarker trackedDiscoveryStartMarker,
     ICommandBus commandBus)
 {
     private static readonly TimeSpan ActiveReservationDuration = TimeSpan.FromMinutes(15);
@@ -39,23 +37,12 @@ public sealed class NextMusicTracksRequestedForLookupHandler(
                 continue;
             }
 
-            var budgetReservation = await reserveSourceApiBudgetPort.TryReserveAsync(new SourceApiBudgetReservationRequest(plannedLookup.Source, now), cancellationToken);
-            if (!budgetReservation.Accepted)
-            {
-                continue;
-            }
-
             var acquired = await activeLookupWorkStore.TryAcquireAsync(plannedLookup.Command.CommandId, now.Add(ActiveReservationDuration), cancellationToken);
             if (!acquired)
             {
                 continue;
             }
 
-            await trackedDiscoveryStartMarker.MarkAsync(
-                plannedLookup.Command.MusicCatalogId,
-                plannedLookup.Command.Priority,
-                now,
-                cancellationToken);
             await commandBus.SendAsync(plannedLookup.Command, cancellationToken);
         }
     }
