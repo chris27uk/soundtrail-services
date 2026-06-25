@@ -18,7 +18,6 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
         private readonly LocalMusicTrackSearchFake localMusicTrackSearchFake;
         private readonly CatalogSearchTrackingStoreFake catalogSearchTrackingStoreFake;
         private readonly CatalogSearchDiscoveryRepositoryFake catalogSearchDiscoveryRepositoryFake;
-        private readonly SourceApiBudgetPortFake sourceApiBudgetPortFake;
         private readonly CommandBusFake commandBusFake;
 
         private CatalogSearchRequestedHandlerTestEnvironment(
@@ -31,7 +30,6 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
             this.localMusicTrackSearchFake = new LocalMusicTrackSearchFake();
             this.catalogSearchTrackingStoreFake = new CatalogSearchTrackingStoreFake();
             this.catalogSearchDiscoveryRepositoryFake = new CatalogSearchDiscoveryRepositoryFake();
-            this.sourceApiBudgetPortFake = new SourceApiBudgetPortFake();
             this.commandBusFake = new CommandBusFake();
             this.Planner = new DiscoveryPriorityPolicy();
             this.ResolutionPolicy = new MusicCatalogMatchResolver();
@@ -41,7 +39,6 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
                 this.catalogSearchTrackingStoreFake,
                 this.catalogSearchDiscoveryRepositoryFake,
                 this.Planner,
-                this.sourceApiBudgetPortFake,
                 this.ResolutionPolicy,
                 this.activeLookupWorkStoreFake,
                 this.localMusicTrackSearchFake,
@@ -66,8 +63,6 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
         public ActiveLookupWorkStoreFake ActiveWorkStore => this.activeLookupWorkStoreFake;
 
         public LocalMusicTrackSearchFake LocalSearch => this.localMusicTrackSearchFake;
-
-        public SourceApiBudgetPortFake SourceBudget => this.sourceApiBudgetPortFake;
 
         public IReadOnlyList<PotentialCatalogLookupWork> PotentialCatalogLookupWorks => this.potentialCatalogLookupWorkStoreFake.All;
 

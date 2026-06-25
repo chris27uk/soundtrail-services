@@ -55,7 +55,30 @@ public sealed class MusicCatalogLookupAttemptedHandlerTests
     }
 
     [Fact]
-    public async Task Given_A_Completed_Report_When_Handled_Then_No_Discovery_Lifecycle_Event_Is_Added()
+    public async Task Given_A_Failed_Report_When_Handled_Then_All_Tracked_Discoveries_Are_Started_Before_Failing()
+    {
+        var env = MusicCatalogLookupAttemptedHandlerTestEnvironment.Create();
+        var before = env.StoredEvents("search:track:rare unknown song").Count;
+
+        await env.Handler.Handle(
+            new MusicCatalogLookupAttempted(
+                CommandId.For("LookupMusicMetadata:mc_track_1"),
+                MusicCatalogId.From("mc_track_1"),
+                ProviderName.MusicBrainz,
+                LookupPriorityBand.High,
+                env.Now,
+                CorrelationId.From("corr-1"),
+                MusicCatalogLookupOutcome.Failed("Lookup failed"),
+                null),
+            CancellationToken.None);
+
+        env.StoredEvents("search:track:rare unknown song").Should().HaveCount(before + 2);
+        env.StoredEvents("search:track:rare unknown song")[^2].Should().BeOfType<DiscoveryStarted>();
+        env.StoredEvents("search:track:rare unknown song")[^1].Should().BeOfType<DiscoveryFailed>();
+    }
+
+    [Fact]
+    public async Task Given_A_Completed_Report_When_Handled_Then_Discovery_Is_Marked_As_Started_When_Not_Already_Started()
     {
         var env = MusicCatalogLookupAttemptedHandlerTestEnvironment.Create();
         var before = env.StoredEvents("search:track:rare unknown song").Count;
@@ -72,6 +95,7 @@ public sealed class MusicCatalogLookupAttemptedHandlerTests
                 null),
             CancellationToken.None);
 
-        env.StoredEvents("search:track:rare unknown song").Should().HaveCount(before);
+        env.StoredEvents("search:track:rare unknown song").Should().HaveCount(before + 1);
+        env.StoredEvents("search:track:rare unknown song").Last().Should().BeOfType<DiscoveryStarted>();
     }
 }

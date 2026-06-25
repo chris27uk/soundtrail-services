@@ -143,12 +143,6 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
                 30,
                 Now.AddSeconds(30),
                 "Planner queued lookup",
-                Now),
-            new DiscoveryStarted(
-                criteria,
-                LookupPriorityBand.High,
-                true,
-                "Lookup started",
                 Now));
     }
 }

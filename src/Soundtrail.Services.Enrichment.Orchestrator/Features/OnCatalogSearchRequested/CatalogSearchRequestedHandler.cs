@@ -21,7 +21,6 @@ public sealed class CatalogSearchRequestedHandler(
     ICatalogSearchTrackingStore catalogSearchTrackingStore,
     ICatalogSearchDiscoveryRepository discoveryRepository,
     DiscoveryPriorityPolicy discoveryPriorityPolicy,
-    IReserveSourceApiBudgetPort reserveSourceApiBudgetPort,
     MusicCatalogMatchResolver musicCatalogMatchResolver,
     IActiveLookupWorkStore activeLookupWorkStore,
     ILocalMusicTrackSearch localMusicTrackSearch,
@@ -122,18 +121,6 @@ public sealed class CatalogSearchRequestedHandler(
                 deferred.Reason);
         }
 
-        var budgetReservation = await reserveSourceApiBudgetPort.TryReserveAsync(
-            new SourceApiBudgetReservationRequest(plannedLookup.Source, request.OccurredAt),
-            cancellationToken);
-        if (!budgetReservation.Accepted)
-        {
-            return new LookupSchedulingDecision(
-                null,
-                budgetReservation.RetryAfterSecondsFrom(request.OccurredAt),
-                budgetReservation.RetryAt,
-                budgetReservation.Reason);
-        }
-
         var acquired = await activeLookupWorkStore.TryAcquireAsync(
             plannedLookup.Command.CommandId,
             request.OccurredAt.Add(ActiveReservationDuration),
@@ -181,19 +168,12 @@ public sealed class CatalogSearchRequestedHandler(
             {
                 if (result.ShouldSchedule)
                 {
-                    var planned = discovery.Plan(
+                    return discovery.Plan(
                         result.Command?.Priority ?? throw new InvalidOperationException("Scheduled discovery must include a priority."),
                         result.EstimatedRetryAfterSeconds,
                         result.EarliestExpectedCompletionAt,
                         result.Reason,
                         request.OccurredAt);
-
-                    var started = discovery.Start(
-                        result.Command?.Priority ?? throw new InvalidOperationException("Scheduled discovery must include a priority."),
-                        "Lookup started",
-                        request.OccurredAt);
-
-                    return planned || started;
                 }
 
                 return discovery.Defer(

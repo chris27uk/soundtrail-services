@@ -16,9 +16,6 @@ internal sealed class NextMusicTracksRequestedForLookupHandlerTestEnvironment
 
     private readonly PotentialCatalogLookupWorkStoreFake store;
     private readonly LocalMusicTrackSearchFake localSearch;
-    private readonly SourceApiBudgetPortFake sourceBudget;
-    private readonly CatalogSearchTrackingStoreFake catalogSearchTrackingStoreFake;
-    private readonly CatalogSearchDiscoveryRepositoryFake catalogSearchDiscoveryRepositoryFake;
     private readonly CommandBusFake commandBusFake;
 
     private NextMusicTracksRequestedForLookupHandlerTestEnvironment(params Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence.PotentialCatalogLookupWork[] candidates)
@@ -31,9 +28,6 @@ internal sealed class NextMusicTracksRequestedForLookupHandlerTestEnvironment
 
         ActiveWorkStore = new ActiveLookupWorkStoreFake();
         localSearch = new LocalMusicTrackSearchFake();
-        sourceBudget = new SourceApiBudgetPortFake();
-        catalogSearchTrackingStoreFake = new CatalogSearchTrackingStoreFake();
-        catalogSearchDiscoveryRepositoryFake = new CatalogSearchDiscoveryRepositoryFake();
         commandBusFake = new CommandBusFake();
         foreach (var candidate in candidates)
         {
@@ -46,22 +40,14 @@ internal sealed class NextMusicTracksRequestedForLookupHandlerTestEnvironment
                 null,
                 null,
                 IsPlayable: false));
-            catalogSearchTrackingStoreFake.Seed(new CatalogSearchTracking(
-                CatalogSearchCriteria.Track(TrackId.From(candidate.MusicCatalogId.Value)),
-                candidate.MusicCatalogId,
-                DefaultNow));
         }
 
         Scheduler = new NextMusicTracksRequestedForLookupHandler(
             this.store,
             ActiveWorkStore,
             new DiscoveryPriorityPolicy(),
-            sourceBudget,
             localSearch,
             new DiscoveryBacklogLookupPlanner(),
-            new TrackedDiscoveryStartMarker(
-                catalogSearchTrackingStoreFake,
-                catalogSearchDiscoveryRepositoryFake),
             commandBusFake);
         Now = DefaultNow;
     }
@@ -71,8 +57,6 @@ internal sealed class NextMusicTracksRequestedForLookupHandlerTestEnvironment
     public ActiveLookupWorkStoreFake ActiveWorkStore { get; }
 
     public DateTimeOffset Now { get; }
-
-    public SourceApiBudgetPortFake SourceBudget => sourceBudget;
 
     public CommandBusFake CommandBus => commandBusFake;
 
