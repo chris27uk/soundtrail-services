@@ -1,0 +1,52 @@
+using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Enrichment.Commands;
+
+namespace Soundtrail.Services.Internal.Projector.Infrastructure.Messaging;
+
+internal static class DiscoveryCommandMappings
+{
+    public static object ToMessage(this object command) =>
+        command switch
+        {
+            AssessMusicTrackCommand assess => new AssessMusicTrackCommandDto(
+                assess.CommandId.Value,
+                assess.CorrelationId.Value,
+                assess.CreatedAt,
+                assess.Priority,
+                assess.MusicCatalogId.Value,
+                assess.Criteria?.Value,
+                assess.TrustLevel,
+                assess.RiskScore),
+            LookupMusicMetadataCommand musicBrainz => new LookupMusicMetadataCommandDto(
+                musicBrainz.CommandId.Value,
+                musicBrainz.MusicCatalogId.Value,
+                musicBrainz.Priority,
+                musicBrainz.CreatedAt,
+                musicBrainz.CorrelationId.Value,
+                musicBrainz.SearchTerm.Kind,
+                musicBrainz.SearchTerm.Query,
+                musicBrainz.SearchTerm.Isrc,
+                musicBrainz.SearchTerm.Title,
+                musicBrainz.SearchTerm.Artist,
+                musicBrainz.SearchTerm.Album,
+                musicBrainz.Hierarchy?.ArtistId?.Value,
+                musicBrainz.Hierarchy?.AlbumId?.Value),
+            LookupStreamingLocationsCommand playback => new LookupStreamingLocationsCommandDto(
+                playback.CommandId.Value,
+                playback.MusicCatalogId.Value,
+                playback.Priority,
+                playback.CreatedAt,
+                playback.CorrelationId.Value,
+                new StreamingLocationSearchTermDto(
+                    playback.LookupKey.Kind,
+                    playback.LookupKey.Query,
+                    playback.LookupKey.Isrc,
+                    playback.LookupKey.Title,
+                    playback.LookupKey.Artist,
+                    playback.LookupKey.Album),
+                playback.Hierarchy?.ArtistId?.Value,
+                playback.Hierarchy?.AlbumId?.Value),
+            _ => throw new ArgumentOutOfRangeException(nameof(command), command, null)
+        };
+}
