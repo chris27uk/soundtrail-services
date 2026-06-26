@@ -2,11 +2,8 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Domain;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Commands;
-using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
-using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup.Support;
-using Soundtrail.Services.Enrichment.Orchestrator.Shared.Prioritisation;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -15,10 +12,9 @@ internal sealed class NextMusicTracksRequestedForLookupHandlerTestEnvironment
     private static readonly DateTimeOffset DefaultNow = new(2026, 5, 31, 12, 0, 0, TimeSpan.Zero);
 
     private readonly PotentialCatalogLookupWorkStoreFake store;
-    private readonly LocalMusicTrackSearchFake localSearch;
     private readonly CommandBusFake commandBusFake;
 
-    private NextMusicTracksRequestedForLookupHandlerTestEnvironment(params Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence.PotentialCatalogLookupWork[] candidates)
+    private NextMusicTracksRequestedForLookupHandlerTestEnvironment(params PotentialCatalogLookupWork[] candidates)
     {
         this.store = new PotentialCatalogLookupWorkStoreFake();
         foreach (var candidate in candidates)
@@ -27,28 +23,8 @@ internal sealed class NextMusicTracksRequestedForLookupHandlerTestEnvironment
         }
 
         ActiveWorkStore = new ActiveLookupWorkStoreFake();
-        localSearch = new LocalMusicTrackSearchFake();
         commandBusFake = new CommandBusFake();
-        foreach (var candidate in candidates)
-        {
-            localSearch.Seed(new LocalMusicTrackSearchResult(
-                candidate.MusicCatalogId,
-                $"Track {candidate.MusicCatalogId.Value}",
-                $"Artist {candidate.MusicCatalogId.Value}",
-                $"Album {candidate.MusicCatalogId.Value}",
-                null,
-                null,
-                null,
-                IsPlayable: false));
-        }
-
-        Scheduler = new NextMusicTracksRequestedForLookupHandler(
-            this.store,
-            ActiveWorkStore,
-            new DiscoveryPriorityPolicy(),
-            localSearch,
-            new DiscoveryBacklogLookupPlanner(),
-            commandBusFake);
+        Scheduler = new NextMusicTracksRequestedForLookupHandler(this.store, commandBusFake);
         Now = DefaultNow;
     }
 
@@ -98,8 +74,6 @@ internal sealed class NextMusicTracksRequestedForLookupHandlerTestEnvironment
 
     public static NextMusicTracksRequestedForLookupHandlerTestEnvironment WithScheduledCandidate() =>
         new(Candidates.EligibleCandidate());
-
-    public LocalMusicTrackSearchFake LocalSearch => localSearch;
 
     public Task RunSweep(int take = 10) => Scheduler.RunOnceAsync(Now, take);
 }

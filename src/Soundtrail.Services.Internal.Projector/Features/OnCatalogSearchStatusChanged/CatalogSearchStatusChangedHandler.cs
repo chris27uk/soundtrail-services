@@ -1,5 +1,6 @@
 using Soundtrail.Domain;
 using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Ports;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged;

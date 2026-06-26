@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnAssessMusicTrack.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
@@ -34,6 +35,7 @@ public static class ServiceBusServiceCollectionExtensions
         opts.Discovery.DisableConventionalDiscovery();
         opts.Discovery.IncludeType<CatalogSearchRequestedListener>();
         opts.Discovery.IncludeType<NextMusicTracksRequestedForLookupListener>();
+        opts.Discovery.IncludeType<AssessMusicTrackListener>();
         opts.Discovery.IncludeType<MusicCatalogLookupAttemptedListener>();
         opts.Discovery.IncludeType<StreamingLocationsRequiredListener>();
         opts.Policies.AutoApplyTransactions();
@@ -63,6 +65,9 @@ public static class ServiceBusServiceCollectionExtensions
             .ProcessInline();
 
         opts.ListenToAzureServiceBusQueue(serviceBusOptions.DiscoveryBacklogSchedulingQueueName)
+            .ProcessInline();
+
+        opts.ListenToAzureServiceBusQueue(serviceBusOptions.AssessMusicTrackQueueName)
             .ProcessInline();
 
         opts.ListenToAzureServiceBusQueue(serviceBusOptions.EnrichmentResponsesQueueName)

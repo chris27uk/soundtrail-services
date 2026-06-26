@@ -15,12 +15,9 @@ internal sealed class LookupStreamingLocationsHandlerTestEnvironment
     private LookupStreamingLocationsHandlerTestEnvironment()
     {
         GetMusicTrackReference = new FakeGetMusicTrackReference();
-        SourceBudget = new SourceApiBudgetPortFake();
+        Admission = new LookupExecutionAdmissionPortFake();
         var coreHandler = new LookupStreamingLocationsHandler(GetMusicTrackReference);
-        var budgetDecorator = new LookupStreamingLocationsBudgetReservationDecorator(SourceBudget, coreHandler);
-        Handler = new LookupStreamingLocationsIdempotencyDecorator(
-            new LookupExecutionReceiptStoreFake(new LookupExecutionReceiptStoreFake.State()),
-            budgetDecorator);
+        Handler = new LookupStreamingLocationsExecutionAdmissionDecorator(Admission, coreHandler);
     }
 
     public ILookupStreamingLocationsHandler Handler { get; }
@@ -29,7 +26,7 @@ internal sealed class LookupStreamingLocationsHandlerTestEnvironment
 
     public FakeGetMusicTrackReference References => GetMusicTrackReference;
 
-    public SourceApiBudgetPortFake SourceBudget { get; }
+    public LookupExecutionAdmissionPortFake Admission { get; }
 
     public static LookupStreamingLocationsHandlerTestEnvironment Create() => new();
 

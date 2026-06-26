@@ -10,7 +10,9 @@ using Soundtrail.Domain.Model;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Support;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
+using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 using Soundtrail.Tools.MusicBrainzImport.Features.OnReplayCatalogSearchStatus;
 using Soundtrail.Tools.MusicBrainzImport.Features.OnReplayCatalogSearchStatus.Adapters;
 
@@ -105,7 +107,9 @@ internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsync
             eventStore,
             eventStore,
             projectionStore,
-            new CatalogSearchStatusChangedHandler(projectionStore, projectionStore));
+            new CatalogSearchStatusChangedHandler(
+                projectionStore,
+                projectionStore));
 
         return new ReplayDiscoveryLifecycleProjectionTestEnvironment(
             handler,

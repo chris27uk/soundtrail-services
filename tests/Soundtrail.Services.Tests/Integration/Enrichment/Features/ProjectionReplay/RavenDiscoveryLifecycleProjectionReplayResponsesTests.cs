@@ -12,6 +12,7 @@ using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChang
 using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus;
 using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
+using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 using System.Linq;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ProjectionReplay;

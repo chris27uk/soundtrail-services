@@ -30,7 +30,7 @@ public sealed class LookupStreamingLocationsListenerWolverineResponsesTests
     public async Task Given_A_Budget_Deferred_Playback_Reference_Lookup_When_Handled_Then_A_Lookup_Execution_Report_Is_Returned()
     {
         var env = LookupStreamingLocationsHandlerTestEnvironment.Create();
-        env.SourceBudget.Reject(
+        env.Admission.Reject(
             ProviderName.Odesli,
             new DateTimeOffset(2026, 6, 18, 12, 1, 0, TimeSpan.Zero),
             "Odesli budget temporarily unavailable");

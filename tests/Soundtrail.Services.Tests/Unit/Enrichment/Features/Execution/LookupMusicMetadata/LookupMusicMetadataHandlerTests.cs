@@ -22,7 +22,7 @@ public sealed class LookupMusicMetadataHandlerTests
     }
 
     [Fact]
-    public async Task Given_A_Duplicate_Execution_Command_When_Handled_Then_No_Budget_Is_Reserved_And_No_Response_Is_Returned()
+    public async Task Given_A_Duplicate_Execution_Command_When_Handled_Then_A_Duplicate_Outcome_Is_Returned_And_The_Source_Is_Not_Called_Twice()
     {
         var env = LookupMusicMetadataHandlerTestEnvironment.Create();
 
@@ -30,7 +30,8 @@ public sealed class LookupMusicMetadataHandlerTests
 
         result.Outcome.Status.Should().Be(MusicCatalogLookupOutcomeStatus.Duplicate);
         result.MusicCatalogMetadataFetched.Should().BeNull();
-        env.SourceBudget.Requests.Should().ContainSingle();
+        env.Admission.Requests.Should().HaveCount(2);
+        env.Metadata.Lookups.Should().ContainSingle();
     }
 
     [Fact]
@@ -61,7 +62,7 @@ public sealed class LookupMusicMetadataHandlerTests
     public async Task Given_A_Budget_Rejection_When_Handled_Then_The_Lookup_Is_Deferred_And_The_Source_Is_Not_Called()
     {
         var env = LookupMusicMetadataHandlerTestEnvironment.Create();
-        env.SourceBudget.Reject(
+        env.Admission.Reject(
             ProviderName.MusicBrainz,
             new DateTimeOffset(2026, 6, 8, 12, 1, 0, TimeSpan.Zero),
             "MusicBrainz budget temporarily unavailable");

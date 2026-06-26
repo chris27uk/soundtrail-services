@@ -18,16 +18,12 @@ public static class ServiceCollectionExtensions
         options.ConfigureDependencies?.Invoke(services);
 
         services.TryAddScoped<LookupStreamingLocationsHandler>();
-        services.TryAddScoped<LookupStreamingLocationsBudgetReservationDecorator>(sp =>
-            new LookupStreamingLocationsBudgetReservationDecorator(
-                sp.GetRequiredService<IReserveSourceApiBudgetPort>(),
+        services.TryAddScoped<LookupStreamingLocationsExecutionAdmissionDecorator>(sp =>
+            new LookupStreamingLocationsExecutionAdmissionDecorator(
+                sp.GetRequiredService<Shared.ExecutionAdmission.ILookupExecutionAdmissionPort>(),
                 sp.GetRequiredService<LookupStreamingLocationsHandler>()));
-        services.TryAddScoped<LookupStreamingLocationsIdempotencyDecorator>(sp =>
-            new LookupStreamingLocationsIdempotencyDecorator(
-                sp.GetRequiredService<ILookupExecutionReceiptStore>(),
-                sp.GetRequiredService<LookupStreamingLocationsBudgetReservationDecorator>()));
         services.TryAddScoped<ILookupStreamingLocationsHandler>(sp =>
-            sp.GetRequiredService<LookupStreamingLocationsIdempotencyDecorator>());
+            sp.GetRequiredService<LookupStreamingLocationsExecutionAdmissionDecorator>());
         services.TryAddScoped<LookupStreamingLocationsListener>();
         return services;
     }

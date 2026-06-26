@@ -1,38 +1,67 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
-using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search.Resolution;
+using Soundtrail.Domain.Discovery;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Shared.Prioritisation;
 
-public sealed class DiscoveryPriorityPolicy
+public sealed class DiscoveryPriorityPolicy : ICatalogDiscoveryWorkPlanningPolicy
 {
-    public PriorityPlan Investigate(PotentialCatalogLookupWork candidate, DateTimeOffset now)
+    public CatalogDiscoveryWorkAssessment Assess(CatalogDiscoveryWorkSummary candidate, DateTimeOffset now)
     {
         if (!candidate.IsPending)
         {
-            return PriorityPlan.Ignore(now);
+            return new CatalogDiscoveryWorkAssessment(
+                CatalogDiscoveryWorkAction.Ignore,
+                null,
+                60,
+                now.AddSeconds(60),
+                "Planner deferred lookup");
         }
 
         if (!candidate.IsEligibleAt(now))
         {
-            return PriorityPlan.Defer(now);
+            return new CatalogDiscoveryWorkAssessment(
+                CatalogDiscoveryWorkAction.Defer,
+                null,
+                60,
+                now.AddSeconds(60),
+                "Planner deferred lookup");
         }
 
         if (candidate.IsSuspicious)
         {
-            return PriorityPlan.Ignore(now);
+            return new CatalogDiscoveryWorkAssessment(
+                CatalogDiscoveryWorkAction.Defer,
+                null,
+                60,
+                now.AddSeconds(60),
+                "Planner deferred lookup");
         }
 
-        if (candidate.RiskBand == RiskBand.Medium)
+        if (candidate.RiskScore >= 30)
         {
-            return PriorityPlan.Schedule(LookupPriorityBand.Low);
+            return new CatalogDiscoveryWorkAssessment(
+                CatalogDiscoveryWorkAction.Schedule,
+                LookupPriorityBand.Low,
+                30,
+                null,
+                "Planner queued lookup");
         }
 
         if (candidate.HighestTrustLevelSeen >= 2 || candidate.RequestCount >= 2)
         {
-            return PriorityPlan.Schedule(LookupPriorityBand.High);
+            return new CatalogDiscoveryWorkAssessment(
+                CatalogDiscoveryWorkAction.Schedule,
+                LookupPriorityBand.High,
+                30,
+                null,
+                "Planner queued lookup");
         }
 
-        return PriorityPlan.Schedule(LookupPriorityBand.Low);
+        return new CatalogDiscoveryWorkAssessment(
+            CatalogDiscoveryWorkAction.Schedule,
+            LookupPriorityBand.Low,
+            30,
+            null,
+            "Planner queued lookup");
     }
 }

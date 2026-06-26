@@ -67,6 +67,7 @@ public sealed class RavenCatalogSearchTrackingStore(
         {
             var documents = await activeSession
                 .Query<RavenCatalogSearchTrackingRecordDto>()
+                .Customize(x => x.WaitForNonStaleResults())
                 .Where(document => document.MusicCatalogId == musicCatalogId.Value)
                 .ToListAsync(cancellationToken);
 

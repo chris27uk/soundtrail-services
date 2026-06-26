@@ -18,6 +18,7 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
     public static IDomainEvent ToDomainEvent(DiscoveryQueryStoredEventRecordDto dto) =>
         dto.EventType switch
         {
+            nameof(MusicTrackSearchStarted) => ToMusicTrackSearchStarted(dto),
             nameof(DiscoveryRequested) => ToDiscoveryRequested(dto),
             nameof(DiscoveryPlanned) => ToDiscoveryPlanned(dto),
             nameof(DiscoveryDeferred) => ToDiscoveryDeferred(dto),
@@ -31,6 +32,7 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
     public static DateTimeOffset GetOccurredAtUtc(IDomainEvent @event) =>
         @event switch
         {
+            MusicTrackSearchStarted started => started.StartedAt,
             DiscoveryRequested requested => requested.RequestedAt,
             DiscoveryPlanned planned => planned.PlannedAt,
             DiscoveryDeferred deferred => deferred.DeferredAt,
@@ -47,6 +49,22 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
         int version) =>
         @event switch
         {
+            MusicTrackSearchStarted started => new DiscoveryQueryStoredEventRecordDto
+            {
+                Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(criteria.Value, version),
+                Criteria = criteria.Value,
+                Version = version,
+                EventType = nameof(MusicTrackSearchStarted),
+                MusicTrackSearchStarted = new MusicTrackSearchStartedEventDataRecordDto(
+                    started.Criteria.Value,
+                    started.MusicCatalogId.Value,
+                    started.TrustLevel,
+                    started.RiskScore,
+                    started.StartedAt,
+                    started.CorrelationId.Value),
+                OccurredAtUtc = started.StartedAt,
+                CorrelationId = started.CorrelationId.Value
+            },
             DiscoveryRequested requested => new DiscoveryQueryStoredEventRecordDto
             {
                 Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(criteria.Value, version),
@@ -150,6 +168,19 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
             },
             _ => throw new ArgumentOutOfRangeException(nameof(@event), @event, "Unknown discovery event.")
         };
+
+    private static MusicTrackSearchStarted ToMusicTrackSearchStarted(DiscoveryQueryStoredEventRecordDto dto)
+    {
+        var data = dto.MusicTrackSearchStarted
+            ?? throw new InvalidOperationException("Missing music track search started event data.");
+        return new MusicTrackSearchStarted(
+            CatalogSearchCriteria.From(data.Criteria),
+            MusicCatalogId.From(data.MusicCatalogId),
+            data.TrustLevel,
+            data.RiskScore,
+            data.StartedAtUtc,
+            CorrelationId.From(data.CorrelationId));
+    }
 
     private static DiscoveryRequested ToDiscoveryRequested(DiscoveryQueryStoredEventRecordDto dto)
     {

@@ -31,6 +31,7 @@ using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupA
 using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus;
 using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
+using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 using Soundtrail.Translators.MusicTrackEventStore;
 using Wolverine;
 using Wolverine.Tracking;
