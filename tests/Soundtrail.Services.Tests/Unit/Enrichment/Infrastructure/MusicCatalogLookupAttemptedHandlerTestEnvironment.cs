@@ -5,6 +5,7 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted;
+using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 

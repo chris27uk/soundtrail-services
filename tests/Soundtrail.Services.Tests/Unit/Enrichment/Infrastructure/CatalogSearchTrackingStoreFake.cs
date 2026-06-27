@@ -1,5 +1,7 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Model;
+using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
