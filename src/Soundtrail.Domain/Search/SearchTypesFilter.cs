@@ -46,6 +46,32 @@ public sealed record SearchTypesFilter(IReadOnlyList<SearchResultType> Types)
         return new SearchTypesFilter(types);
     }
 
+    public bool Equals(SearchTypesFilter? other)
+    {
+        if (ReferenceEquals(this, other))
+        {
+            return true;
+        }
+
+        if (other is null)
+        {
+            return false;
+        }
+
+        return Types.SequenceEqual(other.Types);
+    }
+
+    public override int GetHashCode()
+    {
+        var hash = new HashCode();
+        foreach (var type in Types)
+        {
+            hash.Add(type);
+        }
+
+        return hash.ToHashCode();
+    }
+
     private static SearchResultType ParseType(string type) =>
         type switch
         {

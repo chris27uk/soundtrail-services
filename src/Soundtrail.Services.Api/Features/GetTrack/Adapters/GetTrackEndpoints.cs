@@ -2,9 +2,7 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Browsing;
-using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Api.Features.RequestKnownCatalogItem;
 
 namespace Soundtrail.Services.Api.Features.GetTrack.Adapters;
 
@@ -14,23 +12,14 @@ public static class GetTrackEndpoints
     {
         endpoints.MapGet(
             "/artists/{artistId}/albums/{albumId}/tracks/{trackId}",
-            async (string artistId, string albumId, string trackId, string? playback, IApiHandler<GetTrackCommand, TrackDetailsResponse?> handler, RequestKnownCatalogItemHandler requestHandler, CancellationToken cancellationToken) =>
+            async (string artistId, string albumId, string trackId, string? playback, IApiHandler<GetTrackCommand, TrackDetailsResponse?> handler, CancellationToken cancellationToken) =>
             {
                 var providerFilter = PlaybackProviderFilter.Parse(playback);
                 var artist = ArtistId.From(artistId);
                 var album = AlbumId.From(albumId);
                 var track = TrackId.From(trackId);
                 var response = await handler.Handle(
-                    new GetTrackCommand(artist, album, track),
-                    cancellationToken);
-                await requestHandler.Handle(
-                    new KnownCatalogItemRequested(
-                        KnownCatalogItem.ForTrack(track),
-                        providerFilter,
-                        0,
-                        0,
-                        DateTimeOffset.UtcNow,
-                        CorrelationId.New()),
+                    new GetTrackCommand(artist, album, track, providerFilter),
                     cancellationToken);
 
                 return response is null ? Results.NotFound() : Results.Ok(ToContract(response));

@@ -7,7 +7,7 @@ public sealed record StreamingLocationsRequired(
     MusicCatalogId MusicCatalogId,
     LookupPriorityBand Priority,
     CorrelationId CorrelationId,
-    ProviderName SourceProvider,
+    LookupSource SourceProvider,
     DateTimeOffset ObservedAt,
     MusicSearchCriteria SearchCriteria,
     CatalogTrackHierarchy? Hierarchy = null) : IMusicTrackEvent;

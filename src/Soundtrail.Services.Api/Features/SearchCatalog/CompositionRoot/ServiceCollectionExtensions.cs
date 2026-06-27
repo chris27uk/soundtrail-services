@@ -4,7 +4,6 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.SearchCatalog.Adapters;
 using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
-using Soundtrail.Services.Api.Features.SearchCatalog.Support;
 
 namespace Soundtrail.Services.Api.Features.SearchCatalog.CompositionRoot;
 
@@ -18,11 +17,8 @@ public static class ServiceCollectionExtensions
         configure?.Invoke(options);
 
         options.ConfigureQueueingDependencies?.Invoke(services);
-        services.TryAddScoped<IQueueCatalogSearchAttempt>(sp => sp.GetRequiredService<IEnqueueCatalogSearchAttempt>());
-        services.TryAddScoped<IQueueCatalogSearchAttemptPort>(sp => sp.GetRequiredService<IQueueCatalogSearchAttempt>());
         options.ConfigureCatalogSearchDependencies?.Invoke(services);
         services.TryAddScoped<ICatalogSearchDiscoveryRepository, RavenCatalogSearchDiscoveryRepository>();
-        services.TryAddScoped<CatalogSearchAttemptRecorder>();
         services.TryAddScoped<IApiHandler<SearchCatalogCommand, SearchCatalogResponse>, SearchCatalogHandler>();
 
         return services;

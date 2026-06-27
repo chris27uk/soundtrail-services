@@ -19,7 +19,7 @@ public sealed class MusicCatalogLookupAttemptedListener(MusicCatalogLookupAttemp
             new MusicCatalogLookupAttempted(
                 CommandId.From(dto.CommandId),
                 MusicCatalogId.From(dto.MusicCatalogId),
-                ProviderName.From(dto.SourceProvider),
+                LookupSource.From(dto.SourceProvider),
                 dto.Priority,
                 dto.CreatedAt,
                 CorrelationId.From(dto.CorrelationId),
@@ -33,7 +33,7 @@ public sealed class MusicCatalogLookupAttemptedListener(MusicCatalogLookupAttemp
                     : new MusicCatalogMetadataFetched(
                         CommandId.From(dto.MusicCatalogMetadataFetched.CommandId),
                         MusicCatalogId.From(dto.MusicCatalogMetadataFetched.MusicCatalogId),
-                        ProviderName.From(dto.MusicCatalogMetadataFetched.SourceProvider),
+                        LookupSource.From(dto.MusicCatalogMetadataFetched.SourceProvider),
                         dto.MusicCatalogMetadataFetched.Priority,
                         dto.MusicCatalogMetadataFetched.CreatedAt,
                         dto.MusicCatalogMetadataFetched.Metadata is null
@@ -54,7 +54,7 @@ public sealed class MusicCatalogLookupAttemptedListener(MusicCatalogLookupAttemp
                             reference.ExternalId)).ToArray(),
                         dto.MusicCatalogMetadataFetched.FailedProviders.Select(failure => new ProviderLookupFailure(
                             ProviderName.From(failure.Provider),
-                            ProviderName.From(failure.SourceProvider))).ToArray(),
+                            LookupSource.From(failure.SourceProvider))).ToArray(),
                         dto.MusicCatalogMetadataFetched.ArtistId is null && dto.MusicCatalogMetadataFetched.AlbumId is null
                             ? null
                             : new CatalogTrackHierarchy(

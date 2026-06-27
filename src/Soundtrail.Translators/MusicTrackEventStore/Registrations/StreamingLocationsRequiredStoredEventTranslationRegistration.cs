@@ -30,7 +30,7 @@ public sealed class StreamingLocationsRequiredStoredEventTranslationRegistration
                 MusicCatalogId.From(dto.MusicCatalogId),
                 Enum.Parse<LookupPriorityBand>(dto.Priority, ignoreCase: true),
                 CorrelationId.From(dto.CorrelationId),
-                ProviderName.From(dto.SourceProvider),
+                LookupSource.From(dto.SourceProvider),
                 dto.ObservedAt,
                 dto.SearchKind switch
                 {

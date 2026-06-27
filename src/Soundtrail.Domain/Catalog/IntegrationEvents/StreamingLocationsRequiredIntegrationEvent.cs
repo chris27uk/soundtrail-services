@@ -7,7 +7,7 @@ public sealed record StreamingLocationsRequiredIntegrationEvent(
     MusicCatalogId MusicCatalogId,
     LookupPriorityBand Priority,
     CorrelationId CorrelationId,
-    ProviderName SourceProvider,
+    LookupSource SourceProvider,
     DateTimeOffset ObservedAt,
     MusicSearchCriteria SearchCriteria,
     string? ArtistId,

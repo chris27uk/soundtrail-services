@@ -12,7 +12,7 @@ public sealed class ConfiguredRouteResponsesTests
         await using var env = await CatalogSearchAttemptQueueTestEnvironment.CreateAsync(mode, configuredRoute: true);
         var request = CatalogSearchAttemptQueueTestEnvironment.Request("mr brightside");
 
-        await env.CatalogSearchAttemptQueue.EnqueueAsync(request, CancellationToken.None);
+        await env.CommandBus.SendAsync(request, CancellationToken.None);
         if (mode == CatalogSearchAttemptQueuePortMode.WolverineLocal)
         {
             return;

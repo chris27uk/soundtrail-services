@@ -90,7 +90,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
 
         builder.Services.AddApiAppServices(builder.Configuration, builder.Environment, options =>
         {
-            options.ConfigureQueueingDependencies = services => services.TryAddScoped<IEnqueueCatalogSearchAttempt, WolverineEnqueueCatalogSearchAttempt>();
+            options.ConfigureQueueingDependencies = services => services.AddCatalogSearchAttemptQueue(builder.Configuration);
             options.ConfigureCatalogSearchDependencies = services =>
             {
                 services.AddEmbeddedRavenForTesting(raven.Store);

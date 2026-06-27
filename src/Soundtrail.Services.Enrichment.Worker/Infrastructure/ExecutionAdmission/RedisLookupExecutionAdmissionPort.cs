@@ -176,7 +176,7 @@ internal sealed class RedisLookupExecutionAdmissionPort(
         IDatabase db,
         RedisKey commandKey,
         DateTimeOffset retryAt,
-        ProviderName provider,
+        LookupSource provider,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -194,10 +194,10 @@ internal sealed class RedisLookupExecutionAdmissionPort(
         }
     }
 
-    private SourceApiBudgetPolicyOptions GetPolicy(ProviderName provider) =>
-        provider == ProviderName.MusicBrainz
+    private SourceApiBudgetPolicyOptions GetPolicy(LookupSource provider) =>
+        provider == LookupSource.MusicBrainz
             ? sourceBudgetOptions.MusicBrainz
-            : provider == ProviderName.Odesli
+            : provider == LookupSource.Odesli
                 ? sourceBudgetOptions.Odesli
                 : throw new ArgumentOutOfRangeException(nameof(provider), provider, "Unsupported source budget.");
 

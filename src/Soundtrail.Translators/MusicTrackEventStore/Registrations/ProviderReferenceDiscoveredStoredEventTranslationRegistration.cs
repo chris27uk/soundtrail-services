@@ -20,7 +20,7 @@ public sealed class ProviderReferenceDiscoveredStoredEventTranslationRegistratio
                 ProviderName.From(dto.Provider),
                 dto.ExternalId,
                 new Uri(dto.Url),
-                ProviderName.From(dto.SourceProvider),
+                LookupSource.From(dto.SourceProvider),
                 dto.ObservedAt),
             domainEvent => domainEvent.ObservedAt);
     }

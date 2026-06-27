@@ -93,7 +93,7 @@ public sealed class RavenMusicTrackProjectionMapper
             ProviderName.From(reference.Provider),
             new Uri(reference.Url),
             reference.ExternalId,
-            ProviderName.From(reference.SourceProvider));
+            LookupSource.From(reference.SourceProvider));
 
     private static RavenProviderReferenceRecordDto ToDocument(ProjectedProviderReference reference) =>
         new()

@@ -34,7 +34,7 @@ public sealed class ImportMusicBrainzDumpHandler(
                 new MusicCatalogMetadataFetched(
                     commandId,
                     musicCatalogId,
-                    ProviderName.MusicBrainz,
+                    LookupSource.MusicBrainz,
                     LookupPriorityBand.High,
                     command.ImportedAtUtc,
                     new SongMetadata(

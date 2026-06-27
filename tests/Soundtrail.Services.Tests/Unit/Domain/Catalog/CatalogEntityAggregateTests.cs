@@ -47,7 +47,7 @@ public sealed class CatalogEntityAggregateTests
                 ProviderName.AppleMusic,
                 "apple-1",
                 new Uri("https://music.apple.com/track/1"),
-                ProviderName.Odesli,
+                LookupSource.Odesli,
                 Clock));
         var aggregate = await CatalogEntityAggregate.LoadAsync(store, MusicCatalogId.From("mc_track_1"), CancellationToken.None);
 
@@ -90,7 +90,7 @@ public sealed class CatalogEntityAggregateTests
                 MusicCatalogId.From("mc_track_1"),
                 LookupPriorityBand.High,
                 CorrelationId.From("corr-seeded"),
-                ProviderName.MusicBrainz,
+                LookupSource.MusicBrainz,
                 Clock,
                 MusicSearchCriteria.ByTrackArtistAlbum("Song A", "Artist A", null),
                 new CatalogTrackHierarchy(ArtistId.From("artist_test_artist"), AlbumId.From("album_rare_album"))));
@@ -112,12 +112,12 @@ public sealed class CatalogEntityAggregateTests
             new MusicCatalogMetadataFetched(
                 CommandId.For("LookupStreamingLocations:mc_track_1"),
                 MusicCatalogId.From("mc_track_1"),
-                ProviderName.Odesli,
+                LookupSource.Odesli,
                 LookupPriorityBand.High,
                 Clock,
                 null,
                 [],
-                [new ProviderLookupFailure(ProviderName.Spotify, ProviderName.Odesli)],
+                [new ProviderLookupFailure(ProviderName.Spotify, LookupSource.Odesli)],
                 null,
                 CorrelationId.From("corr-2")));
         var append = await aggregate.SaveAsync(store, CommandId.For("LookupStreamingLocations:mc_track_1"), CancellationToken.None);
@@ -133,7 +133,7 @@ public sealed class CatalogEntityAggregateTests
         new(
             CommandId.For("ResolveMusicMetadata:mc_track_1"),
             MusicCatalogId.From("mc_track_1"),
-            ProviderName.MusicBrainz,
+            LookupSource.MusicBrainz,
             LookupPriorityBand.High,
             Clock,
             new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000, "Rare Album", new DateOnly(2004, 6, 7)),

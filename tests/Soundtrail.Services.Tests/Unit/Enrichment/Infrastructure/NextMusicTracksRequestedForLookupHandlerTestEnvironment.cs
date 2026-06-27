@@ -1,4 +1,5 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
 
@@ -72,5 +73,11 @@ internal sealed class NextMusicTracksRequestedForLookupHandlerTestEnvironment
     public static NextMusicTracksRequestedForLookupHandlerTestEnvironment WithScheduledCandidate() =>
         new(Candidates.EligibleCandidate());
 
-    public Task RunSweep(int take = 10) => Scheduler.RunOnceAsync(Now, take);
+    public Task RunSweep(int take = 10) => Scheduler.Handle(
+        new RunDiscoveryBacklogSchedulingCommand(
+            CommandId.For($"RunDiscoveryBacklogScheduling:{Now.ToUnixTimeMilliseconds()}"),
+            Now,
+            CorrelationId.New(),
+            take),
+        CancellationToken.None);
 }

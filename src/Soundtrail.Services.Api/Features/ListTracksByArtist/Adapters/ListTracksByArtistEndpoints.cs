@@ -2,9 +2,6 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Browsing;
-using Soundtrail.Domain.Discovery.Commands;
-using Soundtrail.Domain.Search;
-using Soundtrail.Services.Api.Features.RequestKnownCatalogItem;
 
 namespace Soundtrail.Services.Api.Features.ListTracksByArtist.Adapters;
 
@@ -14,20 +11,10 @@ public static class ListTracksByArtistEndpoints
     {
         endpoints.MapGet(
             "/artists/{artistId}/tracks",
-            async (string artistId, string? playback, IApiHandler<ListTracksByArtistCommand, ArtistTracksResponse?> handler, RequestKnownCatalogItemHandler requestHandler, CancellationToken cancellationToken) =>
+            async (string artistId, IApiHandler<ListTracksByArtistCommand, ArtistTracksResponse?> handler, CancellationToken cancellationToken) =>
             {
-                var providerFilter = PlaybackProviderFilter.Parse(playback);
                 var artist = ArtistId.From(artistId);
                 var response = await handler.Handle(new ListTracksByArtistCommand(artist), cancellationToken);
-                await requestHandler.Handle(
-                    new KnownCatalogItemRequested(
-                        KnownCatalogItem.ForArtist(artist),
-                        providerFilter,
-                        0,
-                        0,
-                        DateTimeOffset.UtcNow,
-                        CorrelationId.New()),
-                    cancellationToken);
                 return response is null ? Results.NotFound() : Results.Ok(ToContract(response));
             });
 

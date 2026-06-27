@@ -1,3 +1,5 @@
+using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Enrichment.Commands;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Adapters;
@@ -20,8 +22,9 @@ public static class ServiceCollectionExtensions
         services.TryAddScoped<LookupTrackMetadataExecutionAdmissionDecorator>(sp =>
             new LookupTrackMetadataExecutionAdmissionDecorator(
                 sp.GetRequiredService<ILookupExecutionAdmissionPort>(),
-                sp.GetRequiredService<LookupTrackMetadataHandler>()));
-        services.TryAddScoped<ILookupTrackMetadataHandler>(sp =>
+                sp.GetRequiredService<LookupTrackMetadataHandler>(),
+                sp.GetRequiredService<ICommandBus>()));
+        services.TryAddScoped<IHandler<LookupTrackMetadataCommand>>(sp =>
             sp.GetRequiredService<LookupTrackMetadataExecutionAdmissionDecorator>());
         services.TryAddScoped<LookupTrackMetadataListener>();
         return services;

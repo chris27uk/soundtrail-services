@@ -340,7 +340,7 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
                 222000,
                 "USIR20400274",
                 "mbid-1",
-                ProviderName.MusicBrainz,
+                LookupSource.MusicBrainz,
                 new DateTimeOffset(2026, 6, 15, 12, 0, 0, TimeSpan.Zero)));
 
     private static MusicTrackStoredEventRecordDto ArtistDiscovered(
@@ -356,7 +356,7 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
                 artistId,
                 artistName,
                 "mb-artist-the-killers",
-                ProviderName.MusicBrainz,
+                LookupSource.MusicBrainz,
                 new DateTimeOffset(2026, 6, 15, 12, 1, 0, TimeSpan.Zero)));
 
     private static MusicTrackStoredEventRecordDto AlbumDiscovered(
@@ -373,7 +373,7 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
                 albumName,
                 "mb-release-hot-fuss",
                 new DateOnly(2004, 6, 7),
-                ProviderName.MusicBrainz,
+                LookupSource.MusicBrainz,
                 new DateTimeOffset(2026, 6, 15, 12, 2, 0, TimeSpan.Zero)));
 
     private static MusicTrackStoredEventRecordDto ProviderResolved(
@@ -389,7 +389,7 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
                 provider,
                 externalId,
                 new Uri($"https://example.com/{externalId}"),
-                ProviderName.Odesli,
+                LookupSource.Odesli,
                 new DateTimeOffset(2026, 6, 15, 12, 3, 0, TimeSpan.Zero)));
 
     private static MusicTrackStoredEventRecordDto ProviderFailed(
@@ -402,7 +402,7 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
             CommandId.For($"CatalogReplay:{musicCatalogId}:{version}"),
             new ProviderReferenceLookupFailed(
                 provider,
-                ProviderName.Odesli,
+                LookupSource.Odesli,
                 new DateTimeOffset(2026, 6, 15, 12, 4, 0, TimeSpan.Zero)));
 
     private static MusicTrackStoredEventRecordDto ArtworkDiscovered(

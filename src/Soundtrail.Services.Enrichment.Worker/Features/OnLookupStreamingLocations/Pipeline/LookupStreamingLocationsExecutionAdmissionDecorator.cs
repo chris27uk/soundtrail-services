@@ -1,3 +1,4 @@
+using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
@@ -6,9 +7,10 @@ namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocati
 
 public sealed class LookupStreamingLocationsExecutionAdmissionDecorator(
     ILookupExecutionAdmissionPort executionAdmissionPort,
-    ILookupStreamingLocationsHandler inner) : ILookupStreamingLocationsHandler
+    IHandler<LookupStreamingLocationsCommand> inner,
+    ICommandBus bus) : IHandler<LookupStreamingLocationsCommand>
 {
-    public async Task<MusicCatalogLookupAttempted> Handle(
+    public async Task Handle(
         LookupStreamingLocationsCommand command,
         CancellationToken cancellationToken = default)
     {
@@ -22,15 +24,17 @@ public sealed class LookupStreamingLocationsExecutionAdmissionDecorator(
         switch (admission.Status)
         {
             case LookupExecutionAdmissionStatus.Duplicate:
-                return MusicCatalogLookupAttempted.Duplicate(
+                await bus.SendAsync(MusicCatalogLookupAttempted.Duplicate(
                     command.CommandId,
                     command.MusicCatalogId,
                     command.TargetProvider,
                     command.Priority,
                     command.CreatedAt,
-                    command.CorrelationId);
+                    command.CorrelationId), cancellationToken);
+                return;
+            
             case LookupExecutionAdmissionStatus.Deferred:
-                return MusicCatalogLookupAttempted.Deferred(
+                await bus.SendAsync(MusicCatalogLookupAttempted.Deferred(
                     command.CommandId,
                     command.MusicCatalogId,
                     command.TargetProvider,
@@ -39,22 +43,14 @@ public sealed class LookupStreamingLocationsExecutionAdmissionDecorator(
                     command.CorrelationId,
                     admission.Reason,
                     admission.RetryAt,
-                    admission.RetryAfterSecondsFrom(command.CreatedAt));
+                    admission.RetryAfterSecondsFrom(command.CreatedAt)), cancellationToken);
+                return;
         }
 
         try
         {
-            var result = await inner.Handle(command, cancellationToken);
-            if (result.Outcome.Status is MusicCatalogLookupOutcomeStatus.Completed or MusicCatalogLookupOutcomeStatus.Failed)
-            {
-                await executionAdmissionPort.CommitAsync(command.CommandId, cancellationToken);
-            }
-            else
-            {
-                await executionAdmissionPort.ReleaseAsync(command.CommandId, cancellationToken);
-            }
-
-            return result;
+            await inner.Handle(command, cancellationToken);
+            await executionAdmissionPort.CommitAsync(command.CommandId, cancellationToken);
         }
         catch
         {

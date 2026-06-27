@@ -319,7 +319,7 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
             MusicCatalogId.From(data.MusicCatalogId),
             Enum.Parse<LookupPriorityBand>(data.Priority, ignoreCase: true),
             CorrelationId.From(data.CorrelationId),
-            ProviderName.From(data.SourceProvider),
+            LookupSource.From(data.SourceProvider),
             data.ObservedAt,
             data.SearchKind switch
             {

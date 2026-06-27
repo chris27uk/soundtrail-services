@@ -48,7 +48,7 @@ public sealed class LookupExecutionAdmissionResponsesTests
     public async Task Given_A_Committed_CommandId_When_Acquiring_Again_Then_It_Remains_A_Duplicate(LookupExecutionAdmissionMode mode)
     {
         await using var env = await LookupExecutionAdmissionTestEnvironment.CreateAsync(mode);
-        var request = LookupRequest("LookupStreamingLocations:track-3", ProviderName.Odesli);
+        var request = LookupRequest("LookupStreamingLocations:track-3", LookupSource.Odesli);
 
         await env.Port.TryAcquireAsync(request, CancellationToken.None);
         await env.Port.CommitAsync(request.CommandId, CancellationToken.None);
@@ -62,7 +62,7 @@ public sealed class LookupExecutionAdmissionResponsesTests
     public async Task Given_A_Provider_At_Budget_When_Acquiring_Then_It_Is_Deferred(LookupExecutionAdmissionMode mode)
     {
         await using var env = await LookupExecutionAdmissionTestEnvironment.CreateAsync(mode);
-        env.RejectAfterSuccesses(ProviderName.MusicBrainz, 1);
+        env.RejectAfterSuccesses(LookupSource.MusicBrainz, 1);
         var first = LookupRequest("LookupTrackMetadata:track-4a");
         var second = LookupRequest("LookupTrackMetadata:track-4b");
 
@@ -86,9 +86,9 @@ public sealed class LookupExecutionAdmissionResponsesTests
 
     private static LookupExecutionAdmissionRequest LookupRequest(
         string commandId,
-        ProviderName? provider = null) =>
+        LookupSource? provider = null) =>
         new(
-            provider ?? ProviderName.MusicBrainz,
+            provider ?? LookupSource.MusicBrainz,
             CommandId.For(commandId),
             DateTimeOffset.UtcNow);
 
@@ -130,7 +130,7 @@ public sealed class LookupExecutionAdmissionResponsesTests
             }
         }
 
-        public void RejectAfterSuccesses(ProviderName provider, int successfulAcquisitions)
+        public void RejectAfterSuccesses(LookupSource provider, int successfulAcquisitions)
         {
             if (Port is LookupExecutionAdmissionPortFake fake)
             {

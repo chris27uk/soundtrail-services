@@ -17,7 +17,7 @@ public sealed class LookupMusicMetadataHandlerTests
 
         result.Outcome.Status.Should().Be(MusicCatalogLookupOutcomeStatus.Completed);
         result.MusicCatalogMetadataFetched.Should().NotBeNull();
-        result.MusicCatalogMetadataFetched!.SourceProvider.Should().Be(ProviderName.MusicBrainz);
+        result.MusicCatalogMetadataFetched!.SourceProvider.Should().Be(LookupSource.MusicBrainz);
         result.MusicCatalogMetadataFetched.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
     }
 
@@ -63,7 +63,7 @@ public sealed class LookupMusicMetadataHandlerTests
     {
         var env = LookupMusicMetadataHandlerTestEnvironment.Create();
         env.Admission.Reject(
-            ProviderName.MusicBrainz,
+            LookupSource.MusicBrainz,
             new DateTimeOffset(2026, 6, 8, 12, 1, 0, TimeSpan.Zero),
             "MusicBrainz budget temporarily unavailable");
 

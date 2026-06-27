@@ -12,7 +12,7 @@ internal static class LookupMusicMetadataCommandExtensions
         new(
             command.CommandId,
             command.MusicCatalogId,
-            ProviderName.MusicBrainz,
+            LookupSource.MusicBrainz,
             command.Priority,
             command.CreatedAt,
             metadata,

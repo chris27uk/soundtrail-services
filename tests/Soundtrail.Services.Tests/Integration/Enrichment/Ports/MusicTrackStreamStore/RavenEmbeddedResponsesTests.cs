@@ -27,7 +27,7 @@ public sealed class RavenEmbeddedResponsesTests
             expectedVersion: 0,
             CommandId.For("ResolveMusicMetadata:mc_track_1"),
             [
-                new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))
+                new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", LookupSource.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))
             ],
             CancellationToken.None);
         await session.SaveChangesAsync(CancellationToken.None);
@@ -58,7 +58,7 @@ public sealed class RavenEmbeddedResponsesTests
                 musicCatalogId,
                 expectedVersion: 0,
                 CommandId.For("ResolveMusicMetadata:mc_track_1"),
-                [new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))],
+                [new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", LookupSource.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))],
                 CancellationToken.None);
             await session.SaveChangesAsync(CancellationToken.None);
         }
@@ -93,7 +93,7 @@ public sealed class RavenEmbeddedResponsesTests
                 musicCatalogId,
                 expectedVersion: 0,
                 commandId,
-                [new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))],
+                [new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", LookupSource.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))],
                 CancellationToken.None);
             await firstSession.SaveChangesAsync(CancellationToken.None);
         }
@@ -104,7 +104,7 @@ public sealed class RavenEmbeddedResponsesTests
             musicCatalogId,
             expectedVersion: 1,
             commandId,
-            [new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))],
+            [new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", LookupSource.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))],
             CancellationToken.None);
         await secondSession.SaveChangesAsync(CancellationToken.None);
 

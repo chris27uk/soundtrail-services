@@ -19,7 +19,7 @@ public sealed class MusicCatalogLookupAttemptedListenerWolverineResponsesTests
             new MusicCatalogLookupAttemptedDto(
                 "LookupTrackMetadata:mc_track_1",
                 "mc_track_1",
-                ProviderName.MusicBrainz.Value,
+                LookupSource.MusicBrainz.Value,
                 LookupPriorityBand.High,
                 env.Now,
                 "corr-1",
@@ -44,7 +44,7 @@ public sealed class MusicCatalogLookupAttemptedListenerWolverineResponsesTests
             new MusicCatalogLookupAttemptedDto(
                 "LookupTrackMetadata:mc_track_1",
                 "mc_track_1",
-                ProviderName.MusicBrainz.Value,
+                LookupSource.MusicBrainz.Value,
                 LookupPriorityBand.High,
                 env.Now,
                 "corr-1",

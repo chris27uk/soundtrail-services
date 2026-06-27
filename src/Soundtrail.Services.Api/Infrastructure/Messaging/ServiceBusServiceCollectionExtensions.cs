@@ -1,11 +1,11 @@
 using JasperFx.CodeGeneration.Model;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Soundtrail.Domain.Abstractions;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
-using Soundtrail.Services.Api.Features.RequestKnownCatalogItem.Ports;
-using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 using Soundtrail.Services.ServiceDefaults;
 using Wolverine;
 using Wolverine.AzureServiceBus;
+using ICommandBus = Soundtrail.Domain.Abstractions.ICommandBus;
 
 namespace Soundtrail.Services.Api.Infrastructure.Messaging;
 
@@ -16,10 +16,7 @@ public static class ServiceBusServiceCollectionExtensions
         IConfiguration configuration)
     {
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
-        services.TryAddScoped<IEnqueueCatalogSearchAttempt, WolverineEnqueueCatalogSearchAttempt>();
-        services.TryAddScoped<IEnqueueKnownCatalogItemRequest, WolverineEnqueueKnownCatalogItemRequest>();
-        services.TryAddScoped<IQueueCatalogSearchAttempt>(sp => sp.GetRequiredService<IEnqueueCatalogSearchAttempt>());
-        services.TryAddScoped<IQueueCatalogSearchAttemptPort>(sp => sp.GetRequiredService<IQueueCatalogSearchAttempt>());
+        services.TryAddScoped<ICommandBus, WolverineCommandBus>();
         return services;
     }
 
@@ -52,7 +49,13 @@ public static class ServiceBusServiceCollectionExtensions
         opts.PublishMessage<CatalogSearchAttemptDto>()
             .ToAzureServiceBusQueue(options.CatalogSearchAttemptsQueueName);
 
-        opts.PublishMessage<KnownCatalogItemRequestedDto>()
+        opts.PublishMessage<KnownArtistRequestedDto>()
+            .ToAzureServiceBusQueue(options.KnownCatalogItemRequestsQueueName);
+
+        opts.PublishMessage<KnownAlbumRequestedDto>()
+            .ToAzureServiceBusQueue(options.KnownCatalogItemRequestsQueueName);
+
+        opts.PublishMessage<KnownTrackRequestedDto>()
             .ToAzureServiceBusQueue(options.KnownCatalogItemRequestsQueueName);
 
         return opts;

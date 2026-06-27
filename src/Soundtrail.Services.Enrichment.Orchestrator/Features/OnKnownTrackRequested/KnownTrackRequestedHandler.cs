@@ -1,9 +1,10 @@
+using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Commands;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownTrackRequested;
 
-public sealed class KnownTrackRequestedHandler(ICatalogSearchDiscoveryRepository discoveryRepository)
+public sealed class KnownTrackRequestedHandler(ICatalogSearchDiscoveryRepository discoveryRepository) : IHandler<KnownTrackRequested>
 {
     public async Task Handle(
         KnownTrackRequested request,

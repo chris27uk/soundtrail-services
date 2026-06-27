@@ -1,19 +1,15 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Pipeline;
-using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
-using Wolverine;
 using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Adapters;
 
-public sealed class LookupTrackMetadataListener(
-    ILookupTrackMetadataHandler handler,
-    IMessageBus messageBus)
+public sealed class LookupTrackMetadataListener(IHandler<LookupTrackMetadataCommand> handler)
 {
     [WolverineHandler]
     [Transactional]
@@ -30,8 +26,7 @@ public sealed class LookupTrackMetadataListener(
             CorrelationId.From(dto.CorrelationId),
             ToSearchTerm(dto),
             ToHierarchy(dto));
-        var result = await handler.Handle(command, cancellationToken);
-        await messageBus.SendAsync(result.ToDto(command, ProviderName.MusicBrainz.Value));
+        await handler.Handle(command, cancellationToken);
     }
 
     private static MusicSearchCriteria ToSearchTerm(LookupTrackMetadataCommandDto dto) =>

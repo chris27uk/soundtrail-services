@@ -6,5 +6,5 @@ public sealed record ArtistDiscovered(
     string? ArtistId,
     string? ArtistName,
     string? SourceArtistId,
-    ProviderName SourceProvider,
+    LookupSource SourceProvider,
     DateTimeOffset ObservedAt) : IMusicTrackEvent;

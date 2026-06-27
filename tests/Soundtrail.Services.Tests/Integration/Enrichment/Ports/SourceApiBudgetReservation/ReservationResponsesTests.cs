@@ -16,7 +16,7 @@ public sealed class ReservationResponsesTests
 
         var result = await env.Port.TryReserveAsync(
             new SourceApiBudgetReservationRequest(
-                ProviderName.Odesli,
+                LookupSource.Odesli,
                 new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero)),
             CancellationToken.None);
 
@@ -30,11 +30,11 @@ public sealed class ReservationResponsesTests
         using var env = SourceApiBudgetReservationTestEnvironment.Create(mode);
         var now = new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero);
 
-        await env.Port.TryReserveAsync(new SourceApiBudgetReservationRequest(ProviderName.Odesli, now), CancellationToken.None);
-        await env.Port.TryReserveAsync(new SourceApiBudgetReservationRequest(ProviderName.Odesli, now.AddSeconds(1)), CancellationToken.None);
+        await env.Port.TryReserveAsync(new SourceApiBudgetReservationRequest(LookupSource.Odesli, now), CancellationToken.None);
+        await env.Port.TryReserveAsync(new SourceApiBudgetReservationRequest(LookupSource.Odesli, now.AddSeconds(1)), CancellationToken.None);
 
         var result = await env.Port.TryReserveAsync(
-            new SourceApiBudgetReservationRequest(ProviderName.Odesli, now.AddSeconds(2)),
+            new SourceApiBudgetReservationRequest(LookupSource.Odesli, now.AddSeconds(2)),
             CancellationToken.None);
 
         result.Accepted.Should().BeFalse();
@@ -50,13 +50,13 @@ public sealed class ReservationResponsesTests
         var now = new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero);
 
         var first = await env.Port.TryReserveAsync(
-            new SourceApiBudgetReservationRequest(ProviderName.MusicBrainz, now),
+            new SourceApiBudgetReservationRequest(LookupSource.MusicBrainz, now),
             CancellationToken.None);
         var second = await env.Port.TryReserveAsync(
-            new SourceApiBudgetReservationRequest(ProviderName.MusicBrainz, now.AddMilliseconds(250)),
+            new SourceApiBudgetReservationRequest(LookupSource.MusicBrainz, now.AddMilliseconds(250)),
             CancellationToken.None);
         var nextSecond = await env.Port.TryReserveAsync(
-            new SourceApiBudgetReservationRequest(ProviderName.MusicBrainz, now.AddSeconds(1)),
+            new SourceApiBudgetReservationRequest(LookupSource.MusicBrainz, now.AddSeconds(1)),
             CancellationToken.None);
 
         first.Accepted.Should().BeTrue();

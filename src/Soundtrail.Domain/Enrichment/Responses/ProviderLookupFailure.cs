@@ -4,4 +4,4 @@ namespace Soundtrail.Domain.Enrichment.Responses;
 
 public sealed record ProviderLookupFailure(
     ProviderName Provider,
-    ProviderName SourceProvider);
+    LookupSource SourceProvider);

@@ -135,7 +135,7 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
         new(
             CommandId.For("ResolveMusicMetadata:mc_track_1").Value,
             "mc_track_1",
-            ProviderName.MusicBrainz.Value,
+            LookupSource.MusicBrainz.Value,
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero),
             "corr-1",
@@ -143,7 +143,7 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
             new MusicCatalogMetadataFetchedDto(
                 CommandId.For("ResolveMusicMetadata:mc_track_1").Value,
                 "mc_track_1",
-                ProviderName.MusicBrainz.Value,
+                LookupSource.MusicBrainz.Value,
                 LookupPriorityBand.High,
                 new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero),
                 new SongMetadataDto("Rare Unknown Song", "Test Artist", "isrc-1", "mbid-1", 123000, "Rare Album", new DateOnly(2026, 1, 1)),
@@ -157,7 +157,7 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
         new(
             CommandId.For("LookupStreamingLocations:mc_track_1").Value,
             "mc_track_1",
-            ProviderName.Odesli.Value,
+            LookupSource.Odesli.Value,
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 8, 12, 2, 0, TimeSpan.Zero),
             "corr-2",
@@ -165,7 +165,7 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
             new MusicCatalogMetadataFetchedDto(
                 CommandId.For("LookupStreamingLocations:mc_track_1").Value,
                 "mc_track_1",
-                ProviderName.Odesli.Value,
+                LookupSource.Odesli.Value,
                 LookupPriorityBand.High,
                 new DateTimeOffset(2026, 6, 8, 12, 2, 0, TimeSpan.Zero),
                 null,

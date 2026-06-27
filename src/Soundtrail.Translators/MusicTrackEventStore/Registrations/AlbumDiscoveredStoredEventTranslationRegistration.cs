@@ -22,7 +22,7 @@ public sealed class AlbumDiscoveredStoredEventTranslationRegistration : IMusicTr
                 dto.AlbumTitle,
                 dto.SourceAlbumId,
                 dto.ReleaseDate,
-                ProviderName.From(dto.SourceProvider),
+                LookupSource.From(dto.SourceProvider),
                 dto.ObservedAt),
             domainEvent => domainEvent.ObservedAt);
     }

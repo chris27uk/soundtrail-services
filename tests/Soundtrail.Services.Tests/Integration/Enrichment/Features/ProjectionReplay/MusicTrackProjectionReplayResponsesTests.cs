@@ -43,7 +43,7 @@ public sealed class MusicTrackProjectionReplayResponsesTests
                     123000,
                     "isrc-1",
                     "mbid-1",
-                    ProviderName.MusicBrainz,
+                    LookupSource.MusicBrainz,
                     new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))),
             Translator.ToDto(
                 musicCatalogId,
@@ -53,7 +53,7 @@ public sealed class MusicTrackProjectionReplayResponsesTests
                     ProviderName.AppleMusic,
                     "apple-1",
                     new Uri("https://music.apple.com/us/song/song-a?i=apple-1"),
-                    ProviderName.Odesli,
+                    LookupSource.Odesli,
                     new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero)))
         };
 
@@ -93,7 +93,7 @@ public sealed class MusicTrackProjectionReplayResponsesTests
                     123000,
                     "isrc-1",
                     "mbid-1",
-                    ProviderName.MusicBrainz,
+                    LookupSource.MusicBrainz,
                     new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))));
             await seedSession.StoreAsync(Translator.ToDto(
                 musicCatalogId,
@@ -103,7 +103,7 @@ public sealed class MusicTrackProjectionReplayResponsesTests
                     ProviderName.AppleMusic,
                     "apple-1",
                     new Uri("https://music.apple.com/us/song/song-a?i=apple-1"),
-                    ProviderName.Odesli,
+                    LookupSource.Odesli,
                     new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero))));
             await seedSession.SaveChangesAsync(CancellationToken.None);
         }
@@ -148,7 +148,7 @@ public sealed class MusicTrackProjectionReplayResponsesTests
                 123000,
                 "isrc-1",
                 "mbid-1",
-                ProviderName.MusicBrainz,
+                LookupSource.MusicBrainz,
                 new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero)));
 
         using (var session = raven.Store.OpenAsyncSession())

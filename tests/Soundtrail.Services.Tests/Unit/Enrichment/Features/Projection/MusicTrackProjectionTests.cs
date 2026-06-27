@@ -14,14 +14,14 @@ public sealed class MusicTrackProjectionTests
         var projection = new MusicTrackProjection();
 
         projection.Apply(
-            new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, Clock),
+            new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", LookupSource.MusicBrainz, Clock),
             1);
         projection.Apply(
             new ProviderReferenceDiscovered(
                 ProviderName.AppleMusic,
                 "apple-1",
                 new Uri("https://music.apple.com/us/song/song-a?i=apple-1"),
-                ProviderName.Odesli,
+                LookupSource.Odesli,
                 Clock.AddMinutes(1)),
             2);
 
@@ -60,7 +60,7 @@ public sealed class MusicTrackProjectionTests
                 0));
 
         projection.Apply(
-            new ArtistDiscovered("artist_a", "Artist A", "mb-artist-a", ProviderName.MusicBrainz, Clock),
+            new ArtistDiscovered("artist_a", "Artist A", "mb-artist-a", LookupSource.MusicBrainz, Clock),
             3);
 
         projection.ArtistId.Should().Be("artist_a");
@@ -118,7 +118,7 @@ public sealed class MusicTrackProjectionTests
                 "Album A",
                 "mb-release-a",
                 new DateOnly(2004, 6, 7),
-                ProviderName.MusicBrainz,
+                LookupSource.MusicBrainz,
                 Clock),
             2);
 
@@ -156,7 +156,7 @@ public sealed class MusicTrackProjectionTests
                 ProviderName.Spotify,
                 "spotify-1",
                 new Uri("https://open.spotify.com/track/spotify-1"),
-                ProviderName.Odesli,
+                LookupSource.Odesli,
                 Clock),
             1);
 

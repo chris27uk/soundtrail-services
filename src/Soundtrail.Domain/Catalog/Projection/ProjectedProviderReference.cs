@@ -6,4 +6,4 @@ public sealed record ProjectedProviderReference(
     ProviderName Provider,
     Uri Url,
     string? ExternalId,
-    ProviderName SourceProvider);
+    LookupSource SourceProvider);

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Raven.Client.Documents;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
@@ -21,10 +22,12 @@ using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupA
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicTrackEventsImported;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adapters;
+using Soundtrail.Services.Tests.Integration.Enrichment.Messaging.Wolverine;
 using Soundtrail.Services.Tests.EndToEnd.Search;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Translators.MusicTrackEventStore;
 using System.Net.Http.Json;
+using Wolverine;
 
 namespace Soundtrail.Services.Tests.EndToEnd.CatalogBrowsing;
 
@@ -56,6 +59,7 @@ public sealed class CatalogBrowsingOutsideInTestEnvironment : IAsyncDisposable
         });
 
         builder.WebHost.UseTestServer();
+        builder.Services.TryAddScoped<IMessageBus, WolverineMessageBusFake>();
         builder.Services.AddEmbeddedRavenForTesting(raven.Store);
         builder.Services.AddApiAppServices(builder.Configuration, builder.Environment, options =>
         {

@@ -18,7 +18,7 @@ public sealed class RavenMusicTrackEventImportResponsesTests
             MusicCatalogId.From("mc_track_1"),
             0,
             CommandId.For("ImportMusicTrackEvents:mc_track_1"),
-            [new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero))]);
+            [new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", LookupSource.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero))]);
 
         await env.ImportAsync(command);
 
@@ -36,9 +36,9 @@ public sealed class RavenMusicTrackEventImportResponsesTests
             0,
             CommandId.For("ImportMusicTrackEvents:mc_track_1"),
             [
-                new TrackDiscovered("Mr. Brightside", "The Killers", 222000, "USIR20400274", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero)),
-                new ArtistDiscovered("artist_the_killers", "The Killers", "mb-artist-the-killers", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 1, 0, TimeSpan.Zero)),
-                new AlbumDiscovered("album_hot_fuss", "Hot Fuss", "mb-release-hot-fuss", new DateOnly(2004, 6, 7), ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 2, 0, TimeSpan.Zero))
+                new TrackDiscovered("Mr. Brightside", "The Killers", 222000, "USIR20400274", "mbid-1", LookupSource.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero)),
+                new ArtistDiscovered("artist_the_killers", "The Killers", "mb-artist-the-killers", LookupSource.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 1, 0, TimeSpan.Zero)),
+                new AlbumDiscovered("album_hot_fuss", "Hot Fuss", "mb-release-hot-fuss", new DateOnly(2004, 6, 7), LookupSource.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 2, 0, TimeSpan.Zero))
             ]);
 
         await env.ImportAsync(command);
@@ -63,7 +63,7 @@ public sealed class RavenMusicTrackEventImportResponsesTests
             0,
             CommandId.For("ImportMusicTrackEvents:mc_track_1"),
             [
-                new TrackDiscovered("Mr Brightside", "Killers", 222000, "USIR20400274", "mbid-1", ProviderName.MusicBrainz, observedAt),
+                new TrackDiscovered("Mr Brightside", "Killers", 222000, "USIR20400274", "mbid-1", LookupSource.MusicBrainz, observedAt),
                 new MetadataCorrected(
                     "Mr. Brightside",
                     "The Killers",

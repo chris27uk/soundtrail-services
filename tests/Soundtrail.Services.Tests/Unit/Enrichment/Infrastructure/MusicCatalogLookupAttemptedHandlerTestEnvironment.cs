@@ -80,13 +80,17 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
         Handler.Handle(MusicCatalogLookupAttempted.Completed(response), CancellationToken.None);
 
     public IReadOnlyList<IDomainEvent> StoredEvents(string criteria) =>
-        discoveryRepository.GetStoredEvents(MusicSearchTermPersistentIdTranslator.ToDomainObject(criteria));
+        criteria.StartsWith("artist:", StringComparison.Ordinal)
+        || criteria.StartsWith("album:", StringComparison.Ordinal)
+        || criteria.StartsWith("track:", StringComparison.Ordinal)
+            ? discoveryRepository.GetStoredEvents(MusicSearchTermPersistentIdTranslator.ToKnownCatalogItem(criteria))
+            : discoveryRepository.GetStoredEvents(MusicSearchTermPersistentIdTranslator.ToDomainObject(criteria));
 
     public static MusicCatalogMetadataFetched MusicBrainzResponse() =>
         new(
             CommandId.For("ResolveMusicMetadata:mc_track_1"),
             MusicCatalogId.From("mc_track_1"),
-            ProviderName.MusicBrainz,
+            LookupSource.MusicBrainz,
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero),
             new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000, "Album A", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"),
@@ -99,7 +103,7 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
         new(
             CommandId.For("ResolveMusicMetadata:mc_track_1"),
             MusicCatalogId.From("mc_track_1"),
-            ProviderName.MusicBrainz,
+            LookupSource.MusicBrainz,
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero),
             new SongMetadata("Resolved Song", "Resolved Artist", "isrc-1", "mbid-1", 123000, "Resolved Album", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"),
@@ -112,7 +116,7 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
         new(
             CommandId.For("LookupStreamingLocations:mc_track_1"),
             MusicCatalogId.From("mc_track_1"),
-            ProviderName.Odesli,
+            LookupSource.Odesli,
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 8, 12, 2, 0, TimeSpan.Zero),
             null,

@@ -3,7 +3,7 @@ using Soundtrail.Contracts.Common;
 namespace Soundtrail.Domain.Discovery;
 
 public sealed record TryReserveSourceApiBudgetWindowRequest(
-    ProviderName Source,
+    LookupSource Source,
     DateTimeOffset WindowStartedAt,
     DateTimeOffset WindowEndsAt,
     int RequestedAmount,

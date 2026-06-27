@@ -31,7 +31,7 @@ public sealed class SearchOrSeekHistory
 
     private SearchOrSeekHistory(IEnumerable<IDomainEvent> events, int version)
     {
-        eventHandlers = CreateHandlers();
+        this.eventHandlers = CreateHandlers();
 
         foreach (var @event in events)
         {
@@ -41,52 +41,18 @@ public sealed class SearchOrSeekHistory
         this.version = version;
     }
 
-    public static async Task<SearchOrSeekHistory> LoadAsync(
-        ICatalogSearchDiscoveryRepository repository,
-        MusicSearchCriteria searchCriteria,
-        CancellationToken cancellationToken)
+    public static async Task<SearchOrSeekHistory> LoadAsync(ICatalogSearchDiscoveryRepository repository, MusicSearchCriteria searchCriteria, CancellationToken cancellationToken)
     {
         var stream = await repository.LoadAsync(searchCriteria, cancellationToken);
-        var aggregate = new SearchOrSeekHistory(
-            stream.Events.Where(static @event =>
-                @event is Events.TrackMetadataLookupRequested
-                or Events.KnownTrackRequested
-                or Events.ArtistCatalogLookupRequested
-                or Events.AlbumCatalogLookupRequested
-                or Catalog.Events.StreamingLocationsRequired
-                or DiscoveryRequested
-                or DiscoveryPlanned
-                or DiscoveryDeferred
-                or DiscoveryRejected
-                or DiscoveryFailed
-                or DiscoveryStarted
-                or DiscoveryCompleted),
-            stream.Version);
+        var aggregate = new SearchOrSeekHistory(stream.Events, stream.Version);
         aggregate.criteria ??= searchCriteria;
         return aggregate;
     }
 
-    public static async Task<SearchOrSeekHistory> LoadAsync(
-        ICatalogSearchDiscoveryRepository repository,
-        KnownCatalogItem knownItem,
-        CancellationToken cancellationToken)
+    public static async Task<SearchOrSeekHistory> LoadAsync(ICatalogSearchDiscoveryRepository repository, KnownCatalogItem knownItem, CancellationToken cancellationToken)
     {
         var stream = await repository.LoadAsync(knownItem, cancellationToken);
-        var aggregate = new SearchOrSeekHistory(
-            stream.Events.Where(static @event =>
-                @event is Events.TrackMetadataLookupRequested
-                or Events.KnownTrackRequested
-                or Events.ArtistCatalogLookupRequested
-                or Events.AlbumCatalogLookupRequested
-                or Catalog.Events.StreamingLocationsRequired
-                or DiscoveryRequested
-                or DiscoveryPlanned
-                or DiscoveryDeferred
-                or DiscoveryRejected
-                or DiscoveryFailed
-                or DiscoveryStarted
-                or DiscoveryCompleted),
-            stream.Version);
+        var aggregate = new SearchOrSeekHistory(stream.Events, stream.Version);
         aggregate.knownItem ??= knownItem;
         return aggregate;
     }
@@ -294,7 +260,7 @@ public sealed class SearchOrSeekHistory
                 musicCatalogId,
                 priority,
                 correlationId,
-                ProviderName.MusicBrainz,
+                LookupSource.MusicBrainz,
                 observedAt,
                 lookupSearchCriteria,
                 hierarchy),
@@ -341,7 +307,7 @@ public sealed class SearchOrSeekHistory
                 musicCatalogId,
                 priority,
                 correlationId,
-                ProviderName.MusicBrainz,
+                LookupSource.MusicBrainz,
                 observedAt,
                 lookupSearchCriteria,
                 hierarchy),

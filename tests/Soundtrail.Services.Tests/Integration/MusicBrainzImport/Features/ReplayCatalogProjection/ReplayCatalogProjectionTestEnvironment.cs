@@ -54,7 +54,7 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
                     222000,
                     "USIR20400274",
                     "mbid-1",
-                    ProviderName.MusicBrainz,
+                    LookupSource.MusicBrainz,
                     Clock)),
             new VersionedMusicTrackEvent(
                 2,
@@ -62,7 +62,7 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
                     "artist_the_killers",
                     "The Killers",
                     "mb-artist-the-killers",
-                    ProviderName.MusicBrainz,
+                    LookupSource.MusicBrainz,
                     Clock.AddMinutes(1))),
             new VersionedMusicTrackEvent(
                 3,
@@ -71,7 +71,7 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
                     "Hot Fuss",
                     "mb-release-hot-fuss",
                     new DateOnly(2004, 6, 7),
-                    ProviderName.MusicBrainz,
+                    LookupSource.MusicBrainz,
                     Clock.AddMinutes(2)))
         };
 
