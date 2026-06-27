@@ -297,7 +297,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
             new RavenLoadStoredDiscoveryLifecycleEvents(session),
             new CatalogSearchStatusChangedHandler(
                 new RavenLoadDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()),
-                new RavenSaveDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper())));
+                new RavenSaveDiscoveryLifecycleProjection(session, Soundtrail.Services.Internal.Projector.Infrastructure.Translations.InternalProjectorTypeTranslator.Default)));
         replayHandler.Handle(
                 new ReplayCatalogSearchStatusCommand(searchCriteria),
                 CancellationToken.None)
@@ -335,7 +335,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
             .ToArray();
         var projectHandler = new MusicCatalogChangedHandler(
             new RavenLoadMusicTrackCatalogProjection(replaySession, new RavenMusicTrackCatalogProjectionMapper()),
-            new RavenSaveMusicTrackCatalogProjection(replaySession, new RavenMusicTrackCatalogProjectionMapper()));
+            new RavenSaveMusicTrackCatalogProjection(replaySession, Soundtrail.Services.Internal.Projector.Infrastructure.Translations.InternalProjectorTypeTranslator.Default));
         projectHandler.Handle(
                 new MusicCatalogChangedCommand(musicCatalogId, eventsToReplay),
                 CancellationToken.None)
@@ -358,7 +358,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
             new RavenLoadStoredDiscoveryLifecycleEvents(replaySession),
             new CatalogSearchStatusChangedHandler(
                 new RavenLoadDiscoveryLifecycleProjection(replaySession, new RavenDiscoveryLifecycleProjectionMapper()),
-                new RavenSaveDiscoveryLifecycleProjection(replaySession, new RavenDiscoveryLifecycleProjectionMapper())));
+                new RavenSaveDiscoveryLifecycleProjection(replaySession, Soundtrail.Services.Internal.Projector.Infrastructure.Translations.InternalProjectorTypeTranslator.Default)));
         replayHandler.Handle(
                 new ReplayCatalogSearchStatusCommand(searchCriteria),
                 CancellationToken.None)

@@ -6,6 +6,7 @@ using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
+using Soundtrail.Translators.Api;
 using Wolverine;
 using Wolverine.Logging;
 using ICommandBus = Soundtrail.Domain.Abstractions.ICommandBus;
@@ -166,7 +167,7 @@ internal sealed class CatalogSearchAttemptQueueTestEnvironment : IAsyncDisposabl
 
         public Task SendAsync(ICommand command, CancellationToken cancellationToken = default)
         {
-            requests.Enqueue(CatalogSearchAttemptMapper.ToDto((SearchCatalogRequested)command));
+            requests.Enqueue(ApiCommandMessageTranslator.ToDto((SearchCatalogRequested)command));
             return Task.CompletedTask;
         }
     }

@@ -99,7 +99,7 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
             new RavenLoadStoredMusicTrackEvents(session, Translator),
             new MusicTrackChangedHandler(
                 new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
-                new RavenSaveMusicTrackProjection(session, new RavenMusicTrackProjectionMapper())));
+                new RavenSaveMusicTrackProjection(session, Soundtrail.Services.Internal.Projector.Infrastructure.Translations.InternalProjectorTypeTranslator.Default)));
 
         foreach (var musicCatalogId in musicCatalogIds)
         {
@@ -121,7 +121,7 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
             new RavenLoadStoredDiscoveryLifecycleEvents(session),
             new CatalogSearchStatusChangedHandler(
                 new RavenLoadDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()),
-                new RavenSaveDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper())));
+                new RavenSaveDiscoveryLifecycleProjection(session, Soundtrail.Services.Internal.Projector.Infrastructure.Translations.InternalProjectorTypeTranslator.Default)));
 
         foreach (var criteria in criteriaValues.Distinct(StringComparer.Ordinal))
         {

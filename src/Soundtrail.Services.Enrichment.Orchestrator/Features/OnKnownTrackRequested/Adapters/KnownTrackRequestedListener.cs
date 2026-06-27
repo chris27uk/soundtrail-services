@@ -1,9 +1,6 @@
 using Raven.Client.Documents.Session;
-using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
-using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Discovery.Commands;
-using Soundtrail.Domain.Search;
+using Soundtrail.Translators.Api;
 using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownTrackRequested.Adapters;
@@ -16,11 +13,5 @@ public sealed class KnownTrackRequestedListener(KnownTrackRequestedHandler handl
         KnownTrackRequestedDto dto,
         IAsyncDocumentSession _,
         CancellationToken cancellationToken = default) =>
-        handler.Handle(
-            new KnownTrackRequested(
-                TrackId.From(dto.TrackId),
-                PlaybackProviderFilter.Parse(dto.Playback),
-                dto.OccurredAt,
-                CorrelationId.From(dto.CorrelationId)),
-            cancellationToken);
+        handler.Handle(ApiCommandMessageTranslator.ToDomainObject(dto), cancellationToken);
 }

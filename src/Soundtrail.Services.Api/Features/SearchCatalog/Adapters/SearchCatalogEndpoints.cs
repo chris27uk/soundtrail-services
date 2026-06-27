@@ -1,7 +1,7 @@
-using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Search;
+using Soundtrail.Translators.Api;
 
 namespace Soundtrail.Services.Api.Features.SearchCatalog.Adapters;
 
@@ -37,63 +37,9 @@ public static class SearchCatalogEndpoints
                 }
 
                 var response = await handler.Handle(request, cancellationToken);
-                return Results.Ok(ToContract(response));
+                return Results.Ok(ApiResponseContractTranslator.ToDto(response));
             });
 
         return endpoints;
     }
-
-    private static object ToContract(SearchCatalogResponse response) => new
-    {
-        query = response.Query,
-        results = response.Results.Select(ToContract),
-        discovery = new
-        {
-            willBeLookedUp = response.Discovery.WillBeLookedUp,
-            reason = response.Discovery.Reason,
-            retryAfterSeconds = response.Discovery.RetryAfterSeconds
-        }
-    };
-
-    private static object ToContract(SearchCatalogResult result) => new
-    {
-        type = ToContract(result.Type),
-        id = result.Id,
-        name = result.Name,
-        artistId = result.ArtistId,
-        artistName = result.ArtistName,
-        albumId = result.AlbumId,
-        albumName = result.AlbumName,
-        playabilityStatus = result.PlayabilityStatus.ToString(),
-        availableProviders = result.AvailableProviders.Select(ToContract),
-        terminallyUnavailableProviders = result.TerminallyUnavailableProviders.Select(ToContract),
-        providerReferences = result.ProviderReferences.Select(ToContract)
-    };
-
-    private static object ToContract(ProviderReference response) => new
-    {
-        provider = ToContract(response.Provider),
-        providerEntityType = response.ProviderEntityType,
-        providerId = response.ProviderId,
-        url = response.Url,
-        discoveredAt = response.DiscoveredAt
-    };
-
-    private static string ToContract(ProviderName provider) =>
-        provider.Value switch
-        {
-            "Spotify" => "spotify",
-            "AppleMusic" => "appleMusic",
-            "YoutubeMusic" => "youtubeMusic",
-            _ => provider.Value
-        };
-
-    private static string ToContract(SearchResultType type) =>
-        type switch
-        {
-            SearchResultType.Artist => "artist",
-            SearchResultType.Album => "album",
-            SearchResultType.Track => "track",
-            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
-        };
 }

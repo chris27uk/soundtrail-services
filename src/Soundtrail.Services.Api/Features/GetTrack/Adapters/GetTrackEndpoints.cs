@@ -1,8 +1,8 @@
-using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Browsing;
 using Soundtrail.Domain.Search;
+using Soundtrail.Translators.Api;
 
 namespace Soundtrail.Services.Api.Features.GetTrack.Adapters;
 
@@ -22,34 +22,9 @@ public static class GetTrackEndpoints
                     new GetTrackCommand(artist, album, track, providerFilter),
                     cancellationToken);
 
-                return response is null ? Results.NotFound() : Results.Ok(ToContract(response));
+                return response is null ? Results.NotFound() : Results.Ok(ApiResponseContractTranslator.ToDto(response));
             });
 
         return endpoints;
     }
-
-    private static object ToContract(TrackDetailsResponse response) => new
-    {
-        artistId = response.ArtistId.Value,
-        artistName = response.ArtistName,
-        albumId = response.AlbumId.Value,
-        albumName = response.AlbumName,
-        id = response.TrackId.Value,
-        title = response.Title,
-        isrc = response.Isrc,
-        durationMs = response.DurationMs,
-        playabilityStatus = response.PlayabilityStatus.ToString(),
-        availableProviders = response.AvailableProviders.Select(providerName => providerName.ToPersistentId()),
-        terminallyUnavailableProviders = response.TerminallyUnavailableProviders.Select(providerName => providerName.ToPersistentId()),
-        providerReferences = response.ProviderReferences.Select(ToContract)
-    };
-
-    private static object ToContract(ProviderReference response) => new
-    {
-        provider = response.Provider.ToPersistentId(),
-        providerEntityType = response.ProviderEntityType,
-        providerId = response.ProviderId,
-        url = response.Url,
-        discoveredAt = response.DiscoveredAt
-    };
 }

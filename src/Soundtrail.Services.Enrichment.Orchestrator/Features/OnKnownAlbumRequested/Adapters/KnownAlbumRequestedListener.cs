@@ -1,8 +1,6 @@
 using Raven.Client.Documents.Session;
-using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
-using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Translators.Api;
 using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownAlbumRequested.Adapters;
@@ -15,10 +13,5 @@ public sealed class KnownAlbumRequestedListener(KnownAlbumRequestedHandler handl
         KnownAlbumRequestedDto dto,
         IAsyncDocumentSession _,
         CancellationToken cancellationToken = default) =>
-        handler.Handle(
-            new KnownAlbumRequested(
-                AlbumId.From(dto.AlbumId),
-                dto.OccurredAt,
-                CorrelationId.From(dto.CorrelationId)),
-            cancellationToken);
+        handler.Handle(ApiCommandMessageTranslator.ToDomainObject(dto), cancellationToken);
 }

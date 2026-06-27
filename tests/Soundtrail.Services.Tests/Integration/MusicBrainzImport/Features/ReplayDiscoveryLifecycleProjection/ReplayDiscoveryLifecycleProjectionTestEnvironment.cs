@@ -166,7 +166,7 @@ internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsync
             new RavenResetDiscoveryLifecycleProjection(session),
             new CatalogSearchStatusChangedHandler(
                 new RavenLoadDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()),
-                new RavenSaveDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper())));
+                new RavenSaveDiscoveryLifecycleProjection(session, Soundtrail.Services.Internal.Projector.Infrastructure.Translations.InternalProjectorTypeTranslator.Default)));
 
         return new ReplayDiscoveryLifecycleProjectionTestEnvironment(
             handler,
