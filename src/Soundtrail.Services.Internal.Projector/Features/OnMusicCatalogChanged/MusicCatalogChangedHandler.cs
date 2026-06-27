@@ -1,16 +1,13 @@
+using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog.Commands;
 using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.ProjectionModel;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged;
 
-public sealed class MusicCatalogChangedHandler(
-    ILoadMusicTrackCatalogProjectionPort loadPort,
-    ISaveMusicTrackCatalogProjectionPort savePort)
+public sealed class MusicCatalogChangedHandler(ILoadMusicTrackCatalogProjectionPort loadPort, ISaveMusicTrackCatalogProjectionPort savePort) : IHandler<MusicCatalogChangedCommand>
 {
-    public async Task<MusicCatalogChangedResult> Handle(
-        MusicCatalogChangedCommand command,
-        CancellationToken cancellationToken = default)
+    public async Task Handle(MusicCatalogChangedCommand command, CancellationToken cancellationToken = default)
     {
         var projection = await loadPort.LoadAsync(command.MusicCatalogId, cancellationToken);
 
@@ -25,6 +22,5 @@ public sealed class MusicCatalogChangedHandler(
         }
 
         await savePort.SaveAsync(projection, cancellationToken);
-        return new MusicCatalogChangedResult(command.Events.Count);
     }
 }

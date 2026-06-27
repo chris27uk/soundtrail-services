@@ -7,6 +7,7 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Search;
 using Soundtrail.Translators.Discovery;
+using KnownTrackRequestedEvent = Soundtrail.Domain.Discovery.Events.KnownTrackRequested;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
 
@@ -19,6 +20,7 @@ public static class DiscoveryQueryStoredEventRecordMapper
         dto.EventType switch
         {
             nameof(TrackMetadataLookupRequested) => ToTrackMetadataLookupRequested(dto),
+            nameof(KnownTrackRequestedEvent) => ToKnownTrackRequested(dto),
             nameof(ArtistCatalogLookupRequested) => ToArtistCatalogLookupRequested(dto),
             nameof(AlbumCatalogLookupRequested) => ToAlbumCatalogLookupRequested(dto),
             nameof(StreamingLocationsRequired) => ToStreamingLocationsRequired(dto),
@@ -41,6 +43,17 @@ public static class DiscoveryQueryStoredEventRecordMapper
             data.TrustLevel,
             data.RiskScore,
             data.RequiredAtUtc,
+            CorrelationId.From(data.CorrelationId));
+    }
+
+    private static KnownTrackRequestedEvent ToKnownTrackRequested(DiscoveryQueryStoredEventRecordDto dto)
+    {
+        var data = dto.KnownTrackRequested
+            ?? throw new InvalidOperationException("Missing known track requested event data.");
+        return new KnownTrackRequestedEvent(
+            TrackId.From(data.TrackId),
+            PlaybackProviderFilter.Parse(data.Playback),
+            data.RequestedAtUtc,
             CorrelationId.From(data.CorrelationId));
     }
 

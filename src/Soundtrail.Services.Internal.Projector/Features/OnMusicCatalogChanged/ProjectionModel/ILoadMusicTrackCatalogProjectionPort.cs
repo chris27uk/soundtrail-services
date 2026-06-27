@@ -4,7 +4,5 @@ namespace Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.
 
 public interface ILoadMusicTrackCatalogProjectionPort
 {
-    Task<MusicTrackCatalogProjection> LoadAsync(
-        MusicCatalogId musicCatalogId,
-        CancellationToken cancellationToken);
+    Task<MusicTrackCatalogProjection> LoadAsync(MusicCatalogId musicCatalogId, CancellationToken cancellationToken);
 }

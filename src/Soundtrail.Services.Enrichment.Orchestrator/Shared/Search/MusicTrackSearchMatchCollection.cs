@@ -54,6 +54,34 @@ public sealed class MusicTrackSearchMatchCollection(
             .ToArray();
     }
 
+    public async Task<CatalogSearchFollowUp> DetermineFollowUpAsync(
+        MusicSearchCriteria searchCriteria,
+        PlaybackProviderFilter playback,
+        ILocalMusicTrackSearch localMusicTrackSearch,
+        CancellationToken cancellationToken)
+    {
+        var selectedMatches = Query(searchCriteria);
+        if (selectedMatches.Count == 0)
+        {
+            return CatalogSearchFollowUp.TrackMetadataRequired();
+        }
+
+        var lookups = new List<StreamingLocationLookupCandidate>();
+        foreach (var selectedMatch in selectedMatches)
+        {
+            var localTrack = await localMusicTrackSearch.GetByMusicCatalogIdAsync(selectedMatch.MusicCatalogId, cancellationToken);
+            var lookup = LocalMusicTrackStreamingLocationLookup.CreateIfRequired(localTrack, playback);
+            if (lookup is null)
+            {
+                continue;
+            }
+
+            lookups.Add(lookup);
+        }
+
+        return CatalogSearchFollowUp.StreamingLocationsRequired(lookups);
+    }
+
     private static bool MatchesExactQuery(MusicCatalogMatch match, string normalizedQuery)
     {
         var evidence = match.Evidence;

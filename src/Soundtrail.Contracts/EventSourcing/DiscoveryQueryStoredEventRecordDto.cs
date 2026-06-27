@@ -22,6 +22,8 @@ public sealed class DiscoveryQueryStoredEventRecordDto
 
     public AlbumCatalogLookupRequestedEventDataRecordDto? AlbumCatalogLookupRequested { get; set; }
 
+    public KnownTrackRequestedEventDataRecordDto? KnownTrackRequested { get; set; }
+
     public StreamingLocationsRequiredEventDataRecordDto? StreamingLocationsRequired { get; set; }
 
     public DiscoveryPlannedEventDataRecordDto? DiscoveryPlanned { get; set; }

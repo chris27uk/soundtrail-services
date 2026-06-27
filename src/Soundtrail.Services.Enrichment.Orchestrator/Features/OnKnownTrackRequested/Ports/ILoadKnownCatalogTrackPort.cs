@@ -1,7 +1,7 @@
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 
-namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownCatalogItemRequested.Ports;
+namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownTrackRequested.Ports;
 
 public interface ILoadKnownCatalogTrackPort
 {
