@@ -19,7 +19,7 @@ public sealed class StreamingLocationsRequiredStoredEventTranslationRegistration
                 domainEvent.SourceProvider.Value,
                 domainEvent.ObservedAt,
                 domainEvent.SearchCriteria.Kind,
-                domainEvent.SearchCriteria.Query,
+                domainEvent.SearchCriteria.UnifiedQuery,
                 domainEvent.SearchCriteria.Isrc,
                 domainEvent.SearchCriteria.Title,
                 domainEvent.SearchCriteria.Artist,
@@ -30,7 +30,7 @@ public sealed class StreamingLocationsRequiredStoredEventTranslationRegistration
                 MusicCatalogId.From(dto.MusicCatalogId),
                 Enum.Parse<LookupPriorityBand>(dto.Priority, ignoreCase: true),
                 CorrelationId.From(dto.CorrelationId),
-                ProviderName.From(dto.SourceProvider),
+                LookupSource.From(dto.SourceProvider),
                 dto.ObservedAt,
                 dto.SearchKind switch
                 {

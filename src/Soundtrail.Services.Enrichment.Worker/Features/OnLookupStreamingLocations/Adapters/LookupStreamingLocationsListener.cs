@@ -1,17 +1,15 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.Pipeline;
-using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
-using Wolverine;
 using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.Adapters;
 
-public sealed class LookupStreamingLocationsListener(ILookupStreamingLocationsHandler handler, IMessageBus messageBus)
+public sealed class LookupStreamingLocationsListener(IHandler<LookupStreamingLocationsCommand> handler)
 {
     [WolverineHandler]
     [Transactional]
@@ -28,8 +26,7 @@ public sealed class LookupStreamingLocationsListener(ILookupStreamingLocationsHa
             CorrelationId.From(dto.CorrelationId),
             ToSearchTerm(dto.SearchTerm),
             ToHierarchy(dto));
-        var result = await handler.Handle(command, cancellationToken);
-        await messageBus.SendAsync(result.ToDto(command, ProviderName.Odesli.Value));
+        await handler.Handle(command, cancellationToken);
     }
 
     private static MusicSearchCriteria ToSearchTerm(StreamingLocationSearchTermDto dto) =>

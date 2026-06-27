@@ -8,6 +8,7 @@ using Soundtrail.Services.ServiceDefaults;
 using Wolverine;
 using Wolverine.AzureServiceBus;
 using Wolverine.RavenDb;
+using ICommandBus = Soundtrail.Domain.Abstractions.ICommandBus;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
 
@@ -18,6 +19,7 @@ public static class ServiceBusServiceCollectionExtensions
         IConfiguration configuration)
     {
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
+        services.AddScoped<ICommandBus, WolverineCommandBus>();
         return services;
     }
 

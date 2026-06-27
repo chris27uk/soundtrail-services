@@ -6,7 +6,7 @@ namespace Soundtrail.Domain.Enrichment.Responses;
 public sealed record MusicCatalogMetadataFetched(
     CommandId CommandId,
     MusicCatalogId MusicCatalogId,
-    ProviderName SourceProvider,
+    LookupSource SourceProvider,
     LookupPriorityBand Priority,
     DateTimeOffset CreatedAt,
     SongMetadata? Metadata,

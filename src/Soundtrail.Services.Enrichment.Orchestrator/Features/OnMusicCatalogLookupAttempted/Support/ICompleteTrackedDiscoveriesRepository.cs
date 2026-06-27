@@ -1,5 +1,0 @@
-using Soundtrail.Domain.Discovery;
-
-namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Support;
-
-public interface ICompleteTrackedDiscoveriesRepository : ICatalogSearchDiscoveryRepository;

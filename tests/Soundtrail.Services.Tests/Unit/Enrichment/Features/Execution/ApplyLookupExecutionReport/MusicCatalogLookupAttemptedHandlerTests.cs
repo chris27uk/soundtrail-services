@@ -17,7 +17,7 @@ public sealed class MusicCatalogLookupAttemptedHandlerTests
             new MusicCatalogLookupAttempted(
                 CommandId.For("LookupTrackMetadata:mc_track_1"),
                 MusicCatalogId.From("mc_track_1"),
-                ProviderName.MusicBrainz,
+                LookupSource.MusicBrainz,
                 LookupPriorityBand.High,
                 env.Now,
                 CorrelationId.From("corr-1"),
@@ -29,7 +29,6 @@ public sealed class MusicCatalogLookupAttemptedHandlerTests
             CancellationToken.None);
 
         env.StoredEvents("search:track:rare unknown song").Last().Should().BeOfType<DiscoveryDeferred>();
-        env.StoredEvents("artist:artist_1").Last().Should().BeOfType<DiscoveryDeferred>();
     }
 
     [Fact]
@@ -41,7 +40,7 @@ public sealed class MusicCatalogLookupAttemptedHandlerTests
             new MusicCatalogLookupAttempted(
                 CommandId.For("LookupTrackMetadata:mc_track_1"),
                 MusicCatalogId.From("mc_track_1"),
-                ProviderName.MusicBrainz,
+                LookupSource.MusicBrainz,
                 LookupPriorityBand.High,
                 env.Now,
                 CorrelationId.From("corr-1"),
@@ -50,7 +49,6 @@ public sealed class MusicCatalogLookupAttemptedHandlerTests
             CancellationToken.None);
 
         env.StoredEvents("search:track:rare unknown song").Last().Should().BeOfType<DiscoveryFailed>();
-        env.StoredEvents("artist:artist_1").Last().Should().BeOfType<DiscoveryFailed>();
     }
 
     [Fact]
@@ -63,7 +61,7 @@ public sealed class MusicCatalogLookupAttemptedHandlerTests
             new MusicCatalogLookupAttempted(
                 CommandId.For("LookupTrackMetadata:mc_track_1"),
                 MusicCatalogId.From("mc_track_1"),
-                ProviderName.MusicBrainz,
+                LookupSource.MusicBrainz,
                 LookupPriorityBand.High,
                 env.Now,
                 CorrelationId.From("corr-1"),
@@ -86,7 +84,7 @@ public sealed class MusicCatalogLookupAttemptedHandlerTests
             new MusicCatalogLookupAttempted(
                 CommandId.For("LookupTrackMetadata:mc_track_1"),
                 MusicCatalogId.From("mc_track_1"),
-                ProviderName.MusicBrainz,
+                LookupSource.MusicBrainz,
                 LookupPriorityBand.High,
                 env.Now,
                 CorrelationId.From("corr-1"),

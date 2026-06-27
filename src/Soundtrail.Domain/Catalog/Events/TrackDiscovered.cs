@@ -8,5 +8,5 @@ public sealed record TrackDiscovered(
     int? DurationMs,
     string? Isrc,
     string? Mbid,
-    ProviderName SourceProvider,
+    LookupSource SourceProvider,
     DateTimeOffset ObservedAt) : IMusicTrackEvent;

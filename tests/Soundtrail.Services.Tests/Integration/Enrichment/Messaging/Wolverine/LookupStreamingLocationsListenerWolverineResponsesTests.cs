@@ -2,8 +2,11 @@ using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
+using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Domain.Enrichment.Responses;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.Adapters;
+using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Messaging.Wolverine;
@@ -17,12 +20,17 @@ public sealed class LookupStreamingLocationsListenerWolverineResponsesTests
         env.Seed(
             MusicSearchCriteria.ByIsrc("isrc-1"),
             new ExternalReference(ProviderName.AppleMusic, new Uri("https://music.apple.com/us/song/apple-1?i=apple-1"), "apple-1"));
-        var bus = new WolverineMessageBusFake();
-        var listener = new LookupStreamingLocationsListener(env.Handler, bus);
+        var listener = new LookupStreamingLocationsListener(env.Handler);
 
         await listener.Handle(Command(), null!);
 
-        bus.SentMessages.Should().ContainSingle().Which.Should().BeOfType<MusicCatalogLookupAttemptedDto>();
+        env.Bus.SentCommands.Should().ContainSingle().Which.Should().BeOfType<MusicCatalogLookupAttempted>();
+        env.Bus.SentCommands
+            .OfType<MusicCatalogLookupAttempted>()
+            .Single()
+            .ToDto()
+            .Should()
+            .BeOfType<MusicCatalogLookupAttemptedDto>();
     }
 
     [Fact]
@@ -30,17 +38,17 @@ public sealed class LookupStreamingLocationsListenerWolverineResponsesTests
     {
         var env = LookupStreamingLocationsHandlerTestEnvironment.Create();
         env.Admission.Reject(
-            ProviderName.Odesli,
+            LookupSource.Odesli,
             new DateTimeOffset(2026, 6, 18, 12, 1, 0, TimeSpan.Zero),
             "Odesli budget temporarily unavailable");
-        var bus = new WolverineMessageBusFake();
-        var listener = new LookupStreamingLocationsListener(env.Handler, bus);
+        var listener = new LookupStreamingLocationsListener(env.Handler);
 
         await listener.Handle(Command(), null!);
-        var message = bus.SentMessages.Single().Should().BeOfType<MusicCatalogLookupAttemptedDto>().Subject;
+        var message = env.Bus.SentCommands.OfType<MusicCatalogLookupAttempted>().Single()
+            .ToDto();
 
         message.Outcome.Status.Should().Be("Deferred");
-        message.SourceProvider.Should().Be(ProviderName.Odesli.Value);
+        message.SourceProvider.Should().Be(LookupSource.Odesli.Value);
         message.Outcome.Reason.Should().Be("Odesli budget temporarily unavailable");
     }
 
@@ -49,14 +57,14 @@ public sealed class LookupStreamingLocationsListenerWolverineResponsesTests
     {
         var env = LookupStreamingLocationsHandlerTestEnvironment.Create();
         env.Throw(new InvalidOperationException("boom"));
-        var bus = new WolverineMessageBusFake();
-        var listener = new LookupStreamingLocationsListener(env.Handler, bus);
+        var listener = new LookupStreamingLocationsListener(env.Handler);
 
         await listener.Handle(Command(), null!);
-        var message = bus.SentMessages.Single().Should().BeOfType<MusicCatalogLookupAttemptedDto>().Subject;
+        var message = env.Bus.SentCommands.OfType<MusicCatalogLookupAttempted>().Single()
+            .ToDto();
 
         message.Outcome.Status.Should().Be("Failed");
-        message.SourceProvider.Should().Be(ProviderName.Odesli.Value);
+        message.SourceProvider.Should().Be(LookupSource.Odesli.Value);
         message.Outcome.Reason.Should().Be("Lookup failed");
     }
 
@@ -67,8 +75,7 @@ public sealed class LookupStreamingLocationsListenerWolverineResponsesTests
         env.Seed(
             MusicSearchCriteria.ByTrackArtistAlbum("Song A", "Artist A", "Album A"),
             new ExternalReference(ProviderName.AppleMusic, new Uri("https://music.apple.com/us/song/apple-1?i=apple-1"), "apple-1"));
-        var bus = new WolverineMessageBusFake();
-        var listener = new LookupStreamingLocationsListener(env.Handler, bus);
+        var listener = new LookupStreamingLocationsListener(env.Handler);
 
         await listener.Handle(
             new LookupStreamingLocationsCommandDto(

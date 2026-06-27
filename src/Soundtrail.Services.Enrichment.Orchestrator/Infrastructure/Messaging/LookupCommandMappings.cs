@@ -15,7 +15,7 @@ internal static class LookupCommandMappings
                 musicBrainz.CreatedAt,
                 musicBrainz.CorrelationId.Value,
                 musicBrainz.SearchCriteria.Kind,
-                musicBrainz.SearchCriteria.Query,
+                musicBrainz.SearchCriteria.UnifiedQuery,
                 musicBrainz.SearchCriteria.Isrc,
                 musicBrainz.SearchCriteria.Title,
                 musicBrainz.SearchCriteria.Artist,
@@ -31,7 +31,7 @@ internal static class LookupCommandMappings
                 playback.CorrelationId.Value,
                 new StreamingLocationSearchTermDto(
                     playback.LookupKey.Kind,
-                    playback.LookupKey.Query,
+                    playback.LookupKey.UnifiedQuery,
                     playback.LookupKey.Isrc,
                     playback.LookupKey.Title,
                     playback.LookupKey.Artist,

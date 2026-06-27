@@ -26,7 +26,7 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
             musicCatalogId,
             0,
             CommandId.For("LookupTrackMetadata:mc_track_1"),
-            [new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))]);
+            [new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", LookupSource.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))]);
 
         var loaded = await env.LoadAsync(musicCatalogId);
 
@@ -41,7 +41,7 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
         await using var env = StreamStoreTestEnvironment.Create(mode);
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
         var commandId = CommandId.For("LookupTrackMetadata:mc_track_1");
-        var @event = new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero));
+        var @event = new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", LookupSource.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero));
 
         var first = await env.AppendAsync(musicCatalogId, 0, commandId, [@event]);
         var second = await env.AppendAsync(musicCatalogId, 1, commandId, [@event]);
@@ -238,7 +238,7 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
         new(
             CommandId.For("ResolveMusicMetadata:mc_track_1"),
             MusicCatalogId.From("mc_track_1"),
-            ProviderName.MusicBrainz,
+            LookupSource.MusicBrainz,
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero),
             new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000, "Album A", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"),

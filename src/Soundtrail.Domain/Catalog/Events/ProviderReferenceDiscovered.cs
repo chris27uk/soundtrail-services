@@ -6,5 +6,5 @@ public sealed record ProviderReferenceDiscovered(
     ProviderName Provider,
     string? ExternalId,
     Uri Url,
-    ProviderName SourceProvider,
+    LookupSource SourceProvider,
     DateTimeOffset ObservedAt) : IMusicTrackEvent;

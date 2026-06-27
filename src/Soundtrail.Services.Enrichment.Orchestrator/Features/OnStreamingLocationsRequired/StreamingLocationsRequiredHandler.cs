@@ -5,7 +5,7 @@ using Soundtrail.Services.Enrichment.Orchestrator.Features.OnStreamingLocationsR
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnStreamingLocationsRequired;
 
-public sealed class StreamingLocationsRequiredHandler(ICommandBus commandBus)
+public sealed class StreamingLocationsRequiredHandler(ICommandBus commandBus) : IHandler<ScheduleStreamingLocationsLookupCommand>
 {
     public Task Handle(ScheduleStreamingLocationsLookupCommand command, CancellationToken cancellationToken = default)
     {

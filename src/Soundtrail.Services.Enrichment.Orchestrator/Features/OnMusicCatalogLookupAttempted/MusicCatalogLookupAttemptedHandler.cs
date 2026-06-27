@@ -1,18 +1,18 @@
+using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Enrichment.Responses;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Support;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted;
 
 public sealed class MusicCatalogLookupAttemptedHandler(
     IMusicTrackEventRepository eventRepository,
     ICatalogSearchTrackingStore catalogSearchTrackingStore,
-    ICompleteTrackedDiscoveriesRepository discoveryRepository)
+    ICatalogSearchDiscoveryRepository discoveryRepository) : IHandler<MusicCatalogLookupAttempted>
 {
-    public async Task<EnrichmentOrchestrationResult> Handle(
+    public async Task Handle(
         MusicCatalogLookupAttempted attempted,
         CancellationToken cancellationToken = default)
     {
@@ -118,6 +118,6 @@ public sealed class MusicCatalogLookupAttemptedHandler(
             }
         }
 
-        return new EnrichmentOrchestrationResult(Array.Empty<IMusicTrackEvent>());
+        return;
     }
 }

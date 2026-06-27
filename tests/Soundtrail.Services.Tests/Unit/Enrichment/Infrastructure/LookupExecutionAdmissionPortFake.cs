@@ -55,7 +55,7 @@ internal sealed class LookupExecutionAdmissionPortFake : ILookupExecutionAdmissi
     }
 
     public void Reject(
-        ProviderName provider,
+        LookupSource provider,
         DateTimeOffset retryAt,
         string reason)
     {
@@ -69,7 +69,7 @@ internal sealed class LookupExecutionAdmissionPortFake : ILookupExecutionAdmissi
     }
 
     public void RejectAfterSuccesses(
-        ProviderName provider,
+        LookupSource provider,
         int successfulAcquisitions)
     {
         if (!resultsByProvider.TryGetValue(provider.Value, out var results))

@@ -3,12 +3,13 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Ports;
+using Soundtrail.Translators.Registry;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
 
 public sealed class RavenSaveMusicTrackProjection(
     IAsyncDocumentSession session,
-    RavenMusicTrackProjectionMapper mapper) : ISaveMusicTrackProjectionPort
+    ITypeTranslator translator) : ISaveMusicTrackProjectionPort
 {
     public async Task SaveAsync(
         MusicCatalogId musicCatalogId,
@@ -22,7 +23,7 @@ public sealed class RavenSaveMusicTrackProjection(
                 Id = documentId
             };
 
-        mapper.MapOntoDocument(document, projection);
+        translator.MapOnto(projection, document);
         await session.StoreAsync(document, cancellationToken);
         await session.SaveChangesAsync(cancellationToken);
     }

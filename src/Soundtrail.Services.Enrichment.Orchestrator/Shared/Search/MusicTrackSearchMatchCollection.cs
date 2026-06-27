@@ -11,7 +11,7 @@ public sealed class MusicTrackSearchMatchCollection(
 
     public IReadOnlyList<MusicCatalogMatch> Query(MusicSearchCriteria searchCriteria)
     {
-        var normalizedQuery = searchCriteria.Query;
+        var normalizedQuery = searchCriteria.UnifiedQuery;
         if (!string.IsNullOrWhiteSpace(normalizedQuery))
         {
             var exactQueryMatches = matches

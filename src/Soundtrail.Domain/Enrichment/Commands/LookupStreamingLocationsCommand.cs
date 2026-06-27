@@ -15,5 +15,5 @@ public sealed record LookupStreamingLocationsCommand(
 {
     public static CommandId Id(MusicCatalogId catalogId) => CommandId.For($"LookupStreamingLocations:{catalogId.Value}");
     
-    public ProviderName TargetProvider => ProviderName.Odesli;
+    public LookupSource TargetProvider => LookupSource.Odesli;
 }

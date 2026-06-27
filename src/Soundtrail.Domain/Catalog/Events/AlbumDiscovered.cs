@@ -7,5 +7,5 @@ public sealed record AlbumDiscovered(
     string? AlbumTitle,
     string? SourceAlbumId,
     DateOnly? ReleaseDate,
-    ProviderName SourceProvider,
+    LookupSource SourceProvider,
     DateTimeOffset ObservedAt) : IMusicTrackEvent;

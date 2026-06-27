@@ -36,7 +36,7 @@ internal sealed class PublishMusicTrackEventsHandlerTestEnvironment
                 MusicCatalogId.From(musicCatalogId),
                 LookupPriorityBand.High,
                 CorrelationId.From("corr-1"),
-                ProviderName.MusicBrainz,
+                LookupSource.MusicBrainz,
                 new DateTimeOffset(2026, 6, 18, 12, version, 0, TimeSpan.Zero),
                 !string.IsNullOrWhiteSpace(isrc)
                     ? MusicSearchCriteria.ByIsrc(isrc)

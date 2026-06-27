@@ -96,14 +96,14 @@ public sealed class MusicCatalogLookupAttemptedHandlerTests
             new MusicCatalogMetadataFetched(
                 CommandId.For("LookupStreamingLocations:mc_track_1"),
                 MusicCatalogId.From("mc_track_1"),
-                ProviderName.Odesli,
+                LookupSource.Odesli,
                 LookupPriorityBand.High,
                 new DateTimeOffset(2026, 6, 8, 12, 2, 0, TimeSpan.Zero),
                 null,
                 [],
                 [
-                    new ProviderLookupFailure(ProviderName.Spotify, ProviderName.Odesli),
-                    new ProviderLookupFailure(ProviderName.YoutubeMusic, ProviderName.Odesli)
+                    new ProviderLookupFailure(ProviderName.Spotify, LookupSource.Odesli),
+                    new ProviderLookupFailure(ProviderName.YoutubeMusic, LookupSource.Odesli)
                 ],
                 null,
                 CorrelationId.From("corr-2")));

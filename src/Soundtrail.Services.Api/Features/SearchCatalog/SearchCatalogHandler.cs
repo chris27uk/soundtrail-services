@@ -1,14 +1,14 @@
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
-using Soundtrail.Services.Api.Features.SearchCatalog.Support;
 
 namespace Soundtrail.Services.Api.Features.SearchCatalog;
 
 public sealed class SearchCatalogHandler(
     ICatalogSearchPort catalogSearch,
-    CatalogSearchAttemptRecorder catalogSearchAttemptRecorder) : IApiHandler<SearchCatalogCommand, SearchCatalogResponse>
+    ICatalogSearchDiscoveryRepository discoveryRepository,
+    ICommandBus commandBus) : IApiHandler<SearchCatalogCommand, SearchCatalogResponse>
 {
     public async Task<SearchCatalogResponse> Handle(
         SearchCatalogCommand command,
@@ -19,11 +19,20 @@ public sealed class SearchCatalogHandler(
 
         if (!local.IsComplete && discovery is null)
         {
-            await catalogSearchAttemptRecorder.TryRequestAsync(
-                new RecordCatalogSearchAttemptCommand(
-                    command.ToMusicSearchTerm(),
-                    command.ToCatalogSearchAttempt()),
+            var requested = command.ToCatalogSearchAttempt();
+            var history = await SearchOrSeekHistory.LoadAsync(
+                discoveryRepository,
+                requested.SearchCriteria,
                 cancellationToken);
+            if (history.SearchRequested(requested))
+            {
+                var saved = await history.SaveAsync(discoveryRepository, cancellationToken);
+                if (saved)
+                {
+                    await commandBus.SendAsync(requested, cancellationToken);
+                }
+            }
+
             discovery = new SearchDiscovery(
                 WillBeLookedUp: true,
                 Reason: "Local results incomplete",

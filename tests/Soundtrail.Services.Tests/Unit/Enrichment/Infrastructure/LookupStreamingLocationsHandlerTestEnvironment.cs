@@ -1,4 +1,5 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations;
@@ -14,11 +15,12 @@ internal sealed class LookupStreamingLocationsHandlerTestEnvironment
     {
         GetMusicTrackReference = new FakeGetMusicTrackReference();
         Admission = new LookupExecutionAdmissionPortFake();
-        var coreHandler = new LookupStreamingLocationsHandler(GetMusicTrackReference);
-        Handler = new LookupStreamingLocationsExecutionAdmissionDecorator(Admission, coreHandler);
+        Bus = new CommandBusFake();
+        var coreHandler = new LookupStreamingLocationsHandler(GetMusicTrackReference, Bus);
+        Handler = new LookupStreamingLocationsExecutionAdmissionDecorator(Admission, coreHandler, Bus);
     }
 
-    public ILookupStreamingLocationsHandler Handler { get; }
+    public IHandler<LookupStreamingLocationsCommand> Handler { get; }
 
     public FakeGetMusicTrackReference GetMusicTrackReference { get; }
 
@@ -26,13 +28,16 @@ internal sealed class LookupStreamingLocationsHandlerTestEnvironment
 
     public LookupExecutionAdmissionPortFake Admission { get; }
 
+    public CommandBusFake Bus { get; }
+
     public static LookupStreamingLocationsHandlerTestEnvironment Create() => new();
 
     public void Seed(MusicSearchCriteria lookupKey, params ExternalReference[] references) =>
         GetMusicTrackReference.Seed(lookupKey, references);
 
-    public Task<MusicCatalogLookupAttempted> HandleNewExecutionCommand(MusicSearchCriteria? searchTerm = null) =>
-        Handler.Handle(
+    public async Task<MusicCatalogLookupAttempted> HandleNewExecutionCommand(MusicSearchCriteria? searchTerm = null)
+    {
+        await Handler.Handle(
             new LookupStreamingLocationsCommand(
                 CommandId.For("LookupStreamingLocations:mc_track_1"),
                 MusicCatalogId.From("mc_track_1"),
@@ -41,6 +46,9 @@ internal sealed class LookupStreamingLocationsHandlerTestEnvironment
                 CorrelationId.From("corr-1"),
                 searchTerm ?? MusicSearchCriteria.ByIsrc("isrc-1")),
             CancellationToken.None);
+
+        return LastAttempt();
+    }
 
     public async Task<MusicCatalogLookupAttempted> HandleDuplicateExecutionCommand(MusicSearchCriteria? searchTerm = null)
     {
@@ -52,8 +60,12 @@ internal sealed class LookupStreamingLocationsHandlerTestEnvironment
             CorrelationId.From("corr-1"),
             searchTerm ?? MusicSearchCriteria.ByIsrc("isrc-1"));
         await Handler.Handle(command, CancellationToken.None);
-        return await Handler.Handle(command, CancellationToken.None);
+        await Handler.Handle(command, CancellationToken.None);
+        return LastAttempt();
     }
 
     public void Throw(Exception ex) => GetMusicTrackReference.Throw(ex);
+
+    private MusicCatalogLookupAttempted LastAttempt() =>
+        Bus.SentCommands.OfType<MusicCatalogLookupAttempted>().Last();
 }

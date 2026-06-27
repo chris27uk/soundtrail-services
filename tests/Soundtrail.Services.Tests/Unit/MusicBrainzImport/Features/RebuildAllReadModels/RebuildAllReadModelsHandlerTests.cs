@@ -43,7 +43,7 @@ public sealed class RebuildAllReadModelsHandlerTests
                     222000,
                     "USIR20400274",
                     "mbid-1",
-                    ProviderName.MusicBrainz,
+                    LookupSource.MusicBrainz,
                     Clock))
         };
         var discoveryEvents = new[]

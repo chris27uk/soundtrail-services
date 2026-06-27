@@ -16,6 +16,8 @@ using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapte
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Ports;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Ports;
+using Soundtrail.Translators.ProjectionDocuments;
+using Soundtrail.Translators.Registry.CompositionRoot;
 
 namespace Soundtrail.Services.Internal.Projector.Infrastructure.Raven;
 
@@ -25,6 +27,7 @@ public static class RavenServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        services.AddTypeTranslationsFromAssemblies(typeof(Soundtrail.Translators.Registry.TypeTranslationRegistry).Assembly);
         services.Configure<RavenDbOptions>(configuration.GetSection(RavenDbOptions.SectionName));
 
         services.TryAddSingleton<IDocumentStore>(sp =>

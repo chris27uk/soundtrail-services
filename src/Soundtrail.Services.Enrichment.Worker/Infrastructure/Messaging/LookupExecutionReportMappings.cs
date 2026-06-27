@@ -6,10 +6,7 @@ namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
 
 internal static class LookupExecutionReportMappings
 {
-    public static MusicCatalogLookupAttemptedDto ToDto(
-        this MusicCatalogLookupAttempted attempted,
-        IMusicCatalogLookupCommand command,
-        string sourceProvider) =>
+    public static MusicCatalogLookupAttemptedDto ToDto(this MusicCatalogLookupAttempted attempted) =>
         new(
             attempted.CommandId.Value,
             attempted.MusicCatalogId.Value,

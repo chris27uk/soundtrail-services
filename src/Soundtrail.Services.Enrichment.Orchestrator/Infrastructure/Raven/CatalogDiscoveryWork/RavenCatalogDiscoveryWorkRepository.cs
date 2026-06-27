@@ -5,6 +5,8 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Raven.CatalogDiscoveryWork;
 
@@ -25,7 +27,7 @@ public sealed class RavenCatalogDiscoveryWorkRepository(
 
             return document is null
                 ? null
-                : CatalogDiscoveryWorkEventRecordMapper.ToSummary(document);
+                : ToSummary(document);
         }
     }
 
@@ -52,7 +54,7 @@ public sealed class RavenCatalogDiscoveryWorkRepository(
 
             return new CatalogDiscoveryWorkEventStream(
                 metadata.Version,
-                storedEvents.Select(CatalogDiscoveryWorkEventRecordMapper.ToDomainEvent).ToArray());
+                storedEvents.Select(CatalogDiscoveryWorkStoredEventTranslator.ToEvent).ToArray());
         }
     }
 
@@ -88,10 +90,10 @@ public sealed class RavenCatalogDiscoveryWorkRepository(
 
             var startingVersion = metadata.Version;
             metadata.Version += events.Count;
-            metadata.UpdatedAtUtc = events.Max(CatalogDiscoveryWorkEventRecordMapper.GetOccurredAtUtc);
+            metadata.UpdatedAtUtc = events.Max(CatalogDiscoveryWorkStoredEventTranslator.GetOccurredAtUtc);
             await activeSession.StoreAsync(metadata, cancellationToken);
 
-            foreach (var storedEvent in CatalogDiscoveryWorkEventRecordMapper.ToStoredEvents(musicCatalogId, events, startingVersion))
+            foreach (var storedEvent in CatalogDiscoveryWorkStoredEventTranslator.ToStoredEvents(musicCatalogId, events, startingVersion))
             {
                 await activeSession.StoreAsync(storedEvent, cancellationToken);
             }
@@ -103,7 +105,7 @@ public sealed class RavenCatalogDiscoveryWorkRepository(
                     Id = summaryId,
                     MusicCatalogId = musicCatalogId.Value
                 };
-            CatalogDiscoveryWorkEventRecordMapper.Apply(summary, events);
+            Apply(summary, events);
             await activeSession.StoreAsync(summary, cancellationToken);
 
             if (ownsSession)
@@ -134,8 +136,66 @@ public sealed class RavenCatalogDiscoveryWorkRepository(
                 .ToListAsync(cancellationToken);
 
             return documents
-                .Select(CatalogDiscoveryWorkEventRecordMapper.ToSummary)
+                .Select(ToSummary)
                 .ToArray();
+        }
+    }
+
+    private static CatalogDiscoveryWorkSummary ToSummary(CatalogDiscoveryWorkSummaryRecordDto document) =>
+        new(
+            MusicCatalogId.From(document.MusicCatalogId),
+            document.RequestCount,
+            document.HighestTrustLevelSeen,
+            document.RiskScore,
+            Enum.Parse<CatalogDiscoveryWorkStatus>(document.Status, ignoreCase: true),
+            document.NextEligibleAt,
+            document.Priority is null ? null : Enum.Parse<LookupPriorityBand>(document.Priority, ignoreCase: true),
+            document.Reason);
+
+    private static void Apply(
+        CatalogDiscoveryWorkSummaryRecordDto document,
+        IReadOnlyCollection<IDomainEvent> events)
+    {
+        foreach (var @event in events)
+        {
+            switch (@event)
+            {
+                case CatalogDiscoveryWorkRequested requested:
+                    document.MusicCatalogId = requested.MusicCatalogId.Value;
+                    document.RequestCount += 1;
+                    document.HighestTrustLevelSeen = Math.Max(document.HighestTrustLevelSeen, requested.TrustLevel);
+                    document.RiskScore = Math.Max(document.RiskScore, requested.RiskScore);
+                    document.Status = (requested.RiskScore >= 90
+                        ? CatalogDiscoveryWorkStatus.Ignored
+                        : CatalogDiscoveryWorkStatus.Pending).ToString();
+                    document.Reason = null;
+                    document.UpdatedAtUtc = requested.RequestedAt;
+                    break;
+                case CatalogDiscoveryWorkDeferred deferred:
+                    document.MusicCatalogId = deferred.MusicCatalogId.Value;
+                    document.Status = CatalogDiscoveryWorkStatus.Pending.ToString();
+                    document.NextEligibleAt = deferred.NextEligibleAt;
+                    document.Priority = null;
+                    document.Reason = deferred.Reason;
+                    document.UpdatedAtUtc = deferred.DeferredAt;
+                    break;
+                case CatalogDiscoveryWorkIgnored ignored:
+                    document.MusicCatalogId = ignored.MusicCatalogId.Value;
+                    document.Status = CatalogDiscoveryWorkStatus.Ignored.ToString();
+                    document.NextEligibleAt = ignored.NextEligibleAt;
+                    document.Priority = null;
+                    document.Reason = ignored.Reason;
+                    document.UpdatedAtUtc = ignored.IgnoredAt;
+                    break;
+                case CatalogDiscoveryWorkScheduled scheduled:
+                    document.MusicCatalogId = scheduled.MusicCatalogId.Value;
+                    document.Status = CatalogDiscoveryWorkStatus.Pending.ToString();
+                    document.NextEligibleAt = null;
+                    document.Priority = scheduled.Priority.ToString();
+                    document.Reason = scheduled.Reason;
+                    document.UpdatedAtUtc = scheduled.ScheduledAt;
+                    break;
+            }
         }
     }
 

@@ -31,6 +31,7 @@ using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adap
 using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus;
 using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
+using Soundtrail.Translators.ProjectionDocuments;
 using Soundtrail.Translators.MusicTrackEventStore;
 using System.Net.Http.Json;
 using System.Reflection;
@@ -90,7 +91,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
 
         builder.Services.AddApiAppServices(builder.Configuration, builder.Environment, options =>
         {
-            options.ConfigureQueueingDependencies = services => services.TryAddScoped<IEnqueueCatalogSearchAttempt, WolverineEnqueueCatalogSearchAttempt>();
+            options.ConfigureQueueingDependencies = services => services.AddCatalogSearchAttemptQueue(builder.Configuration);
             options.ConfigureCatalogSearchDependencies = services =>
             {
                 services.AddEmbeddedRavenForTesting(raven.Store);
@@ -297,7 +298,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
             new RavenLoadStoredDiscoveryLifecycleEvents(session),
             new CatalogSearchStatusChangedHandler(
                 new RavenLoadDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()),
-                new RavenSaveDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper())));
+                new RavenSaveDiscoveryLifecycleProjection(session, Soundtrail.Translators.Registry.TypeTranslationRegistry.Default)));
         replayHandler.Handle(
                 new ReplayCatalogSearchStatusCommand(searchCriteria),
                 CancellationToken.None)
@@ -335,7 +336,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
             .ToArray();
         var projectHandler = new MusicCatalogChangedHandler(
             new RavenLoadMusicTrackCatalogProjection(replaySession, new RavenMusicTrackCatalogProjectionMapper()),
-            new RavenSaveMusicTrackCatalogProjection(replaySession, new RavenMusicTrackCatalogProjectionMapper()));
+            new RavenSaveMusicTrackCatalogProjection(replaySession, Soundtrail.Translators.Registry.TypeTranslationRegistry.Default));
         projectHandler.Handle(
                 new MusicCatalogChangedCommand(musicCatalogId, eventsToReplay),
                 CancellationToken.None)
@@ -358,7 +359,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
             new RavenLoadStoredDiscoveryLifecycleEvents(replaySession),
             new CatalogSearchStatusChangedHandler(
                 new RavenLoadDiscoveryLifecycleProjection(replaySession, new RavenDiscoveryLifecycleProjectionMapper()),
-                new RavenSaveDiscoveryLifecycleProjection(replaySession, new RavenDiscoveryLifecycleProjectionMapper())));
+                new RavenSaveDiscoveryLifecycleProjection(replaySession, Soundtrail.Translators.Registry.TypeTranslationRegistry.Default)));
         replayHandler.Handle(
                 new ReplayCatalogSearchStatusCommand(searchCriteria),
                 CancellationToken.None)
@@ -408,11 +409,9 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
 
     private static readonly Assembly ApiAssembly = typeof(ApiAssemblyMarker).Assembly;
 
-    private static readonly Type CatalogTrackRecordDtoType = ApiAssembly
-        .GetType("Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogTrackRecordDto", true)!;
+    private static readonly Type CatalogTrackRecordDtoType = typeof(Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogTrackRecordDto);
 
-    private static readonly Type CatalogProviderReferenceRecordDtoType = ApiAssembly
-        .GetType("Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogProviderReferenceRecordDto", true)!;
+    private static readonly Type CatalogProviderReferenceRecordDtoType = typeof(Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogProviderReferenceRecordDto);
 
     private static readonly IReadOnlyList<Type> IndexTypes =
     [

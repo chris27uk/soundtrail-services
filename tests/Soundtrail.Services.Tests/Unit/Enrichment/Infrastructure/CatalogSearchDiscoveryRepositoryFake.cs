@@ -1,11 +1,10 @@
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Commands;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Support;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
-internal sealed class CatalogSearchDiscoveryRepositoryFake : ICompleteTrackedDiscoveriesRepository
+internal sealed class CatalogSearchDiscoveryRepositoryFake : ICatalogSearchDiscoveryRepository
 {
     private readonly Dictionary<string, List<IDomainEvent>> eventsByCriteria = [];
 

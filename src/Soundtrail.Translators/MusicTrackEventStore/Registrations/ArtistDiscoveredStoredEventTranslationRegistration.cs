@@ -20,7 +20,7 @@ public sealed class ArtistDiscoveredStoredEventTranslationRegistration : IMusicT
                 dto.ArtistId,
                 dto.ArtistName,
                 dto.SourceArtistId,
-                ProviderName.From(dto.SourceProvider),
+                LookupSource.From(dto.SourceProvider),
                 dto.ObservedAt),
             domainEvent => domainEvent.ObservedAt);
     }

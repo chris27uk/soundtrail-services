@@ -3,12 +3,13 @@ using Soundtrail.Contracts;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Ports;
 using Soundtrail.Translators.Discovery;
+using Soundtrail.Translators.Registry;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
 
 public sealed class RavenSaveDiscoveryLifecycleProjection(
     IAsyncDocumentSession session,
-    RavenDiscoveryLifecycleProjectionMapper mapper) : ISaveDiscoveryLifecycleProjectionPort
+    ITypeTranslator translator) : ISaveDiscoveryLifecycleProjectionPort
 {
     public async Task SaveAsync(
         DiscoveryLifecycleProjection projection,
@@ -22,7 +23,7 @@ public sealed class RavenSaveDiscoveryLifecycleProjection(
                 Id = statusDocumentId
             };
 
-        mapper.MapOntoStatusDocument(statusDocument, projection);
+        translator.MapOnto(projection, statusDocument);
         await session.StoreAsync(statusDocument, cancellationToken);
 
         var checkpointDocumentId = DiscoveryLifecycleProjectionCheckpointDocument.GetDocumentId(persistentId);
@@ -32,7 +33,7 @@ public sealed class RavenSaveDiscoveryLifecycleProjection(
                 Id = checkpointDocumentId
             };
 
-        mapper.MapOntoCheckpointDocument(checkpointDocument, projection);
+        translator.MapOnto(projection, checkpointDocument);
         await session.StoreAsync(checkpointDocument, cancellationToken);
 
         await session.SaveChangesAsync(cancellationToken);

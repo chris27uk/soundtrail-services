@@ -16,21 +16,18 @@ namespace Soundtrail.Contracts.Common
 
         public static ProviderName From(string value) => new(value);
         
-        public static bool IsKnown(string value) =>
-            value is "AppleMusic" or "YoutubeMusic" or "MusicBrainz" or "Spotify" or "Odesli";
+        public static bool IsKnown(string value) => value is "AppleMusic" or "YoutubeMusic" or "Spotify";
         
         public static ProviderName AppleMusic { get; } = new("AppleMusic");
 
         public static ProviderName YoutubeMusic { get; } = new("YoutubeMusic");
 
-        public static ProviderName MusicBrainz { get; } = new("MusicBrainz");
-
         public static ProviderName Spotify { get; } = new("Spotify");
-
-        public static ProviderName Odesli { get; } = new("Odesli");
 
         public override string ToString() => Value;
 
+        public static ProviderName[] All => [Spotify, AppleMusic, YoutubeMusic];
+        
         public string ToPersistentId()
         {
             return this.Value switch

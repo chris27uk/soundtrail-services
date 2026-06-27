@@ -288,10 +288,10 @@ public sealed class SearchOutsideInTests
             SearchOutsideInTestEnvironment.SeedRebuiltCatalogProjectionFromImportedEvents(
                 store,
                 MusicCatalogId.From("mc_track_1"),
-                new TrackDiscovered("Rare Unknown Song", "Test Artist", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero)),
-                new ArtistDiscovered("artist_test_artist", "Test Artist", "mb-artist-test-artist", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 1, 0, TimeSpan.Zero)),
-                new AlbumDiscovered("album_rare_album", "Rare Album", "mb-release-rare-album", new DateOnly(2026, 1, 1), ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 2, 0, TimeSpan.Zero)),
-                new ProviderReferenceDiscovered(ProviderName.AppleMusic, "apple-track-1", new Uri("https://music.apple.com/track/1"), ProviderName.Odesli, new DateTimeOffset(2026, 6, 16, 12, 3, 0, TimeSpan.Zero)));
+                new TrackDiscovered("Rare Unknown Song", "Test Artist", 123000, "isrc-1", "mbid-1", LookupSource.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero)),
+                new ArtistDiscovered("artist_test_artist", "Test Artist", "mb-artist-test-artist", LookupSource.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 1, 0, TimeSpan.Zero)),
+                new AlbumDiscovered("album_rare_album", "Rare Album", "mb-release-rare-album", new DateOnly(2026, 1, 1), LookupSource.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 2, 0, TimeSpan.Zero)),
+                new ProviderReferenceDiscovered(ProviderName.AppleMusic, "apple-track-1", new Uri("https://music.apple.com/track/1"), LookupSource.Odesli, new DateTimeOffset(2026, 6, 16, 12, 3, 0, TimeSpan.Zero)));
 
             var criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
             SearchOutsideInTestEnvironment.SeedRebuiltDiscoveryProjectionFromImportedEvents(

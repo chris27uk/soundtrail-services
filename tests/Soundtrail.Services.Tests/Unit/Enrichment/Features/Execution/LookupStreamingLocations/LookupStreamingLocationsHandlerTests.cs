@@ -19,7 +19,7 @@ public sealed class LookupStreamingLocationsHandlerTests
         var result = await env.HandleNewExecutionCommand();
 
         result.Outcome.Status.Should().Be(MusicCatalogLookupOutcomeStatus.Completed);
-        result.MusicCatalogMetadataFetched!.SourceProvider.Should().Be(ProviderName.Odesli);
+        result.MusicCatalogMetadataFetched!.SourceProvider.Should().Be(LookupSource.Odesli);
         result.MusicCatalogMetadataFetched.References.Should().HaveCount(2);
         result.MusicCatalogMetadataFetched.FailedProviders.Should().ContainSingle()
             .Which.Provider.Should().Be(ProviderName.YoutubeMusic);
@@ -59,7 +59,7 @@ public sealed class LookupStreamingLocationsHandlerTests
     {
         var env = LookupStreamingLocationsHandlerTestEnvironment.Create();
         env.Admission.Reject(
-            ProviderName.Odesli,
+            LookupSource.Odesli,
             new DateTimeOffset(2026, 6, 8, 12, 1, 0, TimeSpan.Zero),
             "Odesli budget temporarily unavailable");
 

@@ -2,8 +2,10 @@ using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
+using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Adapters;
+using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Messaging.Wolverine;
@@ -15,12 +17,17 @@ public sealed class LookupMusicMetadataListenerWolverineResponsesTests
     {
         var env = LookupMusicMetadataHandlerTestEnvironment.Create();
         env.SeedMusicBrainzIsrc("isrc-1", new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000, "Album A", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"));
-        var bus = new WolverineMessageBusFake();
-        var listener = new LookupTrackMetadataListener(env.Handler, bus);
+        var listener = new LookupTrackMetadataListener(env.Handler);
 
         await listener.Handle(Command(), null!);
 
-        bus.SentMessages.Should().ContainSingle().Which.Should().BeOfType<MusicCatalogLookupAttemptedDto>();
+        env.Bus.SentCommands.Should().ContainSingle().Which.Should().BeOfType<MusicCatalogLookupAttempted>();
+        env.Bus.SentCommands
+            .OfType<MusicCatalogLookupAttempted>()
+            .Single()
+            .ToDto()
+            .Should()
+            .BeOfType<MusicCatalogLookupAttemptedDto>();
     }
 
     [Fact]
@@ -28,17 +35,16 @@ public sealed class LookupMusicMetadataListenerWolverineResponsesTests
     {
         var env = LookupMusicMetadataHandlerTestEnvironment.Create();
         env.Admission.Reject(
-            ProviderName.MusicBrainz,
+            LookupSource.MusicBrainz,
             new DateTimeOffset(2026, 6, 18, 12, 1, 0, TimeSpan.Zero),
             "MusicBrainz budget temporarily unavailable");
-        var bus = new WolverineMessageBusFake();
-        var listener = new LookupTrackMetadataListener(env.Handler, bus);
+        var listener = new LookupTrackMetadataListener(env.Handler);
 
         await listener.Handle(Command(), null!);
-        var message = bus.SentMessages.Single().Should().BeOfType<MusicCatalogLookupAttemptedDto>().Subject;
+        var message = env.Bus.SentCommands.OfType<MusicCatalogLookupAttempted>().Single().ToDto();
 
         message.Outcome.Status.Should().Be("Deferred");
-        message.SourceProvider.Should().Be(ProviderName.MusicBrainz.Value);
+        message.SourceProvider.Should().Be(LookupSource.MusicBrainz.Value);
         message.Outcome.Reason.Should().Be("MusicBrainz budget temporarily unavailable");
     }
 
@@ -47,14 +53,13 @@ public sealed class LookupMusicMetadataListenerWolverineResponsesTests
     {
         var env = LookupMusicMetadataHandlerTestEnvironment.Create();
         env.Throw(new InvalidOperationException("boom"));
-        var bus = new WolverineMessageBusFake();
-        var listener = new LookupTrackMetadataListener(env.Handler, bus);
+        var listener = new LookupTrackMetadataListener(env.Handler);
 
         await listener.Handle(Command(), null!);
-        var message = bus.SentMessages.Single().Should().BeOfType<MusicCatalogLookupAttemptedDto>().Subject;
+        var message = env.Bus.SentCommands.OfType<MusicCatalogLookupAttempted>().Single().ToDto();
 
         message.Outcome.Status.Should().Be("Failed");
-        message.SourceProvider.Should().Be(ProviderName.MusicBrainz.Value);
+        message.SourceProvider.Should().Be(LookupSource.MusicBrainz.Value);
         message.Outcome.Reason.Should().Be("Lookup failed");
     }
 
@@ -63,8 +68,7 @@ public sealed class LookupMusicMetadataListenerWolverineResponsesTests
     {
         var env = LookupMusicMetadataHandlerTestEnvironment.Create();
         env.SeedMusicBrainzNames("Song A", "Artist A", "Album A", new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000, "Album A", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"));
-        var bus = new WolverineMessageBusFake();
-        var listener = new LookupTrackMetadataListener(env.Handler, bus);
+        var listener = new LookupTrackMetadataListener(env.Handler);
 
         await listener.Handle(
             new LookupTrackMetadataCommandDto(
@@ -91,8 +95,7 @@ public sealed class LookupMusicMetadataListenerWolverineResponsesTests
     {
         var env = LookupMusicMetadataHandlerTestEnvironment.Create();
         env.SeedMusicBrainzQuery("rare unknown song", new SongMetadata("Rare Unknown Song", "Test Artist", "isrc-rare-1", "mbid-1", 123000, "Rare Album", null, "mb-artist-1", "mb-release-1"));
-        var bus = new WolverineMessageBusFake();
-        var listener = new LookupTrackMetadataListener(env.Handler, bus);
+        var listener = new LookupTrackMetadataListener(env.Handler);
 
         await listener.Handle(
             new LookupTrackMetadataCommandDto(

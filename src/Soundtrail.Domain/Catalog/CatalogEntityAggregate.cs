@@ -47,7 +47,7 @@ public sealed class CatalogEntityAggregate
             throw new InvalidOperationException("Aggregate music catalog id does not match the enrichment response.");
         }
 
-        if (response.SourceProvider == ProviderName.MusicBrainz && response.Metadata is not null)
+        if (response.SourceProvider == LookupSource.MusicBrainz && response.Metadata is not null)
         {
             if (response.Hierarchy?.ArtistId is not null || !string.IsNullOrWhiteSpace(response.Metadata.Artist))
             {
@@ -153,7 +153,7 @@ public sealed class CatalogEntityAggregate
     }
 
     private bool ShouldRequireStreamingLocations(MusicCatalogMetadataFetched response) =>
-        response.SourceProvider == ProviderName.MusicBrainz
+        response.SourceProvider == LookupSource.MusicBrainz
         && response.Metadata is not null
         && discoveredReferenceProviders.Count == 0
         && !streamingLocationsRequired;

@@ -20,6 +20,7 @@ using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatu
 using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack;
 using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
+using Soundtrail.Translators.ProjectionDocuments;
 using Soundtrail.Translators.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ApplyEnrichmentResponse;
@@ -99,7 +100,7 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
             new RavenLoadStoredMusicTrackEvents(session, Translator),
             new MusicTrackChangedHandler(
                 new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
-                new RavenSaveMusicTrackProjection(session, new RavenMusicTrackProjectionMapper())));
+                new RavenSaveMusicTrackProjection(session, Soundtrail.Translators.Registry.TypeTranslationRegistry.Default)));
 
         foreach (var musicCatalogId in musicCatalogIds)
         {
@@ -121,7 +122,7 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
             new RavenLoadStoredDiscoveryLifecycleEvents(session),
             new CatalogSearchStatusChangedHandler(
                 new RavenLoadDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()),
-                new RavenSaveDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper())));
+                new RavenSaveDiscoveryLifecycleProjection(session, Soundtrail.Translators.Registry.TypeTranslationRegistry.Default)));
 
         foreach (var criteria in criteriaValues.Distinct(StringComparer.Ordinal))
         {
@@ -135,7 +136,7 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
         new(
             CommandId.For("ResolveMusicMetadata:mc_track_1").Value,
             "mc_track_1",
-            ProviderName.MusicBrainz.Value,
+            LookupSource.MusicBrainz.Value,
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero),
             "corr-1",
@@ -143,7 +144,7 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
             new MusicCatalogMetadataFetchedDto(
                 CommandId.For("ResolveMusicMetadata:mc_track_1").Value,
                 "mc_track_1",
-                ProviderName.MusicBrainz.Value,
+                LookupSource.MusicBrainz.Value,
                 LookupPriorityBand.High,
                 new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero),
                 new SongMetadataDto("Rare Unknown Song", "Test Artist", "isrc-1", "mbid-1", 123000, "Rare Album", new DateOnly(2026, 1, 1)),
@@ -157,7 +158,7 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
         new(
             CommandId.For("LookupStreamingLocations:mc_track_1").Value,
             "mc_track_1",
-            ProviderName.Odesli.Value,
+            LookupSource.Odesli.Value,
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 8, 12, 2, 0, TimeSpan.Zero),
             "corr-2",
@@ -165,7 +166,7 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
             new MusicCatalogMetadataFetchedDto(
                 CommandId.For("LookupStreamingLocations:mc_track_1").Value,
                 "mc_track_1",
-                ProviderName.Odesli.Value,
+                LookupSource.Odesli.Value,
                 LookupPriorityBand.High,
                 new DateTimeOffset(2026, 6, 8, 12, 2, 0, TimeSpan.Zero),
                 null,

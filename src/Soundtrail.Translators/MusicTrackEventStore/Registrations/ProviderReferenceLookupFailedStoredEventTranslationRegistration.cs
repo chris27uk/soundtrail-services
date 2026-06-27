@@ -16,7 +16,7 @@ public sealed class ProviderReferenceLookupFailedStoredEventTranslationRegistrat
                 domainEvent.ObservedAt),
             dto => new ProviderReferenceLookupFailed(
                 ProviderName.From(dto.Provider),
-                ProviderName.From(dto.SourceProvider),
+                LookupSource.From(dto.SourceProvider),
                 dto.ObservedAt),
             domainEvent => domainEvent.ObservedAt);
     }

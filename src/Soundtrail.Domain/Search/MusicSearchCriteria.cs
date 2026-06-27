@@ -1,5 +1,3 @@
-using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Search;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog;
 
@@ -9,7 +7,7 @@ public sealed record MusicSearchCriteria
 {
     private MusicSearchCriteria(
         MusicSearchKind kind,
-        string? query,
+        string? unifiedQuery,
         string? isrc,
         string? title,
         string? artist,
@@ -17,7 +15,7 @@ public sealed record MusicSearchCriteria
         SearchTypesFilter? searchTypes)
     {
         Kind = kind;
-        Query = query;
+        UnifiedQuery = unifiedQuery;
         Isrc = isrc;
         Title = title;
         Artist = artist;
@@ -28,7 +26,7 @@ public sealed record MusicSearchCriteria
     public static MusicSearchCriteria ByQuery(string query, SearchTypesFilter? searchTypes = null) =>
         new(
             MusicSearchKind.UnifiedSearch,
-            NormalizeRequired(query, nameof(query)),
+            string.IsNullOrWhiteSpace(query) ? throw new ArgumentException("Value cannot be empty.", nameof(query)) : MusicIdentityText.NormalizeFreeText(query),
             null,
             null,
             null,
@@ -39,7 +37,9 @@ public sealed record MusicSearchCriteria
         new(
             MusicSearchKind.Isrc,
             null,
-            NormalizeCompactRequired(isrc, nameof(isrc)),
+            string.IsNullOrWhiteSpace(isrc)
+                ? throw new ArgumentException("Value cannot be empty.", nameof(isrc))
+                : MusicIdentityText.NormalizeCompact(isrc),
             null,
             null,
             null,
@@ -50,8 +50,12 @@ public sealed record MusicSearchCriteria
             MusicSearchKind.TrackArtistAlbum,
             null,
             null,
-            RequireValue(title, nameof(title)),
-            RequireValue(artist, nameof(artist)),
+            string.IsNullOrWhiteSpace(title)
+                ? throw new ArgumentException("Value cannot be empty.", nameof(title))
+                : title,
+            string.IsNullOrWhiteSpace(artist)
+                ? throw new ArgumentException("Value cannot be empty.", nameof(artist))
+                : artist,
             album,
             null);
 
@@ -63,7 +67,7 @@ public sealed record MusicSearchCriteria
         switch (Kind)
         {
             case MusicSearchKind.UnifiedSearch:
-                withQuery(Query!);
+                withQuery(UnifiedQuery!);
                 return;
             case MusicSearchKind.Isrc:
                 withIsrcAction(Isrc!);
@@ -99,7 +103,7 @@ public sealed record MusicSearchCriteria
     {
         return Kind switch
         {
-            MusicSearchKind.UnifiedSearch => withQuery(Query!),
+            MusicSearchKind.UnifiedSearch => withQuery(UnifiedQuery!),
             MusicSearchKind.Isrc => withIsrcAction(Isrc!),
             MusicSearchKind.TrackArtistAlbum => withTitleAndArtist(Title!, Artist!, Album),
             _ => throw new InvalidOperationException($"Unsupported music search kind '{Kind}'.")
@@ -107,28 +111,22 @@ public sealed record MusicSearchCriteria
     }
 
     public MusicSearchKind Kind { get; init; }
-    public string? Query { get; init; }
+    
+    public string? UnifiedQuery { get; init; }
+    
     public string? Isrc { get; init; }
+    
     public string? Title { get; init; }
+    
     public string? Artist { get; init; }
+    
     public string? Album { get; init; }
+    
     public SearchTypesFilter? SearchTypes { get; init; }
+    
     public string NormalizedTitle => MusicIdentityText.NormalizeFreeText(Title);
+    
     public string NormalizedArtist => MusicIdentityText.NormalizeFreeText(Artist);
+    
     public string NormalizedAlbum => MusicIdentityText.NormalizeFreeText(Album);
-
-    private static string RequireValue(string value, string parameterName) =>
-        string.IsNullOrWhiteSpace(value)
-            ? throw new ArgumentException("Value cannot be empty.", parameterName)
-            : value;
-
-    private static string NormalizeRequired(string value, string parameterName) =>
-        string.IsNullOrWhiteSpace(value)
-            ? throw new ArgumentException("Value cannot be empty.", parameterName)
-            : MusicIdentityText.NormalizeFreeText(value);
-
-    private static string NormalizeCompactRequired(string value, string parameterName) =>
-        string.IsNullOrWhiteSpace(value)
-            ? throw new ArgumentException("Value cannot be empty.", parameterName)
-            : MusicIdentityText.NormalizeCompact(value);
 }

@@ -1,16 +1,17 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Abstractions;
 
 namespace Soundtrail.Domain.Enrichment.Responses;
 
 public sealed record MusicCatalogLookupAttempted(
     CommandId CommandId,
     MusicCatalogId MusicCatalogId,
-    ProviderName SourceProvider,
+    LookupSource SourceProvider,
     LookupPriorityBand Priority,
     DateTimeOffset CreatedAt,
     CorrelationId CorrelationId,
     MusicCatalogLookupOutcome Outcome,
-    MusicCatalogMetadataFetched? MusicCatalogMetadataFetched)
+    MusicCatalogMetadataFetched? MusicCatalogMetadataFetched) : ICommand
 {
     public static MusicCatalogLookupAttempted Completed(MusicCatalogMetadataFetched musicCatalogMetadataFetched) =>
         new(
@@ -26,7 +27,7 @@ public sealed record MusicCatalogLookupAttempted(
     public static MusicCatalogLookupAttempted Deferred(
         CommandId commandId,
         MusicCatalogId musicCatalogId,
-        ProviderName sourceProvider,
+        LookupSource sourceProvider,
         LookupPriorityBand priority,
         DateTimeOffset createdAt,
         CorrelationId correlationId,
@@ -46,7 +47,7 @@ public sealed record MusicCatalogLookupAttempted(
     public static MusicCatalogLookupAttempted Duplicate(
         CommandId commandId,
         MusicCatalogId musicCatalogId,
-        ProviderName sourceProvider,
+        LookupSource sourceProvider,
         LookupPriorityBand priority,
         DateTimeOffset createdAt,
         CorrelationId correlationId) =>
@@ -63,7 +64,7 @@ public sealed record MusicCatalogLookupAttempted(
     public static MusicCatalogLookupAttempted Failed(
         CommandId commandId,
         MusicCatalogId musicCatalogId,
-        ProviderName sourceProvider,
+        LookupSource sourceProvider,
         LookupPriorityBand priority,
         DateTimeOffset createdAt,
         CorrelationId correlationId,

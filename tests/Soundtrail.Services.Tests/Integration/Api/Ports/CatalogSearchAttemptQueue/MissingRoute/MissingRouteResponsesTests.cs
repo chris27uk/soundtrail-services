@@ -12,7 +12,7 @@ public sealed class MissingRouteResponsesTests
         await using var env = await CatalogSearchAttemptQueueTestEnvironment.CreateAsync(mode, configuredRoute: false);
         var request = CatalogSearchAttemptQueueTestEnvironment.Request("mr brightside");
 
-        Func<Task> act = () => env.CatalogSearchAttemptQueue.EnqueueAsync(request, CancellationToken.None);
+        Func<Task> act = () => env.CommandBus.SendAsync(request, CancellationToken.None);
 
         await act.Should().ThrowAsync<Exception>();
     }

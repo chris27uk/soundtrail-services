@@ -34,7 +34,7 @@ public sealed class DiscoveryBacklogLookupPlanner
                     correlationId ?? CorrelationId.New(),
                     searchTerm,
                     ToHierarchy(localTrack)),
-                ProviderName.Odesli);
+                LookupSource.Odesli);
         }
 
         if (searchTerm is null)
@@ -51,7 +51,7 @@ public sealed class DiscoveryBacklogLookupPlanner
                 correlationId ?? CorrelationId.New(),
                 searchTerm,
                 ToHierarchy(localTrack)),
-            ProviderName.MusicBrainz);
+            LookupSource.MusicBrainz);
     }
 
     private static CatalogTrackHierarchy? ToHierarchy(LocalMusicTrackSearchResult? localTrack) =>

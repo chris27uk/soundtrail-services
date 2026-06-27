@@ -8,6 +8,7 @@ using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
+using Soundtrail.Translators.ProjectionDocuments;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicTrackProjectionStore;
 
@@ -22,8 +23,8 @@ public sealed class MusicTrackProjectionStoreResponsesTests
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
         var stream = new MusicTrackStream(2,
         [
-            new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero)),
-            new ProviderReferenceDiscovered(ProviderName.AppleMusic, "apple-1", new Uri("https://music.apple.com/us/song/song-a?i=apple-1"), ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero))
+            new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", LookupSource.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero)),
+            new ProviderReferenceDiscovered(ProviderName.AppleMusic, "apple-1", new Uri("https://music.apple.com/us/song/song-a?i=apple-1"), LookupSource.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero))
         ]);
 
         await env.StoreAsync(musicCatalogId, stream);
@@ -87,7 +88,7 @@ public sealed class MusicTrackProjectionStoreResponsesTests
             using var session = raven!.Store.OpenAsyncSession();
             var handler = new MusicTrackChangedHandler(
                 new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
-                new RavenSaveMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()));
+                new RavenSaveMusicTrackProjection(session, Soundtrail.Translators.Registry.TypeTranslationRegistry.Default));
             await handler.Handle(
                 new MusicTrackChangedCommand(
                     musicCatalogId,

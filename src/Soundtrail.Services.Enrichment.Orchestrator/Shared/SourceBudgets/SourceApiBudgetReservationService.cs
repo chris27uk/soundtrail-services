@@ -70,10 +70,10 @@ public sealed class SourceApiBudgetReservationService(
                 $"{request.Source.Value} budget temporarily unavailable");
     }
 
-    private SourceApiBudgetPolicyOptions GetPolicy(ProviderName source) =>
-        source == ProviderName.MusicBrainz
+    private SourceApiBudgetPolicyOptions GetPolicy(LookupSource source) =>
+        source == LookupSource.MusicBrainz
             ? options.MusicBrainz
-            : source == ProviderName.Odesli
+            : source == LookupSource.Odesli
                 ? options.Odesli
                 : throw new ArgumentOutOfRangeException(nameof(source), source, "Unsupported source budget.");
 

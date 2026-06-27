@@ -3,11 +3,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Discovery.Commands;
-using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
+using Soundtrail.Translators.Registry;
 using Wolverine;
 using Wolverine.Logging;
+using ICommandBus = Soundtrail.Domain.Abstractions.ICommandBus;
 
 namespace Soundtrail.Services.Tests.Integration.Api.Ports.CatalogSearchAttemptQueue;
 
@@ -20,16 +22,16 @@ internal sealed class CatalogSearchAttemptQueueTestEnvironment : IAsyncDisposabl
     private CatalogSearchAttemptQueueTestEnvironment(
         IHost host,
         IServiceScope? scope,
-        IEnqueueCatalogSearchAttempt enqueueMusicRequest,
+        ICommandBus commandBus,
         Func<TimeSpan, Task<object>> waitForCapturedRequest)
     {
         this.host = host;
         this.scope = scope;
         this.waitForCapturedRequest = waitForCapturedRequest;
-        CatalogSearchAttemptQueue = enqueueMusicRequest;
+        CommandBus = commandBus;
     }
 
-    public IEnqueueCatalogSearchAttempt CatalogSearchAttemptQueue { get; }
+    public ICommandBus CommandBus { get; }
 
     public static Task<CatalogSearchAttemptQueueTestEnvironment> CreateAsync(
         CatalogSearchAttemptQueuePortMode mode,
@@ -55,7 +57,7 @@ internal sealed class CatalogSearchAttemptQueueTestEnvironment : IAsyncDisposabl
                 _ => Task.FromException<object>(new InvalidOperationException("No fake route configured.")));
         }
 
-        var queue = new TestInMemoryEnqueueCatalogSearchAttempt();
+        var queue = new TestInMemoryCommandBus();
         return new CatalogSearchAttemptQueueTestEnvironment(
             host,
             scope: null,
@@ -82,7 +84,7 @@ internal sealed class CatalogSearchAttemptQueueTestEnvironment : IAsyncDisposabl
         }
         else
         {
-            builder.Services.AddScoped<IEnqueueCatalogSearchAttempt, WolverineEnqueueCatalogSearchAttempt>();
+            builder.Services.AddScoped<ICommandBus, WolverineCommandBus>();
         }
 
         builder.UseWolverine(opts =>
@@ -98,7 +100,6 @@ internal sealed class CatalogSearchAttemptQueueTestEnvironment : IAsyncDisposabl
             }
             else
             {
-                builder.Services.AddScoped<IEnqueueCatalogSearchAttempt, WolverineEnqueueCatalogSearchAttempt>();
                 opts.UseRuntimeCompilation();
             }
 
@@ -115,7 +116,7 @@ internal sealed class CatalogSearchAttemptQueueTestEnvironment : IAsyncDisposabl
         return new CatalogSearchAttemptQueueTestEnvironment(
             host,
             scope,
-            scope.ServiceProvider.GetRequiredService<IEnqueueCatalogSearchAttempt>(),
+            scope.ServiceProvider.GetRequiredService<ICommandBus>(),
             async timeout => await capture.WaitAsync(timeout));
     }
 
@@ -139,7 +140,7 @@ internal sealed class CatalogSearchAttemptQueueTestEnvironment : IAsyncDisposabl
             CorrelationId: CorrelationId.New());
 
     private static async Task<object> WaitForCapturedRequestAsync(
-        TestInMemoryEnqueueCatalogSearchAttempt queue,
+        TestInMemoryCommandBus queue,
         TimeSpan timeout)
     {
         using var cts = new CancellationTokenSource(timeout);
@@ -158,15 +159,15 @@ internal sealed class CatalogSearchAttemptQueueTestEnvironment : IAsyncDisposabl
         throw new TimeoutException("CatalogSearchAttempt was not captured.");
     }
 
-    private sealed class TestInMemoryEnqueueCatalogSearchAttempt : IEnqueueCatalogSearchAttempt
+    private sealed class TestInMemoryCommandBus : ICommandBus
     {
         private readonly Queue<CatalogSearchAttemptDto> requests = new();
 
         public List<CatalogSearchAttemptDto> Requests => requests.ToList();
 
-        public Task EnqueueAsync(SearchCatalogRequested requested, CancellationToken cancellationToken)
+        public Task SendAsync(ICommand command, CancellationToken cancellationToken = default)
         {
-            requests.Enqueue(CatalogSearchAttemptMapper.ToDto(requested));
+            requests.Enqueue(TypeTranslationRegistry.Default.Translate<CatalogSearchAttemptDto>((SearchCatalogRequested)command));
             return Task.CompletedTask;
         }
     }

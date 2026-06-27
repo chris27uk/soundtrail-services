@@ -1,12 +1,13 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.ProjectionModel;
+using Soundtrail.Translators.Registry;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adapters;
 
 public sealed class RavenSaveMusicTrackCatalogProjection(
     IAsyncDocumentSession session,
-    RavenMusicTrackCatalogProjectionMapper mapper) : ISaveMusicTrackCatalogProjectionPort
+    ITypeTranslator translator) : ISaveMusicTrackCatalogProjectionPort
 {
     public async Task SaveAsync(
         MusicTrackCatalogProjection projection,
@@ -19,7 +20,7 @@ public sealed class RavenSaveMusicTrackCatalogProjection(
                 Id = trackDocumentId
             };
 
-        mapper.MapOntoTrackDocument(trackDocument, projection);
+        translator.MapOnto(projection.Track, trackDocument);
         await session.StoreAsync(trackDocument, cancellationToken);
 
         if (projection.Artist is not null && !string.IsNullOrWhiteSpace(projection.Artist.ArtistId))
@@ -31,7 +32,7 @@ public sealed class RavenSaveMusicTrackCatalogProjection(
                     Id = artistDocumentId
                 };
 
-            mapper.MapOntoArtistDocument(artistDocument, projection.Artist);
+            translator.MapOnto(projection.Artist, artistDocument);
             await session.StoreAsync(artistDocument, cancellationToken);
         }
 
@@ -44,7 +45,7 @@ public sealed class RavenSaveMusicTrackCatalogProjection(
                     Id = albumDocumentId
                 };
 
-            mapper.MapOntoAlbumDocument(albumDocument, projection.Album);
+            translator.MapOnto(projection.Album, albumDocument);
             await session.StoreAsync(albumDocument, cancellationToken);
         }
 
@@ -53,10 +54,8 @@ public sealed class RavenSaveMusicTrackCatalogProjection(
             ?? new CatalogProjectionCheckpointDocument
             {
                 Id = checkpointDocumentId,
-                MusicCatalogId = projection.MusicCatalogId.Value
             };
-        checkpoint.LastAppliedVersion = projection.ProjectionVersion;
-        checkpoint.UpdatedAt = projection.Track.UpdatedAt;
+        translator.MapOnto(projection, checkpoint);
         await session.StoreAsync(checkpoint, cancellationToken);
         await session.SaveChangesAsync(cancellationToken);
     }

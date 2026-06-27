@@ -4,5 +4,5 @@ namespace Soundtrail.Domain.Catalog.Events;
 
 public sealed record ProviderReferenceLookupFailed(
     ProviderName Provider,
-    ProviderName SourceProvider,
+    LookupSource SourceProvider,
     DateTimeOffset ObservedAt) : IMusicTrackEvent;

@@ -24,7 +24,7 @@ public sealed class TrackDiscoveredStoredEventTranslationRegistration : IMusicTr
                 dto.DurationMs,
                 dto.Isrc,
                 dto.Mbid,
-                ProviderName.From(dto.SourceProvider),
+                LookupSource.From(dto.SourceProvider),
                 dto.ObservedAt),
             domainEvent => domainEvent.ObservedAt);
     }
