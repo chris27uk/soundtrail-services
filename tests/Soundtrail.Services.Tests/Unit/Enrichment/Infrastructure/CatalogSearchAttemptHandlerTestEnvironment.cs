@@ -2,6 +2,7 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
@@ -21,9 +22,9 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
             this.search = search;
             this.localMusicTrackSearchFake = new LocalMusicTrackSearchFake();
             this.catalogSearchDiscoveryRepositoryFake = new CatalogSearchDiscoveryRepositoryFake();
-            this.Handler = new CatalogSearchRequestedHandler(
+            this.Handler = new SearchCatalogRequestedHandler(
                 search,
-                new RecordCatalogSearchStartedPortFake(this.catalogSearchDiscoveryRepositoryFake),
+                this.catalogSearchDiscoveryRepositoryFake,
                 this.localMusicTrackSearchFake);
 
             SeedDefaultLocalTrack("mc_track_1");
@@ -34,7 +35,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
             SeedDefaultLocalTrack("mc_track_deferred");
         }
 
-        public CatalogSearchRequestedHandler Handler { get; }
+        public SearchCatalogRequestedHandler Handler { get; }
 
         public FakeMusicCatalogCandidateSearch Search => this.search;
 
@@ -74,14 +75,14 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
             return new CatalogSearchRequestedHandlerTestEnvironment(search, store);
         }
 
-        public CatalogSearchAttempt Request(
+        public SearchCatalogRequested Request(
             string query,
             int trustLevel,
             int riskScore,
             DateTimeOffset? occurredAt = null) =>
             new(
-                Criteria: CatalogSearchCriteria.Search("track", NormalizedSearchQuery.FromText(query).Value),
-                Query: NormalizedSearchQuery.FromText(query),
+                SearchCriteria: MusicSearchCriteria.ByQuery(query, SearchTypesFilter.Tracks),
+                Playback: PlaybackProviderFilter.Parse("spotify,appleMusic,youtubeMusic"),
                 TrustLevel: trustLevel,
                 RiskScore: riskScore,
                 OccurredAt: occurredAt ?? new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero),

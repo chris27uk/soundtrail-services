@@ -26,7 +26,7 @@ public static class SearchCatalogEndpoints
                 try
                 {
                     request = new SearchCatalogCommand(
-                        NormalizedSearchQuery.FromText(q ?? throw new ArgumentException("Query is required.", nameof(q))),
+                        MusicIdentityText.NormalizeFreeText(q ?? throw new ArgumentException("Query is required.", nameof(q))),
                         SearchTypesFilter.Parse(types),
                         PlaybackProviderFilter.Parse(playback),
                         SearchLimit.From(limit),

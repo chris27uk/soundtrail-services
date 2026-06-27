@@ -5,12 +5,12 @@ using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Pipeline;
 
-public sealed class LookupMusicMetadataExecutionAdmissionDecorator(
+public sealed class LookupTrackMetadataExecutionAdmissionDecorator(
     ILookupExecutionAdmissionPort executionAdmissionPort,
-    ILookupMusicMetadataHandler inner) : ILookupMusicMetadataHandler
+    ILookupTrackMetadataHandler inner) : ILookupTrackMetadataHandler
 {
     public async Task<MusicCatalogLookupAttempted> Handle(
-        LookupMusicMetadataCommand command,
+        LookupTrackMetadataCommand command,
         CancellationToken cancellationToken = default)
     {
         var admission = await executionAdmissionPort.TryAcquireAsync(

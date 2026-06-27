@@ -1,121 +1,70 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Model;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Persistence;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested;
 
-public sealed class CatalogSearchRequestedHandler(
+public sealed class SearchCatalogRequestedHandler(
     IMusicCatalogCandidateSearch musicCatalogCandidateSearch,
-    IRecordCatalogSearchStartedPort recordCatalogSearchStartedPort,
+    ICatalogSearchDiscoveryRepository catalogSearchDiscoveryRepository,
     ILocalMusicTrackSearch localMusicTrackSearch)
 {
-    private const decimal MinimumAcceptedScore = 0.80m;
-
     public async Task Handle(
-        CatalogSearchAttempt request,
+        SearchCatalogRequested requested,
         CancellationToken cancellationToken = default)
     {
-        var matches = await musicCatalogCandidateSearch.SearchAsync(request.Query, cancellationToken);
-        var localTrackForResolution = await TryLoadResolutionTrackAsync(request.Criteria, cancellationToken);
-        var selectedMatches = SelectMatches(matches, request.Query, localTrackForResolution?.ReleaseDate);
+        var searchHistory = await SearchOrSeekHistory.LoadAsync(
+            catalogSearchDiscoveryRepository,
+            requested.SearchCriteria,
+            cancellationToken);
+
+        var matches = await musicCatalogCandidateSearch.SearchAsync(requested.SearchCriteria, cancellationToken);
+        var selectedMatches = new MusicTrackSearchMatchCollection(matches).Query(requested.SearchCriteria);
+
         if (selectedMatches.Count == 0)
         {
+            searchHistory.MetadataRequired(
+                requested.TrustLevel,
+                requested.RiskScore,
+                requested.OccurredAt,
+                requested.CorrelationId);
+
+            await searchHistory.SaveAsync(catalogSearchDiscoveryRepository, cancellationToken);
             return;
         }
 
-        await recordCatalogSearchStartedPort.RecordAsync(
-            request.Criteria,
-            selectedMatches.Select(static match => match.MusicCatalogId).ToArray(),
-            request.TrustLevel,
-            request.RiskScore,
-            request.OccurredAt,
-            request.CorrelationId,
-            cancellationToken);
-    }
-
-    private async Task<LocalMusicTrackSearchResult?> TryLoadResolutionTrackAsync(
-        CatalogSearchCriteria criteria,
-        CancellationToken cancellationToken)
-    {
-        const string trackPrefix = "track:";
-        if (!criteria.Value.StartsWith(trackPrefix, StringComparison.Ordinal))
+        foreach (var selectedMatch in selectedMatches)
         {
-            return null;
-        }
-
-        var trackId = criteria.Value[trackPrefix.Length..];
-        return await localMusicTrackSearch.GetByMusicCatalogIdAsync(MusicCatalogId.From(trackId), cancellationToken);
-    }
-
-    private static IReadOnlyList<MusicCatalogMatch> SelectMatches(
-        IReadOnlyList<MusicCatalogMatch> matches,
-        NormalizedSearchQuery query,
-        DateOnly? releaseDate)
-    {
-        var exactQueryMatches = matches
-            .Where(match => MatchesExactQuery(match, query.Value))
-            .OrderByDescending(static match => match.Score)
-            .ToArray();
-
-        if (exactQueryMatches.Length > 0)
-        {
-            return exactQueryMatches;
-        }
-
-        var exactIdentityMatches = matches
-            .Where(static match => match.HasExactIdentityMatch())
-            .OrderByDescending(static match => match.Score)
-            .ToArray();
-
-        if (releaseDate is not null)
-        {
-            var releaseDateMatches = exactIdentityMatches
-                .Where(match => match.Evidence.ReleaseDate == releaseDate)
-                .OrderByDescending(static match => match.Score)
-                .ToArray();
-
-            if (releaseDateMatches.Length > 0)
+            var matchedTrack = await localMusicTrackSearch.GetByMusicCatalogIdAsync(selectedMatch.MusicCatalogId, cancellationToken);
+            if (!RequiresStreamingLocationsLookup(matchedTrack, requested.Playback))
             {
-                return releaseDateMatches;
+                continue;
             }
+
+            searchHistory.StreamingLocationsRequired(
+                selectedMatch.MusicCatalogId,
+                LookupPriorityBand.Low,
+                requested.OccurredAt,
+                requested.CorrelationId,
+                matchedTrack!.ToSearchTerm(),
+                ToHierarchy(matchedTrack));
         }
 
-        if (exactIdentityMatches.Length > 0)
-        {
-            return exactIdentityMatches;
-        }
-
-        return matches
-            .Where(match => match.MeetsMinimumScore(MinimumAcceptedScore))
-            .OrderByDescending(static match => match.Score)
-            .ToArray();
+        await searchHistory.SaveAsync(catalogSearchDiscoveryRepository, cancellationToken);
     }
 
-    private static bool MatchesExactQuery(MusicCatalogMatch match, string normalizedQuery)
-    {
-        var evidence = match.Evidence;
-        if (string.IsNullOrWhiteSpace(evidence.NormalizedTitle)
-            || string.IsNullOrWhiteSpace(evidence.NormalizedArtist))
-        {
-            return false;
-        }
+    private static CatalogTrackHierarchy? ToHierarchy(LocalMusicTrackSearchResult localTrack) =>
+        localTrack.ArtistId is null && localTrack.AlbumId is null
+            ? null
+            : new CatalogTrackHierarchy(localTrack.ArtistId, localTrack.AlbumId);
 
-        var titleArtist = MusicIdentityText.NormalizeFreeText($"{evidence.NormalizedTitle} {evidence.NormalizedArtist}");
-        if (string.Equals(titleArtist, normalizedQuery, StringComparison.Ordinal))
-        {
-            return true;
-        }
-
-        if (string.IsNullOrWhiteSpace(evidence.NormalizedAlbumTitle))
-        {
-            return false;
-        }
-
-        var titleArtistAlbum = MusicIdentityText.NormalizeFreeText(
-            $"{evidence.NormalizedTitle} {evidence.NormalizedArtist} {evidence.NormalizedAlbumTitle}");
-        return string.Equals(titleArtistAlbum, normalizedQuery, StringComparison.Ordinal);
-    }
+    private static bool RequiresStreamingLocationsLookup(
+        LocalMusicTrackSearchResult? localTrack,
+        PlaybackProviderFilter playback) =>
+        localTrack is not null
+        && localTrack.CanCreateSearchTerm()
+        && localTrack.RequiresStreamingLocations(playback);
 }

@@ -30,10 +30,10 @@ internal sealed class LookupStreamingLocationsHandlerTestEnvironment
 
     public static LookupStreamingLocationsHandlerTestEnvironment Create() => new();
 
-    public void Seed(MusicSearchTerm lookupKey, params ExternalReference[] references) =>
+    public void Seed(MusicSearchCriteria lookupKey, params ExternalReference[] references) =>
         GetMusicTrackReference.Seed(lookupKey, references);
 
-    public Task<Soundtrail.Domain.Responses.MusicCatalogLookupAttempted> HandleNewExecutionCommand(MusicSearchTerm? searchTerm = null) =>
+    public Task<Soundtrail.Domain.Responses.MusicCatalogLookupAttempted> HandleNewExecutionCommand(MusicSearchCriteria? searchTerm = null) =>
         Handler.Handle(
             new LookupStreamingLocationsCommand(
                 CommandId.For("LookupStreamingLocations:mc_track_1"),
@@ -41,10 +41,10 @@ internal sealed class LookupStreamingLocationsHandlerTestEnvironment
                 LookupPriorityBand.High,
                 DefaultCreatedAt,
                 CorrelationId.From("corr-1"),
-                searchTerm ?? MusicSearchTerm.ByIsrc("isrc-1")),
+                searchTerm ?? MusicSearchCriteria.ByIsrc("isrc-1")),
             CancellationToken.None);
 
-    public async Task<Soundtrail.Domain.Responses.MusicCatalogLookupAttempted> HandleDuplicateExecutionCommand(MusicSearchTerm? searchTerm = null)
+    public async Task<Soundtrail.Domain.Responses.MusicCatalogLookupAttempted> HandleDuplicateExecutionCommand(MusicSearchCriteria? searchTerm = null)
     {
         var command = new LookupStreamingLocationsCommand(
             CommandId.For("LookupStreamingLocations:mc_track_1"),
@@ -52,7 +52,7 @@ internal sealed class LookupStreamingLocationsHandlerTestEnvironment
             LookupPriorityBand.High,
             DefaultCreatedAt,
             CorrelationId.From("corr-1"),
-            searchTerm ?? MusicSearchTerm.ByIsrc("isrc-1"));
+            searchTerm ?? MusicSearchCriteria.ByIsrc("isrc-1"));
         await Handler.Handle(command, CancellationToken.None);
         return await Handler.Handle(command, CancellationToken.None);
     }

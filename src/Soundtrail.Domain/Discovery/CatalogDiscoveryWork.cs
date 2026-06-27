@@ -41,14 +41,14 @@ public sealed class CatalogDiscoveryWork
         return new CatalogDiscoveryWork(musicCatalogId, stream.Events, stream.Version);
     }
 
-    public void RecordSearchRequested(CatalogSearchAttempt request)
+    public void RecordSearchRequested(SearchCatalogRequested requested)
     {
         Apply(
             new CatalogDiscoveryWorkRequested(
                 RequireMusicCatalogId(),
-                request.TrustLevel,
-                request.RiskScore,
-                request.OccurredAt),
+                requested.TrustLevel,
+                requested.RiskScore,
+                requested.OccurredAt),
             isNew: true);
     }
 

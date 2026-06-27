@@ -3,9 +3,9 @@ using Soundtrail.Domain.Responses;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Pipeline;
 
-public interface ILookupMusicMetadataHandler
+public interface ILookupTrackMetadataHandler
 {
     Task<MusicCatalogLookupAttempted> Handle(
-        LookupMusicMetadataCommand command,
+        LookupTrackMetadataCommand command,
         CancellationToken cancellationToken = default);
 }

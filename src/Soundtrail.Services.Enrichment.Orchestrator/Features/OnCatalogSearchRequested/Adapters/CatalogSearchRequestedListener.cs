@@ -2,13 +2,14 @@ using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Search;
+using Soundtrail.Translators.Discovery;
 using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 
-public sealed class CatalogSearchRequestedListener(CatalogSearchRequestedHandler handler)
+public sealed class SearchCatalogRequestedListener(SearchCatalogRequestedHandler handler)
 {
     [WolverineHandler]
     [Transactional]
@@ -17,13 +18,16 @@ public sealed class CatalogSearchRequestedListener(CatalogSearchRequestedHandler
         IAsyncDocumentSession _,
         CancellationToken cancellationToken = default)
     {
-        var request = new CatalogSearchAttempt(
-            CatalogSearchCriteria.From(requestDto.Criteria),
-            NormalizedSearchQuery.FromText(requestDto.Query),
-            requestDto.TrustLevel,
-            requestDto.RiskScore,
-            requestDto.OccurredAt,
-            CorrelationId.From(requestDto.CorrelationId));
-        await handler.Handle(request, cancellationToken);
+        await handler.Handle(
+            new SearchCatalogRequested(
+                !string.IsNullOrWhiteSpace(requestDto.Criteria)
+                    ? MusicSearchTermPersistentIdTranslator.ToDomainObject(requestDto.Criteria)
+                    : MusicSearchCriteria.ByQuery(requestDto.Query),
+                PlaybackProviderFilter.Parse(requestDto.Playback),
+                requestDto.TrustLevel,
+                requestDto.RiskScore,
+                requestDto.OccurredAt,
+                CorrelationId.From(requestDto.CorrelationId)),
+            cancellationToken);
     }
 }

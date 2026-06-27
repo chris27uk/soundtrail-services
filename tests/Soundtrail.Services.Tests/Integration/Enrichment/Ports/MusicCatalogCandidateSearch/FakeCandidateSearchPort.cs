@@ -29,10 +29,19 @@ namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicCatalogCan
                 releaseDate));
 
         public Task<IReadOnlyList<MusicCatalogMatch>> SearchAsync(
-            NormalizedSearchQuery query,
+            MusicSearchCriteria searchCriteria,
             CancellationToken cancellationToken)
         {
-            var compactQuery = Domain.Model.MusicIdentityText.NormalizeCompact(query.Value);
+            var normalizedQuery = searchCriteria.Match(
+                withQuery: static query => query,
+                withTitleAndArtist: static (title, artist, album) => Domain.Model.MusicIdentityText.NormalizeFreeText(
+                    string.Join(
+                        ' ',
+                        new[] { title, artist, album }
+                            .Where(static value => !string.IsNullOrWhiteSpace(value)))),
+                withIsrcAction: static isrc => isrc);
+
+            var compactQuery = Domain.Model.MusicIdentityText.NormalizeCompact(normalizedQuery);
             var exactIdentity = this.entries
                 .Where(entry =>
                     Domain.Model.MusicIdentityText.NormalizeCompact(entry.Isrc) == compactQuery
@@ -49,10 +58,10 @@ namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicCatalogCan
             }
 
             IReadOnlyList<MusicCatalogMatch> matches = this.entries
-                .Where(entry => BuildSearchableText(entry).Contains(query.Value, StringComparison.Ordinal))
+                .Where(entry => BuildSearchableText(entry).Contains(normalizedQuery, StringComparison.Ordinal))
                 .Select(entry => new MusicCatalogMatch(
                     MusicCatalogId.From(entry.MusicCatalogId),
-                    string.Equals(BuildSearchableText(entry), query.Value, StringComparison.Ordinal) ? 1.00m : 0.90m,
+                    string.Equals(BuildSearchableText(entry), normalizedQuery, StringComparison.Ordinal) ? 1.00m : 0.90m,
                     BuildEvidence(entry, isExactIdentityMatch: false)))
                 .ToArray();
 

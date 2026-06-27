@@ -265,6 +265,8 @@ Handlers should:
 - return domain/application results rather than HTTP-specific results
 - live at the root of their feature folder
 - live outside `Soundtrail.Domain`
+- do one thing only
+- be small enough that the top-level behavior is obvious without inlining helpers
 
 Handlers should not:
 
@@ -273,6 +275,23 @@ Handlers should not:
 - hide core decisions behind unnecessary abstraction
 - be placed in nested subfolders under a feature
 - live in `Soundtrail.Domain`
+- write to two streams
+- both append events and send commands in the same flow
+- both project state and perform orchestration side effects in the same flow
+- contain large multi-branch orchestration logic when that branching belongs to aggregate or domain consistency
+
+Mandatory handler rule:
+
+- a handler may append events to one stream, or send internal or integration commands, or project events into a read model or another stream
+- a handler must not do more than one of those in the same flow
+- if meaningful branching exists, that branching should usually be owned by an aggregate command instead of the handler
+
+Mandatory race-avoidance rule:
+
+- no handler should coordinate writes across catalog stream and discovery stream
+- cross-stream consequences must be handled by projection or subscription, never by dual writes
+- fan-out must be event-driven, replay-safe, and idempotent by identity
+- commands emitted from projections must be idempotent by identity
 
 ## Value Types And Models
 
@@ -317,6 +336,17 @@ Rules:
 If a type exists because JSON, RavenDB, or messaging needs a particular shape, it is a DTO and should not be passed through a business port.
 
 ## Ports And Adapters
+
+Adapters are thin translation and wiring layers around real technology.
+
+Rules:
+
+- adapters should translate transport or infrastructure concerns into domain commands, domain events, or domain models, then delegate immediately
+- adapters must not hide business rules that should be sociably unit tested through handlers
+- infrastructure complexity such as retries, subscriptions, timers, serialization, and SDK concerns should stay in adapters, but business branching should not
+- production applications must not rely on in-memory fakes to run locally; if a stubbed dependency is needed, use an explicit emulator or test server
+- every adapter port must have integration tests that cover the fake and real implementation under the same test suite
+- those integration tests are mandatory and must exercise every supported path for the port
 
 Ports define what the business layer needs. Adapters satisfy those ports.
 

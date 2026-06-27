@@ -13,7 +13,7 @@ public sealed class CatalogSearchStatusChangedHandler(
         CatalogSearchStatusChangedCommand request,
         CancellationToken cancellationToken = default)
     {
-        var projection = await loadPort.LoadAsync(request.Criteria, cancellationToken);
+        var projection = await loadPort.LoadAsync(request.SearchCriteria, cancellationToken);
 
         foreach (var item in request.Events.OrderBy(x => x.Version))
         {

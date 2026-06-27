@@ -16,12 +16,12 @@ internal static class MusicTrackIntegrationMessageMapper
                 playback.SourceProvider.Value,
                 playback.ObservedAt,
                 new StreamingLocationSearchTermDto(
-                    playback.SearchTerm.Kind,
-                    playback.SearchTerm.Query,
-                    playback.SearchTerm.Isrc,
-                    playback.SearchTerm.Title,
-                    playback.SearchTerm.Artist,
-                    playback.SearchTerm.Album),
+                    playback.SearchCriteria.Kind,
+                    playback.SearchCriteria.Query,
+                    playback.SearchCriteria.Isrc,
+                    playback.SearchCriteria.Title,
+                    playback.SearchCriteria.Artist,
+                    playback.SearchCriteria.Album),
                 playback.ArtistId,
                 playback.AlbumId),
             _ => throw new ArgumentOutOfRangeException(nameof(integrationEvent), integrationEvent, null)

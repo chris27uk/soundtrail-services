@@ -13,7 +13,7 @@ public sealed class LookupStreamingLocationsHandlerTests
     {
         var env = LookupStreamingLocationsHandlerTestEnvironment.Create();
         env.Seed(
-            MusicSearchTerm.ByIsrc("isrc-1"),
+            MusicSearchCriteria.ByIsrc("isrc-1"),
             new ExternalReference(ProviderName.AppleMusic, new Uri("https://music.apple.com/us/song/apple-1?i=apple-1"), "apple-1"),
             new ExternalReference(ProviderName.Spotify, new Uri("https://open.spotify.com/track/spotify-1"), "spotify-1"));
 
@@ -31,10 +31,10 @@ public sealed class LookupStreamingLocationsHandlerTests
     {
         var env = LookupStreamingLocationsHandlerTestEnvironment.Create();
         env.Seed(
-            MusicSearchTerm.ByTrackArtistAlbum("Song A", "Artist A", "Album A"),
+            MusicSearchCriteria.ByTrackArtistAlbum("Song A", "Artist A", "Album A"),
             new ExternalReference(ProviderName.YoutubeMusic, new Uri("https://music.youtube.com/watch?v=yt-1"), "yt-1"));
 
-        var result = await env.HandleNewExecutionCommand(MusicSearchTerm.ByTrackArtistAlbum("Song A", "Artist A", "Album A"));
+        var result = await env.HandleNewExecutionCommand(MusicSearchCriteria.ByTrackArtistAlbum("Song A", "Artist A", "Album A"));
 
         result.MusicCatalogMetadataFetched!.References.Should().ContainSingle().Which.ExternalId.Should().Be("yt-1");
         result.MusicCatalogMetadataFetched.FailedProviders.Select(x => x.Provider.Value).Should().BeEquivalentTo(

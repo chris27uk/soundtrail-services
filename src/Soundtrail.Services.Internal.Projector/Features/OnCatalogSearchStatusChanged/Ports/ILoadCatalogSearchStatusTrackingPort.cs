@@ -1,4 +1,4 @@
-using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Model;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Support;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Ports;
@@ -6,6 +6,6 @@ namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusC
 public interface ILoadCatalogSearchStatusTrackingPort
 {
     Task<CatalogSearchStatusTracking?> LoadAsync(
-        CatalogSearchCriteria criteria,
+        MusicSearchCriteria searchCriteria,
         CancellationToken cancellationToken);
 }

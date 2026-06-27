@@ -16,7 +16,7 @@ public sealed class LookupStreamingLocationsListenerWolverineResponsesTests
     {
         var env = LookupStreamingLocationsHandlerTestEnvironment.Create();
         env.Seed(
-            MusicSearchTerm.ByIsrc("isrc-1"),
+            MusicSearchCriteria.ByIsrc("isrc-1"),
             new ExternalReference(ProviderName.AppleMusic, new Uri("https://music.apple.com/us/song/apple-1?i=apple-1"), "apple-1"));
         var bus = new WolverineMessageBusFake();
         var listener = new LookupStreamingLocationsListener(env.Handler, bus);
@@ -66,7 +66,7 @@ public sealed class LookupStreamingLocationsListenerWolverineResponsesTests
     {
         var env = LookupStreamingLocationsHandlerTestEnvironment.Create();
         env.Seed(
-            MusicSearchTerm.ByTrackArtistAlbum("Song A", "Artist A", "Album A"),
+            MusicSearchCriteria.ByTrackArtistAlbum("Song A", "Artist A", "Album A"),
             new ExternalReference(ProviderName.AppleMusic, new Uri("https://music.apple.com/us/song/apple-1?i=apple-1"), "apple-1"));
         var bus = new WolverineMessageBusFake();
         var listener = new LookupStreamingLocationsListener(env.Handler, bus);
@@ -90,7 +90,7 @@ public sealed class LookupStreamingLocationsListenerWolverineResponsesTests
             null!);
 
         env.References.SearchTerms.Should().ContainSingle()
-            .Which.Should().Be(MusicSearchTerm.ByTrackArtistAlbum("Song A", "Artist A", "Album A"));
+            .Which.Should().Be(MusicSearchCriteria.ByTrackArtistAlbum("Song A", "Artist A", "Album A"));
     }
 
     private static LookupStreamingLocationsCommandDto Command() =>

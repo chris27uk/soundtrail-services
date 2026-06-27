@@ -33,8 +33,8 @@ public static class AppServiceCollectionExtensions
         services.AddOnMusicCatalogLookupAttemptedFeature();
         services.AddOnAssessMusicTrackFeature();
         services.AddOnStreamingLocationsRequiredFeature();
-        services.AddOnCatalogSearchRequestedFeature(x =>
-            x.ConfigureDependencies = svc => dependencyProvider.AddOnCatalogSearchRequestedDependencies(svc, configuration));
+        services.AddOnSearchCatalogRequestedFeature(x =>
+            x.ConfigureDependencies = svc => dependencyProvider.AddOnSearchCatalogRequestedDependencies(svc, configuration));
         services.AddOnNextMusicTracksRequestedForLookupFeature(
             x => x.ConfigureDependencies = svc => dependencyProvider.AddOnNextMusicTracksRequestedForLookupDependencies(svc, configuration));
 

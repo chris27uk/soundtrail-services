@@ -6,16 +6,16 @@ using Soundtrail.Contracts.Common;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata;
 
-public sealed class LookupMusicMetadataHandler(
-    IGetMusicMetadata getMetaData) : ILookupMusicMetadataHandler
+public sealed class LookupTrackMetadataHandler(
+    IGetTrackMetadata getMetaData) : ILookupTrackMetadataHandler
 {
     public async Task<MusicCatalogLookupAttempted> Handle(
-        LookupMusicMetadataCommand command,
+        LookupTrackMetadataCommand command,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            var songMetadata = await getMetaData.GetMetadataAsync(command.SearchTerm, cancellationToken);
+            var songMetadata = await getMetaData.GetMetadataAsync(command.SearchCriteria, cancellationToken);
             return MusicCatalogLookupAttempted.Completed(command.ToMusicCatalogMetadataFetched(songMetadata));
         }
         catch

@@ -2,6 +2,8 @@ using Raven.Client.Documents.Session;
 using Soundtrail.Contracts;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Ports;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Model;
+using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
 
@@ -10,15 +12,16 @@ public sealed class RavenLoadDiscoveryLifecycleProjection(
     RavenDiscoveryLifecycleProjectionMapper mapper) : ILoadDiscoveryLifecycleProjectionPort
 {
     public async Task<DiscoveryLifecycleProjection> LoadAsync(
-        CatalogSearchCriteria criteria,
+        MusicSearchCriteria searchCriteria,
         CancellationToken cancellationToken)
     {
+        var persistentId = MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria);
         var status = await session.LoadAsync<CatalogSearchStatusRecordDto>(
-            CatalogSearchStatusRecordDto.GetDocumentId(criteria.Value),
+            CatalogSearchStatusRecordDto.GetDocumentId(persistentId),
             cancellationToken);
         var checkpoint = await session.LoadAsync<DiscoveryLifecycleProjectionCheckpointDocument>(
-            DiscoveryLifecycleProjectionCheckpointDocument.GetDocumentId(criteria.Value),
+            DiscoveryLifecycleProjectionCheckpointDocument.GetDocumentId(persistentId),
             cancellationToken);
-        return mapper.ToDomain(criteria, status, checkpoint);
+        return mapper.ToDomain(searchCriteria, status, checkpoint);
     }
 }

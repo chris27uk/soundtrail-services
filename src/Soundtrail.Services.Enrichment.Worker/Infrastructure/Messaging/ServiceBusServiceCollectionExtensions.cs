@@ -28,7 +28,7 @@ public static class ServiceBusServiceCollectionExtensions
         opts.UseRuntimeCompilation();
         opts.ServiceLocationPolicy = ServiceLocationPolicy.AllowedButWarn;
         opts.Discovery.DisableConventionalDiscovery();
-        opts.Discovery.IncludeType<LookupMusicMetadataListener>();
+        opts.Discovery.IncludeType<LookupTrackMetadataListener>();
         opts.Discovery.IncludeType<LookupStreamingLocationsListener>();
         opts.Policies.AutoApplyTransactions();
 

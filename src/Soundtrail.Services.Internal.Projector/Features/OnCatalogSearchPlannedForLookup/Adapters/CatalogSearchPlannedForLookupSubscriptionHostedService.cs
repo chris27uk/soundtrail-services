@@ -7,6 +7,7 @@ using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchPlannedForLookup.Support;
+using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchPlannedForLookup.Adapters;
 
@@ -74,7 +75,7 @@ public sealed class CatalogSearchPlannedForLookupSubscriptionHostedService(
                      .GroupBy(item => item.Criteria, StringComparer.Ordinal))
         {
             var command = new CatalogSearchPlannedForLookupCommand(
-                CatalogSearchCriteria.From(stream.Key),
+                MusicSearchTermPersistentIdTranslator.ToDomainObject(stream.Key),
                 stream.OrderBy(item => item.Version)
                     .Select(item => item.ToDomainEvent())
                     .ToArray());

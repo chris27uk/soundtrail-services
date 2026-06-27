@@ -1,6 +1,7 @@
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Enrichment.Commands;
+using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Services.Internal.Projector.Infrastructure.Messaging;
 
@@ -15,21 +16,21 @@ internal static class DiscoveryCommandMappings
                 assess.CreatedAt,
                 assess.Priority,
                 assess.MusicCatalogId.Value,
-                assess.Criteria?.Value,
+                assess.SearchTerm is null ? null : MusicSearchTermPersistentIdTranslator.ToPersistentId(assess.SearchTerm),
                 assess.TrustLevel,
                 assess.RiskScore),
-            LookupMusicMetadataCommand musicBrainz => new LookupMusicMetadataCommandDto(
+            LookupTrackMetadataCommand musicBrainz => new LookupTrackMetadataCommandDto(
                 musicBrainz.CommandId.Value,
                 musicBrainz.MusicCatalogId.Value,
                 musicBrainz.Priority,
                 musicBrainz.CreatedAt,
                 musicBrainz.CorrelationId.Value,
-                musicBrainz.SearchTerm.Kind,
-                musicBrainz.SearchTerm.Query,
-                musicBrainz.SearchTerm.Isrc,
-                musicBrainz.SearchTerm.Title,
-                musicBrainz.SearchTerm.Artist,
-                musicBrainz.SearchTerm.Album,
+                musicBrainz.SearchCriteria.Kind,
+                musicBrainz.SearchCriteria.Query,
+                musicBrainz.SearchCriteria.Isrc,
+                musicBrainz.SearchCriteria.Title,
+                musicBrainz.SearchCriteria.Artist,
+                musicBrainz.SearchCriteria.Album,
                 musicBrainz.Hierarchy?.ArtistId?.Value,
                 musicBrainz.Hierarchy?.AlbumId?.Value),
             LookupStreamingLocationsCommand playback => new LookupStreamingLocationsCommandDto(

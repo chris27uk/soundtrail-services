@@ -17,11 +17,10 @@ public sealed class AssessMusicTrackHandler(
         AssessMusicTrackCommand command,
         CancellationToken cancellationToken = default)
     {
-        if (command.Criteria is not null && command.TrustLevel is not null && command.RiskScore is not null)
+        if (command.SearchTerm is not null && command.TrustLevel is not null && command.RiskScore is not null)
         {
-            var criteria = command.Criteria;
             await persistCatalogSearchDiscoveryPort.RequestAsync(
-                criteria,
+                command.SearchTerm,
                 command.TrustLevel.Value,
                 command.RiskScore.Value,
                 command.CreatedAt,

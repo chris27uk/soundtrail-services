@@ -15,9 +15,9 @@ public sealed class ReplayDiscoveryLifecycleProjectionBatchHandler(
         ReplayDiscoveryLifecycleProjectionBatchCommand command,
         CancellationToken cancellationToken = default)
     {
-        var criteria = await loadTargetsPort.LoadAsync(cancellationToken);
+        var searchTerms = await loadTargetsPort.LoadAsync(cancellationToken);
 
-        foreach (var item in criteria)
+        foreach (var item in searchTerms)
         {
             await resetPort.ResetAsync(item, cancellationToken);
 

@@ -20,9 +20,9 @@ internal sealed class FakeCatalogSearchPort : ICatalogSearchPort
         CancellationToken cancellationToken)
     {
         var matches = results
-            .Where(result => NormalizedSearchQuery.FromText(
+            .Where(result => MusicIdentityText.NormalizeFreeText(
                     $"{result.Name} {result.ArtistName} {result.AlbumName}")
-                .Value.Contains(request.Query.Value, StringComparison.Ordinal))
+                .Contains(request.Query, StringComparison.Ordinal))
             .Where(result => request.Types.Includes(result.Type))
             .Where(result => request.Playback.AllowsAny(result.AvailableProviders))
             .Skip(request.Offset.Value)

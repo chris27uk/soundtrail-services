@@ -26,16 +26,16 @@ public sealed class ProductionWorkerDependencyProvider : IWorkerDependencyProvid
         services.TryAddScoped<ILookupExecutionAdmissionPort, LegacyLookupExecutionAdmissionPort>();
     }
 
-    public void AddLookupMusicMetadataDependencies(IServiceCollection services, IConfiguration configuration)
+    public void AddLookupTrackMetadataDependencies(IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<MusicBrainzOptions>(configuration.GetSection(MusicBrainzOptions.SectionName));
-        if (!services.Any(x => x.ServiceType == typeof(IGetMusicMetadata)))
+        if (!services.Any(x => x.ServiceType == typeof(IGetTrackMetadata)))
         {
-            services.AddHttpClient<IGetMusicMetadata, MusicBrainzGetMusicMetadata>()
+            services.AddHttpClient<IGetTrackMetadata, MusicBrainzGetTrackMetadata>()
                 .ConfigureHttpClient((sp, httpClient) =>
                 {
                     var cfg = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<MusicBrainzOptions>>().Value;
-                    MusicBrainzGetMusicMetadata.ConfigureHttpClient(httpClient, cfg);
+                    MusicBrainzGetTrackMetadata.ConfigureHttpClient(httpClient, cfg);
                 });
         }
     }

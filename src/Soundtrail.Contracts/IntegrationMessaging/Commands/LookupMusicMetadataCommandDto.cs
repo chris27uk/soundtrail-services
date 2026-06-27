@@ -2,7 +2,7 @@ using Soundtrail.Contracts.Common;
 
 namespace Soundtrail.Contracts.IntegrationMessaging.Commands;
 
-public sealed record LookupMusicMetadataCommandDto(
+public sealed record LookupTrackMetadataCommandDto(
     string CommandId,
     string MusicCatalogId,
     LookupPriorityBand Priority,

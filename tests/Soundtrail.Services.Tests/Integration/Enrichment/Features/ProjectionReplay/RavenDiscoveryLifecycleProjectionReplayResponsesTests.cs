@@ -6,6 +6,7 @@ using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged;
@@ -14,6 +15,7 @@ using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatu
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 using System.Linq;
+using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ProjectionReplay;
 
@@ -24,21 +26,22 @@ public sealed class RavenDiscoveryLifecycleProjectionReplayResponsesTests
     public async Task Given_Discovery_Lifecycle_Events_When_Replayed_Then_The_Status_Document_Is_Projected()
     {
         using var raven = RavenEmbeddedTestDatabase.Create();
-        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
+        var criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
         var repository = new RavenCatalogSearchDiscoveryRepository(raven.Store);
-        var discovery = await CatalogSearchDiscovery.LoadAsync(repository, criteria, CancellationToken.None);
-        discovery.Request(Request(criteria));
+        var discovery = await SearchOrSeekHistory.LoadAsync(repository, criteria, CancellationToken.None);
+        discovery.SearchRequested(Request(criteria));
         await discovery.SaveAsync(repository, CancellationToken.None);
 
-        discovery = await CatalogSearchDiscovery.LoadAsync(repository, criteria, CancellationToken.None);
+        discovery = await SearchOrSeekHistory.LoadAsync(repository, criteria, CancellationToken.None);
         discovery.Plan(LookupPriorityBand.High, 30, null, "Planner queued lookup", Clock.AddSeconds(5));
         await discovery.SaveAsync(repository, CancellationToken.None);
 
         await ReplayAsync(raven.Store);
 
         using var session = raven.Store.OpenAsyncSession();
+        var criteriaPersistentId = MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria);
         var status = await session.LoadAsync<Soundtrail.Contracts.CatalogSearchStatusRecordDto>(
-            Soundtrail.Contracts.CatalogSearchStatusRecordDto.GetDocumentId(criteria.Value),
+            Soundtrail.Contracts.CatalogSearchStatusRecordDto.GetDocumentId(criteriaPersistentId),
             CancellationToken.None);
 
         status.Should().NotBeNull();
@@ -53,17 +56,18 @@ public sealed class RavenDiscoveryLifecycleProjectionReplayResponsesTests
     public async Task Given_A_Rejected_Discovery_Event_When_Replayed_Then_The_Status_Document_Is_Projected_As_Rejected()
     {
         using var raven = RavenEmbeddedTestDatabase.Create();
-        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
+        var criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
         var repository = new RavenCatalogSearchDiscoveryRepository(raven.Store);
-        var discovery = await CatalogSearchDiscovery.LoadAsync(repository, criteria, CancellationToken.None);
+        var discovery = await SearchOrSeekHistory.LoadAsync(repository, criteria, CancellationToken.None);
         discovery.Reject("Planner rejected lookup", Clock);
         await discovery.SaveAsync(repository, CancellationToken.None);
 
         await ReplayAsync(raven.Store);
 
         using var session = raven.Store.OpenAsyncSession();
+        var criteriaPersistentId = MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria);
         var status = await session.LoadAsync<Soundtrail.Contracts.CatalogSearchStatusRecordDto>(
-            Soundtrail.Contracts.CatalogSearchStatusRecordDto.GetDocumentId(criteria.Value),
+            Soundtrail.Contracts.CatalogSearchStatusRecordDto.GetDocumentId(criteriaPersistentId),
             CancellationToken.None);
 
         status.Should().NotBeNull();
@@ -73,89 +77,21 @@ public sealed class RavenDiscoveryLifecycleProjectionReplayResponsesTests
     }
 
     [Fact]
-    public async Task Given_An_Artist_Criteria_Discovery_Event_When_Replayed_Then_The_Artist_Status_Document_Is_Projected()
-    {
-        using var raven = RavenEmbeddedTestDatabase.Create();
-        var criteria = CatalogSearchCriteria.Artist(ArtistId.From("artist_test_artist"));
-        var repository = new RavenCatalogSearchDiscoveryRepository(raven.Store);
-        var discovery = await CatalogSearchDiscovery.LoadAsync(repository, criteria, CancellationToken.None);
-        discovery.Plan(LookupPriorityBand.High, 30, null, "Planner queued lookup", Clock);
-        await discovery.SaveAsync(repository, CancellationToken.None);
-
-        await ReplayAsync(raven.Store);
-
-        using var session = raven.Store.OpenAsyncSession();
-        var status = await session.LoadAsync<Soundtrail.Contracts.CatalogSearchStatusRecordDto>(
-            Soundtrail.Contracts.CatalogSearchStatusRecordDto.GetDocumentId(criteria.Value),
-            CancellationToken.None);
-
-        status.Should().NotBeNull();
-        status!.Status.Should().Be(CatalogSearchLifecycleStatus.Planned.ToString());
-        status.Reason.Should().Be("Planner queued lookup");
-    }
-
-    [Fact]
-    public async Task Given_An_Album_Criteria_Discovery_Event_When_Replayed_Then_The_Album_Status_Document_Is_Projected()
-    {
-        using var raven = RavenEmbeddedTestDatabase.Create();
-        var criteria = CatalogSearchCriteria.Album(AlbumId.From("album_test_album"));
-        var repository = new RavenCatalogSearchDiscoveryRepository(raven.Store);
-        var discovery = await CatalogSearchDiscovery.LoadAsync(repository, criteria, CancellationToken.None);
-        discovery.Plan(LookupPriorityBand.High, 45, null, "Planner queued album lookup", Clock);
-        await discovery.SaveAsync(repository, CancellationToken.None);
-
-        await ReplayAsync(raven.Store);
-
-        using var session = raven.Store.OpenAsyncSession();
-        var status = await session.LoadAsync<Soundtrail.Contracts.CatalogSearchStatusRecordDto>(
-            Soundtrail.Contracts.CatalogSearchStatusRecordDto.GetDocumentId(criteria.Value),
-            CancellationToken.None);
-
-        status.Should().NotBeNull();
-        status!.Status.Should().Be(CatalogSearchLifecycleStatus.Planned.ToString());
-        status.WillBeLookedUp.Should().BeTrue();
-        status.EstimatedRetryAfterSeconds.Should().Be(45);
-        status.Reason.Should().Be("Planner queued album lookup");
-    }
-
-    [Fact]
-    public async Task Given_A_Track_Criteria_Discovery_Event_When_Replayed_Then_The_Track_Status_Document_Is_Projected()
-    {
-        using var raven = RavenEmbeddedTestDatabase.Create();
-        var criteria = CatalogSearchCriteria.Track(TrackId.From("mc_track_1"));
-        var repository = new RavenCatalogSearchDiscoveryRepository(raven.Store);
-        var discovery = await CatalogSearchDiscovery.LoadAsync(repository, criteria, CancellationToken.None);
-        discovery.Start(LookupPriorityBand.High, "Track lookup started", Clock);
-        await discovery.SaveAsync(repository, CancellationToken.None);
-
-        await ReplayAsync(raven.Store);
-
-        using var session = raven.Store.OpenAsyncSession();
-        var status = await session.LoadAsync<Soundtrail.Contracts.CatalogSearchStatusRecordDto>(
-            Soundtrail.Contracts.CatalogSearchStatusRecordDto.GetDocumentId(criteria.Value),
-            CancellationToken.None);
-
-        status.Should().NotBeNull();
-        status!.Status.Should().Be(CatalogSearchLifecycleStatus.InProgress.ToString());
-        status.WillBeLookedUp.Should().BeTrue();
-        status.Reason.Should().Be("Track lookup started");
-    }
-
-    [Fact]
     public async Task Given_A_Started_Discovery_Event_When_Replayed_Then_The_Status_Document_Is_Projected_As_InProgress()
     {
         using var raven = RavenEmbeddedTestDatabase.Create();
-        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
+        var criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
         var repository = new RavenCatalogSearchDiscoveryRepository(raven.Store);
-        var discovery = await CatalogSearchDiscovery.LoadAsync(repository, criteria, CancellationToken.None);
+        var discovery = await SearchOrSeekHistory.LoadAsync(repository, criteria, CancellationToken.None);
         discovery.Start(LookupPriorityBand.High, "Lookup started", Clock);
         await discovery.SaveAsync(repository, CancellationToken.None);
 
         await ReplayAsync(raven.Store);
 
         using var session = raven.Store.OpenAsyncSession();
+        var criteriaPersistentId = MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria);
         var status = await session.LoadAsync<Soundtrail.Contracts.CatalogSearchStatusRecordDto>(
-            Soundtrail.Contracts.CatalogSearchStatusRecordDto.GetDocumentId(criteria.Value),
+            Soundtrail.Contracts.CatalogSearchStatusRecordDto.GetDocumentId(criteriaPersistentId),
             CancellationToken.None);
 
         status.Should().NotBeNull();
@@ -168,17 +104,18 @@ public sealed class RavenDiscoveryLifecycleProjectionReplayResponsesTests
     public async Task Given_A_Completed_Discovery_Event_When_Replayed_Then_The_Status_Document_Is_Projected_As_Completed()
     {
         using var raven = RavenEmbeddedTestDatabase.Create();
-        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
+        var criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
         var repository = new RavenCatalogSearchDiscoveryRepository(raven.Store);
-        var discovery = await CatalogSearchDiscovery.LoadAsync(repository, criteria, CancellationToken.None);
+        var discovery = await SearchOrSeekHistory.LoadAsync(repository, criteria, CancellationToken.None);
         discovery.Complete(LookupPriorityBand.High, "Discovery completed", Clock);
         await discovery.SaveAsync(repository, CancellationToken.None);
 
         await ReplayAsync(raven.Store);
 
         using var session = raven.Store.OpenAsyncSession();
+        var criteriaPersistentId = MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria);
         var status = await session.LoadAsync<Soundtrail.Contracts.CatalogSearchStatusRecordDto>(
-            Soundtrail.Contracts.CatalogSearchStatusRecordDto.GetDocumentId(criteria.Value),
+            Soundtrail.Contracts.CatalogSearchStatusRecordDto.GetDocumentId(criteriaPersistentId),
             CancellationToken.None);
 
         status.Should().NotBeNull();
@@ -204,15 +141,15 @@ public sealed class RavenDiscoveryLifecycleProjectionReplayResponsesTests
         foreach (var criteria in criteriaValues.Distinct(StringComparer.Ordinal))
         {
             await replayHandler.Handle(
-                new ReplayCatalogSearchStatusCommand(CatalogSearchCriteria.From(criteria)),
+                new ReplayCatalogSearchStatusCommand(MusicSearchTermPersistentIdTranslator.ToDomainObject(criteria)),
                 CancellationToken.None);
         }
     }
 
-    private static CatalogSearchAttempt Request(CatalogSearchCriteria criteria) =>
+    private static SearchCatalogRequested Request(MusicSearchCriteria searchCriteria) =>
         new(
-            criteria,
-            NormalizedSearchQuery.FromText("rare unknown song"),
+            searchCriteria,
+            PlaybackProviderFilter.Parse("spotify,appleMusic,youtubeMusic"),
             1,
             10,
             Clock,

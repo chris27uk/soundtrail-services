@@ -1,5 +1,6 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Domain.Discovery;
 
@@ -9,7 +10,7 @@ public sealed record AssessMusicTrackCommand(
     DateTimeOffset CreatedAt,
     LookupPriorityBand Priority,
     MusicCatalogId MusicCatalogId,
-    CatalogSearchCriteria? Criteria = null,
+    MusicSearchCriteria? SearchTerm = null,
     int? TrustLevel = null,
     int? RiskScore = null) : ICommand
 {

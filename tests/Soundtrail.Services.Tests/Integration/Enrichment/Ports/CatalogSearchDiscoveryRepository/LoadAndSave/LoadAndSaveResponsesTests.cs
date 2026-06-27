@@ -3,6 +3,7 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.CatalogSearchDiscoveryRepository.LoadAndSave;
@@ -15,16 +16,16 @@ public sealed class LoadAndSaveResponsesTests
     public async Task Given_A_Requested_And_Planned_Discovery_When_Loading_Then_The_Aggregate_State_Is_Restored(CatalogSearchDiscoveryRepositoryMode mode)
     {
         using var env = CatalogSearchDiscoveryRepositoryTestEnvironment.Create(mode);
-        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
-        var discovery = await CatalogSearchDiscovery.LoadAsync(env.Repository, criteria, CancellationToken.None);
-        discovery.Request(Request(criteria));
+        var criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
+        var discovery = await SearchOrSeekHistory.LoadAsync(env.Repository, criteria, CancellationToken.None);
+        discovery.SearchRequested(Request(criteria));
         await discovery.SaveAsync(env.Repository, CancellationToken.None);
 
-        discovery = await CatalogSearchDiscovery.LoadAsync(env.Repository, criteria, CancellationToken.None);
+        discovery = await SearchOrSeekHistory.LoadAsync(env.Repository, criteria, CancellationToken.None);
         discovery.Plan(LookupPriorityBand.High, 30, null, "Planner queued lookup", Clock);
 
         var saved = await discovery.SaveAsync(env.Repository, CancellationToken.None);
-        var reloaded = await CatalogSearchDiscovery.LoadAsync(env.Repository, criteria, CancellationToken.None);
+        var reloaded = await SearchOrSeekHistory.LoadAsync(env.Repository, criteria, CancellationToken.None);
 
         saved.Should().BeTrue();
         reloaded.Plan(LookupPriorityBand.High, 30, null, "Planner queued lookup", Clock).Should().BeFalse();
@@ -35,13 +36,13 @@ public sealed class LoadAndSaveResponsesTests
     public async Task Given_Two_Loaded_Copies_When_The_First_Is_Saved_Then_The_Second_Save_Fails_Optimistic_Concurrency(CatalogSearchDiscoveryRepositoryMode mode)
     {
         using var env = CatalogSearchDiscoveryRepositoryTestEnvironment.Create(mode);
-        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
-        var seed = await CatalogSearchDiscovery.LoadAsync(env.Repository, criteria, CancellationToken.None);
-        seed.Request(Request(criteria));
+        var criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
+        var seed = await SearchOrSeekHistory.LoadAsync(env.Repository, criteria, CancellationToken.None);
+        seed.SearchRequested(Request(criteria));
         await seed.SaveAsync(env.Repository, CancellationToken.None);
 
-        var left = await CatalogSearchDiscovery.LoadAsync(env.Repository, criteria, CancellationToken.None);
-        var right = await CatalogSearchDiscovery.LoadAsync(env.Repository, criteria, CancellationToken.None);
+        var left = await SearchOrSeekHistory.LoadAsync(env.Repository, criteria, CancellationToken.None);
+        var right = await SearchOrSeekHistory.LoadAsync(env.Repository, criteria, CancellationToken.None);
         left.Plan(LookupPriorityBand.High, 30, null, "Planner queued lookup", Clock);
         right.Defer(60, Clock.AddSeconds(60), "Planner deferred lookup", Clock);
 
@@ -52,10 +53,10 @@ public sealed class LoadAndSaveResponsesTests
         rightSaved.Should().BeFalse();
     }
 
-    private static CatalogSearchAttempt Request(CatalogSearchCriteria criteria) =>
+    private static SearchCatalogRequested Request(MusicSearchCriteria searchCriteria) =>
         new(
-            criteria,
-            NormalizedSearchQuery.FromText("rare unknown song"),
+            searchCriteria,
+            PlaybackProviderFilter.Parse("spotify,appleMusic,youtubeMusic"),
             1,
             10,
             Clock,

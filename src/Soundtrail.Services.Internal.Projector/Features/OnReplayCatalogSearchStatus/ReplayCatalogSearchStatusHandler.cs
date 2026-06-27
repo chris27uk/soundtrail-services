@@ -13,7 +13,7 @@ public sealed class ReplayCatalogSearchStatusHandler(
         ReplayCatalogSearchStatusCommand request,
         CancellationToken cancellationToken = default)
     {
-        var events = await loadPort.LoadAsync(request.Criteria, cancellationToken);
-        await projectHandler.Handle(new CatalogSearchStatusChangedCommand(request.Criteria, events), cancellationToken);
+        var events = await loadPort.LoadAsync(request.SearchCriteria, cancellationToken);
+        await projectHandler.Handle(new CatalogSearchStatusChangedCommand(request.SearchCriteria, events), cancellationToken);
     }
 }

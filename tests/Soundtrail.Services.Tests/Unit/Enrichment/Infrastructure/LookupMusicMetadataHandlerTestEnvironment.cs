@@ -16,11 +16,11 @@ internal sealed class LookupMusicMetadataHandlerTestEnvironment
     {
         Metadata = new FakeGetMusicMetadata();
         Admission = new LookupExecutionAdmissionPortFake();
-        var coreHandler = new LookupMusicMetadataHandler(Metadata);
-        Handler = new LookupMusicMetadataExecutionAdmissionDecorator(Admission, coreHandler);
+        var coreHandler = new LookupTrackMetadataHandler(Metadata);
+        Handler = new LookupTrackMetadataExecutionAdmissionDecorator(Admission, coreHandler);
     }
 
-    public ILookupMusicMetadataHandler Handler { get; }
+    public ILookupTrackMetadataHandler Handler { get; }
 
     public FakeGetMusicMetadata Metadata { get; }
 
@@ -38,26 +38,26 @@ internal sealed class LookupMusicMetadataHandlerTestEnvironment
 
     public void Throw(Exception ex) => Metadata.Throw(ex);
 
-    public Task<Soundtrail.Domain.Responses.MusicCatalogLookupAttempted> HandleNewExecutionCommand(MusicSearchTerm? searchTerm = null) =>
+    public Task<Soundtrail.Domain.Responses.MusicCatalogLookupAttempted> HandleNewExecutionCommand(MusicSearchCriteria? searchTerm = null) =>
         Handler.Handle(
-            new LookupMusicMetadataCommand(
-                CommandId.For("LookupMusicMetadata:mc_track_1"),
+            new LookupTrackMetadataCommand(
+                CommandId.For("LookupTrackMetadata:mc_track_1"),
                 MusicCatalogId.From("mc_track_1"),
                 LookupPriorityBand.High,
                 DefaultCreatedAt,
                 CorrelationId.From("corr-1"),
-                searchTerm ?? MusicSearchTerm.ByIsrc("isrc-1")),
+                searchTerm ?? MusicSearchCriteria.ByIsrc("isrc-1")),
             CancellationToken.None);
 
-    public async Task<Soundtrail.Domain.Responses.MusicCatalogLookupAttempted> HandleDuplicateExecutionCommand(MusicSearchTerm? searchTerm = null)
+    public async Task<Soundtrail.Domain.Responses.MusicCatalogLookupAttempted> HandleDuplicateExecutionCommand(MusicSearchCriteria? searchTerm = null)
     {
-        var command = new LookupMusicMetadataCommand(
-            CommandId.For("LookupMusicMetadata:mc_track_1"),
+        var command = new LookupTrackMetadataCommand(
+            CommandId.For("LookupTrackMetadata:mc_track_1"),
             MusicCatalogId.From("mc_track_1"),
             LookupPriorityBand.High,
             DefaultCreatedAt,
             CorrelationId.From("corr-1"),
-            searchTerm ?? MusicSearchTerm.ByIsrc("isrc-1"));
+            searchTerm ?? MusicSearchCriteria.ByIsrc("isrc-1"));
         await Handler.Handle(command, CancellationToken.None);
         return await Handler.Handle(command, CancellationToken.None);
     }

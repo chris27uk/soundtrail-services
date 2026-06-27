@@ -2,8 +2,11 @@ using Raven.Client.Documents;
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Support;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters.Mappers;
+using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
 
@@ -12,11 +15,12 @@ public sealed class RavenMusicCatalogMetadataFetchedCatalogSearchDiscoveryReposi
     ICompleteTrackedDiscoveriesRepository
 {
     public async Task<CatalogSearchDiscoveryEventStream> LoadAsync(
-        CatalogSearchCriteria criteria,
+        MusicSearchCriteria searchCriteria,
         CancellationToken cancellationToken)
     {
+        var persistentId = MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria);
         var metadata = await session.LoadAsync<DiscoveryQueryEventStreamMetadataRecordDto>(
-            DiscoveryQueryEventStreamMetadataRecordDto.GetDocumentId(criteria.Value),
+            DiscoveryQueryEventStreamMetadataRecordDto.GetDocumentId(persistentId),
             cancellationToken);
 
         if (metadata is null)
@@ -25,7 +29,7 @@ public sealed class RavenMusicCatalogMetadataFetchedCatalogSearchDiscoveryReposi
         }
 
         var storedEvents = (await session.Advanced.LoadStartingWithAsync<DiscoveryQueryStoredEventRecordDto>(
-                $"discovery-query-events/{criteria.Value}/"))
+                $"discovery-query-events/{persistentId}/"))
             .OrderBy(x => x.Version)
             .ToList();
 
@@ -35,7 +39,7 @@ public sealed class RavenMusicCatalogMetadataFetchedCatalogSearchDiscoveryReposi
     }
 
     public async Task<bool> AppendAsync(
-        CatalogSearchCriteria criteria,
+        MusicSearchCriteria searchCriteria,
         int expectedVersion,
         IReadOnlyCollection<Soundtrail.Domain.Events.IDomainEvent> events,
         CancellationToken cancellationToken)
@@ -46,13 +50,14 @@ public sealed class RavenMusicCatalogMetadataFetchedCatalogSearchDiscoveryReposi
         }
 
         session.Advanced.UseOptimisticConcurrency = true;
+        var persistentId = MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria);
 
-        var metadataId = DiscoveryQueryEventStreamMetadataRecordDto.GetDocumentId(criteria.Value);
+        var metadataId = DiscoveryQueryEventStreamMetadataRecordDto.GetDocumentId(persistentId);
         var metadata = await session.LoadAsync<DiscoveryQueryEventStreamMetadataRecordDto>(metadataId, cancellationToken)
             ?? new DiscoveryQueryEventStreamMetadataRecordDto
             {
                 Id = metadataId,
-                Criteria = criteria.Value
+                Criteria = persistentId
             };
 
         if (metadata.Version != expectedVersion)
@@ -66,7 +71,7 @@ public sealed class RavenMusicCatalogMetadataFetchedCatalogSearchDiscoveryReposi
 
         await session.StoreAsync(metadata, cancellationToken);
 
-        foreach (var storedEvent in CatalogSearchDiscoveryEventRecordMapper.ToStoredEvents(criteria, events, startingVersion))
+        foreach (var storedEvent in CatalogSearchDiscoveryEventRecordMapper.ToStoredEvents(searchCriteria, events, startingVersion))
         {
             await session.StoreAsync(storedEvent, cancellationToken);
         }

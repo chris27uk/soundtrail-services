@@ -17,7 +17,7 @@ public sealed class LookupMusicMetadataListenerWolverineResponsesTests
         var env = LookupMusicMetadataHandlerTestEnvironment.Create();
         env.SeedMusicBrainzIsrc("isrc-1", new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000, "Album A", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"));
         var bus = new WolverineMessageBusFake();
-        var listener = new LookupMusicMetadataListener(env.Handler, bus);
+        var listener = new LookupTrackMetadataListener(env.Handler, bus);
 
         await listener.Handle(Command(), null!);
 
@@ -33,7 +33,7 @@ public sealed class LookupMusicMetadataListenerWolverineResponsesTests
             new DateTimeOffset(2026, 6, 18, 12, 1, 0, TimeSpan.Zero),
             "MusicBrainz budget temporarily unavailable");
         var bus = new WolverineMessageBusFake();
-        var listener = new LookupMusicMetadataListener(env.Handler, bus);
+        var listener = new LookupTrackMetadataListener(env.Handler, bus);
 
         await listener.Handle(Command(), null!);
         var message = bus.SentMessages.Single().Should().BeOfType<MusicCatalogLookupAttemptedDto>().Subject;
@@ -49,7 +49,7 @@ public sealed class LookupMusicMetadataListenerWolverineResponsesTests
         var env = LookupMusicMetadataHandlerTestEnvironment.Create();
         env.Throw(new InvalidOperationException("boom"));
         var bus = new WolverineMessageBusFake();
-        var listener = new LookupMusicMetadataListener(env.Handler, bus);
+        var listener = new LookupTrackMetadataListener(env.Handler, bus);
 
         await listener.Handle(Command(), null!);
         var message = bus.SentMessages.Single().Should().BeOfType<MusicCatalogLookupAttemptedDto>().Subject;
@@ -65,11 +65,11 @@ public sealed class LookupMusicMetadataListenerWolverineResponsesTests
         var env = LookupMusicMetadataHandlerTestEnvironment.Create();
         env.SeedMusicBrainzNames("Song A", "Artist A", "Album A", new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000, "Album A", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"));
         var bus = new WolverineMessageBusFake();
-        var listener = new LookupMusicMetadataListener(env.Handler, bus);
+        var listener = new LookupTrackMetadataListener(env.Handler, bus);
 
         await listener.Handle(
-            new LookupMusicMetadataCommandDto(
-                CommandId.For("LookupMusicMetadata:mc_track_1").Value,
+            new LookupTrackMetadataCommandDto(
+                CommandId.For("LookupTrackMetadata:mc_track_1").Value,
                 "mc_track_1",
                 LookupPriorityBand.High,
                 new DateTimeOffset(2026, 6, 18, 12, 0, 0, TimeSpan.Zero),
@@ -93,11 +93,11 @@ public sealed class LookupMusicMetadataListenerWolverineResponsesTests
         var env = LookupMusicMetadataHandlerTestEnvironment.Create();
         env.SeedMusicBrainzQuery("rare unknown song", new SongMetadata("Rare Unknown Song", "Test Artist", "isrc-rare-1", "mbid-1", 123000, "Rare Album", null, "mb-artist-1", "mb-release-1"));
         var bus = new WolverineMessageBusFake();
-        var listener = new LookupMusicMetadataListener(env.Handler, bus);
+        var listener = new LookupTrackMetadataListener(env.Handler, bus);
 
         await listener.Handle(
-            new LookupMusicMetadataCommandDto(
-                CommandId.For("LookupMusicMetadata:mc_track_1").Value,
+            new LookupTrackMetadataCommandDto(
+                CommandId.For("LookupTrackMetadata:mc_track_1").Value,
                 "mc_track_1",
                 LookupPriorityBand.High,
                 new DateTimeOffset(2026, 6, 18, 12, 0, 0, TimeSpan.Zero),
@@ -115,9 +115,9 @@ public sealed class LookupMusicMetadataListenerWolverineResponsesTests
         env.Metadata.Lookups.Should().ContainSingle().Which.Should().Be("query:rare unknown song");
     }
 
-    private static LookupMusicMetadataCommandDto Command() =>
+    private static LookupTrackMetadataCommandDto Command() =>
         new(
-            CommandId.For("LookupMusicMetadata:mc_track_1").Value,
+            CommandId.For("LookupTrackMetadata:mc_track_1").Value,
             "mc_track_1",
             LookupPriorityBand.High,
             new DateTimeOffset(2026, 6, 18, 12, 0, 0, TimeSpan.Zero),

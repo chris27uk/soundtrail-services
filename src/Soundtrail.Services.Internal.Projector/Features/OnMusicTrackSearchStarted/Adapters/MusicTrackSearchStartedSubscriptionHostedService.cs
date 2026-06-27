@@ -7,6 +7,7 @@ using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Support;
+using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Adapters;
 
@@ -85,7 +86,7 @@ public sealed class MusicTrackSearchStartedSubscriptionHostedService(
 
             await handler.Handle(
                 new MusicTrackSearchStartedCommand(
-                    CatalogSearchCriteria.From(stream.Key),
+                    MusicSearchTermPersistentIdTranslator.ToDomainObject(stream.Key),
                     events),
                 cancellationToken);
         }

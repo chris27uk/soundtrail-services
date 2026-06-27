@@ -8,7 +8,7 @@ namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.L
 internal static class LookupMusicMetadataCommandExtensions
 {
     public static MusicCatalogMetadataFetched ToMusicCatalogMetadataFetched(
-        this LookupMusicMetadataCommand command,
+        this LookupTrackMetadataCommand command,
         SongMetadata? metadata) =>
         new(
             command.CommandId,

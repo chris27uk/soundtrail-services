@@ -22,27 +22,27 @@ public sealed record PotentialCatalogLookupWork(
 
     public bool IsEligibleAt(DateTimeOffset when) => NextEligibleAt is null || NextEligibleAt <= when;
 
-    public static PotentialCatalogLookupWork Create(CatalogSearchAttempt request, MusicCatalogId musicCatalogId)
+    public static PotentialCatalogLookupWork Create(SearchCatalogRequested requested, MusicCatalogId musicCatalogId)
     {
-        var riskBand = ToRiskBand(request.RiskScore);
+        var riskBand = ToRiskBand(requested.RiskScore);
 
         return new PotentialCatalogLookupWork(
             MusicCatalogId: musicCatalogId,
             RequestCount: 1,
-            HighestTrustLevelSeen: request.TrustLevel,
-            RiskScore: request.RiskScore,
+            HighestTrustLevelSeen: requested.TrustLevel,
+            RiskScore: requested.RiskScore,
             Status: riskBand == RiskBand.Blocked ? PotentialCatalogLookupWorkStatus.Ignored : PotentialCatalogLookupWorkStatus.Pending,
             NextEligibleAt: null);
     }
 
-    public PotentialCatalogLookupWork AcceptNewRequest(CatalogSearchAttempt request)
+    public PotentialCatalogLookupWork AcceptNewRequest(SearchCatalogRequested requested)
     {
-        var updatedRiskScore = Math.Max(RiskScore, request.RiskScore);
+        var updatedRiskScore = Math.Max(RiskScore, requested.RiskScore);
 
         return this with
         {
             RequestCount = RequestCount + 1,
-            HighestTrustLevelSeen = Math.Max(HighestTrustLevelSeen, request.TrustLevel),
+            HighestTrustLevelSeen = Math.Max(HighestTrustLevelSeen, requested.TrustLevel),
             RiskScore = updatedRiskScore,
             Status = PromoteStatus(Status, ToRiskBand(updatedRiskScore))
         };

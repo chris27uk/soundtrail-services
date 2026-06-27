@@ -19,7 +19,7 @@ public sealed class LookupExecutionAdmissionResponsesTests
     public async Task Given_A_New_CommandId_When_Acquiring_Then_It_Is_Acquired_Once(LookupExecutionAdmissionMode mode)
     {
         await using var env = await LookupExecutionAdmissionTestEnvironment.CreateAsync(mode);
-        var request = LookupRequest("LookupMusicMetadata:track-1");
+        var request = LookupRequest("LookupTrackMetadata:track-1");
 
         var first = await env.Port.TryAcquireAsync(request, CancellationToken.None);
         var second = await env.Port.TryAcquireAsync(request, CancellationToken.None);
@@ -33,7 +33,7 @@ public sealed class LookupExecutionAdmissionResponsesTests
     public async Task Given_A_Released_CommandId_When_Acquiring_Again_Then_It_Is_Acquired_Again(LookupExecutionAdmissionMode mode)
     {
         await using var env = await LookupExecutionAdmissionTestEnvironment.CreateAsync(mode);
-        var request = LookupRequest("LookupMusicMetadata:track-2");
+        var request = LookupRequest("LookupTrackMetadata:track-2");
 
         var first = await env.Port.TryAcquireAsync(request, CancellationToken.None);
         await env.Port.ReleaseAsync(request.CommandId, CancellationToken.None);
@@ -63,8 +63,8 @@ public sealed class LookupExecutionAdmissionResponsesTests
     {
         await using var env = await LookupExecutionAdmissionTestEnvironment.CreateAsync(mode);
         env.RejectAfterSuccesses(ProviderName.MusicBrainz, 1);
-        var first = LookupRequest("LookupMusicMetadata:track-4a");
-        var second = LookupRequest("LookupMusicMetadata:track-4b");
+        var first = LookupRequest("LookupTrackMetadata:track-4a");
+        var second = LookupRequest("LookupTrackMetadata:track-4b");
 
         var firstResult = await env.Port.TryAcquireAsync(first, CancellationToken.None);
         var secondResult = await env.Port.TryAcquireAsync(second, CancellationToken.None);

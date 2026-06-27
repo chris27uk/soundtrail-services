@@ -12,19 +12,22 @@ public sealed class CatalogSearchAttemptRecorder(
         RecordCatalogSearchAttemptCommand command,
         CancellationToken cancellationToken)
     {
-        var discovery = await CatalogSearchDiscovery.LoadAsync(discoveryRepository, command.Criteria, cancellationToken);
-        if (!discovery.Request(command.Request))
+        var history = await SearchOrSeekHistory.LoadAsync(
+            discoveryRepository,
+            command.SearchCriteria,
+            cancellationToken);
+        if (!history.SearchRequested(command.Requested))
         {
             return false;
         }
 
-        var saved = await discovery.SaveAsync(discoveryRepository, cancellationToken);
+        var saved = await history.SaveAsync(discoveryRepository, cancellationToken);
         if (!saved)
         {
             return false;
         }
 
-        await queueCatalogSearchAttemptPort.EnqueueAsync(command.Request, cancellationToken);
+        await queueCatalogSearchAttemptPort.EnqueueAsync(command.Requested, cancellationToken);
         return true;
     }
 }

@@ -5,11 +5,11 @@ using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Domain.Enrichment.Commands;
 
-public sealed record LookupMusicMetadataCommand(
+public sealed record LookupTrackMetadataCommand(
     CommandId CommandId,
     MusicCatalogId MusicCatalogId,
     LookupPriorityBand Priority,
     DateTimeOffset CreatedAt,
     CorrelationId CorrelationId,
-    MusicSearchTerm SearchTerm,
+    MusicSearchCriteria SearchCriteria,
     CatalogTrackHierarchy? Hierarchy = null) : IMusicCatalogLookupCommand;

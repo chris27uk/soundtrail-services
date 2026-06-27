@@ -10,7 +10,7 @@ public sealed class AmbiguityResponsesTests
     public async Task Given_An_Ambiguous_Name_Lookup_When_Metadata_Is_Looked_Up_Then_No_Metadata_Is_Returned(MusicBrainzMetadataSourceMode mode)
     {
         using var env = MusicBrainzMetadataSourceTestEnvironment.Create(mode);
-        var lookup = MusicSearchTerm.ByTrackArtistAlbum("Song A", "Artist A", "Album A");
+        var lookup = MusicSearchCriteria.ByTrackArtistAlbum("Song A", "Artist A", "Album A");
         env.SeedAmbiguous(lookup);
 
         var actual = await env.Source.GetMetadataAsync(lookup, CancellationToken.None);
@@ -23,7 +23,7 @@ public sealed class AmbiguityResponsesTests
     public async Task Given_An_Ambiguous_Isrc_Lookup_When_Metadata_Is_Looked_Up_Then_No_Metadata_Is_Returned(MusicBrainzMetadataSourceMode mode)
     {
         using var env = MusicBrainzMetadataSourceTestEnvironment.Create(mode);
-        var lookup = MusicSearchTerm.ByIsrc("isrc-1");
+        var lookup = MusicSearchCriteria.ByIsrc("isrc-1");
         env.SeedAmbiguous(lookup);
 
         var actual = await env.Source.GetMetadataAsync(lookup, CancellationToken.None);

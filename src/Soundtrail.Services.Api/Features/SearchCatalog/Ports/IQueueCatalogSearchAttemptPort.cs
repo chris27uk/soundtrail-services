@@ -4,5 +4,5 @@ namespace Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 
 public interface IQueueCatalogSearchAttemptPort
 {
-    Task EnqueueAsync(CatalogSearchAttempt request, CancellationToken cancellationToken);
+    Task EnqueueAsync(SearchCatalogRequested requested, CancellationToken cancellationToken);
 }

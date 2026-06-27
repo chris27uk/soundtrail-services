@@ -1,9 +1,9 @@
-using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Domain.Events;
 
 public sealed record DiscoveryDeferred(
-    CatalogSearchCriteria Criteria,
+    MusicSearchCriteria SearchCriteria,
     bool WillBeLookedUp,
     int? EstimatedRetryAfterSeconds,
     DateTimeOffset? EarliestExpectedCompletionAt,

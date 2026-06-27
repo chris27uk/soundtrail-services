@@ -1,7 +1,8 @@
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Domain.Commands;
 
 public sealed record CatalogSearchStatusChangedCommand(
-    CatalogSearchCriteria Criteria,
+    MusicSearchCriteria SearchCriteria,
     IReadOnlyList<VersionedCatalogSearchDiscoveryEvent> Events);

@@ -93,7 +93,7 @@ public sealed class CatalogEntityAggregateTests
                 CorrelationId.From("corr-seeded"),
                 ProviderName.MusicBrainz,
                 Clock,
-                MusicSearchTerm.ByTrackArtistAlbum("Song A", "Artist A", null),
+                MusicSearchCriteria.ByTrackArtistAlbum("Song A", "Artist A", null),
                 new CatalogTrackHierarchy(ArtistId.From("artist_test_artist"), AlbumId.From("album_rare_album"))));
         var aggregate = await CatalogEntityAggregate.LoadAsync(store, MusicCatalogId.From("mc_track_1"), CancellationToken.None);
 

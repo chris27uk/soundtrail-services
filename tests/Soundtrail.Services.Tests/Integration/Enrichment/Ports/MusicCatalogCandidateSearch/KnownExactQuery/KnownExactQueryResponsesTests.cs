@@ -18,7 +18,7 @@ public sealed class KnownExactQueryResponsesTests
         env.Seed("mc_track_1", "mr brightside", title: "Fixture Track", artist: "Fixture Artist");
 
         var actual = await env.Search.SearchAsync(
-            NormalizedSearchQuery.FromText("mr brightside"),
+            MusicSearchCriteria.ByQuery("mr brightside", SearchTypesFilter.Tracks),
             CancellationToken.None);
 
         actual.Should().ContainSingle().Which.Should().BeEquivalentTo(
@@ -48,7 +48,7 @@ public sealed class KnownExactQueryResponsesTests
             albumTitle: "Rare Album");
 
         var actual = await env.Search.SearchAsync(
-            NormalizedSearchQuery.FromText("rare unknown song test artist rare album"),
+            MusicSearchCriteria.ByQuery("rare unknown song test artist rare album", SearchTypesFilter.Tracks),
             CancellationToken.None);
 
         actual.Should().ContainSingle().Which.Should().BeEquivalentTo(

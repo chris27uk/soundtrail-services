@@ -18,12 +18,12 @@ public sealed class StreamingLocationsRequiredStoredEventTranslationRegistration
                 domainEvent.CorrelationId.Value,
                 domainEvent.SourceProvider.Value,
                 domainEvent.ObservedAt,
-                domainEvent.SearchTerm.Kind,
-                domainEvent.SearchTerm.Query,
-                domainEvent.SearchTerm.Isrc,
-                domainEvent.SearchTerm.Title,
-                domainEvent.SearchTerm.Artist,
-                domainEvent.SearchTerm.Album,
+                domainEvent.SearchCriteria.Kind,
+                domainEvent.SearchCriteria.Query,
+                domainEvent.SearchCriteria.Isrc,
+                domainEvent.SearchCriteria.Title,
+                domainEvent.SearchCriteria.Artist,
+                domainEvent.SearchCriteria.Album,
                 domainEvent.Hierarchy?.ArtistId?.Value,
                 domainEvent.Hierarchy?.AlbumId?.Value),
             dto => new StreamingLocationsRequired(
@@ -34,11 +34,11 @@ public sealed class StreamingLocationsRequiredStoredEventTranslationRegistration
                 dto.ObservedAt,
                 dto.SearchKind switch
                 {
-                    MusicSearchKind.UnifiedSearch => MusicSearchTerm.ByQuery(
+                    MusicSearchKind.UnifiedSearch => MusicSearchCriteria.ByQuery(
                         dto.Query ?? throw new InvalidOperationException("Stored unified streaming locations event requires a query.")),
-                    MusicSearchKind.Isrc => MusicSearchTerm.ByIsrc(
+                    MusicSearchKind.Isrc => MusicSearchCriteria.ByIsrc(
                         dto.Isrc ?? throw new InvalidOperationException("Stored ISRC streaming locations event requires an ISRC.")),
-                    MusicSearchKind.TrackArtistAlbum => MusicSearchTerm.ByTrackArtistAlbum(
+                    MusicSearchKind.TrackArtistAlbum => MusicSearchCriteria.ByTrackArtistAlbum(
                         dto.Title ?? throw new InvalidOperationException("Stored track/artist/album streaming locations event requires a title."),
                         dto.Artist ?? throw new InvalidOperationException("Stored track/artist/album streaming locations event requires an artist."),
                         dto.Album),

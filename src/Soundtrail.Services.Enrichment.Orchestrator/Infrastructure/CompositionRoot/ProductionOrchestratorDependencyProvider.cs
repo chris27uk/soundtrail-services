@@ -19,7 +19,7 @@ public sealed class ProductionOrchestratorDependencyProvider : IOrchestratorDepe
         services.TryAddScoped<IReserveSourceApiBudgetPort, SourceApiBudgetReservationService>();
     }
 
-    public void AddOnCatalogSearchRequestedDependencies(IServiceCollection services, IConfiguration configuration)
+    public void AddOnSearchCatalogRequestedDependencies(IServiceCollection services, IConfiguration configuration)
     {
     }
 

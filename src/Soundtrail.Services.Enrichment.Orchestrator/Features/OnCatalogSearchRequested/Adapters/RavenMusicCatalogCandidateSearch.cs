@@ -13,11 +13,17 @@ namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRe
 public sealed class RavenMusicCatalogCandidateSearch(IDocumentStore documentStore) : IMusicCatalogCandidateSearch
 {
     public async Task<IReadOnlyList<MusicCatalogMatch>> SearchAsync(
-        NormalizedSearchQuery query,
+        MusicSearchCriteria searchCriteria,
         CancellationToken cancellationToken)
     {
+        var normalizedQuery = ToNormalizedQuery(searchCriteria);
+        if (normalizedQuery is null)
+        {
+            return [];
+        }
+
         using var session = documentStore.OpenAsyncSession();
-        var exactIdentityMatches = await SearchByExactIdentityAsync(session, query, cancellationToken);
+        var exactIdentityMatches = await SearchByExactIdentityAsync(session, normalizedQuery, cancellationToken);
         if (exactIdentityMatches.Count > 0)
         {
             return exactIdentityMatches;
@@ -25,14 +31,14 @@ public sealed class RavenMusicCatalogCandidateSearch(IDocumentStore documentStor
 
         var documents = await session
             .Query<RavenTrackRecordDto, TrackCatalogue_BySearchText>()
-            .Search(x => x.SearchText, query.Value)
+            .Search(x => x.SearchText, normalizedQuery)
             .Take(5)
             .ToListAsync(cancellationToken);
 
         return documents
             .Select(document => new MusicCatalogMatch(
                 MusicCatalogId.From(document.Id.Replace("track-catalogue/", string.Empty)),
-                Score(document, query.Value),
+                Score(document, normalizedQuery),
                 BuildEvidence(document, isExactIdentityMatch: false)))
             .OrderByDescending(match => match.Score)
             .ToArray();
@@ -40,10 +46,10 @@ public sealed class RavenMusicCatalogCandidateSearch(IDocumentStore documentStor
 
     private static async Task<IReadOnlyList<MusicCatalogMatch>> SearchByExactIdentityAsync(
         IAsyncDocumentSession session,
-        NormalizedSearchQuery query,
+        string normalizedQuery,
         CancellationToken cancellationToken)
     {
-        var compactQuery = MusicIdentityText.NormalizeCompact(query.Value);
+        var compactQuery = MusicIdentityText.NormalizeCompact(normalizedQuery);
         if (!MusicIdentityText.LooksLikeIsrc(compactQuery)
             && !MusicIdentityText.LooksLikeMusicBrainzId(compactQuery))
         {
@@ -133,4 +139,14 @@ public sealed class RavenMusicCatalogCandidateSearch(IDocumentStore documentStor
                 document.SearchText,
                 document.NormalizedAlbumTitle
             }.Where(static value => !string.IsNullOrWhiteSpace(value)));
+
+    private static string? ToNormalizedQuery(MusicSearchCriteria searchCriteria) =>
+        searchCriteria.Match(
+            withQuery: static query => query,
+            withTitleAndArtist: static (title, artist, album) => MusicIdentityText.NormalizeFreeText(
+                string.Join(
+                    ' ',
+                    new[] { title, artist, album }
+                        .Where(static value => !string.IsNullOrWhiteSpace(value)))),
+            withIsrcAction: static isrc => isrc);
 }

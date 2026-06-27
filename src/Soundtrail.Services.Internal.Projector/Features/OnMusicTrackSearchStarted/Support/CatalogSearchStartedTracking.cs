@@ -1,3 +1,5 @@
+using Soundtrail.Domain.Model;
+
 namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Support;
 
-public sealed record CatalogSearchStartedTracking(string Criteria, string MusicCatalogId, DateTimeOffset UpdatedAt);
+public sealed record CatalogSearchStartedTracking(MusicSearchCriteria SearchCriteria, string MusicCatalogId, DateTimeOffset UpdatedAt);

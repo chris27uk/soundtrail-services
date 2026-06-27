@@ -22,7 +22,9 @@ public sealed class DiscoveryBacklogLookupPlanner
             return null;
         }
 
-        var searchTerm = localTrack?.GetSearchTerm();
+        var searchTerm = localTrack is not null && localTrack.CanCreateSearchTerm()
+            ? localTrack.ToSearchTerm()
+            : null;
         if (!string.IsNullOrWhiteSpace(localTrack?.Isrc) && searchTerm is not null)
         {
             return new PlannedLookupWork(
@@ -43,8 +45,8 @@ public sealed class DiscoveryBacklogLookupPlanner
         }
 
         return new PlannedLookupWork(
-            new LookupMusicMetadataCommand(
-                CommandId.For($"LookupMusicMetadata:{musicCatalogId.Value}"),
+            new LookupTrackMetadataCommand(
+                CommandId.For($"LookupTrackMetadata:{musicCatalogId.Value}"),
                 musicCatalogId,
                 priority,
                 now,

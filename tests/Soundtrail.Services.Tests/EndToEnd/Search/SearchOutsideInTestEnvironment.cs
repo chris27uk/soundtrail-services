@@ -32,6 +32,7 @@ using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatu
 using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
+using Soundtrail.Translators.Discovery;
 using Soundtrail.Translators.MusicTrackEventStore;
 using Wolverine;
 using Wolverine.Tracking;
@@ -271,7 +272,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
         Set(track, CatalogTrackRecordDtoType, "NormalizedTitle", title.ToLowerInvariant());
         Set(track, CatalogTrackRecordDtoType, "ArtistName", artistName);
         Set(track, CatalogTrackRecordDtoType, "AlbumName", albumName);
-        Set(track, CatalogTrackRecordDtoType, "SearchText", NormalizedSearchQuery.FromText(query).Value);
+        Set(track, CatalogTrackRecordDtoType, "SearchText", MusicIdentityText.NormalizeFreeText(query));
         Set(track, CatalogTrackRecordDtoType, "MusicBrainzRecordingId", null);
         Set(track, CatalogTrackRecordDtoType, "Isrc", null);
         Set(track, CatalogTrackRecordDtoType, "DurationMs", null);
@@ -286,11 +287,11 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
 
     public static void SeedProjectedCatalogSearchStatusFromEvents(
         IDocumentStore store,
-        CatalogSearchCriteria criteria,
+        MusicSearchCriteria searchCriteria,
         params IDomainEvent[] events)
     {
         var repository = new Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters.RavenCatalogSearchDiscoveryRepository(store);
-        repository.AppendAsync(criteria, 0, events, CancellationToken.None).GetAwaiter().GetResult();
+        repository.AppendAsync(searchCriteria, 0, events, CancellationToken.None).GetAwaiter().GetResult();
 
         using var session = store.OpenAsyncSession();
         var replayHandler = new ReplayCatalogSearchStatusHandler(
@@ -299,7 +300,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
                 new RavenLoadDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()),
                 new RavenSaveDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper())));
         replayHandler.Handle(
-                new ReplayCatalogSearchStatusCommand(criteria),
+                new ReplayCatalogSearchStatusCommand(searchCriteria),
                 CancellationToken.None)
             .GetAwaiter()
             .GetResult();
@@ -345,12 +346,12 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
 
     public static void SeedRebuiltDiscoveryProjectionFromImportedEvents(
         IDocumentStore store,
-        CatalogSearchCriteria criteria,
+        MusicSearchCriteria searchCriteria,
         params IDomainEvent[] events)
     {
         using var replaySession = store.OpenAsyncSession();
         var repository = new Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters.RavenCatalogSearchDiscoveryRepository(store);
-        repository.AppendAsync(criteria, 0, events, CancellationToken.None)
+        repository.AppendAsync(searchCriteria, 0, events, CancellationToken.None)
             .GetAwaiter()
             .GetResult();
 
@@ -360,7 +361,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
                 new RavenLoadDiscoveryLifecycleProjection(replaySession, new RavenDiscoveryLifecycleProjectionMapper()),
                 new RavenSaveDiscoveryLifecycleProjection(replaySession, new RavenDiscoveryLifecycleProjectionMapper())));
         replayHandler.Handle(
-                new ReplayCatalogSearchStatusCommand(criteria),
+                new ReplayCatalogSearchStatusCommand(searchCriteria),
                 CancellationToken.None)
             .GetAwaiter()
             .GetResult();

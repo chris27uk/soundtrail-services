@@ -4,5 +4,5 @@ namespace Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 
 public interface IMusicCatalogCandidateSearch
 {
-    Task<IReadOnlyList<MusicCatalogMatch>> SearchAsync(NormalizedSearchQuery query, CancellationToken cancellationToken);
+    Task<IReadOnlyList<MusicCatalogMatch>> SearchAsync(MusicSearchCriteria searchCriteria, CancellationToken cancellationToken);
 }

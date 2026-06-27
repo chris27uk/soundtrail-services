@@ -64,7 +64,7 @@ public sealed class MusicCatalogLookupAttemptedHandlerTests
         await env.HandleMusicBrainzResponse();
 
         env.DiscoveryRepository
-            .GetStoredEvents(CatalogSearchCriteria.Search("track", "rare unknown song"))
+            .GetStoredEvents(MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks))
             .Last().Should().BeOfType<DiscoveryCompleted>();
     }
 
@@ -75,9 +75,7 @@ public sealed class MusicCatalogLookupAttemptedHandlerTests
 
         await env.HandleMusicBrainzResponse();
 
-        env.DiscoveryRepository.GetStoredEvents(CatalogSearchCriteria.Track(TrackId.From("mc_track_1"))).Should().NotBeEmpty();
-        env.DiscoveryRepository.GetStoredEvents(CatalogSearchCriteria.Artist(ArtistId.From("artist_test_artist"))).Should().NotBeEmpty();
-        env.DiscoveryRepository.GetStoredEvents(CatalogSearchCriteria.Album(AlbumId.From("album_rare_album"))).Should().NotBeEmpty();
+        env.DiscoveryRepository.GetStoredEvents(MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks)).Should().NotBeEmpty();
     }
 
     [Fact]
@@ -87,11 +85,8 @@ public sealed class MusicCatalogLookupAttemptedHandlerTests
 
         await env.HandleMusicBrainzResponse();
 
-        env.DiscoveryRepository.GetStoredEvents(CatalogSearchCriteria.Search("track", "rare unknown song")).Should().NotBeEmpty();
-        env.DiscoveryRepository.GetStoredEvents(CatalogSearchCriteria.Search("track", "rare unknown song live")).Should().NotBeEmpty();
-        env.DiscoveryRepository.GetStoredEvents(CatalogSearchCriteria.Track(TrackId.From("mc_track_1"))).Should().NotBeEmpty();
-        env.DiscoveryRepository.GetStoredEvents(CatalogSearchCriteria.Artist(ArtistId.From("artist_test_artist"))).Should().NotBeEmpty();
-        env.DiscoveryRepository.GetStoredEvents(CatalogSearchCriteria.Album(AlbumId.From("album_rare_album"))).Should().NotBeEmpty();
+        env.DiscoveryRepository.GetStoredEvents(MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks)).Should().NotBeEmpty();
+        env.DiscoveryRepository.GetStoredEvents(MusicSearchCriteria.ByQuery("rare unknown song live", SearchTypesFilter.Tracks)).Should().NotBeEmpty();
     }
 
     [Fact]

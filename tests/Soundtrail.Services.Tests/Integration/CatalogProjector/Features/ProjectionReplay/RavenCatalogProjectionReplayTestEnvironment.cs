@@ -107,7 +107,7 @@ internal sealed class RavenCatalogProjectionReplayTestEnvironment : IAsyncDispos
     public Task<LocalCatalogSearchResponse> SearchAsync(string query, string? types = null, string? playback = null) =>
         Search.SearchAsync(
             new SearchCatalogCommand(
-                NormalizedSearchQuery.FromText(query),
+                MusicIdentityText.NormalizeFreeText(query),
                 SearchTypesFilter.Parse(types),
                 PlaybackProviderFilter.Parse(playback),
                 SearchLimit.From(25),

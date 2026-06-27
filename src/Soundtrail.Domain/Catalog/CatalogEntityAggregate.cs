@@ -99,8 +99,8 @@ public sealed class CatalogEntityAggregate
         if (ShouldRequireStreamingLocations(response))
         {
             var searchTerm = !string.IsNullOrWhiteSpace(response.Metadata!.Isrc)
-                ? MusicSearchTerm.ByIsrc(response.Metadata.Isrc)
-                : MusicSearchTerm.ByTrackArtistAlbum(
+                ? MusicSearchCriteria.ByIsrc(response.Metadata.Isrc)
+                : MusicSearchCriteria.ByTrackArtistAlbum(
                     response.Metadata.Title,
                     response.Metadata.Artist,
                     album: null);

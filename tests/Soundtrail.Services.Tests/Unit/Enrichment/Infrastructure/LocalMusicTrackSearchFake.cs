@@ -31,6 +31,7 @@ public sealed class LocalMusicTrackSearchFake : ILocalMusicTrackSearch
                 Mbid: null,
                 DurationMs: null,
                 IsPlayable: false,
+                AvailableProviders: [],
                 ReleaseDate: null));
 
     public Task<LocalMusicTrackSearchResult?> GetByMusicCatalogIdAsync(

@@ -2,6 +2,8 @@ using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Events;
+using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Projection;
 
@@ -107,7 +109,7 @@ public sealed class DiscoveryLifecycleProjectionTests
         projection.Reason.Should().Be("Discovery completed");
     }
 
-    private static readonly CatalogSearchCriteria Criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
+    private static readonly MusicSearchCriteria Criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
 
     private static readonly DateTimeOffset Clock = new(2026, 6, 18, 12, 0, 0, TimeSpan.Zero);
 }

@@ -1,7 +1,9 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Model;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
+using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.OnReplayCatalogSearchStatus.Adapters;
 
@@ -9,13 +11,14 @@ public sealed class RavenResetDiscoveryLifecycleProjection(
     IAsyncDocumentSession session) : IResetDiscoveryLifecycleProjectionPort
 {
     public async Task ResetAsync(
-        CatalogSearchCriteria criteria,
+        MusicSearchCriteria searchCriteria,
         CancellationToken cancellationToken)
     {
+        var persistentId = MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria);
         var changed = false;
 
         var status = await session.LoadAsync<CatalogSearchStatusRecordDto>(
-            CatalogSearchStatusRecordDto.GetDocumentId(criteria.Value),
+            CatalogSearchStatusRecordDto.GetDocumentId(persistentId),
             cancellationToken);
         if (status is not null)
         {
@@ -24,7 +27,7 @@ public sealed class RavenResetDiscoveryLifecycleProjection(
         }
 
         var checkpoint = await session.LoadAsync<DiscoveryLifecycleProjectionCheckpointDocument>(
-            DiscoveryLifecycleProjectionCheckpointDocument.GetDocumentId(criteria.Value),
+            DiscoveryLifecycleProjectionCheckpointDocument.GetDocumentId(persistentId),
             cancellationToken);
         if (checkpoint is not null)
         {

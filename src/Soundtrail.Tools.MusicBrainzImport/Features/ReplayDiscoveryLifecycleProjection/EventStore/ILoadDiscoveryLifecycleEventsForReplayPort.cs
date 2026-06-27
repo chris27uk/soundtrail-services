@@ -1,10 +1,11 @@
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.OnReplayCatalogSearchStatus;
 
 public interface ILoadDiscoveryLifecycleEventsForReplayPort
 {
     Task<IReadOnlyList<VersionedCatalogSearchDiscoveryEvent>> LoadAsync(
-        CatalogSearchCriteria criteria,
+        MusicSearchCriteria searchCriteria,
         CancellationToken cancellationToken);
 }
