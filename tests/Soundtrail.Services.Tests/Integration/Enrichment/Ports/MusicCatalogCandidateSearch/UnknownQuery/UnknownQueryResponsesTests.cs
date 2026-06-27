@@ -18,7 +18,7 @@ public sealed class UnknownQueryResponsesTests
         env.Seed("mc_track_1", "mr brightside");
 
         var actual = await env.Search.SearchAsync(
-            NormalizedSearchQuery.FromText("completely unknown"),
+            MusicSearchCriteria.ByQuery("completely unknown", SearchTypesFilter.Tracks),
             CancellationToken.None);
 
         actual.Should().BeEmpty();

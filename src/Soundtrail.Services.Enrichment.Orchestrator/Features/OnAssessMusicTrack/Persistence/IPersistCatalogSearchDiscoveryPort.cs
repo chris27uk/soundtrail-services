@@ -1,12 +1,13 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnAssessMusicTrack.Persistence;
 
 public interface IPersistCatalogSearchDiscoveryPort
 {
     Task RequestAsync(
-        CatalogSearchCriteria criteria,
+        MusicSearchCriteria searchCriteria,
         int trustLevel,
         int riskScore,
         DateTimeOffset requestedAt,
@@ -15,6 +16,6 @@ public interface IPersistCatalogSearchDiscoveryPort
 
     Task ApplyToTrackingsAsync(
         MusicCatalogId musicCatalogId,
-        Func<CatalogSearchDiscovery, bool> apply,
+        Func<SearchOrSeekHistory, bool> apply,
         CancellationToken cancellationToken);
 }

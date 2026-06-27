@@ -40,7 +40,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
         public void Fails() => this.matches = [];
 
         public Task<IReadOnlyList<MusicCatalogMatch>> SearchAsync(
-            NormalizedSearchQuery query,
+            MusicSearchCriteria searchCriteria,
             CancellationToken cancellationToken) =>
             Task.FromResult(this.matches);
     }

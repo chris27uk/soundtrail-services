@@ -35,7 +35,7 @@ internal sealed class WireMockMusicProvidersServer : IDisposable
         return server;
     }
 
-    public void SeedMusicBrainz(MusicSearchTerm lookup, SongMetadata metadata)
+    public void SeedMusicBrainz(MusicSearchCriteria lookup, SongMetadata metadata)
     {
         lookup.Match(
             (track, artist, album) =>
@@ -70,7 +70,7 @@ internal sealed class WireMockMusicProvidersServer : IDisposable
     public void SeedMusicBrainzIsrcResponse(string isrc, params (string? Mbid, string Title, int? DurationMs, string[] Isrcs, string Artist, string? ArtistSourceId, string? ReleaseTitle, string? ReleaseSourceId, string? ReleaseDate)[] recordings) =>
         EnqueueResponse($"/ws/2/isrc/{Uri.EscapeDataString(isrc)}", BuildIsrcLookupResponse(recordings));
 
-    public void SeedOdesli(MusicSearchTerm searchTerm, IReadOnlyList<ExternalReference> references, string userCountry = "US")
+    public void SeedOdesli(MusicSearchCriteria searchCriteria, IReadOnlyList<ExternalReference> references, string userCountry = "US")
     {
         var youtube = references.SingleOrDefault(x => x.Provider == ProviderName.YoutubeMusic);
         var spotify = references.SingleOrDefault(x => x.Provider == ProviderName.Spotify);
@@ -136,11 +136,11 @@ internal sealed class WireMockMusicProvidersServer : IDisposable
             };
 
         SeedMusicBrainz(
-            MusicSearchTerm.ByTrackArtistAlbum("Rare Unknown Song", "Test Artist", "Rare Album"),
+            MusicSearchCriteria.ByTrackArtistAlbum("Rare Unknown Song", "Test Artist", "Rare Album"),
             metadata);
-        SeedOdesli(MusicSearchTerm.ByIsrc("isrc-rare-1"), references);
-        SeedOdesli(MusicSearchTerm.ByTrackArtistAlbum("Rare Unknown Song", "Test Artist", "Rare Album"), references);
-        SeedOdesli(MusicSearchTerm.ByTrackArtistAlbum("Rare Unknown Song", "Test Artist", null), references);
+        SeedOdesli(MusicSearchCriteria.ByIsrc("isrc-rare-1"), references);
+        SeedOdesli(MusicSearchCriteria.ByTrackArtistAlbum("Rare Unknown Song", "Test Artist", "Rare Album"), references);
+        SeedOdesli(MusicSearchCriteria.ByTrackArtistAlbum("Rare Unknown Song", "Test Artist", null), references);
     }
 
     private void EnqueueResponse(string path, string body)

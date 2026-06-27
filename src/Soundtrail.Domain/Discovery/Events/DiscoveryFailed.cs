@@ -1,9 +1,9 @@
-using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Domain.Events;
 
 public sealed record DiscoveryFailed(
-    CatalogSearchCriteria Criteria,
+    MusicSearchCriteria SearchCriteria,
     bool WillBeLookedUp,
     string Reason,
     DateTimeOffset FailedAt) : IDomainEvent;

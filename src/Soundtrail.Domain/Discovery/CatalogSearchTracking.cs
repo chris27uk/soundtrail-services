@@ -1,5 +1,6 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Domain.Discovery;
 
-public sealed record CatalogSearchTracking(CatalogSearchCriteria Criteria, MusicCatalogId MusicCatalogId, DateTimeOffset UpdatedAt);
+public sealed record CatalogSearchTracking(MusicSearchCriteria SearchCriteria, MusicCatalogId MusicCatalogId, DateTimeOffset UpdatedAt);

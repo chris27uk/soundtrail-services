@@ -12,11 +12,11 @@ public sealed class ByMusicCatalogIdResponsesTests
     {
         using var env = CatalogSearchTrackingStoreTestEnvironment.Create(mode);
         var first = new CatalogSearchTracking(
-            CatalogSearchCriteria.Search("track", "rare unknown song"),
+            MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks),
             MusicCatalogId.From("mc_track_1"),
             new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero));
         var second = new CatalogSearchTracking(
-            CatalogSearchCriteria.Search("track", "rare unknown song live"),
+            MusicSearchCriteria.ByQuery("rare unknown song live", SearchTypesFilter.Tracks),
             MusicCatalogId.From("mc_track_1"),
             new DateTimeOffset(2026, 6, 8, 12, 1, 0, TimeSpan.Zero));
 

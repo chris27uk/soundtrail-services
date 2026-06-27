@@ -3,7 +3,8 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Search;
+using Soundtrail.Translators.Discovery;
 using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
@@ -17,9 +18,9 @@ public sealed class CatalogSearchRequestedListener(CatalogSearchRequestedHandler
         IAsyncDocumentSession _,
         CancellationToken cancellationToken = default)
     {
-        var request = new CatalogSearchAttempt(
-            CatalogSearchCriteria.From(requestDto.Criteria),
-            NormalizedSearchQuery.FromText(requestDto.Query),
+        var request = new CatalogSearchRequested(
+            MusicSearchTermPersistentIdTranslator.ToSearchOrSeekDomainObject(requestDto.Criteria),
+            PlaybackProviderFilter.Parse(requestDto.Playback),
             requestDto.TrustLevel,
             requestDto.RiskScore,
             requestDto.OccurredAt,

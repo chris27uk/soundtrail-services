@@ -38,7 +38,7 @@ internal sealed class LookupMusicMetadataHandlerTestEnvironment
 
     public void Throw(Exception ex) => Metadata.Throw(ex);
 
-    public Task<Soundtrail.Domain.Responses.MusicCatalogLookupAttempted> HandleNewExecutionCommand(MusicSearchTerm? searchTerm = null) =>
+    public Task<Soundtrail.Domain.Responses.MusicCatalogLookupAttempted> HandleNewExecutionCommand(MusicSearchCriteria? searchTerm = null) =>
         Handler.Handle(
             new LookupMusicMetadataCommand(
                 CommandId.For("LookupMusicMetadata:mc_track_1"),
@@ -46,10 +46,10 @@ internal sealed class LookupMusicMetadataHandlerTestEnvironment
                 LookupPriorityBand.High,
                 DefaultCreatedAt,
                 CorrelationId.From("corr-1"),
-                searchTerm ?? MusicSearchTerm.ByIsrc("isrc-1")),
+                searchTerm ?? MusicSearchCriteria.ByIsrc("isrc-1")),
             CancellationToken.None);
 
-    public async Task<Soundtrail.Domain.Responses.MusicCatalogLookupAttempted> HandleDuplicateExecutionCommand(MusicSearchTerm? searchTerm = null)
+    public async Task<Soundtrail.Domain.Responses.MusicCatalogLookupAttempted> HandleDuplicateExecutionCommand(MusicSearchCriteria? searchTerm = null)
     {
         var command = new LookupMusicMetadataCommand(
             CommandId.For("LookupMusicMetadata:mc_track_1"),
@@ -57,7 +57,7 @@ internal sealed class LookupMusicMetadataHandlerTestEnvironment
             LookupPriorityBand.High,
             DefaultCreatedAt,
             CorrelationId.From("corr-1"),
-            searchTerm ?? MusicSearchTerm.ByIsrc("isrc-1"));
+            searchTerm ?? MusicSearchCriteria.ByIsrc("isrc-1"));
         await Handler.Handle(command, CancellationToken.None);
         return await Handler.Handle(command, CancellationToken.None);
     }

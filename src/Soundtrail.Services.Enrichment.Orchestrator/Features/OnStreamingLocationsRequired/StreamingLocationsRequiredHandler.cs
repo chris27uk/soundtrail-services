@@ -15,7 +15,7 @@ public sealed class StreamingLocationsRequiredHandler(ICommandBus commandBus)
             command.Priority,
             command.ObservedAt,
             command.CorrelationId,
-            command.SearchTerm,
+            command.SearchCriteria,
             new CatalogTrackHierarchy(command.ArtistId, command.AlbumId));
         return commandBus.SendAsync(commandToSend, cancellationToken);
     }

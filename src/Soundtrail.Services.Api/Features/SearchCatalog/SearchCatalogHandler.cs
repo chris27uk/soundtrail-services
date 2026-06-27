@@ -20,11 +20,10 @@ public sealed class SearchCatalogHandler(
 
         if (!local.IsComplete && discovery is null)
         {
-            var criteria = command.ToCatalogSearchCriteria();
             await catalogSearchAttemptRecorder.TryRequestAsync(
                 new RecordCatalogSearchAttemptCommand(
-                    criteria,
-                    command.Query.ToNewCatalogSearchAttempt(criteria)),
+                    command.ToMusicSearchTerm(),
+                    command.ToCatalogSearchAttempt()),
                 cancellationToken);
             discovery = new SearchDiscovery(
                 WillBeLookedUp: true,
@@ -33,7 +32,7 @@ public sealed class SearchCatalogHandler(
         }
 
         return new SearchCatalogResponse(
-            command.Query.Value,
+            command.Query,
             local.Results,
             discovery ?? new SearchDiscovery(false, null, null));
     }

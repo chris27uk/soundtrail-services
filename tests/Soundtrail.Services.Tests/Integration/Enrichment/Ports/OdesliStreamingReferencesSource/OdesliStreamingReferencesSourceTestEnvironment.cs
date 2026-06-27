@@ -11,12 +11,12 @@ namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.OdesliStreaming
 
 internal sealed class OdesliStreamingReferencesSourceTestEnvironment : IDisposable
 {
-    private readonly Action<MusicSearchTerm, IReadOnlyList<ExternalReference>> seed;
+    private readonly Action<MusicSearchCriteria, IReadOnlyList<ExternalReference>> seed;
     private readonly IDisposable? cleanup;
 
     private OdesliStreamingReferencesSourceTestEnvironment(
         IGetMusicTrackReference source,
-        Action<MusicSearchTerm, IReadOnlyList<ExternalReference>> seed,
+        Action<MusicSearchCriteria, IReadOnlyList<ExternalReference>> seed,
         IDisposable? cleanup = null)
     {
         Source = source;
@@ -34,7 +34,7 @@ internal sealed class OdesliStreamingReferencesSourceTestEnvironment : IDisposab
             _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
         };
 
-    public void Seed(MusicSearchTerm lookupKey, params ExternalReference[] references) => seed(lookupKey, references);
+    public void Seed(MusicSearchCriteria lookupKey, params ExternalReference[] references) => seed(lookupKey, references);
 
     private static OdesliStreamingReferencesSourceTestEnvironment CreateFake()
     {

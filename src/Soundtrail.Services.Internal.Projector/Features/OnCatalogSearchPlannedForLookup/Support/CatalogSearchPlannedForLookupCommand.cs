@@ -1,8 +1,9 @@
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchPlannedForLookup.Support;
 
 public sealed record CatalogSearchPlannedForLookupCommand(
-    CatalogSearchCriteria Criteria,
+    MusicSearchCriteria SearchCriteria,
     IReadOnlyList<VersionedCatalogSearchDiscoveryEvent> Events);

@@ -1,9 +1,10 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Domain.Discovery;
 
 public sealed record DiscoveryLifecycleProjectionSnapshot(
-    CatalogSearchCriteria Criteria,
+    MusicSearchCriteria SearchCriteria,
     string Status,
     string Priority,
     bool WillBeLookedUp,

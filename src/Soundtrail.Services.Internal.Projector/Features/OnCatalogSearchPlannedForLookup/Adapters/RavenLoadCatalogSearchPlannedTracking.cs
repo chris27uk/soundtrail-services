@@ -1,19 +1,20 @@
 using Raven.Client.Documents.Session;
-using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Model;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchPlannedForLookup.Ports;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchPlannedForLookup.Support;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Adapters.Documents;
+using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchPlannedForLookup.Adapters;
 
 public sealed class RavenLoadCatalogSearchPlannedTracking(IAsyncDocumentSession session) : ILoadCatalogSearchPlannedTrackingPort
 {
     public async Task<CatalogSearchPlannedTracking?> LoadAsync(
-        CatalogSearchCriteria criteria,
+        MusicSearchCriteria searchCriteria,
         CancellationToken cancellationToken)
     {
         var document = await session.LoadAsync<CatalogSearchTrackingRecordDto>(
-            CatalogSearchTrackingRecordDto.GetDocumentId(criteria.Value),
+            CatalogSearchTrackingRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria)),
             cancellationToken);
 
         return document is null

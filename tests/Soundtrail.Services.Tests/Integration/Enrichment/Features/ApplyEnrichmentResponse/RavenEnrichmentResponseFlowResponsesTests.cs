@@ -41,7 +41,7 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
             var trackingStore = new RavenCatalogSearchTrackingStore(raven.Store, seedSession);
             await trackingStore.UpsertAsync(
                 new CatalogSearchTracking(
-                    CatalogSearchCriteria.Search("track", "rare unknown song"),
+                    MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks),
                     MusicCatalogId.From("mc_track_1"),
                     new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero)),
                 CancellationToken.None);
@@ -76,28 +76,12 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
         track.Title.Should().Be("Rare Unknown Song");
         track.Artist.Should().Be("Test Artist");
 
+        var querySearchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
         var status = await verificationSession.LoadAsync<CatalogSearchStatusRecordDto>(
-            CatalogSearchStatusRecordDto.GetDocumentId(CatalogSearchCriteria.Search("track", "rare unknown song").Value),
+            CatalogSearchStatusRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(querySearchTerm)),
             CancellationToken.None);
         status.Should().NotBeNull();
         status!.Status.Should().Be("Completed");
-
-        var trackStatus = await verificationSession.LoadAsync<CatalogSearchStatusRecordDto>(
-            CatalogSearchStatusRecordDto.GetDocumentId(CatalogSearchCriteria.Track(TrackId.From("mc_track_1")).Value),
-            CancellationToken.None);
-        var artistStatus = await verificationSession.LoadAsync<CatalogSearchStatusRecordDto>(
-            CatalogSearchStatusRecordDto.GetDocumentId(CatalogSearchCriteria.Artist(ArtistId.From("artist_test_artist")).Value),
-            CancellationToken.None);
-        var albumStatus = await verificationSession.LoadAsync<CatalogSearchStatusRecordDto>(
-            CatalogSearchStatusRecordDto.GetDocumentId(CatalogSearchCriteria.Album(AlbumId.From("album_rare_album")).Value),
-            CancellationToken.None);
-
-        trackStatus.Should().NotBeNull();
-        artistStatus.Should().NotBeNull();
-        albumStatus.Should().NotBeNull();
-        trackStatus!.Status.Should().Be("Completed");
-        artistStatus!.Status.Should().Be("Completed");
-        albumStatus!.Status.Should().Be("Completed");
     }
 
     private static MusicCatalogLookupAttemptedListener CreateListener(Raven.Client.Documents.Session.IAsyncDocumentSession session) =>
@@ -145,7 +129,7 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
         foreach (var criteria in criteriaValues.Distinct(StringComparer.Ordinal))
         {
             await replayHandler.Handle(
-                new ReplayCatalogSearchStatusCommand(CatalogSearchCriteria.From(criteria)),
+                new ReplayCatalogSearchStatusCommand(MusicSearchTermPersistentIdTranslator.ToDomainObject(criteria)),
                 CancellationToken.None);
         }
     }

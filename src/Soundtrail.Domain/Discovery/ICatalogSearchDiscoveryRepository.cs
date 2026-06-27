@@ -1,15 +1,17 @@
 using Soundtrail.Domain.Events;
+using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Domain.Discovery;
 
 public interface ICatalogSearchDiscoveryRepository
 {
     Task<CatalogSearchDiscoveryEventStream> LoadAsync(
-        CatalogSearchCriteria criteria,
+        MusicSeekOrSearchCriteria criteria,
         CancellationToken cancellationToken);
 
     Task<bool> AppendAsync(
-        CatalogSearchCriteria criteria,
+        MusicSeekOrSearchCriteria criteria,
         int expectedVersion,
         IReadOnlyCollection<IDomainEvent> events,
         CancellationToken cancellationToken);

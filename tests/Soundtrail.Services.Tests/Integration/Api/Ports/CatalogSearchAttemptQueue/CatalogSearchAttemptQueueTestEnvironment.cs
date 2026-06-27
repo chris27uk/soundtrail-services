@@ -7,6 +7,7 @@ using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Wolverine;
@@ -132,10 +133,10 @@ internal sealed class CatalogSearchAttemptQueueTestEnvironment : IAsyncDisposabl
         this.host.Dispose();
     }
 
-    public static CatalogSearchAttempt Request(string query) =>
+    public static CatalogSearchRequested Request(string query) =>
         new(
-            Criteria: CatalogSearchCriteria.Search("track", NormalizedSearchQuery.FromText(query).Value),
-            Query: query,
+            Criteria: MusicSeekOrSearchCriteria.FromSearch(MusicSearchCriteria.ByQuery(query, SearchTypesFilter.Tracks)),
+            Playback: PlaybackProviderFilter.Parse("spotify,appleMusic,youtubeMusic"),
             TrustLevel: 2,
             RiskScore: 10,
             OccurredAt: new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero),
@@ -167,9 +168,9 @@ internal sealed class CatalogSearchAttemptQueueTestEnvironment : IAsyncDisposabl
 
         public List<CatalogSearchAttemptDto> Requests => requests.ToList();
 
-        public Task EnqueueAsync(CatalogSearchAttempt request, CancellationToken cancellationToken)
+        public Task EnqueueAsync(CatalogSearchRequested requested, CancellationToken cancellationToken)
         {
-            requests.Enqueue(CatalogSearchAttemptMapper.ToDto(request));
+            requests.Enqueue(CatalogSearchAttemptMapper.ToDto(requested));
             return Task.CompletedTask;
         }
     }

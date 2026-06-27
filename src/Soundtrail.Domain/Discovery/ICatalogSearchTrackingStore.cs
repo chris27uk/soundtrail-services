@@ -1,11 +1,12 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Domain.Discovery;
 
 public interface ICatalogSearchTrackingStore
 {
     Task<CatalogSearchTracking?> FindByCriteriaAsync(
-        CatalogSearchCriteria criteria,
+        MusicSearchCriteria searchCriteria,
         CancellationToken cancellationToken);
 
     Task UpsertAsync(

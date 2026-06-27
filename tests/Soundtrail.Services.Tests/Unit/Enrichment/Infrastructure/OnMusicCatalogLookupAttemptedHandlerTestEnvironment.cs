@@ -5,6 +5,7 @@ using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted;
+using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -20,16 +21,11 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
         discoveryRepository = new CatalogSearchDiscoveryRepositoryFake();
         trackingStore = new CatalogSearchTrackingStoreFake();
         trackingStore.Seed(new CatalogSearchTracking(
-            CatalogSearchCriteria.Search("track", "rare unknown song"),
-            MusicCatalogId.From("mc_track_1"),
-            Now));
-        trackingStore.Seed(new CatalogSearchTracking(
-            CatalogSearchCriteria.Artist(ArtistId.From("artist_1")),
+            MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks),
             MusicCatalogId.From("mc_track_1"),
             Now));
 
-        SeedDiscovery(CatalogSearchCriteria.Search("track", "rare unknown song"));
-        SeedDiscovery(CatalogSearchCriteria.Artist(ArtistId.From("artist_1")));
+        SeedDiscovery(MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks));
 
         Handler = new MusicCatalogLookupAttemptedHandler(
             StreamStore,
@@ -55,7 +51,7 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
     {
         var env = WithAMusicBrainzResponse();
         env.CatalogSearchTrackings.Seed(new CatalogSearchTracking(
-            CatalogSearchCriteria.Search("track", "rare unknown song live"),
+            MusicSearchCriteria.ByQuery("rare unknown song live", SearchTypesFilter.Tracks),
             MusicCatalogId.From("mc_track_1"),
             new DateTimeOffset(2026, 6, 8, 12, 1, 0, TimeSpan.Zero)));
         return env;
@@ -84,7 +80,7 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
         Handler.Handle(MusicCatalogLookupAttempted.Completed(response), CancellationToken.None);
 
     public IReadOnlyList<IDomainEvent> StoredEvents(string criteria) =>
-        discoveryRepository.GetStoredEvents(CatalogSearchCriteria.From(criteria));
+        discoveryRepository.GetStoredEvents(MusicSearchTermPersistentIdTranslator.ToSearchOrSeekDomainObject(criteria));
 
     public static MusicCatalogMetadataFetched MusicBrainzResponse() =>
         new(
@@ -125,19 +121,18 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
             new CatalogTrackHierarchy(ArtistId.From("artist_test_artist"), AlbumId.From("album_rare_album")),
             CorrelationId.From("corr-2"));
 
-    private void SeedDiscovery(CatalogSearchCriteria criteria)
+    private void SeedDiscovery(MusicSearchCriteria searchCriteria)
     {
         discoveryRepository.Seed(
-            criteria,
+            searchCriteria,
             new DiscoveryRequested(
-                criteria,
-                NormalizedSearchQuery.FromText("rare unknown song"),
+                searchCriteria,
                 1,
                 10,
                 Now,
                 CorrelationId.From("corr-1")),
             new DiscoveryPlanned(
-                criteria,
+                searchCriteria,
                 LookupPriorityBand.High,
                 true,
                 30,

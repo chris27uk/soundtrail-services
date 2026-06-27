@@ -40,8 +40,8 @@ internal sealed class PublishMusicTrackEventsHandlerTestEnvironment
                 ProviderName.MusicBrainz,
                 new DateTimeOffset(2026, 6, 18, 12, version, 0, TimeSpan.Zero),
                 !string.IsNullOrWhiteSpace(isrc)
-                    ? MusicSearchTerm.ByIsrc(isrc)
-                    : MusicSearchTerm.ByTrackArtistAlbum(
+                    ? MusicSearchCriteria.ByIsrc(isrc)
+                    : MusicSearchCriteria.ByTrackArtistAlbum(
                         title ?? throw new InvalidOperationException("title is required when isrc is null"),
                         artist ?? throw new InvalidOperationException("artist is required when isrc is null"),
                         album),

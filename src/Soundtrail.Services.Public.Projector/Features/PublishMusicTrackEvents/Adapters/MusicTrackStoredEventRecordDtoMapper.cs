@@ -46,7 +46,7 @@ internal static class MusicTrackStoredEventRecordDtoMapper
                 streamingLocationsRequired.CorrelationId,
                 streamingLocationsRequired.SourceProvider,
                 streamingLocationsRequired.ObservedAt,
-                streamingLocationsRequired.SearchTerm,
+                streamingLocationsRequired.SearchCriteria,
                 streamingLocationsRequired.Hierarchy?.ArtistId?.Value,
                 streamingLocationsRequired.Hierarchy?.AlbumId?.Value));
     }

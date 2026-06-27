@@ -32,8 +32,31 @@ public sealed class RavenLocalMusicTrackSearch(IDocumentStore documentStore) : I
             document.ResolvedMetadata?.Mbid ?? document.Mbid,
             document.ResolvedMetadata?.DurationMs ?? document.DurationMs,
             document.IsPlayable,
+            ToAvailableProviders(document),
             string.IsNullOrWhiteSpace(document.ArtistId) ? null : ArtistId.From(document.ArtistId),
             string.IsNullOrWhiteSpace(document.AlbumId) ? null : AlbumId.From(document.AlbumId),
             document.ReleaseDate);
+    }
+
+    private static IReadOnlyList<ProviderName> ToAvailableProviders(RavenTrackRecordDto document)
+    {
+        var providers = new List<ProviderName>();
+
+        if (!string.IsNullOrWhiteSpace(document.SpotifyId))
+        {
+            providers.Add(ProviderName.Spotify);
+        }
+
+        if (document.AppleReference is not null)
+        {
+            providers.Add(ProviderName.AppleMusic);
+        }
+
+        if (document.YouTubeMusicReference is not null)
+        {
+            providers.Add(ProviderName.YoutubeMusic);
+        }
+
+        return providers;
     }
 }

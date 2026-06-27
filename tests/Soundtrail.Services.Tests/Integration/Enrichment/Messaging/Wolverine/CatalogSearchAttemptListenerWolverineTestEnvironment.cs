@@ -31,7 +31,7 @@ internal sealed class CatalogSearchRequestedListenerWolverineTestEnvironment
         Listener = new CatalogSearchRequestedListener(
             new CatalogSearchRequestedHandler(
                 search,
-                new RecordCatalogSearchStartedPortFake(discoveryRepository),
+                discoveryRepository,
                 localSearchFake));
     }
 
@@ -63,11 +63,11 @@ internal sealed class CatalogSearchRequestedListenerWolverineTestEnvironment
     }
 
     public Task HandleSchedulableRequest() =>
-        Listener.Handle(new CatalogSearchAttemptDto("search:track:rare unknown song", "rare unknown song", 1, 10, DefaultOccurredAt, "corr-1"), null!);
+        Listener.Handle(new CatalogSearchAttemptDto("search:track:rare unknown song", "rare unknown song", "spotify,appleMusic,youtubeMusic", 1, 10, DefaultOccurredAt, "corr-1"), null!);
 
     public Task HandleUnschedulableRequest() =>
-        Listener.Handle(new CatalogSearchAttemptDto("search:track:rare unknown song", "rare unknown song", 0, 100, DefaultOccurredAt, "corr-1"), null!);
+        Listener.Handle(new CatalogSearchAttemptDto("search:track:rare unknown song", "rare unknown song", "spotify,appleMusic,youtubeMusic", 0, 100, DefaultOccurredAt, "corr-1"), null!);
 
     public Task HandleDeferredRequest() =>
-        Listener.Handle(new CatalogSearchAttemptDto("search:track:rare unknown song", "rare unknown song", 0, 100, DefaultOccurredAt, "corr-1"), null!);
+        Listener.Handle(new CatalogSearchAttemptDto("search:track:rare unknown song", "rare unknown song", "spotify,appleMusic,youtubeMusic", 0, 100, DefaultOccurredAt, "corr-1"), null!);
 }

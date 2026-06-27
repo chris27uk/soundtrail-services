@@ -17,7 +17,7 @@ public sealed class FakeGetMusicMetadata : IGetMusicMetadata
     public List<string> Lookups { get; } = [];
 
     public Task<SongMetadata?> GetMetadataAsync(
-        MusicSearchTerm searchTerm,
+        MusicSearchCriteria searchCriteria,
         CancellationToken cancellationToken)
     {
         if (exception is not null)
@@ -25,7 +25,7 @@ public sealed class FakeGetMusicMetadata : IGetMusicMetadata
             throw exception;
         }
 
-        return searchTerm.Match(
+        return searchCriteria.Match(
             query =>
             {
                 var key = MusicMetadataLookupMatch.Normalize(query);

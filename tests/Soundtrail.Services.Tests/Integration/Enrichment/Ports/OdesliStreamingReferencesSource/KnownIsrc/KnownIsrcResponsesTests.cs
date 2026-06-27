@@ -13,12 +13,12 @@ public sealed class KnownIsrcResponsesTests
     {
         using var env = OdesliStreamingReferencesSourceTestEnvironment.Create(mode);
         env.Seed(
-            MusicSearchTerm.ByIsrc("isrc-1"),
+            MusicSearchCriteria.ByIsrc("isrc-1"),
             new ExternalReference(ProviderName.AppleMusic, new Uri("https://music.apple.com/us/song/song-a?i=apple-1"), "apple-1"),
             new ExternalReference(ProviderName.YoutubeMusic, new Uri("https://music.youtube.com/watch?v=yt-1"), "yt-1"),
             new ExternalReference(ProviderName.Spotify, new Uri("https://open.spotify.com/track/spotify-1"), "spotify-1"));
 
-        var actual = await env.Source.GetReferenceToMusicTrack(MusicSearchTerm.ByIsrc("isrc-1"), CancellationToken.None);
+        var actual = await env.Source.GetReferenceToMusicTrack(MusicSearchCriteria.ByIsrc("isrc-1"), CancellationToken.None);
 
         actual.Should().BeEquivalentTo(
             [

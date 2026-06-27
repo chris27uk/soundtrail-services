@@ -1,7 +1,7 @@
-using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Domain.Commands;
 
 public sealed record RecordCatalogSearchAttemptCommand(
-    CatalogSearchCriteria Criteria,
-    CatalogSearchAttempt Request);
+    MusicSearchCriteria SearchCriteria,
+    CatalogSearchRequested Requested);

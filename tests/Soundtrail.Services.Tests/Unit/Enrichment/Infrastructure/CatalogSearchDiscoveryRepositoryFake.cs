@@ -1,6 +1,8 @@
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Events;
+using Soundtrail.Domain.Model;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Support;
+using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -9,31 +11,49 @@ internal sealed class CatalogSearchDiscoveryRepositoryFake : ICompleteTrackedDis
     private readonly Dictionary<string, List<IDomainEvent>> eventsByCriteria = [];
 
     public void Seed(
-        CatalogSearchCriteria criteria,
+        MusicSearchCriteria searchCriteria,
+        params IDomainEvent[] events) =>
+        Seed(MusicSeekOrSearchCriteria.FromSearch(searchCriteria), events);
+
+    public void Seed(
+        MusicSeekOrSearchCriteria criteria,
         params IDomainEvent[] events)
     {
-        eventsByCriteria[criteria.Value] = events.ToList();
+        eventsByCriteria[ToPersistentId(criteria)] = events.ToList();
     }
 
     public Task<CatalogSearchDiscoveryEventStream> LoadAsync(
-        CatalogSearchCriteria criteria,
+        MusicSearchCriteria searchCriteria,
+        CancellationToken cancellationToken) =>
+        LoadAsync(MusicSeekOrSearchCriteria.FromSearch(searchCriteria), cancellationToken);
+
+    public Task<CatalogSearchDiscoveryEventStream> LoadAsync(
+        MusicSeekOrSearchCriteria criteria,
         CancellationToken cancellationToken)
     {
-        return Task.FromResult(eventsByCriteria.TryGetValue(criteria.Value, out var events)
+        return Task.FromResult(eventsByCriteria.TryGetValue(ToPersistentId(criteria), out var events)
             ? new CatalogSearchDiscoveryEventStream(events.Count, events.ToArray())
             : new CatalogSearchDiscoveryEventStream(0, []));
     }
 
     public Task<bool> AppendAsync(
-        CatalogSearchCriteria criteria,
+        MusicSearchCriteria searchCriteria,
+        int expectedVersion,
+        IReadOnlyCollection<IDomainEvent> events,
+        CancellationToken cancellationToken) =>
+        AppendAsync(MusicSeekOrSearchCriteria.FromSearch(searchCriteria), expectedVersion, events, cancellationToken);
+
+    public Task<bool> AppendAsync(
+        MusicSeekOrSearchCriteria criteria,
         int expectedVersion,
         IReadOnlyCollection<IDomainEvent> events,
         CancellationToken cancellationToken)
     {
-        if (!eventsByCriteria.TryGetValue(criteria.Value, out var storedEvents))
+        var persistentId = ToPersistentId(criteria);
+        if (!eventsByCriteria.TryGetValue(persistentId, out var storedEvents))
         {
             storedEvents = [];
-            eventsByCriteria[criteria.Value] = storedEvents;
+            eventsByCriteria[persistentId] = storedEvents;
         }
 
         if (storedEvents.Count != expectedVersion)
@@ -45,8 +65,14 @@ internal sealed class CatalogSearchDiscoveryRepositoryFake : ICompleteTrackedDis
         return Task.FromResult(true);
     }
 
-    public IReadOnlyList<IDomainEvent> GetStoredEvents(CatalogSearchCriteria criteria) =>
-        eventsByCriteria.TryGetValue(criteria.Value, out var events)
+    public IReadOnlyList<IDomainEvent> GetStoredEvents(MusicSearchCriteria searchCriteria) =>
+        GetStoredEvents(MusicSeekOrSearchCriteria.FromSearch(searchCriteria));
+
+    public IReadOnlyList<IDomainEvent> GetStoredEvents(MusicSeekOrSearchCriteria criteria) =>
+        eventsByCriteria.TryGetValue(ToPersistentId(criteria), out var events)
             ? events.AsReadOnly()
             : [];
+
+    private static string ToPersistentId(MusicSeekOrSearchCriteria criteria) =>
+        MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria);
 }

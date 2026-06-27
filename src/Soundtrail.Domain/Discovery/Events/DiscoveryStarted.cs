@@ -1,10 +1,10 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Domain.Events;
 
 public sealed record DiscoveryStarted(
-    CatalogSearchCriteria Criteria,
+    MusicSearchCriteria SearchCriteria,
     LookupPriorityBand Priority,
     bool WillBeLookedUp,
     string Reason,

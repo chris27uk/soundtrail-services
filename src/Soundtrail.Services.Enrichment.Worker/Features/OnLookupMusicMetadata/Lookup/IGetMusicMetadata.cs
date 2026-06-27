@@ -6,6 +6,6 @@ namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.L
 public interface IGetMusicMetadata
 {
     Task<SongMetadata?> GetMetadataAsync(
-        MusicSearchTerm searchTerm,
+        MusicSearchCriteria searchCriteria,
         CancellationToken cancellationToken);
 }

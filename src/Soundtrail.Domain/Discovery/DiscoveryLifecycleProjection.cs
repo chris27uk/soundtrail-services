@@ -1,4 +1,5 @@
 using Soundtrail.Domain.Events;
+using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Domain.Discovery;
 
@@ -6,13 +7,13 @@ public sealed class DiscoveryLifecycleProjection
 {
     private readonly EventHandlers<DiscoveryLifecycleProjection> eventHandlers;
 
-    public DiscoveryLifecycleProjection(CatalogSearchCriteria criteria)
+    public DiscoveryLifecycleProjection(MusicSearchCriteria searchCriteria)
     {
-        Criteria = criteria;
+        SearchCriteria = searchCriteria;
         eventHandlers = CreateHandlers();
     }
 
-    public CatalogSearchCriteria Criteria { get; }
+    public MusicSearchCriteria SearchCriteria { get; }
 
     public string Status { get; private set; } = string.Empty;
 
@@ -31,7 +32,7 @@ public sealed class DiscoveryLifecycleProjection
     public int ProjectionVersion { get; private set; }
 
     public static DiscoveryLifecycleProjection Load(DiscoveryLifecycleProjectionSnapshot snapshot) =>
-        new(snapshot.Criteria)
+        new(snapshot.SearchCriteria)
         {
             Status = snapshot.Status,
             Priority = snapshot.Priority,
@@ -45,7 +46,7 @@ public sealed class DiscoveryLifecycleProjection
 
     public DiscoveryLifecycleProjectionSnapshot ToSnapshot() =>
         new(
-            Criteria,
+            SearchCriteria,
             Status,
             Priority,
             WillBeLookedUp,
@@ -65,7 +66,8 @@ public sealed class DiscoveryLifecycleProjection
     {
         var handlers = new EventHandlers<DiscoveryLifecycleProjection>();
 
-        handlers.Register<MusicTrackSearchStarted>(_ => { });
+        handlers.Register<MusicMetadataRequired>(_ => { });
+        handlers.Register<StreamingLocationsRequired>(_ => { });
 
         handlers.Register<DiscoveryRequested>(@event =>
         {

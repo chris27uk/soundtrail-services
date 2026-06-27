@@ -1,8 +1,10 @@
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
+using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
 
@@ -14,7 +16,8 @@ public static class DiscoveryQueryStoredEventRecordMapper
     private static IDomainEvent ToDomainEventData(DiscoveryQueryStoredEventRecordDto dto) =>
         dto.EventType switch
         {
-            nameof(MusicTrackSearchStarted) => ToMusicTrackSearchStarted(dto),
+            nameof(MusicMetadataRequired) => ToMusicMetadataRequired(dto),
+            nameof(StreamingLocationsRequired) => ToStreamingLocationsRequired(dto),
             nameof(DiscoveryRequested) => ToDiscoveryRequested(dto),
             nameof(DiscoveryPlanned) => ToDiscoveryPlanned(dto),
             nameof(DiscoveryDeferred) => ToDiscoveryDeferred(dto),
@@ -25,17 +28,43 @@ public static class DiscoveryQueryStoredEventRecordMapper
             _ => throw new ArgumentOutOfRangeException(nameof(dto.EventType), dto.EventType, "Unknown discovery event type.")
         };
 
-    private static MusicTrackSearchStarted ToMusicTrackSearchStarted(DiscoveryQueryStoredEventRecordDto dto)
+    private static MusicMetadataRequired ToMusicMetadataRequired(DiscoveryQueryStoredEventRecordDto dto)
     {
-        var data = dto.MusicTrackSearchStarted
-            ?? throw new InvalidOperationException("Missing music track search started event data.");
-        return new MusicTrackSearchStarted(
-            CatalogSearchCriteria.From(data.Criteria),
-            MusicCatalogId.From(data.MusicCatalogId),
+        var data = dto.MusicMetadataRequired
+            ?? throw new InvalidOperationException("Missing music metadata required event data.");
+        return new MusicMetadataRequired(
+            MusicSearchTermPersistentIdTranslator.ToSearchOrSeekDomainObject(data.Criteria),
             data.TrustLevel,
             data.RiskScore,
-            data.StartedAtUtc,
+            data.RequiredAtUtc,
             CorrelationId.From(data.CorrelationId));
+    }
+
+    private static StreamingLocationsRequired ToStreamingLocationsRequired(DiscoveryQueryStoredEventRecordDto dto)
+    {
+        var data = dto.StreamingLocationsRequired
+            ?? throw new InvalidOperationException("Missing streaming locations required event data.");
+        return new StreamingLocationsRequired(
+            MusicCatalogId.From(data.MusicCatalogId),
+            Enum.Parse<LookupPriorityBand>(data.Priority, ignoreCase: true),
+            CorrelationId.From(data.CorrelationId),
+            ProviderName.From(data.SourceProvider),
+            data.ObservedAt,
+            data.SearchKind switch
+            {
+                MusicSearchKind.UnifiedSearch => MusicSearchCriteria.ByQuery(data.Query ?? throw new InvalidOperationException("Query search term is required.")),
+                MusicSearchKind.Isrc => MusicSearchCriteria.ByIsrc(data.Isrc ?? throw new InvalidOperationException("ISRC search term is required.")),
+                MusicSearchKind.TrackArtistAlbum => MusicSearchCriteria.ByTrackArtistAlbum(
+                    data.Title ?? throw new InvalidOperationException("Track title is required."),
+                    data.Artist ?? throw new InvalidOperationException("Track artist is required."),
+                    data.Album),
+                _ => throw new InvalidOperationException($"Unsupported music search kind '{data.SearchKind}'.")
+            },
+            data.ArtistId is null && data.AlbumId is null
+                ? null
+                : new CatalogTrackHierarchy(
+                    data.ArtistId is null ? null : ArtistId.From(data.ArtistId),
+                    data.AlbumId is null ? null : AlbumId.From(data.AlbumId)));
     }
 
     private static DiscoveryRequested ToDiscoveryRequested(DiscoveryQueryStoredEventRecordDto dto)
@@ -43,8 +72,7 @@ public static class DiscoveryQueryStoredEventRecordMapper
         var data = dto.DiscoveryRequested
             ?? throw new InvalidOperationException("Missing discovery requested event data.");
         return new DiscoveryRequested(
-            CatalogSearchCriteria.From(data.Criteria),
-            NormalizedSearchQuery.FromText(data.Query),
+            MusicSearchTermPersistentIdTranslator.ToDomainObject(data.Criteria),
             data.TrustLevel,
             data.RiskScore,
             data.RequestedAtUtc,
@@ -56,7 +84,7 @@ public static class DiscoveryQueryStoredEventRecordMapper
         var data = dto.DiscoveryPlanned
             ?? throw new InvalidOperationException("Missing discovery planned event data.");
         return new DiscoveryPlanned(
-            CatalogSearchCriteria.From(data.Criteria),
+            MusicSearchTermPersistentIdTranslator.ToDomainObject(data.Criteria),
             Enum.Parse<LookupPriorityBand>(data.Priority, ignoreCase: true),
             data.WillBeLookedUp,
             data.EstimatedRetryAfterSeconds,
@@ -70,7 +98,7 @@ public static class DiscoveryQueryStoredEventRecordMapper
         var data = dto.DiscoveryDeferred
             ?? throw new InvalidOperationException("Missing discovery deferred event data.");
         return new DiscoveryDeferred(
-            CatalogSearchCriteria.From(data.Criteria),
+            MusicSearchTermPersistentIdTranslator.ToDomainObject(data.Criteria),
             data.WillBeLookedUp,
             data.EstimatedRetryAfterSeconds,
             data.EarliestExpectedCompletionAt,
@@ -83,7 +111,7 @@ public static class DiscoveryQueryStoredEventRecordMapper
         var data = dto.DiscoveryRejected
             ?? throw new InvalidOperationException("Missing discovery rejected event data.");
         return new DiscoveryRejected(
-            CatalogSearchCriteria.From(data.Criteria),
+            MusicSearchTermPersistentIdTranslator.ToDomainObject(data.Criteria),
             data.WillBeLookedUp,
             data.Reason,
             data.RejectedAtUtc);
@@ -94,7 +122,7 @@ public static class DiscoveryQueryStoredEventRecordMapper
         var data = dto.DiscoveryFailed
             ?? throw new InvalidOperationException("Missing discovery failed event data.");
         return new DiscoveryFailed(
-            CatalogSearchCriteria.From(data.Criteria),
+            MusicSearchTermPersistentIdTranslator.ToDomainObject(data.Criteria),
             data.WillBeLookedUp,
             data.Reason,
             data.FailedAtUtc);
@@ -105,7 +133,7 @@ public static class DiscoveryQueryStoredEventRecordMapper
         var data = dto.DiscoveryStarted
             ?? throw new InvalidOperationException("Missing discovery started event data.");
         return new DiscoveryStarted(
-            CatalogSearchCriteria.From(data.Criteria),
+            MusicSearchTermPersistentIdTranslator.ToDomainObject(data.Criteria),
             Enum.Parse<LookupPriorityBand>(data.Priority, ignoreCase: true),
             data.WillBeLookedUp,
             data.Reason,
@@ -117,7 +145,7 @@ public static class DiscoveryQueryStoredEventRecordMapper
         var data = dto.DiscoveryCompleted
             ?? throw new InvalidOperationException("Missing discovery completed event data.");
         return new DiscoveryCompleted(
-            CatalogSearchCriteria.From(data.Criteria),
+            MusicSearchTermPersistentIdTranslator.ToDomainObject(data.Criteria),
             Enum.Parse<LookupPriorityBand>(data.Priority, ignoreCase: true),
             data.WillBeLookedUp,
             data.Reason,

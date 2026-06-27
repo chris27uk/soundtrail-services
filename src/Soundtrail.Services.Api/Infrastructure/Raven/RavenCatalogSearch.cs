@@ -5,6 +5,7 @@ using Soundtrail.Domain.Catalog;
 using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
+using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Services.Api.Infrastructure.Raven;
 
@@ -23,7 +24,7 @@ public sealed class RavenCatalogSearch(IDocumentStore documentStore) : ICatalogS
         {
             var artists = await session
                 .Query<CatalogArtistRecordDto, Indexes.Search_Artists>()
-                .Search(x => x.SearchText, command.Query.Value)
+                .Search(x => x.SearchText, command.Query)
                 .Take(take)
                 .ToListAsync(cancellationToken);
 
@@ -47,7 +48,7 @@ public sealed class RavenCatalogSearch(IDocumentStore documentStore) : ICatalogS
         {
             var albums = await session
                 .Query<CatalogAlbumRecordDto, Indexes.Search_Albums>()
-                .Search(x => x.SearchText, command.Query.Value)
+                .Search(x => x.SearchText, command.Query)
                 .Take(take)
                 .ToListAsync(cancellationToken);
 
@@ -71,7 +72,7 @@ public sealed class RavenCatalogSearch(IDocumentStore documentStore) : ICatalogS
         {
             var tracks = await session
                 .Query<CatalogTrackRecordDto, Indexes.Search_Tracks>()
-                .Search(x => x.SearchText, command.Query.Value)
+                .Search(x => x.SearchText, command.Query)
                 .Take(take)
                 .ToListAsync(cancellationToken);
 
@@ -97,7 +98,8 @@ public sealed class RavenCatalogSearch(IDocumentStore documentStore) : ICatalogS
             .ToArray();
 
         var discoveryStatus = await session.LoadAsync<CatalogSearchStatusRecordDto>(
-            CatalogSearchStatusRecordDto.GetDocumentId(command.ToCatalogSearchCriteria().Value),
+            CatalogSearchStatusRecordDto.GetDocumentId(
+                MusicSearchTermPersistentIdTranslator.ToPersistentId(command.ToMusicSearchTerm())),
             cancellationToken);
 
         return new LocalCatalogSearchResponse(

@@ -19,7 +19,7 @@ public sealed class KnownExactMusicBrainzIdQueryResponsesTests
         env.Seed("mc_track_1", "mr brightside the killers", title: "Fixture Track", artist: "Fixture Artist", mbid: "f6c30a8f-7d2d-4da8-b3b8-8bbf2b1f6f77");
 
         var actual = await env.Search.SearchAsync(
-            NormalizedSearchQuery.FromText("f6c30a8f-7d2d-4da8-b3b8-8bbf2b1f6f77"),
+            MusicSearchCriteria.ByQuery("f6c30a8f-7d2d-4da8-b3b8-8bbf2b1f6f77", SearchTypesFilter.Tracks),
             CancellationToken.None);
 
         actual.Should().ContainSingle().Which.Should().BeEquivalentTo(

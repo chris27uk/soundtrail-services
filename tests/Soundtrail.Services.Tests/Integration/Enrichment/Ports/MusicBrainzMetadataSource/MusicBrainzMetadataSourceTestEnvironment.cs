@@ -10,16 +10,16 @@ namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicBrainzMeta
 
 internal sealed class MusicBrainzMetadataSourceTestEnvironment : IDisposable
 {
-    private readonly Action<MusicSearchTerm, SongMetadata> seed;
-    private readonly Action<MusicSearchTerm>? seedAmbiguous;
-    private readonly Action<MusicSearchTerm, SongMetadata>? seedPreferredMatch;
+    private readonly Action<MusicSearchCriteria, SongMetadata> seed;
+    private readonly Action<MusicSearchCriteria>? seedAmbiguous;
+    private readonly Action<MusicSearchCriteria, SongMetadata>? seedPreferredMatch;
     private readonly IDisposable? cleanup;
 
     private MusicBrainzMetadataSourceTestEnvironment(
         IGetMusicMetadata source,
-        Action<MusicSearchTerm, SongMetadata> seed,
-        Action<MusicSearchTerm>? seedAmbiguous,
-        Action<MusicSearchTerm, SongMetadata>? seedPreferredMatch,
+        Action<MusicSearchCriteria, SongMetadata> seed,
+        Action<MusicSearchCriteria>? seedAmbiguous,
+        Action<MusicSearchCriteria, SongMetadata>? seedPreferredMatch,
         IDisposable? cleanup = null)
     {
         Source = source;
@@ -39,11 +39,11 @@ internal sealed class MusicBrainzMetadataSourceTestEnvironment : IDisposable
             _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
         };
 
-    public void Seed(MusicSearchTerm searchTerm, SongMetadata metadata) => seed(searchTerm, metadata);
+    public void Seed(MusicSearchCriteria searchCriteria, SongMetadata metadata) => seed(searchCriteria, metadata);
 
-    public void SeedAmbiguous(MusicSearchTerm searchTerm) => seedAmbiguous?.Invoke(searchTerm);
+    public void SeedAmbiguous(MusicSearchCriteria searchCriteria) => seedAmbiguous?.Invoke(searchCriteria);
 
-    public void SeedPreferredMatch(MusicSearchTerm searchTerm, SongMetadata metadata) => seedPreferredMatch?.Invoke(searchTerm, metadata);
+    public void SeedPreferredMatch(MusicSearchCriteria searchCriteria, SongMetadata metadata) => seedPreferredMatch?.Invoke(searchCriteria, metadata);
 
     private static MusicBrainzMetadataSourceTestEnvironment CreateFake()
     {
@@ -119,7 +119,7 @@ internal sealed class MusicBrainzMetadataSourceTestEnvironment : IDisposable
                     },
                     isrc =>
                     {
-                        server.SeedMusicBrainz(MusicSearchTerm.ByIsrc(isrc), metadata);
+                        server.SeedMusicBrainz(MusicSearchCriteria.ByIsrc(isrc), metadata);
                         return 0;
                     });
             },

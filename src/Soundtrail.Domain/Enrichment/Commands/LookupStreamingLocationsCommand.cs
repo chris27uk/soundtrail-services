@@ -11,7 +11,7 @@ public sealed record LookupStreamingLocationsCommand(
     LookupPriorityBand Priority,
     DateTimeOffset CreatedAt,
     CorrelationId CorrelationId,
-    MusicSearchTerm LookupKey,
+    MusicSearchCriteria LookupKey,
     CatalogTrackHierarchy? Hierarchy = null) : IMusicCatalogLookupCommand
 {
     public static CommandId Id(MusicCatalogId catalogId) => CommandId.For($"LookupStreamingLocations:{catalogId.Value}");

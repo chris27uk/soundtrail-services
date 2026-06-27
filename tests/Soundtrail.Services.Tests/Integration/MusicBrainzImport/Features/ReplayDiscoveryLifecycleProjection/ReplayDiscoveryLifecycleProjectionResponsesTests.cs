@@ -15,7 +15,7 @@ public sealed class ReplayDiscoveryLifecycleProjectionResponsesTests
         ReplayDiscoveryLifecycleProjectionMode mode)
     {
         await using var env = await ReplayDiscoveryLifecycleProjectionTestEnvironment.CreateAsync(mode);
-        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
+        var criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
 
         await env.Handler.Handle(
             new ReplayDiscoveryLifecycleProjectionBatchCommand(),

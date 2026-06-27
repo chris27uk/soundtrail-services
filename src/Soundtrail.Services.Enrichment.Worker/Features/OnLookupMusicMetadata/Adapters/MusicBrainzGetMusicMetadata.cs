@@ -9,10 +9,10 @@ namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.A
 public sealed class MusicBrainzGetMusicMetadata(HttpClient httpClient) : IGetMusicMetadata
 {
     public async Task<SongMetadata?> GetMetadataAsync(
-        MusicSearchTerm searchTerm,
+        MusicSearchCriteria searchCriteria,
         CancellationToken cancellationToken)
     {
-        var recording = await searchTerm.Match(
+        var recording = await searchCriteria.Match(
             async query => await SearchByQueryAsync(query, cancellationToken),
             async (track, artist, album) => await SearchByNamesAsync(
                 track,
@@ -26,9 +26,9 @@ public sealed class MusicBrainzGetMusicMetadata(HttpClient httpClient) : IGetMus
             return null;
         }
 
-        var fallbackTitle = searchTerm.Match(query => query, (track, _, _) => track, __ => string.Empty);
-        var fallbackArtist = searchTerm.Match(_ => string.Empty, (_, artist, _) => artist, __ => string.Empty);
-        var fallbackIsrc = searchTerm.Match<string?>(_ => null, (_, _, _) => null, isrc => isrc);
+        var fallbackTitle = searchCriteria.Match(query => query, (track, _, _) => track, __ => string.Empty);
+        var fallbackArtist = searchCriteria.Match(_ => string.Empty, (_, artist, _) => artist, __ => string.Empty);
+        var fallbackIsrc = searchCriteria.Match<string?>(_ => null, (_, _, _) => null, isrc => isrc);
 
         return new SongMetadata(
             recording.Title ?? fallbackTitle,

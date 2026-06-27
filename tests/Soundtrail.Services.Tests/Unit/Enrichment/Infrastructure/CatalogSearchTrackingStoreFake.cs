@@ -1,5 +1,7 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Model;
+using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -10,10 +12,10 @@ internal sealed class CatalogSearchTrackingStoreFake : ICatalogSearchTrackingSto
     public IReadOnlyList<CatalogSearchTracking> All => byCriteria.Values.ToArray();
 
     public Task<CatalogSearchTracking?> FindByCriteriaAsync(
-        CatalogSearchCriteria criteria,
+        MusicSearchCriteria searchCriteria,
         CancellationToken cancellationToken)
     {
-        byCriteria.TryGetValue(criteria.Value, out var tracking);
+        byCriteria.TryGetValue(ToPersistentId(searchCriteria), out var tracking);
         return Task.FromResult(tracking);
     }
 
@@ -21,7 +23,7 @@ internal sealed class CatalogSearchTrackingStoreFake : ICatalogSearchTrackingSto
         CatalogSearchTracking tracking,
         CancellationToken cancellationToken)
     {
-        byCriteria[tracking.Criteria.Value] = tracking;
+        byCriteria[ToPersistentId(tracking.SearchCriteria)] = tracking;
         return Task.CompletedTask;
     }
 
@@ -35,5 +37,8 @@ internal sealed class CatalogSearchTrackingStoreFake : ICatalogSearchTrackingSto
         return Task.FromResult(trackings);
     }
 
-    public void Seed(CatalogSearchTracking tracking) => byCriteria[tracking.Criteria.Value] = tracking;
+    public void Seed(CatalogSearchTracking tracking) => byCriteria[ToPersistentId(tracking.SearchCriteria)] = tracking;
+
+    private static string ToPersistentId(MusicSearchCriteria searchCriteria) =>
+        MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria);
 }

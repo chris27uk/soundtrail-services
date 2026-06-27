@@ -12,12 +12,12 @@ public sealed class ByCriteriaResponsesTests
     {
         using var env = CatalogSearchTrackingStoreTestEnvironment.Create(mode);
         var tracking = new CatalogSearchTracking(
-            CatalogSearchCriteria.Search("track", "rare unknown song"),
+            MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks),
             MusicCatalogId.From("mc_track_1"),
             new DateTimeOffset(2026, 6, 8, 12, 0, 0, TimeSpan.Zero));
 
         await env.Store.UpsertAsync(tracking, CancellationToken.None);
-        var actual = await env.Store.FindByCriteriaAsync(tracking.Criteria, CancellationToken.None);
+        var actual = await env.Store.FindByCriteriaAsync(tracking.SearchCriteria, CancellationToken.None);
 
         actual.Should().BeEquivalentTo(tracking);
     }

@@ -2,8 +2,10 @@ using Raven.Client.Documents;
 using Raven.Client.Documents.Linq;
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Discovery;
 using Soundtrail.Contracts.Persistence;
+using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Model;
+using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 
@@ -12,20 +14,20 @@ public sealed class RavenCatalogSearchTrackingStore(
     IAsyncDocumentSession? session = null) : ICatalogSearchTrackingStore
 {
     public async Task<CatalogSearchTracking?> FindByCriteriaAsync(
-        CatalogSearchCriteria criteria,
+        MusicSearchCriteria searchCriteria,
         CancellationToken cancellationToken)
     {
         var (activeSession, dispose) = OpenSession();
         using (dispose)
         {
             var document = await activeSession.LoadAsync<RavenCatalogSearchTrackingRecordDto>(
-                RavenCatalogSearchTrackingRecordDto.GetDocumentId(criteria.Value),
+                RavenCatalogSearchTrackingRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria)),
                 cancellationToken);
 
             return document is null
                 ? null
                 : new CatalogSearchTracking(
-                    CatalogSearchCriteria.From(document.Criteria),
+                    MusicSearchTermPersistentIdTranslator.ToDomainObject(document.Criteria),
                     MusicCatalogId.From(document.MusicCatalogId),
                     document.UpdatedAt);
         }
@@ -39,14 +41,15 @@ public sealed class RavenCatalogSearchTrackingStore(
         var (activeSession, dispose) = OpenSession();
         using (dispose)
         {
-            var documentId = RavenCatalogSearchTrackingRecordDto.GetDocumentId(tracking.Criteria.Value);
+            var persistentId = MusicSearchTermPersistentIdTranslator.ToPersistentId(tracking.SearchCriteria);
+            var documentId = RavenCatalogSearchTrackingRecordDto.GetDocumentId(persistentId);
             var document = await activeSession.LoadAsync<RavenCatalogSearchTrackingRecordDto>(documentId, cancellationToken)
                 ?? new RavenCatalogSearchTrackingRecordDto
                 {
                     Id = documentId
                 };
 
-            document.Criteria = tracking.Criteria.Value;
+            document.Criteria = persistentId;
             document.MusicCatalogId = tracking.MusicCatalogId.Value;
             document.UpdatedAt = tracking.UpdatedAt;
 
@@ -73,7 +76,7 @@ public sealed class RavenCatalogSearchTrackingStore(
 
             return documents
                 .Select(document => new CatalogSearchTracking(
-                    CatalogSearchCriteria.From(document.Criteria),
+                    MusicSearchTermPersistentIdTranslator.ToDomainObject(document.Criteria),
                     MusicCatalogId.From(document.MusicCatalogId),
                     document.UpdatedAt))
                 .ToArray();

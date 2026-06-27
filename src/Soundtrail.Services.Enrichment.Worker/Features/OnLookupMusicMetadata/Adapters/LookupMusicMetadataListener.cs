@@ -37,14 +37,14 @@ public sealed class LookupMusicMetadataListener(
         await messageBus.SendAsync(result.ToDto(command, ProviderName.MusicBrainz.Value));
     }
 
-    private static MusicSearchTerm ToSearchTerm(LookupMusicMetadataCommandDto dto) =>
+    private static MusicSearchCriteria ToSearchTerm(LookupMusicMetadataCommandDto dto) =>
         dto.SearchKind switch
         {
-            MusicSearchKind.UnifiedSearch => MusicSearchTerm.ByQuery(
+            MusicSearchKind.UnifiedSearch => MusicSearchCriteria.ByQuery(
                 dto.Query ?? throw new InvalidOperationException("Unified music metadata lookup requires a query.")),
-            MusicSearchKind.Isrc => MusicSearchTerm.ByIsrc(
+            MusicSearchKind.Isrc => MusicSearchCriteria.ByIsrc(
                 dto.Isrc ?? throw new InvalidOperationException("ISRC music metadata lookup requires an ISRC.")),
-            MusicSearchKind.TrackArtistAlbum => MusicSearchTerm.ByTrackArtistAlbum(
+            MusicSearchKind.TrackArtistAlbum => MusicSearchCriteria.ByTrackArtistAlbum(
                 dto.TrackName ?? throw new InvalidOperationException("Track/artist/album music metadata lookup requires a track name."),
                 dto.ArtistName ?? throw new InvalidOperationException("Track/artist/album music metadata lookup requires an artist name."),
                 dto.AlbumName),

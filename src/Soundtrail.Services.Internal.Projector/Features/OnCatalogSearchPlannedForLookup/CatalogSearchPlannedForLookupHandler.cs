@@ -39,7 +39,7 @@ public sealed class CatalogSearchPlannedForLookupHandler(
         DiscoveryPlanned planned,
         CancellationToken cancellationToken)
     {
-        var tracking = await loadTrackingPort.LoadAsync(planned.Criteria, cancellationToken);
+        var tracking = await loadTrackingPort.LoadAsync(planned.SearchCriteria, cancellationToken);
         if (tracking is null)
         {
             return null;
@@ -68,7 +68,7 @@ public sealed class CatalogSearchPlannedForLookupHandler(
                 planned.Priority,
                 planned.PlannedAt,
                 CorrelationId.New(),
-                MusicSearchTerm.ByIsrc(track.ResolvedIsrc ?? track.Isrc!),
+                MusicSearchCriteria.ByIsrc(track.ResolvedIsrc ?? track.Isrc!),
                 hierarchy);
         }
 
@@ -86,7 +86,7 @@ public sealed class CatalogSearchPlannedForLookupHandler(
             planned.Priority,
             planned.PlannedAt,
             CorrelationId.New(),
-            MusicSearchTerm.ByTrackArtistAlbum(title, artist, track.AlbumTitle),
+            MusicSearchCriteria.ByTrackArtistAlbum(title, artist, track.AlbumTitle),
             hierarchy);
     }
 }

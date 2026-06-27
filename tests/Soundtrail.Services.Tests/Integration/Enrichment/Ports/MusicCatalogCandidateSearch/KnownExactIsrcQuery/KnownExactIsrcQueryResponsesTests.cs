@@ -19,7 +19,7 @@ public sealed class KnownExactIsrcQueryResponsesTests
         env.Seed("mc_track_1", "mr brightside the killers", title: "Fixture Track", artist: "Fixture Artist", isrc: "USIR20400274");
 
         var actual = await env.Search.SearchAsync(
-            NormalizedSearchQuery.FromText("USIR20400274"),
+            MusicSearchCriteria.ByQuery("USIR20400274", SearchTypesFilter.Tracks),
             CancellationToken.None);
 
         actual.Should().ContainSingle().Which.Should().BeEquivalentTo(

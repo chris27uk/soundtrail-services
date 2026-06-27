@@ -10,5 +10,5 @@ public sealed record StreamingLocationsRequired(
     CorrelationId CorrelationId,
     ProviderName SourceProvider,
     DateTimeOffset ObservedAt,
-    MusicSearchTerm SearchTerm,
+    MusicSearchCriteria SearchCriteria,
     CatalogTrackHierarchy? Hierarchy = null) : IMusicTrackEvent;

@@ -4,6 +4,7 @@ using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Unit.Domain.Discovery;
@@ -14,47 +15,48 @@ public sealed class CatalogSearchDiscoveryTests
     public async Task Given_An_Empty_Discovery_When_Requesting_Then_DiscoveryRequested_Is_Emitted()
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
-        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
-        var discovery = await CatalogSearchDiscovery.LoadAsync(repository, criteria, CancellationToken.None);
+        var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
+        var discovery = await SearchOrSeekHistory.LoadAsync(repository, MusicSeekOrSearchCriteria.FromSearch(searchTerm), CancellationToken.None);
 
-        var requested = discovery.Request(Request(criteria));
+        var requested = discovery.Request(Request(searchTerm));
         await discovery.SaveAsync(repository, CancellationToken.None);
-        var @event = repository.GetStoredEvents(criteria).Should().ContainSingle().Which.Should().BeOfType<DiscoveryRequested>().Subject;
+        var @event = repository.GetStoredEvents(searchTerm).Should().ContainSingle().Which.Should().BeOfType<DiscoveryRequested>().Subject;
 
         requested.Should().BeTrue();
-        @event.Criteria.Should().Be(criteria);
-        @event.Query.Should().Be(NormalizedSearchQuery.FromText("rare unknown song"));
+        @event.SearchCriteria.Should().Be(searchTerm);
+        @event.TrustLevel.Should().Be(1);
+        @event.RiskScore.Should().Be(10);
     }
 
     [Fact]
     public async Task Given_A_Discovery_That_Has_Already_Been_Requested_When_Requesting_Again_Then_No_New_Event_Is_Emitted()
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
-        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
-        var discovery = await CatalogSearchDiscovery.LoadAsync(repository, criteria, CancellationToken.None);
-        discovery.Request(Request(criteria));
+        var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
+        var discovery = await SearchOrSeekHistory.LoadAsync(repository, MusicSeekOrSearchCriteria.FromSearch(searchTerm), CancellationToken.None);
+        discovery.Request(Request(searchTerm));
         await discovery.SaveAsync(repository, CancellationToken.None);
-        discovery = await CatalogSearchDiscovery.LoadAsync(repository, criteria, CancellationToken.None);
+        discovery = await SearchOrSeekHistory.LoadAsync(repository, MusicSeekOrSearchCriteria.FromSearch(searchTerm), CancellationToken.None);
 
-        var requested = discovery.Request(Request(criteria));
+        var requested = discovery.Request(Request(searchTerm));
 
         requested.Should().BeFalse();
-        repository.GetStoredEvents(criteria).Should().ContainSingle();
+        repository.GetStoredEvents(searchTerm).Should().ContainSingle();
     }
 
     [Fact]
     public async Task Given_A_Requested_Discovery_When_Planning_Then_DiscoveryPlanned_Is_Emitted()
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
-        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
-        var discovery = await CatalogSearchDiscovery.LoadAsync(repository, criteria, CancellationToken.None);
-        discovery.Request(Request(criteria));
+        var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
+        var discovery = await SearchOrSeekHistory.LoadAsync(repository, MusicSeekOrSearchCriteria.FromSearch(searchTerm), CancellationToken.None);
+        discovery.Request(Request(searchTerm));
         await discovery.SaveAsync(repository, CancellationToken.None);
-        discovery = await CatalogSearchDiscovery.LoadAsync(repository, criteria, CancellationToken.None);
+        discovery = await SearchOrSeekHistory.LoadAsync(repository, MusicSeekOrSearchCriteria.FromSearch(searchTerm), CancellationToken.None);
 
         var planned = discovery.Plan(LookupPriorityBand.High, 30, null, "Planner queued lookup", Clock);
         await discovery.SaveAsync(repository, CancellationToken.None);
-        var @event = repository.GetStoredEvents(criteria).Last().Should().BeOfType<DiscoveryPlanned>().Subject;
+        var @event = repository.GetStoredEvents(searchTerm).Last().Should().BeOfType<DiscoveryPlanned>().Subject;
 
         planned.Should().BeTrue();
         @event.Priority.Should().Be(LookupPriorityBand.High);
@@ -66,15 +68,15 @@ public sealed class CatalogSearchDiscoveryTests
     public async Task Given_A_Requested_Discovery_When_Deferring_Then_DiscoveryDeferred_Is_Emitted()
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
-        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
-        var discovery = await CatalogSearchDiscovery.LoadAsync(repository, criteria, CancellationToken.None);
-        discovery.Request(Request(criteria));
+        var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
+        var discovery = await SearchOrSeekHistory.LoadAsync(repository, MusicSeekOrSearchCriteria.FromSearch(searchTerm), CancellationToken.None);
+        discovery.Request(Request(searchTerm));
         await discovery.SaveAsync(repository, CancellationToken.None);
-        discovery = await CatalogSearchDiscovery.LoadAsync(repository, criteria, CancellationToken.None);
+        discovery = await SearchOrSeekHistory.LoadAsync(repository, MusicSeekOrSearchCriteria.FromSearch(searchTerm), CancellationToken.None);
 
         var deferred = discovery.Defer(60, Clock.AddSeconds(60), "Planner deferred lookup", Clock);
         await discovery.SaveAsync(repository, CancellationToken.None);
-        var @event = repository.GetStoredEvents(criteria).Last().Should().BeOfType<DiscoveryDeferred>().Subject;
+        var @event = repository.GetStoredEvents(searchTerm).Last().Should().BeOfType<DiscoveryDeferred>().Subject;
 
         deferred.Should().BeTrue();
         @event.EstimatedRetryAfterSeconds.Should().Be(60);
@@ -85,12 +87,12 @@ public sealed class CatalogSearchDiscoveryTests
     public async Task Given_A_Discovery_When_Rejecting_Then_DiscoveryRejected_Is_Emitted()
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
-        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
-        var discovery = await CatalogSearchDiscovery.LoadAsync(repository, criteria, CancellationToken.None);
+        var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
+        var discovery = await SearchOrSeekHistory.LoadAsync(repository, MusicSeekOrSearchCriteria.FromSearch(searchTerm), CancellationToken.None);
 
         var rejected = discovery.Reject("Planner rejected lookup", Clock);
         await discovery.SaveAsync(repository, CancellationToken.None);
-        var @event = repository.GetStoredEvents(criteria).Should().ContainSingle().Which.Should().BeOfType<DiscoveryRejected>().Subject;
+        var @event = repository.GetStoredEvents(searchTerm).Should().ContainSingle().Which.Should().BeOfType<DiscoveryRejected>().Subject;
 
         rejected.Should().BeTrue();
         @event.WillBeLookedUp.Should().BeFalse();
@@ -101,12 +103,12 @@ public sealed class CatalogSearchDiscoveryTests
     public async Task Given_A_Discovery_When_Failing_Then_DiscoveryFailed_Is_Emitted()
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
-        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
-        var discovery = await CatalogSearchDiscovery.LoadAsync(repository, criteria, CancellationToken.None);
+        var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
+        var discovery = await SearchOrSeekHistory.LoadAsync(repository, MusicSeekOrSearchCriteria.FromSearch(searchTerm), CancellationToken.None);
 
         var failed = discovery.Fail("Lookup failed", Clock);
         await discovery.SaveAsync(repository, CancellationToken.None);
-        var @event = repository.GetStoredEvents(criteria).Should().ContainSingle().Which.Should().BeOfType<DiscoveryFailed>().Subject;
+        var @event = repository.GetStoredEvents(searchTerm).Should().ContainSingle().Which.Should().BeOfType<DiscoveryFailed>().Subject;
 
         failed.Should().BeTrue();
         @event.WillBeLookedUp.Should().BeFalse();
@@ -117,21 +119,21 @@ public sealed class CatalogSearchDiscoveryTests
     public async Task Given_A_Rejected_Discovery_When_Planning_Then_The_Transition_Is_Rejected()
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
-        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
-        var discovery = await CatalogSearchDiscovery.LoadAsync(repository, criteria, CancellationToken.None);
+        var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
+        var discovery = await SearchOrSeekHistory.LoadAsync(repository, MusicSeekOrSearchCriteria.FromSearch(searchTerm), CancellationToken.None);
         discovery.Reject("Planner rejected lookup", Clock);
         await discovery.SaveAsync(repository, CancellationToken.None);
-        discovery = await CatalogSearchDiscovery.LoadAsync(repository, criteria, CancellationToken.None);
+        discovery = await SearchOrSeekHistory.LoadAsync(repository, MusicSeekOrSearchCriteria.FromSearch(searchTerm), CancellationToken.None);
 
         var act = () => discovery.Plan(LookupPriorityBand.Low, 30, null, "Planner queued lookup", Clock);
 
         act.Should().Throw<InvalidOperationException>();
     }
 
-    private static CatalogSearchAttempt Request(CatalogSearchCriteria criteria) =>
+    private static CatalogSearchRequested Request(MusicSearchCriteria searchCriteria) =>
         new(
-            criteria,
-            NormalizedSearchQuery.FromText("rare unknown song"),
+            MusicSeekOrSearchCriteria.FromSearch(searchCriteria),
+            PlaybackProviderFilter.Parse("spotify,appleMusic,youtubeMusic"),
             1,
             10,
             Clock,

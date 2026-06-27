@@ -16,7 +16,9 @@ public sealed class DiscoveryQueryStoredEventRecordDto
 
     public DiscoveryRequestedEventDataRecordDto? DiscoveryRequested { get; set; }
 
-    public MusicTrackSearchStartedEventDataRecordDto? MusicTrackSearchStarted { get; set; }
+    public MusicMetadataRequiredEventDataRecordDto? MusicMetadataRequired { get; set; }
+
+    public StreamingLocationsRequiredEventDataRecordDto? StreamingLocationsRequired { get; set; }
 
     public DiscoveryPlannedEventDataRecordDto? DiscoveryPlanned { get; set; }
 

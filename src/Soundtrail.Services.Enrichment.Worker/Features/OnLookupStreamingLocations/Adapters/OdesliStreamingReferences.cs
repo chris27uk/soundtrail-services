@@ -16,10 +16,10 @@ public sealed class OdesliStreamingReferences(
     private readonly OdesliOptions options = options.Value;
 
     public async Task<IReadOnlyList<ExternalReference>> GetReferenceToMusicTrack(
-        MusicSearchTerm searchTerm,
+        MusicSearchCriteria searchCriteria,
         CancellationToken cancellationToken)
     {
-        var requestUri = BuildRequestUri(searchTerm);
+        var requestUri = BuildRequestUri(searchCriteria);
         var response = await httpClient.GetFromJsonAsync<OdesliLookupResponse>(
             requestUri,
             cancellationToken);
@@ -49,9 +49,9 @@ public sealed class OdesliStreamingReferences(
         return references;
     }
 
-    private string BuildRequestUri(MusicSearchTerm searchTerm)
+    private string BuildRequestUri(MusicSearchCriteria searchCriteria)
     {
-        return searchTerm.Match(
+        return searchCriteria.Match(
             query =>
                 throw new InvalidOperationException($"Streaming locations lookup does not support unified search queries. Query='{query}'."),
             (track, artist, album) =>

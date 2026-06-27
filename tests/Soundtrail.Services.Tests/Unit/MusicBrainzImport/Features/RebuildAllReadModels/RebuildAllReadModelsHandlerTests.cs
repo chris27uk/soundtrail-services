@@ -17,6 +17,7 @@ using Soundtrail.Tools.MusicBrainzImport.Features.RebuildAllReadModels.Adapters;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection;
 using Soundtrail.Tools.MusicBrainzImport.Features.OnReplayCatalogSearchStatus;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayPlannerMusicTrackProjection;
+using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Services.Tests.Unit.MusicBrainzImport.Features.RebuildAllReadModels;
 
@@ -26,7 +27,7 @@ public sealed class RebuildAllReadModelsHandlerTests
     public async Task Given_Persisted_State_When_Rebuild_All_Is_Run_Then_Planner_State_Is_Cleared_And_All_Read_Models_Are_Replayed()
     {
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
-        var criteria = CatalogSearchCriteria.Search("track", "mr brightside killers");
+        var searchTerm = MusicSearchCriteria.ByQuery("mr brightside killers", SearchTypesFilter.Tracks);
 
         var trackEvents = new[]
         {
@@ -46,7 +47,7 @@ public sealed class RebuildAllReadModelsHandlerTests
             new VersionedCatalogSearchDiscoveryEvent(
                 1,
                 new DiscoveryPlanned(
-                    criteria,
+                    searchTerm,
                     LookupPriorityBand.High,
                     true,
                     30,
@@ -55,6 +56,7 @@ public sealed class RebuildAllReadModelsHandlerTests
                     Clock.AddMinutes(1)))
         };
 
+        var persistentId = MusicSearchTermPersistentIdTranslator.ToPersistentId(searchTerm);
         var plannerEventStore = new FakeMusicTrackReplayEventStore(new Dictionary<string, IReadOnlyList<VersionedMusicTrackEvent>>
         {
             [musicCatalogId.Value] = trackEvents
@@ -80,7 +82,7 @@ public sealed class RebuildAllReadModelsHandlerTests
 
         var discoveryEventStore = new FakeDiscoveryReplayEventStore(new Dictionary<string, IReadOnlyList<VersionedCatalogSearchDiscoveryEvent>>
         {
-            [criteria.Value] = discoveryEvents
+            [persistentId] = discoveryEvents
         });
         var discoveryProjectionStore = new FakeDiscoveryLifecycleProjectionStore();
         var discoveryReplayHandler = new ReplayDiscoveryLifecycleProjectionBatchHandler(
@@ -102,13 +104,13 @@ public sealed class RebuildAllReadModelsHandlerTests
 
         plannerResetPort.ResetCatalogIds.Should().ContainSingle().Which.Should().Be(musicCatalogId);
         catalogProjectionStore.ResetCatalogIds.Should().ContainSingle().Which.Should().Be(musicCatalogId);
-        discoveryProjectionStore.ResetCriteria.Should().ContainSingle().Which.Should().Be(criteria);
+        discoveryProjectionStore.ResetSearchTerms.Should().ContainSingle().Which.Should().Be(searchTerm);
         clearPlannerOperationalStatePort.WasCalled.Should().BeTrue();
 
         plannerProjectionStore.Projections[musicCatalogId.Value].Title.Should().Be("Mr. Brightside");
         catalogProjectionStore.Projections[musicCatalogId.Value].Track.Title.Should().Be("Mr. Brightside");
-        discoveryProjectionStore.Projections[criteria.Value].Status.Should().Be(CatalogSearchLifecycleStatus.Planned.ToString());
-        discoveryProjectionStore.Projections[criteria.Value].Reason.Should().Be("Planner queued lookup");
+        discoveryProjectionStore.Projections[persistentId].Status.Should().Be(CatalogSearchLifecycleStatus.Planned.ToString());
+        discoveryProjectionStore.Projections[persistentId].Reason.Should().Be("Planner queued lookup");
     }
 
     private static readonly DateTimeOffset Clock = new(2026, 6, 22, 12, 0, 0, TimeSpan.Zero);
@@ -135,14 +137,14 @@ public sealed class RebuildAllReadModelsHandlerTests
         ILoadDiscoveryLifecycleReplayTargetsPort,
         ILoadDiscoveryLifecycleEventsForReplayPort
     {
-        public Task<IReadOnlyList<CatalogSearchCriteria>> LoadAsync(CancellationToken cancellationToken) =>
-            Task.FromResult<IReadOnlyList<CatalogSearchCriteria>>(
-                eventsByCriteria.Keys.Select(CatalogSearchCriteria.From).ToArray());
+        public Task<IReadOnlyList<MusicSearchCriteria>> LoadAsync(CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<MusicSearchCriteria>>(
+                eventsByCriteria.Keys.Select(MusicSearchTermPersistentIdTranslator.ToDomainObject).ToArray());
 
         public Task<IReadOnlyList<VersionedCatalogSearchDiscoveryEvent>> LoadAsync(
-            CatalogSearchCriteria criteria,
+            MusicSearchCriteria searchCriteria,
             CancellationToken cancellationToken) =>
-            Task.FromResult(eventsByCriteria.TryGetValue(criteria.Value, out var events)
+            Task.FromResult(eventsByCriteria.TryGetValue(MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria), out var events)
                 ? events
                 : Array.Empty<VersionedCatalogSearchDiscoveryEvent>() as IReadOnlyList<VersionedCatalogSearchDiscoveryEvent>);
     }
@@ -209,16 +211,17 @@ public sealed class RebuildAllReadModelsHandlerTests
 
         public IReadOnlyDictionary<string, DiscoveryLifecycleProjection> Projections => projections;
 
-        public List<CatalogSearchCriteria> ResetCriteria { get; } = [];
+        public List<MusicSearchCriteria> ResetSearchTerms { get; } = [];
 
         public Task<DiscoveryLifecycleProjection> LoadAsync(
-            CatalogSearchCriteria criteria,
+            MusicSearchCriteria searchCriteria,
             CancellationToken cancellationToken)
         {
-            if (!projections.TryGetValue(criteria.Value, out var projection))
+            var persistentId = MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria);
+            if (!projections.TryGetValue(persistentId, out var projection))
             {
-                projection = new DiscoveryLifecycleProjection(criteria);
-                projections[criteria.Value] = projection;
+                projection = new DiscoveryLifecycleProjection(searchCriteria);
+                projections[persistentId] = projection;
             }
 
             return Task.FromResult(projection);
@@ -228,16 +231,16 @@ public sealed class RebuildAllReadModelsHandlerTests
             DiscoveryLifecycleProjection projection,
             CancellationToken cancellationToken)
         {
-            projections[projection.Criteria.Value] = projection;
+            projections[MusicSearchTermPersistentIdTranslator.ToPersistentId(projection.SearchCriteria)] = projection;
             return Task.CompletedTask;
         }
 
         public Task ResetAsync(
-            CatalogSearchCriteria criteria,
+            MusicSearchCriteria searchCriteria,
             CancellationToken cancellationToken)
         {
-            ResetCriteria.Add(criteria);
-            projections.Remove(criteria.Value);
+            ResetSearchTerms.Add(searchCriteria);
+            projections.Remove(MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria));
             return Task.CompletedTask;
         }
     }
@@ -245,7 +248,7 @@ public sealed class RebuildAllReadModelsHandlerTests
     private sealed class FakeCatalogSearchStatusTrackingPort : ILoadCatalogSearchStatusTrackingPort
     {
         public Task<CatalogSearchStatusTracking?> LoadAsync(
-            CatalogSearchCriteria criteria,
+            MusicSearchCriteria searchCriteria,
             CancellationToken cancellationToken) =>
             Task.FromResult<CatalogSearchStatusTracking?>(null);
     }

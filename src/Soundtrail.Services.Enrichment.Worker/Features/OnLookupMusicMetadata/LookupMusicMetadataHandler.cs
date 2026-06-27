@@ -15,7 +15,7 @@ public sealed class LookupMusicMetadataHandler(
     {
         try
         {
-            var songMetadata = await getMetaData.GetMetadataAsync(command.SearchTerm, cancellationToken);
+            var songMetadata = await getMetaData.GetMetadataAsync(command.SearchCriteria, cancellationToken);
             return MusicCatalogLookupAttempted.Completed(command.ToMusicCatalogMetadataFetched(songMetadata));
         }
         catch

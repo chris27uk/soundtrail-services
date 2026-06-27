@@ -9,6 +9,6 @@ public sealed record StreamingLocationsRequiredIntegrationEvent(
     CorrelationId CorrelationId,
     ProviderName SourceProvider,
     DateTimeOffset ObservedAt,
-    MusicSearchTerm SearchTerm,
+    MusicSearchCriteria SearchCriteria,
     string? ArtistId,
     string? AlbumId) : MusicTrackIntegrationEvent(MusicCatalogId);

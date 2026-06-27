@@ -55,7 +55,7 @@ public sealed class SearchOutsideInTests
                 "Test Artist",
                 "album_rare_album",
                 "Rare Album");
-            var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
+            var criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
             SearchOutsideInTestEnvironment.SeedProjectedCatalogSearchStatusFromEvents(
                 store,
                 criteria,
@@ -112,7 +112,7 @@ public sealed class SearchOutsideInTests
     {
         await using var env = await SearchOutsideInTestEnvironment.CreateAsync(store =>
         {
-            var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
+            var criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
             SearchOutsideInTestEnvironment.SeedProjectedCatalogSearchStatusFromEvents(
                 store,
                 criteria,
@@ -139,7 +139,7 @@ public sealed class SearchOutsideInTests
     {
         await using var env = await SearchOutsideInTestEnvironment.CreateAsync(store =>
         {
-            var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
+            var criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
             SearchOutsideInTestEnvironment.SeedProjectedCatalogSearchStatusFromEvents(
                 store,
                 criteria,
@@ -165,7 +165,7 @@ public sealed class SearchOutsideInTests
     {
         await using var env = await SearchOutsideInTestEnvironment.CreateAsync(store =>
         {
-            var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
+            var criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
             SearchOutsideInTestEnvironment.SeedProjectedCatalogSearchStatusFromEvents(
                 store,
                 criteria,
@@ -193,7 +193,7 @@ public sealed class SearchOutsideInTests
     {
         await using var env = await SearchOutsideInTestEnvironment.CreateAsync(store =>
         {
-            var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
+            var criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
             SearchOutsideInTestEnvironment.SeedProjectedCatalogSearchStatusFromEvents(
                 store,
                 criteria,
@@ -219,7 +219,7 @@ public sealed class SearchOutsideInTests
     {
         await using var env = await SearchOutsideInTestEnvironment.CreateAsync(store =>
         {
-            var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
+            var criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
             SearchOutsideInTestEnvironment.SeedProjectedCatalogSearchStatusFromEvents(
                 store,
                 criteria,
@@ -248,7 +248,8 @@ public sealed class SearchOutsideInTests
 
         var response = await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track");
         var lookupRequest = await env.WaitForMessageAsync<CatalogSearchAttemptDto>(TimeSpan.FromSeconds(1));
-        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song").Value;
+        var criteria = MusicSearchTermPersistentIdTranslator.ToPersistentId(
+            MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks));
 
         response.Query.Should().Be("rare unknown song");
         response.Results.Should().BeEmpty();
@@ -264,7 +265,8 @@ public sealed class SearchOutsideInTests
     public async Task Given_A_Previously_Recorded_Discovery_Request_Without_A_Projection_When_Searching_Then_A_Duplicate_Request_Is_Not_Queued()
     {
         await using var env = await SearchOutsideInTestEnvironment.CreateAsync(_ => { });
-        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song").Value;
+        var criteria = MusicSearchTermPersistentIdTranslator.ToPersistentId(
+            MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks));
 
         await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track");
         var firstLookupRequest = await env.WaitForMessageAsync<CatalogSearchAttemptDto>(TimeSpan.FromSeconds(1));
@@ -291,13 +293,12 @@ public sealed class SearchOutsideInTests
                 new AlbumDiscovered("album_rare_album", "Rare Album", "mb-release-rare-album", new DateOnly(2026, 1, 1), ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 16, 12, 2, 0, TimeSpan.Zero)),
                 new ProviderReferenceDiscovered(ProviderName.AppleMusic, "apple-track-1", new Uri("https://music.apple.com/track/1"), ProviderName.Odesli, new DateTimeOffset(2026, 6, 16, 12, 3, 0, TimeSpan.Zero)));
 
-            var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
+            var criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
             SearchOutsideInTestEnvironment.SeedRebuiltDiscoveryProjectionFromImportedEvents(
                 store,
                 criteria,
                 new DiscoveryRequested(
                     criteria,
-                    Domain.Model.NormalizedSearchQuery.FromText("rare unknown song"),
                     1,
                     10,
                     new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero),

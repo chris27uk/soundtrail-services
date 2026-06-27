@@ -1,15 +1,17 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Domain.Discovery;
 
-public sealed class CatalogSearchDiscovery
+public sealed class SearchOrSeekHistory
 {
-    private readonly EventHandlers<CatalogSearchDiscovery> eventHandlers;
+    private readonly EventHandlers<SearchOrSeekHistory> eventHandlers;
     private readonly List<IDomainEvent> uncommittedEvents = [];
-    private CatalogSearchCriteria? criteria;
+    private MusicSeekOrSearchCriteria? criteria;
     private CatalogSearchLifecycleStatus? status;
     private LookupPriorityBand? priority;
     private bool willBeLookedUp;
@@ -20,9 +22,9 @@ public sealed class CatalogSearchDiscovery
     private bool hasRequested;
     private int version;
 
-    private CatalogSearchDiscovery(IEnumerable<IDomainEvent> events, int version)
+    private SearchOrSeekHistory(IEnumerable<IDomainEvent> events, int version)
     {
-        this.eventHandlers = CreateHandlers();
+        eventHandlers = CreateHandlers();
 
         foreach (var @event in events)
         {
@@ -32,50 +34,51 @@ public sealed class CatalogSearchDiscovery
         this.version = version;
     }
 
-    public static async Task<CatalogSearchDiscovery> LoadAsync(ICatalogSearchDiscoveryRepository repository, CatalogSearchCriteria criteria, CancellationToken cancellationToken)
+    public static async Task<SearchOrSeekHistory> LoadAsync(
+        ICatalogSearchDiscoveryRepository repository,
+        MusicSeekOrSearchCriteria criteria,
+        CancellationToken cancellationToken)
     {
         var stream = await repository.LoadAsync(criteria, cancellationToken);
-        var discovery = new CatalogSearchDiscovery(stream.Events, stream.Version);
-        discovery.criteria ??= criteria;
-        return discovery;
+        var aggregate = new SearchOrSeekHistory(
+            stream.Events.Where(static @event =>
+                @event is MusicMetadataRequired
+                or Events.StreamingLocationsRequired
+                or DiscoveryRequested
+                or DiscoveryPlanned
+                or DiscoveryDeferred
+                or DiscoveryRejected
+                or DiscoveryFailed
+                or DiscoveryStarted
+                or DiscoveryCompleted),
+            stream.Version);
+        aggregate.criteria ??= criteria;
+        return aggregate;
     }
 
-    public bool Request(CatalogSearchAttempt request)
-    {
-        if (this.hasRequested)
-        {
-            return false;
-        }
-
-        Apply(
-            new DiscoveryRequested(
-                request.Criteria,
-                request.Query,
-                request.TrustLevel,
-                request.RiskScore,
-                request.OccurredAt,
-                request.CorrelationId),
-            isNew: true);
-
-        return true;
-    }
+    public bool Request(CatalogSearchRequested requested) =>
+        Request(
+            requested.Criteria.RequireSearchCriteria(),
+            requested.TrustLevel,
+            requested.RiskScore,
+            requested.OccurredAt,
+            requested.CorrelationId);
 
     public bool Request(
-        CatalogSearchCriteria criteria,
+        MusicSearchCriteria searchCriteria,
         int trustLevel,
         int riskScore,
         DateTimeOffset requestedAt,
         CorrelationId correlationId)
     {
-        if (this.hasRequested)
+        if (hasRequested)
         {
             return false;
         }
 
         Apply(
             new DiscoveryRequested(
-                criteria,
-                ToQuery(criteria),
+                searchCriteria,
                 trustLevel,
                 riskScore,
                 requestedAt,
@@ -106,9 +109,9 @@ public sealed class CatalogSearchDiscovery
 
         Apply(
             new DiscoveryPlanned(
-                RequireCriteria(),
+                RequireSearchCriteria(),
                 priority,
-                WillBeLookedUp: true,
+                true,
                 estimatedRetryAfterSeconds,
                 earliestExpectedCompletionAt,
                 reason,
@@ -137,8 +140,8 @@ public sealed class CatalogSearchDiscovery
 
         Apply(
             new DiscoveryDeferred(
-                RequireCriteria(),
-                WillBeLookedUp: true,
+                RequireSearchCriteria(),
+                true,
                 estimatedRetryAfterSeconds,
                 earliestExpectedCompletionAt,
                 reason,
@@ -161,8 +164,8 @@ public sealed class CatalogSearchDiscovery
 
         Apply(
             new DiscoveryRejected(
-                RequireCriteria(),
-                WillBeLookedUp: false,
+                RequireSearchCriteria(),
+                false,
                 reason,
                 rejectedAt),
             isNew: true);
@@ -174,15 +177,17 @@ public sealed class CatalogSearchDiscovery
     {
         EnsureCanTransitionTo(CatalogSearchLifecycleStatus.Failed);
 
-        if (status == CatalogSearchLifecycleStatus.Failed && !willBeLookedUp && string.Equals(this.reason, reason, StringComparison.Ordinal))
+        if (status == CatalogSearchLifecycleStatus.Failed
+            && !willBeLookedUp
+            && string.Equals(this.reason, reason, StringComparison.Ordinal))
         {
             return false;
         }
 
         Apply(
             new DiscoveryFailed(
-                RequireCriteria(),
-                WillBeLookedUp: false,
+                RequireSearchCriteria(),
+                false,
                 reason,
                 failedAt),
             isNew: true);
@@ -204,7 +209,7 @@ public sealed class CatalogSearchDiscovery
 
         Apply(
             new DiscoveryStarted(
-                RequireCriteria(),
+                RequireSearchCriteria(),
                 priority,
                 true,
                 reason,
@@ -231,7 +236,7 @@ public sealed class CatalogSearchDiscovery
 
         Apply(
             new DiscoveryCompleted(
-                RequireCriteria(),
+                RequireSearchCriteria(),
                 priority,
                 false,
                 reason,
@@ -239,6 +244,42 @@ public sealed class CatalogSearchDiscovery
             isNew: true);
 
         return true;
+    }
+
+    public void StreamingLocationsRequired(
+        MusicCatalogId musicCatalogId,
+        LookupPriorityBand priority,
+        DateTimeOffset observedAt,
+        CorrelationId correlationId,
+        MusicSearchCriteria lookupSearchCriteria,
+        CatalogTrackHierarchy? hierarchy = null)
+    {
+        Apply(
+            new StreamingLocationsRequired(
+                musicCatalogId,
+                priority,
+                correlationId,
+                ProviderName.MusicBrainz,
+                observedAt,
+                lookupSearchCriteria,
+                hierarchy),
+            isNew: true);
+    }
+
+    public void MetadataRequired(
+        int trustLevel,
+        int riskScore,
+        DateTimeOffset requiredAt,
+        CorrelationId correlationId)
+    {
+        Apply(
+            new MusicMetadataRequired(
+                this.criteria ?? throw new InvalidOperationException("Catalog search term has not been established."),
+                trustLevel,
+                riskScore,
+                requiredAt,
+                correlationId),
+            isNew: true);
     }
 
     public async Task<bool> SaveAsync(
@@ -251,9 +292,9 @@ public sealed class CatalogSearchDiscovery
         }
 
         var saved = await repository.AppendAsync(
-            RequireCriteria(),
-            version,
-            uncommittedEvents.AsReadOnly(),
+            (this.criteria ?? throw new InvalidOperationException("Catalog search term has not been established.")),
+            this.version,
+            this.uncommittedEvents.AsReadOnly(),
             cancellationToken);
 
         if (saved)
@@ -267,7 +308,7 @@ public sealed class CatalogSearchDiscovery
 
     private void Apply(IDomainEvent @event, bool isNew)
     {
-        this.eventHandlers.Handle(@event);
+        eventHandlers.Handle(@event);
 
         if (isNew)
         {
@@ -275,22 +316,125 @@ public sealed class CatalogSearchDiscovery
         }
     }
 
-    private CatalogSearchCriteria RequireCriteria() =>
-        criteria ?? throw new InvalidOperationException("Discovery criteria has not been established.");
-
-    private static NormalizedSearchQuery ToQuery(CatalogSearchCriteria criteria)
+    private EventHandlers<SearchOrSeekHistory> CreateHandlers()
     {
-        if (criteria.Value.StartsWith("search:", StringComparison.Ordinal))
-        {
-            var parts = criteria.Value.Split(':', 3, StringSplitOptions.None);
-            if (parts.Length == 3)
-            {
-                return NormalizedSearchQuery.FromText(parts[2]);
-            }
-        }
-
-        return NormalizedSearchQuery.FromText(criteria.Value);
+        var handlers = new EventHandlers<SearchOrSeekHistory>();
+        handlers.Register<MusicMetadataRequired>(On);
+        handlers.Register<StreamingLocationsRequired>(On);
+        handlers.Register<DiscoveryRequested>(On);
+        handlers.Register<DiscoveryPlanned>(On);
+        handlers.Register<DiscoveryDeferred>(On);
+        handlers.Register<DiscoveryRejected>(On);
+        handlers.Register<DiscoveryFailed>(On);
+        handlers.Register<DiscoveryStarted>(On);
+        handlers.Register<DiscoveryCompleted>(On);
+        return handlers;
     }
+
+    private void On(MusicMetadataRequired @event)
+    {
+        this.criteria = @event.Criteria;
+    }
+
+    private void On(StreamingLocationsRequired @event)
+    {
+        _ = @event;
+    }
+
+    private void On(DiscoveryRequested @event)
+    {
+        criteria = MusicSeekOrSearchCriteria.FromSearch(@event.SearchCriteria);
+        status = CatalogSearchLifecycleStatus.Requested;
+        priority = null;
+        willBeLookedUp = true;
+        estimatedRetryAfterSeconds = null;
+        earliestExpectedCompletionAt = null;
+        reason = null;
+        updatedAt = @event.RequestedAt;
+        hasRequested = true;
+    }
+
+    private void On(DiscoveryPlanned @event)
+    {
+        criteria = MusicSeekOrSearchCriteria.FromSearch(@event.SearchCriteria);
+        status = CatalogSearchLifecycleStatus.Planned;
+        priority = @event.Priority;
+        willBeLookedUp = @event.WillBeLookedUp;
+        estimatedRetryAfterSeconds = @event.EstimatedRetryAfterSeconds;
+        earliestExpectedCompletionAt = @event.EarliestExpectedCompletionAt;
+        reason = @event.Reason;
+        updatedAt = @event.PlannedAt;
+        hasRequested = true;
+    }
+
+    private void On(DiscoveryDeferred @event)
+    {
+        criteria = MusicSeekOrSearchCriteria.FromSearch(@event.SearchCriteria);
+        status = CatalogSearchLifecycleStatus.Deferred;
+        priority = null;
+        willBeLookedUp = @event.WillBeLookedUp;
+        estimatedRetryAfterSeconds = @event.EstimatedRetryAfterSeconds;
+        earliestExpectedCompletionAt = @event.EarliestExpectedCompletionAt;
+        reason = @event.Reason;
+        updatedAt = @event.DeferredAt;
+        hasRequested = true;
+    }
+
+    private void On(DiscoveryRejected @event)
+    {
+        criteria = MusicSeekOrSearchCriteria.FromSearch(@event.SearchCriteria);
+        status = CatalogSearchLifecycleStatus.Rejected;
+        priority = null;
+        willBeLookedUp = @event.WillBeLookedUp;
+        estimatedRetryAfterSeconds = null;
+        earliestExpectedCompletionAt = null;
+        reason = @event.Reason;
+        updatedAt = @event.RejectedAt;
+        hasRequested = true;
+    }
+
+    private void On(DiscoveryFailed @event)
+    {
+        criteria = MusicSeekOrSearchCriteria.FromSearch(@event.SearchCriteria);
+        status = CatalogSearchLifecycleStatus.Failed;
+        priority = null;
+        willBeLookedUp = @event.WillBeLookedUp;
+        estimatedRetryAfterSeconds = null;
+        earliestExpectedCompletionAt = null;
+        reason = @event.Reason;
+        updatedAt = @event.FailedAt;
+        hasRequested = true;
+    }
+
+    private void On(DiscoveryStarted @event)
+    {
+        criteria = MusicSeekOrSearchCriteria.FromSearch(@event.SearchCriteria);
+        status = CatalogSearchLifecycleStatus.InProgress;
+        priority = @event.Priority;
+        willBeLookedUp = @event.WillBeLookedUp;
+        estimatedRetryAfterSeconds = null;
+        earliestExpectedCompletionAt = null;
+        reason = @event.Reason;
+        updatedAt = @event.StartedAt;
+        hasRequested = true;
+    }
+
+    private void On(DiscoveryCompleted @event)
+    {
+        criteria = MusicSeekOrSearchCriteria.FromSearch(@event.SearchCriteria);
+        status = CatalogSearchLifecycleStatus.Completed;
+        priority = @event.Priority;
+        willBeLookedUp = @event.WillBeLookedUp;
+        estimatedRetryAfterSeconds = null;
+        earliestExpectedCompletionAt = null;
+        reason = @event.Reason;
+        updatedAt = @event.CompletedAt;
+        hasRequested = true;
+    }
+
+    private MusicSearchCriteria RequireSearchCriteria() =>
+        (criteria ?? throw new InvalidOperationException("Catalog search term has not been established."))
+        .RequireSearchCriteria();
 
     private void EnsureCanTransitionTo(CatalogSearchLifecycleStatus targetStatus)
     {
@@ -308,110 +452,5 @@ public sealed class CatalogSearchDiscovery
         {
             throw new InvalidOperationException("Rejected discovery cannot transition to another state.");
         }
-    }
-
-    private EventHandlers<CatalogSearchDiscovery> CreateHandlers()
-    {
-        var handlers = new EventHandlers<CatalogSearchDiscovery>();
-        handlers.Register<MusicTrackSearchStarted>(_ => { });
-        handlers.Register<DiscoveryRequested>(this.On);
-        handlers.Register<DiscoveryPlanned>(this.On);
-        handlers.Register<DiscoveryDeferred>(this.On);
-        handlers.Register<DiscoveryRejected>(this.On);
-        handlers.Register<DiscoveryFailed>(this.On);
-        handlers.Register<DiscoveryStarted>(this.On);
-        handlers.Register<DiscoveryCompleted>(this.On);
-        return handlers;
-    }
-
-    private void On(DiscoveryRequested @event)
-    {
-        criteria = @event.Criteria;
-        status = CatalogSearchLifecycleStatus.Requested;
-        priority = null;
-        willBeLookedUp = true;
-        estimatedRetryAfterSeconds = null;
-        earliestExpectedCompletionAt = null;
-        reason = null;
-        updatedAt = @event.RequestedAt;
-        hasRequested = true;
-    }
-
-    private void On(DiscoveryPlanned @event)
-    {
-        criteria = @event.Criteria;
-        status = CatalogSearchLifecycleStatus.Planned;
-        priority = @event.Priority;
-        willBeLookedUp = @event.WillBeLookedUp;
-        estimatedRetryAfterSeconds = @event.EstimatedRetryAfterSeconds;
-        earliestExpectedCompletionAt = @event.EarliestExpectedCompletionAt;
-        reason = @event.Reason;
-        updatedAt = @event.PlannedAt;
-        hasRequested = true;
-    }
-
-    private void On(DiscoveryDeferred @event)
-    {
-        criteria = @event.Criteria;
-        status = CatalogSearchLifecycleStatus.Deferred;
-        priority = null;
-        willBeLookedUp = @event.WillBeLookedUp;
-        estimatedRetryAfterSeconds = @event.EstimatedRetryAfterSeconds;
-        earliestExpectedCompletionAt = @event.EarliestExpectedCompletionAt;
-        reason = @event.Reason;
-        updatedAt = @event.DeferredAt;
-        hasRequested = true;
-    }
-
-    private void On(DiscoveryRejected @event)
-    {
-        criteria = @event.Criteria;
-        status = CatalogSearchLifecycleStatus.Rejected;
-        priority = null;
-        willBeLookedUp = @event.WillBeLookedUp;
-        estimatedRetryAfterSeconds = null;
-        earliestExpectedCompletionAt = null;
-        reason = @event.Reason;
-        updatedAt = @event.RejectedAt;
-        hasRequested = true;
-    }
-
-    private void On(DiscoveryFailed @event)
-    {
-        criteria = @event.Criteria;
-        status = CatalogSearchLifecycleStatus.Failed;
-        priority = null;
-        willBeLookedUp = @event.WillBeLookedUp;
-        estimatedRetryAfterSeconds = null;
-        earliestExpectedCompletionAt = null;
-        reason = @event.Reason;
-        updatedAt = @event.FailedAt;
-        hasRequested = true;
-    }
-
-    private void On(DiscoveryStarted @event)
-    {
-        criteria = @event.Criteria;
-        status = CatalogSearchLifecycleStatus.InProgress;
-        priority = @event.Priority;
-        willBeLookedUp = @event.WillBeLookedUp;
-        estimatedRetryAfterSeconds = null;
-        earliestExpectedCompletionAt = null;
-        reason = @event.Reason;
-        updatedAt = @event.StartedAt;
-        hasRequested = true;
-    }
-
-    private void On(DiscoveryCompleted @event)
-    {
-        criteria = @event.Criteria;
-        status = CatalogSearchLifecycleStatus.Completed;
-        priority = @event.Priority;
-        willBeLookedUp = @event.WillBeLookedUp;
-        estimatedRetryAfterSeconds = null;
-        earliestExpectedCompletionAt = null;
-        reason = @event.Reason;
-        updatedAt = @event.CompletedAt;
-        hasRequested = true;
     }
 }
