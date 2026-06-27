@@ -4,7 +4,7 @@ using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Looku
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
-public sealed class FakeGetMusicMetadata : IGetMusicMetadata
+public sealed class FakeGetMusicMetadata : IGetTrackMetadata
 {
     private readonly Dictionary<string, SongMetadata> byQuery = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, SongMetadata> byIsrc = new(StringComparer.OrdinalIgnoreCase);
@@ -68,14 +68,14 @@ public sealed class FakeGetMusicMetadata : IGetMusicMetadata
 
     public void SeedQuery(string query, SongMetadata metadata) => byQuery[MusicMetadataLookupMatch.Normalize(query)] = metadata;
 
-    public void SeedIsrc(string isrc, SongMetadata metadata) => byIsrc[isrc] = metadata;
+    public void SeedIsrc(string isrc, SongMetadata metadata) => byIsrc[MusicIdentityText.NormalizeCompact(isrc)] = metadata;
 
     public void SeedNames(string title, string artist, string? albumName, SongMetadata metadata) =>
         byNames[Key(title, artist, albumName)] = metadata;
 
     public void SeedAmbiguousQuery(string query) => ambiguousQueries.Add(MusicMetadataLookupMatch.Normalize(query));
 
-    public void SeedAmbiguousIsrc(string isrc) => ambiguousIsrc.Add(isrc);
+    public void SeedAmbiguousIsrc(string isrc) => ambiguousIsrc.Add(MusicIdentityText.NormalizeCompact(isrc));
 
     public void SeedAmbiguousNames(string title, string artist, string? albumName) =>
         ambiguousNames.Add(Key(title, artist, albumName));

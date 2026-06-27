@@ -76,7 +76,7 @@ public static class ServiceBusServiceCollectionExtensions
         opts.ListenToAzureServiceBusQueue(serviceBusOptions.MusicTrackEventsQueueName)
             .ProcessInline();
 
-        opts.PublishMessage<LookupMusicMetadataCommandDto>()
+        opts.PublishMessage<LookupTrackMetadataCommandDto>()
             .ToAzureServiceBusQueue(serviceBusOptions.MusicBrainzLookupQueueName);
 
         opts.PublishMessage<LookupStreamingLocationsCommandDto>()

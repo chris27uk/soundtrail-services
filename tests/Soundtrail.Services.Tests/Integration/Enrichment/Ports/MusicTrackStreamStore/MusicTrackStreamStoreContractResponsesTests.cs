@@ -25,7 +25,7 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
         await env.AppendAsync(
             musicCatalogId,
             0,
-            CommandId.For("LookupMusicMetadata:mc_track_1"),
+            CommandId.For("LookupTrackMetadata:mc_track_1"),
             [new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))]);
 
         var loaded = await env.LoadAsync(musicCatalogId);
@@ -40,7 +40,7 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
     {
         await using var env = StreamStoreTestEnvironment.Create(mode);
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
-        var commandId = CommandId.For("LookupMusicMetadata:mc_track_1");
+        var commandId = CommandId.For("LookupTrackMetadata:mc_track_1");
         var @event = new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", ProviderName.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero));
 
         var first = await env.AppendAsync(musicCatalogId, 0, commandId, [@event]);

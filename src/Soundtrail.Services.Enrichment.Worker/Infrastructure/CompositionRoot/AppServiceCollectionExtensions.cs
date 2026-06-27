@@ -19,8 +19,8 @@ public static class AppServiceCollectionExtensions
         var dependencyProvider = options.DependencyProvider ?? new ProductionWorkerDependencyProvider();
         dependencyProvider.AddSharedDependencies(services, configuration);
 
-        services.AddLookupMusicMetadataFeature(x =>
-            x.ConfigureDependencies = svc => dependencyProvider.AddLookupMusicMetadataDependencies(svc, configuration));
+        services.AddLookupTrackMetadataFeature(x =>
+            x.ConfigureDependencies = svc => dependencyProvider.AddLookupTrackMetadataDependencies(svc, configuration));
         services.AddLookupStreamingLocationsFeature(x =>
             x.ConfigureDependencies = svc => dependencyProvider.AddLookupStreamingLocationsDependencies(svc, configuration));
 

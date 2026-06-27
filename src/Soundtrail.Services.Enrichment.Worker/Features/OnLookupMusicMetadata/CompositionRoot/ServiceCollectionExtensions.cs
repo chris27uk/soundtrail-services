@@ -9,22 +9,22 @@ namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.C
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddLookupMusicMetadataFeature(
+    public static IServiceCollection AddLookupTrackMetadataFeature(
         this IServiceCollection services,
-        Action<LookupMusicMetadataFeatureOptions>? configure = null)
+        Action<LookupTrackMetadataFeatureOptions>? configure = null)
     {
-        var options = new LookupMusicMetadataFeatureOptions();
+        var options = new LookupTrackMetadataFeatureOptions();
         configure?.Invoke(options);
         options.ConfigureDependencies?.Invoke(services);
 
-        services.TryAddScoped<LookupMusicMetadataHandler>();
-        services.TryAddScoped<LookupMusicMetadataExecutionAdmissionDecorator>(sp =>
-            new LookupMusicMetadataExecutionAdmissionDecorator(
+        services.TryAddScoped<LookupTrackMetadataHandler>();
+        services.TryAddScoped<LookupTrackMetadataExecutionAdmissionDecorator>(sp =>
+            new LookupTrackMetadataExecutionAdmissionDecorator(
                 sp.GetRequiredService<Shared.ExecutionAdmission.ILookupExecutionAdmissionPort>(),
-                sp.GetRequiredService<LookupMusicMetadataHandler>()));
-        services.TryAddScoped<ILookupMusicMetadataHandler>(sp =>
-            sp.GetRequiredService<LookupMusicMetadataExecutionAdmissionDecorator>());
-        services.TryAddScoped<LookupMusicMetadataListener>();
+                sp.GetRequiredService<LookupTrackMetadataHandler>()));
+        services.TryAddScoped<ILookupTrackMetadataHandler>(sp =>
+            sp.GetRequiredService<LookupTrackMetadataExecutionAdmissionDecorator>());
+        services.TryAddScoped<LookupTrackMetadataListener>();
         return services;
     }
 }

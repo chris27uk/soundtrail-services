@@ -45,7 +45,7 @@ public static class ServiceBusServiceCollectionExtensions
         opts.PublishMessage<AssessMusicTrackCommandDto>()
             .ToAzureServiceBusQueue(serviceBusOptions.AssessMusicTrackQueueName);
 
-        opts.PublishMessage<LookupMusicMetadataCommandDto>()
+        opts.PublishMessage<LookupTrackMetadataCommandDto>()
             .ToAzureServiceBusQueue(serviceBusOptions.MusicBrainzLookupQueueName);
 
         opts.PublishMessage<LookupStreamingLocationsCommandDto>()

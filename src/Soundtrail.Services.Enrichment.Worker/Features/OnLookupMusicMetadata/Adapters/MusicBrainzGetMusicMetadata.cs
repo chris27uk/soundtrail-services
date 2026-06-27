@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Adapters;
 
-public sealed class MusicBrainzGetMusicMetadata(HttpClient httpClient) : IGetMusicMetadata
+public sealed class MusicBrainzGetTrackMetadata(HttpClient httpClient) : IGetTrackMetadata
 {
     public async Task<SongMetadata?> GetMetadataAsync(
         MusicSearchCriteria searchCriteria,

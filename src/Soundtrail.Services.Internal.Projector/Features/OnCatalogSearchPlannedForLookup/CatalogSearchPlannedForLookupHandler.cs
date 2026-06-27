@@ -80,8 +80,8 @@ public sealed class CatalogSearchPlannedForLookupHandler(
             return null;
         }
 
-        return new LookupMusicMetadataCommand(
-            CommandId.For($"LookupMusicMetadata:{musicCatalogId.Value}"),
+        return new LookupTrackMetadataCommand(
+            CommandId.For($"LookupTrackMetadata:{musicCatalogId.Value}"),
             musicCatalogId,
             planned.Priority,
             planned.PlannedAt,

@@ -19,7 +19,7 @@ internal static class DiscoveryCommandMappings
                 assess.SearchTerm is null ? null : MusicSearchTermPersistentIdTranslator.ToPersistentId(assess.SearchTerm),
                 assess.TrustLevel,
                 assess.RiskScore),
-            LookupMusicMetadataCommand musicBrainz => new LookupMusicMetadataCommandDto(
+            LookupTrackMetadataCommand musicBrainz => new LookupTrackMetadataCommandDto(
                 musicBrainz.CommandId.Value,
                 musicBrainz.MusicCatalogId.Value,
                 musicBrainz.Priority,

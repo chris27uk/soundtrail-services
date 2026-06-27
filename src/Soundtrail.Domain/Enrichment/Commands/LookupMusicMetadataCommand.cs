@@ -5,7 +5,7 @@ using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Domain.Enrichment.Commands;
 
-public sealed record LookupMusicMetadataCommand(
+public sealed record LookupTrackMetadataCommand(
     CommandId CommandId,
     MusicCatalogId MusicCatalogId,
     LookupPriorityBand Priority,

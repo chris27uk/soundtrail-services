@@ -16,7 +16,7 @@ public static class DiscoveryQueryStoredEventRecordMapper
     private static IDomainEvent ToDomainEventData(DiscoveryQueryStoredEventRecordDto dto) =>
         dto.EventType switch
         {
-            nameof(MusicMetadataRequired) => ToMusicMetadataRequired(dto),
+            nameof(TrackMetadataLookupRequested) => ToTrackMetadataLookupRequested(dto),
             nameof(StreamingLocationsRequired) => ToStreamingLocationsRequired(dto),
             nameof(DiscoveryRequested) => ToDiscoveryRequested(dto),
             nameof(DiscoveryPlanned) => ToDiscoveryPlanned(dto),
@@ -28,11 +28,11 @@ public static class DiscoveryQueryStoredEventRecordMapper
             _ => throw new ArgumentOutOfRangeException(nameof(dto.EventType), dto.EventType, "Unknown discovery event type.")
         };
 
-    private static MusicMetadataRequired ToMusicMetadataRequired(DiscoveryQueryStoredEventRecordDto dto)
+    private static TrackMetadataLookupRequested ToTrackMetadataLookupRequested(DiscoveryQueryStoredEventRecordDto dto)
     {
-        var data = dto.MusicMetadataRequired
-            ?? throw new InvalidOperationException("Missing music metadata required event data.");
-        return new MusicMetadataRequired(
+        var data = dto.TrackMetadataLookupRequested
+            ?? throw new InvalidOperationException("Missing track metadata lookup requested event data.");
+        return new TrackMetadataLookupRequested(
             MusicSearchTermPersistentIdTranslator.ToDomainObject(data.Criteria),
             data.TrustLevel,
             data.RiskScore,

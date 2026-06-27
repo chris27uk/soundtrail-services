@@ -66,7 +66,7 @@ public sealed class DiscoveryLifecycleProjection
     {
         var handlers = new EventHandlers<DiscoveryLifecycleProjection>();
 
-        handlers.Register<MusicMetadataRequired>(_ => { });
+        handlers.Register<TrackMetadataLookupRequested>(_ => { });
         handlers.Register<StreamingLocationsRequired>(_ => { });
 
         handlers.Register<DiscoveryRequested>(@event =>

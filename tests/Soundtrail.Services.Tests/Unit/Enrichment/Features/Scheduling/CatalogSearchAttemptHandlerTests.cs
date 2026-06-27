@@ -61,7 +61,7 @@ public sealed class CatalogSearchRequestedHandlerTests
             .Should()
             .ContainSingle()
             .Which.Should()
-            .BeOfType<MusicMetadataRequired>();
+            .BeOfType<TrackMetadataLookupRequested>();
     }
 
 }

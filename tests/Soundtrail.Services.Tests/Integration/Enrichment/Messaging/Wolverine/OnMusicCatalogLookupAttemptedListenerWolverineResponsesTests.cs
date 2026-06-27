@@ -18,7 +18,7 @@ public sealed class MusicCatalogLookupAttemptedListenerWolverineResponsesTests
 
         await listener.Handle(
             new MusicCatalogLookupAttemptedDto(
-                "LookupMusicMetadata:mc_track_1",
+                "LookupTrackMetadata:mc_track_1",
                 "mc_track_1",
                 ProviderName.MusicBrainz.Value,
                 LookupPriorityBand.High,
@@ -43,7 +43,7 @@ public sealed class MusicCatalogLookupAttemptedListenerWolverineResponsesTests
 
         await listener.Handle(
             new MusicCatalogLookupAttemptedDto(
-                "LookupMusicMetadata:mc_track_1",
+                "LookupTrackMetadata:mc_track_1",
                 "mc_track_1",
                 ProviderName.MusicBrainz.Value,
                 LookupPriorityBand.High,

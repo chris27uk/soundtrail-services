@@ -43,7 +43,7 @@ public sealed class LookupMusicMetadataHandlerTests
         var result = await env.HandleNewExecutionCommand(MusicSearchCriteria.ByIsrc("isrc-1"));
 
         result.MusicCatalogMetadataFetched!.Metadata.Should().BeEquivalentTo(new SongMetadata("Song A", "Artist A", "isrc-1", "mbid-1", 123000, "Album A", new DateOnly(2004, 6, 7), "mb-artist-1", "mb-release-1"));
-        env.Metadata.Lookups.Should().ContainSingle().Which.Should().Be("isrc:isrc-1");
+        env.Metadata.Lookups.Should().ContainSingle().Which.Should().Be($"isrc:{MusicIdentityText.NormalizeCompact("isrc-1")}");
     }
 
     [Fact]

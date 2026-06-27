@@ -5,7 +5,7 @@ using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Domain.Discovery;
 
-public sealed record MusicMetadataRequired(
+public sealed record TrackMetadataLookupRequested(
     MusicSearchCriteria SearchCriteria,
     int TrustLevel,
     int RiskScore,

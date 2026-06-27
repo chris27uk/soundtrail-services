@@ -3,7 +3,7 @@ using Soundtrail.Domain.Responses;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Lookup;
 
-public interface IGetMusicMetadata
+public interface IGetTrackMetadata
 {
     Task<SongMetadata?> GetMetadataAsync(
         MusicSearchCriteria searchCriteria,

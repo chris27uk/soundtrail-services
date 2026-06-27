@@ -14,18 +14,18 @@ using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Adapters;
 
-public sealed class LookupMusicMetadataListener(
-    ILookupMusicMetadataHandler handler,
+public sealed class LookupTrackMetadataListener(
+    ILookupTrackMetadataHandler handler,
     IMessageBus messageBus)
 {
     [WolverineHandler]
     [Transactional]
     public async Task Handle(
-        LookupMusicMetadataCommandDto dto,
+        LookupTrackMetadataCommandDto dto,
         IAsyncDocumentSession _,
         CancellationToken cancellationToken = default)
     {
-        var command = new LookupMusicMetadataCommand(
+        var command = new LookupTrackMetadataCommand(
             CommandId.From(dto.CommandId),
             MusicCatalogId.From(dto.MusicCatalogId),
             dto.Priority,
@@ -37,7 +37,7 @@ public sealed class LookupMusicMetadataListener(
         await messageBus.SendAsync(result.ToDto(command, ProviderName.MusicBrainz.Value));
     }
 
-    private static MusicSearchCriteria ToSearchTerm(LookupMusicMetadataCommandDto dto) =>
+    private static MusicSearchCriteria ToSearchTerm(LookupTrackMetadataCommandDto dto) =>
         dto.SearchKind switch
         {
             MusicSearchKind.UnifiedSearch => MusicSearchCriteria.ByQuery(
@@ -51,7 +51,7 @@ public sealed class LookupMusicMetadataListener(
             _ => throw new InvalidOperationException($"Unsupported music search kind '{dto.SearchKind}'.")
         };
 
-    private static CatalogTrackHierarchy? ToHierarchy(LookupMusicMetadataCommandDto dto) =>
+    private static CatalogTrackHierarchy? ToHierarchy(LookupTrackMetadataCommandDto dto) =>
         dto.ArtistId is null && dto.AlbumId is null
             ? null
             : new CatalogTrackHierarchy(

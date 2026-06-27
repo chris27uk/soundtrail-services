@@ -21,7 +21,7 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
     public static IDomainEvent ToDomainEvent(DiscoveryQueryStoredEventRecordDto dto) =>
         dto.EventType switch
         {
-            nameof(MusicMetadataRequired) => ToMusicMetadataRequired(dto),
+            nameof(TrackMetadataLookupRequested) => ToTrackMetadataLookupRequested(dto),
             nameof(StreamingLocationsRequired) => ToStreamingLocationsRequired(dto),
             nameof(DiscoveryRequested) => ToDiscoveryRequested(dto),
             nameof(DiscoveryPlanned) => ToDiscoveryPlanned(dto),
@@ -36,7 +36,7 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
     public static DateTimeOffset GetOccurredAtUtc(IDomainEvent @event) =>
         @event switch
         {
-            MusicMetadataRequired required => required.RequiredAt,
+            TrackMetadataLookupRequested required => required.RequiredAt,
             StreamingLocationsRequired required => required.ObservedAt,
             DiscoveryRequested requested => requested.RequestedAt,
             DiscoveryPlanned planned => planned.PlannedAt,
@@ -54,13 +54,13 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
         int version) =>
         @event switch
         {
-            MusicMetadataRequired required => new DiscoveryQueryStoredEventRecordDto
+            TrackMetadataLookupRequested required => new DiscoveryQueryStoredEventRecordDto
             {
                 Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria), version),
                 Criteria = MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria),
                 Version = version,
-                EventType = nameof(MusicMetadataRequired),
-                MusicMetadataRequired = new MusicMetadataRequiredEventDataRecordDto(
+                EventType = nameof(TrackMetadataLookupRequested),
+                TrackMetadataLookupRequested = new TrackMetadataLookupRequestedEventDataRecordDto(
                     MusicSearchTermPersistentIdTranslator.ToPersistentId(required.SearchCriteria),
                     required.TrustLevel,
                     required.RiskScore,
@@ -196,11 +196,11 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
             _ => throw new ArgumentOutOfRangeException(nameof(@event), @event, "Unknown discovery event.")
         };
 
-    private static MusicMetadataRequired ToMusicMetadataRequired(DiscoveryQueryStoredEventRecordDto dto)
+    private static TrackMetadataLookupRequested ToTrackMetadataLookupRequested(DiscoveryQueryStoredEventRecordDto dto)
     {
-        var data = dto.MusicMetadataRequired
-            ?? throw new InvalidOperationException("Missing music metadata required event data.");
-        return new MusicMetadataRequired(
+        var data = dto.TrackMetadataLookupRequested
+            ?? throw new InvalidOperationException("Missing track metadata lookup requested event data.");
+        return new TrackMetadataLookupRequested(
             MusicSearchTermPersistentIdTranslator.ToDomainObject(data.Criteria),
             data.TrustLevel,
             data.RiskScore,

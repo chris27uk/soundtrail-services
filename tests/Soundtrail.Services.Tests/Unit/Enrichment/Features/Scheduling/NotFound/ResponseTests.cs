@@ -24,7 +24,7 @@ public sealed class ResponseTests
             .Should()
             .ContainSingle()
             .Which.Should()
-            .BeOfType<MusicMetadataRequired>();
+            .BeOfType<TrackMetadataLookupRequested>();
     }
 
     [Fact]
@@ -40,6 +40,6 @@ public sealed class ResponseTests
             .Should()
             .ContainSingle()
             .Which.Should()
-            .BeOfType<MusicMetadataRequired>();
+            .BeOfType<TrackMetadataLookupRequested>();
     }
 }

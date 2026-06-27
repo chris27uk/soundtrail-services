@@ -42,7 +42,7 @@ public sealed class SearchOrSeekHistory
         var stream = await repository.LoadAsync(searchCriteria, cancellationToken);
         var aggregate = new SearchOrSeekHistory(
             stream.Events.Where(static @event =>
-                @event is MusicMetadataRequired
+                @event is TrackMetadataLookupRequested
                 or Events.StreamingLocationsRequired
                 or DiscoveryRequested
                 or DiscoveryPlanned
@@ -273,7 +273,7 @@ public sealed class SearchOrSeekHistory
         CorrelationId correlationId)
     {
         Apply(
-            new MusicMetadataRequired(
+            new TrackMetadataLookupRequested(
                 this.criteria ?? throw new InvalidOperationException("Catalog search term has not been established."),
                 trustLevel,
                 riskScore,
@@ -319,7 +319,7 @@ public sealed class SearchOrSeekHistory
     private EventHandlers<SearchOrSeekHistory> CreateHandlers()
     {
         var handlers = new EventHandlers<SearchOrSeekHistory>();
-        handlers.Register<MusicMetadataRequired>(On);
+        handlers.Register<TrackMetadataLookupRequested>(On);
         handlers.Register<StreamingLocationsRequired>(On);
         handlers.Register<DiscoveryRequested>(On);
         handlers.Register<DiscoveryPlanned>(On);
@@ -331,7 +331,7 @@ public sealed class SearchOrSeekHistory
         return handlers;
     }
 
-    private void On(MusicMetadataRequired @event)
+    private void On(TrackMetadataLookupRequested @event)
     {
         this.criteria = @event.SearchCriteria;
     }

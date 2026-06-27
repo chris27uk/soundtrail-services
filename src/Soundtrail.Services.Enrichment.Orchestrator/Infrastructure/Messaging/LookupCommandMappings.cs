@@ -9,7 +9,7 @@ internal static class LookupCommandMappings
     public static object ToMessage(this object command) =>
         command switch
         {
-            LookupMusicMetadataCommand musicBrainz => new LookupMusicMetadataCommandDto(
+            LookupTrackMetadataCommand musicBrainz => new LookupTrackMetadataCommandDto(
                 musicBrainz.CommandId.Value,
                 musicBrainz.MusicCatalogId.Value,
                 musicBrainz.Priority,

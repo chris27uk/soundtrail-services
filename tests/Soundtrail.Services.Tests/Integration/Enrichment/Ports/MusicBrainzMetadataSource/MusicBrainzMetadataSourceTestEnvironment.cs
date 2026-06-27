@@ -16,7 +16,7 @@ internal sealed class MusicBrainzMetadataSourceTestEnvironment : IDisposable
     private readonly IDisposable? cleanup;
 
     private MusicBrainzMetadataSourceTestEnvironment(
-        IGetMusicMetadata source,
+        IGetTrackMetadata source,
         Action<MusicSearchCriteria, SongMetadata> seed,
         Action<MusicSearchCriteria>? seedAmbiguous,
         Action<MusicSearchCriteria, SongMetadata>? seedPreferredMatch,
@@ -29,7 +29,7 @@ internal sealed class MusicBrainzMetadataSourceTestEnvironment : IDisposable
         this.cleanup = cleanup;
     }
 
-    public IGetMusicMetadata Source { get; }
+    public IGetTrackMetadata Source { get; }
 
     public static MusicBrainzMetadataSourceTestEnvironment Create(MusicBrainzMetadataSourceMode mode) =>
         mode switch
@@ -83,10 +83,10 @@ internal sealed class MusicBrainzMetadataSourceTestEnvironment : IDisposable
         var server = new WireMockMusicProvidersServer();
         var options = Options.Create(new MusicBrainzOptions { BaseUrl = server.BaseUrl, UserAgent = "Soundtrail.Tests/1.0" });
         var client = new HttpClient();
-        MusicBrainzGetMusicMetadata.ConfigureHttpClient(client, options.Value);
+        MusicBrainzGetTrackMetadata.ConfigureHttpClient(client, options.Value);
 
         return new MusicBrainzMetadataSourceTestEnvironment(
-            new MusicBrainzGetMusicMetadata(client),
+            new MusicBrainzGetTrackMetadata(client),
             server.SeedMusicBrainz,
             seedAmbiguous: searchTerm =>
             {
