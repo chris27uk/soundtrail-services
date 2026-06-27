@@ -8,18 +8,18 @@ namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRe
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddOnCatalogSearchRequestedFeature(
+    public static IServiceCollection AddOnSearchCatalogRequestedFeature(
         this IServiceCollection services,
-        Action<OnCatalogSearchRequestedFeatureOptions>? configure = null)
+        Action<OnSearchCatalogRequestedFeatureOptions>? configure = null)
     {
-        var options = new OnCatalogSearchRequestedFeatureOptions();
+        var options = new OnSearchCatalogRequestedFeatureOptions();
         configure?.Invoke(options);
         options.ConfigureDependencies?.Invoke(services);
 
         services.TryAddScoped<MusicCatalogMatchResolver>();
         services.TryAddScoped<ICatalogSearchDiscoveryRepository, RavenCatalogSearchDiscoveryRepository>();
-        services.TryAddScoped<CatalogSearchRequestedHandler>();
-        services.TryAddScoped<CatalogSearchRequestedListener>();
+        services.TryAddScoped<SearchCatalogRequestedHandler>();
+        services.TryAddScoped<SearchCatalogRequestedListener>();
         return services;
     }
 }

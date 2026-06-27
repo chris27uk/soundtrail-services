@@ -28,14 +28,14 @@ internal sealed class CatalogSearchRequestedListenerWolverineTestEnvironment
             null,
             IsPlayable: false));
 
-        Listener = new CatalogSearchRequestedListener(
-            new CatalogSearchRequestedHandler(
+        Listener = new SearchCatalogRequestedListener(
+            new SearchCatalogRequestedHandler(
                 search,
                 discoveryRepository,
                 localSearchFake));
     }
 
-    public CatalogSearchRequestedListener Listener { get; }
+    public SearchCatalogRequestedListener Listener { get; }
 
     public LocalMusicTrackSearchFake LocalSearch => localSearchFake;
 

@@ -22,7 +22,7 @@ public sealed record PotentialCatalogLookupWork(
 
     public bool IsEligibleAt(DateTimeOffset when) => NextEligibleAt is null || NextEligibleAt <= when;
 
-    public static PotentialCatalogLookupWork Create(CatalogSearchRequested requested, MusicCatalogId musicCatalogId)
+    public static PotentialCatalogLookupWork Create(SearchCatalogRequested requested, MusicCatalogId musicCatalogId)
     {
         var riskBand = ToRiskBand(requested.RiskScore);
 
@@ -35,7 +35,7 @@ public sealed record PotentialCatalogLookupWork(
             NextEligibleAt: null);
     }
 
-    public PotentialCatalogLookupWork AcceptNewRequest(CatalogSearchRequested requested)
+    public PotentialCatalogLookupWork AcceptNewRequest(SearchCatalogRequested requested)
     {
         var updatedRiskScore = Math.Max(RiskScore, requested.RiskScore);
 

@@ -9,14 +9,11 @@ namespace Soundtrail.Services.Api.Infrastructure.Messaging
 {
     public static class CatalogSearchAttemptMapper
     {
-        public static CatalogSearchAttemptDto ToDto(CatalogSearchRequested requested)
+        public static CatalogSearchAttemptDto ToDto(SearchCatalogRequested requested)
         {
-            var query = requested.Criteria.Match(
-                onSearch: search => search.Query ?? string.Empty,
-                onSeek: _ => string.Empty);
-
+            var query = requested.SearchCriteria.Query ?? string.Empty;
             return new CatalogSearchAttemptDto(
-                MusicSearchTermPersistentIdTranslator.ToPersistentId(requested.Criteria),
+                MusicSearchTermPersistentIdTranslator.ToPersistentId(requested.SearchCriteria),
                 query,
                 requested.Playback.ToString(),
                 requested.TrustLevel,
@@ -25,12 +22,12 @@ namespace Soundtrail.Services.Api.Infrastructure.Messaging
                 requested.CorrelationId.Value);
         }
 
-        public static CatalogSearchRequested? FromDto(CatalogSearchAttemptDto request)
+        public static SearchCatalogRequested FromDto(CatalogSearchAttemptDto request)
         {
-            return new CatalogSearchRequested(
+            return new SearchCatalogRequested(
                 !string.IsNullOrWhiteSpace(request.Criteria)
-                    ? MusicSearchTermPersistentIdTranslator.ToSearchOrSeekDomainObject(request.Criteria)
-                    : MusicSeekOrSearchCriteria.FromSearch(MusicSearchCriteria.ByQuery(request.Query)),
+                    ? MusicSearchTermPersistentIdTranslator.ToDomainObject(request.Criteria)
+                    : MusicSearchCriteria.ByQuery(request.Query),
                 PlaybackProviderFilter.Parse(request.Playback),
                 request.TrustLevel,
                 request.RiskScore,

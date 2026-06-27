@@ -16,9 +16,9 @@ public sealed class CatalogSearchDiscoveryTests
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
         var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
-        var discovery = await SearchOrSeekHistory.LoadAsync(repository, MusicSeekOrSearchCriteria.FromSearch(searchTerm), CancellationToken.None);
+        var discovery = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
 
-        var requested = discovery.Request(Request(searchTerm));
+        var requested = discovery.SearchRequested(Request(searchTerm));
         await discovery.SaveAsync(repository, CancellationToken.None);
         var @event = repository.GetStoredEvents(searchTerm).Should().ContainSingle().Which.Should().BeOfType<DiscoveryRequested>().Subject;
 
@@ -33,12 +33,12 @@ public sealed class CatalogSearchDiscoveryTests
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
         var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
-        var discovery = await SearchOrSeekHistory.LoadAsync(repository, MusicSeekOrSearchCriteria.FromSearch(searchTerm), CancellationToken.None);
-        discovery.Request(Request(searchTerm));
+        var discovery = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
+        discovery.SearchRequested(Request(searchTerm));
         await discovery.SaveAsync(repository, CancellationToken.None);
-        discovery = await SearchOrSeekHistory.LoadAsync(repository, MusicSeekOrSearchCriteria.FromSearch(searchTerm), CancellationToken.None);
+        discovery = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
 
-        var requested = discovery.Request(Request(searchTerm));
+        var requested = discovery.SearchRequested(Request(searchTerm));
 
         requested.Should().BeFalse();
         repository.GetStoredEvents(searchTerm).Should().ContainSingle();
@@ -49,10 +49,10 @@ public sealed class CatalogSearchDiscoveryTests
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
         var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
-        var discovery = await SearchOrSeekHistory.LoadAsync(repository, MusicSeekOrSearchCriteria.FromSearch(searchTerm), CancellationToken.None);
-        discovery.Request(Request(searchTerm));
+        var discovery = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
+        discovery.SearchRequested(Request(searchTerm));
         await discovery.SaveAsync(repository, CancellationToken.None);
-        discovery = await SearchOrSeekHistory.LoadAsync(repository, MusicSeekOrSearchCriteria.FromSearch(searchTerm), CancellationToken.None);
+        discovery = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
 
         var planned = discovery.Plan(LookupPriorityBand.High, 30, null, "Planner queued lookup", Clock);
         await discovery.SaveAsync(repository, CancellationToken.None);
@@ -69,10 +69,10 @@ public sealed class CatalogSearchDiscoveryTests
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
         var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
-        var discovery = await SearchOrSeekHistory.LoadAsync(repository, MusicSeekOrSearchCriteria.FromSearch(searchTerm), CancellationToken.None);
-        discovery.Request(Request(searchTerm));
+        var discovery = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
+        discovery.SearchRequested(Request(searchTerm));
         await discovery.SaveAsync(repository, CancellationToken.None);
-        discovery = await SearchOrSeekHistory.LoadAsync(repository, MusicSeekOrSearchCriteria.FromSearch(searchTerm), CancellationToken.None);
+        discovery = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
 
         var deferred = discovery.Defer(60, Clock.AddSeconds(60), "Planner deferred lookup", Clock);
         await discovery.SaveAsync(repository, CancellationToken.None);
@@ -88,7 +88,7 @@ public sealed class CatalogSearchDiscoveryTests
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
         var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
-        var discovery = await SearchOrSeekHistory.LoadAsync(repository, MusicSeekOrSearchCriteria.FromSearch(searchTerm), CancellationToken.None);
+        var discovery = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
 
         var rejected = discovery.Reject("Planner rejected lookup", Clock);
         await discovery.SaveAsync(repository, CancellationToken.None);
@@ -104,7 +104,7 @@ public sealed class CatalogSearchDiscoveryTests
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
         var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
-        var discovery = await SearchOrSeekHistory.LoadAsync(repository, MusicSeekOrSearchCriteria.FromSearch(searchTerm), CancellationToken.None);
+        var discovery = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
 
         var failed = discovery.Fail("Lookup failed", Clock);
         await discovery.SaveAsync(repository, CancellationToken.None);
@@ -120,19 +120,19 @@ public sealed class CatalogSearchDiscoveryTests
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
         var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
-        var discovery = await SearchOrSeekHistory.LoadAsync(repository, MusicSeekOrSearchCriteria.FromSearch(searchTerm), CancellationToken.None);
+        var discovery = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
         discovery.Reject("Planner rejected lookup", Clock);
         await discovery.SaveAsync(repository, CancellationToken.None);
-        discovery = await SearchOrSeekHistory.LoadAsync(repository, MusicSeekOrSearchCriteria.FromSearch(searchTerm), CancellationToken.None);
+        discovery = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
 
         var act = () => discovery.Plan(LookupPriorityBand.Low, 30, null, "Planner queued lookup", Clock);
 
         act.Should().Throw<InvalidOperationException>();
     }
 
-    private static CatalogSearchRequested Request(MusicSearchCriteria searchCriteria) =>
+    private static SearchCatalogRequested Request(MusicSearchCriteria searchCriteria) =>
         new(
-            MusicSeekOrSearchCriteria.FromSearch(searchCriteria),
+            searchCriteria,
             PlaybackProviderFilter.Parse("spotify,appleMusic,youtubeMusic"),
             1,
             10,

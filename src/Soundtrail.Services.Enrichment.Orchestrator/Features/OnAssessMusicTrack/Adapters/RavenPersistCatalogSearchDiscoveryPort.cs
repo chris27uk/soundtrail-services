@@ -19,7 +19,7 @@ public sealed class RavenPersistCatalogSearchDiscoveryPort(
         CorrelationId correlationId,
         CancellationToken cancellationToken) =>
         PersistAsync(
-            MusicSeekOrSearchCriteria.FromSearch(searchCriteria),
+            searchCriteria,
             history => history.Request(
                 searchCriteria,
                 trustLevel,
@@ -36,18 +36,18 @@ public sealed class RavenPersistCatalogSearchDiscoveryPort(
         var trackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(musicCatalogId, cancellationToken);
         foreach (var tracking in trackings)
         {
-            await PersistAsync(MusicSeekOrSearchCriteria.FromSearch(tracking.SearchCriteria), apply, cancellationToken);
+            await PersistAsync(tracking.SearchCriteria, apply, cancellationToken);
         }
     }
 
     private async Task PersistAsync(
-        MusicSeekOrSearchCriteria criteria,
+        MusicSearchCriteria searchCriteria,
         Func<SearchOrSeekHistory, bool> apply,
         CancellationToken cancellationToken)
     {
         for (var attempt = 0; attempt < 2; attempt++)
         {
-            var history = await SearchOrSeekHistory.LoadAsync(discoveryRepository, criteria, cancellationToken);
+            var history = await SearchOrSeekHistory.LoadAsync(discoveryRepository, searchCriteria, cancellationToken);
             if (!apply(history))
             {
                 return;

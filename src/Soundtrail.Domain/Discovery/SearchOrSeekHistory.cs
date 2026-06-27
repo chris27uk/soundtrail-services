@@ -11,7 +11,7 @@ public sealed class SearchOrSeekHistory
 {
     private readonly EventHandlers<SearchOrSeekHistory> eventHandlers;
     private readonly List<IDomainEvent> uncommittedEvents = [];
-    private MusicSeekOrSearchCriteria? criteria;
+    private MusicSearchCriteria? criteria;
     private CatalogSearchLifecycleStatus? status;
     private LookupPriorityBand? priority;
     private bool willBeLookedUp;
@@ -36,10 +36,10 @@ public sealed class SearchOrSeekHistory
 
     public static async Task<SearchOrSeekHistory> LoadAsync(
         ICatalogSearchDiscoveryRepository repository,
-        MusicSeekOrSearchCriteria criteria,
+        MusicSearchCriteria searchCriteria,
         CancellationToken cancellationToken)
     {
-        var stream = await repository.LoadAsync(criteria, cancellationToken);
+        var stream = await repository.LoadAsync(searchCriteria, cancellationToken);
         var aggregate = new SearchOrSeekHistory(
             stream.Events.Where(static @event =>
                 @event is MusicMetadataRequired
@@ -52,13 +52,13 @@ public sealed class SearchOrSeekHistory
                 or DiscoveryStarted
                 or DiscoveryCompleted),
             stream.Version);
-        aggregate.criteria ??= criteria;
+        aggregate.criteria ??= searchCriteria;
         return aggregate;
     }
 
-    public bool Request(CatalogSearchRequested requested) =>
+    public bool SearchRequested(SearchCatalogRequested requested) =>
         Request(
-            requested.Criteria.RequireSearchCriteria(),
+            requested.SearchCriteria,
             requested.TrustLevel,
             requested.RiskScore,
             requested.OccurredAt,
@@ -333,7 +333,7 @@ public sealed class SearchOrSeekHistory
 
     private void On(MusicMetadataRequired @event)
     {
-        this.criteria = @event.Criteria;
+        this.criteria = @event.SearchCriteria;
     }
 
     private void On(StreamingLocationsRequired @event)
@@ -343,7 +343,7 @@ public sealed class SearchOrSeekHistory
 
     private void On(DiscoveryRequested @event)
     {
-        criteria = MusicSeekOrSearchCriteria.FromSearch(@event.SearchCriteria);
+        criteria = @event.SearchCriteria;
         status = CatalogSearchLifecycleStatus.Requested;
         priority = null;
         willBeLookedUp = true;
@@ -356,7 +356,7 @@ public sealed class SearchOrSeekHistory
 
     private void On(DiscoveryPlanned @event)
     {
-        criteria = MusicSeekOrSearchCriteria.FromSearch(@event.SearchCriteria);
+        criteria = @event.SearchCriteria;
         status = CatalogSearchLifecycleStatus.Planned;
         priority = @event.Priority;
         willBeLookedUp = @event.WillBeLookedUp;
@@ -369,7 +369,7 @@ public sealed class SearchOrSeekHistory
 
     private void On(DiscoveryDeferred @event)
     {
-        criteria = MusicSeekOrSearchCriteria.FromSearch(@event.SearchCriteria);
+        criteria = @event.SearchCriteria;
         status = CatalogSearchLifecycleStatus.Deferred;
         priority = null;
         willBeLookedUp = @event.WillBeLookedUp;
@@ -382,7 +382,7 @@ public sealed class SearchOrSeekHistory
 
     private void On(DiscoveryRejected @event)
     {
-        criteria = MusicSeekOrSearchCriteria.FromSearch(@event.SearchCriteria);
+        criteria = @event.SearchCriteria;
         status = CatalogSearchLifecycleStatus.Rejected;
         priority = null;
         willBeLookedUp = @event.WillBeLookedUp;
@@ -395,7 +395,7 @@ public sealed class SearchOrSeekHistory
 
     private void On(DiscoveryFailed @event)
     {
-        criteria = MusicSeekOrSearchCriteria.FromSearch(@event.SearchCriteria);
+        criteria = @event.SearchCriteria;
         status = CatalogSearchLifecycleStatus.Failed;
         priority = null;
         willBeLookedUp = @event.WillBeLookedUp;
@@ -408,7 +408,7 @@ public sealed class SearchOrSeekHistory
 
     private void On(DiscoveryStarted @event)
     {
-        criteria = MusicSeekOrSearchCriteria.FromSearch(@event.SearchCriteria);
+        criteria = @event.SearchCriteria;
         status = CatalogSearchLifecycleStatus.InProgress;
         priority = @event.Priority;
         willBeLookedUp = @event.WillBeLookedUp;
@@ -421,7 +421,7 @@ public sealed class SearchOrSeekHistory
 
     private void On(DiscoveryCompleted @event)
     {
-        criteria = MusicSeekOrSearchCriteria.FromSearch(@event.SearchCriteria);
+        criteria = @event.SearchCriteria;
         status = CatalogSearchLifecycleStatus.Completed;
         priority = @event.Priority;
         willBeLookedUp = @event.WillBeLookedUp;
@@ -433,8 +433,7 @@ public sealed class SearchOrSeekHistory
     }
 
     private MusicSearchCriteria RequireSearchCriteria() =>
-        (criteria ?? throw new InvalidOperationException("Catalog search term has not been established."))
-        .RequireSearchCriteria();
+        criteria ?? throw new InvalidOperationException("Catalog search term has not been established.");
 
     private void EnsureCanTransitionTo(CatalogSearchLifecycleStatus targetStatus)
     {

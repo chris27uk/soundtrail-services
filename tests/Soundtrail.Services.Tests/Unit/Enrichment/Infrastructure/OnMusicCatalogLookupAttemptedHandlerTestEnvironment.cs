@@ -80,7 +80,7 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
         Handler.Handle(MusicCatalogLookupAttempted.Completed(response), CancellationToken.None);
 
     public IReadOnlyList<IDomainEvent> StoredEvents(string criteria) =>
-        discoveryRepository.GetStoredEvents(MusicSearchTermPersistentIdTranslator.ToSearchOrSeekDomainObject(criteria));
+        discoveryRepository.GetStoredEvents(MusicSearchTermPersistentIdTranslator.ToDomainObject(criteria));
 
     public static MusicCatalogMetadataFetched MusicBrainzResponse() =>
         new(

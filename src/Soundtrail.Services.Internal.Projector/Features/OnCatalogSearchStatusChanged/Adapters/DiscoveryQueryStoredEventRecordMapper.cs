@@ -33,7 +33,7 @@ public static class DiscoveryQueryStoredEventRecordMapper
         var data = dto.MusicMetadataRequired
             ?? throw new InvalidOperationException("Missing music metadata required event data.");
         return new MusicMetadataRequired(
-            MusicSearchTermPersistentIdTranslator.ToSearchOrSeekDomainObject(data.Criteria),
+            MusicSearchTermPersistentIdTranslator.ToDomainObject(data.Criteria),
             data.TrustLevel,
             data.RiskScore,
             data.RequiredAtUtc,

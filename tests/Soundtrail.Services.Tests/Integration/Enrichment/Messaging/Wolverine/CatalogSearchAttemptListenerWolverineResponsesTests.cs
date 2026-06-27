@@ -17,7 +17,7 @@ public sealed class CatalogSearchRequestedListenerWolverineResponsesTests
 
         await env.HandleSchedulableRequest();
 
-        env.DiscoveryRepository.GetStoredEvents(MusicSeekOrSearchCriteria.FromSearch(criteria))
+        env.DiscoveryRepository.GetStoredEvents(criteria)
             .Should()
             .ContainSingle()
             .Which.Should()
@@ -32,7 +32,7 @@ public sealed class CatalogSearchRequestedListenerWolverineResponsesTests
 
         await env.HandleUnschedulableRequest();
 
-        env.DiscoveryRepository.GetStoredEvents(MusicSeekOrSearchCriteria.FromSearch(criteria)).Should().ContainSingle().Which.Should().BeOfType<MusicMetadataRequired>();
+        env.DiscoveryRepository.GetStoredEvents(criteria).Should().ContainSingle().Which.Should().BeOfType<MusicMetadataRequired>();
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public sealed class CatalogSearchRequestedListenerWolverineResponsesTests
         await env.HandleSchedulableRequest();
 
         env.DiscoveryRepository
-            .GetStoredEvents(MusicSeekOrSearchCriteria.FromSearch(MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks)))
+            .GetStoredEvents(MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks))
             .Should()
             .OnlyContain(x => x is StreamingLocationsRequired);
     }

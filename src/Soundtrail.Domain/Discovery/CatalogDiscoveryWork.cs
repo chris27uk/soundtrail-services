@@ -41,7 +41,7 @@ public sealed class CatalogDiscoveryWork
         return new CatalogDiscoveryWork(musicCatalogId, stream.Events, stream.Version);
     }
 
-    public void RecordSearchRequested(CatalogSearchRequested requested)
+    public void RecordSearchRequested(SearchCatalogRequested requested)
     {
         Apply(
             new CatalogDiscoveryWorkRequested(

@@ -20,7 +20,7 @@ public sealed class ResponseTests
         await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 0, riskScore: 100));
 
         env.DiscoveryRepository
-            .GetStoredEvents(MusicSeekOrSearchCriteria.FromSearch(MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks)))
+            .GetStoredEvents(MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks))
             .Should()
             .ContainSingle()
             .Which.Should()
@@ -36,7 +36,7 @@ public sealed class ResponseTests
         await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 0, riskScore: 10));
 
         env.DiscoveryRepository
-            .GetStoredEvents(MusicSeekOrSearchCriteria.FromSearch(MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks)))
+            .GetStoredEvents(MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks))
             .Should()
             .ContainSingle()
             .Which.Should()

@@ -4,4 +4,4 @@ namespace Soundtrail.Domain.Commands;
 
 public sealed record RecordCatalogSearchAttemptCommand(
     MusicSearchCriteria SearchCriteria,
-    CatalogSearchRequested Requested);
+    SearchCatalogRequested Requested);

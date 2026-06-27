@@ -22,7 +22,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
             this.search = search;
             this.localMusicTrackSearchFake = new LocalMusicTrackSearchFake();
             this.catalogSearchDiscoveryRepositoryFake = new CatalogSearchDiscoveryRepositoryFake();
-            this.Handler = new CatalogSearchRequestedHandler(
+            this.Handler = new SearchCatalogRequestedHandler(
                 search,
                 this.catalogSearchDiscoveryRepositoryFake,
                 this.localMusicTrackSearchFake);
@@ -35,7 +35,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
             SeedDefaultLocalTrack("mc_track_deferred");
         }
 
-        public CatalogSearchRequestedHandler Handler { get; }
+        public SearchCatalogRequestedHandler Handler { get; }
 
         public FakeMusicCatalogCandidateSearch Search => this.search;
 
@@ -75,13 +75,13 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
             return new CatalogSearchRequestedHandlerTestEnvironment(search, store);
         }
 
-        public CatalogSearchRequested Request(
+        public SearchCatalogRequested Request(
             string query,
             int trustLevel,
             int riskScore,
             DateTimeOffset? occurredAt = null) =>
             new(
-                Criteria: MusicSeekOrSearchCriteria.FromSearch(MusicSearchCriteria.ByQuery(query, SearchTypesFilter.Tracks)),
+                SearchCriteria: MusicSearchCriteria.ByQuery(query, SearchTypesFilter.Tracks),
                 Playback: PlaybackProviderFilter.Parse("spotify,appleMusic,youtubeMusic"),
                 TrustLevel: trustLevel,
                 RiskScore: riskScore,

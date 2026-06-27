@@ -29,7 +29,7 @@ public sealed class MusicCatalogLookupAttemptedHandler(
                 {
                     var history2 = await SearchOrSeekHistory.LoadAsync(
                         discoveryRepository,
-                        Soundtrail.Domain.Search.MusicSeekOrSearchCriteria.FromSearch(tracking1.SearchCriteria),
+                        tracking1.SearchCriteria,
                         cancellationToken);
                     if (!history2.Start(attempted.Priority, "Lookup started", attempted.CreatedAt))
                     {
@@ -74,7 +74,7 @@ public sealed class MusicCatalogLookupAttemptedHandler(
             {
                 var history = await SearchOrSeekHistory.LoadAsync(
                     discoveryRepository,
-                    Soundtrail.Domain.Search.MusicSeekOrSearchCriteria.FromSearch(searchTerm),
+                    searchTerm,
                     cancellationToken);
                 if (!history.Complete(attempted.MusicCatalogMetadataFetched.Priority, "Discovery completed", attempted.MusicCatalogMetadataFetched.CreatedAt))
                 {
@@ -94,7 +94,7 @@ public sealed class MusicCatalogLookupAttemptedHandler(
             {
                 var history1 = await SearchOrSeekHistory.LoadAsync(
                     discoveryRepository,
-                    Soundtrail.Domain.Search.MusicSeekOrSearchCriteria.FromSearch(tracking.SearchCriteria),
+                    tracking.SearchCriteria,
                     cancellationToken);
                 var changed = attempted.Outcome.Status switch
                 {

@@ -17,15 +17,15 @@ public sealed class LoadAndSaveResponsesTests
     {
         using var env = CatalogSearchDiscoveryRepositoryTestEnvironment.Create(mode);
         var criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
-        var discovery = await SearchOrSeekHistory.LoadAsync(env.Repository, MusicSeekOrSearchCriteria.FromSearch(criteria), CancellationToken.None);
-        discovery.Request(Request(criteria));
+        var discovery = await SearchOrSeekHistory.LoadAsync(env.Repository, criteria, CancellationToken.None);
+        discovery.SearchRequested(Request(criteria));
         await discovery.SaveAsync(env.Repository, CancellationToken.None);
 
-        discovery = await SearchOrSeekHistory.LoadAsync(env.Repository, MusicSeekOrSearchCriteria.FromSearch(criteria), CancellationToken.None);
+        discovery = await SearchOrSeekHistory.LoadAsync(env.Repository, criteria, CancellationToken.None);
         discovery.Plan(LookupPriorityBand.High, 30, null, "Planner queued lookup", Clock);
 
         var saved = await discovery.SaveAsync(env.Repository, CancellationToken.None);
-        var reloaded = await SearchOrSeekHistory.LoadAsync(env.Repository, MusicSeekOrSearchCriteria.FromSearch(criteria), CancellationToken.None);
+        var reloaded = await SearchOrSeekHistory.LoadAsync(env.Repository, criteria, CancellationToken.None);
 
         saved.Should().BeTrue();
         reloaded.Plan(LookupPriorityBand.High, 30, null, "Planner queued lookup", Clock).Should().BeFalse();
@@ -37,12 +37,12 @@ public sealed class LoadAndSaveResponsesTests
     {
         using var env = CatalogSearchDiscoveryRepositoryTestEnvironment.Create(mode);
         var criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
-        var seed = await SearchOrSeekHistory.LoadAsync(env.Repository, MusicSeekOrSearchCriteria.FromSearch(criteria), CancellationToken.None);
-        seed.Request(Request(criteria));
+        var seed = await SearchOrSeekHistory.LoadAsync(env.Repository, criteria, CancellationToken.None);
+        seed.SearchRequested(Request(criteria));
         await seed.SaveAsync(env.Repository, CancellationToken.None);
 
-        var left = await SearchOrSeekHistory.LoadAsync(env.Repository, MusicSeekOrSearchCriteria.FromSearch(criteria), CancellationToken.None);
-        var right = await SearchOrSeekHistory.LoadAsync(env.Repository, MusicSeekOrSearchCriteria.FromSearch(criteria), CancellationToken.None);
+        var left = await SearchOrSeekHistory.LoadAsync(env.Repository, criteria, CancellationToken.None);
+        var right = await SearchOrSeekHistory.LoadAsync(env.Repository, criteria, CancellationToken.None);
         left.Plan(LookupPriorityBand.High, 30, null, "Planner queued lookup", Clock);
         right.Defer(60, Clock.AddSeconds(60), "Planner deferred lookup", Clock);
 
@@ -53,9 +53,9 @@ public sealed class LoadAndSaveResponsesTests
         rightSaved.Should().BeFalse();
     }
 
-    private static CatalogSearchRequested Request(MusicSearchCriteria searchCriteria) =>
+    private static SearchCatalogRequested Request(MusicSearchCriteria searchCriteria) =>
         new(
-            MusicSeekOrSearchCriteria.FromSearch(searchCriteria),
+            searchCriteria,
             PlaybackProviderFilter.Parse("spotify,appleMusic,youtubeMusic"),
             1,
             10,

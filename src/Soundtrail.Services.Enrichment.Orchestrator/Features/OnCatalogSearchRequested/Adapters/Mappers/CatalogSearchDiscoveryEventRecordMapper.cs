@@ -12,10 +12,10 @@ namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRe
 internal static class CatalogSearchDiscoveryEventRecordMapper
 {
     public static IReadOnlyList<DiscoveryQueryStoredEventRecordDto> ToStoredEvents(
-        MusicSeekOrSearchCriteria criteria,
+        MusicSearchCriteria searchCriteria,
         IReadOnlyCollection<IDomainEvent> events,
         int startingVersion) =>
-        events.Select((@event, index) => ToStoredEvent(criteria, @event, startingVersion + index + 1))
+        events.Select((@event, index) => ToStoredEvent(searchCriteria, @event, startingVersion + index + 1))
             .ToArray();
 
     public static IDomainEvent ToDomainEvent(DiscoveryQueryStoredEventRecordDto dto) =>
@@ -49,19 +49,19 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
         };
 
     private static DiscoveryQueryStoredEventRecordDto ToStoredEvent(
-        MusicSeekOrSearchCriteria criteria,
+        MusicSearchCriteria searchCriteria,
         IDomainEvent @event,
         int version) =>
         @event switch
         {
             MusicMetadataRequired required => new DiscoveryQueryStoredEventRecordDto
             {
-                Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria), version),
-                Criteria = MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria),
+                Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria), version),
+                Criteria = MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria),
                 Version = version,
                 EventType = nameof(MusicMetadataRequired),
                 MusicMetadataRequired = new MusicMetadataRequiredEventDataRecordDto(
-                    MusicSearchTermPersistentIdTranslator.ToPersistentId(required.Criteria),
+                    MusicSearchTermPersistentIdTranslator.ToPersistentId(required.SearchCriteria),
                     required.TrustLevel,
                     required.RiskScore,
                     required.RequiredAt,
@@ -71,8 +71,8 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
             },
             StreamingLocationsRequired required => new DiscoveryQueryStoredEventRecordDto
             {
-                Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria), version),
-                Criteria = MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria),
+                Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria), version),
+                Criteria = MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria),
                 Version = version,
                 EventType = nameof(StreamingLocationsRequired),
                 StreamingLocationsRequired = new StreamingLocationsRequiredEventDataRecordDto(
@@ -94,8 +94,8 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
             },
             DiscoveryRequested requested => new DiscoveryQueryStoredEventRecordDto
             {
-                Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria), version),
-                Criteria = MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria),
+                Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria), version),
+                Criteria = MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria),
                 Version = version,
                 EventType = nameof(DiscoveryRequested),
                 DiscoveryRequested = new DiscoveryRequestedEventDataRecordDto(
@@ -110,8 +110,8 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
             },
             DiscoveryPlanned planned => new DiscoveryQueryStoredEventRecordDto
             {
-                Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria), version),
-                Criteria = MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria),
+                Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria), version),
+                Criteria = MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria),
                 Version = version,
                 EventType = nameof(DiscoveryPlanned),
                 DiscoveryPlanned = new DiscoveryPlannedEventDataRecordDto(
@@ -126,8 +126,8 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
             },
             DiscoveryDeferred deferred => new DiscoveryQueryStoredEventRecordDto
             {
-                Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria), version),
-                Criteria = MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria),
+                Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria), version),
+                Criteria = MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria),
                 Version = version,
                 EventType = nameof(DiscoveryDeferred),
                 DiscoveryDeferred = new DiscoveryDeferredEventDataRecordDto(
@@ -141,8 +141,8 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
             },
             DiscoveryRejected rejected => new DiscoveryQueryStoredEventRecordDto
             {
-                Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria), version),
-                Criteria = MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria),
+                Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria), version),
+                Criteria = MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria),
                 Version = version,
                 EventType = nameof(DiscoveryRejected),
                 DiscoveryRejected = new DiscoveryRejectedEventDataRecordDto(
@@ -154,8 +154,8 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
             },
             DiscoveryFailed failed => new DiscoveryQueryStoredEventRecordDto
             {
-                Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria), version),
-                Criteria = MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria),
+                Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria), version),
+                Criteria = MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria),
                 Version = version,
                 EventType = nameof(DiscoveryFailed),
                 DiscoveryFailed = new DiscoveryFailedEventDataRecordDto(
@@ -167,8 +167,8 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
             },
             DiscoveryStarted started => new DiscoveryQueryStoredEventRecordDto
             {
-                Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria), version),
-                Criteria = MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria),
+                Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria), version),
+                Criteria = MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria),
                 Version = version,
                 EventType = nameof(DiscoveryStarted),
                 DiscoveryStarted = new DiscoveryStartedEventDataRecordDto(
@@ -181,8 +181,8 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
             },
             DiscoveryCompleted completed => new DiscoveryQueryStoredEventRecordDto
             {
-                Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria), version),
-                Criteria = MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria),
+                Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria), version),
+                Criteria = MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria),
                 Version = version,
                 EventType = nameof(DiscoveryCompleted),
                 DiscoveryCompleted = new DiscoveryCompletedEventDataRecordDto(
@@ -201,7 +201,7 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
         var data = dto.MusicMetadataRequired
             ?? throw new InvalidOperationException("Missing music metadata required event data.");
         return new MusicMetadataRequired(
-            MusicSearchTermPersistentIdTranslator.ToSearchOrSeekDomainObject(data.Criteria),
+            MusicSearchTermPersistentIdTranslator.ToDomainObject(data.Criteria),
             data.TrustLevel,
             data.RiskScore,
             data.RequiredAtUtc,

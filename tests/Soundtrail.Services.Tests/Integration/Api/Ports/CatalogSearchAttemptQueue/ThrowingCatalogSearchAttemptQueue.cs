@@ -5,7 +5,7 @@ namespace Soundtrail.Services.Tests.Integration.Api.Ports.CatalogSearchAttemptQu
 {
     internal sealed class ThrowingCatalogSearchAttemptQueue : IEnqueueCatalogSearchAttempt
     {
-        public Task EnqueueAsync(CatalogSearchRequested requested, CancellationToken cancellationToken) =>
+        public Task EnqueueAsync(SearchCatalogRequested requested, CancellationToken cancellationToken) =>
             Task.FromException(new InvalidOperationException("No route configured."));
     }
 }

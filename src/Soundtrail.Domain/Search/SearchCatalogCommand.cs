@@ -14,9 +14,9 @@ public sealed record SearchCatalogCommand(
 {
     public MusicSearchCriteria ToMusicSearchTerm() => MusicSearchCriteria.ByQuery(Query, Types);
 
-    public CatalogSearchRequested ToCatalogSearchAttempt() =>
+    public SearchCatalogRequested ToCatalogSearchAttempt() =>
         new(
-            MusicSeekOrSearchCriteria.FromSearch(ToMusicSearchTerm()),
+            ToMusicSearchTerm(),
             Playback,
             TrustLevel: 0,
             RiskScore: 0,

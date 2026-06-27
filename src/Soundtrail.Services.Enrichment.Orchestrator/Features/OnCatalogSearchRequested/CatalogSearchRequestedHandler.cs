@@ -7,85 +7,51 @@ using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested;
 
-public sealed class CatalogSearchRequestedHandler(
+public sealed class SearchCatalogRequestedHandler(
     IMusicCatalogCandidateSearch musicCatalogCandidateSearch,
     ICatalogSearchDiscoveryRepository catalogSearchDiscoveryRepository,
     ILocalMusicTrackSearch localMusicTrackSearch)
 {
     public async Task Handle(
-        CatalogSearchRequested requested,
+        SearchCatalogRequested requested,
         CancellationToken cancellationToken = default)
     {
         var searchHistory = await SearchOrSeekHistory.LoadAsync(
             catalogSearchDiscoveryRepository,
-            requested.Criteria,
+            requested.SearchCriteria,
             cancellationToken);
 
-        await requested.Criteria.MatchAsync<object?>(async search =>
+        var matches = await musicCatalogCandidateSearch.SearchAsync(requested.SearchCriteria, cancellationToken);
+        var selectedMatches = new MusicTrackSearchMatchCollection(matches).Query(requested.SearchCriteria);
+
+        if (selectedMatches.Count == 0)
         {
-            var matches = await musicCatalogCandidateSearch.SearchAsync(search, cancellationToken);
-            var selectedMatches = new MusicTrackSearchMatchCollection(matches).Query(search);
-
-            if (selectedMatches.Count == 0)
-            {
-                searchHistory.MetadataRequired(
-                    requested.TrustLevel,
-                    requested.RiskScore,
-                    requested.OccurredAt,
-                    requested.CorrelationId);
-
-                return null;
-            }
-
-            foreach (var selectedMatch in selectedMatches)
-            {
-                var matchedTrack = await localMusicTrackSearch.GetByMusicCatalogIdAsync(selectedMatch.MusicCatalogId, cancellationToken);
-                if (!RequiresStreamingLocationsLookup(matchedTrack, requested.Playback))
-                {
-                    continue;
-                }
-
-                searchHistory.StreamingLocationsRequired(
-                    selectedMatch.MusicCatalogId,
-                    LookupPriorityBand.Low,
-                    requested.OccurredAt,
-                    requested.CorrelationId,
-                    matchedTrack!.ToSearchTerm(),
-                    ToHierarchy(matchedTrack));
-            }
-            return null;
-        }, async seek =>
-        {
-            if (seek.TrackId is null)
-            {
-                throw new NotSupportedException("Seeking by artist id or album id has not been implemented yet.");
-            }
-
-            var matchedTrack = await localMusicTrackSearch.GetByMusicCatalogIdAsync(
-                MusicCatalogId.From(seek.TrackId.Value),
-                cancellationToken);
-
-            if (RequiresStreamingLocationsLookup(matchedTrack, requested.Playback))
-            {
-                searchHistory.StreamingLocationsRequired(
-                    matchedTrack!.MusicCatalogId,
-                    LookupPriorityBand.Low,
-                    requested.OccurredAt,
-                    requested.CorrelationId,
-                    matchedTrack.ToSearchTerm(),
-                    ToHierarchy(matchedTrack));
-
-                return null;
-            }
-
             searchHistory.MetadataRequired(
                 requested.TrustLevel,
                 requested.RiskScore,
                 requested.OccurredAt,
                 requested.CorrelationId);
 
-            return null;
-        });
+            await searchHistory.SaveAsync(catalogSearchDiscoveryRepository, cancellationToken);
+            return;
+        }
+
+        foreach (var selectedMatch in selectedMatches)
+        {
+            var matchedTrack = await localMusicTrackSearch.GetByMusicCatalogIdAsync(selectedMatch.MusicCatalogId, cancellationToken);
+            if (!RequiresStreamingLocationsLookup(matchedTrack, requested.Playback))
+            {
+                continue;
+            }
+
+            searchHistory.StreamingLocationsRequired(
+                selectedMatch.MusicCatalogId,
+                LookupPriorityBand.Low,
+                requested.OccurredAt,
+                requested.CorrelationId,
+                matchedTrack!.ToSearchTerm(),
+                ToHierarchy(matchedTrack));
+        }
 
         await searchHistory.SaveAsync(catalogSearchDiscoveryRepository, cancellationToken);
     }

@@ -20,7 +20,7 @@ public sealed class CatalogSearchRequestedHandlerTests
         await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10), CancellationToken.None);
 
         env.DiscoveryRepository
-            .GetStoredEvents(MusicSeekOrSearchCriteria.FromSearch(MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks)))
+            .GetStoredEvents(MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks))
             .Should()
             .ContainSingle()
             .Which.Should()
@@ -41,7 +41,7 @@ public sealed class CatalogSearchRequestedHandlerTests
         await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10), CancellationToken.None);
 
         env.DiscoveryRepository
-            .GetStoredEvents(MusicSeekOrSearchCriteria.FromSearch(MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks)))
+            .GetStoredEvents(MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks))
             .OfType<StreamingLocationsRequired>()
             .Select(x => x.MusicCatalogId.Value)
             .Should()
@@ -57,40 +57,11 @@ public sealed class CatalogSearchRequestedHandlerTests
         await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 1, riskScore: 10), CancellationToken.None);
 
         env.DiscoveryRepository
-            .GetStoredEvents(MusicSeekOrSearchCriteria.FromSearch(MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks)))
+            .GetStoredEvents(MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks))
             .Should()
             .ContainSingle()
             .Which.Should()
             .BeOfType<MusicMetadataRequired>();
     }
 
-    [Fact]
-    public async Task Given_A_Track_Seek_With_A_Local_Release_Date_When_Handled_Then_The_Track_Is_Recorded_For_Streaming_Locations()
-    {
-        var env = CatalogSearchRequestedHandlerTestEnvironment.WithNoExistingCandidates();
-        env.LocalSearch.Seed(new LocalMusicTrackSearchResult(
-            MusicCatalogId.From("mc_track_criteria"),
-            "Rare Unknown Song",
-            "Test Artist",
-            "Rare Album",
-            null,
-            null,
-            null,
-            IsPlayable: false,
-            AvailableProviders: [],
-            ReleaseDate: new DateOnly(2004, 6, 7)));
-        await env.Handler.Handle(
-            env.Request("rare unknown song", trustLevel: 1, riskScore: 10) with
-            {
-                Criteria = MusicSeekOrSearchCriteria.FromSeek(KnownMusicCatalogId.FromTrackId(TrackId.From("mc_track_criteria")))
-            },
-            CancellationToken.None);
-
-        env.DiscoveryRepository
-            .GetStoredEvents(MusicSeekOrSearchCriteria.FromSeek(KnownMusicCatalogId.FromTrackId(TrackId.From("mc_track_criteria"))))
-            .OfType<StreamingLocationsRequired>()
-            .Select(x => x.MusicCatalogId.Value)
-            .Should()
-            .Equal("mc_track_criteria");
-    }
 }

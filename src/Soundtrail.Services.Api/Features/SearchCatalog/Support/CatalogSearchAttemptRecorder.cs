@@ -14,9 +14,9 @@ public sealed class CatalogSearchAttemptRecorder(
     {
         var history = await SearchOrSeekHistory.LoadAsync(
             discoveryRepository,
-            Soundtrail.Domain.Search.MusicSeekOrSearchCriteria.FromSearch(command.SearchCriteria),
+            command.SearchCriteria,
             cancellationToken);
-        if (!history.Request(command.Requested))
+        if (!history.SearchRequested(command.Requested))
         {
             return false;
         }

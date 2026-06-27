@@ -7,11 +7,11 @@ namespace Soundtrail.Domain.Discovery;
 public interface ICatalogSearchDiscoveryRepository
 {
     Task<CatalogSearchDiscoveryEventStream> LoadAsync(
-        MusicSeekOrSearchCriteria criteria,
+        MusicSearchCriteria searchCriteria,
         CancellationToken cancellationToken);
 
     Task<bool> AppendAsync(
-        MusicSeekOrSearchCriteria criteria,
+        MusicSearchCriteria searchCriteria,
         int expectedVersion,
         IReadOnlyCollection<IDomainEvent> events,
         CancellationToken cancellationToken);

@@ -33,7 +33,7 @@ public static class ServiceBusServiceCollectionExtensions
         opts.UseRuntimeCompilation();
         opts.ServiceLocationPolicy = ServiceLocationPolicy.AllowedButWarn;
         opts.Discovery.DisableConventionalDiscovery();
-        opts.Discovery.IncludeType<CatalogSearchRequestedListener>();
+        opts.Discovery.IncludeType<SearchCatalogRequestedListener>();
         opts.Discovery.IncludeType<NextMusicTracksRequestedForLookupListener>();
         opts.Discovery.IncludeType<AssessMusicTrackListener>();
         opts.Discovery.IncludeType<MusicCatalogLookupAttemptedListener>();

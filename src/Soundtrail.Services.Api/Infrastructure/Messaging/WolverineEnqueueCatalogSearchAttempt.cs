@@ -8,7 +8,7 @@ public sealed class WolverineEnqueueCatalogSearchAttempt(
     IMessageBus messageBus) : IEnqueueCatalogSearchAttempt
 {
     public Task EnqueueAsync(
-        CatalogSearchRequested requested,
+        SearchCatalogRequested requested,
         CancellationToken cancellationToken) =>
         messageBus.SendAsync(CatalogSearchAttemptMapper.ToDto(requested)).AsTask();
 }

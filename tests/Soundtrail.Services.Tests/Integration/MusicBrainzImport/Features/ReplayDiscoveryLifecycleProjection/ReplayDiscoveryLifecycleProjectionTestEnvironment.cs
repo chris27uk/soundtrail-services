@@ -125,10 +125,10 @@ internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsync
     {
         var raven = RavenEmbeddedTestDatabase.Create();
         var repository = new RavenCatalogSearchDiscoveryRepository(raven.Store);
-        var discovery = await SearchOrSeekHistory.LoadAsync(repository, MusicSeekOrSearchCriteria.FromSearch(searchCriteria), CancellationToken.None);
-        discovery.Request(
-            new CatalogSearchRequested(
-                MusicSeekOrSearchCriteria.FromSearch(searchCriteria),
+        var discovery = await SearchOrSeekHistory.LoadAsync(repository, searchCriteria, CancellationToken.None);
+        discovery.SearchRequested(
+            new SearchCatalogRequested(
+                searchCriteria,
                 PlaybackProviderFilter.Parse("spotify,appleMusic,youtubeMusic"),
                 1,
                 10,
@@ -136,7 +136,7 @@ internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsync
                 CorrelationId.From("corr-1")));
         await discovery.SaveAsync(repository, CancellationToken.None);
 
-        discovery = await SearchOrSeekHistory.LoadAsync(repository, MusicSeekOrSearchCriteria.FromSearch(searchCriteria), CancellationToken.None);
+        discovery = await SearchOrSeekHistory.LoadAsync(repository, searchCriteria, CancellationToken.None);
         discovery.Plan(LookupPriorityBand.High, 30, null, "Planner queued lookup", Clock.AddSeconds(5));
         await discovery.SaveAsync(repository, CancellationToken.None);
 

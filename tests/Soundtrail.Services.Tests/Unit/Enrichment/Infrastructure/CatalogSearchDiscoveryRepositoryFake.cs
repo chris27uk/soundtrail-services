@@ -12,26 +12,16 @@ internal sealed class CatalogSearchDiscoveryRepositoryFake : ICompleteTrackedDis
 
     public void Seed(
         MusicSearchCriteria searchCriteria,
-        params IDomainEvent[] events) =>
-        Seed(MusicSeekOrSearchCriteria.FromSearch(searchCriteria), events);
-
-    public void Seed(
-        MusicSeekOrSearchCriteria criteria,
         params IDomainEvent[] events)
     {
-        eventsByCriteria[ToPersistentId(criteria)] = events.ToList();
+        eventsByCriteria[ToPersistentId(searchCriteria)] = events.ToList();
     }
 
     public Task<CatalogSearchDiscoveryEventStream> LoadAsync(
         MusicSearchCriteria searchCriteria,
-        CancellationToken cancellationToken) =>
-        LoadAsync(MusicSeekOrSearchCriteria.FromSearch(searchCriteria), cancellationToken);
-
-    public Task<CatalogSearchDiscoveryEventStream> LoadAsync(
-        MusicSeekOrSearchCriteria criteria,
         CancellationToken cancellationToken)
     {
-        return Task.FromResult(eventsByCriteria.TryGetValue(ToPersistentId(criteria), out var events)
+        return Task.FromResult(eventsByCriteria.TryGetValue(ToPersistentId(searchCriteria), out var events)
             ? new CatalogSearchDiscoveryEventStream(events.Count, events.ToArray())
             : new CatalogSearchDiscoveryEventStream(0, []));
     }
@@ -40,16 +30,9 @@ internal sealed class CatalogSearchDiscoveryRepositoryFake : ICompleteTrackedDis
         MusicSearchCriteria searchCriteria,
         int expectedVersion,
         IReadOnlyCollection<IDomainEvent> events,
-        CancellationToken cancellationToken) =>
-        AppendAsync(MusicSeekOrSearchCriteria.FromSearch(searchCriteria), expectedVersion, events, cancellationToken);
-
-    public Task<bool> AppendAsync(
-        MusicSeekOrSearchCriteria criteria,
-        int expectedVersion,
-        IReadOnlyCollection<IDomainEvent> events,
         CancellationToken cancellationToken)
     {
-        var persistentId = ToPersistentId(criteria);
+        var persistentId = ToPersistentId(searchCriteria);
         if (!eventsByCriteria.TryGetValue(persistentId, out var storedEvents))
         {
             storedEvents = [];
@@ -66,13 +49,10 @@ internal sealed class CatalogSearchDiscoveryRepositoryFake : ICompleteTrackedDis
     }
 
     public IReadOnlyList<IDomainEvent> GetStoredEvents(MusicSearchCriteria searchCriteria) =>
-        GetStoredEvents(MusicSeekOrSearchCriteria.FromSearch(searchCriteria));
-
-    public IReadOnlyList<IDomainEvent> GetStoredEvents(MusicSeekOrSearchCriteria criteria) =>
-        eventsByCriteria.TryGetValue(ToPersistentId(criteria), out var events)
+        eventsByCriteria.TryGetValue(ToPersistentId(searchCriteria), out var events)
             ? events.AsReadOnly()
             : [];
 
-    private static string ToPersistentId(MusicSeekOrSearchCriteria criteria) =>
-        MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria);
+    private static string ToPersistentId(MusicSearchCriteria searchCriteria) =>
+        MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria);
 }

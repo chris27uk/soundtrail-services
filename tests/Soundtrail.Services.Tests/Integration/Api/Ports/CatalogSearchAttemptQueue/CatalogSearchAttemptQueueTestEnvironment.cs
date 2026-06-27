@@ -133,9 +133,9 @@ internal sealed class CatalogSearchAttemptQueueTestEnvironment : IAsyncDisposabl
         this.host.Dispose();
     }
 
-    public static CatalogSearchRequested Request(string query) =>
+    public static SearchCatalogRequested Request(string query) =>
         new(
-            Criteria: MusicSeekOrSearchCriteria.FromSearch(MusicSearchCriteria.ByQuery(query, SearchTypesFilter.Tracks)),
+            SearchCriteria: MusicSearchCriteria.ByQuery(query, SearchTypesFilter.Tracks),
             Playback: PlaybackProviderFilter.Parse("spotify,appleMusic,youtubeMusic"),
             TrustLevel: 2,
             RiskScore: 10,
@@ -168,7 +168,7 @@ internal sealed class CatalogSearchAttemptQueueTestEnvironment : IAsyncDisposabl
 
         public List<CatalogSearchAttemptDto> Requests => requests.ToList();
 
-        public Task EnqueueAsync(CatalogSearchRequested requested, CancellationToken cancellationToken)
+        public Task EnqueueAsync(SearchCatalogRequested requested, CancellationToken cancellationToken)
         {
             requests.Enqueue(CatalogSearchAttemptMapper.ToDto(requested));
             return Task.CompletedTask;
