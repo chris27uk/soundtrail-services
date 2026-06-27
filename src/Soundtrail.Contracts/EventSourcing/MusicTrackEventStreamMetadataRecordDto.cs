@@ -1,6 +1,6 @@
 namespace Soundtrail.Contracts.EventSourcing;
 
-public sealed class MusicTrackEventStreamMetadataRecordDto
+public sealed class MusicTrackEventStreamMetadataRecordDto : IEventStreamMetadataRecord
 {
     public string Id { get; set; } = string.Empty;
 
@@ -12,7 +12,7 @@ public sealed class MusicTrackEventStreamMetadataRecordDto
 
     public DateTimeOffset UpdatedAtUtc { get; set; }
 
-    public List<string> AppliedCommandIds { get; set; } = [];
+    public List<string> AppliedOperationIds { get; set; } = [];
 
     public static string GetDocumentId(string musicCatalogId) => $"music-track-streams/{musicCatalogId}";
 }

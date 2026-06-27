@@ -21,7 +21,7 @@
     <ProjectReference Include="..\Soundtrail.Domain\Soundtrail.Domain.csproj" />
     <ProjectReference Include="..\Soundtrail.Services.Internal.Projector\Soundtrail.Services.Internal.Projector.csproj" />
     <ProjectReference Include="..\Soundtrail.Services.Enrichment.Orchestrator\Soundtrail.Services.Enrichment.Orchestrator.csproj" />
-    <ProjectReference Include="..\Soundtrail.Translators\Soundtrail.Translators.csproj" />
+    <ProjectReference Include="..\Soundtrail.Adapters\Soundtrail.Adapters.csproj" />
   </ItemGroup>
 
 </Project>

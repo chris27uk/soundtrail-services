@@ -1,9 +1,10 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Ports;
-using Soundtrail.Translators.Discovery;
-using Soundtrail.Translators.Registry;
+using Soundtrail.Adapters.Discovery;
+using Soundtrail.Adapters.Registry;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
 
@@ -15,7 +16,7 @@ public sealed class RavenSaveDiscoveryLifecycleProjection(
         DiscoveryLifecycleProjection projection,
         CancellationToken cancellationToken)
     {
-        var persistentId = MusicSearchTermPersistentIdTranslator.ToPersistentId(projection.SearchCriteria);
+        var persistentId = DiscoveryQueryKey.StableValueFor(projection.SearchCriteria);
         var statusDocumentId = CatalogSearchStatusRecordDto.GetDocumentId(persistentId);
         var statusDocument = await session.LoadAsync<CatalogSearchStatusRecordDto>(statusDocumentId, cancellationToken)
             ?? new CatalogSearchStatusRecordDto

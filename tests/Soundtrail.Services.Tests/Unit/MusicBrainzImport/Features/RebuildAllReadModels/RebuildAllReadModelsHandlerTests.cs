@@ -60,7 +60,7 @@ public sealed class RebuildAllReadModelsHandlerTests
                     Clock.AddMinutes(1)))
         };
 
-        var persistentId = MusicSearchTermPersistentIdTranslator.ToPersistentId(searchTerm);
+        var persistentId = DiscoveryQueryKey.StableValueFor(searchTerm);
         var plannerEventStore = new FakeMusicTrackReplayEventStore(new Dictionary<string, IReadOnlyList<VersionedMusicTrackEvent>>
         {
             [musicCatalogId.Value] = trackEvents
@@ -143,12 +143,12 @@ public sealed class RebuildAllReadModelsHandlerTests
     {
         public Task<IReadOnlyList<MusicSearchCriteria>> LoadAsync(CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<MusicSearchCriteria>>(
-                eventsByCriteria.Keys.Select(MusicSearchTermPersistentIdTranslator.ToDomainObject).ToArray());
+                eventsByCriteria.Keys.Select(DiscoveryQueryKey.ToMusicSearchCriteria).ToArray());
 
         public Task<IReadOnlyList<VersionedCatalogSearchDiscoveryEvent>> LoadAsync(
             MusicSearchCriteria searchCriteria,
             CancellationToken cancellationToken) =>
-            Task.FromResult(eventsByCriteria.TryGetValue(MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria), out var events)
+            Task.FromResult(eventsByCriteria.TryGetValue(DiscoveryQueryKey.StableValueFor(searchCriteria), out var events)
                 ? events
                 : Array.Empty<VersionedCatalogSearchDiscoveryEvent>() as IReadOnlyList<VersionedCatalogSearchDiscoveryEvent>);
     }
@@ -221,7 +221,7 @@ public sealed class RebuildAllReadModelsHandlerTests
             MusicSearchCriteria searchCriteria,
             CancellationToken cancellationToken)
         {
-            var persistentId = MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria);
+            var persistentId = DiscoveryQueryKey.StableValueFor(searchCriteria);
             if (!projections.TryGetValue(persistentId, out var projection))
             {
                 projection = new DiscoveryLifecycleProjection(searchCriteria);
@@ -235,7 +235,7 @@ public sealed class RebuildAllReadModelsHandlerTests
             DiscoveryLifecycleProjection projection,
             CancellationToken cancellationToken)
         {
-            projections[MusicSearchTermPersistentIdTranslator.ToPersistentId(projection.SearchCriteria)] = projection;
+            projections[DiscoveryQueryKey.StableValueFor(projection.SearchCriteria)] = projection;
             return Task.CompletedTask;
         }
 
@@ -244,7 +244,7 @@ public sealed class RebuildAllReadModelsHandlerTests
             CancellationToken cancellationToken)
         {
             ResetSearchTerms.Add(searchCriteria);
-            projections.Remove(MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria));
+            projections.Remove(DiscoveryQueryKey.StableValueFor(searchCriteria));
             return Task.CompletedTask;
         }
     }

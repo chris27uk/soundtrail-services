@@ -11,8 +11,8 @@ using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapte
 using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack;
 using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
-using Soundtrail.Translators.ProjectionDocuments;
-using Soundtrail.Translators.MusicTrackEventStore;
+using Soundtrail.Adapters.ProjectionDocuments;
+using Soundtrail.Adapters.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ProjectionReplay;
 
@@ -28,7 +28,7 @@ public sealed class MusicTrackProjectionReplayResponsesTests
         using var session = raven.Store.OpenAsyncSession();
         var handler = new MusicTrackChangedHandler(
             new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
-            new RavenSaveMusicTrackProjection(session, Soundtrail.Translators.Registry.TypeTranslationRegistry.Default));
+            new RavenSaveMusicTrackProjection(session, Soundtrail.Adapters.Registry.TypeTranslationRegistry.Default));
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
         var commandId = CommandId.For("ResolveMusicMetadata:mc_track_1");
 
@@ -115,7 +115,7 @@ public sealed class MusicTrackProjectionReplayResponsesTests
                 new RavenLoadStoredMusicTrackEvents(replaySession, Translator),
                 new MusicTrackChangedHandler(
                     new RavenLoadMusicTrackProjection(replaySession, new RavenMusicTrackProjectionMapper()),
-                    new RavenSaveMusicTrackProjection(replaySession, Soundtrail.Translators.Registry.TypeTranslationRegistry.Default)));
+                    new RavenSaveMusicTrackProjection(replaySession, Soundtrail.Adapters.Registry.TypeTranslationRegistry.Default)));
 
             await replayHandler.Handle(
                 new ReplayMusicTrackCommand(musicCatalogId),
@@ -156,7 +156,7 @@ public sealed class MusicTrackProjectionReplayResponsesTests
         {
             var handler = new MusicTrackChangedHandler(
                 new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
-                new RavenSaveMusicTrackProjection(session, Soundtrail.Translators.Registry.TypeTranslationRegistry.Default));
+                new RavenSaveMusicTrackProjection(session, Soundtrail.Adapters.Registry.TypeTranslationRegistry.Default));
             await handler.Handle(ToCommand(MusicCatalogId.From("mc_track_1"), [storedEvent]), CancellationToken.None);
             await handler.Handle(ToCommand(MusicCatalogId.From("mc_track_1"), [storedEvent]), CancellationToken.None);
             await session.SaveChangesAsync(CancellationToken.None);
@@ -178,7 +178,7 @@ public sealed class MusicTrackProjectionReplayResponsesTests
         using var session = raven.Store.OpenAsyncSession();
         var handler = new MusicTrackChangedHandler(
             new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
-            new RavenSaveMusicTrackProjection(session, Soundtrail.Translators.Registry.TypeTranslationRegistry.Default));
+            new RavenSaveMusicTrackProjection(session, Soundtrail.Adapters.Registry.TypeTranslationRegistry.Default));
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
 
         var storedEvents = new MusicTrackStoredEventRecordDto[]

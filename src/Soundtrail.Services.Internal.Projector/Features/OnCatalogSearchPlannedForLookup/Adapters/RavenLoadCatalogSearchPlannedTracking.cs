@@ -3,7 +3,7 @@ using Soundtrail.Domain.Search;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchPlannedForLookup.Ports;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchPlannedForLookup.Support;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Adapters.Documents;
-using Soundtrail.Translators.Discovery;
+using Soundtrail.Adapters.Discovery;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchPlannedForLookup.Adapters;
 
@@ -14,7 +14,7 @@ public sealed class RavenLoadCatalogSearchPlannedTracking(IAsyncDocumentSession 
         CancellationToken cancellationToken)
     {
         var document = await session.LoadAsync<CatalogSearchTrackingRecordDto>(
-            CatalogSearchTrackingRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria)),
+            CatalogSearchTrackingRecordDto.GetDocumentId(DiscoveryQueryKey.StableValueFor(searchCriteria)),
             cancellationToken);
 
         return document is null

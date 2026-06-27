@@ -20,8 +20,8 @@ using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatu
 using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack;
 using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
-using Soundtrail.Translators.ProjectionDocuments;
-using Soundtrail.Translators.MusicTrackEventStore;
+using Soundtrail.Adapters.ProjectionDocuments;
+using Soundtrail.Adapters.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ApplyEnrichmentResponse;
 
@@ -76,7 +76,7 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
 
         var querySearchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
         var status = await verificationSession.LoadAsync<CatalogSearchStatusRecordDto>(
-            CatalogSearchStatusRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(querySearchTerm)),
+            CatalogSearchStatusRecordDto.GetDocumentId(DiscoveryQueryKey.StableValueFor(querySearchTerm)),
             CancellationToken.None);
         status.Should().NotBeNull();
         status!.Status.Should().Be("Completed");
@@ -100,7 +100,7 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
             new RavenLoadStoredMusicTrackEvents(session, Translator),
             new MusicTrackChangedHandler(
                 new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
-                new RavenSaveMusicTrackProjection(session, Soundtrail.Translators.Registry.TypeTranslationRegistry.Default)));
+                new RavenSaveMusicTrackProjection(session, Soundtrail.Adapters.Registry.TypeTranslationRegistry.Default)));
 
         foreach (var musicCatalogId in musicCatalogIds)
         {
@@ -122,12 +122,12 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
             new RavenLoadStoredDiscoveryLifecycleEvents(session),
             new CatalogSearchStatusChangedHandler(
                 new RavenLoadDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()),
-                new RavenSaveDiscoveryLifecycleProjection(session, Soundtrail.Translators.Registry.TypeTranslationRegistry.Default)));
+                new RavenSaveDiscoveryLifecycleProjection(session, Soundtrail.Adapters.Registry.TypeTranslationRegistry.Default)));
 
         foreach (var criteria in criteriaValues.Distinct(StringComparer.Ordinal))
         {
             await replayHandler.Handle(
-                new ReplayCatalogSearchStatusCommand(MusicSearchTermPersistentIdTranslator.ToDomainObject(criteria)),
+                new ReplayCatalogSearchStatusCommand(DiscoveryQueryKey.ToMusicSearchCriteria(criteria)),
                 CancellationToken.None);
         }
     }

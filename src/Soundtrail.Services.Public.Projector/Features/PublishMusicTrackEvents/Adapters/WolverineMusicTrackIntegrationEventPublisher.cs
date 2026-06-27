@@ -1,6 +1,6 @@
 using Soundtrail.Domain.Catalog.IntegrationEvents;
 using Soundtrail.Services.Public.Projector.Features.PublishMusicTrackEvents.Publishing;
-using Soundtrail.Translators.IntegrationMessaging;
+using Soundtrail.Adapters.IntegrationMessaging;
 using Wolverine;
 
 namespace Soundtrail.Services.Public.Projector.Features.PublishMusicTrackEvents.Adapters;

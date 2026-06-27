@@ -21,9 +21,9 @@ public sealed record SearchTypesFilter(IReadOnlyList<SearchResultType> Types)
             .OrderBy(type => type)
             .Select(type => type.ToString().ToLowerInvariant()));
 
-    public string ToPersistentId() => ToCriteriaType();
+    public string StableValue => ToCriteriaType();
 
-    public static SearchTypesFilter FromPersistentId(string value) => Parse(value);
+    public static SearchTypesFilter FromStableValue(string value) => Parse(value);
 
     public static SearchTypesFilter Parse(string? value)
     {

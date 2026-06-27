@@ -14,6 +14,9 @@ public static class AppHostComposition
         var useProviderStubs = builder.Configuration.GetValue("LocalDevelopment:UseProviderStubs", false);
         var useServiceBusEmulator = builder.Configuration.GetValue("LocalDevelopment:UseServiceBusEmulator", false);
 
+        var redis = builder.AddContainer("redis", "redis", "7-alpine")
+            .WithEndpoint(port: 6379, targetPort: 6379, name: "tcp");
+
         var ravenDb = builder.AddContainer("ravendb", "ravendb/ravendb", "7.1-ubuntu-latest")
             .WithHttpEndpoint(port: 8080, targetPort: 8080, name: "http")
             .WithEnvironment("RAVEN_Setup_Mode", "None")
@@ -128,10 +131,12 @@ public static class AppHostComposition
             .WithHttpEndpoint(name: "http")
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
+            .WaitFor(redis)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
             .WithEnvironment("ServiceBus__MusicBrainzLookupQueueName", "lookup-musicbrainz")
             .WithEnvironment("ServiceBus__PlaybackReferencesLookupQueueName", "lookup-playback-references")
             .WithEnvironment("ServiceBus__EnrichmentResponsesQueueName", "enrichment-responses")
+            .WithEnvironment("ConnectionStrings__Redis", $"{redis.GetEndpoint("tcp").Property(Aspire.Hosting.ApplicationModel.EndpointProperty.Host)}:{redis.GetEndpoint("tcp").Property(Aspire.Hosting.ApplicationModel.EndpointProperty.Port)},abortConnect=false")
             .WithEnvironment("RavenDb__Urls__0", ravenDb.GetEndpoint("http"))
             .WithEnvironment("RavenDb__Database", "soundtrail");
 

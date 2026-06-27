@@ -1,10 +1,10 @@
 using Raven.Client.Documents.Session;
+using Soundtrail.Adapters.Discovery;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.EventStore;
-using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.Adapters;
 
@@ -15,7 +15,7 @@ public sealed class RavenLoadDiscoveryLifecycleEventsForReplay(
         MusicSearchCriteria searchCriteria,
         CancellationToken cancellationToken)
     {
-        var persistentId = MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria);
+        var persistentId = DiscoveryQueryKey.StableValueFor(searchCriteria);
         var events = (await session.Advanced.LoadStartingWithAsync<DiscoveryQueryStoredEventRecordDto>(
                 $"discovery-query-events/{persistentId}/"))
             .OrderBy(x => x.Version)

@@ -8,7 +8,7 @@ using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
-using Soundtrail.Translators.ProjectionDocuments;
+using Soundtrail.Adapters.ProjectionDocuments;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicTrackProjectionStore;
 
@@ -88,7 +88,7 @@ public sealed class MusicTrackProjectionStoreResponsesTests
             using var session = raven!.Store.OpenAsyncSession();
             var handler = new MusicTrackChangedHandler(
                 new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
-                new RavenSaveMusicTrackProjection(session, Soundtrail.Translators.Registry.TypeTranslationRegistry.Default));
+                new RavenSaveMusicTrackProjection(session, Soundtrail.Adapters.Registry.TypeTranslationRegistry.Default));
             await handler.Handle(
                 new MusicTrackChangedCommand(
                     musicCatalogId,

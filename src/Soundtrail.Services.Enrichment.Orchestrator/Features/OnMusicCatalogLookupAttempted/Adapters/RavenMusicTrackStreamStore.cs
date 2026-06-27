@@ -1,9 +1,10 @@
 using Raven.Client.Documents.Session;
+using Soundtrail.Adapters.EventSourcing;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Catalog.Projection;
-using Soundtrail.Translators.MusicTrackEventStore;
+using Soundtrail.Adapters.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
 
@@ -11,27 +12,28 @@ public sealed class RavenMusicTrackStreamStore(
     IAsyncDocumentSession session,
     IMusicTrackStoredEventRecordTranslator translator) : IMusicTrackEventRepository
 {
+    private readonly RavenEventStore<MusicCatalogId, IMusicTrackEvent, MusicTrackStoredEventRecordDto, MusicTrackEventStreamMetadataRecordDto> eventStore =
+        new(
+            session,
+            streamId => MusicTrackEventStreamMetadataRecordDto.GetDocumentId(streamId.StableValue),
+            (streamId, metadataId) => new MusicTrackEventStreamMetadataRecordDto
+            {
+                Id = metadataId,
+                MusicCatalogId = streamId.StableValue
+            },
+            streamId => $"music-track-events/{streamId.StableValue}/",
+            (streamId, version, operationId, @event) =>
+                translator.ToDto(streamId, version, CommandId.From(operationId?.StableValue ?? string.Empty), @event),
+            translator.ToDomainObject,
+            storedEvent => storedEvent.OccurredAtUtc,
+            storedEvent => storedEvent.Version);
+
     public async Task<MusicTrackStream> LoadEventsAsync(
         MusicCatalogId musicCatalogId,
         CancellationToken cancellationToken)
     {
-        var streamId = MusicTrackEventStreamMetadataRecordDto.GetDocumentId(musicCatalogId.Value);
-        var metadata = await session.LoadAsync<MusicTrackEventStreamMetadataRecordDto>(streamId, cancellationToken);
-        if (metadata is null)
-        {
-            return new MusicTrackStream(0, []);
-        }
-
-        var storedEvents = (await session.Advanced.LoadStartingWithAsync<MusicTrackStoredEventRecordDto>(
-                $"music-track-events/{musicCatalogId.Value}/"))
-            .OrderBy(x => x.Version)
-            .ToList();
-
-        return storedEvents.Count == 0
-            ? new MusicTrackStream(0, [])
-            : new MusicTrackStream(
-                metadata.Version,
-                storedEvents.Select(translator.ToDomainObject).ToArray());
+        var stream = await eventStore.LoadAsync(musicCatalogId, cancellationToken);
+        return new MusicTrackStream(stream.Version, stream.Events);
     }
 
     public async Task<AppendMusicTrackStreamResult> AppendEventsAsync(
@@ -41,42 +43,19 @@ public sealed class RavenMusicTrackStreamStore(
         IReadOnlyList<IMusicTrackEvent> events,
         CancellationToken cancellationToken)
     {
-        var storedEventsToAppend = events.Select((@event, index) =>
-                translator.ToDto(musicCatalogId, expectedVersion + index + 1, commandId, @event))
-            .ToArray();
+        var append = await eventStore.AppendAsync(
+            new AppendRequest<MusicCatalogId, IMusicTrackEvent>(
+                musicCatalogId,
+                expectedVersion,
+                events,
+                OperationId.From(commandId.Value)),
+            cancellationToken);
 
-        session.Advanced.UseOptimisticConcurrency = true;
-        var streamId = MusicTrackEventStreamMetadataRecordDto.GetDocumentId(musicCatalogId.Value);
-        var metadata = await session.LoadAsync<MusicTrackEventStreamMetadataRecordDto>(streamId, cancellationToken)
-            ?? new MusicTrackEventStreamMetadataRecordDto
-            {
-                Id = streamId,
-                MusicCatalogId = musicCatalogId.Value
-            };
-
-        if (metadata.AppliedCommandIds.Contains(commandId.Value))
+        return append.Outcome switch
         {
-            return new AppendMusicTrackStreamResult(false, metadata.Version, []);
-        }
-
-        if (metadata.Version != expectedVersion)
-        {
-            throw new MusicTrackStreamConcurrencyException(musicCatalogId, expectedVersion, metadata.Version);
-        }
-
-        metadata.AppliedCommandIds.Add(commandId.Value);
-        metadata.Version += events.Count;
-        metadata.UpdatedAtUtc = storedEventsToAppend.Length == 0
-            ? DateTimeOffset.UtcNow
-            : storedEventsToAppend.Max(x => x.OccurredAtUtc);
-
-        await session.StoreAsync(metadata, cancellationToken);
-
-        foreach (var storedEvent in storedEventsToAppend)
-        {
-            await session.StoreAsync(storedEvent, cancellationToken);
-        }
-
-        return new AppendMusicTrackStreamResult(true, metadata.Version, events.ToArray());
+            AppendOutcome.VersionMismatch => throw new MusicTrackStreamConcurrencyException(musicCatalogId, expectedVersion, append.Version),
+            AppendOutcome.DuplicateOperation => new AppendMusicTrackStreamResult(false, append.Version, []),
+            _ => new AppendMusicTrackStreamResult(true, append.Version, append.Events)
+        };
     }
 }

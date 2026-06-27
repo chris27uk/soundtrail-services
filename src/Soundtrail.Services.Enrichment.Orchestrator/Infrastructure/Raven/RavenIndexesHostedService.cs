@@ -7,10 +7,7 @@ namespace Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Raven;
 
 public sealed class RavenIndexesHostedService(IDocumentStore documentStore) : IHostedService
 {
-    public async Task StartAsync(CancellationToken cancellationToken)
-    {
-        await IndexCreation.CreateIndexesAsync(typeof(TrackCatalogue_BySearchText).Assembly, documentStore);
-    }
+    public async Task StartAsync(CancellationToken cancellationToken) => await IndexCreation.CreateIndexesAsync(typeof(TrackCatalogue_BySearchText).Assembly, documentStore, token: cancellationToken);
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }

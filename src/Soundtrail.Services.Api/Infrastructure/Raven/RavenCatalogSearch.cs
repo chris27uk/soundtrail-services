@@ -6,7 +6,7 @@ using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Api.Infrastructure.Raven.Indexes;
-using Soundtrail.Translators.Discovery;
+using Soundtrail.Adapters.Discovery;
 
 namespace Soundtrail.Services.Api.Infrastructure.Raven;
 
@@ -100,7 +100,7 @@ public sealed class RavenCatalogSearch(IDocumentStore documentStore) : ICatalogS
 
         var discoveryStatus = await session.LoadAsync<CatalogSearchStatusRecordDto>(
             CatalogSearchStatusRecordDto.GetDocumentId(
-                MusicSearchTermPersistentIdTranslator.ToPersistentId(command.ToMusicSearchTerm())),
+                DiscoveryQueryKey.StableValueFor(command.ToMusicSearchTerm())),
             cancellationToken);
 
         return new LocalCatalogSearchResponse(

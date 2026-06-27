@@ -3,7 +3,7 @@ using Soundtrail.Contracts;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.ProjectionReset;
-using Soundtrail.Translators.Discovery;
+using Soundtrail.Adapters.Discovery;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.Adapters;
 
@@ -14,7 +14,7 @@ public sealed class RavenResetDiscoveryLifecycleProjection(
         MusicSearchCriteria searchCriteria,
         CancellationToken cancellationToken)
     {
-        var persistentId = MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria);
+        var persistentId = DiscoveryQueryKey.StableValueFor(searchCriteria);
         var changed = false;
 
         var status = await session.LoadAsync<CatalogSearchStatusRecordDto>(

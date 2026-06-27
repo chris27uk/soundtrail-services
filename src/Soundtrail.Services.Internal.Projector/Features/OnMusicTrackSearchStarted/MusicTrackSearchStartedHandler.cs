@@ -7,7 +7,7 @@ using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Ports;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Support;
-using Soundtrail.Translators.Discovery;
+using Soundtrail.Adapters.Discovery;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted;
 
@@ -27,7 +27,7 @@ public sealed class MusicTrackSearchStartedHandler(
         {
             var @event = (MusicTrackSearchStarted)item.Event;
             var workDocument = await loadWorkPort.LoadAsync(@event.MusicCatalogId, cancellationToken);
-            var appliedEventId = $"{MusicSearchTermPersistentIdTranslator.ToPersistentId(command.SearchCriteria)}:{item.Version}";
+            var appliedEventId = $"{DiscoveryQueryKey.StableValueFor(command.SearchCriteria)}:{item.Version}";
 
             if (workDocument.AppliedSearchStartEventIds.Contains(appliedEventId, StringComparer.Ordinal))
             {

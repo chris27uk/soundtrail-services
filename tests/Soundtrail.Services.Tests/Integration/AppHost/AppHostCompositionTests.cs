@@ -37,6 +37,7 @@ public sealed class AppHostCompositionTests
         var resourceNames = model.Resources.Select(resource => resource.Name).ToArray();
 
         resourceNames.Should().Contain("ravendb");
+        resourceNames.Should().Contain("redis");
         resourceNames.Should().Contain("mssql");
         resourceNames.Should().Contain("servicebus-emulator");
         resourceNames.Should().Contain("provider-stubs");
