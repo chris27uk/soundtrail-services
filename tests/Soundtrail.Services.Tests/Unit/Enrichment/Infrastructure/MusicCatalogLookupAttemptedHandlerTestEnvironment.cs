@@ -5,7 +5,7 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted;
-using Soundtrail.Translators.Discovery;
+using Soundtrail.Adapters.Discovery;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -83,8 +83,8 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
         criteria.StartsWith("artist:", StringComparison.Ordinal)
         || criteria.StartsWith("album:", StringComparison.Ordinal)
         || criteria.StartsWith("track:", StringComparison.Ordinal)
-            ? discoveryRepository.GetStoredEvents(MusicSearchTermPersistentIdTranslator.ToKnownCatalogItem(criteria))
-            : discoveryRepository.GetStoredEvents(MusicSearchTermPersistentIdTranslator.ToDomainObject(criteria));
+            ? discoveryRepository.GetStoredEvents(DiscoveryQueryKey.ToKnownCatalogItem(criteria))
+            : discoveryRepository.GetStoredEvents(DiscoveryQueryKey.ToMusicSearchCriteria(criteria));
 
     public static MusicCatalogMetadataFetched MusicBrainzResponse() =>
         new(

@@ -88,8 +88,8 @@ internal sealed class CatalogSearchDiscoveryRepositoryFake : ICatalogSearchDisco
             : [];
 
     private static string ToPersistentId(MusicSearchCriteria searchCriteria) =>
-        MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria);
+        DiscoveryQueryKey.StableValueFor(searchCriteria);
 
     private static string ToPersistentId(KnownCatalogItem knownItem) =>
-        MusicSearchTermPersistentIdTranslator.ToPersistentId(knownItem);
+        DiscoveryQueryKey.StableValueFor(knownItem);
 }

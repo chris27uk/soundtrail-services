@@ -3,7 +3,7 @@ using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus.StoredEvents;
-using Soundtrail.Translators.Discovery;
+using Soundtrail.Adapters.Discovery;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus.Adapters;
 
@@ -14,7 +14,7 @@ public sealed class RavenLoadStoredDiscoveryLifecycleEvents(
         MusicSearchCriteria searchCriteria,
         CancellationToken cancellationToken)
     {
-        var persistentId = MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria);
+        var persistentId = DiscoveryQueryKey.StableValueFor(searchCriteria);
         var events = (await session.Advanced.LoadStartingWithAsync<DiscoveryQueryStoredEventRecordDto>(
                 $"discovery-query-events/{persistentId}/"))
             .ToList();

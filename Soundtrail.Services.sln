@@ -33,7 +33,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "200 - Tools", "200 - Tools"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Soundtrail.Services.Enrichment.Orchestrator", "src\Soundtrail.Services.Enrichment.Orchestrator\Soundtrail.Services.Enrichment.Orchestrator.csproj", "{7FE27945-1172-4526-9A26-F44D770EE03C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Soundtrail.Translators", "src\Soundtrail.Translators\Soundtrail.Translators.csproj", "{754D0DF5-0D25-452A-B3EB-A657DF699E9E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Soundtrail.Adapters", "src\Soundtrail.Adapters\Soundtrail.Adapters.csproj", "{754D0DF5-0D25-452A-B3EB-A657DF699E9E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

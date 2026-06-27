@@ -1,7 +1,8 @@
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Enrichment.Commands;
-using Soundtrail.Translators.Discovery;
+using Soundtrail.Domain.Search;
+using Soundtrail.Adapters.Discovery;
 
 namespace Soundtrail.Services.Internal.Projector.Infrastructure.Messaging;
 
@@ -16,7 +17,7 @@ internal static class DiscoveryCommandMappings
                 assess.CreatedAt,
                 assess.Priority,
                 assess.MusicCatalogId.Value,
-                assess.SearchTerm is null ? null : MusicSearchTermPersistentIdTranslator.ToPersistentId(assess.SearchTerm),
+                assess.SearchTerm is null ? null : DiscoveryQueryKey.StableValueFor(assess.SearchTerm),
                 assess.TrustLevel,
                 assess.RiskScore),
             LookupTrackMetadataCommand musicBrainz => new LookupTrackMetadataCommandDto(

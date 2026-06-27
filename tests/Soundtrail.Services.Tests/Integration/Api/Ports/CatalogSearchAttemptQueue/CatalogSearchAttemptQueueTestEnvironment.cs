@@ -6,7 +6,7 @@ using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
-using Soundtrail.Translators.Registry;
+using Soundtrail.Adapters.Registry;
 using Wolverine;
 using Wolverine.Logging;
 using ICommandBus = Soundtrail.Domain.Abstractions.ICommandBus;

@@ -3,7 +3,7 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.EventStore;
-using Soundtrail.Translators.MusicTrackEventStore;
+using Soundtrail.Adapters.MusicTrackEventStore;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.Adapters;
 

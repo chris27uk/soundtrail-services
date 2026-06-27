@@ -1,7 +1,9 @@
 namespace Soundtrail.Contracts.Common;
 
-public readonly record struct MusicCatalogId(string Value)
+public readonly record struct MusicCatalogId(string Value) : IValueType
 {
+    public string StableValue => Value;
+
     public static MusicCatalogId From(string value) => new(value);
 
     public override string ToString() => Value;

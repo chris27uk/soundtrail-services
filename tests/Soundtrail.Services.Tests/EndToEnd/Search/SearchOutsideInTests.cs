@@ -248,7 +248,7 @@ public sealed class SearchOutsideInTests
 
         var response = await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track");
         var lookupRequest = await env.WaitForMessageAsync<CatalogSearchAttemptDto>(TimeSpan.FromSeconds(1));
-        var criteria = MusicSearchTermPersistentIdTranslator.ToPersistentId(
+        var criteria = DiscoveryQueryKey.StableValueFor(
             MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks));
 
         response.Query.Should().Be("rare unknown song");
@@ -265,7 +265,7 @@ public sealed class SearchOutsideInTests
     public async Task Given_A_Previously_Recorded_Discovery_Request_Without_A_Projection_When_Searching_Then_A_Duplicate_Request_Is_Not_Queued()
     {
         await using var env = await SearchOutsideInTestEnvironment.CreateAsync(_ => { });
-        var criteria = MusicSearchTermPersistentIdTranslator.ToPersistentId(
+        var criteria = DiscoveryQueryKey.StableValueFor(
             MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks));
 
         await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track");

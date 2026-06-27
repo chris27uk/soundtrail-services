@@ -1,7 +1,7 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.ProjectionModel;
-using Soundtrail.Translators.Registry;
+using Soundtrail.Adapters.Registry;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adapters;
 

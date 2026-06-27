@@ -1,6 +1,6 @@
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Discovery.Commands;
-using Soundtrail.Translators.Registry;
+using Soundtrail.Adapters.Registry;
 
 namespace Soundtrail.Services.Api.Infrastructure.Messaging;
 

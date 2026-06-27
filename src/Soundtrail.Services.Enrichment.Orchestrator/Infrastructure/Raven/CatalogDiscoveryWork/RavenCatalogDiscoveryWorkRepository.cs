@@ -1,12 +1,13 @@
 using Raven.Client.Documents;
 using Raven.Client.Documents.Linq;
 using Raven.Client.Documents.Session;
+using Soundtrail.Adapters.EventSourcing;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
-using Soundtrail.Translators.Discovery;
+using Soundtrail.Adapters.Discovery;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Raven.CatalogDiscoveryWork;
 
@@ -38,23 +39,8 @@ public sealed class RavenCatalogDiscoveryWorkRepository(
         var (activeSession, dispose) = OpenSession();
         using (dispose)
         {
-            var metadata = await activeSession.LoadAsync<CatalogDiscoveryWorkEventStreamMetadataRecordDto>(
-                CatalogDiscoveryWorkEventStreamMetadataRecordDto.GetDocumentId(musicCatalogId.Value),
-                cancellationToken);
-
-            if (metadata is null)
-            {
-                return new CatalogDiscoveryWorkEventStream(0, []);
-            }
-
-            var storedEvents = (await activeSession.Advanced.LoadStartingWithAsync<CatalogDiscoveryWorkStoredEventRecordDto>(
-                    $"catalog-discovery-work-events/{musicCatalogId.Value}/"))
-                .OrderBy(x => x.Version)
-                .ToList();
-
-            return new CatalogDiscoveryWorkEventStream(
-                metadata.Version,
-                storedEvents.Select(CatalogDiscoveryWorkStoredEventTranslator.ToEvent).ToArray());
+            var stream = await CreateEventStore(activeSession).LoadAsync(musicCatalogId, cancellationToken);
+            return new CatalogDiscoveryWorkEventStream(stream.Version, stream.Events);
         }
     }
 
@@ -73,47 +59,24 @@ public sealed class RavenCatalogDiscoveryWorkRepository(
         var (activeSession, dispose) = OpenSession();
         using (dispose)
         {
-            activeSession.Advanced.UseOptimisticConcurrency = true;
-
-            var metadataId = CatalogDiscoveryWorkEventStreamMetadataRecordDto.GetDocumentId(musicCatalogId.Value);
-            var metadata = await activeSession.LoadAsync<CatalogDiscoveryWorkEventStreamMetadataRecordDto>(metadataId, cancellationToken)
-                ?? new CatalogDiscoveryWorkEventStreamMetadataRecordDto
+            var append = await CreateEventStore(activeSession).AppendAsync(
+                new AppendRequest<MusicCatalogId, IDomainEvent>(musicCatalogId, expectedVersion, events.ToArray()),
+                cancellationToken,
+                saveChanges: ownsSession,
+                beforeSave: async (appendSession, request, token) =>
                 {
-                    Id = metadataId,
-                    MusicCatalogId = musicCatalogId.Value
-                };
+                    var summaryId = CatalogDiscoveryWorkSummaryRecordDto.GetDocumentId(request.StreamId.Value);
+                    var summary = await appendSession.LoadAsync<CatalogDiscoveryWorkSummaryRecordDto>(summaryId, token)
+                        ?? new CatalogDiscoveryWorkSummaryRecordDto
+                        {
+                            Id = summaryId,
+                            MusicCatalogId = request.StreamId.Value
+                        };
+                    Apply(summary, request.Events);
+                    await appendSession.StoreAsync(summary, token);
+                });
 
-            if (metadata.Version != expectedVersion)
-            {
-                return false;
-            }
-
-            var startingVersion = metadata.Version;
-            metadata.Version += events.Count;
-            metadata.UpdatedAtUtc = events.Max(CatalogDiscoveryWorkStoredEventTranslator.GetOccurredAtUtc);
-            await activeSession.StoreAsync(metadata, cancellationToken);
-
-            foreach (var storedEvent in CatalogDiscoveryWorkStoredEventTranslator.ToStoredEvents(musicCatalogId, events, startingVersion))
-            {
-                await activeSession.StoreAsync(storedEvent, cancellationToken);
-            }
-
-            var summaryId = CatalogDiscoveryWorkSummaryRecordDto.GetDocumentId(musicCatalogId.Value);
-            var summary = await activeSession.LoadAsync<CatalogDiscoveryWorkSummaryRecordDto>(summaryId, cancellationToken)
-                ?? new CatalogDiscoveryWorkSummaryRecordDto
-                {
-                    Id = summaryId,
-                    MusicCatalogId = musicCatalogId.Value
-                };
-            Apply(summary, events);
-            await activeSession.StoreAsync(summary, cancellationToken);
-
-            if (ownsSession)
-            {
-                await activeSession.SaveChangesAsync(cancellationToken);
-            }
-
-            return true;
+            return append.Appended;
         }
     }
 
@@ -218,4 +181,20 @@ public sealed class RavenCatalogDiscoveryWorkRepository(
         {
         }
     }
+
+    private static RavenEventStore<MusicCatalogId, IDomainEvent, CatalogDiscoveryWorkStoredEventRecordDto, CatalogDiscoveryWorkEventStreamMetadataRecordDto> CreateEventStore(
+        IAsyncDocumentSession session) =>
+        new(
+            session,
+            streamId => CatalogDiscoveryWorkEventStreamMetadataRecordDto.GetDocumentId(streamId.StableValue),
+            (streamId, metadataId) => new CatalogDiscoveryWorkEventStreamMetadataRecordDto
+            {
+                Id = metadataId,
+                MusicCatalogId = streamId.StableValue
+            },
+            streamId => $"catalog-discovery-work-events/{streamId.StableValue}/",
+            (streamId, version, _, @event) => CatalogDiscoveryWorkStoredEventTranslator.ToStoredEvent(streamId, @event, version),
+            CatalogDiscoveryWorkStoredEventTranslator.ToEvent,
+            storedEvent => storedEvent.OccurredAtUtc,
+            storedEvent => storedEvent.Version);
 }

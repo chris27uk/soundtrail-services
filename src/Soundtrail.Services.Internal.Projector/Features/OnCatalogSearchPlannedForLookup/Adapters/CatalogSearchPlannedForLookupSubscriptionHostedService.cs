@@ -4,8 +4,9 @@ using Microsoft.Extensions.Logging;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Subscriptions;
 using Soundtrail.Contracts.EventSourcing;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchPlannedForLookup.Support;
-using Soundtrail.Translators.Discovery;
+using Soundtrail.Adapters.Discovery;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchPlannedForLookup.Adapters;
 
@@ -73,7 +74,7 @@ public sealed class CatalogSearchPlannedForLookupSubscriptionHostedService(
                      .GroupBy(item => item.Criteria, StringComparer.Ordinal))
         {
             var command = new CatalogSearchPlannedForLookupCommand(
-                MusicSearchTermPersistentIdTranslator.ToDomainObject(stream.Key),
+                DiscoveryQueryKey.ToMusicSearchCriteria(stream.Key),
                 stream.OrderBy(item => item.Version)
                     .Select(item => item.ToDomainEvent())
                     .ToArray());

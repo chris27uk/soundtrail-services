@@ -5,7 +5,8 @@ using Raven.Client.Documents;
 using Raven.Client.Documents.Subscriptions;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Discovery.Commands;
-using Soundtrail.Translators.Discovery;
+using Soundtrail.Domain.Search;
+using Soundtrail.Adapters.Discovery;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
 
@@ -73,7 +74,7 @@ public sealed class CatalogSearchStatusChangedSubscriptionHostedService(
                      .GroupBy(item => item.Criteria, StringComparer.Ordinal))
         {
             var command = new CatalogSearchStatusChangedCommand(
-                MusicSearchTermPersistentIdTranslator.ToDomainObject(stream.Key),
+                DiscoveryQueryKey.ToMusicSearchCriteria(stream.Key),
                 stream.OrderBy(item => item.Version)
                     .Select(item => item.ToDomainEvent())
                     .ToArray());

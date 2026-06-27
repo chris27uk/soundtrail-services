@@ -15,7 +15,7 @@ using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adap
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.ProjectionModel;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Ports;
-using Soundtrail.Translators.ProjectionDocuments;
+using Soundtrail.Adapters.ProjectionDocuments;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Infrastructure.Raven;
 
