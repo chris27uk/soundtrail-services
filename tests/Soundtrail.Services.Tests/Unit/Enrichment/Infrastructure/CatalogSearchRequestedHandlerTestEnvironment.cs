@@ -1,7 +1,6 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;

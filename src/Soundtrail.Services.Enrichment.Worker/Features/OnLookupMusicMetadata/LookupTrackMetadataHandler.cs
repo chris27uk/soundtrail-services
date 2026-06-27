@@ -1,8 +1,8 @@
 using Soundtrail.Domain.Enrichment.Commands;
-using Soundtrail.Domain.Responses;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Pipeline;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Lookup;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Enrichment.Responses;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata;
 

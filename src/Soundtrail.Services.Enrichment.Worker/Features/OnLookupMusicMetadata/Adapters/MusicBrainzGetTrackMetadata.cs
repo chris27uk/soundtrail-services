@@ -1,5 +1,5 @@
-using Soundtrail.Domain.Model;
-using Soundtrail.Domain.Responses;
+using Soundtrail.Domain.Enrichment.Responses;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Lookup;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;

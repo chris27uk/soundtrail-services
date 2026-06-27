@@ -4,9 +4,7 @@ using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Contracts;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Model;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup.Adapters;
@@ -19,6 +17,8 @@ using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapte
 using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack;
 using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack.Adapters;
 using Soundtrail.Contracts.Persistence;
+using Soundtrail.Domain.Catalog.Commands;
+using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;

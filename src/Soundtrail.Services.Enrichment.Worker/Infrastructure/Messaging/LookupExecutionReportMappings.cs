@@ -1,6 +1,6 @@
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Responses;
+using Soundtrail.Domain.Enrichment.Commands;
+using Soundtrail.Domain.Enrichment.Responses;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
 
