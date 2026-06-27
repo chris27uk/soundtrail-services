@@ -2,11 +2,10 @@ using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Catalog.Commands;
 using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Catalog.IntegrationEvents;
-using Soundtrail.Translators.MusicTrackEventStore;
 
-namespace Soundtrail.Services.Public.Projector.Features.PublishMusicTrackEvents.Adapters;
+namespace Soundtrail.Translators.MusicTrackEventStore;
 
-internal static class MusicTrackStoredEventRecordDtoMapper
+public static class MusicTrackStoredEventCommandTranslator
 {
     public static PublishMusicTrackEventsCommand ToCommand(
         this IReadOnlyCollection<MusicTrackStoredEventRecordDto> storedEvents,

@@ -1,9 +1,10 @@
 using Soundtrail.Contracts;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Search;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
 using Soundtrail.Translators.Discovery;
 
-namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
+namespace Soundtrail.Translators.ProjectionDocuments;
 
 public sealed class RavenDiscoveryLifecycleProjectionMapper
 {

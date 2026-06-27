@@ -4,6 +4,7 @@ using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayPlannerMusicTrackProjection.Adapters;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayPlannerMusicTrackProjection.ProjectionReset;
+using Soundtrail.Translators.ProjectionDocuments;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayPlannerMusicTrackProjection.CompositionRoot;
 

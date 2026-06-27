@@ -1,6 +1,6 @@
 namespace Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Raven.CatalogDiscoveryWork;
 
-internal sealed class CatalogDiscoveryWorkSummaryRecordDto
+public sealed class CatalogDiscoveryWorkSummaryRecordDto
 {
     public string Id { get; set; } = string.Empty;
 

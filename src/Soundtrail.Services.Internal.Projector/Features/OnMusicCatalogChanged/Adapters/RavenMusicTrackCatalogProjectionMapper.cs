@@ -1,5 +1,4 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Catalog;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.ProjectionModel;
 

@@ -1,6 +1,6 @@
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters.Documents;
 
-internal sealed class RavenCatalogSearchTrackingRecordDto
+public sealed class RavenCatalogSearchTrackingRecordDto
 {
     public string Id { get; set; } = string.Empty;
 

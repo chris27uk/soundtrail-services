@@ -1,6 +1,6 @@
-namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup.Adapters.Documents;
+namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Adapters.Documents;
 
-internal sealed class RavenPotentialCatalogLookupWorkRecordDto
+public sealed class PotentialCatalogLookupWorkRecordDto
 {
     public string Id { get; set; } = string.Empty;
 
@@ -15,6 +15,8 @@ internal sealed class RavenPotentialCatalogLookupWorkRecordDto
     public string Status { get; set; } = string.Empty;
 
     public DateTimeOffset? NextEligibleAt { get; set; }
+
+    public List<string> AppliedSearchStartEventIds { get; set; } = [];
 
     public static string GetDocumentId(string musicCatalogId) =>
         $"potential-catalog-lookup-work/{Uri.EscapeDataString(musicCatalogId)}";

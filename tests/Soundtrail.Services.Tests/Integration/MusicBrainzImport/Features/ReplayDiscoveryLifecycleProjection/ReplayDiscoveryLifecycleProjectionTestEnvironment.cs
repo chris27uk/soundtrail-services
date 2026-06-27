@@ -13,6 +13,7 @@ using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjec
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.Adapters;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.EventStore;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.ProjectionReset;
+using Soundtrail.Translators.ProjectionDocuments;
 
 namespace Soundtrail.Services.Tests.Integration.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection;
 

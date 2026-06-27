@@ -14,7 +14,7 @@ public sealed class SearchCatalogRequestedToCatalogSearchAttemptTranslationRegis
         registry.Register<SearchCatalogRequested, CatalogSearchAttemptDto>(
             translate: request =>
             {
-                var query = request.SearchCriteria.Query ?? string.Empty;
+                var query = request.SearchCriteria.UnifiedQuery ?? string.Empty;
 
                 return new CatalogSearchAttemptDto(
                     MusicSearchTermPersistentIdTranslator.ToPersistentId(request.SearchCriteria),

@@ -20,6 +20,7 @@ using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatu
 using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack;
 using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
+using Soundtrail.Translators.ProjectionDocuments;
 using Soundtrail.Translators.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ApplyEnrichmentResponse;

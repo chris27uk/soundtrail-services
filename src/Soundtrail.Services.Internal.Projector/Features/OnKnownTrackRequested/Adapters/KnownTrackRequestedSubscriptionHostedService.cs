@@ -5,7 +5,6 @@ using Raven.Client.Documents;
 using Raven.Client.Documents.Subscriptions;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Discovery.Events;
-using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnKnownTrackRequested.Support;
 using Soundtrail.Translators.Discovery;
 

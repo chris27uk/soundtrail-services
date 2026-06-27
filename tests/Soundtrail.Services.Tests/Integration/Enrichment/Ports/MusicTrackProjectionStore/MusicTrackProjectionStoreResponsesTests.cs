@@ -8,6 +8,7 @@ using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
+using Soundtrail.Translators.ProjectionDocuments;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicTrackProjectionStore;
 

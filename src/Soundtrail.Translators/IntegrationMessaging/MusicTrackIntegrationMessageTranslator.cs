@@ -2,9 +2,9 @@ using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Contracts.IntegrationMessaging.Events;
 using Soundtrail.Domain.Catalog.IntegrationEvents;
 
-namespace Soundtrail.Services.Public.Projector.Features.PublishMusicTrackEvents.Adapters;
+namespace Soundtrail.Translators.IntegrationMessaging;
 
-internal static class MusicTrackIntegrationMessageMapper
+public static class MusicTrackIntegrationMessageTranslator
 {
     public static object ToMessage(this MusicTrackIntegrationEvent integrationEvent) =>
         integrationEvent switch
@@ -17,7 +17,7 @@ internal static class MusicTrackIntegrationMessageMapper
                 playback.ObservedAt,
                 new StreamingLocationSearchTermDto(
                     playback.SearchCriteria.Kind,
-                    playback.SearchCriteria.Query,
+                    playback.SearchCriteria.UnifiedQuery,
                     playback.SearchCriteria.Isrc,
                     playback.SearchCriteria.Title,
                     playback.SearchCriteria.Artist,

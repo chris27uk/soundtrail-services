@@ -1,6 +1,7 @@
 using Raven.Client.Documents;
 using Raven.Client.Documents.Indexes;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup.Adapters.Documents;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
@@ -92,8 +93,7 @@ internal sealed class PotentialCatalogLookupWorkStoreTestEnvironment : IDisposab
         session.SaveChanges();
     }
 
-    private static readonly Type RavenPotentialCatalogLookupWorkRecordDtoType = typeof(RavenPotentialCatalogLookupWorkStore).Assembly
-        .GetType("Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup.Adapters.Documents.RavenPotentialCatalogLookupWorkRecordDto", throwOnError: true)!;
+    private static readonly Type RavenPotentialCatalogLookupWorkRecordDtoType = typeof(RavenPotentialCatalogLookupWorkRecordDto);
 
     private static readonly Type PotentialCatalogLookupWorksByPlanningIndexType = typeof(RavenPotentialCatalogLookupWorkStore).Assembly
         .GetType("Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup.Adapters.Indexes.PotentialCatalogLookupWork_ByPlanning", throwOnError: true)!;

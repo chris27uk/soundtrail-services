@@ -1,6 +1,6 @@
 namespace Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 
-internal sealed class RavenSearchResultRecordDto
+public sealed class RavenSearchResultRecordDto
 {
     public string Title { get; set; } = string.Empty;
 

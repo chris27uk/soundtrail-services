@@ -20,7 +20,6 @@ public sealed class SearchOrSeekHistory
     private int? estimatedRetryAfterSeconds;
     private DateTimeOffset? earliestExpectedCompletionAt;
     private string? reason;
-    private DateTimeOffset? updatedAt;
     private bool hasRequested;
     private bool hasKnownTrackRequested;
     private bool hasTrackMetadataLookupRequested;
@@ -267,7 +266,7 @@ public sealed class SearchOrSeekHistory
             isNew: true);
     }
 
-    public bool KnownTrackRequested(
+    public void KnownTrackRequested(
         TrackId trackId,
         PlaybackProviderFilter playback,
         DateTimeOffset requestedAt,
@@ -275,7 +274,7 @@ public sealed class SearchOrSeekHistory
     {
         if (hasKnownTrackRequested)
         {
-            return false;
+            return;
         }
 
         Apply(
@@ -285,8 +284,6 @@ public sealed class SearchOrSeekHistory
                 requestedAt,
                 correlationId),
             isNew: true);
-
-        return true;
     }
 
     public bool RequireStreamingLocationsForKnownTrack(
@@ -376,7 +373,7 @@ public sealed class SearchOrSeekHistory
         return true;
     }
 
-    public bool AlbumCatalogLookupRequested(
+    public void AlbumCatalogLookupRequested(
         ArtistId? artistId,
         AlbumId albumId,
         DateTimeOffset requestedAt,
@@ -384,7 +381,7 @@ public sealed class SearchOrSeekHistory
     {
         if (hasAlbumCatalogLookupRequested)
         {
-            return false;
+            return;
         }
 
         Apply(
@@ -394,8 +391,6 @@ public sealed class SearchOrSeekHistory
                 requestedAt,
                 correlationId),
             isNew: true);
-
-        return true;
     }
 
     public async Task<bool> SaveAsync(
@@ -497,7 +492,6 @@ public sealed class SearchOrSeekHistory
         estimatedRetryAfterSeconds = null;
         earliestExpectedCompletionAt = null;
         reason = null;
-        updatedAt = @event.RequestedAt;
         hasRequested = true;
     }
 
@@ -510,7 +504,6 @@ public sealed class SearchOrSeekHistory
         estimatedRetryAfterSeconds = @event.EstimatedRetryAfterSeconds;
         earliestExpectedCompletionAt = @event.EarliestExpectedCompletionAt;
         reason = @event.Reason;
-        updatedAt = @event.PlannedAt;
         hasRequested = true;
     }
 
@@ -523,7 +516,6 @@ public sealed class SearchOrSeekHistory
         estimatedRetryAfterSeconds = @event.EstimatedRetryAfterSeconds;
         earliestExpectedCompletionAt = @event.EarliestExpectedCompletionAt;
         reason = @event.Reason;
-        updatedAt = @event.DeferredAt;
         hasRequested = true;
     }
 
@@ -536,7 +528,6 @@ public sealed class SearchOrSeekHistory
         estimatedRetryAfterSeconds = null;
         earliestExpectedCompletionAt = null;
         reason = @event.Reason;
-        updatedAt = @event.RejectedAt;
         hasRequested = true;
     }
 
@@ -549,7 +540,6 @@ public sealed class SearchOrSeekHistory
         estimatedRetryAfterSeconds = null;
         earliestExpectedCompletionAt = null;
         reason = @event.Reason;
-        updatedAt = @event.FailedAt;
         hasRequested = true;
     }
 
@@ -562,7 +552,6 @@ public sealed class SearchOrSeekHistory
         estimatedRetryAfterSeconds = null;
         earliestExpectedCompletionAt = null;
         reason = @event.Reason;
-        updatedAt = @event.StartedAt;
         hasRequested = true;
     }
 
@@ -575,7 +564,6 @@ public sealed class SearchOrSeekHistory
         estimatedRetryAfterSeconds = null;
         earliestExpectedCompletionAt = null;
         reason = @event.Reason;
-        updatedAt = @event.CompletedAt;
         hasRequested = true;
     }
 

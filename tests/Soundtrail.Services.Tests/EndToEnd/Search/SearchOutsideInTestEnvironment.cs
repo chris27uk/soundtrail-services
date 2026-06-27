@@ -31,6 +31,7 @@ using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adap
 using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus;
 using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
+using Soundtrail.Translators.ProjectionDocuments;
 using Soundtrail.Translators.MusicTrackEventStore;
 using System.Net.Http.Json;
 using System.Reflection;

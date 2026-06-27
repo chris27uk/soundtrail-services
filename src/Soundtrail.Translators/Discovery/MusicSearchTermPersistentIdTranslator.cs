@@ -10,7 +10,7 @@ public static class MusicSearchTermPersistentIdTranslator
     public static string ToPersistentId(MusicSearchCriteria searchCriteria) =>
         searchCriteria.Kind switch
         {
-            MusicSearchKind.UnifiedSearch => $"search:{searchCriteria.SearchTypes!.ToPersistentId()}:{searchCriteria.Query}",
+            MusicSearchKind.UnifiedSearch => $"search:{searchCriteria.SearchTypes!.ToPersistentId()}:{searchCriteria.UnifiedQuery}",
             MusicSearchKind.Isrc => $"isrc:{searchCriteria.Isrc}",
             MusicSearchKind.TrackArtistAlbum => $"track-artist-album:{searchCriteria.NormalizedTitle}:{searchCriteria.NormalizedArtist}:{searchCriteria.NormalizedAlbum}",
             _ => throw new InvalidOperationException($"Unsupported music search kind '{searchCriteria.Kind}'.")

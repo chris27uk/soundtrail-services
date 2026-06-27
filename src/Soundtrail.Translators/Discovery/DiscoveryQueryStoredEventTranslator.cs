@@ -3,15 +3,15 @@ using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Search;
-using Soundtrail.Translators.Discovery;
 using KnownTrackRequestedEvent = Soundtrail.Domain.Discovery.Events.KnownTrackRequested;
 
-namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters.Mappers;
+namespace Soundtrail.Translators.Discovery;
 
-internal static class CatalogSearchDiscoveryEventRecordMapper
+public static class DiscoveryQueryStoredEventTranslator
 {
     public static IReadOnlyList<DiscoveryQueryStoredEventRecordDto> ToStoredEvents(
         MusicSearchCriteria searchCriteria,
@@ -27,7 +27,10 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
         events.Select((@event, index) => ToStoredEvent(knownItem, @event, startingVersion + index + 1))
             .ToArray();
 
-    public static IDomainEvent ToDomainEvent(DiscoveryQueryStoredEventRecordDto dto) =>
+    public static VersionedCatalogSearchDiscoveryEvent ToDomainEvent(this DiscoveryQueryStoredEventRecordDto dto) =>
+        new(dto.Version, dto.ToEvent());
+
+    public static IDomainEvent ToEvent(this DiscoveryQueryStoredEventRecordDto dto) =>
         dto.EventType switch
         {
             nameof(TrackMetadataLookupRequested) => ToTrackMetadataLookupRequested(dto),
@@ -97,7 +100,7 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
                     required.SourceProvider.Value,
                     required.ObservedAt,
                     required.SearchCriteria.Kind,
-                    required.SearchCriteria.Query,
+                    required.SearchCriteria.UnifiedQuery,
                     required.SearchCriteria.Isrc,
                     required.SearchCriteria.Title,
                     required.SearchCriteria.Artist,
@@ -115,7 +118,7 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
                 EventType = nameof(DiscoveryRequested),
                 DiscoveryRequested = new DiscoveryRequestedEventDataRecordDto(
                     MusicSearchTermPersistentIdTranslator.ToPersistentId(requested.SearchCriteria),
-                    requested.SearchCriteria.Query ?? string.Empty,
+                    requested.SearchCriteria.UnifiedQuery ?? string.Empty,
                     requested.TrustLevel,
                     requested.RiskScore,
                     requested.RequestedAt,
@@ -274,7 +277,7 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
                     required.SourceProvider.Value,
                     required.ObservedAt,
                     required.SearchCriteria.Kind,
-                    required.SearchCriteria.Query,
+                    required.SearchCriteria.UnifiedQuery,
                     required.SearchCriteria.Isrc,
                     required.SearchCriteria.Title,
                     required.SearchCriteria.Artist,

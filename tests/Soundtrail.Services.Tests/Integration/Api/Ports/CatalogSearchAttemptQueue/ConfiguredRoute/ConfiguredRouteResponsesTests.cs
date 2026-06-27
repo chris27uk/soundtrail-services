@@ -20,7 +20,7 @@ public sealed class ConfiguredRouteResponsesTests
 
         var actual = (CatalogSearchAttemptDto)await env.WaitForCapturedRequestAsync(TimeSpan.FromSeconds(5));
 
-        actual.Query.Should().Be(request.SearchCriteria.Query);
+        actual.Query.Should().Be(request.SearchCriteria.UnifiedQuery);
         actual.TrustLevel.Should().Be(request.TrustLevel);
         actual.RiskScore.Should().Be(request.RiskScore);
         actual.OccurredAt.Should().Be(request.OccurredAt);

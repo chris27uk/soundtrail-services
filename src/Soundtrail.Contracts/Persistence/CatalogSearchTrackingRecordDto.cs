@@ -1,6 +1,6 @@
 namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Adapters.Documents;
 
-internal sealed class CatalogSearchTrackingRecordDto
+public sealed class CatalogSearchTrackingRecordDto
 {
     public string Id { get; set; } = string.Empty;
 

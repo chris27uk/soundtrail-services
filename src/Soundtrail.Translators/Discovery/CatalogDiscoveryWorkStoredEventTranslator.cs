@@ -4,9 +4,9 @@ using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
 
-namespace Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Raven.CatalogDiscoveryWork;
+namespace Soundtrail.Translators.Discovery;
 
-internal static class CatalogDiscoveryWorkEventRecordMapper
+public static class CatalogDiscoveryWorkStoredEventTranslator
 {
     public static IReadOnlyList<CatalogDiscoveryWorkStoredEventRecordDto> ToStoredEvents(
         MusicCatalogId musicCatalogId,
@@ -15,7 +15,7 @@ internal static class CatalogDiscoveryWorkEventRecordMapper
         events.Select((@event, index) => ToStoredEvent(musicCatalogId, @event, startingVersion + index + 1))
             .ToArray();
 
-    public static IDomainEvent ToDomainEvent(CatalogDiscoveryWorkStoredEventRecordDto dto) =>
+    public static IDomainEvent ToEvent(CatalogDiscoveryWorkStoredEventRecordDto dto) =>
         dto.EventType switch
         {
             nameof(CatalogDiscoveryWorkRequested) => ToCatalogDiscoveryWorkRequested(dto),
@@ -34,64 +34,6 @@ internal static class CatalogDiscoveryWorkEventRecordMapper
             CatalogDiscoveryWorkScheduled scheduled => scheduled.ScheduledAt,
             _ => throw new ArgumentOutOfRangeException(nameof(@event), @event, "Unknown catalog discovery work event.")
         };
-
-    public static CatalogDiscoveryWorkSummary ToSummary(CatalogDiscoveryWorkSummaryRecordDto document) =>
-        new(
-            MusicCatalogId.From(document.MusicCatalogId),
-            document.RequestCount,
-            document.HighestTrustLevelSeen,
-            document.RiskScore,
-            Enum.Parse<CatalogDiscoveryWorkStatus>(document.Status, ignoreCase: true),
-            document.NextEligibleAt,
-            document.Priority is null ? null : Enum.Parse<LookupPriorityBand>(document.Priority, ignoreCase: true),
-            document.Reason);
-
-    public static void Apply(
-        CatalogDiscoveryWorkSummaryRecordDto document,
-        IReadOnlyCollection<IDomainEvent> events)
-    {
-        foreach (var @event in events)
-        {
-            switch (@event)
-            {
-                case CatalogDiscoveryWorkRequested requested:
-                    document.MusicCatalogId = requested.MusicCatalogId.Value;
-                    document.RequestCount += 1;
-                    document.HighestTrustLevelSeen = Math.Max(document.HighestTrustLevelSeen, requested.TrustLevel);
-                    document.RiskScore = Math.Max(document.RiskScore, requested.RiskScore);
-                    document.Status = (requested.RiskScore >= 90
-                        ? CatalogDiscoveryWorkStatus.Ignored
-                        : CatalogDiscoveryWorkStatus.Pending).ToString();
-                    document.Reason = null;
-                    document.UpdatedAtUtc = requested.RequestedAt;
-                    break;
-                case CatalogDiscoveryWorkDeferred deferred:
-                    document.MusicCatalogId = deferred.MusicCatalogId.Value;
-                    document.Status = CatalogDiscoveryWorkStatus.Pending.ToString();
-                    document.NextEligibleAt = deferred.NextEligibleAt;
-                    document.Priority = null;
-                    document.Reason = deferred.Reason;
-                    document.UpdatedAtUtc = deferred.DeferredAt;
-                    break;
-                case CatalogDiscoveryWorkIgnored ignored:
-                    document.MusicCatalogId = ignored.MusicCatalogId.Value;
-                    document.Status = CatalogDiscoveryWorkStatus.Ignored.ToString();
-                    document.NextEligibleAt = ignored.NextEligibleAt;
-                    document.Priority = null;
-                    document.Reason = ignored.Reason;
-                    document.UpdatedAtUtc = ignored.IgnoredAt;
-                    break;
-                case CatalogDiscoveryWorkScheduled scheduled:
-                    document.MusicCatalogId = scheduled.MusicCatalogId.Value;
-                    document.Status = CatalogDiscoveryWorkStatus.Pending.ToString();
-                    document.NextEligibleAt = null;
-                    document.Priority = scheduled.Priority.ToString();
-                    document.Reason = scheduled.Reason;
-                    document.UpdatedAtUtc = scheduled.ScheduledAt;
-                    break;
-            }
-        }
-    }
 
     private static CatalogDiscoveryWorkStoredEventRecordDto ToStoredEvent(
         MusicCatalogId musicCatalogId,

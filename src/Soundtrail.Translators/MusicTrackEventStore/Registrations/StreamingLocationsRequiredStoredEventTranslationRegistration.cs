@@ -19,7 +19,7 @@ public sealed class StreamingLocationsRequiredStoredEventTranslationRegistration
                 domainEvent.SourceProvider.Value,
                 domainEvent.ObservedAt,
                 domainEvent.SearchCriteria.Kind,
-                domainEvent.SearchCriteria.Query,
+                domainEvent.SearchCriteria.UnifiedQuery,
                 domainEvent.SearchCriteria.Isrc,
                 domainEvent.SearchCriteria.Title,
                 domainEvent.SearchCriteria.Artist,

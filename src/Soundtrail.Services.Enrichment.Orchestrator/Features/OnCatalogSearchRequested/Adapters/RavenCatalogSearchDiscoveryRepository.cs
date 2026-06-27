@@ -5,7 +5,6 @@ using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters.Mappers;
 using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
@@ -34,7 +33,7 @@ public sealed class RavenCatalogSearchDiscoveryRepository(IDocumentStore documen
 
         return new CatalogSearchDiscoveryEventStream(
             metadata.Version,
-            storedEvents.Select(CatalogSearchDiscoveryEventRecordMapper.ToDomainEvent).ToArray());
+            storedEvents.Select(DiscoveryQueryStoredEventTranslator.ToEvent).ToArray());
     }
 
     public async Task<CatalogSearchDiscoveryEventStream> LoadAsync(
@@ -59,7 +58,7 @@ public sealed class RavenCatalogSearchDiscoveryRepository(IDocumentStore documen
 
         return new CatalogSearchDiscoveryEventStream(
             metadata.Version,
-            storedEvents.Select(CatalogSearchDiscoveryEventRecordMapper.ToDomainEvent).ToArray());
+            storedEvents.Select(DiscoveryQueryStoredEventTranslator.ToEvent).ToArray());
     }
 
     public async Task<bool> AppendAsync(
@@ -92,11 +91,11 @@ public sealed class RavenCatalogSearchDiscoveryRepository(IDocumentStore documen
 
         var startingVersion = metadata.Version;
         metadata.Version += events.Count;
-        metadata.UpdatedAtUtc = events.Max(CatalogSearchDiscoveryEventRecordMapper.GetOccurredAtUtc);
+        metadata.UpdatedAtUtc = events.Max(DiscoveryQueryStoredEventTranslator.GetOccurredAtUtc);
 
         await session.StoreAsync(metadata, cancellationToken);
 
-        foreach (var storedEvent in CatalogSearchDiscoveryEventRecordMapper.ToStoredEvents(searchCriteria, events, startingVersion))
+        foreach (var storedEvent in DiscoveryQueryStoredEventTranslator.ToStoredEvents(searchCriteria, events, startingVersion))
         {
             await session.StoreAsync(storedEvent, cancellationToken);
         }
@@ -142,11 +141,11 @@ public sealed class RavenCatalogSearchDiscoveryRepository(IDocumentStore documen
 
         var startingVersion = metadata.Version;
         metadata.Version += events.Count;
-        metadata.UpdatedAtUtc = events.Max(CatalogSearchDiscoveryEventRecordMapper.GetOccurredAtUtc);
+        metadata.UpdatedAtUtc = events.Max(DiscoveryQueryStoredEventTranslator.GetOccurredAtUtc);
 
         await session.StoreAsync(metadata, cancellationToken);
 
-        foreach (var storedEvent in CatalogSearchDiscoveryEventRecordMapper.ToStoredEvents(knownItem, events, startingVersion))
+        foreach (var storedEvent in DiscoveryQueryStoredEventTranslator.ToStoredEvents(knownItem, events, startingVersion))
         {
             await session.StoreAsync(storedEvent, cancellationToken);
         }
