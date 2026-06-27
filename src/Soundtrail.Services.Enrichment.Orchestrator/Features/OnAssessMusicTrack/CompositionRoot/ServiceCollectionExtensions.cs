@@ -9,7 +9,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddOnAssessMusicTrackFeature(this IServiceCollection services)
     {
-        services.TryAddScoped<IPersistCatalogSearchDiscoveryPort, RavenPersistCatalogSearchDiscoveryPort>();
+        services.TryAddScoped<CatalogSearchDiscoveryPersistence>();
         services.TryAddScoped<AssessMusicTrackHandler>();
         services.TryAddScoped<AssessMusicTrackListener>();
         return services;

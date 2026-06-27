@@ -5,14 +5,12 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters.Mappers;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Support;
 using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
 
 public sealed class RavenMusicCatalogMetadataFetchedCatalogSearchDiscoveryRepository(
-    IAsyncDocumentSession session) : ICatalogSearchDiscoveryRepository,
-    ICompleteTrackedDiscoveriesRepository
+    IAsyncDocumentSession session) : ICatalogSearchDiscoveryRepository
 {
     public async Task<CatalogSearchDiscoveryEventStream> LoadAsync(
         MusicSearchCriteria searchCriteria,

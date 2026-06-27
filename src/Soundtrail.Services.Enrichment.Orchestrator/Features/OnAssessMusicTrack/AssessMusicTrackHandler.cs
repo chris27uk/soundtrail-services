@@ -10,7 +10,7 @@ namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnAssessMusicTrac
 
 public sealed class AssessMusicTrackHandler(
     IPotentialCatalogLookupWorkStore potentialCatalogLookupWorkStore,
-    IPersistCatalogSearchDiscoveryPort persistCatalogSearchDiscoveryPort,
+    CatalogSearchDiscoveryPersistence catalogSearchDiscoveryPersistence,
     DiscoveryPriorityPolicy discoveryPriorityPolicy,
     ILocalMusicTrackSearch localMusicTrackSearch) : IHandler<AssessMusicTrackCommand>
 {
@@ -18,7 +18,7 @@ public sealed class AssessMusicTrackHandler(
     {
         if (command.SearchTerm is not null && command.TrustLevel is not null && command.RiskScore is not null)
         {
-            await persistCatalogSearchDiscoveryPort.RequestAsync(
+            await catalogSearchDiscoveryPersistence.RequestAsync(
                 command.SearchTerm,
                 command.TrustLevel.Value,
                 command.RiskScore.Value,
@@ -36,7 +36,7 @@ public sealed class AssessMusicTrackHandler(
         var assessment = discoveryPriorityPolicy.Assess(ToSummary(candidate), command.CreatedAt);
         if (assessment.Action != CatalogDiscoveryWorkAction.Schedule || assessment.Priority is null)
         {
-            await persistCatalogSearchDiscoveryPort.ApplyToTrackingsAsync(
+            await catalogSearchDiscoveryPersistence.ApplyToTrackingsAsync(
                 command.MusicCatalogId,
                 discovery => discovery.Defer(
                     assessment.EstimatedRetryAfterSeconds,
@@ -50,7 +50,7 @@ public sealed class AssessMusicTrackHandler(
         var localTrack = await localMusicTrackSearch.GetByMusicCatalogIdAsync(command.MusicCatalogId, cancellationToken);
         if (localTrack?.IsPlayable == true)
         {
-            await persistCatalogSearchDiscoveryPort.ApplyToTrackingsAsync(
+            await catalogSearchDiscoveryPersistence.ApplyToTrackingsAsync(
                 command.MusicCatalogId,
                 discovery => discovery.Defer(
                     60,
@@ -61,7 +61,7 @@ public sealed class AssessMusicTrackHandler(
             return;
         }
 
-        await persistCatalogSearchDiscoveryPort.ApplyToTrackingsAsync(
+        await catalogSearchDiscoveryPersistence.ApplyToTrackingsAsync(
             command.MusicCatalogId,
             discovery => discovery.Plan(
                 assessment.Priority.Value,

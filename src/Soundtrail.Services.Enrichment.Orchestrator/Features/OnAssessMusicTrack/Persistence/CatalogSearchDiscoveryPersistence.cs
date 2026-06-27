@@ -1,13 +1,12 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnAssessMusicTrack.Persistence;
 
-namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnAssessMusicTrack.Adapters;
+namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnAssessMusicTrack.Persistence;
 
-public sealed class RavenPersistCatalogSearchDiscoveryPort(
+public sealed class CatalogSearchDiscoveryPersistence(
     ICatalogSearchTrackingStore catalogSearchTrackingStore,
-    ICatalogSearchDiscoveryRepository discoveryRepository) : IPersistCatalogSearchDiscoveryPort
+    ICatalogSearchDiscoveryRepository discoveryRepository)
 {
     public Task RequestAsync(
         MusicSearchCriteria searchCriteria,
