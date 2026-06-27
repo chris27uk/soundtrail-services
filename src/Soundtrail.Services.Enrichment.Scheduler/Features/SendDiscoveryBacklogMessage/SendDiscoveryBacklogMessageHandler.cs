@@ -1,6 +1,6 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Services.Enrichment.Scheduler.Features.SendDiscoveryBacklogMessage.Support;
+using Soundtrail.Domain.Enrichment.Commands;
 
 namespace Soundtrail.Services.Enrichment.Scheduler.Features.SendDiscoveryBacklogMessage;
 
@@ -15,6 +15,11 @@ public sealed class SendDiscoveryBacklogMessageHandler(
     private RunDiscoveryBacklogSchedulingCommand NewScheduledMessage()
     {
         var now = timeProvider.UtcNow;
-        return new RunDiscoveryBacklogSchedulingCommand(RunDiscoveryBacklogSchedulingCommand.Id(now), CorrelationId.New(), now, LookupPriorityBand.Low, now, BatchSize);
+        return new RunDiscoveryBacklogSchedulingCommand(
+            CommandId.For($"RunDiscoveryBacklogScheduling:{now.ToUnixTimeMilliseconds()}"),
+            now,
+            CorrelationId.New(),
+            BatchSize,
+            LookupPriorityBand.Low);
     }
 }

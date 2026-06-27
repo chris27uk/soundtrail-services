@@ -1,5 +1,6 @@
 using JasperFx.CodeGeneration.Model;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Soundtrail.Adapters.Messaging;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Services.ServiceDefaults;

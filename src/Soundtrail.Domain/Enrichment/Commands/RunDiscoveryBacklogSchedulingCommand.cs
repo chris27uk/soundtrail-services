@@ -1,4 +1,5 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Abstractions;
 
 namespace Soundtrail.Domain.Enrichment.Commands
 {
@@ -6,5 +7,6 @@ namespace Soundtrail.Domain.Enrichment.Commands
         CommandId CommandId,
         DateTimeOffset CreatedAt,
         CorrelationId CorrelationId,
-        int BatchSize);
+        int BatchSize,
+        LookupPriorityBand Priority = LookupPriorityBand.Low) : ICommand;
 }
