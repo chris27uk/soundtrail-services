@@ -1,9 +1,8 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Events;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adapters;
@@ -11,6 +10,8 @@ using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Proj
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.Adapters;
+using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.EventStore;
+using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.ProjectionReset;
 using Soundtrail.Translators.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Tests.Integration.MusicBrainzImport.Features.ReplayCatalogProjection;

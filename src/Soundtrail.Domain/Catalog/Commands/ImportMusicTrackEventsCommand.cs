@@ -1,7 +1,7 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Events;
+using Soundtrail.Domain.Catalog.Events;
 
-namespace Soundtrail.Domain.Commands;
+namespace Soundtrail.Domain.Catalog.Commands;
 
 public sealed record ImportMusicTrackEventsCommand(
     MusicCatalogId MusicCatalogId,

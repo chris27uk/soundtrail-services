@@ -1,10 +1,10 @@
 using FluentAssertions;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Discovery;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
-namespace Soundtrail.Services.Tests.Integration.MusicBrainzImport.Features.OnReplayCatalogSearchStatus;
+namespace Soundtrail.Services.Tests.Integration.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection;
 
 [Collection(RavenEmbeddedCollection.Name)]
 public sealed class ReplayDiscoveryLifecycleProjectionResponsesTests

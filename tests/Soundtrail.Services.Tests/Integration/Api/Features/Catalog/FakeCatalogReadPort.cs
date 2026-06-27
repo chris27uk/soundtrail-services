@@ -1,6 +1,6 @@
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Browsing;
 using Soundtrail.Services.Api.Infrastructure.Ports;
-using Soundtrail.Domain.CatalogBrowsing;
 
 namespace Soundtrail.Services.Tests.Integration.Api.Features.Catalog;
 

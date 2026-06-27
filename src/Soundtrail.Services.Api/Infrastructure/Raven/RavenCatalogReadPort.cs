@@ -1,8 +1,8 @@
 using Raven.Client.Documents;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Browsing;
 using Soundtrail.Services.Api.Infrastructure.Ports;
-using Soundtrail.Domain.CatalogBrowsing;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 
 namespace Soundtrail.Services.Api.Infrastructure.Raven;

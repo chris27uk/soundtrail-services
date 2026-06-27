@@ -1,11 +1,10 @@
-using System.Net.Http.Json;
-using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Model;
-using Soundtrail.Domain.Responses;
-using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations;
+using Soundtrail.Domain.Enrichment.Responses;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.GetReference;
+using System.Net.Http.Json;
+using System.Text.Json.Serialization;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.Adapters;
 

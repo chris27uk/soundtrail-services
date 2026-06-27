@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
 [CollectionDefinition(Name, DisableParallelization = true)]

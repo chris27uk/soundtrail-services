@@ -1,4 +1,4 @@
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Support;
 

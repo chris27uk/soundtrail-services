@@ -1,6 +1,6 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Translators.Discovery;
@@ -26,6 +26,15 @@ public static class MusicSearchTermPersistentIdTranslator
                 { TrackId: not null } => $"track:{seek.TrackId.Value.Value}",
                 _ => throw new InvalidOperationException("Known music catalog id must contain an artist id, album id or track id.")
             });
+
+    public static string ToPersistentId(KnownCatalogItem knownItem) =>
+        knownItem switch
+        {
+            { ArtistId: not null } => $"artist:{knownItem.ArtistId.Value.Value}",
+            { AlbumId: not null } => $"album:{knownItem.AlbumId.Value.Value}",
+            { TrackId: not null } => $"track:{knownItem.TrackId.Value.Value}",
+            _ => throw new InvalidOperationException("Known catalog item must contain an artist id, album id or track id.")
+        };
 
     public static MusicSearchCriteria ToDomainObject(string persistentId)
     {

@@ -1,8 +1,10 @@
+using Soundtrail.Domain.Catalog;
+
 namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Lookup;
 
 public static class MusicMetadataLookupMatch
 {
-    public static string Normalize(string? value) => Domain.Model.MusicIdentityText.NormalizeFreeText(value);
+    public static string Normalize(string? value) => MusicIdentityText.NormalizeFreeText(value);
 
     public static bool TitleAndArtistMatch(
         string? expectedTitle,

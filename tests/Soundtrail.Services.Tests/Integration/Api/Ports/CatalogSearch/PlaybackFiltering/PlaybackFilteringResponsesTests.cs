@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Soundtrail.Domain.Search;
 using Soundtrail.Services.Tests.Integration.Api.Features.Search;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 

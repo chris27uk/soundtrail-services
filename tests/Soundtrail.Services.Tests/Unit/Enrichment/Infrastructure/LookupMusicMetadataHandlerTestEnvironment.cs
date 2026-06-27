@@ -1,8 +1,6 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Enrichment.Commands;
-using Soundtrail.Domain.Model;
-using Soundtrail.Domain.Responses;
+using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Pipeline;
 
@@ -38,7 +36,7 @@ internal sealed class LookupMusicMetadataHandlerTestEnvironment
 
     public void Throw(Exception ex) => Metadata.Throw(ex);
 
-    public Task<Soundtrail.Domain.Responses.MusicCatalogLookupAttempted> HandleNewExecutionCommand(MusicSearchCriteria? searchTerm = null) =>
+    public Task<MusicCatalogLookupAttempted> HandleNewExecutionCommand(MusicSearchCriteria? searchTerm = null) =>
         Handler.Handle(
             new LookupTrackMetadataCommand(
                 CommandId.For("LookupTrackMetadata:mc_track_1"),
@@ -49,7 +47,7 @@ internal sealed class LookupMusicMetadataHandlerTestEnvironment
                 searchTerm ?? MusicSearchCriteria.ByIsrc("isrc-1")),
             CancellationToken.None);
 
-    public async Task<Soundtrail.Domain.Responses.MusicCatalogLookupAttempted> HandleDuplicateExecutionCommand(MusicSearchCriteria? searchTerm = null)
+    public async Task<MusicCatalogLookupAttempted> HandleDuplicateExecutionCommand(MusicSearchCriteria? searchTerm = null)
     {
         var command = new LookupTrackMetadataCommand(
             CommandId.For("LookupTrackMetadata:mc_track_1"),

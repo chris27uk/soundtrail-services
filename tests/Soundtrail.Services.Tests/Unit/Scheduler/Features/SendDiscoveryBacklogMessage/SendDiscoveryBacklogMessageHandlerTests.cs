@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Soundtrail.Contracts.Common;
 using Soundtrail.Services.Enrichment.Scheduler;
 using Soundtrail.Services.Enrichment.Scheduler.Features.SendDiscoveryBacklogMessage;
 using Soundtrail.Services.Enrichment.Scheduler.Features.SendDiscoveryBacklogMessage.Support;
@@ -20,7 +21,7 @@ public sealed class SendDiscoveryBacklogMessageHandlerTests
         var message = bus.SentCommands.Single().Should().BeOfType<RunDiscoveryBacklogSchedulingCommand>().Subject;
         message.CommandId.Value.Should().Be($"RunDiscoveryBacklogScheduling:{now.ToUnixTimeMilliseconds()}");
         message.CorrelationId.Value.Should().NotBeNullOrWhiteSpace();
-        message.Priority.Should().Be(Soundtrail.Contracts.Common.LookupPriorityBand.Low);
+        message.Priority.Should().Be(LookupPriorityBand.Low);
         message.CreatedAt.Should().Be(now);
         message.Now.Should().Be(now);
         message.Take.Should().Be(25);

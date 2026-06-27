@@ -1,6 +1,6 @@
-using Soundtrail.Domain.Events;
+using Soundtrail.Domain.Catalog.Events;
 
-namespace Soundtrail.Domain.Responses
+namespace Soundtrail.Domain.Enrichment.Responses
 {
     public sealed record EnrichmentOrchestrationResult(IReadOnlyList<IMusicTrackEvent> Events);
 }

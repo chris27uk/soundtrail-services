@@ -1,7 +1,10 @@
-using Soundtrail.Domain;
-using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Catalog.Commands;
+using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Operations;
+using Soundtrail.Tools.MusicBrainzImport.Features.RebuildAllReadModels.OperationalState;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection;
-using Soundtrail.Tools.MusicBrainzImport.Features.OnReplayCatalogSearchStatus;
+using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayPlannerMusicTrackProjection;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.RebuildAllReadModels;

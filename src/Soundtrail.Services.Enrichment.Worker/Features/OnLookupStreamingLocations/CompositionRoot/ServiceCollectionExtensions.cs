@@ -2,8 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.Adapters;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.Pipeline;
-using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
-using Soundtrail.Domain.Discovery;
+using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.CompositionRoot;
 
@@ -20,7 +19,7 @@ public static class ServiceCollectionExtensions
         services.TryAddScoped<LookupStreamingLocationsHandler>();
         services.TryAddScoped<LookupStreamingLocationsExecutionAdmissionDecorator>(sp =>
             new LookupStreamingLocationsExecutionAdmissionDecorator(
-                sp.GetRequiredService<Shared.ExecutionAdmission.ILookupExecutionAdmissionPort>(),
+                sp.GetRequiredService<ILookupExecutionAdmissionPort>(),
                 sp.GetRequiredService<LookupStreamingLocationsHandler>()));
         services.TryAddScoped<ILookupStreamingLocationsHandler>(sp =>
             sp.GetRequiredService<LookupStreamingLocationsExecutionAdmissionDecorator>());

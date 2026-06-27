@@ -1,5 +1,5 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Events;
+using Soundtrail.Domain.Abstractions.EventSourcing;
 
 namespace Soundtrail.Domain.Discovery;
 

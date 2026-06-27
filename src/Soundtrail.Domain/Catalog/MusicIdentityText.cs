@@ -1,4 +1,4 @@
-namespace Soundtrail.Domain.Model;
+namespace Soundtrail.Domain.Catalog;
 
 public static class MusicIdentityText
 {

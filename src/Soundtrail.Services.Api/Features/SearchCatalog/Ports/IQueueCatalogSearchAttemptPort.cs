@@ -1,4 +1,4 @@
-using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Discovery.Commands;
 
 namespace Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 

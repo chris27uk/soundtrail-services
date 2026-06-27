@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Hosting;
+using Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Messaging;
 
 namespace Soundtrail.Services.Enrichment.Scheduler.Infrastructure.CompositionRoot;
 

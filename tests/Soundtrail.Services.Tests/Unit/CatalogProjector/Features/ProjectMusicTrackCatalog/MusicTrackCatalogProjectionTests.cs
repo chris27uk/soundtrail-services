@@ -1,10 +1,10 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Events;
+using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.ProjectionModel;
 
-namespace Soundtrail.Services.Tests.Unit.CatalogProjector.Features.OnMusicCatalogChanged;
+namespace Soundtrail.Services.Tests.Unit.CatalogProjector.Features.ProjectMusicTrackCatalog;
 
 public sealed class MusicTrackCatalogProjectionTests
 {

@@ -1,4 +1,4 @@
-namespace Soundtrail.Domain.Events;
+namespace Soundtrail.Domain.Abstractions.EventSourcing;
 
 public sealed class EventHandlers<TAggregate>
 {
@@ -9,7 +9,7 @@ public sealed class EventHandlers<TAggregate>
     public void Handle(IDomainEvent @event)
     {
         var eventType = @event.GetType();
-        if (!handlers.TryGetValue(eventType, out var handler))
+        if (!this.handlers.TryGetValue(eventType, out var handler))
         {
             throw new InvalidOperationException($"No handler registered for event type {eventType.Name}.");
         }

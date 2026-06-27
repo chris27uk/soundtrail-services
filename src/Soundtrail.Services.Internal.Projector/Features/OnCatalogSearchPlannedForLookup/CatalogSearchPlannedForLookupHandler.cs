@@ -1,11 +1,9 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain;
+using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Enrichment.Commands;
-using Soundtrail.Domain.Events;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchPlannedForLookup.Ports;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchPlannedForLookup.Support;
 
@@ -35,7 +33,7 @@ public sealed class CatalogSearchPlannedForLookupHandler(
         }
     }
 
-    private async Task<Soundtrail.Domain.Abstractions.ICommand?> BuildLookupCommandAsync(
+    private async Task<ICommand?> BuildLookupCommandAsync(
         DiscoveryPlanned planned,
         CancellationToken cancellationToken)
     {

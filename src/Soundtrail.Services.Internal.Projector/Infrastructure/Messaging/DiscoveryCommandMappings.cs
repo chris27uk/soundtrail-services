@@ -1,5 +1,5 @@
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
-using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Translators.Discovery;
 

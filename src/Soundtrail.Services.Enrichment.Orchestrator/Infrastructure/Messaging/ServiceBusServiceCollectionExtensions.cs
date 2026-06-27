@@ -2,16 +2,17 @@ using JasperFx.CodeGeneration.Model;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
-using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnAssessMusicTrack.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownCatalogItemRequested.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup.Adapters;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnStreamingLocationsRequired.Adapters;
 using Soundtrail.Services.ServiceDefaults;
 using Wolverine;
 using Wolverine.AzureServiceBus;
 using Wolverine.RavenDb;
+using ICommandBus = Soundtrail.Domain.Abstractions.ICommandBus;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Messaging;
 
@@ -22,7 +23,7 @@ public static class ServiceBusServiceCollectionExtensions
         IConfiguration configuration)
     {
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
-        services.AddScoped<Soundtrail.Domain.ICommandBus, WolverineCommandBus>();
+        services.AddScoped<ICommandBus, WolverineCommandBus>();
         return services;
     }
 
@@ -34,6 +35,7 @@ public static class ServiceBusServiceCollectionExtensions
         opts.ServiceLocationPolicy = ServiceLocationPolicy.AllowedButWarn;
         opts.Discovery.DisableConventionalDiscovery();
         opts.Discovery.IncludeType<SearchCatalogRequestedListener>();
+        opts.Discovery.IncludeType<KnownCatalogItemRequestedListener>();
         opts.Discovery.IncludeType<NextMusicTracksRequestedForLookupListener>();
         opts.Discovery.IncludeType<AssessMusicTrackListener>();
         opts.Discovery.IncludeType<MusicCatalogLookupAttemptedListener>();

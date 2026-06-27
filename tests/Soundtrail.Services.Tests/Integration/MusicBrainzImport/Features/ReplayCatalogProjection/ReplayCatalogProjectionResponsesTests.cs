@@ -1,6 +1,6 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Catalog.Commands;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.MusicBrainzImport.Features.ReplayCatalogProjection;

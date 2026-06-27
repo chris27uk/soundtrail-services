@@ -1,7 +1,5 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Discovery.Commands;
 
 namespace Soundtrail.Domain.Search;
 

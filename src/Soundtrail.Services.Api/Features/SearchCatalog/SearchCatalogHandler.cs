@@ -1,8 +1,7 @@
-using Soundtrail.Domain;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Discovery;
-using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
+using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Search;
+using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 using Soundtrail.Services.Api.Features.SearchCatalog.Support;
 
 namespace Soundtrail.Services.Api.Features.SearchCatalog;

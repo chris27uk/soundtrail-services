@@ -1,6 +1,5 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Model;
-using Soundtrail.Domain.Responses;
+using Soundtrail.Domain.Enrichment.Responses;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;

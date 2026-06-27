@@ -1,7 +1,7 @@
-using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Events;
+using Soundtrail.Domain.Abstractions.EventSourcing;
+using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Discovery.Events;
 
 namespace Soundtrail.Domain.Discovery;
 

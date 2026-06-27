@@ -1,5 +1,3 @@
-using Soundtrail.Domain.Catalog;
-
-namespace Soundtrail.Domain.CatalogBrowsing;
+namespace Soundtrail.Domain.Catalog.Browsing;
 
 public sealed record ListTracksByArtistCommand(ArtistId ArtistId);

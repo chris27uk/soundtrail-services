@@ -1,6 +1,6 @@
 using Soundtrail.Contracts.Common;
 
-namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection;
+namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.ProjectionReset;
 
 public interface IResetCatalogProjectionCheckpointPort
 {

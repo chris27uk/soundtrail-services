@@ -1,8 +1,6 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Enrichment.Commands;
-using Soundtrail.Domain.Model;
-using Soundtrail.Domain.Responses;
+using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.Pipeline;
 
@@ -33,7 +31,7 @@ internal sealed class LookupStreamingLocationsHandlerTestEnvironment
     public void Seed(MusicSearchCriteria lookupKey, params ExternalReference[] references) =>
         GetMusicTrackReference.Seed(lookupKey, references);
 
-    public Task<Soundtrail.Domain.Responses.MusicCatalogLookupAttempted> HandleNewExecutionCommand(MusicSearchCriteria? searchTerm = null) =>
+    public Task<MusicCatalogLookupAttempted> HandleNewExecutionCommand(MusicSearchCriteria? searchTerm = null) =>
         Handler.Handle(
             new LookupStreamingLocationsCommand(
                 CommandId.For("LookupStreamingLocations:mc_track_1"),
@@ -44,7 +42,7 @@ internal sealed class LookupStreamingLocationsHandlerTestEnvironment
                 searchTerm ?? MusicSearchCriteria.ByIsrc("isrc-1")),
             CancellationToken.None);
 
-    public async Task<Soundtrail.Domain.Responses.MusicCatalogLookupAttempted> HandleDuplicateExecutionCommand(MusicSearchCriteria? searchTerm = null)
+    public async Task<MusicCatalogLookupAttempted> HandleDuplicateExecutionCommand(MusicSearchCriteria? searchTerm = null)
     {
         var command = new LookupStreamingLocationsCommand(
             CommandId.For("LookupStreamingLocations:mc_track_1"),

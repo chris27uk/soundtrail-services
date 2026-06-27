@@ -1,3 +1,3 @@
-namespace Soundtrail.Domain.Events;
+namespace Soundtrail.Domain.Abstractions.EventSourcing;
 
 public interface IDomainEvent;

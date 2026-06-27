@@ -1,7 +1,6 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Catalog;
 
-namespace Soundtrail.Domain.CatalogBrowsing;
+namespace Soundtrail.Domain.Catalog.Browsing;
 
 public sealed record AlbumSummary(
     AlbumId AlbumId,

@@ -1,9 +1,10 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain;
+using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Model;
-using Soundtrail.Domain.Responses;
+using Soundtrail.Domain.Catalog.Commands;
+using Soundtrail.Domain.Catalog.Projection;
+using Soundtrail.Domain.Enrichment.Responses;
+using Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump.Input;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump;
 

@@ -1,9 +1,10 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
+using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Events;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Search;
 using Soundtrail.Translators.Discovery;
 
@@ -18,10 +19,19 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
         events.Select((@event, index) => ToStoredEvent(searchCriteria, @event, startingVersion + index + 1))
             .ToArray();
 
+    public static IReadOnlyList<DiscoveryQueryStoredEventRecordDto> ToStoredEvents(
+        KnownCatalogItem knownItem,
+        IReadOnlyCollection<IDomainEvent> events,
+        int startingVersion) =>
+        events.Select((@event, index) => ToStoredEvent(knownItem, @event, startingVersion + index + 1))
+            .ToArray();
+
     public static IDomainEvent ToDomainEvent(DiscoveryQueryStoredEventRecordDto dto) =>
         dto.EventType switch
         {
             nameof(TrackMetadataLookupRequested) => ToTrackMetadataLookupRequested(dto),
+            nameof(ArtistCatalogLookupRequested) => ToArtistCatalogLookupRequested(dto),
+            nameof(AlbumCatalogLookupRequested) => ToAlbumCatalogLookupRequested(dto),
             nameof(StreamingLocationsRequired) => ToStreamingLocationsRequired(dto),
             nameof(DiscoveryRequested) => ToDiscoveryRequested(dto),
             nameof(DiscoveryPlanned) => ToDiscoveryPlanned(dto),
@@ -37,6 +47,8 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
         @event switch
         {
             TrackMetadataLookupRequested required => required.RequiredAt,
+            ArtistCatalogLookupRequested requested => requested.RequestedAt,
+            AlbumCatalogLookupRequested requested => requested.RequestedAt,
             StreamingLocationsRequired required => required.ObservedAt,
             DiscoveryRequested requested => requested.RequestedAt,
             DiscoveryPlanned planned => planned.PlannedAt,
@@ -196,6 +208,69 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
             _ => throw new ArgumentOutOfRangeException(nameof(@event), @event, "Unknown discovery event.")
         };
 
+    private static DiscoveryQueryStoredEventRecordDto ToStoredEvent(
+        KnownCatalogItem knownItem,
+        IDomainEvent @event,
+        int version)
+    {
+        var persistentId = MusicSearchTermPersistentIdTranslator.ToPersistentId(knownItem);
+
+        return @event switch
+        {
+            ArtistCatalogLookupRequested requested => new DiscoveryQueryStoredEventRecordDto
+            {
+                Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(persistentId, version),
+                Criteria = persistentId,
+                Version = version,
+                EventType = nameof(ArtistCatalogLookupRequested),
+                ArtistCatalogLookupRequested = new ArtistCatalogLookupRequestedEventDataRecordDto(
+                    requested.ArtistId.Value,
+                    requested.RequestedAt,
+                    requested.CorrelationId.Value),
+                OccurredAtUtc = requested.RequestedAt,
+                CorrelationId = requested.CorrelationId.Value
+            },
+            AlbumCatalogLookupRequested requested => new DiscoveryQueryStoredEventRecordDto
+            {
+                Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(persistentId, version),
+                Criteria = persistentId,
+                Version = version,
+                EventType = nameof(AlbumCatalogLookupRequested),
+                AlbumCatalogLookupRequested = new AlbumCatalogLookupRequestedEventDataRecordDto(
+                    requested.ArtistId?.Value,
+                    requested.AlbumId.Value,
+                    requested.RequestedAt,
+                    requested.CorrelationId.Value),
+                OccurredAtUtc = requested.RequestedAt,
+                CorrelationId = requested.CorrelationId.Value
+            },
+            StreamingLocationsRequired required => new DiscoveryQueryStoredEventRecordDto
+            {
+                Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(persistentId, version),
+                Criteria = persistentId,
+                Version = version,
+                EventType = nameof(StreamingLocationsRequired),
+                StreamingLocationsRequired = new StreamingLocationsRequiredEventDataRecordDto(
+                    required.MusicCatalogId.Value,
+                    required.Priority.ToString(),
+                    required.CorrelationId.Value,
+                    required.SourceProvider.Value,
+                    required.ObservedAt,
+                    required.SearchCriteria.Kind,
+                    required.SearchCriteria.Query,
+                    required.SearchCriteria.Isrc,
+                    required.SearchCriteria.Title,
+                    required.SearchCriteria.Artist,
+                    required.SearchCriteria.Album,
+                    required.Hierarchy?.ArtistId?.Value,
+                    required.Hierarchy?.AlbumId?.Value),
+                OccurredAtUtc = required.ObservedAt,
+                CorrelationId = required.CorrelationId.Value
+            },
+            _ => throw new ArgumentOutOfRangeException(nameof(@event), @event, "Unknown known catalog discovery event.")
+        };
+    }
+
     private static TrackMetadataLookupRequested ToTrackMetadataLookupRequested(DiscoveryQueryStoredEventRecordDto dto)
     {
         var data = dto.TrackMetadataLookupRequested
@@ -233,6 +308,27 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
                 : new CatalogTrackHierarchy(
                     data.ArtistId is null ? null : ArtistId.From(data.ArtistId),
                     data.AlbumId is null ? null : AlbumId.From(data.AlbumId)));
+    }
+
+    private static ArtistCatalogLookupRequested ToArtistCatalogLookupRequested(DiscoveryQueryStoredEventRecordDto dto)
+    {
+        var data = dto.ArtistCatalogLookupRequested
+            ?? throw new InvalidOperationException("Missing artist catalog lookup requested event data.");
+        return new ArtistCatalogLookupRequested(
+            ArtistId.From(data.ArtistId),
+            data.RequestedAtUtc,
+            CorrelationId.From(data.CorrelationId));
+    }
+
+    private static AlbumCatalogLookupRequested ToAlbumCatalogLookupRequested(DiscoveryQueryStoredEventRecordDto dto)
+    {
+        var data = dto.AlbumCatalogLookupRequested
+            ?? throw new InvalidOperationException("Missing album catalog lookup requested event data.");
+        return new AlbumCatalogLookupRequested(
+            data.ArtistId is null ? null : ArtistId.From(data.ArtistId),
+            AlbumId.From(data.AlbumId),
+            data.RequestedAtUtc,
+            CorrelationId.From(data.CorrelationId));
     }
 
     private static DiscoveryRequested ToDiscoveryRequested(DiscoveryQueryStoredEventRecordDto dto)

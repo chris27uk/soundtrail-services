@@ -1,6 +1,6 @@
 using Soundtrail.Contracts;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Search;
 using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;

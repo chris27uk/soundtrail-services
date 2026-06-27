@@ -1,6 +1,6 @@
 using Soundtrail.Domain.Catalog.IntegrationEvents;
 
-namespace Soundtrail.Domain.Commands;
+namespace Soundtrail.Domain.Catalog.Commands;
 
 public sealed record PublishMusicTrackEventsCommand(
     IReadOnlyCollection<VersionedMusicTrackIntegrationEvent> Events);

@@ -1,8 +1,8 @@
-using Soundtrail.Domain.Enrichment.Commands;
-using Soundtrail.Domain.Responses;
-using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.Pipeline;
-using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.GetReference;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Enrichment.Commands;
+using Soundtrail.Domain.Enrichment.Responses;
+using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.GetReference;
+using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.Pipeline;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations;
 

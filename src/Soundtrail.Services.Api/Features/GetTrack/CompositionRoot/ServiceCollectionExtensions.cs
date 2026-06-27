@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Soundtrail.Domain;
-using Soundtrail.Domain.CatalogBrowsing;
+using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Catalog.Browsing;
 
 namespace Soundtrail.Services.Api.Features.GetTrack.CompositionRoot;
 

@@ -1,11 +1,12 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Events;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Catalog.Commands;
+using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 using Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump;
+using Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump.Input;
+using System.Runtime.CompilerServices;
 
 namespace Soundtrail.Services.Tests.Unit.MusicBrainzImport.Features.ImportMusicBrainzDump;
 
@@ -101,7 +102,7 @@ public sealed class ImportMusicBrainzDumpHandlerTests
         public async IAsyncEnumerable<MusicBrainzCatalogSeedRecord> ReadAsync(
             IReadOnlyList<string> recordingDumpPaths,
             IReadOnlyList<string> releaseDumpPaths,
-            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+            [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             foreach (var record in records)
             {

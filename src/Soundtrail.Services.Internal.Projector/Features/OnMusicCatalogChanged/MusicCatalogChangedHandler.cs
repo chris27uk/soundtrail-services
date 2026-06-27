@@ -1,5 +1,5 @@
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Responses;
+using Soundtrail.Domain.Catalog.Commands;
+using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.ProjectionModel;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged;

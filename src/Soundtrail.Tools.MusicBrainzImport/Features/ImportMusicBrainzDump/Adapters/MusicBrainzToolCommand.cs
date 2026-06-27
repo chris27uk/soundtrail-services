@@ -1,4 +1,6 @@
-using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Catalog.Commands;
+using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Operations;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump.Adapters;
 

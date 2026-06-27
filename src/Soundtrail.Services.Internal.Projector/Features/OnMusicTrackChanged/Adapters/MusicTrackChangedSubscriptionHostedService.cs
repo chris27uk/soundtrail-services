@@ -3,10 +3,10 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Subscriptions;
-using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Model;
+using Soundtrail.Contracts.EventSourcing;
+using Soundtrail.Domain.Catalog.Commands;
+using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Translators.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;

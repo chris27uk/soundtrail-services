@@ -1,6 +1,6 @@
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Catalog;
 
-namespace Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump;
+namespace Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump.Input;
 
 public interface IReadMusicBrainzDumpPort
 {

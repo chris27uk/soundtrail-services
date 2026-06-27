@@ -1,4 +1,3 @@
-using Soundtrail.Domain;
 using Soundtrail.Domain.Abstractions;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;

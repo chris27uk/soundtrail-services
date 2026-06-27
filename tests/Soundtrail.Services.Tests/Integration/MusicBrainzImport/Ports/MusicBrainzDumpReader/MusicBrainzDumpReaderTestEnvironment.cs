@@ -1,6 +1,7 @@
-using Soundtrail.Domain.Model;
-using Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump.Adapters;
+using Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump.Input;
+using System.Runtime.CompilerServices;
 
 namespace Soundtrail.Services.Tests.Integration.MusicBrainzImport.Ports.MusicBrainzDumpReader;
 
@@ -84,7 +85,7 @@ internal sealed class MusicBrainzDumpReaderTestEnvironment : IDisposable
         public async IAsyncEnumerable<MusicBrainzCatalogSeedRecord> ReadAsync(
             IReadOnlyList<string> recordingDumpPaths,
             IReadOnlyList<string> releaseDumpPaths,
-            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+            [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             yield return new MusicBrainzCatalogSeedRecord(
                 "recording:mb-recording-1",

@@ -1,4 +1,4 @@
-using Soundtrail.Domain;
+using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnStreamingLocationsRequired.Support;

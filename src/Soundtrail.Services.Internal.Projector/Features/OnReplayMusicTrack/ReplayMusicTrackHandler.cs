@@ -1,5 +1,5 @@
-using Soundtrail.Domain;
-using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Catalog.Commands;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack.StoredEvents;
 

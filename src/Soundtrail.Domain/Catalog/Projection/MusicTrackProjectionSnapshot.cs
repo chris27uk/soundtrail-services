@@ -1,4 +1,4 @@
-namespace Soundtrail.Domain.Model;
+namespace Soundtrail.Domain.Catalog.Projection;
 
 public sealed record MusicTrackProjectionSnapshot(
     string? ArtistId,

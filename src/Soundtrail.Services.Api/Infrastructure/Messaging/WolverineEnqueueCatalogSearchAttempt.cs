@@ -1,4 +1,4 @@
-using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 using Wolverine;
 

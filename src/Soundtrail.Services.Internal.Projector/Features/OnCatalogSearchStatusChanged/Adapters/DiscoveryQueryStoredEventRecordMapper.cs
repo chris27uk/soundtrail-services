@@ -1,9 +1,11 @@
-using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Contracts.EventSourcing;
+using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Events;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Domain.Search;
 using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
@@ -17,6 +19,8 @@ public static class DiscoveryQueryStoredEventRecordMapper
         dto.EventType switch
         {
             nameof(TrackMetadataLookupRequested) => ToTrackMetadataLookupRequested(dto),
+            nameof(ArtistCatalogLookupRequested) => ToArtistCatalogLookupRequested(dto),
+            nameof(AlbumCatalogLookupRequested) => ToAlbumCatalogLookupRequested(dto),
             nameof(StreamingLocationsRequired) => ToStreamingLocationsRequired(dto),
             nameof(DiscoveryRequested) => ToDiscoveryRequested(dto),
             nameof(DiscoveryPlanned) => ToDiscoveryPlanned(dto),
@@ -65,6 +69,27 @@ public static class DiscoveryQueryStoredEventRecordMapper
                 : new CatalogTrackHierarchy(
                     data.ArtistId is null ? null : ArtistId.From(data.ArtistId),
                     data.AlbumId is null ? null : AlbumId.From(data.AlbumId)));
+    }
+
+    private static ArtistCatalogLookupRequested ToArtistCatalogLookupRequested(DiscoveryQueryStoredEventRecordDto dto)
+    {
+        var data = dto.ArtistCatalogLookupRequested
+            ?? throw new InvalidOperationException("Missing artist catalog lookup requested event data.");
+        return new ArtistCatalogLookupRequested(
+            ArtistId.From(data.ArtistId),
+            data.RequestedAtUtc,
+            CorrelationId.From(data.CorrelationId));
+    }
+
+    private static AlbumCatalogLookupRequested ToAlbumCatalogLookupRequested(DiscoveryQueryStoredEventRecordDto dto)
+    {
+        var data = dto.AlbumCatalogLookupRequested
+            ?? throw new InvalidOperationException("Missing album catalog lookup requested event data.");
+        return new AlbumCatalogLookupRequested(
+            data.ArtistId is null ? null : ArtistId.From(data.ArtistId),
+            AlbumId.From(data.AlbumId),
+            data.RequestedAtUtc,
+            CorrelationId.From(data.CorrelationId));
     }
 
     private static DiscoveryRequested ToDiscoveryRequested(DiscoveryQueryStoredEventRecordDto dto)

@@ -6,7 +6,6 @@ using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
 using Raven.Client.Documents.Session;
-using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;

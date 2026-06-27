@@ -1,6 +1,4 @@
-using Soundtrail.Domain.Abstractions;
-
-namespace Soundtrail.Domain;
+namespace Soundtrail.Domain.Abstractions;
 
 public interface ICommandBus
 {

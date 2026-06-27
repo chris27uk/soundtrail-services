@@ -2,12 +2,12 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
+using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain;
-using Soundtrail.Services.Api.Infrastructure.Ports;
-using Soundtrail.Domain.CatalogBrowsing;
-using Soundtrail.Domain.Search;
+using Soundtrail.Domain.Catalog.Browsing;
 using Soundtrail.Services.Api;
+using Soundtrail.Services.Api.Infrastructure.Ports;
 using Soundtrail.Services.Api.Infrastructure.Raven;
 using Soundtrail.Services.Tests.Integration.Api.Features.Search;
 
@@ -47,7 +47,7 @@ internal sealed class SearchWebApiTestEnvironment : IAsyncDisposable
             builder.ConfigureServices(services =>
             {
                 foreach (var descriptor in services
-                             .Where(x => x.ServiceType == typeof(Microsoft.Extensions.Hosting.IHostedService)
+                             .Where(x => x.ServiceType == typeof(IHostedService)
                                          && x.ImplementationType == typeof(RavenDatabaseHostedService))
                              .ToArray())
                 {

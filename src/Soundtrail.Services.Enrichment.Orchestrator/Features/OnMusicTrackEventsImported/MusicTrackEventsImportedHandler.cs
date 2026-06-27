@@ -1,6 +1,6 @@
-using Soundtrail.Domain;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Catalog.Commands;
+using Soundtrail.Domain.Catalog.Projection;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicTrackEventsImported;
 

@@ -1,3 +1,3 @@
-namespace Soundtrail.Domain.Commands;
+namespace Soundtrail.Domain.Catalog.Commands;
 
 public sealed record ReplayCatalogProjectionCommand;

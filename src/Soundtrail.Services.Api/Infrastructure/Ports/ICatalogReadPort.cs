@@ -1,5 +1,5 @@
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.CatalogBrowsing;
+using Soundtrail.Domain.Catalog.Browsing;
 
 namespace Soundtrail.Services.Api.Infrastructure.Ports;
 

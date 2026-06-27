@@ -2,16 +2,17 @@ using Raven.Client.Documents;
 using Raven.Client.Documents.Indexes;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Model;
-using Soundtrail.Domain.Search;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged;
+using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Commands;
+using Soundtrail.Domain.Catalog.Projection;
+using Soundtrail.Services.Api;
 using Soundtrail.Services.Api.Infrastructure.Raven;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
-using System.Reflection;
 using Soundtrail.Translators.MusicTrackEventStore;
+using System.Reflection;
 
 namespace Soundtrail.Services.Tests.Integration.CatalogProjector.Features.ProjectionReplay;
 
@@ -129,7 +130,7 @@ internal sealed class RavenCatalogProjectionReplayTestEnvironment : IAsyncDispos
         }
     }
 
-    private static readonly Assembly ApiAssembly = typeof(Soundtrail.Services.Api.ApiAssemblyMarker).Assembly;
+    private static readonly Assembly ApiAssembly = typeof(ApiAssemblyMarker).Assembly;
 
     private static readonly IReadOnlyList<Type> IndexTypes =
     [

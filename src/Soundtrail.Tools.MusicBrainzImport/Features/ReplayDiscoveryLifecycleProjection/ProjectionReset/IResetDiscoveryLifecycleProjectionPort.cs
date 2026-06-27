@@ -1,7 +1,6 @@
-using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Search;
 
-namespace Soundtrail.Tools.MusicBrainzImport.Features.OnReplayCatalogSearchStatus;
+namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.ProjectionReset;
 
 public interface IResetDiscoveryLifecycleProjectionPort
 {

@@ -3,6 +3,7 @@ using Raven.Client.Documents.Linq;
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
+using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Raven.CatalogDiscoveryWork;
@@ -58,7 +59,7 @@ public sealed class RavenCatalogDiscoveryWorkRepository(
     public async Task<bool> AppendAsync(
         MusicCatalogId musicCatalogId,
         int expectedVersion,
-        IReadOnlyCollection<Soundtrail.Domain.Events.IDomainEvent> events,
+        IReadOnlyCollection<IDomainEvent> events,
         CancellationToken cancellationToken)
     {
         if (events.Count == 0)

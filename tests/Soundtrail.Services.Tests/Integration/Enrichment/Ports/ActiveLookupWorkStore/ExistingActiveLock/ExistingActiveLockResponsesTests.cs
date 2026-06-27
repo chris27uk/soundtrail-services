@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Services.Tests.Integration.Enrichment.Ports.ActiveLookupWorkStore.NewCommandId;
 

@@ -1,7 +1,8 @@
-using Soundtrail.Domain;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Responses;
+using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Catalog.Commands;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged;
+using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.EventStore;
+using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.ProjectionReset;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection;
 

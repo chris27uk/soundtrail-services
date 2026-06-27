@@ -1,9 +1,8 @@
 using Raven.Client.Documents;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
-using Soundtrail.Domain.Discovery;
-using Soundtrail.Contracts.Persistence;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 

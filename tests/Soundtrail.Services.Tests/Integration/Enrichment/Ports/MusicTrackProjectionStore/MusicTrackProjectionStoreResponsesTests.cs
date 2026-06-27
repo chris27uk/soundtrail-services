@@ -1,12 +1,11 @@
 using FluentAssertions;
-using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Events;
-using Soundtrail.Domain.Model;
+using Soundtrail.Contracts.Persistence;
+using Soundtrail.Domain.Catalog.Commands;
+using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
-using Soundtrail.Contracts.Persistence;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 

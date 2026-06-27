@@ -1,5 +1,5 @@
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Search;
 
-namespace Soundtrail.Domain.Commands;
+namespace Soundtrail.Domain.Discovery.Commands;
 
 public sealed record ReplayCatalogSearchStatusCommand(MusicSearchCriteria SearchCriteria);

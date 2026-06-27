@@ -1,8 +1,8 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Events;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Translators.MusicTrackEventStore.Registrations;
 

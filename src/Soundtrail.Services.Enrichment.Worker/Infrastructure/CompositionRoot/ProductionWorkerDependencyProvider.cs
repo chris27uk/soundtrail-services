@@ -1,15 +1,16 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.SourceBudgets;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.SourceBudgets.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.SourceBudgets.Configuration;
-using Soundtrail.Services.Enrichment.Worker.Infrastructure.ExecutionAdmission;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Adapters;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Lookup;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.Adapters;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.GetReference;
+using Soundtrail.Services.Enrichment.Worker.Infrastructure.ExecutionAdmission;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;
 using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
 
@@ -34,7 +35,7 @@ public sealed class ProductionWorkerDependencyProvider : IWorkerDependencyProvid
             services.AddHttpClient<IGetTrackMetadata, MusicBrainzGetTrackMetadata>()
                 .ConfigureHttpClient((sp, httpClient) =>
                 {
-                    var cfg = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<MusicBrainzOptions>>().Value;
+                    var cfg = sp.GetRequiredService<IOptions<MusicBrainzOptions>>().Value;
                     MusicBrainzGetTrackMetadata.ConfigureHttpClient(httpClient, cfg);
                 });
         }
@@ -48,7 +49,7 @@ public sealed class ProductionWorkerDependencyProvider : IWorkerDependencyProvid
             services.AddHttpClient<IGetMusicTrackReference, OdesliStreamingReferences>()
                 .ConfigureHttpClient((sp, httpClient) =>
                 {
-                    var cfg = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<OdesliOptions>>().Value;
+                    var cfg = sp.GetRequiredService<IOptions<OdesliOptions>>().Value;
                     OdesliStreamingReferences.ConfigureHttpClient(httpClient, cfg);
                 });
         }

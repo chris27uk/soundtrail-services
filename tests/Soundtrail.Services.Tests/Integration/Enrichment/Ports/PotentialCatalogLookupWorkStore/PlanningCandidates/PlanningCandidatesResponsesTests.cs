@@ -1,7 +1,6 @@
 using FluentAssertions;
-using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
-using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
 using Soundtrail.Services.Tests.Integration.Enrichment.Ports.PotentialCatalogLookupWorkStore.UpsertedCandidate;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.PotentialCatalogLookupWorkStore.PlanningCandidates;

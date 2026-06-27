@@ -1,10 +1,9 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Soundtrail.Domain;
-using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
-using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.SearchCatalog.Adapters;
+using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 using Soundtrail.Services.Api.Features.SearchCatalog.Support;
 
 namespace Soundtrail.Services.Api.Features.SearchCatalog.CompositionRoot;

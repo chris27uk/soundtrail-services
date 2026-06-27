@@ -1,5 +1,5 @@
 using FluentAssertions;
-using Soundtrail.Domain.Search;
+using Soundtrail.Contracts.Common;
 using Soundtrail.Services.Tests.Integration.Api.Features.Search;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
@@ -26,6 +26,6 @@ public sealed class KnownQueryResponsesTests
 
         actual.Results.Should().ContainSingle();
         actual.Results[0].Name.Should().Be("Mr. Brightside");
-        actual.Results[0].AvailableProviders.Should().ContainSingle(provider => provider == Soundtrail.Contracts.Common.ProviderName.Spotify);
+        actual.Results[0].AvailableProviders.Should().ContainSingle(provider => provider == ProviderName.Spotify);
     }
 }

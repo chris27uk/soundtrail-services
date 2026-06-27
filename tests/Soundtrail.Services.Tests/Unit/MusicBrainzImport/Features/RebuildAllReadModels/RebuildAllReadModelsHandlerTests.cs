@@ -1,23 +1,27 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Domain.Catalog.Projection;
+using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Domain.Operations;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Ports;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Support;
-using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Events;
-using Soundtrail.Domain.Model;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.ProjectionModel;
-using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 using Soundtrail.Tools.MusicBrainzImport.Features.RebuildAllReadModels;
-using Soundtrail.Tools.MusicBrainzImport.Features.RebuildAllReadModels.Adapters;
+using Soundtrail.Tools.MusicBrainzImport.Features.RebuildAllReadModels.OperationalState;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection;
-using Soundtrail.Tools.MusicBrainzImport.Features.OnReplayCatalogSearchStatus;
+using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.EventStore;
+using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.ProjectionReset;
+using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection;
+using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.EventStore;
+using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.ProjectionReset;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayPlannerMusicTrackProjection;
-using Soundtrail.Translators.Discovery;
+using Soundtrail.Tools.MusicBrainzImport.Features.ReplayPlannerMusicTrackProjection.ProjectionReset;
 
 namespace Soundtrail.Services.Tests.Unit.MusicBrainzImport.Features.RebuildAllReadModels;
 

@@ -1,9 +1,7 @@
-using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
+using Soundtrail.Domain.Catalog.Commands;
+using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Catalog.IntegrationEvents;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Events;
-using Soundtrail.Domain.Model;
 using Soundtrail.Translators.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Public.Projector.Features.PublishMusicTrackEvents.Adapters;

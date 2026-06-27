@@ -1,7 +1,6 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Domain.Enrichment.Commands;
 

@@ -1,10 +1,11 @@
 using Raven.Client.Documents;
-using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts;
+using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 using Soundtrail.Domain.Search;
+using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
+using Soundtrail.Services.Api.Infrastructure.Raven.Indexes;
 using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Services.Api.Infrastructure.Raven;
@@ -23,7 +24,7 @@ public sealed class RavenCatalogSearch(IDocumentStore documentStore) : ICatalogS
         if (command.Types.Includes(SearchResultType.Artist))
         {
             var artists = await session
-                .Query<CatalogArtistRecordDto, Indexes.Search_Artists>()
+                .Query<CatalogArtistRecordDto, Search_Artists>()
                 .Search(x => x.SearchText, command.Query)
                 .Take(take)
                 .ToListAsync(cancellationToken);
@@ -47,7 +48,7 @@ public sealed class RavenCatalogSearch(IDocumentStore documentStore) : ICatalogS
         if (command.Types.Includes(SearchResultType.Album))
         {
             var albums = await session
-                .Query<CatalogAlbumRecordDto, Indexes.Search_Albums>()
+                .Query<CatalogAlbumRecordDto, Search_Albums>()
                 .Search(x => x.SearchText, command.Query)
                 .Take(take)
                 .ToListAsync(cancellationToken);
@@ -71,7 +72,7 @@ public sealed class RavenCatalogSearch(IDocumentStore documentStore) : ICatalogS
         if (command.Types.Includes(SearchResultType.Track))
         {
             var tracks = await session
-                .Query<CatalogTrackRecordDto, Indexes.Search_Tracks>()
+                .Query<CatalogTrackRecordDto, Search_Tracks>()
                 .Search(x => x.SearchText, command.Query)
                 .Take(take)
                 .ToListAsync(cancellationToken);

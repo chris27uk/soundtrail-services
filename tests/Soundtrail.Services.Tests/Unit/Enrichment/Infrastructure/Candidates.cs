@@ -1,6 +1,5 @@
-using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
-using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 

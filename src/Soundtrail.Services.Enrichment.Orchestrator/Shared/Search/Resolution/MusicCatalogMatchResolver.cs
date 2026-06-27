@@ -1,4 +1,4 @@
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Catalog;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Shared.Search.Resolution;
 

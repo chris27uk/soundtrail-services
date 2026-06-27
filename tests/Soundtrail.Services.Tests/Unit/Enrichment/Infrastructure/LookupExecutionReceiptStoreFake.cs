@@ -1,6 +1,4 @@
-using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;

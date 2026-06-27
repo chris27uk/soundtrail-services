@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
-using Soundtrail.Tools.MusicBrainzImport.Features.OnReplayCatalogSearchStatus;
-using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection;
 using Soundtrail.Tools.MusicBrainzImport.Features.RebuildAllReadModels;
+using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection;
+using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump.Adapters;
 

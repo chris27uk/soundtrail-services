@@ -1,8 +1,7 @@
 using Raven.Client.Documents;
 using Raven.Client.Documents.Session;
-using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Contracts.Persistence;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters.Documents;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Idempotency;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;

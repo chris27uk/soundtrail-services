@@ -1,10 +1,6 @@
 using FluentAssertions;
-using Raven.Client.Documents.Session;
-using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
-using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 

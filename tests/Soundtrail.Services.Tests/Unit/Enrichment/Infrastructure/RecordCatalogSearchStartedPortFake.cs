@@ -8,7 +8,7 @@ internal sealed class RecordCatalogSearchStartedPortFake(
     CatalogSearchDiscoveryRepositoryFake repository) : IRecordCatalogSearchStartedPort
 {
     public async Task RecordAsync(
-        CatalogSearchCriteria criteria,
+        MusicSearchCriteria criteria,
         IReadOnlyList<MusicCatalogId> musicCatalogIds,
         int trustLevel,
         int riskScore,

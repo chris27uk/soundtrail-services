@@ -1,8 +1,9 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Events;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Domain.Discovery;
@@ -12,6 +13,7 @@ public sealed class SearchOrSeekHistory
     private readonly EventHandlers<SearchOrSeekHistory> eventHandlers;
     private readonly List<IDomainEvent> uncommittedEvents = [];
     private MusicSearchCriteria? criteria;
+    private KnownCatalogItem? knownItem;
     private CatalogSearchLifecycleStatus? status;
     private LookupPriorityBand? priority;
     private bool willBeLookedUp;
@@ -20,6 +22,9 @@ public sealed class SearchOrSeekHistory
     private string? reason;
     private DateTimeOffset? updatedAt;
     private bool hasRequested;
+    private bool hasTrackMetadataLookupRequested;
+    private bool hasArtistCatalogLookupRequested;
+    private bool hasAlbumCatalogLookupRequested;
     private int version;
 
     private SearchOrSeekHistory(IEnumerable<IDomainEvent> events, int version)
@@ -42,8 +47,10 @@ public sealed class SearchOrSeekHistory
         var stream = await repository.LoadAsync(searchCriteria, cancellationToken);
         var aggregate = new SearchOrSeekHistory(
             stream.Events.Where(static @event =>
-                @event is TrackMetadataLookupRequested
-                or Events.StreamingLocationsRequired
+                @event is Events.TrackMetadataLookupRequested
+                or Events.ArtistCatalogLookupRequested
+                or Events.AlbumCatalogLookupRequested
+                or Catalog.Events.StreamingLocationsRequired
                 or DiscoveryRequested
                 or DiscoveryPlanned
                 or DiscoveryDeferred
@@ -53,6 +60,30 @@ public sealed class SearchOrSeekHistory
                 or DiscoveryCompleted),
             stream.Version);
         aggregate.criteria ??= searchCriteria;
+        return aggregate;
+    }
+
+    public static async Task<SearchOrSeekHistory> LoadAsync(
+        ICatalogSearchDiscoveryRepository repository,
+        KnownCatalogItem knownItem,
+        CancellationToken cancellationToken)
+    {
+        var stream = await repository.LoadAsync(knownItem, cancellationToken);
+        var aggregate = new SearchOrSeekHistory(
+            stream.Events.Where(static @event =>
+                @event is Events.TrackMetadataLookupRequested
+                or Events.ArtistCatalogLookupRequested
+                or Events.AlbumCatalogLookupRequested
+                or Catalog.Events.StreamingLocationsRequired
+                or DiscoveryRequested
+                or DiscoveryPlanned
+                or DiscoveryDeferred
+                or DiscoveryRejected
+                or DiscoveryFailed
+                or DiscoveryStarted
+                or DiscoveryCompleted),
+            stream.Version);
+        aggregate.knownItem ??= knownItem;
         return aggregate;
     }
 
@@ -282,6 +313,72 @@ public sealed class SearchOrSeekHistory
             isNew: true);
     }
 
+    public bool TrackMetadataLookupRequested(
+        MusicSearchCriteria searchCriteria,
+        int trustLevel,
+        int riskScore,
+        DateTimeOffset requiredAt,
+        CorrelationId correlationId)
+    {
+        if (hasTrackMetadataLookupRequested)
+        {
+            return false;
+        }
+
+        Apply(
+            new TrackMetadataLookupRequested(
+                searchCriteria,
+                trustLevel,
+                riskScore,
+                requiredAt,
+                correlationId),
+            isNew: true);
+
+        return true;
+    }
+
+    public bool ArtistCatalogLookupRequested(
+        ArtistId artistId,
+        DateTimeOffset requestedAt,
+        CorrelationId correlationId)
+    {
+        if (hasArtistCatalogLookupRequested)
+        {
+            return false;
+        }
+
+        Apply(
+            new ArtistCatalogLookupRequested(
+                artistId,
+                requestedAt,
+                correlationId),
+            isNew: true);
+
+        return true;
+    }
+
+    public bool AlbumCatalogLookupRequested(
+        ArtistId? artistId,
+        AlbumId albumId,
+        DateTimeOffset requestedAt,
+        CorrelationId correlationId)
+    {
+        if (hasAlbumCatalogLookupRequested)
+        {
+            return false;
+        }
+
+        Apply(
+            new AlbumCatalogLookupRequested(
+                artistId,
+                albumId,
+                requestedAt,
+                correlationId),
+            isNew: true);
+
+        return true;
+    }
+
     public async Task<bool> SaveAsync(
         ICatalogSearchDiscoveryRepository repository,
         CancellationToken cancellationToken)
@@ -291,11 +388,19 @@ public sealed class SearchOrSeekHistory
             return true;
         }
 
-        var saved = await repository.AppendAsync(
-            (this.criteria ?? throw new InvalidOperationException("Catalog search term has not been established.")),
-            this.version,
-            this.uncommittedEvents.AsReadOnly(),
-            cancellationToken);
+        var saved = criteria is not null
+            ? await repository.AppendAsync(
+                criteria,
+                version,
+                uncommittedEvents.AsReadOnly(),
+                cancellationToken)
+            : knownItem is not null
+                ? await repository.AppendAsync(
+                    knownItem,
+                    version,
+                    uncommittedEvents.AsReadOnly(),
+                    cancellationToken)
+                : throw new InvalidOperationException("Catalog discovery subject has not been established.");
 
         if (saved)
         {
@@ -320,6 +425,8 @@ public sealed class SearchOrSeekHistory
     {
         var handlers = new EventHandlers<SearchOrSeekHistory>();
         handlers.Register<TrackMetadataLookupRequested>(On);
+        handlers.Register<ArtistCatalogLookupRequested>(On);
+        handlers.Register<AlbumCatalogLookupRequested>(On);
         handlers.Register<StreamingLocationsRequired>(On);
         handlers.Register<DiscoveryRequested>(On);
         handlers.Register<DiscoveryPlanned>(On);
@@ -334,6 +441,19 @@ public sealed class SearchOrSeekHistory
     private void On(TrackMetadataLookupRequested @event)
     {
         this.criteria = @event.SearchCriteria;
+        hasTrackMetadataLookupRequested = true;
+    }
+
+    private void On(ArtistCatalogLookupRequested @event)
+    {
+        knownItem ??= KnownCatalogItem.ForArtist(@event.ArtistId);
+        hasArtistCatalogLookupRequested = true;
+    }
+
+    private void On(AlbumCatalogLookupRequested @event)
+    {
+        knownItem ??= KnownCatalogItem.ForAlbum(@event.AlbumId);
+        hasAlbumCatalogLookupRequested = true;
     }
 
     private void On(StreamingLocationsRequired @event)

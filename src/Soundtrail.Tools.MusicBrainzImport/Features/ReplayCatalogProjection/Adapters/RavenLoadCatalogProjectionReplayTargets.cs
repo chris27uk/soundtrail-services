@@ -1,6 +1,7 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
+using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.EventStore;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.Adapters;
 

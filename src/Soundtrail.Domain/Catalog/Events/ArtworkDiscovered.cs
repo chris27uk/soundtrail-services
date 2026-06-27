@@ -1,6 +1,4 @@
-using Soundtrail.Domain.Catalog;
-
-namespace Soundtrail.Domain.Events;
+namespace Soundtrail.Domain.Catalog.Events;
 
 public sealed record ArtworkDiscovered(
     CatalogEntityKind EntityKind,

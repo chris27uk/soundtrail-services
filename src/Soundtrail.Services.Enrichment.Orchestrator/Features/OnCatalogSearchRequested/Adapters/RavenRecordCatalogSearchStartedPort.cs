@@ -1,5 +1,6 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Persistence;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
@@ -8,7 +9,7 @@ public sealed class RavenRecordCatalogSearchStartedPort(
     ICatalogSearchDiscoveryRepository discoveryRepository) : IRecordCatalogSearchStartedPort
 {
     public async Task RecordAsync(
-        CatalogSearchCriteria criteria,
+        MusicSearchCriteria criteria,
         IReadOnlyList<MusicCatalogId> musicCatalogIds,
         int trustLevel,
         int riskScore,
@@ -41,6 +42,6 @@ public sealed class RavenRecordCatalogSearchStartedPort(
             }
         }
 
-        throw new InvalidOperationException($"Unable to persist search-start events for {criteria.Value} after retry.");
+        throw new InvalidOperationException("Unable to persist search-start events after retry.");
     }
 }

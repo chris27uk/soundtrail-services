@@ -4,6 +4,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Soundtrail.Services.AppHost;
+using System.Collections;
 
 namespace Soundtrail.Services.Tests.Integration.AppHost;
 
@@ -100,7 +101,7 @@ public sealed class AppHostCompositionTests
     private static IEnumerable<object> GetAnnotations(ProjectResource resource)
     {
         var annotationsProperty = resource.GetType().GetProperty("Annotations");
-        var annotations = annotationsProperty?.GetValue(resource) as System.Collections.IEnumerable;
+        var annotations = annotationsProperty?.GetValue(resource) as IEnumerable;
         if (annotations is null)
         {
             return [];

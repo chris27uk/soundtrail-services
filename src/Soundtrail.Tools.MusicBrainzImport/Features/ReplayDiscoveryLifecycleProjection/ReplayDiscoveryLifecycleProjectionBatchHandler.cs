@@ -1,9 +1,10 @@
-using Soundtrail.Domain;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Responses;
+using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged;
+using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.EventStore;
+using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.ProjectionReset;
 
-namespace Soundtrail.Tools.MusicBrainzImport.Features.OnReplayCatalogSearchStatus;
+namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection;
 
 public sealed class ReplayDiscoveryLifecycleProjectionBatchHandler(
     ILoadDiscoveryLifecycleReplayTargetsPort loadTargetsPort,
