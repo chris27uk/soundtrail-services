@@ -1,48 +1,30 @@
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Commands;
-using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Model;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
-using Soundtrail.Services.Enrichment.Orchestrator.Shared.Prioritisation;
-using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search.Resolution;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
 {
     internal sealed class CatalogSearchRequestedHandlerTestEnvironment
     {
         private readonly FakeMusicCatalogCandidateSearch search;
-        private readonly PotentialCatalogLookupWorkStoreFake potentialCatalogLookupWorkStoreFake;
-        private readonly ActiveLookupWorkStoreFake activeLookupWorkStoreFake;
         private readonly LocalMusicTrackSearchFake localMusicTrackSearchFake;
-        private readonly CatalogSearchTrackingStoreFake catalogSearchTrackingStoreFake;
         private readonly CatalogSearchDiscoveryRepositoryFake catalogSearchDiscoveryRepositoryFake;
-        private readonly CommandBusFake commandBusFake;
 
         private CatalogSearchRequestedHandlerTestEnvironment(
             FakeMusicCatalogCandidateSearch search,
-            PotentialCatalogLookupWorkStoreFake potentialCatalogLookupWorkStoreFake)
+            PotentialCatalogLookupWorkStoreFake _)
         {
             this.search = search;
-            this.potentialCatalogLookupWorkStoreFake = potentialCatalogLookupWorkStoreFake;
-            this.activeLookupWorkStoreFake = new ActiveLookupWorkStoreFake();
             this.localMusicTrackSearchFake = new LocalMusicTrackSearchFake();
-            this.catalogSearchTrackingStoreFake = new CatalogSearchTrackingStoreFake();
             this.catalogSearchDiscoveryRepositoryFake = new CatalogSearchDiscoveryRepositoryFake();
-            this.commandBusFake = new CommandBusFake();
-            this.Planner = new DiscoveryPriorityPolicy();
-            this.ResolutionPolicy = new MusicCatalogMatchResolver();
             this.Handler = new CatalogSearchRequestedHandler(
                 search,
-                potentialCatalogLookupWorkStoreFake,
-                this.catalogSearchTrackingStoreFake,
-                this.catalogSearchDiscoveryRepositoryFake,
-                this.Planner,
-                this.ResolutionPolicy,
-                this.activeLookupWorkStoreFake,
-                this.localMusicTrackSearchFake,
-                this.commandBusFake);
+                new RecordCatalogSearchStartedPortFake(this.catalogSearchDiscoveryRepositoryFake),
+                this.localMusicTrackSearchFake);
 
             SeedDefaultLocalTrack("mc_track_1");
             SeedDefaultLocalTrack("mc_track_2");
@@ -54,23 +36,11 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
 
         public CatalogSearchRequestedHandler Handler { get; }
 
-        public DiscoveryPriorityPolicy Planner { get; }
-
-        public MusicCatalogMatchResolver ResolutionPolicy { get; }
-
         public FakeMusicCatalogCandidateSearch Search => this.search;
-
-        public ActiveLookupWorkStoreFake ActiveWorkStore => this.activeLookupWorkStoreFake;
 
         public LocalMusicTrackSearchFake LocalSearch => this.localMusicTrackSearchFake;
 
-        public IReadOnlyList<PotentialCatalogLookupWork> PotentialCatalogLookupWorks => this.potentialCatalogLookupWorkStoreFake.All;
-
-        public IReadOnlyList<CatalogSearchTracking> CatalogSearchTrackings => this.catalogSearchTrackingStoreFake.All;
-
         public CatalogSearchDiscoveryRepositoryFake DiscoveryRepository => this.catalogSearchDiscoveryRepositoryFake;
-
-        public CommandBusFake CommandBus => this.commandBusFake;
 
         public static CatalogSearchRequestedHandlerTestEnvironment WithNoExistingCandidates() =>
             new(
@@ -85,7 +55,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
             search.ResolveAs(musicCatalogId);
             return new CatalogSearchRequestedHandlerTestEnvironment(search, store);
         }
-        
+
         public static CatalogSearchRequestedHandlerTestEnvironment WithExistingNotYetEligibleCandidate(string musicCatalogId = "SomeId")
         {
             var store = new PotentialCatalogLookupWorkStoreFake();

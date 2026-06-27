@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnAssessMusicTrack.CompositionRoot;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.CompositionRoot;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup.CompositionRoot;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicTrackEventsImported.CompositionRoot;
@@ -30,6 +31,7 @@ public static class AppServiceCollectionExtensions
 
         services.AddOnMusicTrackEventsImportedFeature();
         services.AddOnMusicCatalogLookupAttemptedFeature();
+        services.AddOnAssessMusicTrackFeature();
         services.AddOnStreamingLocationsRequiredFeature();
         services.AddOnCatalogSearchRequestedFeature(x =>
             x.ConfigureDependencies = svc => dependencyProvider.AddOnCatalogSearchRequestedDependencies(svc, configuration));

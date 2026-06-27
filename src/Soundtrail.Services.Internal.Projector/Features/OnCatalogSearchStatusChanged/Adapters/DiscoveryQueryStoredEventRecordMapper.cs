@@ -14,6 +14,7 @@ public static class DiscoveryQueryStoredEventRecordMapper
     private static IDomainEvent ToDomainEventData(DiscoveryQueryStoredEventRecordDto dto) =>
         dto.EventType switch
         {
+            nameof(MusicTrackSearchStarted) => ToMusicTrackSearchStarted(dto),
             nameof(DiscoveryRequested) => ToDiscoveryRequested(dto),
             nameof(DiscoveryPlanned) => ToDiscoveryPlanned(dto),
             nameof(DiscoveryDeferred) => ToDiscoveryDeferred(dto),
@@ -23,6 +24,19 @@ public static class DiscoveryQueryStoredEventRecordMapper
             nameof(DiscoveryCompleted) => ToDiscoveryCompleted(dto),
             _ => throw new ArgumentOutOfRangeException(nameof(dto.EventType), dto.EventType, "Unknown discovery event type.")
         };
+
+    private static MusicTrackSearchStarted ToMusicTrackSearchStarted(DiscoveryQueryStoredEventRecordDto dto)
+    {
+        var data = dto.MusicTrackSearchStarted
+            ?? throw new InvalidOperationException("Missing music track search started event data.");
+        return new MusicTrackSearchStarted(
+            CatalogSearchCriteria.From(data.Criteria),
+            MusicCatalogId.From(data.MusicCatalogId),
+            data.TrustLevel,
+            data.RiskScore,
+            data.StartedAtUtc,
+            CorrelationId.From(data.CorrelationId));
+    }
 
     private static DiscoveryRequested ToDiscoveryRequested(DiscoveryQueryStoredEventRecordDto dto)
     {

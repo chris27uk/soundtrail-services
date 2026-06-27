@@ -16,115 +16,99 @@ public sealed class MusicCatalogLookupAttemptedHandler(
         MusicCatalogLookupAttempted attempted,
         CancellationToken cancellationToken = default)
     {
-        await ApplyStartedAsync(attempted, cancellationToken);
+        if (attempted.MusicCatalogMetadataFetched is not null)
+        { }
+        else
+        {
+            if (attempted.Outcome.Status is MusicCatalogLookupOutcomeStatus.Deferred or MusicCatalogLookupOutcomeStatus.Duplicate)
+            { }
+            else
+            {
+                var trackings2 = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(attempted.MusicCatalogId, cancellationToken);
+                foreach (var tracking1 in trackings2)
+                {
+                    var discovery2 = await CatalogSearchDiscovery.LoadAsync(discoveryRepository, tracking1.Criteria, cancellationToken);
+                    if (!discovery2.Start(attempted.Priority, "Lookup started", attempted.CreatedAt))
+                    {
+                        continue;
+                    }
+
+                    await discovery2.SaveAsync(discoveryRepository, cancellationToken);
+                }
+            }
+        }
 
         if (attempted.MusicCatalogMetadataFetched is not null)
         {
-            await ApplyFetchedMetadataAsync(attempted.MusicCatalogMetadataFetched, cancellationToken);
+            var aggregate = await CatalogEntityAggregate.LoadAsync(
+                eventRepository,
+                attempted.MusicCatalogMetadataFetched.MusicCatalogId,
+                cancellationToken);
+            aggregate.RecordMusicCatalogMetadataFetched(attempted.MusicCatalogMetadataFetched);
+            await aggregate.SaveAsync(eventRepository, attempted.MusicCatalogMetadataFetched.CommandId, cancellationToken);
+
+            var resolvedCriteria = CatalogSearchCriteriaSet.ForResolvedTrack(
+                attempted.MusicCatalogMetadataFetched.MusicCatalogId,
+                attempted.MusicCatalogMetadataFetched.Hierarchy?.ArtistId,
+                attempted.MusicCatalogMetadataFetched.Hierarchy?.AlbumId);
+
+            foreach (var criteria in resolvedCriteria)
+            {
+                await catalogSearchTrackingStore.UpsertAsync(
+                    new CatalogSearchTracking(
+                        criteria,
+                        attempted.MusicCatalogMetadataFetched.MusicCatalogId,
+                        attempted.MusicCatalogMetadataFetched.CreatedAt),
+                    cancellationToken);
+            }
+
+            var trackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(attempted.MusicCatalogMetadataFetched.MusicCatalogId, cancellationToken);
+            var discoveryCriteria = resolvedCriteria
+                .Concat(trackings.Select(static tracking => tracking.Criteria))
+                .DistinctBy(static criteria => criteria.Value);
+
+            foreach (var criteria in discoveryCriteria)
+            {
+                var discovery = await CatalogSearchDiscovery.LoadAsync(discoveryRepository, criteria, cancellationToken);
+                if (!discovery.Complete(attempted.MusicCatalogMetadataFetched.Priority, "Discovery completed", attempted.MusicCatalogMetadataFetched.CreatedAt))
+                {
+                    continue;
+                }
+
+                await discovery.SaveAsync(discoveryRepository, cancellationToken);
+            }
         }
 
-        await ApplyOutcomeAsync(attempted, cancellationToken);
+        if (attempted.Outcome.Status is not (MusicCatalogLookupOutcomeStatus.Deferred or MusicCatalogLookupOutcomeStatus.Failed))
+        { }
+        else
+        {
+            var trackings1 = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(attempted.MusicCatalogId, cancellationToken);
+            foreach (var tracking in trackings1)
+            {
+                var discovery1 = await CatalogSearchDiscovery.LoadAsync(discoveryRepository, tracking.Criteria, cancellationToken);
+                var changed = attempted.Outcome.Status switch
+                {
+                    MusicCatalogLookupOutcomeStatus.Deferred => discovery1.Defer(
+                        attempted.Outcome.RetryAfterSeconds,
+                        attempted.Outcome.RetryAt,
+                        attempted.Outcome.Reason ?? "Lookup deferred",
+                        attempted.CreatedAt),
+                    MusicCatalogLookupOutcomeStatus.Failed => discovery1.Fail(
+                        attempted.Outcome.Reason ?? "Lookup failed",
+                        attempted.CreatedAt),
+                    _ => false
+                };
+
+                if (!changed)
+                {
+                    continue;
+                }
+
+                await discovery1.SaveAsync(discoveryRepository, cancellationToken);
+            }
+        }
 
         return new EnrichmentOrchestrationResult(Array.Empty<IMusicTrackEvent>());
-    }
-
-    private async Task ApplyStartedAsync(
-        MusicCatalogLookupAttempted attempted,
-        CancellationToken cancellationToken)
-    {
-        if (attempted.Outcome.Status is MusicCatalogLookupOutcomeStatus.Deferred or MusicCatalogLookupOutcomeStatus.Duplicate)
-        {
-            return;
-        }
-
-        var trackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(attempted.MusicCatalogId, cancellationToken);
-        foreach (var tracking in trackings)
-        {
-            var discovery = await CatalogSearchDiscovery.LoadAsync(discoveryRepository, tracking.Criteria, cancellationToken);
-            if (!discovery.Start(attempted.Priority, "Lookup started", attempted.CreatedAt))
-            {
-                continue;
-            }
-
-            await discovery.SaveAsync(discoveryRepository, cancellationToken);
-        }
-    }
-
-    private async Task ApplyFetchedMetadataAsync(
-        MusicCatalogMetadataFetched fetched,
-        CancellationToken cancellationToken)
-    {
-        var aggregate = await CatalogEntityAggregate.LoadAsync(
-            eventRepository,
-            fetched.MusicCatalogId,
-            cancellationToken);
-        aggregate.RecordMusicCatalogMetadataFetched(fetched);
-        await aggregate.SaveAsync(eventRepository, fetched.CommandId, cancellationToken);
-
-        var resolvedCriteria = CatalogSearchCriteriaSet.ForResolvedTrack(
-            fetched.MusicCatalogId,
-            fetched.Hierarchy?.ArtistId,
-            fetched.Hierarchy?.AlbumId);
-
-        foreach (var criteria in resolvedCriteria)
-        {
-            await catalogSearchTrackingStore.UpsertAsync(
-                new CatalogSearchTracking(
-                    criteria,
-                    fetched.MusicCatalogId,
-                    fetched.CreatedAt),
-                cancellationToken);
-        }
-
-        var trackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(fetched.MusicCatalogId, cancellationToken);
-        var discoveryCriteria = resolvedCriteria
-            .Concat(trackings.Select(static tracking => tracking.Criteria))
-            .DistinctBy(static criteria => criteria.Value);
-
-        foreach (var criteria in discoveryCriteria)
-        {
-            var discovery = await CatalogSearchDiscovery.LoadAsync(discoveryRepository, criteria, cancellationToken);
-            if (!discovery.Complete(fetched.Priority, "Discovery completed", fetched.CreatedAt))
-            {
-                continue;
-            }
-
-            await discovery.SaveAsync(discoveryRepository, cancellationToken);
-        }
-    }
-
-    private async Task ApplyOutcomeAsync(
-        MusicCatalogLookupAttempted attempted,
-        CancellationToken cancellationToken)
-    {
-        if (attempted.Outcome.Status is not (MusicCatalogLookupOutcomeStatus.Deferred or MusicCatalogLookupOutcomeStatus.Failed))
-        {
-            return;
-        }
-
-        var trackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(attempted.MusicCatalogId, cancellationToken);
-        foreach (var tracking in trackings)
-        {
-            var discovery = await CatalogSearchDiscovery.LoadAsync(discoveryRepository, tracking.Criteria, cancellationToken);
-            var changed = attempted.Outcome.Status switch
-            {
-                MusicCatalogLookupOutcomeStatus.Deferred => discovery.Defer(
-                    attempted.Outcome.RetryAfterSeconds,
-                    attempted.Outcome.RetryAt,
-                    attempted.Outcome.Reason ?? "Lookup deferred",
-                    attempted.CreatedAt),
-                MusicCatalogLookupOutcomeStatus.Failed => discovery.Fail(
-                    attempted.Outcome.Reason ?? "Lookup failed",
-                    attempted.CreatedAt),
-                _ => false
-            };
-
-            if (!changed)
-            {
-                continue;
-            }
-
-            await discovery.SaveAsync(discoveryRepository, cancellationToken);
-        }
     }
 }

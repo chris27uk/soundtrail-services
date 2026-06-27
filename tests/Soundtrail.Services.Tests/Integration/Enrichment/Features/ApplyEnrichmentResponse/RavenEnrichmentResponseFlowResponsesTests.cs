@@ -21,6 +21,7 @@ using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack.Adapter
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
+using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 using Soundtrail.Translators.MusicTrackEventStore;
 using System.Linq;
 

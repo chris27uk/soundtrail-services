@@ -11,4 +11,8 @@ public interface ILookupExecutionReceiptStore
     Task MarkCompletedAsync(
         CommandId commandId,
         CancellationToken cancellationToken);
+
+    Task ReleaseAsync(
+        CommandId commandId,
+        CancellationToken cancellationToken);
 }

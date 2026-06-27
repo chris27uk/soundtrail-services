@@ -28,7 +28,7 @@ public sealed class LookupMusicMetadataListenerWolverineResponsesTests
     public async Task Given_A_Budget_Deferred_Metadata_Lookup_When_Handled_Then_A_Lookup_Execution_Report_Is_Returned()
     {
         var env = LookupMusicMetadataHandlerTestEnvironment.Create();
-        env.SourceBudget.Reject(
+        env.Admission.Reject(
             ProviderName.MusicBrainz,
             new DateTimeOffset(2026, 6, 18, 12, 1, 0, TimeSpan.Zero),
             "MusicBrainz budget temporarily unavailable");

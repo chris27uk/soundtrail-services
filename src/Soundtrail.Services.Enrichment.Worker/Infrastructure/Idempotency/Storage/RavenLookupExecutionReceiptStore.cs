@@ -38,4 +38,18 @@ internal sealed class RavenLookupExecutionReceiptStore(
 
         existing.Completed = true;
     }
+
+    public async Task ReleaseAsync(
+        CommandId commandId,
+        CancellationToken cancellationToken)
+    {
+        var documentId = RavenLookupExecutionReceiptDto.GetDocumentId(commandId.Value);
+        var existing = await session.LoadAsync<RavenLookupExecutionReceiptDto>(documentId, cancellationToken);
+        if (existing is null || existing.Completed)
+        {
+            return;
+        }
+
+        session.Delete(existing);
+    }
 }

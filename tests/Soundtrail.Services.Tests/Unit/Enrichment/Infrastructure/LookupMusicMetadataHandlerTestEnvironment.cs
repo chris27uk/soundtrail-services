@@ -12,25 +12,19 @@ internal sealed class LookupMusicMetadataHandlerTestEnvironment
 {
     private static readonly DateTimeOffset DefaultCreatedAt = new(2026, 6, 8, 12, 0, 0, TimeSpan.Zero);
 
-    private readonly LookupExecutionReceiptStoreFake.State state;
-
     private LookupMusicMetadataHandlerTestEnvironment()
     {
-        state = new LookupExecutionReceiptStoreFake.State();
         Metadata = new FakeGetMusicMetadata();
-        SourceBudget = new SourceApiBudgetPortFake();
+        Admission = new LookupExecutionAdmissionPortFake();
         var coreHandler = new LookupMusicMetadataHandler(Metadata);
-        var budgetDecorator = new LookupMusicMetadataBudgetReservationDecorator(SourceBudget, coreHandler);
-        Handler = new LookupMusicMetadataIdempotencyDecorator(
-            new LookupExecutionReceiptStoreFake(state),
-            budgetDecorator);
+        Handler = new LookupMusicMetadataExecutionAdmissionDecorator(Admission, coreHandler);
     }
 
     public ILookupMusicMetadataHandler Handler { get; }
 
     public FakeGetMusicMetadata Metadata { get; }
 
-    public SourceApiBudgetPortFake SourceBudget { get; }
+    public LookupExecutionAdmissionPortFake Admission { get; }
 
     public static LookupMusicMetadataHandlerTestEnvironment Create() => new();
 

@@ -18,16 +18,12 @@ public static class ServiceCollectionExtensions
         options.ConfigureDependencies?.Invoke(services);
 
         services.TryAddScoped<LookupMusicMetadataHandler>();
-        services.TryAddScoped<LookupMusicMetadataBudgetReservationDecorator>(sp =>
-            new LookupMusicMetadataBudgetReservationDecorator(
-                sp.GetRequiredService<IReserveSourceApiBudgetPort>(),
+        services.TryAddScoped<LookupMusicMetadataExecutionAdmissionDecorator>(sp =>
+            new LookupMusicMetadataExecutionAdmissionDecorator(
+                sp.GetRequiredService<Shared.ExecutionAdmission.ILookupExecutionAdmissionPort>(),
                 sp.GetRequiredService<LookupMusicMetadataHandler>()));
-        services.TryAddScoped<LookupMusicMetadataIdempotencyDecorator>(sp =>
-            new LookupMusicMetadataIdempotencyDecorator(
-                sp.GetRequiredService<ILookupExecutionReceiptStore>(),
-                sp.GetRequiredService<LookupMusicMetadataBudgetReservationDecorator>()));
         services.TryAddScoped<ILookupMusicMetadataHandler>(sp =>
-            sp.GetRequiredService<LookupMusicMetadataIdempotencyDecorator>());
+            sp.GetRequiredService<LookupMusicMetadataExecutionAdmissionDecorator>());
         services.TryAddScoped<LookupMusicMetadataListener>();
         return services;
     }

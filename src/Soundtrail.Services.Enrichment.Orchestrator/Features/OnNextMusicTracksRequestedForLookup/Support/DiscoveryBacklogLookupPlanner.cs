@@ -10,11 +10,12 @@ namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracks
 
 public sealed class DiscoveryBacklogLookupPlanner
 {
-    internal PlannedLookupWork? Plan(
+    public PlannedLookupWork? Plan(
         MusicCatalogId musicCatalogId,
         LookupPriorityBand priority,
         DateTimeOffset now,
-        LocalMusicTrackSearchResult? localTrack)
+        LocalMusicTrackSearchResult? localTrack,
+        CorrelationId? correlationId = null)
     {
         if (localTrack?.IsPlayable == true)
         {
@@ -30,7 +31,7 @@ public sealed class DiscoveryBacklogLookupPlanner
                     musicCatalogId,
                     priority,
                     now,
-                    CorrelationId.New(),
+                    correlationId ?? CorrelationId.New(),
                     searchTerm,
                     ToHierarchy(localTrack)),
                 ProviderName.Odesli);
@@ -47,7 +48,7 @@ public sealed class DiscoveryBacklogLookupPlanner
                 musicCatalogId,
                 priority,
                 now,
-                CorrelationId.New(),
+                correlationId ?? CorrelationId.New(),
                 searchTerm,
                 ToHierarchy(localTrack)),
             ProviderName.MusicBrainz);

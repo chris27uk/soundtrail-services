@@ -23,6 +23,18 @@ internal sealed class LookupExecutionReceiptStoreFake(
         return Task.CompletedTask;
     }
 
+    public Task ReleaseAsync(
+        CommandId commandId,
+        CancellationToken cancellationToken)
+    {
+        if (!state.CompletedReceipts.Contains(commandId.Value))
+        {
+            state.StartedReceipts.Remove(commandId.Value);
+        }
+
+        return Task.CompletedTask;
+    }
+
     internal sealed class State
     {
         public HashSet<string> StartedReceipts { get; } = [];

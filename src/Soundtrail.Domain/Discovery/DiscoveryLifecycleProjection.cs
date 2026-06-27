@@ -65,6 +65,8 @@ public sealed class DiscoveryLifecycleProjection
     {
         var handlers = new EventHandlers<DiscoveryLifecycleProjection>();
 
+        handlers.Register<MusicTrackSearchStarted>(_ => { });
+
         handlers.Register<DiscoveryRequested>(@event =>
         {
             Status = CatalogSearchLifecycleStatus.Requested.ToString();

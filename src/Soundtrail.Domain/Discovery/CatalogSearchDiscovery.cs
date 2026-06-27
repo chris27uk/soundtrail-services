@@ -1,6 +1,7 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Events;
+using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Domain.Discovery;
 
@@ -54,6 +55,31 @@ public sealed class CatalogSearchDiscovery
                 request.RiskScore,
                 request.OccurredAt,
                 request.CorrelationId),
+            isNew: true);
+
+        return true;
+    }
+
+    public bool Request(
+        CatalogSearchCriteria criteria,
+        int trustLevel,
+        int riskScore,
+        DateTimeOffset requestedAt,
+        CorrelationId correlationId)
+    {
+        if (this.hasRequested)
+        {
+            return false;
+        }
+
+        Apply(
+            new DiscoveryRequested(
+                criteria,
+                ToQuery(criteria),
+                trustLevel,
+                riskScore,
+                requestedAt,
+                correlationId),
             isNew: true);
 
         return true;
@@ -252,6 +278,20 @@ public sealed class CatalogSearchDiscovery
     private CatalogSearchCriteria RequireCriteria() =>
         criteria ?? throw new InvalidOperationException("Discovery criteria has not been established.");
 
+    private static NormalizedSearchQuery ToQuery(CatalogSearchCriteria criteria)
+    {
+        if (criteria.Value.StartsWith("search:", StringComparison.Ordinal))
+        {
+            var parts = criteria.Value.Split(':', 3, StringSplitOptions.None);
+            if (parts.Length == 3)
+            {
+                return NormalizedSearchQuery.FromText(parts[2]);
+            }
+        }
+
+        return NormalizedSearchQuery.FromText(criteria.Value);
+    }
+
     private void EnsureCanTransitionTo(CatalogSearchLifecycleStatus targetStatus)
     {
         if (status is null)
@@ -273,6 +313,7 @@ public sealed class CatalogSearchDiscovery
     private EventHandlers<CatalogSearchDiscovery> CreateHandlers()
     {
         var handlers = new EventHandlers<CatalogSearchDiscovery>();
+        handlers.Register<MusicTrackSearchStarted>(_ => { });
         handlers.Register<DiscoveryRequested>(this.On);
         handlers.Register<DiscoveryPlanned>(this.On);
         handlers.Register<DiscoveryDeferred>(this.On);

@@ -1,25 +1,40 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Contracts.IntegrationMessaging.Commands;
-using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Events;
-using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search.Resolution;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Messaging.Wolverine;
 
 public sealed class CatalogSearchRequestedListenerWolverineResponsesTests
 {
     [Fact]
-    public async Task Given_A_Schedulable_Request_When_Handled_Then_A_MusicBrainz_Command_Dto_Is_Returned()
+    public async Task Given_A_Schedulable_Request_When_Handled_Then_A_Search_Start_Event_Is_Stored()
     {
         var env = CatalogSearchRequestedListenerWolverineTestEnvironment.WithASchedulableRequest();
-        var messages = await env.HandleSchedulableRequest();
-        messages.Should().ContainSingle().Which.Should().BeOfType<LookupMusicMetadataCommandDto>();
+        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
+
+        await env.HandleSchedulableRequest();
+
+        env.DiscoveryRepository.GetStoredEvents(criteria)
+            .Should()
+            .ContainSingle()
+            .Which.Should()
+            .BeOfType<MusicTrackSearchStarted>();
     }
 
     [Fact]
-    public async Task Given_Local_Search_Has_Isrc_When_Handled_Then_A_Playback_References_Command_Dto_Is_Returned()
+    public async Task Given_A_Request_That_Cannot_Be_Resolved_When_Handled_Then_No_Discovery_Event_Is_Stored()
+    {
+        var env = CatalogSearchRequestedListenerWolverineTestEnvironment.WithAnUnschedulableRequest();
+        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
+
+        await env.HandleUnschedulableRequest();
+
+        env.DiscoveryRepository.GetStoredEvents(criteria).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Given_Local_Search_Has_Isrc_When_Handled_Then_The_Request_Handler_Still_Only_Stores_Search_Start_Events()
     {
         var env = CatalogSearchRequestedListenerWolverineTestEnvironment.WithASchedulableRequest();
         env.LocalSearch.Seed(new LocalMusicTrackSearchResult(
@@ -33,55 +48,11 @@ public sealed class CatalogSearchRequestedListenerWolverineResponsesTests
             IsPlayable: false,
             ReleaseDate: null));
 
-        var message = (LookupStreamingLocationsCommandDto)(await env.HandleSchedulableRequest()).Single();
-
-        message.SearchTerm.Kind.Should().Be(MusicSearchKind.Isrc);
-        message.SearchTerm.Isrc.Should().Be("isrc-1");
-    }
-
-    [Fact]
-    public async Task Given_A_Schedulable_Request_When_Handled_Then_Discovery_Is_Planned()
-    {
-        var env = CatalogSearchRequestedListenerWolverineTestEnvironment.WithASchedulableRequest();
-        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
-
         await env.HandleSchedulableRequest();
 
-        var events = env.DiscoveryRepository.GetStoredEvents(criteria);
-        var planned = events.OfType<DiscoveryPlanned>().Single();
-
-        planned.WillBeLookedUp.Should().BeTrue();
-        planned.EstimatedRetryAfterSeconds.Should().Be(30);
-        planned.Reason.Should().Be("Planner queued lookup");
-        events.Should().NotContainItemsAssignableTo<DiscoveryStarted>();
-    }
-
-    [Fact]
-    public async Task Given_A_Deferred_Request_When_Handled_Then_Discovery_Status_Is_Projected_As_Deferred()
-    {
-        var env = CatalogSearchRequestedListenerWolverineTestEnvironment.WithADeferredRequest();
-        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
-
-        var messages = await env.HandleDeferredRequest();
-
-        messages.Should().BeEmpty();
-        var @event = env.DiscoveryRepository.GetStoredEvents(criteria).Single().Should().BeOfType<DiscoveryDeferred>().Subject;
-        @event.WillBeLookedUp.Should().BeTrue();
-        @event.EstimatedRetryAfterSeconds.Should().Be(60);
-        @event.Reason.Should().Be("Planner deferred lookup");
-    }
-
-    [Fact]
-    public async Task Given_A_Request_That_Cannot_Be_Resolved_When_Handled_Then_Discovery_Status_Is_Projected_As_Rejected()
-    {
-        var env = CatalogSearchRequestedListenerWolverineTestEnvironment.WithAnUnschedulableRequest();
-        var criteria = CatalogSearchCriteria.Search("track", "rare unknown song");
-
-        var messages = await env.HandleUnschedulableRequest();
-
-        messages.Should().BeEmpty();
-        var @event = env.DiscoveryRepository.GetStoredEvents(criteria).Single().Should().BeOfType<DiscoveryRejected>().Subject;
-        @event.WillBeLookedUp.Should().BeFalse();
-        @event.Reason.Should().Be("Planner rejected lookup");
+        env.DiscoveryRepository
+            .GetStoredEvents(CatalogSearchCriteria.Search("track", "rare unknown song"))
+            .Should()
+            .OnlyContain(x => x is MusicTrackSearchStarted);
     }
 }

@@ -3,6 +3,7 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Commands;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Ports;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Support;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Events;
 using Soundtrail.Domain.Model;
@@ -86,7 +87,9 @@ public sealed class RebuildAllReadModelsHandlerTests
             discoveryEventStore,
             discoveryEventStore,
             discoveryProjectionStore,
-            new CatalogSearchStatusChangedHandler(discoveryProjectionStore, discoveryProjectionStore));
+            new CatalogSearchStatusChangedHandler(
+                discoveryProjectionStore,
+                discoveryProjectionStore));
 
         var clearPlannerOperationalStatePort = new FakeClearPlannerOperationalStatePort(3, 4, 5);
         var handler = new RebuildAllReadModelsHandler(
@@ -237,6 +240,22 @@ public sealed class RebuildAllReadModelsHandlerTests
             projections.Remove(criteria.Value);
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class FakeCatalogSearchStatusTrackingPort : ILoadCatalogSearchStatusTrackingPort
+    {
+        public Task<CatalogSearchStatusTracking?> LoadAsync(
+            CatalogSearchCriteria criteria,
+            CancellationToken cancellationToken) =>
+            Task.FromResult<CatalogSearchStatusTracking?>(null);
+    }
+
+    private sealed class FakeCatalogSearchStatusMusicTrackPort : ILoadCatalogSearchStatusMusicTrackPort
+    {
+        public Task<CatalogSearchStatusMusicTrack?> LoadAsync(
+            MusicCatalogId musicCatalogId,
+            CancellationToken cancellationToken) =>
+            Task.FromResult<CatalogSearchStatusMusicTrack?>(null);
     }
 
         private sealed class FakeClearPlannerOperationalStatePort(
