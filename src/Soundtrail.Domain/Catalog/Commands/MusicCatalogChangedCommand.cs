@@ -3,6 +3,4 @@ using Soundtrail.Domain.Catalog.Projection;
 
 namespace Soundtrail.Domain.Catalog.Commands;
 
-public sealed record MusicCatalogChangedCommand(
-    MusicCatalogId MusicCatalogId,
-    IReadOnlyList<VersionedMusicTrackEvent> Events);
+public sealed record MusicCatalogChangedCommand(MusicCatalogId MusicCatalogId, IReadOnlyList<VersionedMusicTrackEvent> Events);

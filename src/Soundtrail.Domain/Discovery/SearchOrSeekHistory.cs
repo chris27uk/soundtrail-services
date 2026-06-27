@@ -22,9 +22,11 @@ public sealed class SearchOrSeekHistory
     private string? reason;
     private DateTimeOffset? updatedAt;
     private bool hasRequested;
+    private bool hasKnownTrackRequested;
     private bool hasTrackMetadataLookupRequested;
     private bool hasArtistCatalogLookupRequested;
     private bool hasAlbumCatalogLookupRequested;
+    private bool hasStreamingLocationsRequired;
     private int version;
 
     private SearchOrSeekHistory(IEnumerable<IDomainEvent> events, int version)
@@ -48,6 +50,7 @@ public sealed class SearchOrSeekHistory
         var aggregate = new SearchOrSeekHistory(
             stream.Events.Where(static @event =>
                 @event is Events.TrackMetadataLookupRequested
+                or Events.KnownTrackRequested
                 or Events.ArtistCatalogLookupRequested
                 or Events.AlbumCatalogLookupRequested
                 or Catalog.Events.StreamingLocationsRequired
@@ -72,6 +75,7 @@ public sealed class SearchOrSeekHistory
         var aggregate = new SearchOrSeekHistory(
             stream.Events.Where(static @event =>
                 @event is Events.TrackMetadataLookupRequested
+                or Events.KnownTrackRequested
                 or Events.ArtistCatalogLookupRequested
                 or Events.AlbumCatalogLookupRequested
                 or Catalog.Events.StreamingLocationsRequired
@@ -297,6 +301,55 @@ public sealed class SearchOrSeekHistory
             isNew: true);
     }
 
+    public bool KnownTrackRequested(
+        TrackId trackId,
+        PlaybackProviderFilter playback,
+        DateTimeOffset requestedAt,
+        CorrelationId correlationId)
+    {
+        if (hasKnownTrackRequested)
+        {
+            return false;
+        }
+
+        Apply(
+            new Events.KnownTrackRequested(
+                trackId,
+                playback,
+                requestedAt,
+                correlationId),
+            isNew: true);
+
+        return true;
+    }
+
+    public bool RequireStreamingLocationsForKnownTrack(
+        MusicCatalogId musicCatalogId,
+        LookupPriorityBand priority,
+        DateTimeOffset observedAt,
+        CorrelationId correlationId,
+        MusicSearchCriteria lookupSearchCriteria,
+        CatalogTrackHierarchy? hierarchy = null)
+    {
+        if (hasStreamingLocationsRequired)
+        {
+            return false;
+        }
+
+        Apply(
+            new StreamingLocationsRequired(
+                musicCatalogId,
+                priority,
+                correlationId,
+                ProviderName.MusicBrainz,
+                observedAt,
+                lookupSearchCriteria,
+                hierarchy),
+            isNew: true);
+
+        return true;
+    }
+
     public void MetadataRequired(
         int trustLevel,
         int riskScore,
@@ -425,6 +478,7 @@ public sealed class SearchOrSeekHistory
     {
         var handlers = new EventHandlers<SearchOrSeekHistory>();
         handlers.Register<TrackMetadataLookupRequested>(On);
+        handlers.Register<Events.KnownTrackRequested>(On);
         handlers.Register<ArtistCatalogLookupRequested>(On);
         handlers.Register<AlbumCatalogLookupRequested>(On);
         handlers.Register<StreamingLocationsRequired>(On);
@@ -444,6 +498,12 @@ public sealed class SearchOrSeekHistory
         hasTrackMetadataLookupRequested = true;
     }
 
+    private void On(Events.KnownTrackRequested @event)
+    {
+        knownItem ??= KnownCatalogItem.ForTrack(@event.TrackId);
+        hasKnownTrackRequested = true;
+    }
+
     private void On(ArtistCatalogLookupRequested @event)
     {
         knownItem ??= KnownCatalogItem.ForArtist(@event.ArtistId);
@@ -459,6 +519,7 @@ public sealed class SearchOrSeekHistory
     private void On(StreamingLocationsRequired @event)
     {
         _ = @event;
+        hasStreamingLocationsRequired = true;
     }
 
     private void On(DiscoveryRequested @event)

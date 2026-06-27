@@ -36,6 +36,23 @@ public static class MusicSearchTermPersistentIdTranslator
             _ => throw new InvalidOperationException("Known catalog item must contain an artist id, album id or track id.")
         };
 
+    public static KnownCatalogItem ToKnownCatalogItem(string persistentId)
+    {
+        if (string.IsNullOrWhiteSpace(persistentId))
+        {
+            throw new ArgumentException("Persistent id is required.", nameof(persistentId));
+        }
+
+        var parts = persistentId.Split(':', StringSplitOptions.None);
+        return parts[0] switch
+        {
+            "artist" when parts.Length >= 2 => KnownCatalogItem.ForArtist(ArtistId.From(string.Join(':', parts.Skip(1)))),
+            "album" when parts.Length >= 2 => KnownCatalogItem.ForAlbum(AlbumId.From(string.Join(':', parts.Skip(1)))),
+            "track" when parts.Length >= 2 => KnownCatalogItem.ForTrack(TrackId.From(string.Join(':', parts.Skip(1)))),
+            _ => throw new InvalidOperationException($"Unsupported known catalog item persistent id '{persistentId}'.")
+        };
+    }
+
     public static MusicSearchCriteria ToDomainObject(string persistentId)
     {
         if (string.IsNullOrWhiteSpace(persistentId))

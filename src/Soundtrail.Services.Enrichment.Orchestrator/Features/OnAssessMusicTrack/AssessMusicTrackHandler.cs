@@ -1,3 +1,4 @@
+using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnAssessMusicTrack.Persistence;
@@ -11,11 +12,9 @@ public sealed class AssessMusicTrackHandler(
     IPotentialCatalogLookupWorkStore potentialCatalogLookupWorkStore,
     IPersistCatalogSearchDiscoveryPort persistCatalogSearchDiscoveryPort,
     DiscoveryPriorityPolicy discoveryPriorityPolicy,
-    ILocalMusicTrackSearch localMusicTrackSearch)
+    ILocalMusicTrackSearch localMusicTrackSearch) : IHandler<AssessMusicTrackCommand>
 {
-    public async Task Handle(
-        AssessMusicTrackCommand command,
-        CancellationToken cancellationToken = default)
+    public async Task Handle(AssessMusicTrackCommand command, CancellationToken cancellationToken = default)
     {
         if (command.SearchTerm is not null && command.TrustLevel is not null && command.RiskScore is not null)
         {

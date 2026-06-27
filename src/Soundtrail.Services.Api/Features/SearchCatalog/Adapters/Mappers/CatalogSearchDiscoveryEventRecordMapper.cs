@@ -7,6 +7,7 @@ using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Search;
 using Soundtrail.Translators.Discovery;
+using KnownTrackRequestedEvent = Soundtrail.Domain.Discovery.Events.KnownTrackRequested;
 
 namespace Soundtrail.Services.Api.Features.SearchCatalog.Adapters.Mappers;
 
@@ -30,6 +31,7 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
         dto.EventType switch
         {
             nameof(TrackMetadataLookupRequested) => ToTrackMetadataLookupRequested(dto),
+            nameof(KnownTrackRequestedEvent) => ToKnownTrackRequested(dto),
             nameof(ArtistCatalogLookupRequested) => ToArtistCatalogLookupRequested(dto),
             nameof(AlbumCatalogLookupRequested) => ToAlbumCatalogLookupRequested(dto),
             nameof(StreamingLocationsRequired) => ToStreamingLocationsRequired(dto),
@@ -47,6 +49,7 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
         @event switch
         {
             TrackMetadataLookupRequested required => required.RequiredAt,
+            KnownTrackRequestedEvent requested => requested.RequestedAt,
             ArtistCatalogLookupRequested requested => requested.RequestedAt,
             AlbumCatalogLookupRequested requested => requested.RequestedAt,
             StreamingLocationsRequired required => required.ObservedAt,
@@ -217,6 +220,20 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
 
         return @event switch
         {
+            KnownTrackRequestedEvent requested => new DiscoveryQueryStoredEventRecordDto
+            {
+                Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(persistentId, version),
+                Criteria = persistentId,
+                Version = version,
+                EventType = nameof(KnownTrackRequestedEvent),
+                KnownTrackRequested = new KnownTrackRequestedEventDataRecordDto(
+                    requested.TrackId.Value,
+                    requested.Playback.ToString(),
+                    requested.RequestedAt,
+                    requested.CorrelationId.Value),
+                OccurredAtUtc = requested.RequestedAt,
+                CorrelationId = requested.CorrelationId.Value
+            },
             ArtistCatalogLookupRequested requested => new DiscoveryQueryStoredEventRecordDto
             {
                 Id = DiscoveryQueryStoredEventRecordDto.GetDocumentId(persistentId, version),
@@ -292,6 +309,17 @@ internal static class CatalogSearchDiscoveryEventRecordMapper
             data.TrustLevel,
             data.RiskScore,
             data.RequiredAtUtc,
+            CorrelationId.From(data.CorrelationId));
+    }
+
+    private static KnownTrackRequestedEvent ToKnownTrackRequested(DiscoveryQueryStoredEventRecordDto dto)
+    {
+        var data = dto.KnownTrackRequested
+            ?? throw new InvalidOperationException("Missing known track requested event data.");
+        return new KnownTrackRequestedEvent(
+            TrackId.From(data.TrackId),
+            PlaybackProviderFilter.Parse(data.Playback),
+            data.RequestedAtUtc,
             CorrelationId.From(data.CorrelationId));
     }
 
