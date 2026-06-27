@@ -4,8 +4,8 @@ using Microsoft.Extensions.Logging;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Subscriptions;
 using Soundtrail.Contracts.EventSourcing;
-using Soundtrail.Domain;
-using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Catalog.Commands;
 using Soundtrail.Translators.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Public.Projector.Features.PublishMusicTrackEvents.Adapters;

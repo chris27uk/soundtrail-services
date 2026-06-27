@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.Adapters;
+using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.EventStore;
+using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.ProjectionReset;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.CompositionRoot;
 

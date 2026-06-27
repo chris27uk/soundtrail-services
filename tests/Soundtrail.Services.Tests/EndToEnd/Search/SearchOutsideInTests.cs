@@ -1,8 +1,8 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
-using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Events;
+using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
 namespace Soundtrail.Services.Tests.EndToEnd.Search;

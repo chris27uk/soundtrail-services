@@ -2,8 +2,7 @@ using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Model;
-using Soundtrail.Domain.Responses;
+using Soundtrail.Domain.Enrichment.Responses;
 using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;

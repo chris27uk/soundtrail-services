@@ -1,4 +1,3 @@
-using Soundtrail.Contracts;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Wolverine;
 using Wolverine.Logging;

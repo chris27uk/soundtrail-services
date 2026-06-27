@@ -6,16 +6,15 @@ using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
 using Raven.Client.Documents.Session;
-using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
+using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Raven.CatalogDiscoveryWork;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Idempotency;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
-using Soundtrail.Contracts;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
-using Soundtrail.Domain.Model;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Raven;
 

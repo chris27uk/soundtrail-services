@@ -1,7 +1,6 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Model;
 
-namespace Soundtrail.Domain.Responses;
+namespace Soundtrail.Domain.Enrichment.Responses;
 
 public sealed record ProviderReference(
     ProviderName Provider,

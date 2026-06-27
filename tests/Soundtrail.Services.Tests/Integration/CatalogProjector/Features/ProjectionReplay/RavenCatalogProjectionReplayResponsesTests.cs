@@ -2,7 +2,7 @@ using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Events;
+using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Translators.MusicTrackEventStore;
 

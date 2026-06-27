@@ -2,8 +2,7 @@ using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
-using Soundtrail.Domain.Model;
-using Soundtrail.Domain.Responses;
+using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Adapters;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 

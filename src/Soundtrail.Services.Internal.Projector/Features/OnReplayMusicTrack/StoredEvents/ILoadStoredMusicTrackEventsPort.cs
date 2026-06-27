@@ -1,5 +1,5 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Catalog.Projection;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack.StoredEvents;
 

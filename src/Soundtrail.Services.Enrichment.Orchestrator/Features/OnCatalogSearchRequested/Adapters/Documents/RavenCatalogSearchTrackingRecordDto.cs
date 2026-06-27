@@ -1,4 +1,4 @@
-namespace Soundtrail.Contracts.Persistence;
+namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters.Documents;
 
 internal sealed class RavenCatalogSearchTrackingRecordDto
 {

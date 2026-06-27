@@ -1,7 +1,7 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Catalog.Projection;
 
-namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection;
+namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.EventStore;
 
 public interface ILoadMusicTrackEventsForCatalogReplayPort
 {

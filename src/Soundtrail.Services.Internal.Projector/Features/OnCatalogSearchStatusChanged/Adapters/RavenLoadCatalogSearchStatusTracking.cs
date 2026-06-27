@@ -1,5 +1,5 @@
 using Raven.Client.Documents.Session;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Ports;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Support;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Adapters.Documents;

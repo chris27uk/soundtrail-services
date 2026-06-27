@@ -1,4 +1,4 @@
-namespace Soundtrail.Tools.MusicBrainzImport.Features.RebuildAllReadModels;
+namespace Soundtrail.Tools.MusicBrainzImport.Features.RebuildAllReadModels.OperationalState;
 
 public sealed record ClearPlannerOperationalStateResult(
     int ClearedPotentialCatalogLookupWorkCount,

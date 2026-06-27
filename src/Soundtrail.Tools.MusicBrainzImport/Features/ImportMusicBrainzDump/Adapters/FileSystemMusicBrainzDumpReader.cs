@@ -1,5 +1,7 @@
+using Soundtrail.Domain.Catalog;
+using Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump.Input;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
-using Soundtrail.Domain.Model;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump.Adapters;
 
@@ -8,7 +10,7 @@ public sealed class FileSystemMusicBrainzDumpReader : IReadMusicBrainzDumpPort
     public async IAsyncEnumerable<MusicBrainzCatalogSeedRecord> ReadAsync(
         IReadOnlyList<string> recordingDumpPaths,
         IReadOnlyList<string> releaseDumpPaths,
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         foreach (var path in recordingDumpPaths)
         {
@@ -29,7 +31,7 @@ public sealed class FileSystemMusicBrainzDumpReader : IReadMusicBrainzDumpPort
 
     private static async IAsyncEnumerable<MusicBrainzCatalogSeedRecord> ReadRecordingDumpAsync(
         string path,
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         await foreach (var line in ReadJsonLinesAsync(path, cancellationToken))
         {
@@ -58,7 +60,7 @@ public sealed class FileSystemMusicBrainzDumpReader : IReadMusicBrainzDumpPort
 
     private static async IAsyncEnumerable<MusicBrainzCatalogSeedRecord> ReadReleaseDumpAsync(
         string path,
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         await foreach (var line in ReadJsonLinesAsync(path, cancellationToken))
         {
@@ -115,7 +117,7 @@ public sealed class FileSystemMusicBrainzDumpReader : IReadMusicBrainzDumpPort
 
     private static async IAsyncEnumerable<string> ReadJsonLinesAsync(
         string path,
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         await using var stream = File.OpenRead(path);
         using var reader = new StreamReader(stream);

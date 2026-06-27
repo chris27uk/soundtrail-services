@@ -1,6 +1,10 @@
-using Soundtrail.Domain;
+using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.CatalogBrowsing;
+using Soundtrail.Domain.Catalog.Browsing;
+using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Search;
+using Soundtrail.Services.Api.Features.RequestKnownCatalogItem;
 
 namespace Soundtrail.Services.Api.Features.GetAlbum.Adapters;
 
@@ -10,9 +14,21 @@ public static class GetAlbumEndpoints
     {
         endpoints.MapGet(
             "/artists/{artistId}/albums/{albumId}",
-            async (string artistId, string albumId, IApiHandler<GetAlbumCommand, AlbumDetailsResponse?> handler, CancellationToken cancellationToken) =>
+            async (string artistId, string albumId, string? playback, IApiHandler<GetAlbumCommand, AlbumDetailsResponse?> handler, RequestKnownCatalogItemHandler requestHandler, CancellationToken cancellationToken) =>
             {
-                var response = await handler.Handle(new GetAlbumCommand(ArtistId.From(artistId), AlbumId.From(albumId)), cancellationToken);
+                var providerFilter = PlaybackProviderFilter.Parse(playback);
+                var artist = ArtistId.From(artistId);
+                var album = AlbumId.From(albumId);
+                var response = await handler.Handle(new GetAlbumCommand(artist, album), cancellationToken);
+                await requestHandler.Handle(
+                    new KnownCatalogItemRequested(
+                        KnownCatalogItem.ForAlbum(album),
+                        providerFilter,
+                        0,
+                        0,
+                        DateTimeOffset.UtcNow,
+                        CorrelationId.New()),
+                    cancellationToken);
                 return response is null ? Results.NotFound() : Results.Ok(ToContract(response));
             });
 

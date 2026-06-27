@@ -1,24 +1,20 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Contracts.EventSourcing;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Ports;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Events;
-using Soundtrail.Domain.Model;
-using Soundtrail.Domain.Search;
+using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
-using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Support;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Ports;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
-using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
-using Soundtrail.Tools.MusicBrainzImport.Features.OnReplayCatalogSearchStatus;
-using Soundtrail.Tools.MusicBrainzImport.Features.OnReplayCatalogSearchStatus.Adapters;
-using Soundtrail.Translators.Discovery;
+using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection;
+using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.Adapters;
+using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.EventStore;
+using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.ProjectionReset;
 
-namespace Soundtrail.Services.Tests.Integration.MusicBrainzImport.Features.OnReplayCatalogSearchStatus;
+namespace Soundtrail.Services.Tests.Integration.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection;
 
 internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsyncDisposable
 {
@@ -57,19 +53,19 @@ internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsync
     }
 
     public Task<CatalogSearchStatusRecordDto?> LoadStatusAsync(MusicSearchCriteria searchCriteria) =>
-        loadStatusAsync(searchCriteria);
+        this.loadStatusAsync(searchCriteria);
 
     public Task<int> LoadCheckpointVersionAsync(MusicSearchCriteria searchCriteria) =>
-        loadCheckpointVersionAsync(searchCriteria);
+        this.loadCheckpointVersionAsync(searchCriteria);
 
     public Task<int> CountStatusDocumentsAsync() =>
-        countStatusDocumentsAsync();
+        this.countStatusDocumentsAsync();
 
     public async ValueTask DisposeAsync()
     {
-        if (asyncDisposable is not null)
+        if (this.asyncDisposable is not null)
         {
-            await asyncDisposable.DisposeAsync();
+            await this.asyncDisposable.DisposeAsync();
         }
     }
 
@@ -222,11 +218,11 @@ internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsync
     {
         private readonly Dictionary<string, DiscoveryLifecycleProjectionSnapshot> projections = new(StringComparer.Ordinal);
 
-        public int StatusDocumentCount => projections.Count;
+        public int StatusDocumentCount => this.projections.Count;
 
         public void SeedStale(MusicSearchCriteria searchCriteria)
         {
-            projections[MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria)] = new DiscoveryLifecycleProjectionSnapshot(
+            this.projections[MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria)] = new DiscoveryLifecycleProjectionSnapshot(
                 searchCriteria,
                 "Stale",
                 "Low",
@@ -241,7 +237,7 @@ internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsync
         public CatalogSearchStatusRecordDto? LoadStatus(MusicSearchCriteria searchCriteria)
         {
             var persistentId = MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria);
-            if (!projections.TryGetValue(persistentId, out var snapshot))
+            if (!this.projections.TryGetValue(persistentId, out var snapshot))
             {
                 return null;
             }
@@ -261,7 +257,7 @@ internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsync
         }
 
         public int LoadCheckpointVersion(MusicSearchCriteria searchCriteria) =>
-            projections.TryGetValue(MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria), out var snapshot)
+            this.projections.TryGetValue(MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria), out var snapshot)
                 ? snapshot.ProjectionVersion
                 : 0;
 
@@ -270,7 +266,7 @@ internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsync
             CancellationToken cancellationToken)
         {
             var persistentId = MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria);
-            var projection = projections.TryGetValue(persistentId, out var snapshot)
+            var projection = this.projections.TryGetValue(persistentId, out var snapshot)
                 ? DiscoveryLifecycleProjection.Load(snapshot)
                 : DiscoveryLifecycleProjection.Load(
                     new DiscoveryLifecycleProjectionSnapshot(
@@ -290,7 +286,7 @@ internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsync
             DiscoveryLifecycleProjection projection,
             CancellationToken cancellationToken)
         {
-            projections[MusicSearchTermPersistentIdTranslator.ToPersistentId(projection.SearchCriteria)] = projection.ToSnapshot();
+            this.projections[MusicSearchTermPersistentIdTranslator.ToPersistentId(projection.SearchCriteria)] = projection.ToSnapshot();
             return Task.CompletedTask;
         }
 
@@ -298,7 +294,7 @@ internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsync
             MusicSearchCriteria searchCriteria,
             CancellationToken cancellationToken)
         {
-            projections.Remove(MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria));
+            this.projections.Remove(MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria));
             return Task.CompletedTask;
         }
     }

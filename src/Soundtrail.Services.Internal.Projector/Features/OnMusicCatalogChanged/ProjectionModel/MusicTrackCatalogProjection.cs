@@ -1,7 +1,7 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Events;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Catalog.Events;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.ProjectionModel;
 

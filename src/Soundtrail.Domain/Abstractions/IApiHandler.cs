@@ -1,4 +1,4 @@
-namespace Soundtrail.Domain
+namespace Soundtrail.Domain.Abstractions
 {
     public interface IApiHandler<in TRequest, TResponse>
     {

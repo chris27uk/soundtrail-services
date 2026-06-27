@@ -1,5 +1,4 @@
 using Soundtrail.Domain.Catalog.IntegrationEvents;
-using Soundtrail.Services.Public.Projector.Features.PublishMusicTrackEvents.Adapters;
 using Soundtrail.Services.Public.Projector.Features.PublishMusicTrackEvents.Publishing;
 using Wolverine;
 

@@ -1,6 +1,6 @@
-namespace Soundtrail.Domain.CatalogBrowsing;
+namespace Soundtrail.Domain.Catalog.Browsing;
 
 public sealed record ArtistDetailsResponse(
-    Catalog.ArtistId ArtistId,
+    ArtistId ArtistId,
     string Name,
     IReadOnlyList<AlbumSummary> Albums);

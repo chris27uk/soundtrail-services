@@ -1,6 +1,5 @@
-using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicCatalogCandidateSearch
@@ -34,18 +33,18 @@ namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicCatalogCan
         {
             var normalizedQuery = searchCriteria.Match(
                 withQuery: static query => query,
-                withTitleAndArtist: static (title, artist, album) => Domain.Model.MusicIdentityText.NormalizeFreeText(
+                withTitleAndArtist: static (title, artist, album) => MusicIdentityText.NormalizeFreeText(
                     string.Join(
                         ' ',
                         new[] { title, artist, album }
                             .Where(static value => !string.IsNullOrWhiteSpace(value)))),
                 withIsrcAction: static isrc => isrc);
 
-            var compactQuery = Domain.Model.MusicIdentityText.NormalizeCompact(normalizedQuery);
+            var compactQuery = MusicIdentityText.NormalizeCompact(normalizedQuery);
             var exactIdentity = this.entries
                 .Where(entry =>
-                    Domain.Model.MusicIdentityText.NormalizeCompact(entry.Isrc) == compactQuery
-                    || Domain.Model.MusicIdentityText.NormalizeCompact(entry.Mbid) == compactQuery)
+                    MusicIdentityText.NormalizeCompact(entry.Isrc) == compactQuery
+                    || MusicIdentityText.NormalizeCompact(entry.Mbid) == compactQuery)
                 .Select(entry => new MusicCatalogMatch(
                     MusicCatalogId.From(entry.MusicCatalogId),
                     1.00m,
@@ -73,11 +72,11 @@ namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicCatalogCan
             bool isExactIdentityMatch) =>
             new(
                 isExactIdentityMatch,
-                Domain.Model.MusicIdentityText.NormalizeFreeText(entry.Title),
-                Domain.Model.MusicIdentityText.NormalizeFreeText(entry.Artist),
-                Domain.Model.MusicIdentityText.NormalizeFreeText(entry.AlbumTitle),
-                Domain.Model.MusicIdentityText.NormalizeCompact(entry.Isrc),
-                Domain.Model.MusicIdentityText.NormalizeCompact(entry.Mbid),
+                MusicIdentityText.NormalizeFreeText(entry.Title),
+                MusicIdentityText.NormalizeFreeText(entry.Artist),
+                MusicIdentityText.NormalizeFreeText(entry.AlbumTitle),
+                MusicIdentityText.NormalizeCompact(entry.Isrc),
+                MusicIdentityText.NormalizeCompact(entry.Mbid),
                 entry.ReleaseDate);
 
         private static string BuildSearchableText(Entry entry) =>
@@ -86,7 +85,7 @@ namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicCatalogCan
                 new[]
                 {
                     entry.SearchText,
-                    Domain.Model.MusicIdentityText.NormalizeFreeText(entry.AlbumTitle)
+                    MusicIdentityText.NormalizeFreeText(entry.AlbumTitle)
                 }.Where(static value => !string.IsNullOrWhiteSpace(value)));
 
         private sealed record Entry(

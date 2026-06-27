@@ -1,8 +1,10 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain;
+using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Ports;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Support;
 using Soundtrail.Translators.Discovery;

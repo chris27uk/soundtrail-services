@@ -1,4 +1,4 @@
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchPlannedForLookup.Support;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchPlannedForLookup.Ports;

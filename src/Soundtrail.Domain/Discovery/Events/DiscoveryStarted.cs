@@ -1,7 +1,8 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Abstractions.EventSourcing;
+using Soundtrail.Domain.Search;
 
-namespace Soundtrail.Domain.Events;
+namespace Soundtrail.Domain.Discovery.Events;
 
 public sealed record DiscoveryStarted(
     MusicSearchCriteria SearchCriteria,

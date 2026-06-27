@@ -1,5 +1,5 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Commands;
+using Soundtrail.Domain.Enrichment.Commands;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Shared.Scheduling;
 

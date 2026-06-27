@@ -1,6 +1,7 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Model;
 using Soundtrail.Contracts.Persistence;
+using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Projection;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
 

@@ -1,9 +1,8 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Events;
-using Soundtrail.Domain.Model;
-using Soundtrail.Domain.Responses;
+using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Unit.Domain.Catalog;

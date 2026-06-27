@@ -1,10 +1,8 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Events;
-using Soundtrail.Domain.Model;
-using Soundtrail.Domain.Search;
+using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Unit.Domain.Discovery;

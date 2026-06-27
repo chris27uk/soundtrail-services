@@ -1,4 +1,4 @@
-namespace Soundtrail.Domain.Responses;
+namespace Soundtrail.Domain.Enrichment.Responses;
 
 public enum MusicCatalogLookupOutcomeStatus
 {

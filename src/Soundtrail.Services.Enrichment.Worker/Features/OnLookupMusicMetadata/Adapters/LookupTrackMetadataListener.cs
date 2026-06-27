@@ -1,12 +1,11 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
-using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Pipeline;
+using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
 using Wolverine;
 using Wolverine.Attributes;
 

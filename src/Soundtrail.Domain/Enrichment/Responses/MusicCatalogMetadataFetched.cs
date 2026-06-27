@@ -1,7 +1,7 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog;
 
-namespace Soundtrail.Domain.Responses;
+namespace Soundtrail.Domain.Enrichment.Responses;
 
 public sealed record MusicCatalogMetadataFetched(
     CommandId CommandId,

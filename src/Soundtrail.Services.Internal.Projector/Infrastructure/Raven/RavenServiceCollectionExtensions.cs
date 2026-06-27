@@ -10,12 +10,12 @@ using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchPlannedForL
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchPlannedForLookup.Ports;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Ports;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Adapters;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Ports;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Ports;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.ProjectionModel;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Ports;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Ports;
 
 namespace Soundtrail.Services.Internal.Projector.Infrastructure.Raven;
 

@@ -1,29 +1,26 @@
 using FluentAssertions;
-using Soundtrail.Contracts.Common;
-using Soundtrail.Contracts.IntegrationMessaging.Responses;
-using Soundtrail.Contracts.EventSourcing;
+using Raven.Client.Documents.Session;
 using Soundtrail.Contracts;
-using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Discovery;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup.Adapters;
-using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged;
-using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
-using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus;
-using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus.Adapters;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
-using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack;
-using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack.Adapters;
+using Soundtrail.Contracts.Common;
+using Soundtrail.Contracts.EventSourcing;
+using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog.Commands;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus;
+using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack;
+using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
-using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 using Soundtrail.Translators.MusicTrackEventStore;
-using System.Linq;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ApplyEnrichmentResponse;
 
@@ -84,7 +81,7 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
         status!.Status.Should().Be("Completed");
     }
 
-    private static MusicCatalogLookupAttemptedListener CreateListener(Raven.Client.Documents.Session.IAsyncDocumentSession session) =>
+    private static MusicCatalogLookupAttemptedListener CreateListener(IAsyncDocumentSession session) =>
         new(new MusicCatalogLookupAttemptedHandler(
             new RavenMusicTrackStreamStore(session, Translator),
             new RavenCatalogSearchTrackingStore(session.Advanced.DocumentStore, session),

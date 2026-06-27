@@ -1,6 +1,4 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain;
-using Soundtrail.Domain.Catalog;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
 

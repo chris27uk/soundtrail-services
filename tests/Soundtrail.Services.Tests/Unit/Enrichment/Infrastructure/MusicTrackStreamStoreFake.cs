@@ -1,6 +1,6 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Events;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Domain.Catalog.Projection;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 

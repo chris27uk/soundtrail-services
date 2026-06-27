@@ -1,11 +1,12 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
+using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.EventStore;
 using Soundtrail.Translators.Discovery;
 
-namespace Soundtrail.Tools.MusicBrainzImport.Features.OnReplayCatalogSearchStatus.Adapters;
+namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.Adapters;
 
 public sealed class RavenLoadDiscoveryLifecycleEventsForReplay(
     IAsyncDocumentSession session) : ILoadDiscoveryLifecycleEventsForReplayPort

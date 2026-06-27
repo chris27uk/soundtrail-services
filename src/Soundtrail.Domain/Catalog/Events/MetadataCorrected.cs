@@ -1,4 +1,4 @@
-namespace Soundtrail.Domain.Events;
+namespace Soundtrail.Domain.Catalog.Events;
 
 public sealed record MetadataCorrected(
     string Title,

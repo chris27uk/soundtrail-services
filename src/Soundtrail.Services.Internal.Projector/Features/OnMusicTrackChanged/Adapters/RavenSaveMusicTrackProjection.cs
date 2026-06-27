@@ -1,8 +1,8 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Ports;
-using Soundtrail.Domain.Model;
 using Soundtrail.Contracts.Persistence;
+using Soundtrail.Domain.Catalog.Projection;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Ports;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
 

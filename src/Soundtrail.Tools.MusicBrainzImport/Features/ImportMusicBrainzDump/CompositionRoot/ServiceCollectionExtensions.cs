@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump.Adapters;
+using Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump.Input;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump.CompositionRoot;
 

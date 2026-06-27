@@ -1,5 +1,5 @@
-using Soundtrail.Domain.Model;
-using Soundtrail.Domain.Responses;
+using Soundtrail.Domain.Enrichment.Responses;
+using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.GetReference;
 

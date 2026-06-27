@@ -1,7 +1,9 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Events;
-using Soundtrail.Domain.Model;
-using Soundtrail.Domain.Responses;
+using Soundtrail.Domain.Abstractions.EventSourcing;
+using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Domain.Catalog.Projection;
+using Soundtrail.Domain.Enrichment.Responses;
+using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Domain.Catalog;
 

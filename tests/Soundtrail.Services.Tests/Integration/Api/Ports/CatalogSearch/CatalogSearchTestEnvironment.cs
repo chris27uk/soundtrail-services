@@ -1,10 +1,9 @@
 using Raven.Client.Documents;
 using Raven.Client.Documents.Indexes;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Services.Api;
-using Soundtrail.Services.Api.Infrastructure.Raven;
 using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
-using Soundtrail.Domain.Search;
-using Soundtrail.Services.Tests.Integration.Api.Features.Search;
+using Soundtrail.Services.Api.Infrastructure.Raven;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using System.Reflection;
 
@@ -137,7 +136,7 @@ internal sealed class CatalogSearchTestEnvironment : IDisposable
         targetType.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!
             .SetValue(target, value);
 
-    private static Array CreateProviderReferences(IReadOnlyList<Soundtrail.Domain.Catalog.ProviderReference> references)
+    private static Array CreateProviderReferences(IReadOnlyList<ProviderReference> references)
     {
         var array = Array.CreateInstance(CatalogProviderReferenceRecordDtoType, references.Count);
 

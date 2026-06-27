@@ -1,13 +1,9 @@
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Model;
-using Soundtrail.Domain.Search;
+using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Wolverine;

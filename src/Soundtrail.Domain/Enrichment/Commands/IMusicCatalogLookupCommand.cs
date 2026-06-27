@@ -1,7 +1,7 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
 
-namespace Soundtrail.Domain.Commands;
+namespace Soundtrail.Domain.Enrichment.Commands;
 
 public interface IMusicCatalogLookupCommand : ICommand
 {

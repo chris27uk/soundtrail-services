@@ -1,5 +1,5 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain;
+using Soundtrail.Domain.Abstractions;
 using Soundtrail.Services.Enrichment.Scheduler.Features.SendDiscoveryBacklogMessage.Support;
 
 namespace Soundtrail.Services.Enrichment.Scheduler.Features.SendDiscoveryBacklogMessage;

@@ -1,5 +1,6 @@
-using Soundtrail.Domain;
+using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup.Support;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Idempotency;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;

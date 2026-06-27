@@ -1,8 +1,6 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
+using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search.Resolution;
-using Soundtrail.Domain.Discovery;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
 

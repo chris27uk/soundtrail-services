@@ -1,6 +1,5 @@
 using FluentAssertions;
-using Soundtrail.Domain.Model;
-using Soundtrail.Domain.Responses;
+using Soundtrail.Domain.Enrichment.Responses;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicBrainzMetadataSource.ByIsrc;
 

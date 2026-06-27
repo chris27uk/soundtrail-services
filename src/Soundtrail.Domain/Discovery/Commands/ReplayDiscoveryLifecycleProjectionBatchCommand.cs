@@ -1,3 +1,3 @@
-namespace Soundtrail.Domain.Commands;
+namespace Soundtrail.Domain.Discovery.Commands;
 
 public sealed record ReplayDiscoveryLifecycleProjectionBatchCommand;

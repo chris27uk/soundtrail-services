@@ -1,5 +1,3 @@
-using Soundtrail.Domain.Model;
-
 namespace Soundtrail.Domain.Search
 {
     public record MusicSeekOrSearchCriteria

@@ -1,9 +1,7 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnAssessMusicTrack.Persistence;
-using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnAssessMusicTrack.Adapters;
 

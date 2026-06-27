@@ -1,7 +1,7 @@
-using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Events;
+using Soundtrail.Domain.Abstractions.EventSourcing;
+using Soundtrail.Domain.Catalog.Events;
 
-namespace Soundtrail.Domain.Model;
+namespace Soundtrail.Domain.Catalog.Projection;
 
 public sealed class MusicTrackProjection
 {
@@ -9,7 +9,7 @@ public sealed class MusicTrackProjection
 
     public MusicTrackProjection()
     {
-        eventHandlers = CreateHandlers();
+        this.eventHandlers = CreateHandlers();
         Artist = ArtistName.Empty;
         AlbumTitle = AlbumTitle.Empty;
     }
@@ -112,7 +112,7 @@ public sealed class MusicTrackProjection
 
     public void Apply(IMusicTrackEvent @event, int version)
     {
-        eventHandlers.Handle(@event);
+        this.eventHandlers.Handle(@event);
         IsPlayable =
             ResolvedMetadata is not null
             && (AppleReference is not null

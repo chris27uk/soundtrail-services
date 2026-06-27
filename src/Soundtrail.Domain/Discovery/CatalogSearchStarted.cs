@@ -1,5 +1,7 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Events;
+using Soundtrail.Domain.Abstractions.EventSourcing;
+using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Domain.Discovery;
 
@@ -7,7 +9,7 @@ public sealed class CatalogSearchStarted
 {
     private readonly EventHandlers<CatalogSearchStarted> eventHandlers;
     private readonly List<IDomainEvent> uncommittedEvents = [];
-    private CatalogSearchCriteria? criteria;
+    private MusicSearchCriteria? criteria;
     private int version;
 
     private CatalogSearchStarted(IEnumerable<IDomainEvent> events, int version)
@@ -24,7 +26,7 @@ public sealed class CatalogSearchStarted
 
     public static async Task<CatalogSearchStarted> LoadAsync(
         ICatalogSearchDiscoveryRepository repository,
-        CatalogSearchCriteria criteria,
+        MusicSearchCriteria criteria,
         CancellationToken cancellationToken)
     {
         var stream = await repository.LoadAsync(criteria, cancellationToken);
@@ -85,7 +87,7 @@ public sealed class CatalogSearchStarted
         }
     }
 
-    private CatalogSearchCriteria RequireCriteria() =>
+    private MusicSearchCriteria RequireCriteria() =>
         criteria ?? throw new InvalidOperationException("Catalog search criteria has not been established.");
 
     private EventHandlers<CatalogSearchStarted> CreateHandlers()
@@ -97,6 +99,6 @@ public sealed class CatalogSearchStarted
 
     private void On(MusicTrackSearchStarted @event)
     {
-        criteria = @event.Criteria;
+        criteria = @event.SearchCriteria;
     }
 }

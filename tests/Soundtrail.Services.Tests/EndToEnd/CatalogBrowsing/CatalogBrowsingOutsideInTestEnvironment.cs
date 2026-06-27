@@ -2,12 +2,11 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Raven.Client.Documents;
-using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Events;
-using Soundtrail.Domain.Model;
-using Soundtrail.Services.Api;
+using Soundtrail.Contracts.EventSourcing;
+using Soundtrail.Domain.Catalog.Commands;
+using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Services.Api.Features.GetAlbum.Adapters;
 using Soundtrail.Services.Api.Features.GetArtist.Adapters;
 using Soundtrail.Services.Api.Features.GetTrack.Adapters;
@@ -15,12 +14,13 @@ using Soundtrail.Services.Api.Features.ListTracksByAlbum.Adapters;
 using Soundtrail.Services.Api.Features.ListTracksByArtist.Adapters;
 using Soundtrail.Services.Api.Features.SearchCatalog.Adapters;
 using Soundtrail.Services.Api.Infrastructure.CompositionRoot;
+using Soundtrail.Services.Api.Infrastructure.Ports;
 using Soundtrail.Services.Api.Infrastructure.Raven;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicTrackEventsImported;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adapters;
 using Soundtrail.Services.Tests.EndToEnd.Search;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Translators.MusicTrackEventStore;
@@ -62,7 +62,7 @@ public sealed class CatalogBrowsingOutsideInTestEnvironment : IAsyncDisposable
             options.ConfigureCatalogReadDependencies = services =>
             {
                 services.AddEmbeddedRavenForTesting(raven.Store);
-                services.AddSingleton<Soundtrail.Services.Api.Infrastructure.Ports.ICatalogReadPort, RavenCatalogReadPort>();
+                services.AddSingleton<ICatalogReadPort, RavenCatalogReadPort>();
             };
         });
 

@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Tests.Integration.MusicBrainzImport.Features.OnReplayCatalogSearchStatus;
+namespace Soundtrail.Services.Tests.Integration.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection;
 
 public static class ReplayDiscoveryLifecycleProjectionModes
 {

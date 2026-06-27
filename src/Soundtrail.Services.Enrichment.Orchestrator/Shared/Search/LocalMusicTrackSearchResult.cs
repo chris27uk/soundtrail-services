@@ -1,6 +1,5 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Model;
 using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;

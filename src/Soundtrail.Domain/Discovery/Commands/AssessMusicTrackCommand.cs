@@ -1,8 +1,8 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Search;
 
-namespace Soundtrail.Domain.Discovery;
+namespace Soundtrail.Domain.Discovery.Commands;
 
 public sealed record AssessMusicTrackCommand(
     CommandId CommandId,

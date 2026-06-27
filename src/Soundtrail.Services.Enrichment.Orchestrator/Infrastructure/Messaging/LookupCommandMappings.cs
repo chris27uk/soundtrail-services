@@ -1,5 +1,4 @@
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
-using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Enrichment.Commands;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Messaging;

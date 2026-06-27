@@ -1,8 +1,7 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Search;
 
-namespace Soundtrail.Domain.Events;
+namespace Soundtrail.Domain.Catalog.Events;
 
 public sealed record StreamingLocationsRequired(
     MusicCatalogId MusicCatalogId,

@@ -1,8 +1,6 @@
+using Soundtrail.Contracts.Common;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup.Adapters.Documents;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
-using Soundtrail.Contracts;
-using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Discovery;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup.Adapters;
 

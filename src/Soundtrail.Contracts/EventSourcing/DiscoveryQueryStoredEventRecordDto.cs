@@ -18,6 +18,10 @@ public sealed class DiscoveryQueryStoredEventRecordDto
 
     public TrackMetadataLookupRequestedEventDataRecordDto? TrackMetadataLookupRequested { get; set; }
 
+    public ArtistCatalogLookupRequestedEventDataRecordDto? ArtistCatalogLookupRequested { get; set; }
+
+    public AlbumCatalogLookupRequestedEventDataRecordDto? AlbumCatalogLookupRequested { get; set; }
+
     public StreamingLocationsRequiredEventDataRecordDto? StreamingLocationsRequired { get; set; }
 
     public DiscoveryPlannedEventDataRecordDto? DiscoveryPlanned { get; set; }

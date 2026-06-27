@@ -1,8 +1,8 @@
-using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Events;
-using Soundtrail.Domain.Responses;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Domain.Catalog.Projection;
+using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Support;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted;

@@ -5,6 +5,7 @@ using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Services.ServiceDefaults;
 using Wolverine;
 using Wolverine.AzureServiceBus;
+using ICommandBus = Soundtrail.Domain.Abstractions.ICommandBus;
 
 namespace Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Messaging;
 
@@ -15,7 +16,7 @@ public static class ServiceBusServiceCollectionExtensions
         IConfiguration configuration)
     {
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
-        services.AddScoped<Soundtrail.Domain.ICommandBus, WolverineCommandBus>();
+        services.AddScoped<ICommandBus, WolverineCommandBus>();
         return services;
     }
 

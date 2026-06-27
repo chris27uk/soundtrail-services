@@ -1,7 +1,7 @@
-using System.Collections.Concurrent;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Ports;
-using Soundtrail.Domain.Model;
+using System.Collections.Concurrent;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 

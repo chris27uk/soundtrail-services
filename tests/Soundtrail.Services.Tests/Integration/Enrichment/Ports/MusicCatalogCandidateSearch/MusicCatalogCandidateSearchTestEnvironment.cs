@@ -1,8 +1,8 @@
 using Raven.Client.Documents;
 using Raven.Client.Documents.Indexes;
-using Soundtrail.Contracts;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 using Soundtrail.Contracts.Persistence;
+using Soundtrail.Domain.Catalog;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using System.Reflection;
@@ -87,14 +87,14 @@ internal sealed class MusicCatalogCandidateSearchTestEnvironment : IDisposable
             Id = $"track-catalogue/{musicCatalogId}",
             Title = title ?? "Fixture Track",
             Artist = artist ?? "Fixture Artist",
-            NormalizedArtist = Domain.Model.MusicIdentityText.NormalizeFreeText(artist ?? "Fixture Artist"),
+            NormalizedArtist = MusicIdentityText.NormalizeFreeText(artist ?? "Fixture Artist"),
             AlbumTitle = albumTitle,
-            NormalizedAlbumTitle = Domain.Model.MusicIdentityText.NormalizeFreeText(albumTitle),
+            NormalizedAlbumTitle = MusicIdentityText.NormalizeFreeText(albumTitle),
             SearchText = searchText,
             Isrc = isrc,
-            NormalizedIsrc = Domain.Model.MusicIdentityText.NormalizeCompact(isrc),
+            NormalizedIsrc = MusicIdentityText.NormalizeCompact(isrc),
             Mbid = mbid,
-            NormalizedMbid = Domain.Model.MusicIdentityText.NormalizeCompact(mbid),
+            NormalizedMbid = MusicIdentityText.NormalizeCompact(mbid),
             ReleaseDate = releaseDate,
             AppleId = null,
             SpotifyId = null,

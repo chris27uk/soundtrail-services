@@ -1,9 +1,9 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Events;
-using Soundtrail.Domain.Model;
-using Soundtrail.Domain.Responses;
+using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Domain.Catalog.Projection;
+using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
@@ -63,7 +63,7 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
             CommandId.For("RepairMetadata:mc_track_1"),
             [
                 new ArtworkDiscovered(
-                    Domain.Catalog.CatalogEntityKind.Track,
+                    CatalogEntityKind.Track,
                     null,
                     new Uri("https://images.example.com/track.png"),
                     "worker/musicbrainz",

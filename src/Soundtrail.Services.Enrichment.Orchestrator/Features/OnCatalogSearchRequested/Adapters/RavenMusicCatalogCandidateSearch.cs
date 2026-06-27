@@ -1,10 +1,10 @@
 using Raven.Client.Documents;
 using Raven.Client.Documents.Linq;
 using Raven.Client.Documents.Session;
-using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Model;
 using Soundtrail.Contracts.Persistence;
+using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters.Indexes;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 

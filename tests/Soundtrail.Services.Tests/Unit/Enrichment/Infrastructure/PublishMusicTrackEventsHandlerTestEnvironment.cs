@@ -1,7 +1,6 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog.Commands;
 using Soundtrail.Domain.Catalog.IntegrationEvents;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Model;
 using Soundtrail.Services.Public.Projector.Features.PublishMusicTrackEvents;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;

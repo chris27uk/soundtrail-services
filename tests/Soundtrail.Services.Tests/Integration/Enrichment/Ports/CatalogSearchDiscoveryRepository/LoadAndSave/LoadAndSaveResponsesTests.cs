@@ -1,9 +1,7 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Model;
-using Soundtrail.Domain.Search;
+using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.CatalogSearchDiscoveryRepository.LoadAndSave;

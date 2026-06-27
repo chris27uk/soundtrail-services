@@ -1,11 +1,11 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Events;
+using Soundtrail.Domain.Catalog.Commands;
+using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 
-namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.OnMusicTrackEventsImported;
+namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ImportMusicTrackEvents;
 
 [Collection(RavenEmbeddedCollection.Name)]
 public sealed class RavenMusicTrackEventImportResponsesTests

@@ -1,21 +1,16 @@
 using FluentAssertions;
-using Raven.Client.Documents.Session;
+using Raven.Client.Documents;
+using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
-using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Commands;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Model;
-using Soundtrail.Domain.Search;
+using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
-using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus;
 using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
-using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
-using System.Linq;
-using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ProjectionReplay;
 
@@ -40,8 +35,8 @@ public sealed class RavenDiscoveryLifecycleProjectionReplayResponsesTests
 
         using var session = raven.Store.OpenAsyncSession();
         var criteriaPersistentId = MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria);
-        var status = await session.LoadAsync<Soundtrail.Contracts.CatalogSearchStatusRecordDto>(
-            Soundtrail.Contracts.CatalogSearchStatusRecordDto.GetDocumentId(criteriaPersistentId),
+        var status = await session.LoadAsync<CatalogSearchStatusRecordDto>(
+            CatalogSearchStatusRecordDto.GetDocumentId(criteriaPersistentId),
             CancellationToken.None);
 
         status.Should().NotBeNull();
@@ -66,8 +61,8 @@ public sealed class RavenDiscoveryLifecycleProjectionReplayResponsesTests
 
         using var session = raven.Store.OpenAsyncSession();
         var criteriaPersistentId = MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria);
-        var status = await session.LoadAsync<Soundtrail.Contracts.CatalogSearchStatusRecordDto>(
-            Soundtrail.Contracts.CatalogSearchStatusRecordDto.GetDocumentId(criteriaPersistentId),
+        var status = await session.LoadAsync<CatalogSearchStatusRecordDto>(
+            CatalogSearchStatusRecordDto.GetDocumentId(criteriaPersistentId),
             CancellationToken.None);
 
         status.Should().NotBeNull();
@@ -90,8 +85,8 @@ public sealed class RavenDiscoveryLifecycleProjectionReplayResponsesTests
 
         using var session = raven.Store.OpenAsyncSession();
         var criteriaPersistentId = MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria);
-        var status = await session.LoadAsync<Soundtrail.Contracts.CatalogSearchStatusRecordDto>(
-            Soundtrail.Contracts.CatalogSearchStatusRecordDto.GetDocumentId(criteriaPersistentId),
+        var status = await session.LoadAsync<CatalogSearchStatusRecordDto>(
+            CatalogSearchStatusRecordDto.GetDocumentId(criteriaPersistentId),
             CancellationToken.None);
 
         status.Should().NotBeNull();
@@ -114,8 +109,8 @@ public sealed class RavenDiscoveryLifecycleProjectionReplayResponsesTests
 
         using var session = raven.Store.OpenAsyncSession();
         var criteriaPersistentId = MusicSearchTermPersistentIdTranslator.ToPersistentId(criteria);
-        var status = await session.LoadAsync<Soundtrail.Contracts.CatalogSearchStatusRecordDto>(
-            Soundtrail.Contracts.CatalogSearchStatusRecordDto.GetDocumentId(criteriaPersistentId),
+        var status = await session.LoadAsync<CatalogSearchStatusRecordDto>(
+            CatalogSearchStatusRecordDto.GetDocumentId(criteriaPersistentId),
             CancellationToken.None);
 
         status.Should().NotBeNull();
@@ -124,7 +119,7 @@ public sealed class RavenDiscoveryLifecycleProjectionReplayResponsesTests
         status.Reason.Should().Be("Discovery completed");
     }
 
-    private static async Task ReplayAsync(Raven.Client.Documents.IDocumentStore store)
+    private static async Task ReplayAsync(IDocumentStore store)
     {
         using var querySession = store.OpenAsyncSession();
         var streamMetadata = await querySession.Advanced.LoadStartingWithAsync<DiscoveryQueryEventStreamMetadataRecordDto>(

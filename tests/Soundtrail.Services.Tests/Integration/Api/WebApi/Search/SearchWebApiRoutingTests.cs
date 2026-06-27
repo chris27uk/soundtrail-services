@@ -1,8 +1,6 @@
 using FluentAssertions;
 using System.Net;
 using System.Net.Http.Json;
-using Soundtrail.Domain.Search;
-using Soundtrail.Services.Tests.Integration.Api.Features.Search;
 
 namespace Soundtrail.Services.Tests.Integration.Api.WebApi.Search;
 

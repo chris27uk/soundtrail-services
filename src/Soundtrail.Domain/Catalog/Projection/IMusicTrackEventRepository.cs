@@ -1,8 +1,7 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog.Events;
 
-using Soundtrail.Domain.Events;
-
-namespace Soundtrail.Domain.Model;
+namespace Soundtrail.Domain.Catalog.Projection;
 
 public interface IMusicTrackEventRepository
 {

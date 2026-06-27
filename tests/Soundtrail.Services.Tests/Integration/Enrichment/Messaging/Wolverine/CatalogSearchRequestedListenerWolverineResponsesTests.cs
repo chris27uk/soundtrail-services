@@ -1,9 +1,7 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog.Events;
-using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
-using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Messaging.Wolverine;

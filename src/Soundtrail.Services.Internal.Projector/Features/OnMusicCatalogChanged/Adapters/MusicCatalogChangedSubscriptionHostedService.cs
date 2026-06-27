@@ -4,8 +4,8 @@ using Raven.Client.Documents;
 using Raven.Client.Documents.Subscriptions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Catalog.Commands;
+using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Translators.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adapters;

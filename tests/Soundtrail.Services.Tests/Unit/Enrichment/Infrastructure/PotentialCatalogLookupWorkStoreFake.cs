@@ -1,8 +1,8 @@
-using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Events;
-using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
-using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Abstractions.EventSourcing;
+using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
 {
@@ -229,26 +229,5 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
 
             return current;
         }
-    }
-
-    internal static class PotentialCatalogLookupWorkStatusMappings
-    {
-        public static CatalogDiscoveryWorkStatus ToDiscoveryStatus(this PotentialCatalogLookupWorkStatus status) =>
-            status switch
-            {
-                PotentialCatalogLookupWorkStatus.Pending => CatalogDiscoveryWorkStatus.Pending,
-                PotentialCatalogLookupWorkStatus.Ignored => CatalogDiscoveryWorkStatus.Ignored,
-                PotentialCatalogLookupWorkStatus.Resolved => CatalogDiscoveryWorkStatus.Resolved,
-                _ => throw new ArgumentOutOfRangeException(nameof(status), status, null)
-            };
-
-        public static PotentialCatalogLookupWorkStatus ToLegacyStatus(this CatalogDiscoveryWorkStatus status) =>
-            status switch
-            {
-                CatalogDiscoveryWorkStatus.Pending => PotentialCatalogLookupWorkStatus.Pending,
-                CatalogDiscoveryWorkStatus.Ignored => PotentialCatalogLookupWorkStatus.Ignored,
-                CatalogDiscoveryWorkStatus.Resolved => PotentialCatalogLookupWorkStatus.Resolved,
-                _ => throw new ArgumentOutOfRangeException(nameof(status), status, null)
-            };
     }
 }

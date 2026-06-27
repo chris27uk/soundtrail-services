@@ -1,18 +1,16 @@
-using Raven.Client.Documents;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
-using Soundtrail.Domain.Commands;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Catalog.Commands;
+using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicTrackEventsImported;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
-using System.Linq;
 using Soundtrail.Translators.MusicTrackEventStore;
 
-namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.OnMusicTrackEventsImported;
+namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ImportMusicTrackEvents;
 
 internal sealed class RavenMusicTrackEventImportTestEnvironment : IAsyncDisposable
 {
@@ -28,7 +26,7 @@ internal sealed class RavenMusicTrackEventImportTestEnvironment : IAsyncDisposab
 
     public async Task ImportAsync(ImportMusicTrackEventsCommand command)
     {
-        using var session = raven.Store.OpenAsyncSession();
+        using var session = this.raven.Store.OpenAsyncSession();
         var handler = new MusicTrackEventsImportedHandler(new RavenMusicTrackStreamStore(session, Translator));
         await handler.Handle(command, CancellationToken.None);
         await session.SaveChangesAsync(CancellationToken.None);
@@ -36,7 +34,7 @@ internal sealed class RavenMusicTrackEventImportTestEnvironment : IAsyncDisposab
 
     public async Task<CatalogTrackRecordDto?> LoadCatalogTrackAsync(string trackId)
     {
-        using var session = raven.Store.OpenAsyncSession();
+        using var session = this.raven.Store.OpenAsyncSession();
         return await session.LoadAsync<CatalogTrackRecordDto>(
             CatalogTrackRecordDto.GetDocumentId(trackId),
             CancellationToken.None);
@@ -44,7 +42,7 @@ internal sealed class RavenMusicTrackEventImportTestEnvironment : IAsyncDisposab
 
     public async Task<CatalogArtistRecordDto?> LoadCatalogArtistAsync(string artistId)
     {
-        using var session = raven.Store.OpenAsyncSession();
+        using var session = this.raven.Store.OpenAsyncSession();
         return await session.LoadAsync<CatalogArtistRecordDto>(
             CatalogArtistRecordDto.GetDocumentId(artistId),
             CancellationToken.None);
@@ -52,7 +50,7 @@ internal sealed class RavenMusicTrackEventImportTestEnvironment : IAsyncDisposab
 
     public async Task<CatalogAlbumRecordDto?> LoadCatalogAlbumAsync(string albumId)
     {
-        using var session = raven.Store.OpenAsyncSession();
+        using var session = this.raven.Store.OpenAsyncSession();
         return await session.LoadAsync<CatalogAlbumRecordDto>(
             CatalogAlbumRecordDto.GetDocumentId(albumId),
             CancellationToken.None);
@@ -60,7 +58,7 @@ internal sealed class RavenMusicTrackEventImportTestEnvironment : IAsyncDisposab
 
     public async Task ReplayCatalogProjectionAsync()
     {
-        using var session = raven.Store.OpenAsyncSession();
+        using var session = this.raven.Store.OpenAsyncSession();
         var projectHandler = new MusicCatalogChangedHandler(
             new RavenLoadMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()),
             new RavenSaveMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()));
@@ -83,7 +81,7 @@ internal sealed class RavenMusicTrackEventImportTestEnvironment : IAsyncDisposab
 
     public ValueTask DisposeAsync()
     {
-        raven.Dispose();
+        this.raven.Dispose();
         return ValueTask.CompletedTask;
     }
 }

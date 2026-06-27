@@ -1,7 +1,6 @@
 using Raven.Client.Documents;
-using Soundtrail.Services.Api.Infrastructure.Ports;
-using Soundtrail.Domain.CatalogBrowsing;
 using Soundtrail.Services.Api;
+using Soundtrail.Services.Api.Infrastructure.Ports;
 using Soundtrail.Services.Api.Infrastructure.Raven;
 using Soundtrail.Services.Tests.Integration.Api.Features.Search;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;

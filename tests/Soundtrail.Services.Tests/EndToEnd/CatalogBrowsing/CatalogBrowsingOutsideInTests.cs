@@ -1,6 +1,6 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Events;
+using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using System.Net;
 

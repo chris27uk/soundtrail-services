@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.CompositionRoot;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.CompositionRoot;
+using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.CompositionRoot;
 

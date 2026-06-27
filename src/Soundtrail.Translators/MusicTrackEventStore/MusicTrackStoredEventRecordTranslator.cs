@@ -1,8 +1,7 @@
-using System.Text.Json;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
-using Soundtrail.Domain.Events;
-using Soundtrail.Domain.Model;
+using Soundtrail.Domain.Catalog.Events;
+using System.Text.Json;
 
 namespace Soundtrail.Translators.MusicTrackEventStore;
 

@@ -1,16 +1,14 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Soundtrail.Services.Api.Infrastructure.Ports;
-using Soundtrail.Domain.CatalogBrowsing;
-using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
-using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.GetAlbum.CompositionRoot;
 using Soundtrail.Services.Api.Features.GetArtist.CompositionRoot;
 using Soundtrail.Services.Api.Features.GetTrack.CompositionRoot;
 using Soundtrail.Services.Api.Features.ListTracksByAlbum.CompositionRoot;
 using Soundtrail.Services.Api.Features.ListTracksByArtist.CompositionRoot;
-using Soundtrail.Services.Api.Features.SearchCatalog.Adapters;
+using Soundtrail.Services.Api.Features.RequestKnownCatalogItem.CompositionRoot;
 using Soundtrail.Services.Api.Features.SearchCatalog.CompositionRoot;
+using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
+using Soundtrail.Services.Api.Infrastructure.Ports;
 using Soundtrail.Services.Api.Infrastructure.Raven;
 using Soundtrail.Services.Api.Infrastructure.Time;
 
@@ -35,6 +33,7 @@ public static class AppServiceCollectionExtensions
         services.AddGetAlbumFeature();
         services.AddListTracksByAlbumFeature();
         services.AddGetTrackFeature();
+        services.AddRequestKnownCatalogItemFeature();
         services.AddSearchCatalogFeature(x =>
         {
             x.ConfigureQueueingDependencies = options.ConfigureQueueingDependencies ?? (svc => svc.AddCatalogSearchAttemptQueue(configuration));
