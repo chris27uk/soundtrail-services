@@ -258,8 +258,6 @@ public sealed class MusicTrackCatalogProjection
                     }
 
                     break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(@event.EntityKind), @event.EntityKind, null);
             }
         });
 
@@ -267,27 +265,27 @@ public sealed class MusicTrackCatalogProjection
         {
             Track = Track with
             {
-                Title = @event.Title,
-                NormalizedTitle = Normalize(@event.Title),
-                ArtistName = @event.ArtistName,
-                AlbumName = @event.AlbumTitle ?? Track.AlbumName,
-                ArtistId = @event.ArtistId ?? Track.ArtistId,
-                AlbumId = @event.AlbumId ?? Track.AlbumId,
-                MusicBrainzRecordingId = @event.Mbid,
-                Isrc = @event.Isrc,
-                DurationMs = @event.DurationMs,
-                SearchText = BuildSearchText(@event.Title, @event.ArtistName),
+                Title = Coalesce(@event.Title, Track.Title),
+                NormalizedTitle = Normalize(Coalesce(@event.Title, Track.Title)),
+                ArtistId = Coalesce(@event.ArtistId, Track.ArtistId),
+                ArtistName = Coalesce(@event.ArtistName, Track.ArtistName),
+                AlbumId = Coalesce(@event.AlbumId, Track.AlbumId),
+                AlbumName = Coalesce(@event.AlbumTitle, Track.AlbumName),
+                SearchText = BuildSearchText(Coalesce(@event.Title, Track.Title), Coalesce(@event.ArtistName, Track.ArtistName)),
+                MusicBrainzRecordingId = CoalesceNullable(@event.Mbid, Track.MusicBrainzRecordingId),
+                Isrc = CoalesceNullable(@event.Isrc, Track.Isrc),
+                DurationMs = @event.DurationMs ?? Track.DurationMs,
                 UpdatedAt = @event.CorrectedAt
             };
 
-            if (!string.IsNullOrWhiteSpace(Track.ArtistId))
+            if (!string.IsNullOrWhiteSpace(@event.ArtistId))
             {
-                Artist ??= EmptyArtist(Track.ArtistId);
+                Artist ??= EmptyArtist(@event.ArtistId);
                 Artist = Artist with
                 {
-                    ArtistId = Track.ArtistId,
-                    Name = @event.ArtistName,
-                    NormalizedName = Normalize(@event.ArtistName),
+                    ArtistId = @event.ArtistId,
+                    Name = Coalesce(@event.ArtistName, Artist.Name),
+                    NormalizedName = Normalize(Coalesce(@event.ArtistName, Artist.Name)),
                     MusicBrainzArtistId = CoalesceNullable(@event.SourceArtistId, Artist.MusicBrainzArtistId),
                     AvailableProviders = MergeProviders(Artist.AvailableProviders, Track.AvailableProviders),
                     TerminallyUnavailableProviders = MergeProviders(Artist.TerminallyUnavailableProviders, Track.TerminallyUnavailableProviders),
@@ -296,16 +294,16 @@ public sealed class MusicTrackCatalogProjection
                 };
             }
 
-            if (!string.IsNullOrWhiteSpace(Track.AlbumId))
+            if (!string.IsNullOrWhiteSpace(@event.AlbumId))
             {
-                Album ??= EmptyAlbum(Track.AlbumId);
+                Album ??= EmptyAlbum(@event.AlbumId);
                 Album = Album with
                 {
-                    AlbumId = Track.AlbumId,
-                    Name = Track.AlbumName,
-                    NormalizedName = Normalize(Track.AlbumName),
-                    ArtistId = Track.ArtistId,
-                    ArtistName = Track.ArtistName,
+                    AlbumId = @event.AlbumId,
+                    ArtistId = Coalesce(@event.ArtistId, Album.ArtistId),
+                    Name = Coalesce(@event.AlbumTitle, Album.Name),
+                    NormalizedName = Normalize(Coalesce(@event.AlbumTitle, Album.Name)),
+                    ArtistName = Coalesce(@event.ArtistName, Album.ArtistName),
                     MusicBrainzReleaseId = CoalesceNullable(@event.SourceAlbumId, Album.MusicBrainzReleaseId),
                     ReleaseDate = @event.ReleaseDate ?? Album.ReleaseDate,
                     AvailableProviders = MergeProviders(Album.AvailableProviders, Track.AvailableProviders),
@@ -316,7 +314,6 @@ public sealed class MusicTrackCatalogProjection
             }
         });
 
-        handlers.Register<StreamingLocationsRequired>(_ => { });
         return handlers;
     }
 
@@ -364,10 +361,10 @@ public sealed class MusicTrackCatalogProjection
             null,
             default);
 
-    private static string Normalize(string value) => value.Trim().ToLowerInvariant();
+    private static string Normalize(string value) => MusicIdentityText.NormalizeFreeText(value);
 
-    private static string BuildSearchText(string title, string artistName) =>
-        $"{title} {artistName}".Trim().ToLowerInvariant();
+    private static string BuildSearchText(string title, string artist) =>
+        MusicIdentityText.NormalizeFreeText($"{title} {artist}".Trim());
 
     private static string Coalesce(string? preferred, string fallback) =>
         string.IsNullOrWhiteSpace(preferred) ? fallback : preferred;
@@ -375,33 +372,27 @@ public sealed class MusicTrackCatalogProjection
     private static string? CoalesceNullable(string? preferred, string? fallback) =>
         string.IsNullOrWhiteSpace(preferred) ? fallback : preferred;
 
-    private static IReadOnlyList<string> MergeProviders(
-        IReadOnlyList<string> current,
-        IReadOnlyList<string> additional) =>
-        current.Concat(additional).Distinct(StringComparer.Ordinal).ToArray();
+    private static IReadOnlyList<string> MergeProviders(IReadOnlyList<string> current, IReadOnlyList<string> incoming) =>
+        current.Concat(incoming).Distinct(StringComparer.Ordinal).ToArray();
 
-    private static IReadOnlyList<string> AddProvider(
-        IReadOnlyList<string> providers,
-        string provider) =>
+    private static IReadOnlyList<string> AddProvider(IReadOnlyList<string> providers, string provider) =>
         providers.Contains(provider, StringComparer.Ordinal)
-            ? providers.ToArray()
+            ? providers
             : providers.Concat([provider]).ToArray();
 
-    private static IReadOnlyList<string> RemoveProvider(
-        IReadOnlyList<string> providers,
-        string provider) =>
+    private static IReadOnlyList<string> RemoveProvider(IReadOnlyList<string> providers, string provider) =>
         providers.Where(x => !string.Equals(x, provider, StringComparison.Ordinal)).ToArray();
 
     private static IReadOnlyList<CatalogProviderReferenceProjection> UpsertProviderReference(
-        IReadOnlyList<CatalogProviderReferenceProjection> providers,
-        CatalogProviderReferenceProjection reference) =>
-        providers
-            .Where(x => !string.Equals(x.Provider, reference.Provider, StringComparison.Ordinal))
-            .Append(reference)
-            .ToArray();
+        IReadOnlyList<CatalogProviderReferenceProjection> existing,
+        CatalogProviderReferenceProjection reference)
+    {
+        var filtered = existing.Where(x => !string.Equals(x.Provider, reference.Provider, StringComparison.Ordinal)).ToArray();
+        return filtered.Concat([reference]).ToArray();
+    }
 
     private static IReadOnlyList<CatalogProviderReferenceProjection> RemoveProviderReference(
-        IReadOnlyList<CatalogProviderReferenceProjection> providers,
+        IReadOnlyList<CatalogProviderReferenceProjection> existing,
         string provider) =>
-        providers.Where(x => !string.Equals(x.Provider, provider, StringComparison.Ordinal)).ToArray();
+        existing.Where(x => !string.Equals(x.Provider, provider, StringComparison.Ordinal)).ToArray();
 }

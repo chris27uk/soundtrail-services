@@ -219,7 +219,7 @@ public sealed class CatalogBrowsingOutsideInTestEnvironment : IAsyncDisposable
             .ToArray();
         var projectHandler = new MusicCatalogChangedHandler(
             new RavenLoadMusicTrackCatalogProjection(replaySession, new RavenMusicTrackCatalogProjectionMapper()),
-            new RavenSaveMusicTrackCatalogProjection(replaySession, Soundtrail.Services.Internal.Projector.Infrastructure.Translations.InternalProjectorTypeTranslator.Default));
+            new RavenSaveMusicTrackCatalogProjection(replaySession, Soundtrail.Translators.Registry.TypeTranslationRegistry.Default));
         projectHandler.Handle(
                 new MusicCatalogChangedCommand(musicCatalogId, eventsToReplay),
                 CancellationToken.None)

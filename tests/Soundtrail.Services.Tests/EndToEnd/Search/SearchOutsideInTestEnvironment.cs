@@ -297,7 +297,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
             new RavenLoadStoredDiscoveryLifecycleEvents(session),
             new CatalogSearchStatusChangedHandler(
                 new RavenLoadDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()),
-                new RavenSaveDiscoveryLifecycleProjection(session, Soundtrail.Services.Internal.Projector.Infrastructure.Translations.InternalProjectorTypeTranslator.Default)));
+                new RavenSaveDiscoveryLifecycleProjection(session, Soundtrail.Translators.Registry.TypeTranslationRegistry.Default)));
         replayHandler.Handle(
                 new ReplayCatalogSearchStatusCommand(searchCriteria),
                 CancellationToken.None)
@@ -335,7 +335,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
             .ToArray();
         var projectHandler = new MusicCatalogChangedHandler(
             new RavenLoadMusicTrackCatalogProjection(replaySession, new RavenMusicTrackCatalogProjectionMapper()),
-            new RavenSaveMusicTrackCatalogProjection(replaySession, Soundtrail.Services.Internal.Projector.Infrastructure.Translations.InternalProjectorTypeTranslator.Default));
+            new RavenSaveMusicTrackCatalogProjection(replaySession, Soundtrail.Translators.Registry.TypeTranslationRegistry.Default));
         projectHandler.Handle(
                 new MusicCatalogChangedCommand(musicCatalogId, eventsToReplay),
                 CancellationToken.None)
@@ -358,7 +358,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
             new RavenLoadStoredDiscoveryLifecycleEvents(replaySession),
             new CatalogSearchStatusChangedHandler(
                 new RavenLoadDiscoveryLifecycleProjection(replaySession, new RavenDiscoveryLifecycleProjectionMapper()),
-                new RavenSaveDiscoveryLifecycleProjection(replaySession, Soundtrail.Services.Internal.Projector.Infrastructure.Translations.InternalProjectorTypeTranslator.Default)));
+                new RavenSaveDiscoveryLifecycleProjection(replaySession, Soundtrail.Translators.Registry.TypeTranslationRegistry.Default)));
         replayHandler.Handle(
                 new ReplayCatalogSearchStatusCommand(searchCriteria),
                 CancellationToken.None)
@@ -408,11 +408,9 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
 
     private static readonly Assembly ApiAssembly = typeof(ApiAssemblyMarker).Assembly;
 
-    private static readonly Type CatalogTrackRecordDtoType = ApiAssembly
-        .GetType("Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogTrackRecordDto", true)!;
+    private static readonly Type CatalogTrackRecordDtoType = typeof(Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogTrackRecordDto);
 
-    private static readonly Type CatalogProviderReferenceRecordDtoType = ApiAssembly
-        .GetType("Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogProviderReferenceRecordDto", true)!;
+    private static readonly Type CatalogProviderReferenceRecordDtoType = typeof(Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogProviderReferenceRecordDto);
 
     private static readonly IReadOnlyList<Type> IndexTypes =
     [

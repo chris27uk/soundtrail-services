@@ -26,7 +26,7 @@ public static class RavenServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddTypeTranslationsFromAssemblies(typeof(RavenServiceCollectionExtensions).Assembly);
+        services.AddTypeTranslationsFromAssemblies(typeof(Soundtrail.Translators.Registry.TypeTranslationRegistry).Assembly);
         services.Configure<RavenDbOptions>(configuration.GetSection(RavenDbOptions.SectionName));
 
         services.TryAddSingleton<IDocumentStore>(sp =>

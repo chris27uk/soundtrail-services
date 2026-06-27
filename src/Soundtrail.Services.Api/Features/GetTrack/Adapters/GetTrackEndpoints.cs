@@ -2,7 +2,7 @@ using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Browsing;
 using Soundtrail.Domain.Search;
-using Soundtrail.Translators.Api;
+using Soundtrail.Translators.Registry;
 
 namespace Soundtrail.Services.Api.Features.GetTrack.Adapters;
 
@@ -22,7 +22,7 @@ public static class GetTrackEndpoints
                     new GetTrackCommand(artist, album, track, providerFilter),
                     cancellationToken);
 
-                return response is null ? Results.NotFound() : Results.Ok(ApiResponseContractTranslator.ToDto(response));
+                return response is null ? Results.NotFound() : Results.Ok(TypeTranslationRegistry.Default.Translate<Soundtrail.Contracts.Api.TrackDetailsResponseDto>(response));
             });
 
         return endpoints;

@@ -42,7 +42,7 @@ internal sealed class RavenCatalogProjectionReplayTestEnvironment : IAsyncDispos
         session.Advanced.WaitForIndexesAfterSaveChanges();
         var handler = new MusicCatalogChangedHandler(
             new RavenLoadMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()),
-            new RavenSaveMusicTrackCatalogProjection(session, Soundtrail.Services.Internal.Projector.Infrastructure.Translations.InternalProjectorTypeTranslator.Default));
+            new RavenSaveMusicTrackCatalogProjection(session, Soundtrail.Translators.Registry.TypeTranslationRegistry.Default));
 
         foreach (var stream in storedEvents.OrderBy(x => x.MusicCatalogId, StringComparer.Ordinal).ThenBy(x => x.Version).GroupBy(x => x.MusicCatalogId, StringComparer.Ordinal))
         {
@@ -78,7 +78,7 @@ internal sealed class RavenCatalogProjectionReplayTestEnvironment : IAsyncDispos
             .ToArray();
         var handler = new MusicCatalogChangedHandler(
             new RavenLoadMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()),
-            new RavenSaveMusicTrackCatalogProjection(session, Soundtrail.Services.Internal.Projector.Infrastructure.Translations.InternalProjectorTypeTranslator.Default));
+            new RavenSaveMusicTrackCatalogProjection(session, Soundtrail.Translators.Registry.TypeTranslationRegistry.Default));
 
         await handler.Handle(
             new MusicCatalogChangedCommand(musicCatalogId, eventsToReplay),

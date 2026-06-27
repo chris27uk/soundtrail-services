@@ -1,7 +1,7 @@
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Browsing;
-using Soundtrail.Translators.Api;
+using Soundtrail.Translators.Registry;
 
 namespace Soundtrail.Services.Api.Features.ListTracksByArtist.Adapters;
 
@@ -15,7 +15,7 @@ public static class ListTracksByArtistEndpoints
             {
                 var artist = ArtistId.From(artistId);
                 var response = await handler.Handle(new ListTracksByArtistCommand(artist), cancellationToken);
-                return response is null ? Results.NotFound() : Results.Ok(ApiResponseContractTranslator.ToDto(response));
+                return response is null ? Results.NotFound() : Results.Ok(TypeTranslationRegistry.Default.Translate<Soundtrail.Contracts.Api.ArtistTracksResponseDto>(response));
             });
 
         return endpoints;

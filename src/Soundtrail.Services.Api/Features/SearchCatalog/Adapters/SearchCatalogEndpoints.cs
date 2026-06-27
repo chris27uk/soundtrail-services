@@ -1,7 +1,7 @@
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Search;
-using Soundtrail.Translators.Api;
+using Soundtrail.Translators.Registry;
 
 namespace Soundtrail.Services.Api.Features.SearchCatalog.Adapters;
 
@@ -37,7 +37,7 @@ public static class SearchCatalogEndpoints
                 }
 
                 var response = await handler.Handle(request, cancellationToken);
-                return Results.Ok(ApiResponseContractTranslator.ToDto(response));
+                return Results.Ok(TypeTranslationRegistry.Default.Translate<Soundtrail.Contracts.Api.SearchCatalogResponseDto>(response));
             });
 
         return endpoints;

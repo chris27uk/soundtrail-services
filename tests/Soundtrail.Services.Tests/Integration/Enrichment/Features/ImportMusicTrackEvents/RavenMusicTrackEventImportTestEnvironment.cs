@@ -61,7 +61,7 @@ internal sealed class RavenMusicTrackEventImportTestEnvironment : IAsyncDisposab
         using var session = this.raven.Store.OpenAsyncSession();
         var projectHandler = new MusicCatalogChangedHandler(
             new RavenLoadMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()),
-            new RavenSaveMusicTrackCatalogProjection(session, Soundtrail.Services.Internal.Projector.Infrastructure.Translations.InternalProjectorTypeTranslator.Default));
+            new RavenSaveMusicTrackCatalogProjection(session, Soundtrail.Translators.Registry.TypeTranslationRegistry.Default));
         var streamMetadata = await session.Advanced.LoadStartingWithAsync<MusicTrackEventStreamMetadataRecordDto>(
             "music-track-streams/");
         var musicCatalogIds = streamMetadata.Select(x => x.MusicCatalogId).ToList();

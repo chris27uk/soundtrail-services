@@ -4,8 +4,11 @@ namespace Soundtrail.Translators.Registry;
 
 public sealed class TypeTranslationRegistry : ITypeTranslator
 {
+    private static readonly Lazy<TypeTranslationRegistry> DefaultValue = new(CreateDefault);
     private readonly Dictionary<(Type SourceType, Type TargetType), Func<object, object>> translators = [];
     private readonly Dictionary<(Type SourceType, Type TargetType), Action<object, object>> mapOntoHandlers = [];
+
+    public static ITypeTranslator Default => DefaultValue.Value;
 
     public static TypeTranslationRegistry CreateFromAssemblies(params Assembly[] assemblies)
     {
@@ -75,4 +78,7 @@ public sealed class TypeTranslationRegistry : ITypeTranslator
         throw new InvalidOperationException(
             $"No map-onto translation exists from '{typeof(TSource).FullName}' to '{typeof(TTarget).FullName}'.");
     }
+
+    private static TypeTranslationRegistry CreateDefault() =>
+        CreateFromAssemblies(typeof(TypeTranslationRegistry).Assembly);
 }

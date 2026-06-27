@@ -170,8 +170,8 @@ internal sealed class CatalogReadTestEnvironment : IDisposable
     }
 
     private static readonly Assembly ApiAssembly = typeof(ApiAssemblyMarker).Assembly;
-    private static readonly Type ArtistType = ApiAssembly.GetType("Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogArtistRecordDto", true)!;
-    private static readonly Type AlbumType = ApiAssembly.GetType("Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogAlbumRecordDto", true)!;
-    private static readonly Type TrackType = ApiAssembly.GetType("Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogTrackRecordDto", true)!;
-    private static readonly Type CatalogProviderReferenceType = ApiAssembly.GetType("Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogProviderReferenceRecordDto", true)!;
+    private static readonly Type ArtistType = typeof(Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogArtistRecordDto);
+    private static readonly Type AlbumType = typeof(Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogAlbumRecordDto);
+    private static readonly Type TrackType = typeof(Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogTrackRecordDto);
+    private static readonly Type CatalogProviderReferenceType = typeof(Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogProviderReferenceRecordDto);
 }

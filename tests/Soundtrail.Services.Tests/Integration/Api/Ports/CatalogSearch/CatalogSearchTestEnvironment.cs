@@ -156,17 +156,13 @@ internal sealed class CatalogSearchTestEnvironment : IDisposable
 
     private static readonly Assembly ApiAssembly = typeof(ApiAssemblyMarker).Assembly;
 
-    private static readonly Type CatalogArtistRecordDtoType = ApiAssembly
-        .GetType("Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogArtistRecordDto", true)!;
+    private static readonly Type CatalogArtistRecordDtoType = typeof(Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogArtistRecordDto);
 
-    private static readonly Type CatalogAlbumRecordDtoType = ApiAssembly
-        .GetType("Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogAlbumRecordDto", true)!;
+    private static readonly Type CatalogAlbumRecordDtoType = typeof(Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogAlbumRecordDto);
 
-    private static readonly Type CatalogTrackRecordDtoType = ApiAssembly
-        .GetType("Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogTrackRecordDto", true)!;
+    private static readonly Type CatalogTrackRecordDtoType = typeof(Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogTrackRecordDto);
 
-    private static readonly Type CatalogProviderReferenceRecordDtoType = ApiAssembly
-        .GetType("Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogProviderReferenceRecordDto", true)!;
+    private static readonly Type CatalogProviderReferenceRecordDtoType = typeof(Soundtrail.Services.Api.Infrastructure.Raven.Documents.CatalogProviderReferenceRecordDto);
 
     private static readonly IReadOnlyList<Type> IndexTypes =
     [

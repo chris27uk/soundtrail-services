@@ -1,11 +1,10 @@
-using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Translators.Registry;
 
-namespace Soundtrail.Services.Internal.Projector.Infrastructure.Translations.Registrations;
+namespace Soundtrail.Translators.ProjectionDocuments.Registrations;
 
-public sealed class MusicTrackProjectionDocumentTranslationRegistration : ITypeTranslationRegistration
+public sealed class MusicTrackProjectionToRavenTrackRecordTranslationRegistration : ITypeTranslationRegistration
 {
     public void Register(TypeTranslationRegistry registry)
     {
