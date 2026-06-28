@@ -9,7 +9,6 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddOnMusicCatalogLookupAttemptedFeature(this IServiceCollection services)
     {
-        services.TryAddScoped<RavenMusicCatalogMetadataFetchedCatalogSearchDiscoveryRepository>();
         services.TryAddScoped<ApplyMusicCatalogLookupAttemptedToCatalogHandler>();
         services.TryAddScoped<ApplyMusicCatalogLookupAttemptedToDiscoveryHandler>();
         services.TryAddScoped<MusicCatalogLookupAttemptedHandler>(sp => new MusicCatalogLookupAttemptedHandler(

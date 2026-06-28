@@ -5,4 +5,4 @@ public sealed record CatalogDiscoveryWorkScheduledEventDataRecordDto(
     string Priority,
     DateTimeOffset NextEligibleAtUtc,
     string Reason,
-    DateTimeOffset ScheduledAtUtc);
+    DateTimeOffset ScheduledAtUtc) : RavenEventBodyDto;

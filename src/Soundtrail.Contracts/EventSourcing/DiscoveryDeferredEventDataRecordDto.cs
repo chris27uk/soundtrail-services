@@ -6,4 +6,4 @@ public sealed record DiscoveryDeferredEventDataRecordDto(
     int? EstimatedRetryAfterSeconds,
     DateTimeOffset? EarliestExpectedCompletionAt,
     string Reason,
-    DateTimeOffset DeferredAtUtc);
+    DateTimeOffset DeferredAtUtc) : RavenEventBodyDto;

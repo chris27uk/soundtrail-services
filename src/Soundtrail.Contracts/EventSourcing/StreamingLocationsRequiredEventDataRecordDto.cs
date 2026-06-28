@@ -15,4 +15,4 @@ public sealed record StreamingLocationsRequiredEventDataRecordDto(
     string? Artist,
     string? Album,
     string? ArtistId,
-    string? AlbumId);
+    string? AlbumId) : RavenEventBodyDto;

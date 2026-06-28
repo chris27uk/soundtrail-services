@@ -6,8 +6,17 @@ using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
 using Raven.Client.Documents.Session;
+using Soundtrail.Adapters.Discovery;
+using Soundtrail.Adapters.EventSourcing;
+using Soundtrail.Adapters.MusicTrackEventStore;
+using Soundtrail.Adapters.Registry;
+using Soundtrail.Adapters.Registry.CompositionRoot;
+using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Abstractions.EventSourcing;
+using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup.Adapters;
@@ -24,6 +33,7 @@ public static class RavenServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        services.AddTypeTranslationsFromAssemblies(typeof(TypeTranslationRegistry).Assembly);
         services.Configure<RavenDbOptions>(configuration.GetSection(RavenDbOptions.SectionName));
         services.TryAddSingleton<IDocumentStore>(sp =>
             {
@@ -44,13 +54,26 @@ public static class RavenServiceCollectionExtensions
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, RavenDatabaseHostedService>());
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, RavenIndexesHostedService>());
 
-        services.TryAddScoped<RavenCatalogDiscoveryWorkRepository>();
-        services.TryAddScoped<ICatalogDiscoveryWorkRepository>(sp => sp.GetRequiredService<RavenCatalogDiscoveryWorkRepository>());
-        services.TryAddScoped<ICatalogDiscoveryWorkPlanningReadPort>(sp => sp.GetRequiredService<RavenCatalogDiscoveryWorkRepository>());
+        services.TryAddScoped<IEventStreamRepository<DiscoveryQueryKey, IDomainEvent>>(sp =>
+            new RavenEventStreamRepository<DiscoveryQueryKey, IDomainEvent>(
+                sp.GetRequiredService<IAsyncDocumentSession>(),
+                sp.GetRequiredService<ITypeRegistry>(),
+                DiscoveryQueryEventStreamDefinition.Create()));
+        services.TryAddScoped<IEventStreamRepository<MusicCatalogId, IDomainEvent>>(sp =>
+            new RavenEventStreamRepository<MusicCatalogId, IDomainEvent>(
+                sp.GetRequiredService<IAsyncDocumentSession>(),
+                sp.GetRequiredService<ITypeRegistry>(),
+                CatalogDiscoveryWorkEventStreamDefinition.Create()));
+        services.TryAddScoped<IEventStreamRepository<MusicCatalogId, IMusicTrackEvent>>(sp =>
+            new RavenEventStreamRepository<MusicCatalogId, IMusicTrackEvent>(
+                sp.GetRequiredService<IAsyncDocumentSession>(),
+                sp.GetRequiredService<ITypeRegistry>(),
+                MusicTrackEventStreamDefinition.Create()));
+        services.TryAddScoped<ICatalogDiscoveryWorkSummaryStore, RavenCatalogDiscoveryWorkSummaryStore>();
+        services.TryAddScoped<ICatalogDiscoveryWorkPlanningReadPort>(sp => sp.GetRequiredService<RavenCatalogDiscoveryWorkSummaryStore>());
         services.TryAddScoped<IPotentialCatalogLookupWorkStore, RavenPotentialCatalogLookupWorkStore>();
         services.TryAddScoped<ICatalogSearchTrackingStore, RavenCatalogSearchTrackingStore>();
         services.TryAddScoped<IActiveLookupWorkStore, RavenActiveLookupWorkStore>();
-        services.TryAddScoped<IMusicTrackEventRepository, RavenMusicTrackStreamStore>();
         services.TryAddSingleton<IMusicCatalogCandidateSearch, RavenMusicCatalogCandidateSearch>();
         services.TryAddSingleton<ILocalMusicTrackSearch, RavenLocalMusicTrackSearch>();
         return services;

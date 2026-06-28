@@ -14,5 +14,5 @@ public sealed class KnownArtistRequestedListener(KnownArtistRequestedHandler han
         KnownArtistRequestedDto dto,
         IAsyncDocumentSession _,
         CancellationToken cancellationToken = default) =>
-        handler.Handle(TypeTranslationRegistry.Default.Translate<KnownArtistRequested>(dto), cancellationToken);
+        handler.Handle(TypeTranslationRegistry.Default.ToDomainObject<KnownArtistRequested>(dto), cancellationToken);
 }

@@ -1,10 +1,12 @@
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
-internal sealed class CatalogSearchDiscoveryRepositoryFake : ICatalogSearchDiscoveryRepository
+internal sealed class CatalogSearchDiscoveryRepositoryFake :
+    IEventStreamRepository<DiscoveryQueryKey, IDomainEvent>
 {
     private readonly Dictionary<string, List<IDomainEvent>> eventsByCriteria = [];
 
@@ -13,68 +15,6 @@ internal sealed class CatalogSearchDiscoveryRepositoryFake : ICatalogSearchDisco
         params IDomainEvent[] events)
     {
         eventsByCriteria[ToPersistentId(searchCriteria)] = events.ToList();
-    }
-
-    public Task<CatalogSearchDiscoveryEventStream> LoadAsync(
-        MusicSearchCriteria searchCriteria,
-        CancellationToken cancellationToken)
-    {
-        return Task.FromResult(eventsByCriteria.TryGetValue(ToPersistentId(searchCriteria), out var events)
-            ? new CatalogSearchDiscoveryEventStream(events.Count, events.ToArray())
-            : new CatalogSearchDiscoveryEventStream(0, []));
-    }
-
-    public Task<CatalogSearchDiscoveryEventStream> LoadAsync(
-        KnownCatalogItem knownItem,
-        CancellationToken cancellationToken)
-    {
-        return Task.FromResult(eventsByCriteria.TryGetValue(ToPersistentId(knownItem), out var events)
-            ? new CatalogSearchDiscoveryEventStream(events.Count, events.ToArray())
-            : new CatalogSearchDiscoveryEventStream(0, []));
-    }
-
-    public Task<bool> AppendAsync(
-        MusicSearchCriteria searchCriteria,
-        int expectedVersion,
-        IReadOnlyCollection<IDomainEvent> events,
-        CancellationToken cancellationToken)
-    {
-        var persistentId = ToPersistentId(searchCriteria);
-        if (!eventsByCriteria.TryGetValue(persistentId, out var storedEvents))
-        {
-            storedEvents = [];
-            eventsByCriteria[persistentId] = storedEvents;
-        }
-
-        if (storedEvents.Count != expectedVersion)
-        {
-            return Task.FromResult(false);
-        }
-
-        storedEvents.AddRange(events);
-        return Task.FromResult(true);
-    }
-
-    public Task<bool> AppendAsync(
-        KnownCatalogItem knownItem,
-        int expectedVersion,
-        IReadOnlyCollection<IDomainEvent> events,
-        CancellationToken cancellationToken)
-    {
-        var persistentId = ToPersistentId(knownItem);
-        if (!eventsByCriteria.TryGetValue(persistentId, out var storedEvents))
-        {
-            storedEvents = [];
-            eventsByCriteria[persistentId] = storedEvents;
-        }
-
-        if (storedEvents.Count != expectedVersion)
-        {
-            return Task.FromResult(false);
-        }
-
-        storedEvents.AddRange(events);
-        return Task.FromResult(true);
     }
 
     public IReadOnlyList<IDomainEvent> GetStoredEvents(MusicSearchCriteria searchCriteria) =>
@@ -86,6 +26,38 @@ internal sealed class CatalogSearchDiscoveryRepositoryFake : ICatalogSearchDisco
         eventsByCriteria.TryGetValue(ToPersistentId(knownItem), out var events)
             ? events.AsReadOnly()
             : [];
+
+    public Task<EventStream<IDomainEvent>> LoadAsync(
+        DiscoveryQueryKey streamId,
+        CancellationToken cancellationToken)
+    {
+        _ = cancellationToken;
+
+        return Task.FromResult(eventsByCriteria.TryGetValue(streamId.StableValue, out var events)
+            ? new EventStream<IDomainEvent>(events.Count, events.ToArray())
+            : new EventStream<IDomainEvent>(0, []));
+    }
+
+    public Task<AppendResult<IDomainEvent>> AppendAsync(
+        AppendRequest<DiscoveryQueryKey, IDomainEvent> request,
+        CancellationToken cancellationToken)
+    {
+        _ = cancellationToken;
+
+        if (!eventsByCriteria.TryGetValue(request.StreamId.StableValue, out var storedEvents))
+        {
+            storedEvents = [];
+            eventsByCriteria[request.StreamId.StableValue] = storedEvents;
+        }
+
+        if (storedEvents.Count != request.ExpectedVersion)
+        {
+            return Task.FromResult(new AppendResult<IDomainEvent>(false, storedEvents.Count, [], AppendOutcome.VersionMismatch));
+        }
+
+        storedEvents.AddRange(request.Events);
+        return Task.FromResult(new AppendResult<IDomainEvent>(true, storedEvents.Count, request.Events.ToArray(), AppendOutcome.Appended));
+    }
 
     private static string ToPersistentId(MusicSearchCriteria searchCriteria) =>
         DiscoveryQueryKey.StableValueFor(searchCriteria);

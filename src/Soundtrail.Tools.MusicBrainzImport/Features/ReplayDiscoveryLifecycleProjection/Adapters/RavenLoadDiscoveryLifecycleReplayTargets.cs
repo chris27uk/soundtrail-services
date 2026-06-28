@@ -10,13 +10,13 @@ public sealed class RavenLoadDiscoveryLifecycleReplayTargets(
 {
     public async Task<IReadOnlyList<MusicSearchCriteria>> LoadAsync(CancellationToken cancellationToken)
     {
-        var metadata = await session.Advanced.LoadStartingWithAsync<DiscoveryQueryEventStreamMetadataRecordDto>(
+        var metadata = await session.Advanced.LoadStartingWithAsync<RavenEventStreamMetadataRecord>(
             "discovery-query-streams/",
             start: 0,
             pageSize: 4096);
 
         return metadata
-            .Select(x => DiscoveryQueryKey.ToMusicSearchCriteria(x.Criteria))
+            .Select(x => DiscoveryQueryKey.ToMusicSearchCriteria(x.StreamId))
             .Distinct()
             .OrderBy(DiscoveryQueryKey.StableValueFor, StringComparer.Ordinal)
             .ToArray();

@@ -1,14 +1,15 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Adapters.Registry;
 
 namespace Soundtrail.Adapters.MusicTrackEventStore.Registrations;
 
-public sealed class ProviderReferenceDiscoveredStoredEventTranslationRegistration : IMusicTrackStoredEventTranslationRegistration
+public sealed class ProviderReferenceDiscoveredStoredEventTranslationRegistration : ITypeTranslationRegistration
 {
-    public void Register(MusicTrackStoredEventTranslationRegistry registry)
+    public void Register(TypeTranslationRegistry registry)
     {
-        registry.Register<ProviderReferenceDiscovered, ProviderReferenceDiscoveredEventDataRecordDto>(
+        registry.RegisterStoredEventPair<ProviderReferenceDiscovered, ProviderReferenceDiscoveredEventDataRecordDto>(
             nameof(ProviderReferenceDiscovered),
             domainEvent => new ProviderReferenceDiscoveredEventDataRecordDto(
                 domainEvent.Provider.Value,

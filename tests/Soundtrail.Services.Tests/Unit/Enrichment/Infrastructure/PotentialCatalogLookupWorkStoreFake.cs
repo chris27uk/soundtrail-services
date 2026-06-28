@@ -8,7 +8,6 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
 {
     internal sealed class PotentialCatalogLookupWorkStoreFake :
         IPotentialCatalogLookupWorkStore,
-        ICatalogDiscoveryWorkRepository,
         ICatalogDiscoveryWorkPlanningReadPort
     {
         private readonly Dictionary<string, PotentialCatalogLookupWork> byMusicCatalogId = [];

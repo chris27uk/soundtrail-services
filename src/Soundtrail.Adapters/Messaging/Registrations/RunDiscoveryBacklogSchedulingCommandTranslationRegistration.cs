@@ -1,4 +1,5 @@
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Adapters.Registry;
 
@@ -8,10 +9,16 @@ public sealed class RunDiscoveryBacklogSchedulingCommandTranslationRegistration 
 {
     public void Register(TypeTranslationRegistry registry)
     {
-        registry.Register<RunDiscoveryBacklogSchedulingCommand, RunDiscoveryBacklogSchedulingCommandDto>(
-            translate: command =>
+        registry.RegisterPair<RunDiscoveryBacklogSchedulingCommand, RunDiscoveryBacklogSchedulingCommandDto>(
+            command =>
                 new RunDiscoveryBacklogSchedulingCommandDto(
                     command.CreatedAt,
-                    command.BatchSize));
+                    command.BatchSize),
+            dto =>
+                new RunDiscoveryBacklogSchedulingCommand(
+                    CommandId.For($"RunDiscoveryBacklogScheduling:{dto.Now:O}:{dto.Take}"),
+                    dto.Now,
+                    CorrelationId.From($"RunDiscoveryBacklogScheduling:{dto.Now:O}:{dto.Take}"),
+                    dto.Take));
     }
 }

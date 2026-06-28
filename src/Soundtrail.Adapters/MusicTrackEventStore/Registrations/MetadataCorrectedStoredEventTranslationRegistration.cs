@@ -1,13 +1,14 @@
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Adapters.Registry;
 
 namespace Soundtrail.Adapters.MusicTrackEventStore.Registrations;
 
-public sealed class MetadataCorrectedStoredEventTranslationRegistration : IMusicTrackStoredEventTranslationRegistration
+public sealed class MetadataCorrectedStoredEventTranslationRegistration : ITypeTranslationRegistration
 {
-    public void Register(MusicTrackStoredEventTranslationRegistry registry)
+    public void Register(TypeTranslationRegistry registry)
     {
-        registry.Register<MetadataCorrected, MetadataCorrectedEventDataRecordDto>(
+        registry.RegisterStoredEventPair<MetadataCorrected, MetadataCorrectedEventDataRecordDto>(
             nameof(MetadataCorrected),
             domainEvent => new MetadataCorrectedEventDataRecordDto(
                 domainEvent.Title,

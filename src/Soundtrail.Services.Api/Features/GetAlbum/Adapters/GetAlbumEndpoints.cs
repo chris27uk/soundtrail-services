@@ -16,7 +16,7 @@ public static class GetAlbumEndpoints
                 var artist = ArtistId.From(artistId);
                 var album = AlbumId.From(albumId);
                 var response = await handler.Handle(new GetAlbumCommand(artist, album), cancellationToken);
-                return response is null ? Results.NotFound() : Results.Ok(TypeTranslationRegistry.Default.Translate<Soundtrail.Contracts.Api.AlbumDetailsResponseDto>(response));
+                return response is null ? Results.NotFound() : Results.Ok(TypeTranslationRegistry.Default.ToDto<Soundtrail.Contracts.Api.AlbumDetailsResponseDto>(response));
             });
 
         return endpoints;

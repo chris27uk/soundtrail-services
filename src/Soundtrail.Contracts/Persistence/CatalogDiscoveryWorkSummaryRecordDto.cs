@@ -22,5 +22,7 @@ public sealed class CatalogDiscoveryWorkSummaryRecordDto
 
     public DateTimeOffset UpdatedAtUtc { get; set; }
 
+    public int LastAppliedVersion { get; set; }
+
     public static string GetDocumentId(string musicCatalogId) => $"catalog-discovery-work-summary/{musicCatalogId}";
 }

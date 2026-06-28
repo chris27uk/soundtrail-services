@@ -1,4 +1,5 @@
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Search;
 using Soundtrail.Adapters.Registry;
@@ -9,8 +10,8 @@ public sealed class AssessMusicTrackCommandTranslationRegistration : ITypeTransl
 {
     public void Register(TypeTranslationRegistry registry)
     {
-        registry.Register<AssessMusicTrackCommand, AssessMusicTrackCommandDto>(
-            translate: command =>
+        registry.RegisterPair<AssessMusicTrackCommand, AssessMusicTrackCommandDto>(
+            command =>
                 new AssessMusicTrackCommandDto(
                     command.CommandId.Value,
                     command.CorrelationId.Value,
@@ -19,6 +20,16 @@ public sealed class AssessMusicTrackCommandTranslationRegistration : ITypeTransl
                     command.MusicCatalogId.Value,
                     command.SearchTerm is null ? null : DiscoveryQueryKey.StableValueFor(command.SearchTerm),
                     command.TrustLevel,
-                    command.RiskScore));
+                    command.RiskScore),
+            dto =>
+                new AssessMusicTrackCommand(
+                    CommandId.For(dto.CommandId),
+                    CorrelationId.From(dto.CorrelationId),
+                    dto.CreatedAt,
+                    dto.Priority,
+                    MusicCatalogId.From(dto.MusicCatalogId),
+                    string.IsNullOrWhiteSpace(dto.Criteria) ? null : DiscoveryQueryKey.ToMusicSearchCriteria(dto.Criteria),
+                    dto.TrustLevel,
+                    dto.RiskScore));
     }
 }

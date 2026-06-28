@@ -1,4 +1,5 @@
 using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
@@ -7,7 +8,7 @@ namespace Soundtrail.Services.Api.Features.SearchCatalog;
 
 public sealed class SearchCatalogHandler(
     ICatalogSearchPort catalogSearch,
-    ICatalogSearchDiscoveryRepository discoveryRepository,
+    IEventStreamRepository<DiscoveryQueryKey, IDomainEvent> discoveryRepository,
     ICommandBus commandBus) : IApiHandler<SearchCatalogCommand, SearchCatalogResponse>
 {
     public async Task<SearchCatalogResponse> Handle(

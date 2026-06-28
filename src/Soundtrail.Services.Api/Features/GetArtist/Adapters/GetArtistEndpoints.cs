@@ -15,7 +15,7 @@ public static class GetArtistEndpoints
             {
                 var artist = ArtistId.From(artistId);
                 var response = await handler.Handle(new GetArtistCommand(artist), cancellationToken);
-                return response is null ? Results.NotFound() : Results.Ok(TypeTranslationRegistry.Default.Translate<Soundtrail.Contracts.Api.ArtistDetailsResponseDto>(response));
+                return response is null ? Results.NotFound() : Results.Ok(TypeTranslationRegistry.Default.ToDto<Soundtrail.Contracts.Api.ArtistDetailsResponseDto>(response));
             });
 
         return endpoints;

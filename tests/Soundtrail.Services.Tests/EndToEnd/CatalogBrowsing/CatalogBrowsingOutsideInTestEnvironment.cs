@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Raven.Client.Documents;
+using Soundtrail.Adapters.Registry;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Catalog.Commands;
@@ -25,7 +26,7 @@ using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adap
 using Soundtrail.Services.Tests.Integration.Enrichment.Messaging.Wolverine;
 using Soundtrail.Services.Tests.EndToEnd.Search;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
-using Soundtrail.Adapters.MusicTrackEventStore;
+using Soundtrail.Services.Tests.Support;
 using System.Net.Http.Json;
 using Wolverine;
 
@@ -33,7 +34,6 @@ namespace Soundtrail.Services.Tests.EndToEnd.CatalogBrowsing;
 
 public sealed class CatalogBrowsingOutsideInTestEnvironment : IAsyncDisposable
 {
-    private static readonly IMusicTrackStoredEventRecordTranslator Translator = MusicTrackStoredEventRecordTranslator.Default;
     private readonly WebApplication app;
     private readonly HttpClient client;
     private readonly RavenEmbeddedTestDatabase raven;
@@ -196,7 +196,7 @@ public sealed class CatalogBrowsingOutsideInTestEnvironment : IAsyncDisposable
     {
         using (var session = store.OpenAsyncSession())
         {
-            var importHandler = new MusicTrackEventsImportedHandler(new RavenMusicTrackStreamStore(session, Translator));
+            var importHandler = new MusicTrackEventsImportedHandler(TestEventStreamRepositories.CreateMusicTrack(session));
             importHandler.Handle(
                     new ImportMusicTrackEventsCommand(
                         musicCatalogId,
@@ -210,12 +210,12 @@ public sealed class CatalogBrowsingOutsideInTestEnvironment : IAsyncDisposable
         }
 
         using var replaySession = store.OpenAsyncSession();
-        var eventsToReplay = replaySession.Advanced.LoadStartingWithAsync<MusicTrackStoredEventRecordDto>(
+        var eventsToReplay = replaySession.Advanced.LoadStartingWithAsync<RavenStoredEventRecord>(
                 $"music-track-events/{musicCatalogId.Value}/")
             .GetAwaiter()
             .GetResult()
             .OrderBy(x => x.Version)
-            .Select(x => new VersionedMusicTrackEvent(x.Version, Translator.ToDomainObject(x)))
+            .Select(x => new VersionedMusicTrackEvent(x.Version, TypeTranslationRegistry.Default.ToDomainObject<IMusicTrackEvent>(x.Body!)))
             .ToArray();
         var projectHandler = new MusicCatalogChangedHandler(
             new RavenLoadMusicTrackCatalogProjection(replaySession, new RavenMusicTrackCatalogProjectionMapper()),

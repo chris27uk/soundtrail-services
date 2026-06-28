@@ -125,7 +125,7 @@ public sealed class MusicTrackCatalogProjectionTests
         projection.Track.ArtistId.Should().Be("artist_the_killers");
         projection.Track.AlbumId.Should().Be("album_hot_fuss");
         projection.Track.AlbumName.Should().Be("Hot Fuss");
-        projection.Track.SearchText.Should().Be("mr. brightside the killers");
+        projection.Track.SearchText.Should().Be("mr brightside the killers");
         projection.Artist!.Name.Should().Be("The Killers");
         projection.Artist.MusicBrainzArtistId.Should().Be("mb-artist-the-killers");
         projection.Album!.Name.Should().Be("Hot Fuss");

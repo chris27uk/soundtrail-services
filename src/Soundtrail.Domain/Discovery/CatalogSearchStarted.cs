@@ -25,11 +25,11 @@ public sealed class CatalogSearchStarted
     }
 
     public static async Task<CatalogSearchStarted> LoadAsync(
-        ICatalogSearchDiscoveryRepository repository,
+        IEventStreamRepository<DiscoveryQueryKey, IDomainEvent> repository,
         MusicSearchCriteria criteria,
         CancellationToken cancellationToken)
     {
-        var stream = await repository.LoadAsync(criteria, cancellationToken);
+        var stream = await repository.LoadAsync(DiscoveryQueryKey.For(criteria), cancellationToken);
         var aggregate = new CatalogSearchStarted(stream.Events.OfType<MusicTrackSearchStarted>(), stream.Version);
         aggregate.criteria ??= criteria;
         return aggregate;
@@ -54,7 +54,7 @@ public sealed class CatalogSearchStarted
     }
 
     public async Task<bool> SaveAsync(
-        ICatalogSearchDiscoveryRepository repository,
+        IEventStreamRepository<DiscoveryQueryKey, IDomainEvent> repository,
         CancellationToken cancellationToken)
     {
         if (uncommittedEvents.Count == 0)
@@ -62,11 +62,12 @@ public sealed class CatalogSearchStarted
             return true;
         }
 
-        var saved = await repository.AppendAsync(
-            RequireCriteria(),
-            version,
-            uncommittedEvents.AsReadOnly(),
-            cancellationToken);
+        var saved = (await repository.AppendAsync(
+            new AppendRequest<DiscoveryQueryKey, IDomainEvent>(
+                DiscoveryQueryKey.For(RequireCriteria()),
+                version,
+                uncommittedEvents.AsReadOnly()),
+            cancellationToken)).Appended;
 
         if (saved)
         {

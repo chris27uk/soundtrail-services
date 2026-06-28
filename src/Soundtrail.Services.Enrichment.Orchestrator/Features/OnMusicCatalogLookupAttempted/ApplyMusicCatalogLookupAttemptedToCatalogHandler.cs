@@ -1,12 +1,15 @@
 using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Domain.Enrichment.Commands;
+using Soundtrail.Contracts.Common;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted;
 
 public sealed class ApplyMusicCatalogLookupAttemptedToCatalogHandler(
-    IMusicTrackEventRepository eventRepository) : IHandler<ApplyMusicCatalogLookupAttemptedToCatalogCommand>
+    IEventStreamRepository<MusicCatalogId, IMusicTrackEvent> eventRepository) : IHandler<ApplyMusicCatalogLookupAttemptedToCatalogCommand>
 {
     public async Task Handle(
         ApplyMusicCatalogLookupAttemptedToCatalogCommand command,
@@ -18,11 +21,11 @@ public sealed class ApplyMusicCatalogLookupAttemptedToCatalogHandler(
             return;
         }
 
-        var aggregate = await CatalogEntityAggregate.LoadAsync(
+        var aggregate = await MusicTrack.LoadAsync(
             eventRepository,
             fetched.MusicCatalogId,
             cancellationToken);
-        aggregate.RecordMusicCatalogMetadataFetched(fetched);
+        aggregate.MetadataFetched(fetched);
         await aggregate.SaveAsync(eventRepository, fetched.CommandId, cancellationToken);
     }
 }

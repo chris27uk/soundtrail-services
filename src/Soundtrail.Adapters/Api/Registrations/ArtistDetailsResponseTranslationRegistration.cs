@@ -13,6 +13,6 @@ public sealed class ArtistDetailsResponseTranslationRegistration : ITypeTranslat
                 new ArtistDetailsResponseDto(
                     response.ArtistId.Value,
                     response.Name,
-                    response.Albums.Select(x => registry.Translate<AlbumSummaryResponseDto>(x)).ToArray()));
+                    response.Albums.Select(x => registry.ToDto<AlbumSummaryResponseDto>(x)).ToArray()));
     }
 }

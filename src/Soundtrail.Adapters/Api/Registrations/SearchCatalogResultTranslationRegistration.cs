@@ -21,7 +21,7 @@ public sealed class SearchCatalogResultTranslationRegistration : ITypeTranslatio
                     result.PlayabilityStatus.ToString(),
                     result.AvailableProviders.Select(x => x.StableValue).ToArray(),
                     result.TerminallyUnavailableProviders.Select(x => x.StableValue).ToArray(),
-                    result.ProviderReferences.Select(x => registry.Translate<ProviderReferenceResponseDto>(x)).ToArray()));
+                    result.ProviderReferences.Select(x => registry.ToDto<ProviderReferenceResponseDto>(x)).ToArray()));
     }
 
     private static string ToResponseType(SearchResultType type) =>

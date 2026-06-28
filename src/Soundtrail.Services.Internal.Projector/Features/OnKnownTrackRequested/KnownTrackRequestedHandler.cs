@@ -1,5 +1,7 @@
+using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Internal.Projector.Features.OnKnownTrackRequested.Ports;
 using Soundtrail.Services.Internal.Projector.Features.OnKnownTrackRequested.Support;
 
@@ -7,7 +9,7 @@ namespace Soundtrail.Services.Internal.Projector.Features.OnKnownTrackRequested;
 
 public sealed class KnownTrackRequestedHandler(
     ILoadKnownTrackRequestedMusicTrackPort loadMusicTrackPort,
-    ICatalogSearchDiscoveryRepository discoveryRepository)
+    IEventStreamRepository<DiscoveryQueryKey, IDomainEvent> discoveryRepository)
 {
     public async Task Handle(
         KnownTrackRequestedCommand command,

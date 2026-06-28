@@ -4,4 +4,4 @@ public sealed record CatalogDiscoveryWorkDeferredEventDataRecordDto(
     string MusicCatalogId,
     DateTimeOffset NextEligibleAtUtc,
     string Reason,
-    DateTimeOffset DeferredAtUtc);
+    DateTimeOffset DeferredAtUtc) : RavenEventBodyDto;

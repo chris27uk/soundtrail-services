@@ -14,5 +14,5 @@ public sealed class KnownTrackRequestedListener(KnownTrackRequestedHandler handl
         KnownTrackRequestedDto dto,
         IAsyncDocumentSession _,
         CancellationToken cancellationToken = default) =>
-        handler.Handle(TypeTranslationRegistry.Default.Translate<KnownTrackRequested>(dto), cancellationToken);
+        handler.Handle(TypeTranslationRegistry.Default.ToDomainObject<KnownTrackRequested>(dto), cancellationToken);
 }

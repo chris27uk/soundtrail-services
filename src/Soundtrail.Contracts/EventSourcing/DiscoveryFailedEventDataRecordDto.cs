@@ -4,4 +4,4 @@ public sealed record DiscoveryFailedEventDataRecordDto(
     string Criteria,
     bool WillBeLookedUp,
     string Reason,
-    DateTimeOffset FailedAtUtc);
+    DateTimeOffset FailedAtUtc) : RavenEventBodyDto;

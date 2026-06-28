@@ -5,4 +5,4 @@ public sealed record ProviderReferenceDiscoveredEventDataRecordDto(
     string? ExternalId,
     string Url,
     string SourceProvider,
-    DateTimeOffset ObservedAt);
+    DateTimeOffset ObservedAt) : RavenEventBodyDto;

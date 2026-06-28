@@ -1,6 +1,9 @@
+using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
+using Soundtrail.Domain.Search;
+using Raven.Client.Documents.Session;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
+using Soundtrail.Services.Tests.Support;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.CatalogSearchDiscoveryRepository;
@@ -8,16 +11,19 @@ namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.CatalogSearchDi
 internal sealed class CatalogSearchDiscoveryRepositoryTestEnvironment : IDisposable
 {
     private readonly RavenEmbeddedTestDatabase? raven;
+    private readonly IAsyncDocumentSession? session;
 
     private CatalogSearchDiscoveryRepositoryTestEnvironment(
-        ICatalogSearchDiscoveryRepository repository,
-        RavenEmbeddedTestDatabase? raven)
+        IEventStreamRepository<DiscoveryQueryKey, IDomainEvent> repository,
+        RavenEmbeddedTestDatabase? raven,
+        IAsyncDocumentSession? session = null)
     {
         Repository = repository;
         this.raven = raven;
+        this.session = session;
     }
 
-    public ICatalogSearchDiscoveryRepository Repository { get; }
+    public IEventStreamRepository<DiscoveryQueryKey, IDomainEvent> Repository { get; }
 
     public static CatalogSearchDiscoveryRepositoryTestEnvironment Create(CatalogSearchDiscoveryRepositoryMode mode) =>
         mode switch
@@ -27,13 +33,19 @@ internal sealed class CatalogSearchDiscoveryRepositoryTestEnvironment : IDisposa
             _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
         };
 
-    public void Dispose() => raven?.Dispose();
+    public void Dispose()
+    {
+        session?.Dispose();
+        raven?.Dispose();
+    }
 
     private static CatalogSearchDiscoveryRepositoryTestEnvironment CreateRavenEmbedded()
     {
         var raven = RavenEmbeddedTestDatabase.Create();
+        var session = raven.Store.OpenAsyncSession();
         return new CatalogSearchDiscoveryRepositoryTestEnvironment(
-            new RavenCatalogSearchDiscoveryRepository(raven.Store),
-            raven);
+            TestEventStreamRepositories.CreateDiscoveryQuery(session),
+            raven,
+            session);
     }
 }

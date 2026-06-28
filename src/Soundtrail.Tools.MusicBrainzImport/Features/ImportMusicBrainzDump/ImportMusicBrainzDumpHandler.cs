@@ -1,7 +1,9 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Commands;
+using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump.Input;
@@ -10,7 +12,7 @@ namespace Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump;
 
 public sealed class ImportMusicBrainzDumpHandler(
     IReadMusicBrainzDumpPort readPort,
-    IMusicTrackEventRepository repository) : IHandler<ImportMusicBrainzDumpCommand>
+    IEventStreamRepository<MusicCatalogId, IMusicTrackEvent> repository) : IHandler<ImportMusicBrainzDumpCommand>
 {
     public async Task Handle(
         ImportMusicBrainzDumpCommand command,
@@ -27,10 +29,10 @@ public sealed class ImportMusicBrainzDumpHandler(
             }
 
             var musicCatalogId = BuildMusicCatalogId(record);
-            var aggregate = await CatalogEntityAggregate.LoadAsync(repository, musicCatalogId, cancellationToken);
+            var aggregate = await MusicTrack.LoadAsync(repository, musicCatalogId, cancellationToken);
             var commandId = BuildCommandId(record);
 
-            aggregate.RecordMusicCatalogMetadataFetched(
+            aggregate.MetadataFetched(
                 new MusicCatalogMetadataFetched(
                     commandId,
                     musicCatalogId,

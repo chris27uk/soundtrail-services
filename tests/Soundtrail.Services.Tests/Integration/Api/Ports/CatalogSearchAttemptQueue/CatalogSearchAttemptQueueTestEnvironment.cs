@@ -168,7 +168,7 @@ internal sealed class CatalogSearchAttemptQueueTestEnvironment : IAsyncDisposabl
 
         public Task SendAsync(ICommand command, CancellationToken cancellationToken = default)
         {
-            requests.Enqueue(TypeTranslationRegistry.Default.Translate<CatalogSearchAttemptDto>((SearchCatalogRequested)command));
+            requests.Enqueue(TypeTranslationRegistry.Default.ToDto<CatalogSearchAttemptDto>((SearchCatalogRequested)command));
             return Task.CompletedTask;
         }
     }

@@ -1,13 +1,15 @@
 using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested;
 
 public sealed class SearchCatalogRequestedHandler(
     IMusicCatalogCandidateSearch musicCatalogCandidateSearch,
-    ICatalogSearchDiscoveryRepository catalogSearchDiscoveryRepository,
+    IEventStreamRepository<DiscoveryQueryKey, IDomainEvent> catalogSearchDiscoveryRepository,
     ILocalMusicTrackSearch localMusicTrackSearch) : IHandler<SearchCatalogRequested>
 {
     public async Task Handle(

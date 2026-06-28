@@ -1,14 +1,15 @@
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Adapters.Registry;
 
 namespace Soundtrail.Adapters.MusicTrackEventStore.Registrations;
 
-public sealed class ArtworkDiscoveredStoredEventTranslationRegistration : IMusicTrackStoredEventTranslationRegistration
+public sealed class ArtworkDiscoveredStoredEventTranslationRegistration : ITypeTranslationRegistration
 {
-    public void Register(MusicTrackStoredEventTranslationRegistry registry)
+    public void Register(TypeTranslationRegistry registry)
     {
-        registry.Register<ArtworkDiscovered, ArtworkDiscoveredEventDataRecordDto>(
+        registry.RegisterStoredEventPair<ArtworkDiscovered, ArtworkDiscoveredEventDataRecordDto>(
             nameof(ArtworkDiscovered),
             domainEvent => new ArtworkDiscoveredEventDataRecordDto(
                 domainEvent.EntityKind.ToString(),

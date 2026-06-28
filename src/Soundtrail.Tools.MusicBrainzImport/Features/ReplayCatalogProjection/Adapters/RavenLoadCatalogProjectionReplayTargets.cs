@@ -10,13 +10,13 @@ public sealed class RavenLoadCatalogProjectionReplayTargets(
 {
     public async Task<IReadOnlyList<MusicCatalogId>> LoadAsync(CancellationToken cancellationToken)
     {
-        var metadata = await session.Advanced.LoadStartingWithAsync<MusicTrackEventStreamMetadataRecordDto>(
+        var metadata = await session.Advanced.LoadStartingWithAsync<RavenEventStreamMetadataRecord>(
             "music-track-streams/",
             start: 0,
             pageSize: 4096);
 
         return metadata
-            .Select(x => MusicCatalogId.From(x.MusicCatalogId))
+            .Select(x => MusicCatalogId.From(x.StreamId))
             .Distinct()
             .OrderBy(x => x.Value, StringComparer.Ordinal)
             .ToArray();

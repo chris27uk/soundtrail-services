@@ -1,10 +1,10 @@
 using Raven.Client.Documents.Session;
+using Soundtrail.Adapters.Registry;
 using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Discovery.Events;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Ports;
@@ -14,6 +14,7 @@ using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjec
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.EventStore;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.ProjectionReset;
 using Soundtrail.Adapters.ProjectionDocuments;
+using Soundtrail.Services.Tests.Support;
 
 namespace Soundtrail.Services.Tests.Integration.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection;
 
@@ -121,7 +122,8 @@ internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsync
         MusicSearchCriteria searchCriteria)
     {
         var raven = RavenEmbeddedTestDatabase.Create();
-        var repository = new RavenCatalogSearchDiscoveryRepository(raven.Store);
+        using var repositorySession = raven.Store.OpenAsyncSession();
+        var repository = TestEventStreamRepositories.CreateDiscoveryQuery(repositorySession);
         var discovery = await SearchOrSeekHistory.LoadAsync(repository, searchCriteria, CancellationToken.None);
         discovery.SearchRequested(
             new SearchCatalogRequested(
@@ -163,7 +165,7 @@ internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsync
         var session = raven.Store.OpenAsyncSession();
         var handler = new ReplayDiscoveryLifecycleProjectionBatchHandler(
             new RavenLoadDiscoveryLifecycleReplayTargets(session),
-            new RavenLoadDiscoveryLifecycleEventsForReplay(session),
+            new RavenLoadDiscoveryLifecycleEventsForReplay(session, TypeTranslationRegistry.Default),
             new RavenResetDiscoveryLifecycleProjection(session),
             new CatalogSearchStatusChangedHandler(
                 new RavenLoadDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()),

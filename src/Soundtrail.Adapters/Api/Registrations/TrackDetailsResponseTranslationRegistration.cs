@@ -22,6 +22,6 @@ public sealed class TrackDetailsResponseTranslationRegistration : ITypeTranslati
                     response.PlayabilityStatus.ToString(),
                     response.AvailableProviders.Select(x => x.StableValue).ToArray(),
                     response.TerminallyUnavailableProviders.Select(x => x.StableValue).ToArray(),
-                    response.ProviderReferences.Select(x => registry.Translate<ProviderReferenceResponseDto>(x)).ToArray()));
+                    response.ProviderReferences.Select(x => registry.ToDto<ProviderReferenceResponseDto>(x)).ToArray()));
     }
 }

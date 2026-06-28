@@ -6,4 +6,4 @@ public sealed record DiscoveryRequestedEventDataRecordDto(
     int TrustLevel,
     int RiskScore,
     DateTimeOffset RequestedAtUtc,
-    string CorrelationId);
+    string CorrelationId) : RavenEventBodyDto;

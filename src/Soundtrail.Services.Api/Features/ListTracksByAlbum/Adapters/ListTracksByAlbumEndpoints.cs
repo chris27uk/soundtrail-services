@@ -16,7 +16,7 @@ public static class ListTracksByAlbumEndpoints
                 var artist = ArtistId.From(artistId);
                 var album = AlbumId.From(albumId);
                 var response = await handler.Handle(new ListTracksByAlbumCommand(artist, album), cancellationToken);
-                return response is null ? Results.NotFound() : Results.Ok(TypeTranslationRegistry.Default.Translate<Soundtrail.Contracts.Api.AlbumTracksResponseDto>(response));
+                return response is null ? Results.NotFound() : Results.Ok(TypeTranslationRegistry.Default.ToDto<Soundtrail.Contracts.Api.AlbumTracksResponseDto>(response));
             });
 
         return endpoints;

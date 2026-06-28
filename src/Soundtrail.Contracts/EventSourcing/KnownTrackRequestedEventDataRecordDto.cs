@@ -4,4 +4,4 @@ public sealed record KnownTrackRequestedEventDataRecordDto(
     string TrackId,
     string Playback,
     DateTimeOffset RequestedAtUtc,
-    string CorrelationId);
+    string CorrelationId) : RavenEventBodyDto;

@@ -13,6 +13,6 @@ public sealed class ArtistTracksResponseTranslationRegistration : ITypeTranslati
                 new ArtistTracksResponseDto(
                     response.ArtistId.Value,
                     response.ArtistName,
-                    response.Tracks.Select(x => registry.Translate<TrackSummaryResponseDto>(x)).ToArray()));
+                    response.Tracks.Select(x => registry.ToDto<TrackSummaryResponseDto>(x)).ToArray()));
     }
 }

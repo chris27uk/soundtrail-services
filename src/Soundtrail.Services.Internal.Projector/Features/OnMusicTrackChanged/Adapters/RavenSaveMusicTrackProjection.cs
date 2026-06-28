@@ -9,7 +9,7 @@ namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Ad
 
 public sealed class RavenSaveMusicTrackProjection(
     IAsyncDocumentSession session,
-    ITypeTranslator translator) : ISaveMusicTrackProjectionPort
+    ITypeRegistry translator) : ISaveMusicTrackProjectionPort
 {
     public async Task SaveAsync(
         MusicCatalogId musicCatalogId,

@@ -33,7 +33,7 @@ public sealed class CatalogDiscoveryWork
     }
 
     public static async Task<CatalogDiscoveryWork> LoadAsync(
-        ICatalogDiscoveryWorkRepository repository,
+        IEventStreamRepository<MusicCatalogId, IDomainEvent> repository,
         MusicCatalogId musicCatalogId,
         CancellationToken cancellationToken)
     {
@@ -102,7 +102,7 @@ public sealed class CatalogDiscoveryWork
     }
 
     public async Task<bool> SaveAsync(
-        ICatalogDiscoveryWorkRepository repository,
+        IEventStreamRepository<MusicCatalogId, IDomainEvent> repository,
         CancellationToken cancellationToken)
     {
         if (uncommittedEvents.Count == 0)
@@ -110,11 +110,12 @@ public sealed class CatalogDiscoveryWork
             return true;
         }
 
-        var saved = await repository.AppendAsync(
-            RequireMusicCatalogId(),
-            version,
-            uncommittedEvents.AsReadOnly(),
-            cancellationToken);
+        var saved = (await repository.AppendAsync(
+            new AppendRequest<MusicCatalogId, IDomainEvent>(
+                RequireMusicCatalogId(),
+                version,
+                uncommittedEvents.AsReadOnly()),
+            cancellationToken)).Appended;
 
         if (saved)
         {

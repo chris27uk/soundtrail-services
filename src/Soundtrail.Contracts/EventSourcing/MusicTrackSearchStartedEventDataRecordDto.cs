@@ -6,4 +6,4 @@ public sealed record MusicTrackSearchStartedEventDataRecordDto(
     int TrustLevel,
     int RiskScore,
     DateTimeOffset StartedAtUtc,
-    string CorrelationId);
+    string CorrelationId) : RavenEventBodyDto;

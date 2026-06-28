@@ -16,10 +16,7 @@ internal sealed class WireMockMusicProvidersServer : IDisposable
 
     public WireMockMusicProvidersServer()
     {
-        var port = GetAvailablePort();
-        BaseUrl = $"http://127.0.0.1:{port}";
-        server.Prefixes.Add($"{BaseUrl}/");
-        server.Start();
+        BaseUrl = StartServer(server);
         serverLoop = Task.Run(() => RunServerLoopAsync(shutdown.Token));
     }
 
@@ -251,6 +248,32 @@ internal sealed class WireMockMusicProvidersServer : IDisposable
         context.Response.ContentLength64 = bytes.Length;
         await context.Response.OutputStream.WriteAsync(bytes, cancellationToken);
         context.Response.Close();
+    }
+
+    private static string StartServer(HttpListener server)
+    {
+        for (var attempt = 0; attempt < 20; attempt++)
+        {
+            var port = GetAvailablePort();
+            var baseUrl = $"http://127.0.0.1:{port}";
+
+            try
+            {
+                server.Prefixes.Clear();
+                server.Prefixes.Add($"{baseUrl}/");
+                server.Start();
+                return baseUrl;
+            }
+            catch (HttpListenerException) when (attempt < 19)
+            {
+                if (server.IsListening)
+                {
+                    server.Stop();
+                }
+            }
+        }
+
+        throw new InvalidOperationException("Unable to start WireMockMusicProvidersServer after multiple port binding attempts.");
     }
 
     private static int GetAvailablePort()

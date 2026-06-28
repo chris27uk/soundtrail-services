@@ -1,14 +1,16 @@
 using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Domain.Enrichment.Responses;
+using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted;
 
 public sealed class ApplyMusicCatalogLookupAttemptedToDiscoveryHandler(
     ICatalogSearchTrackingStore catalogSearchTrackingStore,
-    ICatalogSearchDiscoveryRepository discoveryRepository) : IHandler<ApplyMusicCatalogLookupAttemptedToDiscoveryCommand>
+    IEventStreamRepository<DiscoveryQueryKey, IDomainEvent> discoveryRepository) : IHandler<ApplyMusicCatalogLookupAttemptedToDiscoveryCommand>
 {
     public async Task Handle(
         ApplyMusicCatalogLookupAttemptedToDiscoveryCommand command,
@@ -21,19 +23,11 @@ public sealed class ApplyMusicCatalogLookupAttemptedToDiscoveryHandler(
             if (attempted.Outcome.Status is not (MusicCatalogLookupOutcomeStatus.Deferred or MusicCatalogLookupOutcomeStatus.Duplicate))
             {
                 var existingTrackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(attempted.MusicCatalogId, cancellationToken);
-                foreach (var tracking in existingTrackings)
-                {
-                    var history = await SearchOrSeekHistory.LoadAsync(
-                        discoveryRepository,
-                        tracking.SearchCriteria,
-                        cancellationToken);
-                    if (!history.LookupStarted(attempted.Priority, attempted.CreatedAt))
-                    {
-                        continue;
-                    }
-
-                    await history.SaveAsync(discoveryRepository, cancellationToken);
-                }
+                await SearchOrSeekHistory.ApplyToSearchCriteriaAsync(
+                    discoveryRepository,
+                    existingTrackings.Select(static tracking => tracking.SearchCriteria),
+                    history => history.LookupStarted(attempted.Priority, attempted.CreatedAt),
+                    cancellationToken);
             }
         }
 
@@ -60,19 +54,11 @@ public sealed class ApplyMusicCatalogLookupAttemptedToDiscoveryHandler(
                 .Concat(trackings.Select(static tracking => tracking.SearchCriteria))
                 .Distinct();
 
-            foreach (var searchTerm in discoverySearchTerms)
-            {
-                var history = await SearchOrSeekHistory.LoadAsync(
-                    discoveryRepository,
-                    searchTerm,
-                    cancellationToken);
-                if (!history.LookupCompleted(fetched.Priority, fetched.CreatedAt))
-                {
-                    continue;
-                }
-
-                await history.SaveAsync(discoveryRepository, cancellationToken);
-            }
+            await SearchOrSeekHistory.ApplyToSearchCriteriaAsync(
+                discoveryRepository,
+                discoverySearchTerms,
+                history => history.LookupCompleted(fetched.Priority, fetched.CreatedAt),
+                cancellationToken);
         }
 
         if (attempted.Outcome.Status is not (MusicCatalogLookupOutcomeStatus.Deferred or MusicCatalogLookupOutcomeStatus.Failed))
@@ -80,14 +66,11 @@ public sealed class ApplyMusicCatalogLookupAttemptedToDiscoveryHandler(
             return;
         }
 
-        var trackedSearches = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(attempted.MusicCatalogId, cancellationToken);
-        foreach (var tracking in trackedSearches)
-        {
-            var history = await SearchOrSeekHistory.LoadAsync(
-                discoveryRepository,
-                tracking.SearchCriteria,
-                cancellationToken);
-            var changed = attempted.Outcome.Status switch
+        await SearchOrSeekHistory.ApplyToTrackingsAsync(
+            catalogSearchTrackingStore,
+            discoveryRepository,
+            attempted.MusicCatalogId,
+            history => attempted.Outcome.Status switch
             {
                 MusicCatalogLookupOutcomeStatus.Deferred => history.LookupDeferred(
                     attempted.Outcome.RetryAfterSeconds,
@@ -99,14 +82,7 @@ public sealed class ApplyMusicCatalogLookupAttemptedToDiscoveryHandler(
                     attempted.Outcome.Reason ?? "Lookup failed",
                     attempted.CreatedAt),
                 _ => false
-            };
-
-            if (!changed)
-            {
-                continue;
-            }
-
-            await history.SaveAsync(discoveryRepository, cancellationToken);
-        }
+            },
+            cancellationToken);
     }
 }

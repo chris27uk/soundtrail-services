@@ -5,4 +5,4 @@ public sealed record TrackMetadataLookupRequestedEventDataRecordDto(
     int TrustLevel,
     int RiskScore,
     DateTimeOffset RequiredAtUtc,
-    string CorrelationId);
+    string CorrelationId) : RavenEventBodyDto;

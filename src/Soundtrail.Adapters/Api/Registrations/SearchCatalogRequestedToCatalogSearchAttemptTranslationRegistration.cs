@@ -11,8 +11,8 @@ public sealed class SearchCatalogRequestedToCatalogSearchAttemptTranslationRegis
 {
     public void Register(TypeTranslationRegistry registry)
     {
-        registry.Register<SearchCatalogRequested, CatalogSearchAttemptDto>(
-            translate: request =>
+        registry.RegisterPair<SearchCatalogRequested, CatalogSearchAttemptDto>(
+            request =>
             {
                 var query = request.SearchCriteria.UnifiedQuery ?? string.Empty;
 
@@ -24,10 +24,8 @@ public sealed class SearchCatalogRequestedToCatalogSearchAttemptTranslationRegis
                     request.RiskScore,
                     request.OccurredAt,
                     request.CorrelationId.Value);
-            });
-
-        registry.Register<CatalogSearchAttemptDto, SearchCatalogRequested>(
-            translate: dto =>
+            },
+            dto =>
                 new SearchCatalogRequested(
                     !string.IsNullOrWhiteSpace(dto.Criteria)
                         ? DiscoveryQueryKey.ToMusicSearchCriteria(dto.Criteria)

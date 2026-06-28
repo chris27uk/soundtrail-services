@@ -5,4 +5,4 @@ public sealed record ArtworkDiscoveredEventDataRecordDto(
     string? EntityId,
     string Url,
     string Source,
-    DateTimeOffset ObservedAt);
+    DateTimeOffset ObservedAt) : RavenEventBodyDto;
