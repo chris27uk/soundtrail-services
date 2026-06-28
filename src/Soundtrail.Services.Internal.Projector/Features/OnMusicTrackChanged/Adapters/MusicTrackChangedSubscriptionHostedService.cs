@@ -7,7 +7,7 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Catalog.Commands;
 using Soundtrail.Domain.Catalog.Projection;
-using Soundtrail.Translators.MusicTrackEventStore;
+using Soundtrail.Adapters.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
 

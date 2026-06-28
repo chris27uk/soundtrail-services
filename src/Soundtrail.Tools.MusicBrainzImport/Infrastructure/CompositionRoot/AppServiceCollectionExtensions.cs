@@ -6,7 +6,7 @@ using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.Compos
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.CompositionRoot;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayPlannerMusicTrackProjection.CompositionRoot;
 using Soundtrail.Tools.MusicBrainzImport.Infrastructure.Raven;
-using Soundtrail.Translators.MusicTrackEventStore.CompositionRoot;
+using Soundtrail.Adapters.MusicTrackEventStore.CompositionRoot;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Infrastructure.CompositionRoot;
 

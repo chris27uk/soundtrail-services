@@ -1,10 +1,10 @@
 using FluentAssertions;
+using Soundtrail.Adapters.Messaging;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Contracts.IntegrationMessaging.Events;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnStreamingLocationsRequired;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnStreamingLocationsRequired.Adapters;
-using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Messaging;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Messaging.Wolverine;
 

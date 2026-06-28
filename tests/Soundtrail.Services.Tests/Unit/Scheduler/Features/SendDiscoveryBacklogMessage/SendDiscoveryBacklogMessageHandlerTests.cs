@@ -1,8 +1,8 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Services.Enrichment.Scheduler;
 using Soundtrail.Services.Enrichment.Scheduler.Features.SendDiscoveryBacklogMessage;
-using Soundtrail.Services.Enrichment.Scheduler.Features.SendDiscoveryBacklogMessage.Support;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Unit.Scheduler.Features.SendDiscoveryBacklogMessage;
@@ -23,8 +23,7 @@ public sealed class SendDiscoveryBacklogMessageHandlerTests
         message.CorrelationId.Value.Should().NotBeNullOrWhiteSpace();
         message.Priority.Should().Be(LookupPriorityBand.Low);
         message.CreatedAt.Should().Be(now);
-        message.Now.Should().Be(now);
-        message.Take.Should().Be(25);
+        message.BatchSize.Should().Be(25);
     }
 
     private sealed class TestTimeProvider(DateTimeOffset utcNow) : ITimeProvider

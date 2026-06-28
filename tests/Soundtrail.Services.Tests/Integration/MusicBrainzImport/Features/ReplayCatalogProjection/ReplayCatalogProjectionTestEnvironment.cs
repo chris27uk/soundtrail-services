@@ -12,7 +12,7 @@ using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.Adapters;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.EventStore;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.ProjectionReset;
-using Soundtrail.Translators.MusicTrackEventStore;
+using Soundtrail.Adapters.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Tests.Integration.MusicBrainzImport.Features.ReplayCatalogProjection;
 
@@ -173,7 +173,7 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
         var session = raven.Store.OpenAsyncSession();
         var projectionHandler = new MusicCatalogChangedHandler(
             new RavenLoadMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()),
-            new RavenSaveMusicTrackCatalogProjection(session, Soundtrail.Translators.Registry.TypeTranslationRegistry.Default));
+            new RavenSaveMusicTrackCatalogProjection(session, Soundtrail.Adapters.Registry.TypeTranslationRegistry.Default));
         var handler = new ReplayCatalogProjectionHandler(
             new RavenLoadCatalogProjectionReplayTargets(session),
             new RavenLoadMusicTrackEventsForCatalogReplay(session, Translator),

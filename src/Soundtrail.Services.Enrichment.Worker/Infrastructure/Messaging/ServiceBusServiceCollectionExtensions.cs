@@ -1,6 +1,7 @@
 using JasperFx.CodeGeneration.Model;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Soundtrail.Adapters.Messaging;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Adapters;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.Adapters;

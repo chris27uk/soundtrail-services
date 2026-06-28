@@ -5,8 +5,9 @@ using Raven.Client.Documents;
 using Raven.Client.Documents.Subscriptions;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Support;
-using Soundtrail.Translators.Discovery;
+using Soundtrail.Adapters.Discovery;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Adapters;
 
@@ -85,7 +86,7 @@ public sealed class MusicTrackSearchStartedSubscriptionHostedService(
 
             await handler.Handle(
                 new MusicTrackSearchStartedCommand(
-                    MusicSearchTermPersistentIdTranslator.ToDomainObject(stream.Key),
+                    DiscoveryQueryKey.ToMusicSearchCriteria(stream.Key),
                     events),
                 cancellationToken);
         }

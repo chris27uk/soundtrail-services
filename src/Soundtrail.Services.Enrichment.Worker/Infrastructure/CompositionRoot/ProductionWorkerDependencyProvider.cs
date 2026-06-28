@@ -2,9 +2,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
-using Soundtrail.Domain.Discovery;
-using Soundtrail.Services.Enrichment.Orchestrator.Shared.SourceBudgets;
-using Soundtrail.Services.Enrichment.Orchestrator.Shared.SourceBudgets.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.SourceBudgets.Configuration;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Adapters;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Lookup;
@@ -13,6 +10,7 @@ using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.ExecutionAdmission;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;
 using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
+using StackExchange.Redis;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.CompositionRoot;
 
@@ -22,9 +20,13 @@ public sealed class ProductionWorkerDependencyProvider : IWorkerDependencyProvid
     {
         services.AddWorkerRavenDocumentStore(configuration);
         services.Configure<SourceApiBudgetsOptions>(configuration.GetSection(SourceApiBudgetsOptions.SectionName));
-        services.TryAddScoped<ITryReserveSourceApiBudgetWindowPort, RavenCompareExchangeSourceApiBudgetPort>();
-        services.TryAddScoped<IReserveSourceApiBudgetPort, SourceApiBudgetReservationService>();
-        services.TryAddScoped<ILookupExecutionAdmissionPort, LegacyLookupExecutionAdmissionPort>();
+        services.Configure<RedisLookupExecutionAdmissionOptions>(
+            configuration.GetSection(RedisLookupExecutionAdmissionOptions.SectionName));
+        services.TryAddSingleton<IConnectionMultiplexer>(_ =>
+            ConnectionMultiplexer.Connect(
+                configuration.GetConnectionString("Redis")
+                ?? throw new InvalidOperationException("Connection string 'Redis' is required for lookup execution admission.")));
+        services.TryAddScoped<ILookupExecutionAdmissionPort, RedisLookupExecutionAdmissionPort>();
     }
 
     public void AddLookupTrackMetadataDependencies(IServiceCollection services, IConfiguration configuration)

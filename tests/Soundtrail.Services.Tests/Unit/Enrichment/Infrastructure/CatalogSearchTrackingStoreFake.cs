@@ -1,7 +1,7 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Search;
-using Soundtrail.Translators.Discovery;
+using Soundtrail.Adapters.Discovery;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -40,5 +40,5 @@ internal sealed class CatalogSearchTrackingStoreFake : ICatalogSearchTrackingSto
     public void Seed(CatalogSearchTracking tracking) => byCriteria[ToPersistentId(tracking.SearchCriteria)] = tracking;
 
     private static string ToPersistentId(MusicSearchCriteria searchCriteria) =>
-        MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria);
+        DiscoveryQueryKey.StableValueFor(searchCriteria);
 }

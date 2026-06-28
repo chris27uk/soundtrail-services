@@ -3,7 +3,7 @@ using Soundtrail.Domain.Search;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Adapters.Documents;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Ports;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Support;
-using Soundtrail.Translators.Discovery;
+using Soundtrail.Adapters.Discovery;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Adapters;
 
@@ -14,13 +14,13 @@ public sealed class RavenLoadCatalogSearchStartedTracking(IAsyncDocumentSession 
         CancellationToken cancellationToken)
     {
         var document = await session.LoadAsync<CatalogSearchTrackingRecordDto>(
-            CatalogSearchTrackingRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria)),
+            CatalogSearchTrackingRecordDto.GetDocumentId(DiscoveryQueryKey.StableValueFor(searchCriteria)),
             cancellationToken);
 
         return document is null
             ? null
             : new CatalogSearchStartedTracking(
-                MusicSearchTermPersistentIdTranslator.ToDomainObject(document.Criteria),
+                DiscoveryQueryKey.ToMusicSearchCriteria(document.Criteria),
                 document.MusicCatalogId,
                 document.UpdatedAt);
     }

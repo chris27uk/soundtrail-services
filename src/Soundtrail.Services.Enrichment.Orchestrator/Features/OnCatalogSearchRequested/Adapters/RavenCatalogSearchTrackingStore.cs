@@ -5,7 +5,7 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters.Documents;
-using Soundtrail.Translators.Discovery;
+using Soundtrail.Adapters.Discovery;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 
@@ -21,13 +21,13 @@ public sealed class RavenCatalogSearchTrackingStore(
         using (dispose)
         {
             var document = await activeSession.LoadAsync<RavenCatalogSearchTrackingRecordDto>(
-                RavenCatalogSearchTrackingRecordDto.GetDocumentId(MusicSearchTermPersistentIdTranslator.ToPersistentId(searchCriteria)),
+                RavenCatalogSearchTrackingRecordDto.GetDocumentId(DiscoveryQueryKey.StableValueFor(searchCriteria)),
                 cancellationToken);
 
             return document is null
                 ? null
                 : new CatalogSearchTracking(
-                    MusicSearchTermPersistentIdTranslator.ToDomainObject(document.Criteria),
+                    DiscoveryQueryKey.ToMusicSearchCriteria(document.Criteria),
                     MusicCatalogId.From(document.MusicCatalogId),
                     document.UpdatedAt);
         }
@@ -41,7 +41,7 @@ public sealed class RavenCatalogSearchTrackingStore(
         var (activeSession, dispose) = OpenSession();
         using (dispose)
         {
-            var persistentId = MusicSearchTermPersistentIdTranslator.ToPersistentId(tracking.SearchCriteria);
+            var persistentId = DiscoveryQueryKey.StableValueFor(tracking.SearchCriteria);
             var documentId = RavenCatalogSearchTrackingRecordDto.GetDocumentId(persistentId);
             var document = await activeSession.LoadAsync<RavenCatalogSearchTrackingRecordDto>(documentId, cancellationToken)
                 ?? new RavenCatalogSearchTrackingRecordDto
@@ -76,7 +76,7 @@ public sealed class RavenCatalogSearchTrackingStore(
 
             return documents
                 .Select(document => new CatalogSearchTracking(
-                    MusicSearchTermPersistentIdTranslator.ToDomainObject(document.Criteria),
+                    DiscoveryQueryKey.ToMusicSearchCriteria(document.Criteria),
                     MusicCatalogId.From(document.MusicCatalogId),
                     document.UpdatedAt))
                 .ToArray();

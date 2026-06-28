@@ -8,7 +8,7 @@ using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicTrackEventsImp
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
-using Soundtrail.Translators.MusicTrackEventStore;
+using Soundtrail.Adapters.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ImportMusicTrackEvents;
 
@@ -61,7 +61,7 @@ internal sealed class RavenMusicTrackEventImportTestEnvironment : IAsyncDisposab
         using var session = this.raven.Store.OpenAsyncSession();
         var projectHandler = new MusicCatalogChangedHandler(
             new RavenLoadMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()),
-            new RavenSaveMusicTrackCatalogProjection(session, Soundtrail.Translators.Registry.TypeTranslationRegistry.Default));
+            new RavenSaveMusicTrackCatalogProjection(session, Soundtrail.Adapters.Registry.TypeTranslationRegistry.Default));
         var streamMetadata = await session.Advanced.LoadStartingWithAsync<MusicTrackEventStreamMetadataRecordDto>(
             "music-track-streams/");
         var musicCatalogIds = streamMetadata.Select(x => x.MusicCatalogId).ToList();

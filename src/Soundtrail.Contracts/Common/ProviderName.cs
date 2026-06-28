@@ -27,16 +27,15 @@ namespace Soundtrail.Contracts.Common
         public override string ToString() => Value;
 
         public static ProviderName[] All => [Spotify, AppleMusic, YoutubeMusic];
+
         
-        public string ToPersistentId()
-        {
-            return this.Value switch
+        public string StableValue =>
+            this.Value switch
             {
                 "Spotify" => "spotify",
                 "AppleMusic" => "appleMusic",
                 "YoutubeMusic" => "youtubeMusic",
                 _ => throw new ArgumentException($"Unknown provider name '{this.Value}'.", nameof(this.Value))
             };
-        }
     }
 }

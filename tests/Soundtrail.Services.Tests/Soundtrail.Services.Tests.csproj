@@ -32,7 +32,7 @@
     <ProjectReference Include="..\..\src\Soundtrail.Services.Enrichment.Worker\Soundtrail.Services.Enrichment.Worker.csproj" />
     <ProjectReference Include="..\..\src\Soundtrail.Tools.MusicBrainzImport\Soundtrail.Tools.MusicBrainzImport.csproj" />
     <ProjectReference Include="..\..\src\Soundtrail.Contracts\Soundtrail.Contracts.csproj" />
-    <ProjectReference Include="..\..\src\Soundtrail.Translators\Soundtrail.Translators.csproj" />
+    <ProjectReference Include="..\..\src\Soundtrail.Adapters\Soundtrail.Adapters.csproj" />
     <ProjectReference Include="..\..\Soundtrail.Services.ServiceDefaults\Soundtrail.Services.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\Soundtrail.Services.AppHost\Soundtrail.Services.AppHost.csproj" />
   </ItemGroup>

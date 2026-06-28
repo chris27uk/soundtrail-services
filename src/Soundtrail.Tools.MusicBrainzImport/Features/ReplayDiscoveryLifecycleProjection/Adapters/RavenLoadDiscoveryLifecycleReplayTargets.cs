@@ -2,7 +2,6 @@ using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Search;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.EventStore;
-using Soundtrail.Translators.Discovery;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.Adapters;
 
@@ -17,9 +16,9 @@ public sealed class RavenLoadDiscoveryLifecycleReplayTargets(
             pageSize: 4096);
 
         return metadata
-            .Select(x => MusicSearchTermPersistentIdTranslator.ToDomainObject(x.Criteria))
+            .Select(x => DiscoveryQueryKey.ToMusicSearchCriteria(x.Criteria))
             .Distinct()
-            .OrderBy(MusicSearchTermPersistentIdTranslator.ToPersistentId, StringComparer.Ordinal)
+            .OrderBy(DiscoveryQueryKey.StableValueFor, StringComparer.Ordinal)
             .ToArray();
     }
 }

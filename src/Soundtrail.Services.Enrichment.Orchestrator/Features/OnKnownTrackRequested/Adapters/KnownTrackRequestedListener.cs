@@ -1,7 +1,7 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Discovery.Commands;
-using Soundtrail.Translators.Registry;
+using Soundtrail.Adapters.Registry;
 using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownTrackRequested.Adapters;

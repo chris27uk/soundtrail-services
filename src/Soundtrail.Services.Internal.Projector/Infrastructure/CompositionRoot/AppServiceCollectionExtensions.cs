@@ -8,7 +8,7 @@ using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Compos
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.CompositionRoot;
 using Soundtrail.Services.Internal.Projector.Infrastructure.Messaging;
 using Soundtrail.Services.Internal.Projector.Infrastructure.Raven;
-using Soundtrail.Translators.MusicTrackEventStore.CompositionRoot;
+using Soundtrail.Adapters.MusicTrackEventStore.CompositionRoot;
 
 namespace Soundtrail.Services.Internal.Projector.Infrastructure.CompositionRoot;
 

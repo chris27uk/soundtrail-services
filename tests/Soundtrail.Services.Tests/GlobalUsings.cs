@@ -1,3 +1,3 @@
 global using Xunit;
 global using Soundtrail.Domain.Search;
-global using Soundtrail.Translators.Discovery;
+global using Soundtrail.Adapters.Discovery;

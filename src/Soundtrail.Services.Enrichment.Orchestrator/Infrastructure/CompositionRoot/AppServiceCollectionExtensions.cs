@@ -12,7 +12,7 @@ using Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequ
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnStreamingLocationsRequired.CompositionRoot;
 using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Prioritisation;
-using Soundtrail.Translators.MusicTrackEventStore.CompositionRoot;
+using Soundtrail.Adapters.MusicTrackEventStore.CompositionRoot;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.CompositionRoot;
 

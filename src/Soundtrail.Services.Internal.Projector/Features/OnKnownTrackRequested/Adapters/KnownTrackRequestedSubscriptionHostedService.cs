@@ -5,8 +5,9 @@ using Raven.Client.Documents;
 using Raven.Client.Documents.Subscriptions;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Internal.Projector.Features.OnKnownTrackRequested.Support;
-using Soundtrail.Translators.Discovery;
+using Soundtrail.Adapters.Discovery;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnKnownTrackRequested.Adapters;
 
@@ -82,7 +83,7 @@ public sealed class KnownTrackRequestedSubscriptionHostedService(
 
             await handler.Handle(
                 new KnownTrackRequestedCommand(
-                    MusicSearchTermPersistentIdTranslator.ToKnownCatalogItem(stream.Key),
+                    DiscoveryQueryKey.ToKnownCatalogItem(stream.Key),
                     events),
                 cancellationToken);
         }
