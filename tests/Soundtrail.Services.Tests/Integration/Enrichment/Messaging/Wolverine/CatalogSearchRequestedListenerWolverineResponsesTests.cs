@@ -30,7 +30,7 @@ public sealed class CatalogSearchRequestedListenerWolverineResponsesTests
 
         await env.HandleUnschedulableRequest();
 
-        env.DiscoveryRepository.GetStoredEvents(criteria).Should().ContainSingle().Which.Should().BeOfType<TrackMetadataLookupRequested>();
+        env.DiscoveryRepository.GetStoredEvents(criteria).Should().ContainSingle().Which.Should().BeOfType<MusicTrackSearchStarted>();
     }
 
     [Fact]

@@ -17,7 +17,6 @@ public static class ServiceCollectionExtensions
 
         services.TryAddScoped<MusicCatalogMatchResolver>();
         services.TryAddScoped<RecordCatalogSearchCandidateHandler>();
-        services.TryAddScoped<RecordTrackMetadataLookupRequestedHandler>();
         services.TryAddScoped<SearchCatalogRequestedHandler>();
         services.TryAddScoped<SearchCatalogRequestedListener>();
         return services;

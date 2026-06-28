@@ -15,7 +15,6 @@ internal sealed class CatalogSearchRequestedListenerWolverineTestEnvironment
     private readonly CatalogSearchDiscoveryRepositoryFake discoveryRepository;
     private readonly CommandBusFake commandBus;
     private readonly RecordCatalogSearchCandidateHandler recordCandidateHandler;
-    private readonly RecordTrackMetadataLookupRequestedHandler recordTrackMetadataLookupRequestedHandler;
 
     private CatalogSearchRequestedListenerWolverineTestEnvironment(FakeMusicCatalogCandidateSearch search)
     {
@@ -23,7 +22,6 @@ internal sealed class CatalogSearchRequestedListenerWolverineTestEnvironment
         discoveryRepository = new CatalogSearchDiscoveryRepositoryFake();
         commandBus = new CommandBusFake();
         recordCandidateHandler = new RecordCatalogSearchCandidateHandler(discoveryRepository);
-        recordTrackMetadataLookupRequestedHandler = new RecordTrackMetadataLookupRequestedHandler(discoveryRepository);
         localSearchFake.Seed(new LocalMusicTrackSearchResult(
             MusicCatalogId.From("mc_track_1"),
             "Song A",
@@ -87,9 +85,6 @@ internal sealed class CatalogSearchRequestedListenerWolverineTestEnvironment
             {
                 case RecordCatalogSearchCandidateCommand candidate:
                     await recordCandidateHandler.Handle(candidate, CancellationToken.None);
-                    break;
-                case RecordTrackMetadataLookupRequestedCommand trackMetadata:
-                    await recordTrackMetadataLookupRequestedHandler.Handle(trackMetadata, CancellationToken.None);
                     break;
             }
         }

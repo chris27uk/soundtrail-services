@@ -27,15 +27,16 @@ public sealed class SearchCatalogRequestedHandler(
         if (followUp.RequiresTrackMetadataLookup)
         {
             await commandBus.SendAsync(
-                new RecordTrackMetadataLookupRequestedCommand(
+                new RecordCatalogSearchCandidateCommand(
                     requested.SearchCriteria,
+                    SyntheticCatalogCandidateId.ForSearch(requested.SearchCriteria),
                     requested.TrustLevel,
                     requested.RiskScore,
                     requested.OccurredAt,
                     requested.CorrelationId)
                 {
                     CommandId = CommandId.For(
-                        $"RecordTrackMetadataLookupRequested:{DiscoveryQueryKey.StableValueFor(requested.SearchCriteria)}:{requested.OccurredAt:O}")
+                        $"RecordCatalogSearchCandidate:{DiscoveryQueryKey.StableValueFor(requested.SearchCriteria)}:synthetic")
                 },
                 cancellationToken);
 

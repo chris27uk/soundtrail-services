@@ -27,7 +27,6 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
                 this.commandBusFake,
                 this.localMusicTrackSearchFake);
             this.RecordCandidateHandler = new RecordCatalogSearchCandidateHandler(this.catalogSearchDiscoveryRepositoryFake);
-            this.RecordTrackMetadataLookupRequestedHandler = new RecordTrackMetadataLookupRequestedHandler(this.catalogSearchDiscoveryRepositoryFake);
 
             SeedDefaultLocalTrack("mc_track_1");
             SeedDefaultLocalTrack("mc_track_2");
@@ -40,8 +39,6 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
         public SearchCatalogRequestedHandler Handler { get; }
 
         public RecordCatalogSearchCandidateHandler RecordCandidateHandler { get; }
-
-        public RecordTrackMetadataLookupRequestedHandler RecordTrackMetadataLookupRequestedHandler { get; }
 
         public FakeMusicCatalogCandidateSearch Search => this.search;
 
@@ -104,9 +101,6 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
                 {
                     case RecordCatalogSearchCandidateCommand candidate:
                         await this.RecordCandidateHandler.Handle(candidate, cancellationToken);
-                        break;
-                    case RecordTrackMetadataLookupRequestedCommand trackMetadata:
-                        await this.RecordTrackMetadataLookupRequestedHandler.Handle(trackMetadata, cancellationToken);
                         break;
                 }
             }
