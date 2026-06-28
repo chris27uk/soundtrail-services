@@ -20,7 +20,7 @@ public sealed class AssessMusicTrackHandler(
     {
         if (command.SearchTerm is not null && command.TrustLevel is not null && command.RiskScore is not null)
         {
-            var loaded = await SearchOrSeekHistory.LoadAsync(
+            var loaded = await SearchDiscoveryHistory.LoadAsync(
                 discoveryRepository,
                 command.SearchTerm,
                 cancellationToken);
@@ -49,7 +49,7 @@ public sealed class AssessMusicTrackHandler(
             var trackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(command.MusicCatalogId, cancellationToken);
             foreach (var tracking in trackings)
             {
-                var loaded = await SearchOrSeekHistory.LoadAsync(discoveryRepository, tracking.SearchCriteria, cancellationToken);
+                var loaded = await SearchDiscoveryHistory.LoadAsync(discoveryRepository, tracking.SearchCriteria, cancellationToken);
                 if (!loaded.Aggregate.Defer(
                         assessment.EstimatedRetryAfterSeconds,
                         assessment.EarliestExpectedCompletionAt,
@@ -70,7 +70,7 @@ public sealed class AssessMusicTrackHandler(
             var trackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(command.MusicCatalogId, cancellationToken);
             foreach (var tracking in trackings)
             {
-                var loaded = await SearchOrSeekHistory.LoadAsync(discoveryRepository, tracking.SearchCriteria, cancellationToken);
+                var loaded = await SearchDiscoveryHistory.LoadAsync(discoveryRepository, tracking.SearchCriteria, cancellationToken);
                 if (!loaded.Aggregate.Defer(
                         60,
                         command.CreatedAt.AddSeconds(60),
@@ -88,7 +88,7 @@ public sealed class AssessMusicTrackHandler(
         var finalTrackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(command.MusicCatalogId, cancellationToken);
         foreach (var tracking in finalTrackings)
         {
-            var loaded = await SearchOrSeekHistory.LoadAsync(discoveryRepository, tracking.SearchCriteria, cancellationToken);
+            var loaded = await SearchDiscoveryHistory.LoadAsync(discoveryRepository, tracking.SearchCriteria, cancellationToken);
             if (!loaded.Aggregate.Plan(
                     assessment.Priority.Value,
                     assessment.EstimatedRetryAfterSeconds,

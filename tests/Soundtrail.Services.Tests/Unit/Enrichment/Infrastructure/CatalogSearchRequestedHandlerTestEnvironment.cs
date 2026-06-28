@@ -1,6 +1,7 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Support;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 
@@ -11,6 +12,7 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
         private readonly FakeMusicCatalogCandidateSearch search;
         private readonly LocalMusicTrackSearchFake localMusicTrackSearchFake;
         private readonly CatalogSearchDiscoveryRepositoryFake catalogSearchDiscoveryRepositoryFake;
+        private readonly CommandBusFake commandBusFake;
 
         private CatalogSearchRequestedHandlerTestEnvironment(
             FakeMusicCatalogCandidateSearch search,
@@ -19,10 +21,13 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
             this.search = search;
             this.localMusicTrackSearchFake = new LocalMusicTrackSearchFake();
             this.catalogSearchDiscoveryRepositoryFake = new CatalogSearchDiscoveryRepositoryFake();
+            this.commandBusFake = new CommandBusFake();
             this.Handler = new SearchCatalogRequestedHandler(
                 search,
-                this.catalogSearchDiscoveryRepositoryFake,
+                this.commandBusFake,
                 this.localMusicTrackSearchFake);
+            this.RecordCandidateHandler = new RecordCatalogSearchCandidateHandler(this.catalogSearchDiscoveryRepositoryFake);
+            this.RecordTrackMetadataLookupRequestedHandler = new RecordTrackMetadataLookupRequestedHandler(this.catalogSearchDiscoveryRepositoryFake);
 
             SeedDefaultLocalTrack("mc_track_1");
             SeedDefaultLocalTrack("mc_track_2");
@@ -34,11 +39,17 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
 
         public SearchCatalogRequestedHandler Handler { get; }
 
+        public RecordCatalogSearchCandidateHandler RecordCandidateHandler { get; }
+
+        public RecordTrackMetadataLookupRequestedHandler RecordTrackMetadataLookupRequestedHandler { get; }
+
         public FakeMusicCatalogCandidateSearch Search => this.search;
 
         public LocalMusicTrackSearchFake LocalSearch => this.localMusicTrackSearchFake;
 
         public CatalogSearchDiscoveryRepositoryFake DiscoveryRepository => this.catalogSearchDiscoveryRepositoryFake;
+
+        public CommandBusFake CommandBus => this.commandBusFake;
 
         public static CatalogSearchRequestedHandlerTestEnvironment WithNoExistingCandidates() =>
             new(
@@ -84,6 +95,22 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure
                 RiskScore: riskScore,
                 OccurredAt: occurredAt ?? new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero),
                 CorrelationId: CorrelationId.New());
+
+        public async Task DrainAsync(CancellationToken cancellationToken = default)
+        {
+            foreach (var command in this.commandBusFake.SentCommands)
+            {
+                switch (command)
+                {
+                    case RecordCatalogSearchCandidateCommand candidate:
+                        await this.RecordCandidateHandler.Handle(candidate, cancellationToken);
+                        break;
+                    case RecordTrackMetadataLookupRequestedCommand trackMetadata:
+                        await this.RecordTrackMetadataLookupRequestedHandler.Handle(trackMetadata, cancellationToken);
+                        break;
+                }
+            }
+        }
 
         private void SeedDefaultLocalTrack(string musicCatalogId) =>
             this.localMusicTrackSearchFake.Seed(new LocalMusicTrackSearchResult(

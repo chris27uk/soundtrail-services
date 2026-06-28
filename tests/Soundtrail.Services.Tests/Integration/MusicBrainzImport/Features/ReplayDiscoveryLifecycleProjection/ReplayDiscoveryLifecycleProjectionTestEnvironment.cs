@@ -125,7 +125,7 @@ internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsync
         var raven = RavenEmbeddedTestDatabase.Create();
         using var repositorySession = raven.Store.OpenAsyncSession();
         var repository = TestEventStreamRepositories.CreateDiscoveryQuery(repositorySession);
-        var loaded = await SearchOrSeekHistory.LoadAsync(repository, searchCriteria, CancellationToken.None);
+        var loaded = await SearchDiscoveryHistory.LoadAsync(repository, searchCriteria, CancellationToken.None);
         var discovery = loaded.Aggregate;
         discovery.SearchRequested(
             new SearchCatalogRequested(
@@ -137,7 +137,7 @@ internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsync
                 CorrelationId.From("corr-1")));
         await discovery.SaveAsync(repository, loaded.Stream, CancellationToken.None);
 
-        loaded = await SearchOrSeekHistory.LoadAsync(repository, searchCriteria, CancellationToken.None);
+        loaded = await SearchDiscoveryHistory.LoadAsync(repository, searchCriteria, CancellationToken.None);
         discovery = loaded.Aggregate;
         discovery.Plan(LookupPriorityBand.High, 30, null, "Planner queued lookup", Clock.AddSeconds(5));
         await discovery.SaveAsync(repository, loaded.Stream, CancellationToken.None);

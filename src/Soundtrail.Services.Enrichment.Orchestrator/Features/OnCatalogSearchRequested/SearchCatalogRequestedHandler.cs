@@ -1,16 +1,15 @@
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Search;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Support;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested;
 
 public sealed class SearchCatalogRequestedHandler(
     IMusicCatalogCandidateSearch musicCatalogCandidateSearch,
-    IEventStreamRepository<DiscoveryQueryKey, IDomainEvent> catalogSearchDiscoveryRepository,
+    ICommandBus commandBus,
     ILocalMusicTrackSearch localMusicTrackSearch) : IHandler<SearchCatalogRequested>
 {
     public async Task Handle(
@@ -25,34 +24,39 @@ public sealed class SearchCatalogRequestedHandler(
                 localMusicTrackSearch,
                 cancellationToken);
 
-        var loaded = await SearchOrSeekHistory.LoadAsync(
-            catalogSearchDiscoveryRepository,
-            requested.SearchCriteria,
-            cancellationToken);
-
         if (followUp.RequiresTrackMetadataLookup)
         {
-            loaded.Aggregate.TrackMetadataLookupRequested(
-                requested.SearchCriteria,
-                requested.TrustLevel,
-                requested.RiskScore,
-                requested.OccurredAt,
-                requested.CorrelationId);
-        }
-        else
-        {
-            foreach (var lookup in followUp.StreamingLocationLookups)
-            {
-                loaded.Aggregate.StreamingLocationsRequired(
-                    lookup.MusicCatalogId,
-                    LookupPriorityBand.Low,
+            await commandBus.SendAsync(
+                new RecordTrackMetadataLookupRequestedCommand(
+                    requested.SearchCriteria,
+                    requested.TrustLevel,
+                    requested.RiskScore,
                     requested.OccurredAt,
-                    requested.CorrelationId,
-                    lookup.SearchCriteria,
-                    lookup.Hierarchy);
-            }
+                    requested.CorrelationId)
+                {
+                    CommandId = CommandId.For(
+                        $"RecordTrackMetadataLookupRequested:{DiscoveryQueryKey.StableValueFor(requested.SearchCriteria)}:{requested.OccurredAt:O}")
+                },
+                cancellationToken);
+
+            return;
         }
 
-        await loaded.Aggregate.SaveAsync(catalogSearchDiscoveryRepository, loaded.Stream, cancellationToken);
+        foreach (var lookup in followUp.StreamingLocationLookups)
+        {
+            await commandBus.SendAsync(
+                new RecordCatalogSearchCandidateCommand(
+                    requested.SearchCriteria,
+                    lookup.MusicCatalogId,
+                    requested.TrustLevel,
+                    requested.RiskScore,
+                    requested.OccurredAt,
+                    requested.CorrelationId)
+                {
+                    CommandId = CommandId.For(
+                        $"RecordCatalogSearchCandidate:{DiscoveryQueryKey.StableValueFor(requested.SearchCriteria)}:{lookup.MusicCatalogId.Value}")
+                },
+                cancellationToken);
+        }
     }
 }
