@@ -6,7 +6,9 @@ using Raven.Client.Documents.Subscriptions;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog.Commands;
-using Soundtrail.Adapters.MusicTrackEventStore;
+using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Domain.Catalog.IntegrationEvents;
+using Soundtrail.Adapters.Registry;
 
 namespace Soundtrail.Services.Public.Projector.Features.PublishMusicTrackEvents.Adapters;
 
@@ -26,7 +28,7 @@ public sealed class MusicTrackEventSubscriptionHostedService(
             try
             {
                 var options = new SubscriptionWorkerOptions(SubscriptionName);
-                await using var worker = documentStore.Subscriptions.GetSubscriptionWorker<MusicTrackStoredEventRecordDto>(options);
+                await using var worker = documentStore.Subscriptions.GetSubscriptionWorker<RavenStoredEventRecord>(options);
                 await worker.Run(batch => ProcessBatchAsync(batch, stoppingToken), stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -49,7 +51,7 @@ public sealed class MusicTrackEventSubscriptionHostedService(
     {
         try
         {
-            await documentStore.Subscriptions.CreateAsync<MusicTrackStoredEventRecordDto>(
+            await documentStore.Subscriptions.CreateAsync<RavenStoredEventRecord>(
                 new SubscriptionCreationOptions
                 {
                     Name = SubscriptionName
@@ -63,14 +65,42 @@ public sealed class MusicTrackEventSubscriptionHostedService(
     }
 
     private async Task ProcessBatchAsync(
-        SubscriptionBatch<MusicTrackStoredEventRecordDto> batch,
+        SubscriptionBatch<RavenStoredEventRecord> batch,
         CancellationToken cancellationToken)
     {
         using var scope = serviceScopeFactory.CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<IHandler<PublishMusicTrackEventsCommand>>();
-        var translator = scope.ServiceProvider.GetRequiredService<IMusicTrackStoredEventRecordTranslator>();
-        await handler.Handle(
-            batch.Items.Select(x => x.Result).ToArray().ToCommand(translator),
-            cancellationToken);
+        var registry = scope.ServiceProvider.GetRequiredService<ITypeRegistry>();
+        var events = batch.Items
+            .Select(x => x.Result)
+            .Select(storedEvent =>
+            {
+                if (storedEvent.Body is null)
+                {
+                    throw new InvalidOperationException($"Stored event '{storedEvent.Id}' is missing a body.");
+                }
+
+                return (Stored: storedEvent, Event: registry.ToDomainObject<IMusicTrackEvent>(storedEvent.Body));
+            })
+            .Where(x => x.Event is StreamingLocationsRequired)
+            .Select(x =>
+            {
+                var streamingLocationsRequired = (StreamingLocationsRequired)x.Event;
+                return new VersionedMusicTrackIntegrationEvent(
+                    streamingLocationsRequired.MusicCatalogId,
+                    x.Stored.Version,
+                    new StreamingLocationsRequiredIntegrationEvent(
+                        streamingLocationsRequired.MusicCatalogId,
+                        streamingLocationsRequired.Priority,
+                        streamingLocationsRequired.CorrelationId,
+                        streamingLocationsRequired.SourceProvider,
+                        streamingLocationsRequired.ObservedAt,
+                        streamingLocationsRequired.SearchCriteria,
+                        streamingLocationsRequired.Hierarchy?.ArtistId?.Value,
+                        streamingLocationsRequired.Hierarchy?.AlbumId?.Value));
+            })
+            .ToArray();
+
+        await handler.Handle(new PublishMusicTrackEventsCommand(events), cancellationToken);
     }
 }

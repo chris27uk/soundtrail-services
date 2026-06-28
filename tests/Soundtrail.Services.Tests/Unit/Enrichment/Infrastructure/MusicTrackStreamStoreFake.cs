@@ -1,10 +1,12 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Catalog.Projection;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
-public sealed class MusicTrackStreamStoreFake : IMusicTrackEventRepository
+public sealed class MusicTrackStreamStoreFake :
+    IEventStreamRepository<MusicCatalogId, IMusicTrackEvent>
 {
     private readonly Dictionary<string, StoredStream> streams = [];
 
@@ -22,7 +24,7 @@ public sealed class MusicTrackStreamStoreFake : IMusicTrackEventRepository
         streams[musicCatalogId.Value].Events.AddRange(events);
     }
 
-    public Task<MusicTrackStream> LoadEventsAsync(
+    public Task<MusicTrackStream> LoadStreamAsync(
         MusicCatalogId musicCatalogId,
         CancellationToken cancellationToken)
     {
@@ -34,7 +36,7 @@ public sealed class MusicTrackStreamStoreFake : IMusicTrackEventRepository
         return Task.FromResult(new MusicTrackStream(stored.Version, stored.Events.ToArray()));
     }
 
-    public Task<AppendMusicTrackStreamResult> AppendEventsAsync(
+    public Task<AppendMusicTrackStreamResult> AppendAsync(
         MusicCatalogId musicCatalogId,
         int expectedVersion,
         CommandId commandId,
@@ -61,6 +63,54 @@ public sealed class MusicTrackStreamStoreFake : IMusicTrackEventRepository
         stored.Events.AddRange(events);
         stored.Version += events.Count;
         return Task.FromResult(new AppendMusicTrackStreamResult(true, stored.Version, events.ToArray()));
+    }
+
+    public Task<LoadedEventStream<MusicCatalogId, IMusicTrackEvent>> LoadAsync(
+        MusicCatalogId streamId,
+        CancellationToken cancellationToken)
+    {
+        _ = cancellationToken;
+
+        if (!streams.TryGetValue(streamId.Value, out var stored))
+        {
+            return Task.FromResult(LoadedEventStream<MusicCatalogId, IMusicTrackEvent>.Empty(streamId));
+        }
+
+        return Task.FromResult(new LoadedEventStream<MusicCatalogId, IMusicTrackEvent>(streamId, stored.Version, stored.Events.ToArray()));
+    }
+
+    public Task<AppendResult<IMusicTrackEvent>> AppendAsync(
+        LoadedEventStream<MusicCatalogId, IMusicTrackEvent> stream,
+        IReadOnlyList<IMusicTrackEvent> events,
+        OperationId? operationId,
+        CancellationToken cancellationToken)
+    {
+        _ = cancellationToken;
+
+        if (!streams.TryGetValue(stream.StreamId.Value, out var stored))
+        {
+            stored = new StoredStream();
+            streams[stream.StreamId.Value] = stored;
+        }
+
+        if (operationId is { } duplicateOperationId && stored.AppliedCommandIds.Contains(duplicateOperationId.StableValue))
+        {
+            return Task.FromResult(new AppendResult<IMusicTrackEvent>(false, stored.Version, [], AppendOutcome.DuplicateOperation));
+        }
+
+        if (stored.Version != stream.Version)
+        {
+            return Task.FromResult(new AppendResult<IMusicTrackEvent>(false, stored.Version, [], AppendOutcome.VersionMismatch));
+        }
+
+        if (operationId is { } newOperationId)
+        {
+            stored.AppliedCommandIds.Add(newOperationId.StableValue);
+        }
+
+        stored.Events.AddRange(events);
+        stored.Version += events.Count;
+        return Task.FromResult(new AppendResult<IMusicTrackEvent>(true, stored.Version, events.ToArray(), AppendOutcome.Appended));
     }
 
     public sealed class StoredStream

@@ -1,19 +1,19 @@
 using FluentAssertions;
 using Raven.Client.Documents.Session;
+using Soundtrail.Adapters.Registry;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
+using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Catalog.Projection;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
-using Soundtrail.Adapters.MusicTrackEventStore;
+using Soundtrail.Services.Tests.Support;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicTrackStreamStore;
 
 [Collection(RavenEmbeddedCollection.Name)]
 public sealed class RavenEmbeddedResponsesTests
 {
-    private static readonly IMusicTrackStoredEventRecordTranslator Translator = MusicTrackStoredEventRecordTranslator.Default;
     [Fact]
     public async Task Given_A_New_Stream_When_Appending_Facts_Then_They_Can_Be_Loaded_Back()
     {
@@ -22,21 +22,21 @@ public sealed class RavenEmbeddedResponsesTests
         var store = CreateStore(session);
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
 
-        var append = await store.AppendEventsAsync(
+        var append = await AppendAsync(
+            store,
             musicCatalogId,
             expectedVersion: 0,
             CommandId.For("ResolveMusicMetadata:mc_track_1"),
             [
                 new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", LookupSource.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))
-            ],
-            CancellationToken.None);
+            ]);
         await session.SaveChangesAsync(CancellationToken.None);
 
         append.Appended.Should().BeTrue();
 
         using var verificationSession = raven.Store.OpenAsyncSession();
         var verificationStore = CreateStore(verificationSession);
-        var loaded = await verificationStore.LoadEventsAsync(musicCatalogId, CancellationToken.None);
+        var loaded = await LoadAsync(verificationStore, musicCatalogId);
 
         loaded.Version.Should().Be(1);
         loaded.Events.Should().ContainItemsAssignableTo<TrackDiscovered>();
@@ -54,21 +54,21 @@ public sealed class RavenEmbeddedResponsesTests
         using (var session = raven.Store.OpenAsyncSession())
         {
             var store = CreateStore(session);
-            await store.AppendEventsAsync(
+            await AppendAsync(
+                store,
                 musicCatalogId,
                 expectedVersion: 0,
                 CommandId.For("ResolveMusicMetadata:mc_track_1"),
-                [new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", LookupSource.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))],
-                CancellationToken.None);
+                [new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", LookupSource.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))]);
             await session.SaveChangesAsync(CancellationToken.None);
         }
 
         using var verificationSession = raven.Store.OpenAsyncSession();
-        var metadata = await verificationSession.LoadAsync<MusicTrackEventStreamMetadataRecordDto>(
-            MusicTrackEventStreamMetadataRecordDto.GetDocumentId(musicCatalogId.Value),
+        var metadata = await verificationSession.LoadAsync<RavenEventStreamMetadataRecord>(
+            $"music-track-streams/{musicCatalogId.Value}",
             CancellationToken.None);
-        var storedEvent = await verificationSession.LoadAsync<MusicTrackStoredEventRecordDto>(
-            MusicTrackStoredEventRecordDto.GetDocumentId(musicCatalogId.Value, 1),
+        var storedEvent = await verificationSession.LoadAsync<RavenStoredEventRecord>(
+            $"music-track-events/{musicCatalogId.Value}/0000000001",
             CancellationToken.None);
 
         metadata.Should().NotBeNull();
@@ -76,7 +76,7 @@ public sealed class RavenEmbeddedResponsesTests
         storedEvent.Should().NotBeNull();
         storedEvent!.Version.Should().Be(1);
         storedEvent.EventType.Should().Be(nameof(TrackDiscovered));
-        storedEvent.BodyJson.Should().NotBeNullOrWhiteSpace();
+        storedEvent.Body.Should().NotBeNull();
     }
 
     [Fact]
@@ -89,34 +89,57 @@ public sealed class RavenEmbeddedResponsesTests
         using (var firstSession = raven.Store.OpenAsyncSession())
         {
             var store = CreateStore(firstSession);
-            await store.AppendEventsAsync(
+            await AppendAsync(
+                store,
                 musicCatalogId,
                 expectedVersion: 0,
                 commandId,
-                [new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", LookupSource.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))],
-                CancellationToken.None);
+                [new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", LookupSource.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))]);
             await firstSession.SaveChangesAsync(CancellationToken.None);
         }
 
         using var secondSession = raven.Store.OpenAsyncSession();
         var secondStore = CreateStore(secondSession);
-        var duplicate = await secondStore.AppendEventsAsync(
+        var duplicate = await AppendAsync(
+            secondStore,
             musicCatalogId,
             expectedVersion: 1,
             commandId,
-            [new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", LookupSource.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))],
-            CancellationToken.None);
+            [new TrackDiscovered("Song A", "Artist A", 123000, "isrc-1", "mbid-1", LookupSource.MusicBrainz, new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))]);
         await secondSession.SaveChangesAsync(CancellationToken.None);
 
         duplicate.Appended.Should().BeFalse();
 
         using var verificationSession = raven.Store.OpenAsyncSession();
         var verificationStore = CreateStore(verificationSession);
-        var loaded = await verificationStore.LoadEventsAsync(musicCatalogId, CancellationToken.None);
+        var loaded = await LoadAsync(verificationStore, musicCatalogId);
         loaded.Version.Should().Be(1);
         loaded.Events.Should().ContainSingle();
     }
 
-    private static IMusicTrackEventRepository CreateStore(IAsyncDocumentSession session) =>
-        new RavenMusicTrackStreamStore(session, Translator);
+    private static IEventStreamRepository<MusicCatalogId, IMusicTrackEvent> CreateStore(IAsyncDocumentSession session) =>
+        TestEventStreamRepositories.CreateMusicTrack(session);
+
+    private static Task<AppendResult<IMusicTrackEvent>> AppendAsync(
+        IEventStreamRepository<MusicCatalogId, IMusicTrackEvent> store,
+        MusicCatalogId musicCatalogId,
+        int expectedVersion,
+        CommandId commandId,
+        IReadOnlyList<IMusicTrackEvent> events) =>
+        store.AppendAsync(
+            new LoadedEventStream<MusicCatalogId, IMusicTrackEvent>(
+                musicCatalogId,
+                expectedVersion,
+                []),
+            events,
+            OperationId.From(commandId.Value),
+            CancellationToken.None);
+
+    private static async Task<MusicTrackStream> LoadAsync(
+        IEventStreamRepository<MusicCatalogId, IMusicTrackEvent> store,
+        MusicCatalogId musicCatalogId)
+    {
+        var stream = await store.LoadAsync(musicCatalogId, CancellationToken.None);
+        return new MusicTrackStream(stream.Version, stream.Events);
+    }
 }

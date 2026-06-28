@@ -6,7 +6,13 @@ using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
 using Raven.Client.Documents.Session;
+using Soundtrail.Adapters.EventSourcing;
+using Soundtrail.Adapters.MusicTrackEventStore;
+using Soundtrail.Adapters.Registry;
+using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Catalog.Projection;
+using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Raven;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
@@ -44,7 +50,11 @@ public static class RavenServiceCollectionExtensions
         services.TryAddScoped<IAsyncDocumentSession>(sp => sp.GetRequiredService<IDocumentStore>().OpenAsyncSession());
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, RavenDatabaseHostedService>());
 
-        services.TryAddScoped<IMusicTrackEventRepository, RavenMusicTrackStreamStore>();
+        services.TryAddScoped<IEventStreamRepository<MusicCatalogId, IMusicTrackEvent>>(sp =>
+            new RavenEventStreamRepository<MusicCatalogId, IMusicTrackEvent>(
+                sp.GetRequiredService<IAsyncDocumentSession>(),
+                sp.GetRequiredService<ITypeRegistry>(),
+                MusicTrackEventStreamDefinition.Create()));
         services.TryAddScoped<ILoadMusicTrackCatalogProjectionPort, RavenLoadMusicTrackCatalogProjection>();
         services.TryAddScoped<ISaveMusicTrackCatalogProjectionPort, RavenSaveMusicTrackCatalogProjection>();
         services.TryAddSingleton<RavenMusicTrackCatalogProjectionMapper>();

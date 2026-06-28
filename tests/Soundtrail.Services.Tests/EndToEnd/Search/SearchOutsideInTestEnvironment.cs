@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Indexes;
+using Soundtrail.Adapters.Registry;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
@@ -32,18 +33,16 @@ using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatu
 using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Adapters.ProjectionDocuments;
-using Soundtrail.Adapters.MusicTrackEventStore;
+using Soundtrail.Services.Tests.Support;
 using System.Net.Http.Json;
 using System.Reflection;
 using Wolverine;
 using Wolverine.Tracking;
-using RavenCatalogSearchDiscoveryRepository = Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters.RavenCatalogSearchDiscoveryRepository;
 
 namespace Soundtrail.Services.Tests.EndToEnd.Search;
 
 public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
 {
-    private static readonly IMusicTrackStoredEventRecordTranslator Translator = MusicTrackStoredEventRecordTranslator.Default;
     private readonly WebApplication app;
     private readonly HttpClient client;
     private readonly PipelineMessageCapture pipelineMessageCapture;
@@ -161,8 +160,8 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
     public async Task<bool> HasDiscoveryRequestAsync(string criteria)
     {
         using var session = raven.Store.OpenAsyncSession();
-        var metadata = await session.LoadAsync<DiscoveryQueryEventStreamMetadataRecordDto>(
-            DiscoveryQueryEventStreamMetadataRecordDto.GetDocumentId(criteria),
+        var metadata = await session.LoadAsync<RavenEventStreamMetadataRecord>(
+            $"discovery-query-streams/{criteria}",
             CancellationToken.None);
         return metadata is not null;
     }
@@ -170,8 +169,8 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
     public async Task<int> CountDiscoveryRequestEventsAsync(string criteria)
     {
         using var session = raven.Store.OpenAsyncSession();
-        var metadata = await session.LoadAsync<DiscoveryQueryEventStreamMetadataRecordDto>(
-            DiscoveryQueryEventStreamMetadataRecordDto.GetDocumentId(criteria),
+        var metadata = await session.LoadAsync<RavenEventStreamMetadataRecord>(
+            $"discovery-query-streams/{criteria}",
             CancellationToken.None);
         return metadata?.Version ?? 0;
     }
@@ -290,15 +289,22 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
         MusicSearchCriteria searchCriteria,
         params IDomainEvent[] events)
     {
-        var repository = new RavenCatalogSearchDiscoveryRepository(store);
-        repository.AppendAsync(searchCriteria, 0, events, CancellationToken.None).GetAwaiter().GetResult();
-
         using var session = store.OpenAsyncSession();
+        var repository = TestEventStreamRepositories.CreateDiscoveryQuery(session);
+        repository.AppendAsync(
+                LoadedEventStream<DiscoveryQueryKey, IDomainEvent>.Empty(DiscoveryQueryKey.For(searchCriteria)),
+                events,
+                null,
+                CancellationToken.None)
+            .GetAwaiter()
+            .GetResult();
+
+        using var replaySession = store.OpenAsyncSession();
         var replayHandler = new ReplayCatalogSearchStatusHandler(
-            new RavenLoadStoredDiscoveryLifecycleEvents(session),
+            new RavenLoadStoredDiscoveryLifecycleEvents(replaySession, TypeTranslationRegistry.Default),
             new CatalogSearchStatusChangedHandler(
-                new RavenLoadDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()),
-                new RavenSaveDiscoveryLifecycleProjection(session, Soundtrail.Adapters.Registry.TypeTranslationRegistry.Default)));
+                new RavenLoadDiscoveryLifecycleProjection(replaySession, new RavenDiscoveryLifecycleProjectionMapper()),
+                new RavenSaveDiscoveryLifecycleProjection(replaySession, Soundtrail.Adapters.Registry.TypeTranslationRegistry.Default)));
         replayHandler.Handle(
                 new ReplayCatalogSearchStatusCommand(searchCriteria),
                 CancellationToken.None)
@@ -313,7 +319,7 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
     {
         using (var session = store.OpenAsyncSession())
         {
-            var importHandler = new MusicTrackEventsImportedHandler(new RavenMusicTrackStreamStore(session, Translator));
+            var importHandler = new MusicTrackEventsImportedHandler(TestEventStreamRepositories.CreateMusicTrack(session));
             importHandler.Handle(
                     new ImportMusicTrackEventsCommand(
                         musicCatalogId,
@@ -327,12 +333,12 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
         }
 
         using var replaySession = store.OpenAsyncSession();
-        var eventsToReplay = replaySession.Advanced.LoadStartingWithAsync<MusicTrackStoredEventRecordDto>(
+        var eventsToReplay = replaySession.Advanced.LoadStartingWithAsync<RavenStoredEventRecord>(
                 $"music-track-events/{musicCatalogId.Value}/")
             .GetAwaiter()
             .GetResult()
             .OrderBy(x => x.Version)
-            .Select(x => new VersionedMusicTrackEvent(x.Version, Translator.ToDomainObject(x)))
+            .Select(x => new VersionedMusicTrackEvent(x.Version, TypeTranslationRegistry.Default.ToDomainObject<IMusicTrackEvent>(x.Body!)))
             .ToArray();
         var projectHandler = new MusicCatalogChangedHandler(
             new RavenLoadMusicTrackCatalogProjection(replaySession, new RavenMusicTrackCatalogProjectionMapper()),
@@ -350,13 +356,18 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
         params IDomainEvent[] events)
     {
         using var replaySession = store.OpenAsyncSession();
-        var repository = new RavenCatalogSearchDiscoveryRepository(store);
-        repository.AppendAsync(searchCriteria, 0, events, CancellationToken.None)
+        using var session = store.OpenAsyncSession();
+        var repository = TestEventStreamRepositories.CreateDiscoveryQuery(session);
+        repository.AppendAsync(
+                LoadedEventStream<DiscoveryQueryKey, IDomainEvent>.Empty(DiscoveryQueryKey.For(searchCriteria)),
+                events,
+                null,
+                CancellationToken.None)
             .GetAwaiter()
             .GetResult();
 
         var replayHandler = new ReplayCatalogSearchStatusHandler(
-            new RavenLoadStoredDiscoveryLifecycleEvents(replaySession),
+            new RavenLoadStoredDiscoveryLifecycleEvents(replaySession, TypeTranslationRegistry.Default),
             new CatalogSearchStatusChangedHandler(
                 new RavenLoadDiscoveryLifecycleProjection(replaySession, new RavenDiscoveryLifecycleProjectionMapper()),
                 new RavenSaveDiscoveryLifecycleProjection(replaySession, Soundtrail.Adapters.Registry.TypeTranslationRegistry.Default)));

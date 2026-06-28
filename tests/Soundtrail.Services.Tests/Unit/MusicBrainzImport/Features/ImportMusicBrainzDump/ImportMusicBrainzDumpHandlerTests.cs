@@ -34,7 +34,7 @@ public sealed class ImportMusicBrainzDumpHandlerTests
             new ImportMusicBrainzDumpCommand([], [], Clock),
             CancellationToken.None);
 
-        var stream = await env.StreamStore.LoadEventsAsync(MusicCatalogId.From("mc_track_mbrecording1"), CancellationToken.None);
+        var stream = await env.StreamStore.LoadStreamAsync(MusicCatalogId.From("mc_track_mbrecording1"), CancellationToken.None);
         stream.Events.Should().ContainItemsAssignableTo<TrackDiscovered>();
         stream.Events.Should().ContainItemsAssignableTo<ArtistDiscovered>();
         stream.Events.Should().ContainItemsAssignableTo<AlbumDiscovered>();
@@ -62,7 +62,7 @@ public sealed class ImportMusicBrainzDumpHandlerTests
         await env.Handler.Handle(command, CancellationToken.None);
         await env.Handler.Handle(command, CancellationToken.None);
 
-        var stream = await env.StreamStore.LoadEventsAsync(MusicCatalogId.From("mc_track_mbrecording1"), CancellationToken.None);
+        var stream = await env.StreamStore.LoadStreamAsync(MusicCatalogId.From("mc_track_mbrecording1"), CancellationToken.None);
         stream.Events.Should().ContainSingle(x => x is TrackDiscovered);
         stream.Events.Should().ContainSingle(x => x is ArtistDiscovered);
         stream.Events.Should().ContainSingle(x => x is StreamingLocationsRequired);

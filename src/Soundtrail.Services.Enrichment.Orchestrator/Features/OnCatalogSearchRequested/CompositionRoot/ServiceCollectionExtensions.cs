@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search.Resolution;
 
@@ -17,7 +16,6 @@ public static class ServiceCollectionExtensions
         options.ConfigureDependencies?.Invoke(services);
 
         services.TryAddScoped<MusicCatalogMatchResolver>();
-        services.TryAddScoped<ICatalogSearchDiscoveryRepository, RavenCatalogSearchDiscoveryRepository>();
         services.TryAddScoped<SearchCatalogRequestedHandler>();
         services.TryAddScoped<SearchCatalogRequestedListener>();
         return services;

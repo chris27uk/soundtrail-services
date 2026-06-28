@@ -45,16 +45,16 @@ internal sealed class KnownTrackRequestedHandlerTestEnvironment
 
     public async Task SeedKnownTrackRequestedAsync()
     {
-        var history = await SearchOrSeekHistory.LoadAsync(
+        var loaded = await SearchOrSeekHistory.LoadAsync(
             DiscoveryRepository,
             KnownCatalogItem.ForTrack(TrackId.From("track_1")),
             CancellationToken.None);
-        history.KnownTrackRequested(
+        loaded.Aggregate.KnownTrackRequested(
             TrackId.From("track_1"),
             PlaybackProviderFilter.Parse("spotify,appleMusic,youtubeMusic"),
             Clock,
             CorrelationId.From("corr-track"));
-        await history.SaveAsync(DiscoveryRepository, CancellationToken.None);
+        await loaded.Aggregate.SaveAsync(DiscoveryRepository, loaded.Stream, CancellationToken.None);
     }
 
     public KnownTrackRequestedCommand Command() =>

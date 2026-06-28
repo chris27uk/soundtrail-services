@@ -37,7 +37,7 @@ public static class SearchCatalogEndpoints
                 }
 
                 var response = await handler.Handle(request, cancellationToken);
-                return Results.Ok(TypeTranslationRegistry.Default.Translate<Soundtrail.Contracts.Api.SearchCatalogResponseDto>(response));
+                return Results.Ok(TypeTranslationRegistry.Default.ToDto<Soundtrail.Contracts.Api.SearchCatalogResponseDto>(response));
             });
 
         return endpoints;

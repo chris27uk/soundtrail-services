@@ -12,7 +12,7 @@ public static class ServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(assemblies);
 
-        services.TryAddSingleton<ITypeTranslator>(_ => TypeTranslationRegistry.CreateFromAssemblies(assemblies));
+        services.TryAddSingleton<ITypeRegistry>(_ => TypeTranslationRegistry.CreateFromAssemblies(assemblies));
         return services;
     }
 }

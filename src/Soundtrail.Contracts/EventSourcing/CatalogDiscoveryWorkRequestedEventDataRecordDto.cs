@@ -4,4 +4,4 @@ public sealed record CatalogDiscoveryWorkRequestedEventDataRecordDto(
     string MusicCatalogId,
     int TrustLevel,
     int RiskScore,
-    DateTimeOffset RequestedAtUtc);
+    DateTimeOffset RequestedAtUtc) : RavenEventBodyDto;

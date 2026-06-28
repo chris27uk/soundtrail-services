@@ -4,15 +4,18 @@ using Microsoft.Extensions.Logging;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Subscriptions;
 using Soundtrail.Contracts.EventSourcing;
+using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Search;
-using Soundtrail.Adapters.Discovery;
+using Soundtrail.Adapters.Registry;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
 
 public sealed class CatalogSearchStatusChangedSubscriptionHostedService(
     IDocumentStore documentStore,
     IServiceScopeFactory scopeFactory,
+    ITypeRegistry registry,
     ILogger<CatalogSearchStatusChangedSubscriptionHostedService> logger) : BackgroundService
 {
     private const string SubscriptionName = "discovery-lifecycle-projections";
@@ -26,7 +29,7 @@ public sealed class CatalogSearchStatusChangedSubscriptionHostedService(
             try
             {
                 var options = new SubscriptionWorkerOptions(SubscriptionName);
-                await using var worker = documentStore.Subscriptions.GetSubscriptionWorker<DiscoveryQueryStoredEventRecordDto>(options);
+                await using var worker = documentStore.Subscriptions.GetSubscriptionWorker<RavenStoredEventRecord>(options);
                 await worker.Run(batch => ProcessBatchAsync(batch, stoppingToken), stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -49,7 +52,7 @@ public sealed class CatalogSearchStatusChangedSubscriptionHostedService(
     {
         try
         {
-            await documentStore.Subscriptions.CreateAsync<DiscoveryQueryStoredEventRecordDto>(
+            await documentStore.Subscriptions.CreateAsync<RavenStoredEventRecord>(
                 new SubscriptionCreationOptions
                 {
                     Name = SubscriptionName
@@ -63,7 +66,7 @@ public sealed class CatalogSearchStatusChangedSubscriptionHostedService(
     }
 
     private async Task ProcessBatchAsync(
-        SubscriptionBatch<DiscoveryQueryStoredEventRecordDto> batch,
+        SubscriptionBatch<RavenStoredEventRecord> batch,
         CancellationToken cancellationToken)
     {
         await using var scope = scopeFactory.CreateAsyncScope();
@@ -71,12 +74,15 @@ public sealed class CatalogSearchStatusChangedSubscriptionHostedService(
 
         foreach (var stream in batch.Items
                      .Select(item => item.Result)
-                     .GroupBy(item => item.Criteria, StringComparer.Ordinal))
+                     .GroupBy(item => item.StreamId, StringComparer.Ordinal))
         {
             var command = new CatalogSearchStatusChangedCommand(
                 DiscoveryQueryKey.ToMusicSearchCriteria(stream.Key),
                 stream.OrderBy(item => item.Version)
-                    .Select(item => item.ToDomainEvent())
+                    .Select(item => new VersionedCatalogSearchDiscoveryEvent(
+                        item.Version,
+                        registry.ToDomainObject<IDomainEvent>(
+                            item.Body ?? throw new InvalidOperationException($"Stored event '{item.Id}' is missing a body."))))
                     .ToArray());
 
             await handler.Handle(command, cancellationToken);

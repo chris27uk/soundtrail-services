@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnAssessMusicTrack.CompositionRoot;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogDiscoveryWorkChanged.CompositionRoot;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.CompositionRoot;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownAlbumRequested.CompositionRoot;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownArtistRequested.CompositionRoot;
@@ -12,7 +13,6 @@ using Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequ
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnStreamingLocationsRequired.CompositionRoot;
 using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Prioritisation;
-using Soundtrail.Adapters.MusicTrackEventStore.CompositionRoot;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.CompositionRoot;
 
@@ -26,13 +26,13 @@ public static class AppServiceCollectionExtensions
         var options = new OrchestratorAppServicesOptions();
         configure?.Invoke(options);
 
-        services.AddMusicTrackStoredEventTranslations();
         services.AddOrchestratorServiceBus(configuration);
         services.TryAddSingleton<DiscoveryPriorityPolicy>();
         var dependencyProvider = options.DependencyProvider ?? new ProductionOrchestratorDependencyProvider();
         dependencyProvider.AddSharedDependencies(services, configuration);
 
         services.AddOnMusicTrackEventsImportedFeature();
+        services.AddOnCatalogDiscoveryWorkChangedFeature();
         services.AddOnMusicCatalogLookupAttemptedFeature();
         services.AddOnAssessMusicTrackFeature();
         services.AddOnKnownArtistRequestedFeature();

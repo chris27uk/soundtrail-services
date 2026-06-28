@@ -6,7 +6,6 @@ using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.Compos
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.CompositionRoot;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayPlannerMusicTrackProjection.CompositionRoot;
 using Soundtrail.Tools.MusicBrainzImport.Infrastructure.Raven;
-using Soundtrail.Adapters.MusicTrackEventStore.CompositionRoot;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Infrastructure.CompositionRoot;
 
@@ -16,7 +15,6 @@ public static class AppServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddMusicTrackStoredEventTranslations();
         services.AddMusicBrainzImportRaven(configuration);
         services.AddImportMusicBrainzDumpFeature();
         services.AddReplayPlannerMusicTrackProjectionFeature();

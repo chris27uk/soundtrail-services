@@ -7,4 +7,4 @@ public sealed record TrackDiscoveredEventDataRecordDto(
     string? Isrc,
     string? Mbid,
     string SourceProvider,
-    DateTimeOffset ObservedAt);
+    DateTimeOffset ObservedAt) : RavenEventBodyDto;

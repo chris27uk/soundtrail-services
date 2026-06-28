@@ -2,15 +2,16 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Adapters.Registry;
 using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Adapters.MusicTrackEventStore.Registrations;
 
-public sealed class StreamingLocationsRequiredStoredEventTranslationRegistration : IMusicTrackStoredEventTranslationRegistration
+public sealed class StreamingLocationsRequiredStoredEventTranslationRegistration : ITypeTranslationRegistration
 {
-    public void Register(MusicTrackStoredEventTranslationRegistry registry)
+    public void Register(TypeTranslationRegistry registry)
     {
-        registry.Register<StreamingLocationsRequired, StreamingLocationsRequiredEventDataRecordDto>(
+        registry.RegisterStoredEventPair<StreamingLocationsRequired, StreamingLocationsRequiredEventDataRecordDto>(
             nameof(StreamingLocationsRequired),
             domainEvent => new StreamingLocationsRequiredEventDataRecordDto(
                 domainEvent.MusicCatalogId.Value,

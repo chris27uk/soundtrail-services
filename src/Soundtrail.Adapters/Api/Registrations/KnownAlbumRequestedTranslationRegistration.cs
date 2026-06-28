@@ -10,15 +10,13 @@ public sealed class KnownAlbumRequestedTranslationRegistration : ITypeTranslatio
 {
     public void Register(TypeTranslationRegistry registry)
     {
-        registry.Register<KnownAlbumRequested, KnownAlbumRequestedDto>(
-            translate: request =>
+        registry.RegisterPair<KnownAlbumRequested, KnownAlbumRequestedDto>(
+            request =>
                 new KnownAlbumRequestedDto(
                     request.AlbumId.Value,
                     request.OccurredAt,
-                    request.CorrelationId.Value));
-
-        registry.Register<KnownAlbumRequestedDto, KnownAlbumRequested>(
-            translate: dto =>
+                    request.CorrelationId.Value),
+            dto =>
                 new KnownAlbumRequested(
                     AlbumId.From(dto.AlbumId),
                     dto.OccurredAt,

@@ -1,25 +1,30 @@
 using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownArtistRequested;
 
-public sealed class KnownArtistRequestedHandler(ICatalogSearchDiscoveryRepository discoveryRepository) : IHandler<KnownArtistRequested>
+public sealed class KnownArtistRequestedHandler(IEventStreamRepository<DiscoveryQueryKey, IDomainEvent> discoveryRepository) : IHandler<KnownArtistRequested>
 {
     public async Task Handle(
         KnownArtistRequested request,
         CancellationToken cancellationToken = default)
     {
-        var history = await SearchOrSeekHistory.LoadAsync(
+        var loaded = await SearchOrSeekHistory.LoadAsync(
             discoveryRepository,
             KnownCatalogItem.ForArtist(request.ArtistId),
             cancellationToken);
 
-        history.ArtistCatalogLookupRequested(
-            request.ArtistId,
-            request.OccurredAt,
-            request.CorrelationId);
+        if (!loaded.Aggregate.ArtistCatalogLookupRequested(
+                request.ArtistId,
+                request.OccurredAt,
+                request.CorrelationId))
+        {
+            return;
+        }
 
-        await history.SaveAsync(discoveryRepository, cancellationToken);
+        await loaded.Aggregate.SaveAsync(discoveryRepository, loaded.Stream, cancellationToken);
     }
 }

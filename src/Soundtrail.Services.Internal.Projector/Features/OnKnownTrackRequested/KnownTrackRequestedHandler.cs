@@ -1,5 +1,7 @@
+using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Internal.Projector.Features.OnKnownTrackRequested.Ports;
 using Soundtrail.Services.Internal.Projector.Features.OnKnownTrackRequested.Support;
 
@@ -7,7 +9,7 @@ namespace Soundtrail.Services.Internal.Projector.Features.OnKnownTrackRequested;
 
 public sealed class KnownTrackRequestedHandler(
     ILoadKnownTrackRequestedMusicTrackPort loadMusicTrackPort,
-    ICatalogSearchDiscoveryRepository discoveryRepository)
+    IEventStreamRepository<DiscoveryQueryKey, IDomainEvent> discoveryRepository)
 {
     public async Task Handle(
         KnownTrackRequestedCommand command,
@@ -17,17 +19,17 @@ public sealed class KnownTrackRequestedHandler(
         {
             var @event = (KnownTrackRequested)item.Event;
             var track = await loadMusicTrackPort.LoadAsync(@event.TrackId, cancellationToken);
-            var history = await SearchOrSeekHistory.LoadAsync(
+            var loaded = await SearchOrSeekHistory.LoadAsync(
                 discoveryRepository,
                 command.KnownItem,
                 cancellationToken);
 
-            if (!track.AppendFollowUp(history, @event))
+            if (!track.AppendFollowUp(loaded.Aggregate, @event))
             {
                 continue;
             }
 
-            await history.SaveAsync(discoveryRepository, cancellationToken);
+            await loaded.Aggregate.SaveAsync(discoveryRepository, loaded.Stream, cancellationToken);
         }
     }
 }

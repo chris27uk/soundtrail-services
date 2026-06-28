@@ -20,6 +20,6 @@ public sealed class TrackSummaryToTrackSummaryResponseTranslationRegistration : 
                     track.PlayabilityStatus.ToString(),
                     track.AvailableProviders.Select(x => x.StableValue).ToArray(),
                     track.TerminallyUnavailableProviders.Select(x => x.StableValue).ToArray(),
-                    track.ProviderReferences.Select(x => registry.Translate<ProviderReferenceResponseDto>(x)).ToArray()));
+                    track.ProviderReferences.Select(x => registry.ToDto<ProviderReferenceResponseDto>(x)).ToArray()));
     }
 }

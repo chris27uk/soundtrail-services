@@ -2,6 +2,7 @@ using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
+using Soundtrail.Adapters.Registry;
 using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Domain.Search;
@@ -25,10 +26,10 @@ public sealed class LookupStreamingLocationsListenerWolverineResponsesTests
         await listener.Handle(Command(), null!);
 
         env.Bus.SentCommands.Should().ContainSingle().Which.Should().BeOfType<MusicCatalogLookupAttempted>();
-        env.Bus.SentCommands
-            .OfType<MusicCatalogLookupAttempted>()
-            .Single()
-            .ToDto()
+        TypeTranslationRegistry.Default
+            .ToDto<MusicCatalogLookupAttemptedDto>(env.Bus.SentCommands
+                .OfType<MusicCatalogLookupAttempted>()
+                .Single())
             .Should()
             .BeOfType<MusicCatalogLookupAttemptedDto>();
     }
@@ -44,8 +45,8 @@ public sealed class LookupStreamingLocationsListenerWolverineResponsesTests
         var listener = new LookupStreamingLocationsListener(env.Handler);
 
         await listener.Handle(Command(), null!);
-        var message = env.Bus.SentCommands.OfType<MusicCatalogLookupAttempted>().Single()
-            .ToDto();
+        var message = TypeTranslationRegistry.Default.ToDto<MusicCatalogLookupAttemptedDto>(
+            env.Bus.SentCommands.OfType<MusicCatalogLookupAttempted>().Single());
 
         message.Outcome.Status.Should().Be("Deferred");
         message.SourceProvider.Should().Be(LookupSource.Odesli.Value);
@@ -60,8 +61,8 @@ public sealed class LookupStreamingLocationsListenerWolverineResponsesTests
         var listener = new LookupStreamingLocationsListener(env.Handler);
 
         await listener.Handle(Command(), null!);
-        var message = env.Bus.SentCommands.OfType<MusicCatalogLookupAttempted>().Single()
-            .ToDto();
+        var message = TypeTranslationRegistry.Default.ToDto<MusicCatalogLookupAttemptedDto>(
+            env.Bus.SentCommands.OfType<MusicCatalogLookupAttempted>().Single());
 
         message.Outcome.Status.Should().Be("Failed");
         message.SourceProvider.Should().Be(LookupSource.Odesli.Value);

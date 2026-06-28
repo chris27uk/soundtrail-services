@@ -2,6 +2,7 @@ using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
+using Soundtrail.Adapters.Registry;
 using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Adapters.Messaging;
@@ -22,10 +23,10 @@ public sealed class LookupMusicMetadataListenerWolverineResponsesTests
         await listener.Handle(Command(), null!);
 
         env.Bus.SentCommands.Should().ContainSingle().Which.Should().BeOfType<MusicCatalogLookupAttempted>();
-        env.Bus.SentCommands
-            .OfType<MusicCatalogLookupAttempted>()
-            .Single()
-            .ToDto()
+        TypeTranslationRegistry.Default
+            .ToDto<MusicCatalogLookupAttemptedDto>(env.Bus.SentCommands
+                .OfType<MusicCatalogLookupAttempted>()
+                .Single())
             .Should()
             .BeOfType<MusicCatalogLookupAttemptedDto>();
     }
@@ -41,11 +42,12 @@ public sealed class LookupMusicMetadataListenerWolverineResponsesTests
         var listener = new LookupTrackMetadataListener(env.Handler);
 
         await listener.Handle(Command(), null!);
-        var message = env.Bus.SentCommands.OfType<MusicCatalogLookupAttempted>().Single().ToDto();
+        var message = TypeTranslationRegistry.Default.ToDto<MusicCatalogLookupAttemptedDto>(
+            env.Bus.SentCommands.OfType<MusicCatalogLookupAttempted>().Single());
 
-        message.Outcome.Status.Should().Be("Deferred");
-        message.SourceProvider.Should().Be(LookupSource.MusicBrainz.Value);
-        message.Outcome.Reason.Should().Be("MusicBrainz budget temporarily unavailable");
+        message?.Outcome.Status.Should().Be("Deferred");
+        message?.SourceProvider.Should().Be(LookupSource.MusicBrainz.Value);
+        message?.Outcome.Reason.Should().Be("MusicBrainz budget temporarily unavailable");
     }
 
     [Fact]
@@ -56,11 +58,12 @@ public sealed class LookupMusicMetadataListenerWolverineResponsesTests
         var listener = new LookupTrackMetadataListener(env.Handler);
 
         await listener.Handle(Command(), null!);
-        var message = env.Bus.SentCommands.OfType<MusicCatalogLookupAttempted>().Single().ToDto();
+        var message = TypeTranslationRegistry.Default.ToDto<MusicCatalogLookupAttemptedDto>(
+            env.Bus.SentCommands.OfType<MusicCatalogLookupAttempted>().Single());
 
-        message.Outcome.Status.Should().Be("Failed");
-        message.SourceProvider.Should().Be(LookupSource.MusicBrainz.Value);
-        message.Outcome.Reason.Should().Be("Lookup failed");
+        message?.Outcome.Status.Should().Be("Failed");
+        message?.SourceProvider.Should().Be(LookupSource.MusicBrainz.Value);
+        message?.Outcome.Reason.Should().Be("Lookup failed");
     }
 
     [Fact]

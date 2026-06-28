@@ -11,16 +11,14 @@ public sealed class KnownTrackRequestedTranslationRegistration : ITypeTranslatio
 {
     public void Register(TypeTranslationRegistry registry)
     {
-        registry.Register<KnownTrackRequested, KnownTrackRequestedDto>(
-            translate: request =>
+        registry.RegisterPair<KnownTrackRequested, KnownTrackRequestedDto>(
+            request =>
                 new KnownTrackRequestedDto(
                     request.TrackId.Value,
                     request.Playback.ToString(),
                     request.OccurredAt,
-                    request.CorrelationId.Value));
-
-        registry.Register<KnownTrackRequestedDto, KnownTrackRequested>(
-            translate: dto =>
+                    request.CorrelationId.Value),
+            dto =>
                 new KnownTrackRequested(
                     TrackId.From(dto.TrackId),
                     PlaybackProviderFilter.Parse(dto.Playback),

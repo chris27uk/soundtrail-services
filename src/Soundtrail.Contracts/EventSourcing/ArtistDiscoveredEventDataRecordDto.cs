@@ -5,4 +5,4 @@ public sealed record ArtistDiscoveredEventDataRecordDto(
     string? ArtistName,
     string? SourceArtistId,
     string SourceProvider,
-    DateTimeOffset ObservedAt);
+    DateTimeOffset ObservedAt) : RavenEventBodyDto;

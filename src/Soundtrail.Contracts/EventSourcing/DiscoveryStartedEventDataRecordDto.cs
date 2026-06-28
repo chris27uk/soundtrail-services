@@ -5,4 +5,4 @@ public sealed record DiscoveryStartedEventDataRecordDto(
     string Priority,
     bool WillBeLookedUp,
     string Reason,
-    DateTimeOffset StartedAtUtc);
+    DateTimeOffset StartedAtUtc) : RavenEventBodyDto;

@@ -10,7 +10,7 @@ namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusC
 
 public sealed class RavenSaveDiscoveryLifecycleProjection(
     IAsyncDocumentSession session,
-    ITypeTranslator translator) : ISaveDiscoveryLifecycleProjectionPort
+    ITypeRegistry translator) : ISaveDiscoveryLifecycleProjectionPort
 {
     public async Task SaveAsync(
         DiscoveryLifecycleProjection projection,

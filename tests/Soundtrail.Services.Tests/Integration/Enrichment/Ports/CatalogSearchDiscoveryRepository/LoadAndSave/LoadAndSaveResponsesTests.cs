@@ -15,18 +15,20 @@ public sealed class LoadAndSaveResponsesTests
     {
         using var env = CatalogSearchDiscoveryRepositoryTestEnvironment.Create(mode);
         var criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
-        var discovery = await SearchOrSeekHistory.LoadAsync(env.Repository, criteria, CancellationToken.None);
+        var loaded = await SearchOrSeekHistory.LoadAsync(env.Repository, criteria, CancellationToken.None);
+        var discovery = loaded.Aggregate;
         discovery.SearchRequested(Request(criteria));
-        await discovery.SaveAsync(env.Repository, CancellationToken.None);
+        await discovery.SaveAsync(env.Repository, loaded.Stream, CancellationToken.None);
 
-        discovery = await SearchOrSeekHistory.LoadAsync(env.Repository, criteria, CancellationToken.None);
+        loaded = await SearchOrSeekHistory.LoadAsync(env.Repository, criteria, CancellationToken.None);
+        discovery = loaded.Aggregate;
         discovery.Plan(LookupPriorityBand.High, 30, null, "Planner queued lookup", Clock);
 
-        var saved = await discovery.SaveAsync(env.Repository, CancellationToken.None);
+        var saved = await discovery.SaveAsync(env.Repository, loaded.Stream, CancellationToken.None);
         var reloaded = await SearchOrSeekHistory.LoadAsync(env.Repository, criteria, CancellationToken.None);
 
         saved.Should().BeTrue();
-        reloaded.Plan(LookupPriorityBand.High, 30, null, "Planner queued lookup", Clock).Should().BeFalse();
+        reloaded.Aggregate.Plan(LookupPriorityBand.High, 30, null, "Planner queued lookup", Clock).Should().BeFalse();
     }
 
     [Theory]
@@ -36,16 +38,16 @@ public sealed class LoadAndSaveResponsesTests
         using var env = CatalogSearchDiscoveryRepositoryTestEnvironment.Create(mode);
         var criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
         var seed = await SearchOrSeekHistory.LoadAsync(env.Repository, criteria, CancellationToken.None);
-        seed.SearchRequested(Request(criteria));
-        await seed.SaveAsync(env.Repository, CancellationToken.None);
+        seed.Aggregate.SearchRequested(Request(criteria));
+        await seed.Aggregate.SaveAsync(env.Repository, seed.Stream, CancellationToken.None);
 
         var left = await SearchOrSeekHistory.LoadAsync(env.Repository, criteria, CancellationToken.None);
         var right = await SearchOrSeekHistory.LoadAsync(env.Repository, criteria, CancellationToken.None);
-        left.Plan(LookupPriorityBand.High, 30, null, "Planner queued lookup", Clock);
-        right.Defer(60, Clock.AddSeconds(60), "Planner deferred lookup", Clock);
+        left.Aggregate.Plan(LookupPriorityBand.High, 30, null, "Planner queued lookup", Clock);
+        right.Aggregate.Defer(60, Clock.AddSeconds(60), "Planner deferred lookup", Clock);
 
-        var leftSaved = await left.SaveAsync(env.Repository, CancellationToken.None);
-        var rightSaved = await right.SaveAsync(env.Repository, CancellationToken.None);
+        var leftSaved = await left.Aggregate.SaveAsync(env.Repository, left.Stream, CancellationToken.None);
+        var rightSaved = await right.Aggregate.SaveAsync(env.Repository, right.Stream, CancellationToken.None);
 
         leftSaved.Should().BeTrue();
         rightSaved.Should().BeFalse();

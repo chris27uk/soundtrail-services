@@ -1,14 +1,15 @@
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Domain.Enrichment.Responses;
+using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted;
 
 public sealed class ApplyMusicCatalogLookupAttemptedToDiscoveryHandler(
     ICatalogSearchTrackingStore catalogSearchTrackingStore,
-    ICatalogSearchDiscoveryRepository discoveryRepository) : IHandler<ApplyMusicCatalogLookupAttemptedToDiscoveryCommand>
+    IEventStreamRepository<DiscoveryQueryKey, IDomainEvent> discoveryRepository) : IHandler<ApplyMusicCatalogLookupAttemptedToDiscoveryCommand>
 {
     public async Task Handle(
         ApplyMusicCatalogLookupAttemptedToDiscoveryCommand command,
@@ -23,16 +24,13 @@ public sealed class ApplyMusicCatalogLookupAttemptedToDiscoveryHandler(
                 var existingTrackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(attempted.MusicCatalogId, cancellationToken);
                 foreach (var tracking in existingTrackings)
                 {
-                    var history = await SearchOrSeekHistory.LoadAsync(
-                        discoveryRepository,
-                        tracking.SearchCriteria,
-                        cancellationToken);
-                    if (!history.LookupStarted(attempted.Priority, attempted.CreatedAt))
+                    var loaded = await SearchOrSeekHistory.LoadAsync(discoveryRepository, tracking.SearchCriteria, cancellationToken);
+                    if (!loaded.Aggregate.LookupStarted(attempted.Priority, attempted.CreatedAt))
                     {
                         continue;
                     }
 
-                    await history.SaveAsync(discoveryRepository, cancellationToken);
+                    await loaded.Aggregate.SaveAsync(discoveryRepository, loaded.Stream, cancellationToken);
                 }
             }
         }
@@ -55,23 +53,20 @@ public sealed class ApplyMusicCatalogLookupAttemptedToDiscoveryHandler(
                     cancellationToken);
             }
 
-            var trackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(fetched.MusicCatalogId, cancellationToken);
+            var existingTrackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(fetched.MusicCatalogId, cancellationToken);
             var discoverySearchTerms = resolvedSearchTerms
-                .Concat(trackings.Select(static tracking => tracking.SearchCriteria))
+                .Concat(existingTrackings.Select(static tracking => tracking.SearchCriteria))
                 .Distinct();
 
             foreach (var searchTerm in discoverySearchTerms)
             {
-                var history = await SearchOrSeekHistory.LoadAsync(
-                    discoveryRepository,
-                    searchTerm,
-                    cancellationToken);
-                if (!history.LookupCompleted(fetched.Priority, fetched.CreatedAt))
+                var loaded = await SearchOrSeekHistory.LoadAsync(discoveryRepository, searchTerm, cancellationToken);
+                if (!loaded.Aggregate.LookupCompleted(fetched.Priority, fetched.CreatedAt))
                 {
                     continue;
                 }
 
-                await history.SaveAsync(discoveryRepository, cancellationToken);
+                await loaded.Aggregate.SaveAsync(discoveryRepository, loaded.Stream, cancellationToken);
             }
         }
 
@@ -80,21 +75,18 @@ public sealed class ApplyMusicCatalogLookupAttemptedToDiscoveryHandler(
             return;
         }
 
-        var trackedSearches = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(attempted.MusicCatalogId, cancellationToken);
-        foreach (var tracking in trackedSearches)
+        var trackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(attempted.MusicCatalogId, cancellationToken);
+        foreach (var tracking in trackings)
         {
-            var history = await SearchOrSeekHistory.LoadAsync(
-                discoveryRepository,
-                tracking.SearchCriteria,
-                cancellationToken);
+            var loaded = await SearchOrSeekHistory.LoadAsync(discoveryRepository, tracking.SearchCriteria, cancellationToken);
             var changed = attempted.Outcome.Status switch
             {
-                MusicCatalogLookupOutcomeStatus.Deferred => history.LookupDeferred(
+                MusicCatalogLookupOutcomeStatus.Deferred => loaded.Aggregate.LookupDeferred(
                     attempted.Outcome.RetryAfterSeconds,
                     attempted.Outcome.RetryAt,
                     attempted.Outcome.Reason ?? "Lookup deferred",
                     attempted.CreatedAt),
-                MusicCatalogLookupOutcomeStatus.Failed => history.LookupFailed(
+                MusicCatalogLookupOutcomeStatus.Failed => loaded.Aggregate.LookupFailed(
                     attempted.Priority,
                     attempted.Outcome.Reason ?? "Lookup failed",
                     attempted.CreatedAt),
@@ -106,7 +98,7 @@ public sealed class ApplyMusicCatalogLookupAttemptedToDiscoveryHandler(
                 continue;
             }
 
-            await history.SaveAsync(discoveryRepository, cancellationToken);
+            await loaded.Aggregate.SaveAsync(discoveryRepository, loaded.Stream, cancellationToken);
         }
     }
 }

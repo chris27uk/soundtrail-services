@@ -1,14 +1,15 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Adapters.Registry;
 
 namespace Soundtrail.Adapters.MusicTrackEventStore.Registrations;
 
-public sealed class AlbumDiscoveredStoredEventTranslationRegistration : IMusicTrackStoredEventTranslationRegistration
+public sealed class AlbumDiscoveredStoredEventTranslationRegistration : ITypeTranslationRegistration
 {
-    public void Register(MusicTrackStoredEventTranslationRegistry registry)
+    public void Register(TypeTranslationRegistry registry)
     {
-        registry.Register<AlbumDiscovered, AlbumDiscoveredEventDataRecordDto>(
+        registry.RegisterStoredEventPair<AlbumDiscovered, AlbumDiscoveredEventDataRecordDto>(
             nameof(AlbumDiscovered),
             domainEvent => new AlbumDiscoveredEventDataRecordDto(
                 domainEvent.AlbumId,

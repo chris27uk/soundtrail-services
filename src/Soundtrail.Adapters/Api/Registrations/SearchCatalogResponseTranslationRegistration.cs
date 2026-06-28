@@ -12,7 +12,7 @@ public sealed class SearchCatalogResponseTranslationRegistration : ITypeTranslat
             translate: response =>
                 new SearchCatalogResponseDto(
                     response.Query,
-                    response.Results.Select(x => registry.Translate<SearchCatalogResultResponseDto>(x)).ToArray(),
-                    registry.Translate<SearchDiscoveryResponseDto>(response.Discovery)));
+                    response.Results.Select(x => registry.ToDto<SearchCatalogResultResponseDto>(x)).ToArray(),
+                    registry.ToDto<SearchDiscoveryResponseDto>(response.Discovery)));
     }
 }

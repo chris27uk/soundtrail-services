@@ -1,10 +1,10 @@
 using Raven.Client.Documents.Session;
+using Soundtrail.Adapters.Registry;
 using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Discovery.Events;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Ports;
@@ -14,6 +14,7 @@ using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjec
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.EventStore;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.ProjectionReset;
 using Soundtrail.Adapters.ProjectionDocuments;
+using Soundtrail.Services.Tests.Support;
 
 namespace Soundtrail.Services.Tests.Integration.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection;
 
@@ -78,6 +79,7 @@ internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsync
                 1,
                 new DiscoveryRequested(
                     searchCriteria,
+                    null,
                     1,
                     10,
                     Clock,
@@ -121,8 +123,10 @@ internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsync
         MusicSearchCriteria searchCriteria)
     {
         var raven = RavenEmbeddedTestDatabase.Create();
-        var repository = new RavenCatalogSearchDiscoveryRepository(raven.Store);
-        var discovery = await SearchOrSeekHistory.LoadAsync(repository, searchCriteria, CancellationToken.None);
+        using var repositorySession = raven.Store.OpenAsyncSession();
+        var repository = TestEventStreamRepositories.CreateDiscoveryQuery(repositorySession);
+        var loaded = await SearchOrSeekHistory.LoadAsync(repository, searchCriteria, CancellationToken.None);
+        var discovery = loaded.Aggregate;
         discovery.SearchRequested(
             new SearchCatalogRequested(
                 searchCriteria,
@@ -131,11 +135,12 @@ internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsync
                 10,
                 Clock,
                 CorrelationId.From("corr-1")));
-        await discovery.SaveAsync(repository, CancellationToken.None);
+        await discovery.SaveAsync(repository, loaded.Stream, CancellationToken.None);
 
-        discovery = await SearchOrSeekHistory.LoadAsync(repository, searchCriteria, CancellationToken.None);
+        loaded = await SearchOrSeekHistory.LoadAsync(repository, searchCriteria, CancellationToken.None);
+        discovery = loaded.Aggregate;
         discovery.Plan(LookupPriorityBand.High, 30, null, "Planner queued lookup", Clock.AddSeconds(5));
-        await discovery.SaveAsync(repository, CancellationToken.None);
+        await discovery.SaveAsync(repository, loaded.Stream, CancellationToken.None);
 
         var persistentId = DiscoveryQueryKey.StableValueFor(searchCriteria);
         using (var seedSession = raven.Store.OpenAsyncSession())
@@ -163,7 +168,7 @@ internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsync
         var session = raven.Store.OpenAsyncSession();
         var handler = new ReplayDiscoveryLifecycleProjectionBatchHandler(
             new RavenLoadDiscoveryLifecycleReplayTargets(session),
-            new RavenLoadDiscoveryLifecycleEventsForReplay(session),
+            new RavenLoadDiscoveryLifecycleEventsForReplay(session, TypeTranslationRegistry.Default),
             new RavenResetDiscoveryLifecycleProjection(session),
             new CatalogSearchStatusChangedHandler(
                 new RavenLoadDiscoveryLifecycleProjection(session, new RavenDiscoveryLifecycleProjectionMapper()),

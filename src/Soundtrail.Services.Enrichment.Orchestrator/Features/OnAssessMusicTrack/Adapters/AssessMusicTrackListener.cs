@@ -3,7 +3,6 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Search;
-using Soundtrail.Adapters.Discovery;
 using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnAssessMusicTrack.Adapters;

@@ -1,20 +1,19 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Domain.Enrichment.Responses;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
+using Soundtrail.Services.Tests.Support;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
-using Soundtrail.Adapters.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Ports.MusicTrackStreamStore;
 
 [Collection(RavenEmbeddedCollection.Name)]
 public sealed class MusicTrackStreamStoreContractResponsesTests
 {
-    private static readonly IMusicTrackStoredEventRecordTranslator Translator = MusicTrackStoredEventRecordTranslator.Default;
     [Theory]
     [MemberData(nameof(AllModes))]
     public async Task Given_A_New_Stream_When_Appending_Then_Events_Can_Be_Loaded_Back(StreamStoreMode mode)
@@ -177,17 +176,17 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
         {
             if (fake is not null)
             {
-                var aggregate = await CatalogEntityAggregate.LoadAsync(fake, musicCatalogId, CancellationToken.None);
-                aggregate.RecordMusicCatalogMetadataFetched(response);
-                await aggregate.SaveAsync(fake, response.CommandId, CancellationToken.None);
+                var loaded = await MusicTrack.LoadAsync(fake, musicCatalogId, CancellationToken.None);
+                loaded.Aggregate.MetadataFetched(response);
+                await loaded.Aggregate.SaveAsync(fake, loaded.Stream, response.CommandId, CancellationToken.None);
                 return;
             }
 
             using var session = raven!.Store.OpenAsyncSession();
-            var store = new RavenMusicTrackStreamStore(session, Translator);
-            var ravenAggregate = await CatalogEntityAggregate.LoadAsync(store, musicCatalogId, CancellationToken.None);
-            ravenAggregate.RecordMusicCatalogMetadataFetched(response);
-            await ravenAggregate.SaveAsync(store, response.CommandId, CancellationToken.None);
+            var store = TestEventStreamRepositories.CreateMusicTrack(session);
+            var loadedRaven = await MusicTrack.LoadAsync(store, musicCatalogId, CancellationToken.None);
+            loadedRaven.Aggregate.MetadataFetched(response);
+            await loadedRaven.Aggregate.SaveAsync(store, loadedRaven.Stream, response.CommandId, CancellationToken.None);
             await session.SaveChangesAsync(CancellationToken.None);
         }
 
@@ -195,7 +194,7 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
         {
             if (fake is not null)
             {
-                return fake.AppendEventsAsync(musicCatalogId, expectedVersion, commandId, events, CancellationToken.None);
+                return fake.AppendAsync(musicCatalogId, expectedVersion, commandId, events, CancellationToken.None);
             }
 
             return AppendRavenAsync(musicCatalogId, expectedVersion, commandId, events);
@@ -204,17 +203,24 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
         private async Task<AppendMusicTrackStreamResult> AppendRavenAsync(MusicCatalogId musicCatalogId, int expectedVersion, CommandId commandId, IReadOnlyList<IMusicTrackEvent> events)
         {
             using var session = raven!.Store.OpenAsyncSession();
-            var store = new RavenMusicTrackStreamStore(session, Translator);
-            var append = await store.AppendEventsAsync(musicCatalogId, expectedVersion, commandId, events, CancellationToken.None);
+            var store = TestEventStreamRepositories.CreateMusicTrack(session);
+            var append = await store.AppendAsync(
+                new LoadedEventStream<MusicCatalogId, IMusicTrackEvent>(
+                    musicCatalogId,
+                    expectedVersion,
+                    []),
+                events,
+                OperationId.From(commandId.Value),
+                CancellationToken.None);
             await session.SaveChangesAsync(CancellationToken.None);
-            return append;
+            return new AppendMusicTrackStreamResult(append.Appended, append.Version, append.Events);
         }
 
         public Task<MusicTrackStream> LoadAsync(MusicCatalogId musicCatalogId)
         {
             if (fake is not null)
             {
-                return fake.LoadEventsAsync(musicCatalogId, CancellationToken.None);
+                return fake.LoadStreamAsync(musicCatalogId, CancellationToken.None);
             }
 
             return LoadRavenAsync(musicCatalogId);
@@ -223,8 +229,9 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
         private async Task<MusicTrackStream> LoadRavenAsync(MusicCatalogId musicCatalogId)
         {
             using var session = raven!.Store.OpenAsyncSession();
-            var store = new RavenMusicTrackStreamStore(session, Translator);
-            return await store.LoadEventsAsync(musicCatalogId, CancellationToken.None);
+            var store = TestEventStreamRepositories.CreateMusicTrack(session);
+            var stream = await store.LoadAsync(musicCatalogId, CancellationToken.None);
+            return new MusicTrackStream(stream.Version, stream.Events);
         }
 
         public ValueTask DisposeAsync()

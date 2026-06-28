@@ -13,4 +13,4 @@ public sealed record MetadataCorrectedEventDataRecordDto(
     string? Isrc,
     string? Mbid,
     string Source,
-    DateTimeOffset CorrectedAt);
+    DateTimeOffset CorrectedAt) : RavenEventBodyDto;

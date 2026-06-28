@@ -1,4 +1,5 @@
 using Raven.Client.Documents.Session;
+using Soundtrail.Adapters.Registry;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Enrichment.Commands;
 using Wolverine.Attributes;
@@ -13,7 +14,5 @@ public sealed class ApplyMusicCatalogLookupAttemptedToCatalogListener(ApplyMusic
         ApplyMusicCatalogLookupAttemptedToCatalogCommandDto dto,
         IAsyncDocumentSession _,
         CancellationToken cancellationToken = default) =>
-        handler.Handle(
-            new ApplyMusicCatalogLookupAttemptedToCatalogCommand(dto.Attempted.ToDomain()),
-            cancellationToken);
+        handler.Handle(TypeTranslationRegistry.Default.ToDomainObject<ApplyMusicCatalogLookupAttemptedToCatalogCommand>(dto), cancellationToken);
 }

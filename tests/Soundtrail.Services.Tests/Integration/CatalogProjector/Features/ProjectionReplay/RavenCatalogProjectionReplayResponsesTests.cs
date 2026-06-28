@@ -1,17 +1,14 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
-using Soundtrail.Adapters.MusicTrackEventStore;
 
 namespace Soundtrail.Services.Tests.Integration.CatalogProjector.Features.ProjectionReplay;
 
 [Collection(RavenEmbeddedCollection.Name)]
 public sealed class RavenCatalogProjectionReplayResponsesTests
 {
-    private static readonly IMusicTrackStoredEventRecordTranslator Translator = MusicTrackStoredEventRecordTranslator.Default;
 
     [Fact]
     public async Task Given_Replayable_MusicTrack_Events_When_Projecting_Then_Catalog_Documents_Are_Materialized_And_Searchable()
@@ -325,15 +322,14 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
         album!.ArtworkUrl.Should().Be("https://images.example.com/track.png");
     }
 
-    private static MusicTrackStoredEventRecordDto MinimalTrackInfo(
+    private static RavenCatalogProjectionReplayTestEnvironment.CatalogReplayEvent MinimalTrackInfo(
         string musicCatalogId,
         int version,
         string title,
         string artist) =>
-        Translator.ToDto(
-            MusicCatalogId.From(musicCatalogId),
+        new(
+            musicCatalogId,
             version,
-            CommandId.For($"CatalogReplay:{musicCatalogId}:{version}"),
             new TrackDiscovered(
                 title,
                 artist,
@@ -343,15 +339,14 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
                 LookupSource.MusicBrainz,
                 new DateTimeOffset(2026, 6, 15, 12, 0, 0, TimeSpan.Zero)));
 
-    private static MusicTrackStoredEventRecordDto ArtistDiscovered(
+    private static RavenCatalogProjectionReplayTestEnvironment.CatalogReplayEvent ArtistDiscovered(
         string musicCatalogId,
         int version,
         string artistId,
         string artistName) =>
-        Translator.ToDto(
-            MusicCatalogId.From(musicCatalogId),
+        new(
+            musicCatalogId,
             version,
-            CommandId.For($"CatalogReplay:{musicCatalogId}:{version}"),
             new ArtistDiscovered(
                 artistId,
                 artistName,
@@ -359,15 +354,14 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
                 LookupSource.MusicBrainz,
                 new DateTimeOffset(2026, 6, 15, 12, 1, 0, TimeSpan.Zero)));
 
-    private static MusicTrackStoredEventRecordDto AlbumDiscovered(
+    private static RavenCatalogProjectionReplayTestEnvironment.CatalogReplayEvent AlbumDiscovered(
         string musicCatalogId,
         int version,
         string albumId,
         string albumName) =>
-        Translator.ToDto(
-            MusicCatalogId.From(musicCatalogId),
+        new(
+            musicCatalogId,
             version,
-            CommandId.For($"CatalogReplay:{musicCatalogId}:{version}"),
             new AlbumDiscovered(
                 albumId,
                 albumName,
@@ -376,15 +370,14 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
                 LookupSource.MusicBrainz,
                 new DateTimeOffset(2026, 6, 15, 12, 2, 0, TimeSpan.Zero)));
 
-    private static MusicTrackStoredEventRecordDto ProviderResolved(
+    private static RavenCatalogProjectionReplayTestEnvironment.CatalogReplayEvent ProviderResolved(
         string musicCatalogId,
         int version,
         ProviderName provider,
         string externalId) =>
-        Translator.ToDto(
-            MusicCatalogId.From(musicCatalogId),
+        new(
+            musicCatalogId,
             version,
-            CommandId.For($"CatalogReplay:{musicCatalogId}:{version}"),
             new ProviderReferenceDiscovered(
                 provider,
                 externalId,
@@ -392,29 +385,27 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
                 LookupSource.Odesli,
                 new DateTimeOffset(2026, 6, 15, 12, 3, 0, TimeSpan.Zero)));
 
-    private static MusicTrackStoredEventRecordDto ProviderFailed(
+    private static RavenCatalogProjectionReplayTestEnvironment.CatalogReplayEvent ProviderFailed(
         string musicCatalogId,
         int version,
         ProviderName provider) =>
-        Translator.ToDto(
-            MusicCatalogId.From(musicCatalogId),
+        new(
+            musicCatalogId,
             version,
-            CommandId.For($"CatalogReplay:{musicCatalogId}:{version}"),
             new ProviderReferenceLookupFailed(
                 provider,
                 LookupSource.Odesli,
                 new DateTimeOffset(2026, 6, 15, 12, 4, 0, TimeSpan.Zero)));
 
-    private static MusicTrackStoredEventRecordDto ArtworkDiscovered(
+    private static RavenCatalogProjectionReplayTestEnvironment.CatalogReplayEvent ArtworkDiscovered(
         string musicCatalogId,
         int version,
         string entityKind,
         string? entityId,
         string url) =>
-        Translator.ToDto(
-            MusicCatalogId.From(musicCatalogId),
+        new(
+            musicCatalogId,
             version,
-            CommandId.For($"CatalogReplay:{musicCatalogId}:{version}"),
             new ArtworkDiscovered(
                 Enum.Parse<CatalogEntityKind>(entityKind, ignoreCase: true),
                 entityId,
@@ -422,7 +413,7 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
                 "worker/musicbrainz",
                 new DateTimeOffset(2026, 6, 15, 12, version, 0, TimeSpan.Zero)));
 
-    private static MusicTrackStoredEventRecordDto MetadataCorrected(
+    private static RavenCatalogProjectionReplayTestEnvironment.CatalogReplayEvent MetadataCorrected(
         string musicCatalogId,
         int version,
         string title,
@@ -430,10 +421,9 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
         string artistId,
         string albumTitle,
         string albumId) =>
-        Translator.ToDto(
-            MusicCatalogId.From(musicCatalogId),
+        new(
+            musicCatalogId,
             version,
-            CommandId.For($"CatalogReplay:{musicCatalogId}:{version}"),
             new MetadataCorrected(
                 title,
                 artistName,

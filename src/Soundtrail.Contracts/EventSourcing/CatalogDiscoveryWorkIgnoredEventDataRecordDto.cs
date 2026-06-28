@@ -4,4 +4,4 @@ public sealed record CatalogDiscoveryWorkIgnoredEventDataRecordDto(
     string MusicCatalogId,
     DateTimeOffset? NextEligibleAtUtc,
     string Reason,
-    DateTimeOffset IgnoredAtUtc);
+    DateTimeOffset IgnoredAtUtc) : RavenEventBodyDto;

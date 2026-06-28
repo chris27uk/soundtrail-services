@@ -16,6 +16,6 @@ public sealed class AlbumDetailsResponseTranslationRegistration : ITypeTranslati
                     response.AlbumId.Value,
                     response.Name,
                     response.ReleaseDate,
-                    response.Tracks.Select(x => registry.Translate<TrackSummaryResponseDto>(x)).ToArray()));
+                    response.Tracks.Select(x => registry.ToDto<TrackSummaryResponseDto>(x)).ToArray()));
     }
 }

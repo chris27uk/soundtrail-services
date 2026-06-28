@@ -16,7 +16,7 @@ public sealed class SearchCatalogRequestedListener(SearchCatalogRequestedHandler
         CancellationToken cancellationToken = default)
     {
         await handler.Handle(
-            TypeTranslationRegistry.Default.Translate<SearchCatalogRequested>(requestDto),
+            TypeTranslationRegistry.Default.ToDomainObject<SearchCatalogRequested>(requestDto),
             cancellationToken);
     }
 }

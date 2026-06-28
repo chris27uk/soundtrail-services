@@ -26,9 +26,8 @@ public sealed class SearchOrSeekHistory
     private bool hasArtistCatalogLookupRequested;
     private bool hasAlbumCatalogLookupRequested;
     private bool hasStreamingLocationsRequired;
-    private int version;
 
-    private SearchOrSeekHistory(IEnumerable<IDomainEvent> events, int version)
+    private SearchOrSeekHistory(IEnumerable<IDomainEvent> events)
     {
         this.eventHandlers = CreateHandlers();
 
@@ -36,29 +35,34 @@ public sealed class SearchOrSeekHistory
         {
             Apply(@event, isNew: false);
         }
-
-        this.version = version;
     }
 
-    public static async Task<SearchOrSeekHistory> LoadAsync(ICatalogSearchDiscoveryRepository repository, MusicSearchCriteria searchCriteria, CancellationToken cancellationToken)
+    public static async Task<(LoadedEventStream<DiscoveryQueryKey, IDomainEvent> Stream, SearchOrSeekHistory Aggregate)> LoadAsync(
+        IEventStreamRepository<DiscoveryQueryKey, IDomainEvent> repository,
+        MusicSearchCriteria searchCriteria,
+        CancellationToken cancellationToken)
     {
-        var stream = await repository.LoadAsync(searchCriteria, cancellationToken);
-        var aggregate = new SearchOrSeekHistory(stream.Events, stream.Version);
+        var stream = await repository.LoadAsync(DiscoveryQueryKey.For(searchCriteria), cancellationToken);
+        var aggregate = new SearchOrSeekHistory(stream.Events);
         aggregate.criteria ??= searchCriteria;
-        return aggregate;
+        return (stream, aggregate);
     }
 
-    public static async Task<SearchOrSeekHistory> LoadAsync(ICatalogSearchDiscoveryRepository repository, KnownCatalogItem knownItem, CancellationToken cancellationToken)
+    public static async Task<(LoadedEventStream<DiscoveryQueryKey, IDomainEvent> Stream, SearchOrSeekHistory Aggregate)> LoadAsync(
+        IEventStreamRepository<DiscoveryQueryKey, IDomainEvent> repository,
+        KnownCatalogItem knownItem,
+        CancellationToken cancellationToken)
     {
-        var stream = await repository.LoadAsync(knownItem, cancellationToken);
-        var aggregate = new SearchOrSeekHistory(stream.Events, stream.Version);
+        var stream = await repository.LoadAsync(DiscoveryQueryKey.For(knownItem), cancellationToken);
+        var aggregate = new SearchOrSeekHistory(stream.Events);
         aggregate.knownItem ??= knownItem;
-        return aggregate;
+        return (stream, aggregate);
     }
 
     public bool SearchRequested(SearchCatalogRequested requested) =>
         Request(
             requested.SearchCriteria,
+            requested.Playback,
             requested.TrustLevel,
             requested.RiskScore,
             requested.OccurredAt,
@@ -66,6 +70,7 @@ public sealed class SearchOrSeekHistory
 
     public bool Request(
         MusicSearchCriteria searchCriteria,
+        PlaybackProviderFilter? playback,
         int trustLevel,
         int riskScore,
         DateTimeOffset requestedAt,
@@ -79,6 +84,7 @@ public sealed class SearchOrSeekHistory
         Apply(
             new DiscoveryRequested(
                 searchCriteria,
+                playback,
                 trustLevel,
                 riskScore,
                 requestedAt,
@@ -296,7 +302,7 @@ public sealed class SearchOrSeekHistory
             isNew: true);
     }
 
-    public void KnownTrackRequested(
+    public bool KnownTrackRequested(
         TrackId trackId,
         PlaybackProviderFilter playback,
         DateTimeOffset requestedAt,
@@ -304,7 +310,7 @@ public sealed class SearchOrSeekHistory
     {
         if (hasKnownTrackRequested)
         {
-            return;
+            return false;
         }
 
         Apply(
@@ -314,6 +320,8 @@ public sealed class SearchOrSeekHistory
                 requestedAt,
                 correlationId),
             isNew: true);
+
+        return true;
     }
 
     public bool RequireStreamingLocationsForKnownTrack(
@@ -403,7 +411,7 @@ public sealed class SearchOrSeekHistory
         return true;
     }
 
-    public void AlbumCatalogLookupRequested(
+    public bool AlbumCatalogLookupRequested(
         ArtistId? artistId,
         AlbumId albumId,
         DateTimeOffset requestedAt,
@@ -411,7 +419,7 @@ public sealed class SearchOrSeekHistory
     {
         if (hasAlbumCatalogLookupRequested)
         {
-            return;
+            return false;
         }
 
         Apply(
@@ -421,10 +429,13 @@ public sealed class SearchOrSeekHistory
                 requestedAt,
                 correlationId),
             isNew: true);
+
+        return true;
     }
 
     public async Task<bool> SaveAsync(
-        ICatalogSearchDiscoveryRepository repository,
+        IEventStreamRepository<DiscoveryQueryKey, IDomainEvent> repository,
+        LoadedEventStream<DiscoveryQueryKey, IDomainEvent> stream,
         CancellationToken cancellationToken)
     {
         if (uncommittedEvents.Count == 0)
@@ -432,23 +443,18 @@ public sealed class SearchOrSeekHistory
             return true;
         }
 
-        var saved = criteria is not null
-            ? await repository.AppendAsync(
-                criteria,
-                version,
-                uncommittedEvents.AsReadOnly(),
-                cancellationToken)
-            : knownItem is not null
-                ? await repository.AppendAsync(
-                    knownItem,
-                    version,
-                    uncommittedEvents.AsReadOnly(),
-                    cancellationToken)
-                : throw new InvalidOperationException("Catalog discovery subject has not been established.");
+        _ = criteria is not null || knownItem is not null
+            ? true
+            : throw new InvalidOperationException("Catalog discovery subject has not been established.");
+
+        var saved = (await repository.AppendAsync(
+            stream,
+            uncommittedEvents.AsReadOnly(),
+            null,
+            cancellationToken)).Appended;
 
         if (saved)
         {
-            version += uncommittedEvents.Count;
             uncommittedEvents.Clear();
         }
 

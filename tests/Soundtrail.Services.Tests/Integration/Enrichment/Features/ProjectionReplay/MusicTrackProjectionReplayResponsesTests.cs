@@ -1,6 +1,7 @@
 using FluentAssertions;
+using Soundtrail.Adapters.Registry;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Contracts.EventSourcing;
+using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Commands;
@@ -12,14 +13,13 @@ using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack;
 using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Adapters.ProjectionDocuments;
-using Soundtrail.Adapters.MusicTrackEventStore;
+using Soundtrail.Services.Tests.Support;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Features.ProjectionReplay;
 
 [Collection(RavenEmbeddedCollection.Name)]
 public sealed class MusicTrackProjectionReplayResponsesTests
 {
-    private static readonly IMusicTrackStoredEventRecordTranslator Translator = MusicTrackStoredEventRecordTranslator.Default;
 
     [Fact]
     public async Task Given_Replayable_Stored_Events_When_Projecting_Then_The_Track_Becomes_Playable()
@@ -30,35 +30,30 @@ public sealed class MusicTrackProjectionReplayResponsesTests
             new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
             new RavenSaveMusicTrackProjection(session, Soundtrail.Adapters.Registry.TypeTranslationRegistry.Default));
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
-        var commandId = CommandId.For("ResolveMusicMetadata:mc_track_1");
-
-        var storedEvents = new MusicTrackStoredEventRecordDto[]
-        {
-            Translator.ToDto(
+        await handler.Handle(
+            new MusicTrackChangedCommand(
                 musicCatalogId,
-                1,
-                commandId,
-                new TrackDiscovered(
-                    "Song A",
-                    "Artist A",
-                    123000,
-                    "isrc-1",
-                    "mbid-1",
-                    LookupSource.MusicBrainz,
-                    new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))),
-            Translator.ToDto(
-                musicCatalogId,
-                2,
-                commandId,
-                new ProviderReferenceDiscovered(
-                    ProviderName.AppleMusic,
-                    "apple-1",
-                    new Uri("https://music.apple.com/us/song/song-a?i=apple-1"),
-                    LookupSource.Odesli,
-                    new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero)))
-        };
-
-        await handler.Handle(ToCommand(musicCatalogId, storedEvents), CancellationToken.None);
+                [
+                    new VersionedMusicTrackEvent(
+                        1,
+                        new TrackDiscovered(
+                            "Song A",
+                            "Artist A",
+                            123000,
+                            "isrc-1",
+                            "mbid-1",
+                            LookupSource.MusicBrainz,
+                            new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))),
+                    new VersionedMusicTrackEvent(
+                        2,
+                        new ProviderReferenceDiscovered(
+                            ProviderName.AppleMusic,
+                            "apple-1",
+                            new Uri("https://music.apple.com/us/song/song-a?i=apple-1"),
+                            LookupSource.Odesli,
+                            new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero)))
+                ]),
+            CancellationToken.None);
 
         await session.SaveChangesAsync(CancellationToken.None);
 
@@ -80,39 +75,36 @@ public sealed class MusicTrackProjectionReplayResponsesTests
     {
         using var raven = RavenEmbeddedTestDatabase.Create();
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
-        var commandId = CommandId.For("ResolveMusicMetadata:mc_track_1");
-
         using (var seedSession = raven.Store.OpenAsyncSession())
         {
-            await seedSession.StoreAsync(Translator.ToDto(
-                musicCatalogId,
-                1,
-                commandId,
-                new TrackDiscovered(
-                    "Song A",
-                    "Artist A",
-                    123000,
-                    "isrc-1",
-                    "mbid-1",
-                    LookupSource.MusicBrainz,
-                    new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero))));
-            await seedSession.StoreAsync(Translator.ToDto(
-                musicCatalogId,
-                2,
-                commandId,
-                new ProviderReferenceDiscovered(
-                    ProviderName.AppleMusic,
-                    "apple-1",
-                    new Uri("https://music.apple.com/us/song/song-a?i=apple-1"),
-                    LookupSource.Odesli,
-                    new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero))));
+            var repository = TestEventStreamRepositories.CreateMusicTrack(seedSession);
+            await repository.AppendAsync(
+                LoadedEventStream<MusicCatalogId, IMusicTrackEvent>.Empty(musicCatalogId),
+                [
+                    new TrackDiscovered(
+                        "Song A",
+                        "Artist A",
+                        123000,
+                        "isrc-1",
+                        "mbid-1",
+                        LookupSource.MusicBrainz,
+                        new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero)),
+                    new ProviderReferenceDiscovered(
+                        ProviderName.AppleMusic,
+                        "apple-1",
+                        new Uri("https://music.apple.com/us/song/song-a?i=apple-1"),
+                        LookupSource.Odesli,
+                        new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero))
+                ],
+                OperationId.From("ResolveMusicMetadata:mc_track_1"),
+                CancellationToken.None);
             await seedSession.SaveChangesAsync(CancellationToken.None);
         }
 
         using (var replaySession = raven.Store.OpenAsyncSession())
         {
             var replayHandler = new ReplayMusicTrackHandler(
-                new RavenLoadStoredMusicTrackEvents(replaySession, Translator),
+                new RavenLoadStoredMusicTrackEvents(replaySession, TypeTranslationRegistry.Default),
                 new MusicTrackChangedHandler(
                     new RavenLoadMusicTrackProjection(replaySession, new RavenMusicTrackProjectionMapper()),
                     new RavenSaveMusicTrackProjection(replaySession, Soundtrail.Adapters.Registry.TypeTranslationRegistry.Default)));
@@ -139,10 +131,8 @@ public sealed class MusicTrackProjectionReplayResponsesTests
     public async Task Given_An_Already_Applied_Event_Version_When_Projecting_Then_The_Duplicate_Is_Ignored()
     {
         using var raven = RavenEmbeddedTestDatabase.Create();
-        var storedEvent = Translator.ToDto(
-            MusicCatalogId.From("mc_track_1"),
+        var storedEvent = new VersionedMusicTrackEvent(
             1,
-            CommandId.For("ProjectionReplay:mc_track_1"),
             new TrackDiscovered(
                 "Song A",
                 "Artist A",
@@ -157,8 +147,8 @@ public sealed class MusicTrackProjectionReplayResponsesTests
             var handler = new MusicTrackChangedHandler(
                 new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
                 new RavenSaveMusicTrackProjection(session, Soundtrail.Adapters.Registry.TypeTranslationRegistry.Default));
-            await handler.Handle(ToCommand(MusicCatalogId.From("mc_track_1"), [storedEvent]), CancellationToken.None);
-            await handler.Handle(ToCommand(MusicCatalogId.From("mc_track_1"), [storedEvent]), CancellationToken.None);
+            await handler.Handle(new MusicTrackChangedCommand(MusicCatalogId.From("mc_track_1"), [storedEvent]), CancellationToken.None);
+            await handler.Handle(new MusicTrackChangedCommand(MusicCatalogId.From("mc_track_1"), [storedEvent]), CancellationToken.None);
             await session.SaveChangesAsync(CancellationToken.None);
         }
 
@@ -181,39 +171,36 @@ public sealed class MusicTrackProjectionReplayResponsesTests
             new RavenSaveMusicTrackProjection(session, Soundtrail.Adapters.Registry.TypeTranslationRegistry.Default));
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
 
-        var storedEvents = new MusicTrackStoredEventRecordDto[]
-        {
-            Translator.ToDto(
+        await handler.Handle(
+            new MusicTrackChangedCommand(
                 musicCatalogId,
-                1,
-                CommandId.For("ProjectionReplay:metadata"),
-                new MetadataCorrected(
-                    "Song A (Remastered)",
-                    "Artist A",
-                    "artist_a",
-                    "mb-artist-a",
-                    "Album A",
-                    "album_a",
-                    "mb-release-a",
-                    new DateOnly(2004, 6, 7),
-                    123000,
-                    "isrc-1",
-                    "mbid-1",
-                    "admin/repair",
-                    new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero))),
-            Translator.ToDto(
-                musicCatalogId,
-                2,
-                CommandId.For("ProjectionReplay:artwork"),
-                new ArtworkDiscovered(
-                    CatalogEntityKind.Track,
-                    null,
-                    new Uri("https://images.example.com/track.png"),
-                    "worker/musicbrainz",
-                    new DateTimeOffset(2026, 6, 16, 12, 1, 0, TimeSpan.Zero)))
-        };
-
-        await handler.Handle(ToCommand(musicCatalogId, storedEvents), CancellationToken.None);
+                [
+                    new VersionedMusicTrackEvent(
+                        1,
+                        new MetadataCorrected(
+                            "Song A (Remastered)",
+                            "Artist A",
+                            "artist_a",
+                            "mb-artist-a",
+                            "Album A",
+                            "album_a",
+                            "mb-release-a",
+                            new DateOnly(2004, 6, 7),
+                            123000,
+                            "isrc-1",
+                            "mbid-1",
+                            "admin/repair",
+                            new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero))),
+                    new VersionedMusicTrackEvent(
+                        2,
+                        new ArtworkDiscovered(
+                            CatalogEntityKind.Track,
+                            null,
+                            new Uri("https://images.example.com/track.png"),
+                            "worker/musicbrainz",
+                            new DateTimeOffset(2026, 6, 16, 12, 1, 0, TimeSpan.Zero)))
+                ]),
+            CancellationToken.None);
 
         await session.SaveChangesAsync(CancellationToken.None);
 
@@ -233,13 +220,4 @@ public sealed class MusicTrackProjectionReplayResponsesTests
         projection.ProjectionVersion.Should().Be(2);
     }
 
-    private static MusicTrackChangedCommand ToCommand(
-        MusicCatalogId musicCatalogId,
-        IReadOnlyList<MusicTrackStoredEventRecordDto> storedEvents) =>
-        new(
-            musicCatalogId,
-            storedEvents
-                .OrderBy(x => x.Version)
-                .Select(x => new VersionedMusicTrackEvent(x.Version, Translator.ToDomainObject(x)))
-                .ToArray());
 }

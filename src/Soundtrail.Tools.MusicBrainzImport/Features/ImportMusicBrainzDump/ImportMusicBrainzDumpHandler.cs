@@ -1,7 +1,9 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Commands;
+using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump.Input;
@@ -10,7 +12,7 @@ namespace Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump;
 
 public sealed class ImportMusicBrainzDumpHandler(
     IReadMusicBrainzDumpPort readPort,
-    IMusicTrackEventRepository repository) : IHandler<ImportMusicBrainzDumpCommand>
+    IEventStreamRepository<MusicCatalogId, IMusicTrackEvent> repository) : IHandler<ImportMusicBrainzDumpCommand>
 {
     public async Task Handle(
         ImportMusicBrainzDumpCommand command,
@@ -27,10 +29,10 @@ public sealed class ImportMusicBrainzDumpHandler(
             }
 
             var musicCatalogId = BuildMusicCatalogId(record);
-            var aggregate = await CatalogEntityAggregate.LoadAsync(repository, musicCatalogId, cancellationToken);
+            var loaded = await MusicTrack.LoadAsync(repository, musicCatalogId, cancellationToken);
             var commandId = BuildCommandId(record);
 
-            aggregate.RecordMusicCatalogMetadataFetched(
+            loaded.Aggregate.MetadataFetched(
                 new MusicCatalogMetadataFetched(
                     commandId,
                     musicCatalogId,
@@ -54,7 +56,7 @@ public sealed class ImportMusicBrainzDumpHandler(
                         BuildAlbumId(record)),
                     CorrelationId.From($"musicbrainz-dump:{record.SourceRecordKey}")));
 
-            var append = await aggregate.SaveAsync(repository, commandId, cancellationToken);
+            var append = await loaded.Aggregate.SaveAsync(repository, loaded.Stream, commandId, cancellationToken);
             if (!append.Appended || append.AppendedEvents.Count == 0)
             {
                 continue;

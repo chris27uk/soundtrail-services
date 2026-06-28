@@ -17,21 +17,17 @@ public sealed class WolverineCommandBus(
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        object message = command switch
+        var registry = TypeTranslationRegistry.Default;
+        object message;
+
+        try
         {
-            SearchCatalogRequested requested => TypeTranslationRegistry.Default.Translate<CatalogSearchAttemptDto>(requested),
-            KnownArtistRequested requested => TypeTranslationRegistry.Default.Translate<KnownArtistRequestedDto>(requested),
-            KnownAlbumRequested requested => TypeTranslationRegistry.Default.Translate<KnownAlbumRequestedDto>(requested),
-            KnownTrackRequested requested => TypeTranslationRegistry.Default.Translate<KnownTrackRequestedDto>(requested),
-            AssessMusicTrackCommand requested => TypeTranslationRegistry.Default.Translate<AssessMusicTrackCommandDto>(requested),
-            LookupTrackMetadataCommand requested => TypeTranslationRegistry.Default.Translate<LookupTrackMetadataCommandDto>(requested),
-            LookupStreamingLocationsCommand requested => TypeTranslationRegistry.Default.Translate<LookupStreamingLocationsCommandDto>(requested),
-            RunDiscoveryBacklogSchedulingCommand requested => TypeTranslationRegistry.Default.Translate<RunDiscoveryBacklogSchedulingCommandDto>(requested),
-            ApplyMusicCatalogLookupAttemptedToCatalogCommand requested => TypeTranslationRegistry.Default.Translate<ApplyMusicCatalogLookupAttemptedToCatalogCommandDto>(requested),
-            ApplyMusicCatalogLookupAttemptedToDiscoveryCommand requested => TypeTranslationRegistry.Default.Translate<ApplyMusicCatalogLookupAttemptedToDiscoveryCommandDto>(requested),
-            MusicCatalogLookupAttempted requested => TypeTranslationRegistry.Default.Translate<MusicCatalogLookupAttemptedDto>(requested),
-            _ => command
-        };
+            message = registry.ToDto(command);
+        }
+        catch (InvalidOperationException)
+        {
+            message = command;
+        }
 
         return messageBus.SendAsync(message).AsTask();
     }

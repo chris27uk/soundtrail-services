@@ -22,7 +22,7 @@ public static class GetTrackEndpoints
                     new GetTrackCommand(artist, album, track, providerFilter),
                     cancellationToken);
 
-                return response is null ? Results.NotFound() : Results.Ok(TypeTranslationRegistry.Default.Translate<Soundtrail.Contracts.Api.TrackDetailsResponseDto>(response));
+                return response is null ? Results.NotFound() : Results.Ok(TypeTranslationRegistry.Default.ToDto<Soundtrail.Contracts.Api.TrackDetailsResponseDto>(response));
             });
 
         return endpoints;
