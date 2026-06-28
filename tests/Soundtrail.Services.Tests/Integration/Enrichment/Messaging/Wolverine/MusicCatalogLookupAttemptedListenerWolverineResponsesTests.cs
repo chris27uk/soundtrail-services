@@ -1,7 +1,8 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
-using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Domain.Enrichment.Commands;
+using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -10,7 +11,7 @@ namespace Soundtrail.Services.Tests.Integration.Enrichment.Messaging.Wolverine;
 public sealed class MusicCatalogLookupAttemptedListenerWolverineResponsesTests
 {
     [Fact]
-    public async Task Given_A_Deferred_Report_When_Handled_Then_Discovery_Is_Deferred()
+    public async Task Given_A_Deferred_Report_When_Handled_Then_Catalog_And_Discovery_Follow_Up_Commands_Are_Sent()
     {
         var env = MusicCatalogLookupAttemptedHandlerTestEnvironment.Create();
         var listener = new MusicCatalogLookupAttemptedListener(env.Handler);
@@ -31,11 +32,12 @@ public sealed class MusicCatalogLookupAttemptedListenerWolverineResponsesTests
                 null),
             null!);
 
-        env.StoredEvents("search:track:rare unknown song").Last().Should().BeOfType<DiscoveryDeferred>();
+        env.Bus.SentCommands.Should().ContainSingle(x => x is ApplyMusicCatalogLookupAttemptedToCatalogCommand);
+        env.Bus.SentCommands.Should().ContainSingle(x => x is ApplyMusicCatalogLookupAttemptedToDiscoveryCommand);
     }
 
     [Fact]
-    public async Task Given_A_Failed_Report_When_Handled_Then_Discovery_Is_Failed()
+    public async Task Given_A_Failed_Report_When_Handled_Then_The_Original_Lookup_Attempt_Is_Preserved_In_Both_Follow_Up_Commands()
     {
         var env = MusicCatalogLookupAttemptedHandlerTestEnvironment.Create();
         var listener = new MusicCatalogLookupAttemptedListener(env.Handler);
@@ -56,6 +58,9 @@ public sealed class MusicCatalogLookupAttemptedListenerWolverineResponsesTests
                 null),
             null!);
 
-        env.StoredEvents("search:track:rare unknown song").Last().Should().BeOfType<DiscoveryFailed>();
+        env.Bus.SentCommands.OfType<ApplyMusicCatalogLookupAttemptedToCatalogCommand>().Single().Attempted.Outcome.Status
+            .Should().Be(MusicCatalogLookupOutcomeStatus.Failed);
+        env.Bus.SentCommands.OfType<ApplyMusicCatalogLookupAttemptedToDiscoveryCommand>().Single().Attempted.Outcome.Status
+            .Should().Be(MusicCatalogLookupOutcomeStatus.Failed);
     }
 }

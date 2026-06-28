@@ -18,6 +18,8 @@ public static class CommandMessageMappings
             LookupTrackMetadataCommand musicBrainz => TypeTranslationRegistry.Default.Translate<LookupTrackMetadataCommandDto>(musicBrainz),
             LookupStreamingLocationsCommand playback => TypeTranslationRegistry.Default.Translate<LookupStreamingLocationsCommandDto>(playback),
             RunDiscoveryBacklogSchedulingCommand backlog => TypeTranslationRegistry.Default.Translate<RunDiscoveryBacklogSchedulingCommandDto>(backlog),
+            ApplyMusicCatalogLookupAttemptedToCatalogCommand catalog => TypeTranslationRegistry.Default.Translate<ApplyMusicCatalogLookupAttemptedToCatalogCommandDto>(catalog),
+            ApplyMusicCatalogLookupAttemptedToDiscoveryCommand discovery => TypeTranslationRegistry.Default.Translate<ApplyMusicCatalogLookupAttemptedToDiscoveryCommandDto>(discovery),
             _ => command
         };
 }

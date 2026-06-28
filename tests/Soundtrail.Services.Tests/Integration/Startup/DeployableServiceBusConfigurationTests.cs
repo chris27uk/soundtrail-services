@@ -31,6 +31,8 @@ public sealed class DeployableServiceBusConfigurationTests
         options.MusicBrainzLookupQueueName.Should().Be("lookup-musicbrainz");
         options.PlaybackReferencesLookupQueueName.Should().Be("lookup-playback-references");
         options.EnrichmentResponsesQueueName.Should().Be("enrichment-responses");
+        options.ApplyMusicCatalogLookupAttemptedToCatalogQueueName.Should().Be("apply-lookup-attempted-to-catalog");
+        options.ApplyMusicCatalogLookupAttemptedToDiscoveryQueueName.Should().Be("apply-lookup-attempted-to-discovery");
         options.MusicTrackEventsQueueName.Should().Be("music-track-events");
     }
 

@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -9,12 +10,32 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Execution.ApplyLook
 public sealed class MusicCatalogLookupAttemptedHandlerTests
 {
     [Fact]
+    public async Task Given_A_Lookup_Attempt_When_Handled_Then_Catalog_And_Discovery_Follow_Up_Commands_Are_Sent()
+    {
+        var env = MusicCatalogLookupAttemptedHandlerTestEnvironment.Create();
+        var attempted = new MusicCatalogLookupAttempted(
+            CommandId.For("LookupTrackMetadata:mc_track_1"),
+            MusicCatalogId.From("mc_track_1"),
+            LookupSource.MusicBrainz,
+            LookupPriorityBand.High,
+            env.Now,
+            CorrelationId.From("corr-1"),
+            MusicCatalogLookupOutcome.Completed(),
+            null);
+
+        await env.Handler.Handle(attempted, CancellationToken.None);
+
+        env.Bus.SentCommands.Should().ContainSingle(x => x is ApplyMusicCatalogLookupAttemptedToCatalogCommand);
+        env.Bus.SentCommands.Should().ContainSingle(x => x is ApplyMusicCatalogLookupAttemptedToDiscoveryCommand);
+    }
+
+    [Fact]
     public async Task Given_A_Deferred_Report_When_Handled_Then_All_Tracked_Discoveries_Are_Deferred()
     {
         var env = MusicCatalogLookupAttemptedHandlerTestEnvironment.Create();
 
-        await env.Handler.Handle(
-            new MusicCatalogLookupAttempted(
+        await env.DiscoveryHandler.Handle(
+            new ApplyMusicCatalogLookupAttemptedToDiscoveryCommand(new MusicCatalogLookupAttempted(
                 CommandId.For("LookupTrackMetadata:mc_track_1"),
                 MusicCatalogId.From("mc_track_1"),
                 LookupSource.MusicBrainz,
@@ -25,7 +46,7 @@ public sealed class MusicCatalogLookupAttemptedHandlerTests
                     "MusicBrainz budget temporarily unavailable",
                     env.Now.AddMinutes(1),
                     60),
-                null),
+                null)),
             CancellationToken.None);
 
         env.StoredEvents("search:track:rare unknown song").Last().Should().BeOfType<DiscoveryDeferred>();
@@ -36,8 +57,8 @@ public sealed class MusicCatalogLookupAttemptedHandlerTests
     {
         var env = MusicCatalogLookupAttemptedHandlerTestEnvironment.Create();
 
-        await env.Handler.Handle(
-            new MusicCatalogLookupAttempted(
+        await env.DiscoveryHandler.Handle(
+            new ApplyMusicCatalogLookupAttemptedToDiscoveryCommand(new MusicCatalogLookupAttempted(
                 CommandId.For("LookupTrackMetadata:mc_track_1"),
                 MusicCatalogId.From("mc_track_1"),
                 LookupSource.MusicBrainz,
@@ -45,7 +66,7 @@ public sealed class MusicCatalogLookupAttemptedHandlerTests
                 env.Now,
                 CorrelationId.From("corr-1"),
                 MusicCatalogLookupOutcome.Failed("Lookup failed"),
-                null),
+                null)),
             CancellationToken.None);
 
         env.StoredEvents("search:track:rare unknown song").Last().Should().BeOfType<DiscoveryFailed>();
@@ -57,8 +78,8 @@ public sealed class MusicCatalogLookupAttemptedHandlerTests
         var env = MusicCatalogLookupAttemptedHandlerTestEnvironment.Create();
         var before = env.StoredEvents("search:track:rare unknown song").Count;
 
-        await env.Handler.Handle(
-            new MusicCatalogLookupAttempted(
+        await env.DiscoveryHandler.Handle(
+            new ApplyMusicCatalogLookupAttemptedToDiscoveryCommand(new MusicCatalogLookupAttempted(
                 CommandId.For("LookupTrackMetadata:mc_track_1"),
                 MusicCatalogId.From("mc_track_1"),
                 LookupSource.MusicBrainz,
@@ -66,7 +87,7 @@ public sealed class MusicCatalogLookupAttemptedHandlerTests
                 env.Now,
                 CorrelationId.From("corr-1"),
                 MusicCatalogLookupOutcome.Failed("Lookup failed"),
-                null),
+                null)),
             CancellationToken.None);
 
         env.StoredEvents("search:track:rare unknown song").Should().HaveCount(before + 2);
@@ -80,8 +101,8 @@ public sealed class MusicCatalogLookupAttemptedHandlerTests
         var env = MusicCatalogLookupAttemptedHandlerTestEnvironment.Create();
         var before = env.StoredEvents("search:track:rare unknown song").Count;
 
-        await env.Handler.Handle(
-            new MusicCatalogLookupAttempted(
+        await env.DiscoveryHandler.Handle(
+            new ApplyMusicCatalogLookupAttemptedToDiscoveryCommand(new MusicCatalogLookupAttempted(
                 CommandId.For("LookupTrackMetadata:mc_track_1"),
                 MusicCatalogId.From("mc_track_1"),
                 LookupSource.MusicBrainz,
@@ -89,7 +110,7 @@ public sealed class MusicCatalogLookupAttemptedHandlerTests
                 env.Now,
                 CorrelationId.From("corr-1"),
                 MusicCatalogLookupOutcome.Completed(),
-                null),
+                null)),
             CancellationToken.None);
 
         env.StoredEvents("search:track:rare unknown song").Should().HaveCount(before + 1);

@@ -3,6 +3,7 @@ using Raven.Client.Documents.Session;
 using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
+using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog.Commands;
@@ -48,15 +49,13 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
 
         using (var metadataSession = raven.Store.OpenAsyncSession())
         {
-            var listener = CreateListener(metadataSession);
-            await listener.Handle(ResolvedMetadataAttemptDto(), null!);
+            await ApplyAttemptAsync(metadataSession, ResolvedMetadataAttemptDto());
             await metadataSession.SaveChangesAsync();
         }
 
         using (var playbackSession = raven.Store.OpenAsyncSession())
         {
-            var listener = CreateListener(playbackSession);
-            await listener.Handle(PlaybackAttemptDto(), null!);
+            await ApplyAttemptAsync(playbackSession, PlaybackAttemptDto());
             await playbackSession.SaveChangesAsync();
         }
 
@@ -82,11 +81,25 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
         status!.Status.Should().Be("Completed");
     }
 
-    private static MusicCatalogLookupAttemptedListener CreateListener(IAsyncDocumentSession session) =>
-        new(new MusicCatalogLookupAttemptedHandler(
-            new RavenMusicTrackStreamStore(session, Translator),
-            new RavenCatalogSearchTrackingStore(session.Advanced.DocumentStore, session),
-            new RavenMusicCatalogMetadataFetchedCatalogSearchDiscoveryRepository(session)));
+    private static async Task ApplyAttemptAsync(IAsyncDocumentSession session, MusicCatalogLookupAttemptedDto dto)
+    {
+        var catalogListener = new ApplyMusicCatalogLookupAttemptedToCatalogListener(
+            new ApplyMusicCatalogLookupAttemptedToCatalogHandler(
+                new RavenMusicTrackStreamStore(session, Translator)));
+        var discoveryListener = new ApplyMusicCatalogLookupAttemptedToDiscoveryListener(
+            new ApplyMusicCatalogLookupAttemptedToDiscoveryHandler(
+                new RavenCatalogSearchTrackingStore(session.Advanced.DocumentStore, session),
+                new RavenMusicCatalogMetadataFetchedCatalogSearchDiscoveryRepository(session)));
+
+        await catalogListener.Handle(
+            new ApplyMusicCatalogLookupAttemptedToCatalogCommandDto(dto),
+            session,
+            CancellationToken.None);
+        await discoveryListener.Handle(
+            new ApplyMusicCatalogLookupAttemptedToDiscoveryCommandDto(dto),
+            session,
+            CancellationToken.None);
+    }
 
     private static async Task ReplayProjectionsAsync(RavenEmbeddedTestDatabase raven)
     {

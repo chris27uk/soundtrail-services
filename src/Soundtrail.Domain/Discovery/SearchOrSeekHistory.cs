@@ -246,6 +246,36 @@ public sealed class SearchOrSeekHistory
         return true;
     }
 
+    public bool LookupStarted(
+        LookupPriorityBand priority,
+        DateTimeOffset startedAt) =>
+        Start(priority, "Lookup started", startedAt);
+
+    public bool LookupCompleted(
+        LookupPriorityBand priority,
+        DateTimeOffset completedAt) =>
+        Complete(priority, "Discovery completed", completedAt);
+
+    public bool LookupDeferred(
+        int? estimatedRetryAfterSeconds,
+        DateTimeOffset? earliestExpectedCompletionAt,
+        string reason,
+        DateTimeOffset deferredAt) =>
+        Defer(
+            estimatedRetryAfterSeconds,
+            earliestExpectedCompletionAt,
+            reason,
+            deferredAt);
+
+    public bool LookupFailed(
+        LookupPriorityBand priority,
+        string reason,
+        DateTimeOffset failedAt)
+    {
+        LookupStarted(priority, failedAt);
+        return Fail(reason, failedAt);
+    }
+
     public void StreamingLocationsRequired(
         MusicCatalogId musicCatalogId,
         LookupPriorityBand priority,

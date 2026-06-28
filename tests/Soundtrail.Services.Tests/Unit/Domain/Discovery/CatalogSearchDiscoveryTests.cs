@@ -114,6 +114,43 @@ public sealed class CatalogSearchDiscoveryTests
     }
 
     [Fact]
+    public async Task Given_A_Planned_Discovery_When_A_Lookup_Starts_Then_The_Lookup_Started_Transition_Is_Emitted()
+    {
+        var repository = new CatalogSearchDiscoveryRepositoryFake();
+        var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
+        var discovery = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
+        discovery.SearchRequested(Request(searchTerm));
+        discovery.Plan(LookupPriorityBand.High, 30, null, "Planner queued lookup", Clock);
+        await discovery.SaveAsync(repository, CancellationToken.None);
+        discovery = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
+
+        var changed = discovery.LookupStarted(LookupPriorityBand.High, Clock.AddSeconds(5));
+        await discovery.SaveAsync(repository, CancellationToken.None);
+
+        changed.Should().BeTrue();
+        repository.GetStoredEvents(searchTerm).Last().Should().BeOfType<DiscoveryStarted>();
+    }
+
+    [Fact]
+    public async Task Given_A_Planned_Discovery_When_A_Lookup_Fails_Then_The_Lifecycle_Starts_Then_Fails()
+    {
+        var repository = new CatalogSearchDiscoveryRepositoryFake();
+        var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
+        var discovery = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
+        discovery.SearchRequested(Request(searchTerm));
+        discovery.Plan(LookupPriorityBand.High, 30, null, "Planner queued lookup", Clock);
+        await discovery.SaveAsync(repository, CancellationToken.None);
+        discovery = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
+
+        var changed = discovery.LookupFailed(LookupPriorityBand.High, "Lookup failed", Clock.AddSeconds(5));
+        await discovery.SaveAsync(repository, CancellationToken.None);
+
+        changed.Should().BeTrue();
+        repository.GetStoredEvents(searchTerm)[^2].Should().BeOfType<DiscoveryStarted>();
+        repository.GetStoredEvents(searchTerm)[^1].Should().BeOfType<DiscoveryFailed>();
+    }
+
+    [Fact]
     public async Task Given_A_Rejected_Discovery_When_Planning_Then_The_Transition_Is_Rejected()
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
