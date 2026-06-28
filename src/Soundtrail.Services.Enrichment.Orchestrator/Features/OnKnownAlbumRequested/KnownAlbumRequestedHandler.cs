@@ -12,12 +12,12 @@ public sealed class KnownAlbumRequestedHandler(IEventStreamRepository<DiscoveryQ
         KnownAlbumRequested request,
         CancellationToken cancellationToken = default)
     {
-        var loaded = await SearchOrSeekHistory.LoadAsync(
+        var loaded = await KnownItemDiscovery.LoadAsync(
             discoveryRepository,
             KnownCatalogItem.ForAlbum(request.AlbumId),
             cancellationToken);
 
-        if (!loaded.Aggregate.AlbumCatalogLookupRequested(
+        if (!loaded.Aggregate.AlbumRequested(
                 null,
                 request.AlbumId,
                 request.OccurredAt,

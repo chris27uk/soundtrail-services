@@ -20,7 +20,7 @@ public sealed class SearchCatalogHandler(
         if (!local.IsComplete && discovery is null)
         {
             var requested = command.ToCatalogSearchAttempt();
-            var loaded = await SearchOrSeekHistory.LoadAsync(
+            var loaded = await SearchDiscoveryHistory.LoadAsync(
                 discoveryRepository,
                 requested.SearchCriteria,
                 cancellationToken);

@@ -24,7 +24,7 @@ public sealed class ApplyMusicCatalogLookupAttemptedToDiscoveryHandler(
                 var existingTrackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(attempted.MusicCatalogId, cancellationToken);
                 foreach (var tracking in existingTrackings)
                 {
-                    var loaded = await SearchOrSeekHistory.LoadAsync(discoveryRepository, tracking.SearchCriteria, cancellationToken);
+                    var loaded = await SearchDiscoveryHistory.LoadAsync(discoveryRepository, tracking.SearchCriteria, cancellationToken);
                     if (!loaded.Aggregate.LookupStarted(attempted.Priority, attempted.CreatedAt))
                     {
                         continue;
@@ -60,7 +60,7 @@ public sealed class ApplyMusicCatalogLookupAttemptedToDiscoveryHandler(
 
             foreach (var searchTerm in discoverySearchTerms)
             {
-                var loaded = await SearchOrSeekHistory.LoadAsync(discoveryRepository, searchTerm, cancellationToken);
+                var loaded = await SearchDiscoveryHistory.LoadAsync(discoveryRepository, searchTerm, cancellationToken);
                 if (!loaded.Aggregate.LookupCompleted(fetched.Priority, fetched.CreatedAt))
                 {
                     continue;
@@ -78,7 +78,7 @@ public sealed class ApplyMusicCatalogLookupAttemptedToDiscoveryHandler(
         var trackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(attempted.MusicCatalogId, cancellationToken);
         foreach (var tracking in trackings)
         {
-            var loaded = await SearchOrSeekHistory.LoadAsync(discoveryRepository, tracking.SearchCriteria, cancellationToken);
+            var loaded = await SearchDiscoveryHistory.LoadAsync(discoveryRepository, tracking.SearchCriteria, cancellationToken);
             var changed = attempted.Outcome.Status switch
             {
                 MusicCatalogLookupOutcomeStatus.Deferred => loaded.Aggregate.LookupDeferred(
