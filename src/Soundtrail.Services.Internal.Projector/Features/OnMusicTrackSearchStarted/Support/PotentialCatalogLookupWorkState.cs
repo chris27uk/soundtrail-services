@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Support;
+namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Support;
 
 public sealed class PotentialCatalogLookupWorkState
 {

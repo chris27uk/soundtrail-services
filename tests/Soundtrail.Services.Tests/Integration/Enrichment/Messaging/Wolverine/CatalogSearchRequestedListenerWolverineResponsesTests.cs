@@ -19,7 +19,7 @@ public sealed class CatalogSearchRequestedListenerWolverineResponsesTests
             .Should()
             .ContainSingle()
             .Which.Should()
-            .BeOfType<MusicTrackSearchStarted>();
+            .BeOfType<CatalogSearchCandidateRecorded>();
     }
 
     [Fact]
@@ -30,7 +30,7 @@ public sealed class CatalogSearchRequestedListenerWolverineResponsesTests
 
         await env.HandleUnschedulableRequest();
 
-        env.DiscoveryRepository.GetStoredEvents(criteria).Should().ContainSingle().Which.Should().BeOfType<MusicTrackSearchStarted>();
+        env.DiscoveryRepository.GetStoredEvents(criteria).Should().ContainSingle().Which.Should().BeOfType<CatalogSearchCandidateRecorded>();
     }
 
     [Fact]
@@ -54,6 +54,6 @@ public sealed class CatalogSearchRequestedListenerWolverineResponsesTests
         env.DiscoveryRepository
             .GetStoredEvents(MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks))
             .Should()
-            .OnlyContain(x => x is MusicTrackSearchStarted);
+            .OnlyContain(x => x is CatalogSearchCandidateRecorded);
     }
 }

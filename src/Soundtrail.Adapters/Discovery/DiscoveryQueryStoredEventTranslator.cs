@@ -234,16 +234,16 @@ public sealed class DiscoveryQueryStoredEventTranslator : ITypeTranslationRegist
                 dto.CompletedAtUtc),
             domainEvent => domainEvent.CompletedAt);
 
-        registry.RegisterStoredEventPair<MusicTrackSearchStarted, MusicTrackSearchStartedEventDataRecordDto>(
-            nameof(MusicTrackSearchStarted),
-            domainEvent => new MusicTrackSearchStartedEventDataRecordDto(
+        registry.RegisterStoredEventPair<CatalogSearchCandidateRecorded, CatalogSearchCandidateRecordedEventDataRecordDto>(
+            nameof(CatalogSearchCandidateRecorded),
+            domainEvent => new CatalogSearchCandidateRecordedEventDataRecordDto(
                 DiscoveryQueryKey.StableValueFor(domainEvent.SearchCriteria),
                 domainEvent.MusicCatalogId.Value,
                 domainEvent.TrustLevel,
                 domainEvent.RiskScore,
                 domainEvent.StartedAt,
                 domainEvent.CorrelationId.Value),
-            dto => new MusicTrackSearchStarted(
+            dto => new CatalogSearchCandidateRecorded(
                 DiscoveryQueryKey.ToMusicSearchCriteria(dto.Criteria),
                 MusicCatalogId.From(dto.MusicCatalogId),
                 dto.TrustLevel,

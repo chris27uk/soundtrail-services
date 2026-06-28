@@ -4,7 +4,7 @@ using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Domain.Discovery.Events;
 
-public sealed record MusicTrackSearchStarted(
+public sealed record CatalogSearchCandidateRecorded(
     MusicSearchCriteria SearchCriteria,
     MusicCatalogId MusicCatalogId,
     int TrustLevel,

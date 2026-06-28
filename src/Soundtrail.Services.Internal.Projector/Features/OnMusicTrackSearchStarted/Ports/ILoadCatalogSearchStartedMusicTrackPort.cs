@@ -1,11 +1,11 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Support;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Support;
 
-namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Ports;
+namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Ports;
 
-public interface ILoadCatalogSearchStartedMusicTrackPort
+public interface ILoadCatalogSearchCandidateMusicTrackPort
 {
-    Task<CatalogSearchStartedMusicTrack?> LoadAsync(
+    Task<CatalogSearchCandidateMusicTrack?> LoadAsync(
         MusicCatalogId musicCatalogId,
         CancellationToken cancellationToken);
 }

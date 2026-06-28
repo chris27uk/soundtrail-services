@@ -5,27 +5,27 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Ports;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Support;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Ports;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Support;
 using Soundtrail.Adapters.Discovery;
 
-namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted;
+namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded;
 
-public sealed class MusicTrackSearchStartedHandler(
+public sealed class CatalogSearchCandidateRecordedHandler(
     ILoadPotentialCatalogLookupWorkPort loadWorkPort,
     ISavePotentialCatalogLookupWorkPort saveWorkPort,
-    ILoadCatalogSearchStartedMusicTrackPort loadMusicTrackPort,
-    ILoadCatalogSearchStartedTrackingPort loadTrackingPort,
-    ISaveCatalogSearchStartedTrackingPort saveTrackingPort,
+    ILoadCatalogSearchCandidateMusicTrackPort loadMusicTrackPort,
+    ILoadCatalogSearchCandidateTrackingPort loadTrackingPort,
+    ISaveCatalogSearchCandidateTrackingPort saveTrackingPort,
     ICommandBus commandBus)
 {
     public async Task Handle(
-        MusicTrackSearchStartedCommand command,
+        CatalogSearchCandidateRecordedCommand command,
         CancellationToken cancellationToken = default)
     {
         foreach (var item in command.Events.OrderBy(x => x.Version))
         {
-            var @event = (MusicTrackSearchStarted)item.Event;
+            var @event = (CatalogSearchCandidateRecorded)item.Event;
             var workDocument = await loadWorkPort.LoadAsync(@event.MusicCatalogId, cancellationToken);
             var appliedEventId = $"{DiscoveryQueryKey.StableValueFor(command.SearchCriteria)}:{item.Version}";
 
@@ -53,7 +53,7 @@ public sealed class MusicTrackSearchStartedHandler(
     }
 
     private async Task UpsertTrackingsAsync(
-        MusicTrackSearchStarted @event,
+        CatalogSearchCandidateRecorded @event,
         CancellationToken cancellationToken)
     {
         var track = await loadMusicTrackPort.LoadAsync(@event.MusicCatalogId, cancellationToken);
@@ -78,7 +78,7 @@ public sealed class MusicTrackSearchStartedHandler(
 
     private void Apply(
         PotentialCatalogLookupWorkState document,
-        MusicTrackSearchStarted @event,
+        CatalogSearchCandidateRecorded @event,
         string appliedEventId)
     {
         document.RequestCount += 1;
@@ -94,8 +94,8 @@ public sealed class MusicTrackSearchStartedHandler(
     }
 
     private static IReadOnlyList<MusicSearchCriteria> BuildSearchTerms(
-        MusicTrackSearchStarted @event,
-        CatalogSearchStartedMusicTrack? track)
+        CatalogSearchCandidateRecorded @event,
+        CatalogSearchCandidateMusicTrack? track)
     {
         return MusicSearchTermSet.ForResolvedTrack(
             @event.MusicCatalogId,

@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Adapters.Documents;
+namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Adapters.Documents;
 
 public sealed class PotentialCatalogLookupWorkRecordDto
 {

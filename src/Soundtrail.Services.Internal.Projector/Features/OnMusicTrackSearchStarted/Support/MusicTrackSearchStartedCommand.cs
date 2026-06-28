@@ -1,8 +1,8 @@
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Search;
 
-namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Support;
+namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Support;
 
-public sealed record MusicTrackSearchStartedCommand(
+public sealed record CatalogSearchCandidateRecordedCommand(
     MusicSearchCriteria SearchCriteria,
     IReadOnlyList<VersionedCatalogSearchDiscoveryEvent> Events);

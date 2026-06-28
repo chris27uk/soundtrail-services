@@ -1,14 +1,14 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.Persistence;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Ports;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Support;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Ports;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Support;
 
-namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Adapters;
+namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Adapters;
 
-public sealed class RavenLoadCatalogSearchStartedMusicTrack(IAsyncDocumentSession session) : ILoadCatalogSearchStartedMusicTrackPort
+public sealed class RavenLoadCatalogSearchCandidateMusicTrack(IAsyncDocumentSession session) : ILoadCatalogSearchCandidateMusicTrackPort
 {
-    public async Task<CatalogSearchStartedMusicTrack?> LoadAsync(
+    public async Task<CatalogSearchCandidateMusicTrack?> LoadAsync(
         MusicCatalogId musicCatalogId,
         CancellationToken cancellationToken)
     {
@@ -18,6 +18,6 @@ public sealed class RavenLoadCatalogSearchStartedMusicTrack(IAsyncDocumentSessio
 
         return document is null
             ? null
-            : new CatalogSearchStartedMusicTrack(document.ArtistId, document.AlbumId);
+            : new CatalogSearchCandidateMusicTrack(document.ArtistId, document.AlbumId);
     }
 }

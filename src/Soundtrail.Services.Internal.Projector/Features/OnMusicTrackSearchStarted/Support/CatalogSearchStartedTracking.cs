@@ -1,5 +1,5 @@
 using Soundtrail.Domain.Search;
 
-namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Support;
+namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Support;
 
-public sealed record CatalogSearchStartedTracking(MusicSearchCriteria SearchCriteria, string MusicCatalogId, DateTimeOffset UpdatedAt);
+public sealed record CatalogSearchCandidateTracking(MusicSearchCriteria SearchCriteria, string MusicCatalogId, DateTimeOffset UpdatedAt);

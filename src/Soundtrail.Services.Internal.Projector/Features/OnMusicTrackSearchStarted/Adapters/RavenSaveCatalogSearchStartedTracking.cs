@@ -1,13 +1,13 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Adapters.Documents;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Ports;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Adapters.Documents;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Ports;
 using Soundtrail.Adapters.Discovery;
 
-namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Adapters;
+namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Adapters;
 
-public sealed class RavenSaveCatalogSearchStartedTracking(IAsyncDocumentSession session) : ISaveCatalogSearchStartedTrackingPort
+public sealed class RavenSaveCatalogSearchCandidateTracking(IAsyncDocumentSession session) : ISaveCatalogSearchCandidateTrackingPort
 {
     public async Task SaveAsync(
         MusicSearchCriteria searchCriteria,

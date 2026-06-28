@@ -27,7 +27,7 @@ public sealed class RecordCatalogSearchCandidateHandlerTests
             .Should()
             .ContainSingle()
             .Which.Should()
-            .BeOfType<MusicTrackSearchStarted>()
+            .BeOfType<CatalogSearchCandidateRecorded>()
             .Which.MusicCatalogId.Should()
             .Be(MusicCatalogId.From("mc_track_1"));
     }

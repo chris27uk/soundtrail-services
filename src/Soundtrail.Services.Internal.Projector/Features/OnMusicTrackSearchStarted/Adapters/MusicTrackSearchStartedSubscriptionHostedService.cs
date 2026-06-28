@@ -8,18 +8,18 @@ using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Support;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Support;
 using Soundtrail.Adapters.Registry;
 
-namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Adapters;
+namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Adapters;
 
-public sealed class MusicTrackSearchStartedSubscriptionHostedService(
+public sealed class CatalogSearchCandidateRecordedSubscriptionHostedService(
     IDocumentStore documentStore,
     IServiceScopeFactory scopeFactory,
     ITypeRegistry registry,
-    ILogger<MusicTrackSearchStartedSubscriptionHostedService> logger) : BackgroundService
+    ILogger<CatalogSearchCandidateRecordedSubscriptionHostedService> logger) : BackgroundService
 {
-    private const string SubscriptionName = "music-track-search-started-projections";
+    private const string SubscriptionName = "catalog-search-candidate-recorded-projections";
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -43,7 +43,7 @@ public sealed class MusicTrackSearchStartedSubscriptionHostedService(
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Music track search started subscription failed.");
+                logger.LogError(ex, "Catalog search candidate recorded subscription failed.");
                 await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
             }
         }
@@ -70,7 +70,7 @@ public sealed class MusicTrackSearchStartedSubscriptionHostedService(
         CancellationToken cancellationToken)
     {
         await using var scope = scopeFactory.CreateAsyncScope();
-        var handler = scope.ServiceProvider.GetRequiredService<MusicTrackSearchStartedHandler>();
+        var handler = scope.ServiceProvider.GetRequiredService<CatalogSearchCandidateRecordedHandler>();
 
         foreach (var stream in batch.Items
                      .Select(item => item.Result)
@@ -82,7 +82,7 @@ public sealed class MusicTrackSearchStartedSubscriptionHostedService(
                     item.Version,
                     registry.ToDomainObject<IDomainEvent>(
                         item.Body ?? throw new InvalidOperationException($"Stored event '{item.Id}' is missing a body."))))
-                .Where(item => item.Event is MusicTrackSearchStarted)
+                .Where(item => item.Event is CatalogSearchCandidateRecorded)
                 .ToArray();
 
             if (events.Length == 0)
@@ -91,7 +91,7 @@ public sealed class MusicTrackSearchStartedSubscriptionHostedService(
             }
 
             await handler.Handle(
-                new MusicTrackSearchStartedCommand(
+                new CatalogSearchCandidateRecordedCommand(
                     DiscoveryQueryKey.ToMusicSearchCriteria(stream.Key),
                     events),
                 cancellationToken);

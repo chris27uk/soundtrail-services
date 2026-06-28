@@ -13,7 +13,7 @@ public sealed class RecordCatalogSearchCandidateHandler(
         RecordCatalogSearchCandidateCommand command,
         CancellationToken cancellationToken = default)
     {
-        var loaded = await CatalogSearchStarted.LoadAsync(
+        var loaded = await CatalogSearchCandidates.LoadAsync(
             discoveryRepository,
             command.SearchCriteria,
             cancellationToken);

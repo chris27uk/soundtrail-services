@@ -1,9 +1,9 @@
 using Raven.Client.Documents.Session;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Adapters.Documents;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Ports;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Support;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Adapters.Documents;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Ports;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Support;
 
-namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Adapters;
+namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Adapters;
 
 public sealed class RavenSavePotentialCatalogLookupWork(IAsyncDocumentSession session) : ISavePotentialCatalogLookupWorkPort
 {

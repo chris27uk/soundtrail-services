@@ -1,15 +1,15 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Adapters.Documents;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Ports;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Support;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Adapters.Documents;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Ports;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Support;
 using Soundtrail.Adapters.Discovery;
 
-namespace Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Adapters;
+namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Adapters;
 
-public sealed class RavenLoadCatalogSearchStartedTracking(IAsyncDocumentSession session) : ILoadCatalogSearchStartedTrackingPort
+public sealed class RavenLoadCatalogSearchCandidateTracking(IAsyncDocumentSession session) : ILoadCatalogSearchCandidateTrackingPort
 {
-    public async Task<CatalogSearchStartedTracking?> LoadAsync(
+    public async Task<CatalogSearchCandidateTracking?> LoadAsync(
         MusicSearchCriteria searchCriteria,
         CancellationToken cancellationToken)
     {
@@ -19,7 +19,7 @@ public sealed class RavenLoadCatalogSearchStartedTracking(IAsyncDocumentSession 
 
         return document is null
             ? null
-            : new CatalogSearchStartedTracking(
+            : new CatalogSearchCandidateTracking(
                 DiscoveryQueryKey.ToMusicSearchCriteria(document.Criteria),
                 document.MusicCatalogId,
                 document.UpdatedAt);

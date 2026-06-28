@@ -5,13 +5,13 @@ using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Domain.Discovery;
 
-public sealed class CatalogSearchStarted
+public sealed class CatalogSearchCandidates
 {
-    private readonly EventHandlers<CatalogSearchStarted> eventHandlers;
+    private readonly EventHandlers<CatalogSearchCandidates> eventHandlers;
     private readonly List<IDomainEvent> uncommittedEvents = [];
     private MusicSearchCriteria? criteria;
 
-    private CatalogSearchStarted(IEnumerable<IDomainEvent> events)
+    private CatalogSearchCandidates(IEnumerable<IDomainEvent> events)
     {
         eventHandlers = CreateHandlers();
 
@@ -21,13 +21,13 @@ public sealed class CatalogSearchStarted
         }
     }
 
-    public static async Task<(LoadedEventStream<DiscoveryQueryKey, IDomainEvent> Stream, CatalogSearchStarted Aggregate)> LoadAsync(
+    public static async Task<(LoadedEventStream<DiscoveryQueryKey, IDomainEvent> Stream, CatalogSearchCandidates Aggregate)> LoadAsync(
         IEventStreamRepository<DiscoveryQueryKey, IDomainEvent> repository,
         MusicSearchCriteria criteria,
         CancellationToken cancellationToken)
     {
         var stream = await repository.LoadAsync(DiscoveryQueryKey.For(criteria), cancellationToken);
-        var aggregate = new CatalogSearchStarted(stream.Events.OfType<MusicTrackSearchStarted>());
+        var aggregate = new CatalogSearchCandidates(stream.Events.OfType<CatalogSearchCandidateRecorded>());
         aggregate.criteria ??= criteria;
         return (stream, aggregate);
     }
@@ -40,7 +40,7 @@ public sealed class CatalogSearchStarted
         CorrelationId correlationId)
     {
         Apply(
-            new MusicTrackSearchStarted(
+            new CatalogSearchCandidateRecorded(
                 RequireCriteria(),
                 musicCatalogId,
                 trustLevel,
@@ -87,14 +87,14 @@ public sealed class CatalogSearchStarted
     private MusicSearchCriteria RequireCriteria() =>
         criteria ?? throw new InvalidOperationException("Catalog search criteria has not been established.");
 
-    private EventHandlers<CatalogSearchStarted> CreateHandlers()
+    private EventHandlers<CatalogSearchCandidates> CreateHandlers()
     {
-        var handlers = new EventHandlers<CatalogSearchStarted>();
-        handlers.Register<MusicTrackSearchStarted>(On);
+        var handlers = new EventHandlers<CatalogSearchCandidates>();
+        handlers.Register<CatalogSearchCandidateRecorded>(On);
         return handlers;
     }
 
-    private void On(MusicTrackSearchStarted @event)
+    private void On(CatalogSearchCandidateRecorded @event)
     {
         criteria = @event.SearchCriteria;
     }

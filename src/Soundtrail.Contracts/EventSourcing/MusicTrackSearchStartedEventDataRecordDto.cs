@@ -1,6 +1,6 @@
 namespace Soundtrail.Contracts.EventSourcing;
 
-public sealed record MusicTrackSearchStartedEventDataRecordDto(
+public sealed record CatalogSearchCandidateRecordedEventDataRecordDto(
     string Criteria,
     string MusicCatalogId,
     int TrustLevel,
