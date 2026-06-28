@@ -118,6 +118,8 @@ public static class AppHostComposition
             .WithEnvironment("ServiceBus__MusicBrainzLookupQueueName", "lookup-musicbrainz")
             .WithEnvironment("ServiceBus__PlaybackReferencesLookupQueueName", "lookup-playback-references")
             .WithEnvironment("ServiceBus__EnrichmentResponsesQueueName", "enrichment-responses")
+            .WithEnvironment("ServiceBus__ApplyMusicCatalogLookupAttemptedToCatalogQueueName", "apply-lookup-attempted-to-catalog")
+            .WithEnvironment("ServiceBus__ApplyMusicCatalogLookupAttemptedToDiscoveryQueueName", "apply-lookup-attempted-to-discovery")
             .WithEnvironment("ServiceBus__MusicTrackEventsQueueName", "music-track-events")
             .WithEnvironment("RavenDb__Urls__0", ravenDb.GetEndpoint("http"))
             .WithEnvironment("RavenDb__Database", "soundtrail");

@@ -44,6 +44,8 @@ public static class ServiceBusServiceCollectionExtensions
         opts.Discovery.IncludeType<NextMusicTracksRequestedForLookupListener>();
         opts.Discovery.IncludeType<AssessMusicTrackListener>();
         opts.Discovery.IncludeType<MusicCatalogLookupAttemptedListener>();
+        opts.Discovery.IncludeType<ApplyMusicCatalogLookupAttemptedToCatalogListener>();
+        opts.Discovery.IncludeType<ApplyMusicCatalogLookupAttemptedToDiscoveryListener>();
         opts.Discovery.IncludeType<StreamingLocationsRequiredListener>();
         opts.Policies.AutoApplyTransactions();
 
@@ -80,8 +82,20 @@ public static class ServiceBusServiceCollectionExtensions
         opts.ListenToAzureServiceBusQueue(serviceBusOptions.EnrichmentResponsesQueueName)
             .ProcessInline();
 
+        opts.ListenToAzureServiceBusQueue(serviceBusOptions.ApplyMusicCatalogLookupAttemptedToCatalogQueueName)
+            .ProcessInline();
+
+        opts.ListenToAzureServiceBusQueue(serviceBusOptions.ApplyMusicCatalogLookupAttemptedToDiscoveryQueueName)
+            .ProcessInline();
+
         opts.ListenToAzureServiceBusQueue(serviceBusOptions.MusicTrackEventsQueueName)
             .ProcessInline();
+
+        opts.PublishMessage<ApplyMusicCatalogLookupAttemptedToCatalogCommandDto>()
+            .ToAzureServiceBusQueue(serviceBusOptions.ApplyMusicCatalogLookupAttemptedToCatalogQueueName);
+
+        opts.PublishMessage<ApplyMusicCatalogLookupAttemptedToDiscoveryCommandDto>()
+            .ToAzureServiceBusQueue(serviceBusOptions.ApplyMusicCatalogLookupAttemptedToDiscoveryQueueName);
 
         opts.PublishMessage<LookupTrackMetadataCommandDto>()
             .ToAzureServiceBusQueue(serviceBusOptions.MusicBrainzLookupQueueName);

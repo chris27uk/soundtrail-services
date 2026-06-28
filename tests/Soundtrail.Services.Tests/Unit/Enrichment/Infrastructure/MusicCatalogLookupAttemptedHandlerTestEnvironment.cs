@@ -3,6 +3,7 @@ using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted;
 using Soundtrail.Adapters.Discovery;
@@ -13,6 +14,7 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
 {
     private readonly CatalogSearchDiscoveryRepositoryFake discoveryRepository;
     private readonly CatalogSearchTrackingStoreFake trackingStore;
+    private readonly CommandBusFake commandBus;
 
     private MusicCatalogLookupAttemptedHandlerTestEnvironment()
     {
@@ -20,6 +22,7 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
         StreamStore = new MusicTrackStreamStoreFake();
         discoveryRepository = new CatalogSearchDiscoveryRepositoryFake();
         trackingStore = new CatalogSearchTrackingStoreFake();
+        commandBus = new CommandBusFake();
         trackingStore.Seed(new CatalogSearchTracking(
             MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks),
             MusicCatalogId.From("mc_track_1"),
@@ -27,19 +30,27 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
 
         SeedDiscovery(MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks));
 
-        Handler = new MusicCatalogLookupAttemptedHandler(
-            StreamStore,
+        Handler = new MusicCatalogLookupAttemptedHandler(commandBus);
+        CatalogHandler = new ApplyMusicCatalogLookupAttemptedToCatalogHandler(
+            StreamStore);
+        DiscoveryHandler = new ApplyMusicCatalogLookupAttemptedToDiscoveryHandler(
             trackingStore,
             discoveryRepository);
     }
 
     public MusicCatalogLookupAttemptedHandler Handler { get; }
 
+    public ApplyMusicCatalogLookupAttemptedToCatalogHandler CatalogHandler { get; }
+
+    public ApplyMusicCatalogLookupAttemptedToDiscoveryHandler DiscoveryHandler { get; }
+
     public MusicTrackStreamStoreFake StreamStore { get; }
 
     public CatalogSearchTrackingStoreFake CatalogSearchTrackings => trackingStore;
 
     public CatalogSearchDiscoveryRepositoryFake DiscoveryRepository => discoveryRepository;
+
+    public CommandBusFake Bus => commandBus;
 
     public DateTimeOffset Now { get; }
 
@@ -61,23 +72,36 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
 
     public static MusicCatalogLookupAttemptedHandlerTestEnvironment WithADuplicateMusicBrainzResponse() => WithAMusicBrainzResponse();
 
-    public Task HandleMusicBrainzResponse() => Handler.Handle(MusicCatalogLookupAttempted.Completed(MusicBrainzResponse()), CancellationToken.None);
+    public async Task HandleMusicBrainzResponse()
+    {
+        var attempted = MusicCatalogLookupAttempted.Completed(MusicBrainzResponse());
+        await CatalogHandler.Handle(new ApplyMusicCatalogLookupAttemptedToCatalogCommand(attempted), CancellationToken.None);
+        await DiscoveryHandler.Handle(new ApplyMusicCatalogLookupAttemptedToDiscoveryCommand(attempted), CancellationToken.None);
+    }
 
     public async Task HandlePlaybackReferencesResponseAfterResolvedMetadata()
     {
-        await Handler.Handle(MusicCatalogLookupAttempted.Completed(ResolvedMetadataResponse()), CancellationToken.None);
-        await Handler.Handle(MusicCatalogLookupAttempted.Completed(PlaybackReferencesResponse()), CancellationToken.None);
+        await CatalogHandler.Handle(new ApplyMusicCatalogLookupAttemptedToCatalogCommand(MusicCatalogLookupAttempted.Completed(ResolvedMetadataResponse())), CancellationToken.None);
+        await DiscoveryHandler.Handle(new ApplyMusicCatalogLookupAttemptedToDiscoveryCommand(MusicCatalogLookupAttempted.Completed(ResolvedMetadataResponse())), CancellationToken.None);
+        await CatalogHandler.Handle(new ApplyMusicCatalogLookupAttemptedToCatalogCommand(MusicCatalogLookupAttempted.Completed(PlaybackReferencesResponse())), CancellationToken.None);
+        await DiscoveryHandler.Handle(new ApplyMusicCatalogLookupAttemptedToDiscoveryCommand(MusicCatalogLookupAttempted.Completed(PlaybackReferencesResponse())), CancellationToken.None);
     }
 
     public async Task HandleDuplicateMusicBrainzResponse()
     {
         var response = MusicBrainzResponse();
-        await Handler.Handle(MusicCatalogLookupAttempted.Completed(response), CancellationToken.None);
-        await Handler.Handle(MusicCatalogLookupAttempted.Completed(response), CancellationToken.None);
+        await CatalogHandler.Handle(new ApplyMusicCatalogLookupAttemptedToCatalogCommand(MusicCatalogLookupAttempted.Completed(response)), CancellationToken.None);
+        await DiscoveryHandler.Handle(new ApplyMusicCatalogLookupAttemptedToDiscoveryCommand(MusicCatalogLookupAttempted.Completed(response)), CancellationToken.None);
+        await CatalogHandler.Handle(new ApplyMusicCatalogLookupAttemptedToCatalogCommand(MusicCatalogLookupAttempted.Completed(response)), CancellationToken.None);
+        await DiscoveryHandler.Handle(new ApplyMusicCatalogLookupAttemptedToDiscoveryCommand(MusicCatalogLookupAttempted.Completed(response)), CancellationToken.None);
     }
 
-    public Task Handle(MusicCatalogMetadataFetched response) =>
-        Handler.Handle(MusicCatalogLookupAttempted.Completed(response), CancellationToken.None);
+    public async Task Handle(MusicCatalogMetadataFetched response)
+    {
+        var attempted = MusicCatalogLookupAttempted.Completed(response);
+        await CatalogHandler.Handle(new ApplyMusicCatalogLookupAttemptedToCatalogCommand(attempted), CancellationToken.None);
+        await DiscoveryHandler.Handle(new ApplyMusicCatalogLookupAttemptedToDiscoveryCommand(attempted), CancellationToken.None);
+    }
 
     public IReadOnlyList<IDomainEvent> StoredEvents(string criteria) =>
         criteria.StartsWith("artist:", StringComparison.Ordinal)

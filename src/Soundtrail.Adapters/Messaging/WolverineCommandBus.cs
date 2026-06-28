@@ -27,6 +27,8 @@ public sealed class WolverineCommandBus(
             LookupTrackMetadataCommand requested => TypeTranslationRegistry.Default.Translate<LookupTrackMetadataCommandDto>(requested),
             LookupStreamingLocationsCommand requested => TypeTranslationRegistry.Default.Translate<LookupStreamingLocationsCommandDto>(requested),
             RunDiscoveryBacklogSchedulingCommand requested => TypeTranslationRegistry.Default.Translate<RunDiscoveryBacklogSchedulingCommandDto>(requested),
+            ApplyMusicCatalogLookupAttemptedToCatalogCommand requested => TypeTranslationRegistry.Default.Translate<ApplyMusicCatalogLookupAttemptedToCatalogCommandDto>(requested),
+            ApplyMusicCatalogLookupAttemptedToDiscoveryCommand requested => TypeTranslationRegistry.Default.Translate<ApplyMusicCatalogLookupAttemptedToDiscoveryCommandDto>(requested),
             MusicCatalogLookupAttempted requested => TypeTranslationRegistry.Default.Translate<MusicCatalogLookupAttemptedDto>(requested),
             _ => command
         };

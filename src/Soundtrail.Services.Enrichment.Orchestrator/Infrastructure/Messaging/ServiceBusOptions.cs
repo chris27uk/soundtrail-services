@@ -18,5 +18,9 @@ public sealed class ServiceBusOptions
 
     public string EnrichmentResponsesQueueName { get; init; } = "enrichment-responses";
 
+    public string ApplyMusicCatalogLookupAttemptedToCatalogQueueName { get; init; } = "apply-lookup-attempted-to-catalog";
+
+    public string ApplyMusicCatalogLookupAttemptedToDiscoveryQueueName { get; init; } = "apply-lookup-attempted-to-discovery";
+
     public string MusicTrackEventsQueueName { get; init; } = "music-track-events";
 }
