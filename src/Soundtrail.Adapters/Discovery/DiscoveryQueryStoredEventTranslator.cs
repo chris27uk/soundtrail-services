@@ -121,12 +121,14 @@ public sealed class DiscoveryQueryStoredEventTranslator : ITypeTranslationRegist
             domainEvent => new DiscoveryRequestedEventDataRecordDto(
                 DiscoveryQueryKey.StableValueFor(domainEvent.SearchCriteria),
                 domainEvent.SearchCriteria.UnifiedQuery ?? string.Empty,
+                domainEvent.Playback?.ToString(),
                 domainEvent.TrustLevel,
                 domainEvent.RiskScore,
                 domainEvent.RequestedAt,
                 domainEvent.CorrelationId.Value),
             dto => new DiscoveryRequested(
                 DiscoveryQueryKey.ToMusicSearchCriteria(dto.Criteria),
+                dto.Playback is null ? null : PlaybackProviderFilter.Parse(dto.Playback),
                 dto.TrustLevel,
                 dto.RiskScore,
                 dto.RequestedAtUtc,

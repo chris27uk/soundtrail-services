@@ -19,11 +19,17 @@ public sealed class KnownTrackRequestedHandler(
         {
             var @event = (KnownTrackRequested)item.Event;
             var track = await loadMusicTrackPort.LoadAsync(@event.TrackId, cancellationToken);
-            await SearchOrSeekHistory.ApplyAsync(
+            var loaded = await SearchOrSeekHistory.LoadAsync(
                 discoveryRepository,
                 command.KnownItem,
-                history => track.AppendFollowUp(history, @event),
                 cancellationToken);
+
+            if (!track.AppendFollowUp(loaded.Aggregate, @event))
+            {
+                continue;
+            }
+
+            await loaded.Aggregate.SaveAsync(discoveryRepository, loaded.Stream, cancellationToken);
         }
     }
 }

@@ -148,15 +148,14 @@ public sealed class ApiHandlerDispatchTests
     }
 
     [Fact]
-    public async Task SearchCatalogHandler_Sends_SearchCatalogRequested_When_Local_Result_Is_Incomplete()
+    public async Task SearchCatalogHandler_Appends_DiscoveryRequested_When_Local_Result_Is_Incomplete()
     {
         var catalogSearch = new FakeCatalogSearchPort
         {
             Response = new LocalCatalogSearchResponse([], null, false)
         };
         var discoveryRepository = new CatalogSearchDiscoveryRepositoryFake();
-        var bus = new CommandBusFake();
-        var handler = new SearchCatalogHandler(catalogSearch, discoveryRepository, bus);
+        var handler = new SearchCatalogHandler(catalogSearch, discoveryRepository);
         var command = new SearchCatalogCommand(
             "artist song",
             SearchTypesFilter.Tracks,
@@ -166,8 +165,9 @@ public sealed class ApiHandlerDispatchTests
 
         await handler.Handle(command, CancellationToken.None);
 
-        bus.SentCommands.Should().ContainSingle()
-            .Which.Should().BeOfType<SearchCatalogRequested>()
+        discoveryRepository.GetStoredEvents(command.ToMusicSearchTerm())
+            .Should().ContainSingle()
+            .Which.Should().BeOfType<Soundtrail.Domain.Discovery.Events.DiscoveryRequested>()
             .Which.Should().BeEquivalentTo(new
             {
                 SearchCriteria = command.ToMusicSearchTerm(),

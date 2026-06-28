@@ -20,14 +20,21 @@ public sealed class AssessMusicTrackHandler(
     {
         if (command.SearchTerm is not null && command.TrustLevel is not null && command.RiskScore is not null)
         {
-            await SearchOrSeekHistory.RequestAsync(
+            var loaded = await SearchOrSeekHistory.LoadAsync(
                 discoveryRepository,
                 command.SearchTerm,
-                command.TrustLevel.Value,
-                command.RiskScore.Value,
-                command.CreatedAt,
-                command.CorrelationId,
                 cancellationToken);
+
+            if (loaded.Aggregate.Request(
+                    command.SearchTerm,
+                    null,
+                    command.TrustLevel.Value,
+                    command.RiskScore.Value,
+                    command.CreatedAt,
+                    command.CorrelationId))
+            {
+                await loaded.Aggregate.SaveAsync(discoveryRepository, loaded.Stream, cancellationToken);
+            }
         }
 
         var candidate = await potentialCatalogLookupWorkStore.FindByMusicCatalogIdAsync(command.MusicCatalogId, cancellationToken);
@@ -39,46 +46,61 @@ public sealed class AssessMusicTrackHandler(
         var assessment = discoveryPriorityPolicy.Assess(ToSummary(candidate), command.CreatedAt);
         if (assessment.Action != CatalogDiscoveryWorkAction.Schedule || assessment.Priority is null)
         {
-            await SearchOrSeekHistory.ApplyToTrackingsAsync(
-                catalogSearchTrackingStore,
-                discoveryRepository,
-                command.MusicCatalogId,
-                discovery => discovery.Defer(
-                    assessment.EstimatedRetryAfterSeconds,
-                    assessment.EarliestExpectedCompletionAt,
-                    assessment.Reason,
-                    command.CreatedAt),
-                cancellationToken);
+            var trackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(command.MusicCatalogId, cancellationToken);
+            foreach (var tracking in trackings)
+            {
+                var loaded = await SearchOrSeekHistory.LoadAsync(discoveryRepository, tracking.SearchCriteria, cancellationToken);
+                if (!loaded.Aggregate.Defer(
+                        assessment.EstimatedRetryAfterSeconds,
+                        assessment.EarliestExpectedCompletionAt,
+                        assessment.Reason,
+                        command.CreatedAt))
+                {
+                    continue;
+                }
+
+                await loaded.Aggregate.SaveAsync(discoveryRepository, loaded.Stream, cancellationToken);
+            }
             return;
         }
 
         var localTrack = await localMusicTrackSearch.GetByMusicCatalogIdAsync(command.MusicCatalogId, cancellationToken);
         if (localTrack?.IsPlayable == true)
         {
-            await SearchOrSeekHistory.ApplyToTrackingsAsync(
-                catalogSearchTrackingStore,
-                discoveryRepository,
-                command.MusicCatalogId,
-                discovery => discovery.Defer(
-                    60,
-                    command.CreatedAt.AddSeconds(60),
-                    "Planner deferred lookup",
-                    command.CreatedAt),
-                cancellationToken);
+            var trackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(command.MusicCatalogId, cancellationToken);
+            foreach (var tracking in trackings)
+            {
+                var loaded = await SearchOrSeekHistory.LoadAsync(discoveryRepository, tracking.SearchCriteria, cancellationToken);
+                if (!loaded.Aggregate.Defer(
+                        60,
+                        command.CreatedAt.AddSeconds(60),
+                        "Planner deferred lookup",
+                        command.CreatedAt))
+                {
+                    continue;
+                }
+
+                await loaded.Aggregate.SaveAsync(discoveryRepository, loaded.Stream, cancellationToken);
+            }
             return;
         }
 
-        await SearchOrSeekHistory.ApplyToTrackingsAsync(
-            catalogSearchTrackingStore,
-            discoveryRepository,
-            command.MusicCatalogId,
-            discovery => discovery.Plan(
-                assessment.Priority.Value,
-                assessment.EstimatedRetryAfterSeconds,
-                assessment.EarliestExpectedCompletionAt,
-                assessment.Reason,
-                command.CreatedAt),
-            cancellationToken);
+        var finalTrackings = await catalogSearchTrackingStore.GetByMusicCatalogIdAsync(command.MusicCatalogId, cancellationToken);
+        foreach (var tracking in finalTrackings)
+        {
+            var loaded = await SearchOrSeekHistory.LoadAsync(discoveryRepository, tracking.SearchCriteria, cancellationToken);
+            if (!loaded.Aggregate.Plan(
+                    assessment.Priority.Value,
+                    assessment.EstimatedRetryAfterSeconds,
+                    assessment.EarliestExpectedCompletionAt,
+                    assessment.Reason,
+                    command.CreatedAt))
+            {
+                continue;
+            }
+
+            await loaded.Aggregate.SaveAsync(discoveryRepository, loaded.Stream, cancellationToken);
+        }
     }
 
     private static CatalogDiscoveryWorkSummary ToSummary(PotentialCatalogLookupWork candidate) =>

@@ -79,6 +79,7 @@ internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsync
                 1,
                 new DiscoveryRequested(
                     searchCriteria,
+                    null,
                     1,
                     10,
                     Clock,

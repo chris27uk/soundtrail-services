@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Soundtrail.Services.Internal.Projector.Features.OnDiscoveryRequested.CompositionRoot;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchPlannedForLookup.CompositionRoot;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.CompositionRoot;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.CompositionRoot;
@@ -19,6 +20,7 @@ public static class AppServiceCollectionExtensions
     {
         services.AddRavenDocumentStore(configuration);
         services.AddInternalProjectorServiceBus(configuration);
+        services.AddOnDiscoveryRequestedFeature();
         services.AddOnCatalogSearchPlannedForLookupFeature();
         services.AddOnCatalogSearchStatusChangedFeature();
         services.AddOnKnownTrackRequestedFeature();

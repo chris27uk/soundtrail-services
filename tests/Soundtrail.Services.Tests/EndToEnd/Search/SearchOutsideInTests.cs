@@ -97,14 +97,16 @@ public sealed class SearchOutsideInTests
                 "Rare Album"));
 
         var response = await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track");
-        var lookupRequest = await env.WaitForMessageAsync<CatalogSearchAttemptDto>(TimeSpan.FromSeconds(1));
+        var criteria = DiscoveryQueryKey.StableValueFor(
+            MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks));
 
         response.Results.Should().ContainSingle();
         response.Results[0].Id.Should().Be("track_rare_unknown_song");
         response.Results[0].PlayabilityStatus.Should().Be("NotYetDiscovered");
         response.Discovery.WillBeLookedUp.Should().BeTrue();
         response.Discovery.Reason.Should().Be("Local results incomplete");
-        lookupRequest.Query.Should().Be("rare unknown song");
+        (await env.DidReceiveMessageAsync<CatalogSearchAttemptDto>(TimeSpan.FromMilliseconds(150))).Should().BeFalse();
+        (await env.HasDiscoveryRequestAsync(criteria)).Should().BeTrue();
     }
 
     [Fact]
@@ -246,17 +248,16 @@ public sealed class SearchOutsideInTests
     {
         await using var env = await SearchOutsideInTestEnvironment.CreateAsync(_ => { });
 
-        var response = await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track");
-        var lookupRequest = await env.WaitForMessageAsync<CatalogSearchAttemptDto>(TimeSpan.FromSeconds(1));
         var criteria = DiscoveryQueryKey.StableValueFor(
             MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks));
+        var response = await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track");
 
         response.Query.Should().Be("rare unknown song");
         response.Results.Should().BeEmpty();
         response.Discovery.WillBeLookedUp.Should().BeTrue();
         response.Discovery.Reason.Should().Be("Local results incomplete");
         response.Discovery.RetryAfterSeconds.Should().BeNull();
-        lookupRequest.Query.Should().Be("rare unknown song");
+        (await env.DidReceiveMessageAsync<CatalogSearchAttemptDto>(TimeSpan.FromMilliseconds(150))).Should().BeFalse();
         (await env.HasDiscoveryRequestAsync(criteria)).Should().BeTrue();
         (await env.CountDiscoveryRequestEventsAsync(criteria)).Should().Be(1);
     }
@@ -269,14 +270,12 @@ public sealed class SearchOutsideInTests
             MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks));
 
         await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track");
-        var firstLookupRequest = await env.WaitForMessageAsync<CatalogSearchAttemptDto>(TimeSpan.FromSeconds(1));
-        firstLookupRequest.Query.Should().Be("rare unknown song");
 
         var secondResponse = await env.SearchAndWaitForPipelineAsync("rare unknown song", types: "track");
 
         secondResponse.Discovery.WillBeLookedUp.Should().BeTrue();
         secondResponse.Results.Should().BeEmpty();
-        env.CountMessages<CatalogSearchAttemptDto>().Should().Be(1);
+        (await env.DidReceiveMessageAsync<CatalogSearchAttemptDto>(TimeSpan.FromMilliseconds(150))).Should().BeFalse();
         (await env.CountDiscoveryRequestEventsAsync(criteria)).Should().Be(1);
     }
 
@@ -299,6 +298,7 @@ public sealed class SearchOutsideInTests
                 criteria,
                 new DiscoveryRequested(
                     criteria,
+                    PlaybackProviderFilter.Parse("appleMusic"),
                     1,
                     10,
                     new DateTimeOffset(2026, 6, 16, 12, 0, 0, TimeSpan.Zero),

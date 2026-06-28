@@ -155,6 +155,7 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
             searchCriteria,
             new DiscoveryRequested(
                 searchCriteria,
+                null,
                 1,
                 10,
                 Now,

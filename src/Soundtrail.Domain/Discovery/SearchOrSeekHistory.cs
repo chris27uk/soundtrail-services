@@ -62,6 +62,7 @@ public sealed class SearchOrSeekHistory
     public bool SearchRequested(SearchCatalogRequested requested) =>
         Request(
             requested.SearchCriteria,
+            requested.Playback,
             requested.TrustLevel,
             requested.RiskScore,
             requested.OccurredAt,
@@ -69,6 +70,7 @@ public sealed class SearchOrSeekHistory
 
     public bool Request(
         MusicSearchCriteria searchCriteria,
+        PlaybackProviderFilter? playback,
         int trustLevel,
         int riskScore,
         DateTimeOffset requestedAt,
@@ -82,6 +84,7 @@ public sealed class SearchOrSeekHistory
         Apply(
             new DiscoveryRequested(
                 searchCriteria,
+                playback,
                 trustLevel,
                 riskScore,
                 requestedAt,

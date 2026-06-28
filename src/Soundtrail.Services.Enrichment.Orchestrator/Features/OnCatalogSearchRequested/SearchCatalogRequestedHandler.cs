@@ -25,36 +25,34 @@ public sealed class SearchCatalogRequestedHandler(
                 localMusicTrackSearch,
                 cancellationToken);
 
-        await SearchOrSeekHistory.ApplyAsync(
+        var loaded = await SearchOrSeekHistory.LoadAsync(
             catalogSearchDiscoveryRepository,
             requested.SearchCriteria,
-            history =>
-            {
-                if (followUp.RequiresTrackMetadataLookup)
-                {
-                    return history.TrackMetadataLookupRequested(
-                        requested.SearchCriteria,
-                        requested.TrustLevel,
-                        requested.RiskScore,
-                        requested.OccurredAt,
-                        requested.CorrelationId);
-                }
-
-                var appended = false;
-                foreach (var lookup in followUp.StreamingLocationLookups)
-                {
-                    history.StreamingLocationsRequired(
-                        lookup.MusicCatalogId,
-                        LookupPriorityBand.Low,
-                        requested.OccurredAt,
-                        requested.CorrelationId,
-                        lookup.SearchCriteria,
-                        lookup.Hierarchy);
-                    appended = true;
-                }
-
-                return appended;
-            },
             cancellationToken);
+
+        if (followUp.RequiresTrackMetadataLookup)
+        {
+            loaded.Aggregate.TrackMetadataLookupRequested(
+                requested.SearchCriteria,
+                requested.TrustLevel,
+                requested.RiskScore,
+                requested.OccurredAt,
+                requested.CorrelationId);
+        }
+        else
+        {
+            foreach (var lookup in followUp.StreamingLocationLookups)
+            {
+                loaded.Aggregate.StreamingLocationsRequired(
+                    lookup.MusicCatalogId,
+                    LookupPriorityBand.Low,
+                    requested.OccurredAt,
+                    requested.CorrelationId,
+                    lookup.SearchCriteria,
+                    lookup.Hierarchy);
+            }
+        }
+
+        await loaded.Aggregate.SaveAsync(catalogSearchDiscoveryRepository, loaded.Stream, cancellationToken);
     }
 }

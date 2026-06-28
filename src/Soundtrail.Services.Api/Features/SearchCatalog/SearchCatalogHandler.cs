@@ -8,8 +8,7 @@ namespace Soundtrail.Services.Api.Features.SearchCatalog;
 
 public sealed class SearchCatalogHandler(
     ICatalogSearchPort catalogSearch,
-    IEventStreamRepository<DiscoveryQueryKey, IDomainEvent> discoveryRepository,
-    ICommandBus commandBus) : IApiHandler<SearchCatalogCommand, SearchCatalogResponse>
+    IEventStreamRepository<DiscoveryQueryKey, IDomainEvent> discoveryRepository) : IApiHandler<SearchCatalogCommand, SearchCatalogResponse>
 {
     public async Task<SearchCatalogResponse> Handle(
         SearchCatalogCommand command,
@@ -21,17 +20,13 @@ public sealed class SearchCatalogHandler(
         if (!local.IsComplete && discovery is null)
         {
             var requested = command.ToCatalogSearchAttempt();
-            var saved = await SearchOrSeekHistory.RequestAsync(
+            var loaded = await SearchOrSeekHistory.LoadAsync(
                 discoveryRepository,
                 requested.SearchCriteria,
-                requested.TrustLevel,
-                requested.RiskScore,
-                requested.OccurredAt,
-                requested.CorrelationId,
                 cancellationToken);
-            if (saved)
+            if (loaded.Aggregate.SearchRequested(requested))
             {
-                await commandBus.SendAsync(requested, cancellationToken);
+                await loaded.Aggregate.SaveAsync(discoveryRepository, loaded.Stream, cancellationToken);
             }
 
             discovery = new SearchDiscovery(
