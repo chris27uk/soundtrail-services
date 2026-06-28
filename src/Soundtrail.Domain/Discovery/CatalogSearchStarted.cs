@@ -10,9 +10,8 @@ public sealed class CatalogSearchStarted
     private readonly EventHandlers<CatalogSearchStarted> eventHandlers;
     private readonly List<IDomainEvent> uncommittedEvents = [];
     private MusicSearchCriteria? criteria;
-    private int version;
 
-    private CatalogSearchStarted(IEnumerable<IDomainEvent> events, int version)
+    private CatalogSearchStarted(IEnumerable<IDomainEvent> events)
     {
         eventHandlers = CreateHandlers();
 
@@ -20,19 +19,17 @@ public sealed class CatalogSearchStarted
         {
             Apply(@event, isNew: false);
         }
-
-        this.version = version;
     }
 
-    public static async Task<CatalogSearchStarted> LoadAsync(
+    public static async Task<(LoadedEventStream<DiscoveryQueryKey, IDomainEvent> Stream, CatalogSearchStarted Aggregate)> LoadAsync(
         IEventStreamRepository<DiscoveryQueryKey, IDomainEvent> repository,
         MusicSearchCriteria criteria,
         CancellationToken cancellationToken)
     {
         var stream = await repository.LoadAsync(DiscoveryQueryKey.For(criteria), cancellationToken);
-        var aggregate = new CatalogSearchStarted(stream.Events.OfType<MusicTrackSearchStarted>(), stream.Version);
+        var aggregate = new CatalogSearchStarted(stream.Events.OfType<MusicTrackSearchStarted>());
         aggregate.criteria ??= criteria;
-        return aggregate;
+        return (stream, aggregate);
     }
 
     public void Record(
@@ -55,6 +52,7 @@ public sealed class CatalogSearchStarted
 
     public async Task<bool> SaveAsync(
         IEventStreamRepository<DiscoveryQueryKey, IDomainEvent> repository,
+        LoadedEventStream<DiscoveryQueryKey, IDomainEvent> stream,
         CancellationToken cancellationToken)
     {
         if (uncommittedEvents.Count == 0)
@@ -63,15 +61,13 @@ public sealed class CatalogSearchStarted
         }
 
         var saved = (await repository.AppendAsync(
-            new AppendRequest<DiscoveryQueryKey, IDomainEvent>(
-                DiscoveryQueryKey.For(RequireCriteria()),
-                version,
-                uncommittedEvents.AsReadOnly()),
+            stream,
+            uncommittedEvents.AsReadOnly(),
+            null,
             cancellationToken)).Appended;
 
         if (saved)
         {
-            version += uncommittedEvents.Count;
             uncommittedEvents.Clear();
         }
 

@@ -2,17 +2,17 @@ using System.Reflection;
 
 namespace Soundtrail.Adapters.Registry;
 
+using Mapper = Func<object, object>;
+using TypeMapping = (Type SourceType, Type TargetType);
+
 public sealed class TypeTranslationRegistry : ITypeRegistry
 {
     private static readonly Lazy<TypeTranslationRegistry> DefaultValue = new(CreateDefault);
-    private readonly Dictionary<(Type SourceType, Type TargetType), Func<object, object>> translators = [];
+    private readonly Dictionary<TypeMapping, Mapper> translators = [];
     private readonly Dictionary<Type, Type> dtoTypesByDomainType = [];
     private readonly Dictionary<Type, Type> domainTypesByDtoType = [];
     private readonly Dictionary<Type, StoredEventTypeRegistration> storedEventTypesByDomainType = [];
-    private readonly Dictionary<Type, StoredEventTypeRegistration> storedEventTypesByDtoType = [];
-    private readonly Dictionary<string, StoredEventTypeRegistration> storedEventTypesByEventType =
-        new(StringComparer.Ordinal);
-    private readonly Dictionary<(Type SourceType, Type TargetType), Action<object, object>> mapOntoHandlers = [];
+    private readonly Dictionary<TypeMapping, Action<object, object>> mapOntoHandlers = [];
 
     public static ITypeRegistry Default => DefaultValue.Value;
 
@@ -84,31 +84,30 @@ public sealed class TypeTranslationRegistry : ITypeRegistry
             source => correlationId?.Invoke((TDomain)source));
 
         storedEventTypesByDomainType[typeof(TDomain)] = registration;
-        storedEventTypesByDtoType[typeof(TDto)] = registration;
-        storedEventTypesByEventType[eventType] = registration;
     }
 
-    public object ToDto(object domainObject)
+    public object? ToDto(object? domainObject)
     {
-        ArgumentNullException.ThrowIfNull(domainObject);
+        if(domainObject is null) return null;
         var dtoType = GetDtoTypeForDomain(domainObject.GetType());
         return Translate(domainObject, dtoType);
     }
 
-    public TDto ToDto<TDto>(object domainObject)
+    public TDto? ToDto<TDto>(object? domainObject)
         where TDto : class
     {
+        if (domainObject is null) return null;
         return (TDto)Translate(domainObject, typeof(TDto));
     }
 
-    public object ToDomainObject(object dto)
+    public object ToDomainObject(object? dto)
     {
         ArgumentNullException.ThrowIfNull(dto);
         var domainType = GetDomainTypeForDto(dto.GetType());
         return Translate(dto, domainType);
     }
 
-    public TDomain ToDomainObject<TDomain>(object dto)
+    public TDomain ToDomainObject<TDomain>(object? dto)
         where TDomain : class
     {
         return (TDomain)Translate(dto, typeof(TDomain));
@@ -153,32 +152,6 @@ public sealed class TypeTranslationRegistry : ITypeRegistry
             $"No stored event registration exists for domain type '{domainType.FullName}'.");
     }
 
-    public StoredEventTypeRegistration GetStoredEventRegistrationForDto(Type dtoType)
-    {
-        ArgumentNullException.ThrowIfNull(dtoType);
-
-        if (storedEventTypesByDtoType.TryGetValue(dtoType, out var registration))
-        {
-            return registration;
-        }
-
-        throw new InvalidOperationException(
-            $"No stored event registration exists for DTO type '{dtoType.FullName}'.");
-    }
-
-    public StoredEventTypeRegistration GetStoredEventRegistrationForEventType(string eventType)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(eventType);
-
-        if (storedEventTypesByEventType.TryGetValue(eventType, out var registration))
-        {
-            return registration;
-        }
-
-        throw new InvalidOperationException(
-            $"No stored event registration exists for event type '{eventType}'.");
-    }
-
     public void MapOnto<TSource, TTarget>(TSource source, TTarget target)
         where TSource : class
         where TTarget : class
@@ -197,7 +170,7 @@ public sealed class TypeTranslationRegistry : ITypeRegistry
             $"No map-onto translation exists from '{typeof(TSource).FullName}' to '{typeof(TTarget).FullName}'.");
     }
 
-    private object Translate(object source, Type targetType)
+    private object Translate(object? source, Type? targetType)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(targetType);
@@ -220,26 +193,20 @@ public sealed class TypeTranslationRegistry : ITypeRegistry
     private bool TryFindAssignableTranslation(
         Type sourceType,
         Type targetType,
-        out Func<object, object> translate)
+        out Mapper translate)
     {
-        foreach (var candidate in translators)
+        var match = this.translators
+            .Where(candidate => candidate.Key.SourceType == sourceType)
+            .FirstOrDefault(candidate => targetType.IsAssignableFrom(candidate.Key.TargetType));
+
+        if (default(KeyValuePair<TypeMapping, Mapper>).Equals(match))
         {
-            if (candidate.Key.SourceType != sourceType)
-            {
-                continue;
-            }
-
-            if (!targetType.IsAssignableFrom(candidate.Key.TargetType))
-            {
-                continue;
-            }
-
-            translate = candidate.Value;
-            return true;
+            translate = default(Mapper);
+            return false;
         }
-
-        translate = null!;
-        return false;
+        
+        translate = match.Value;
+        return translate is not null;
     }
 
     private void RegisterPairMetadata(Type domainType, Type dtoType)

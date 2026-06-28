@@ -127,11 +127,12 @@ public sealed class RavenEmbeddedResponsesTests
         CommandId commandId,
         IReadOnlyList<IMusicTrackEvent> events) =>
         store.AppendAsync(
-            new AppendRequest<MusicCatalogId, IMusicTrackEvent>(
+            new LoadedEventStream<MusicCatalogId, IMusicTrackEvent>(
                 musicCatalogId,
                 expectedVersion,
-                events,
-                OperationId.From(commandId.Value)),
+                []),
+            events,
+            OperationId.From(commandId.Value),
             CancellationToken.None);
 
     private static async Task<MusicTrackStream> LoadAsync(

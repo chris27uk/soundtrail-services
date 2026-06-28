@@ -13,10 +13,11 @@ public sealed class MusicTrackTests
     public async Task Given_A_MusicBrainz_Response_When_Recorded_Then_Metadata_Discovery_Events_Are_Emitted()
     {
         var store = new MusicTrackStreamStoreFake();
-        var aggregate = await MusicTrack.LoadAsync(store, MusicCatalogId.From("mc_track_1"), CancellationToken.None);
+        var loaded = await MusicTrack.LoadAsync(store, MusicCatalogId.From("mc_track_1"), CancellationToken.None);
+        var aggregate = loaded.Aggregate;
 
         aggregate.MetadataFetched(MusicBrainzResponse());
-        var append = await aggregate.SaveAsync(store, CommandId.For("ResolveMusicMetadata:mc_track_1"), CancellationToken.None);
+        var append = await aggregate.SaveAsync(store, loaded.Stream, CommandId.For("ResolveMusicMetadata:mc_track_1"), CancellationToken.None);
 
         append.AppendedEvents.Should().ContainItemsAssignableTo<ArtistDiscovered>();
         append.AppendedEvents.Should().ContainItemsAssignableTo<AlbumDiscovered>();
@@ -29,10 +30,11 @@ public sealed class MusicTrackTests
     public async Task Given_A_First_Metadata_Response_With_No_Playback_References_When_Recorded_Then_Playback_Resolution_Is_Required()
     {
         var store = new MusicTrackStreamStoreFake();
-        var aggregate = await MusicTrack.LoadAsync(store, MusicCatalogId.From("mc_track_1"), CancellationToken.None);
+        var loaded = await MusicTrack.LoadAsync(store, MusicCatalogId.From("mc_track_1"), CancellationToken.None);
+        var aggregate = loaded.Aggregate;
 
         aggregate.MetadataFetched(MusicBrainzResponse());
-        var append = await aggregate.SaveAsync(store, CommandId.For("ResolveMusicMetadata:mc_track_1"), CancellationToken.None);
+        var append = await aggregate.SaveAsync(store, loaded.Stream, CommandId.For("ResolveMusicMetadata:mc_track_1"), CancellationToken.None);
 
         append.AppendedEvents.Should().ContainSingle(x => x is StreamingLocationsRequired);
     }
@@ -49,10 +51,11 @@ public sealed class MusicTrackTests
                 new Uri("https://music.apple.com/track/1"),
                 LookupSource.Odesli,
                 Clock));
-        var aggregate = await MusicTrack.LoadAsync(store, MusicCatalogId.From("mc_track_1"), CancellationToken.None);
+        var loaded = await MusicTrack.LoadAsync(store, MusicCatalogId.From("mc_track_1"), CancellationToken.None);
+        var aggregate = loaded.Aggregate;
 
         aggregate.MetadataFetched(MusicBrainzResponse());
-        var append = await aggregate.SaveAsync(store, CommandId.For("ResolveMusicMetadata:mc_track_1"), CancellationToken.None);
+        var append = await aggregate.SaveAsync(store, loaded.Stream, CommandId.For("ResolveMusicMetadata:mc_track_1"), CancellationToken.None);
 
         append.AppendedEvents.Should().NotContain(x => x is StreamingLocationsRequired);
     }
@@ -61,7 +64,8 @@ public sealed class MusicTrackTests
     public async Task Given_A_Metadata_Response_That_Already_Contains_Playback_References_When_Recorded_Then_Playback_Resolution_Is_Not_Required()
     {
         var store = new MusicTrackStreamStoreFake();
-        var aggregate = await MusicTrack.LoadAsync(store, MusicCatalogId.From("mc_track_1"), CancellationToken.None);
+        var loaded = await MusicTrack.LoadAsync(store, MusicCatalogId.From("mc_track_1"), CancellationToken.None);
+        var aggregate = loaded.Aggregate;
 
         aggregate.MetadataFetched(
             MusicBrainzResponse() with
@@ -74,7 +78,7 @@ public sealed class MusicTrackTests
                         "spotify-1")
                 ]
             });
-        var append = await aggregate.SaveAsync(store, CommandId.For("ResolveMusicMetadata:mc_track_1"), CancellationToken.None);
+        var append = await aggregate.SaveAsync(store, loaded.Stream, CommandId.For("ResolveMusicMetadata:mc_track_1"), CancellationToken.None);
 
         append.AppendedEvents.Should().ContainSingle(x => x is ProviderReferenceDiscovered);
         append.AppendedEvents.Should().NotContain(x => x is StreamingLocationsRequired);
@@ -94,10 +98,11 @@ public sealed class MusicTrackTests
                 Clock,
                 MusicSearchCriteria.ByTrackArtistAlbum("Song A", "Artist A", null),
                 new CatalogTrackHierarchy(ArtistId.From("artist_test_artist"), AlbumId.From("album_rare_album"))));
-        var aggregate = await MusicTrack.LoadAsync(store, MusicCatalogId.From("mc_track_1"), CancellationToken.None);
+        var loaded = await MusicTrack.LoadAsync(store, MusicCatalogId.From("mc_track_1"), CancellationToken.None);
+        var aggregate = loaded.Aggregate;
 
         aggregate.MetadataFetched(MusicBrainzResponse());
-        var append = await aggregate.SaveAsync(store, CommandId.For("ResolveMusicMetadata:mc_track_1"), CancellationToken.None);
+        var append = await aggregate.SaveAsync(store, loaded.Stream, CommandId.For("ResolveMusicMetadata:mc_track_1"), CancellationToken.None);
 
         append.AppendedEvents.Should().NotContain(x => x is StreamingLocationsRequired);
     }
@@ -106,7 +111,8 @@ public sealed class MusicTrackTests
     public async Task Given_A_Non_MusicBrainz_Response_With_Failed_Providers_When_Recorded_Then_Only_Provider_Failures_Are_Emitted()
     {
         var store = new MusicTrackStreamStoreFake();
-        var aggregate = await MusicTrack.LoadAsync(store, MusicCatalogId.From("mc_track_1"), CancellationToken.None);
+        var loaded = await MusicTrack.LoadAsync(store, MusicCatalogId.From("mc_track_1"), CancellationToken.None);
+        var aggregate = loaded.Aggregate;
 
         aggregate.MetadataFetched(
             new MusicCatalogMetadataFetched(
@@ -120,7 +126,7 @@ public sealed class MusicTrackTests
                 [new ProviderLookupFailure(ProviderName.Spotify, LookupSource.Odesli)],
                 null,
                 CorrelationId.From("corr-2")));
-        var append = await aggregate.SaveAsync(store, CommandId.For("LookupStreamingLocations:mc_track_1"), CancellationToken.None);
+        var append = await aggregate.SaveAsync(store, loaded.Stream, CommandId.For("LookupStreamingLocations:mc_track_1"), CancellationToken.None);
 
         append.AppendedEvents.Should().ContainSingle(x => x is ProviderReferenceLookupFailed);
         append.AppendedEvents.Should().NotContainItemsAssignableTo<TrackDiscovered>();

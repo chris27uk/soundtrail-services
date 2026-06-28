@@ -12,7 +12,7 @@ public sealed class RavenEventStore<TStreamId, TEvent>(
     RavenEventStreamDefinition definition)
     where TStreamId : IValueType
 {
-    public async Task<EventStream<TEvent>> LoadAsync(
+    public async Task<LoadedEventStream<TStreamId, TEvent>> LoadAsync(
         TStreamId streamId,
         CancellationToken cancellationToken)
     {
@@ -20,7 +20,7 @@ public sealed class RavenEventStore<TStreamId, TEvent>(
         var metadata = await session.LoadAsync<RavenEventStreamMetadataRecord>(metadataId, cancellationToken);
         if (metadata is null)
         {
-            return new EventStream<TEvent>(0, []);
+            return LoadedEventStream<TStreamId, TEvent>.Empty(streamId);
         }
 
         var storedEvents = (await session.Advanced.LoadStartingWithAsync<RavenStoredEventRecord>(GetEventPrefix(streamId), token: cancellationToken))
@@ -28,50 +28,53 @@ public sealed class RavenEventStore<TStreamId, TEvent>(
             .ToList();
 
         return storedEvents.Count == 0
-            ? new EventStream<TEvent>(metadata.Version, [])
-            : new EventStream<TEvent>(
+            ? new LoadedEventStream<TStreamId, TEvent>(streamId, metadata.Version, [])
+            : new LoadedEventStream<TStreamId, TEvent>(
+                streamId,
                 metadata.Version,
                 storedEvents.Select(ToDomainEvent).ToArray());
     }
 
     public async Task<AppendResult<TEvent>> AppendAsync(
-        AppendRequest<TStreamId, TEvent> request,
+        LoadedEventStream<TStreamId, TEvent> stream,
+        IReadOnlyList<TEvent> events,
+        OperationId? operationId,
         CancellationToken cancellationToken,
         bool saveChanges = false,
-        Func<IAsyncDocumentSession, AppendRequest<TStreamId, TEvent>, CancellationToken, Task>? beforeSave = null)
+        Func<IAsyncDocumentSession, LoadedEventStream<TStreamId, TEvent>, IReadOnlyList<TEvent>, OperationId?, CancellationToken, Task>? beforeSave = null)
     {
         session.Advanced.UseOptimisticConcurrency = true;
 
-        var metadataId = GetMetadataId(request.StreamId);
+        var metadataId = GetMetadataId(stream.StreamId);
         var metadata = await session.LoadAsync<RavenEventStreamMetadataRecord>(metadataId, cancellationToken)
-            ?? CreateMetadata(request.StreamId, metadataId);
+            ?? CreateMetadata(stream.StreamId, metadataId);
 
-        if (request.OperationId is { } operationId &&
-            metadata.AppliedOperationIds.Contains(operationId.StableValue))
+        if (operationId is { } duplicateCheckOperationId &&
+            metadata.AppliedOperationIds.Contains(duplicateCheckOperationId.StableValue))
         {
             return new AppendResult<TEvent>(false, metadata.Version, [], AppendOutcome.DuplicateOperation);
         }
 
-        if (metadata.Version != request.ExpectedVersion)
+        if (metadata.Version != stream.Version)
         {
             return new AppendResult<TEvent>(false, metadata.Version, [], AppendOutcome.VersionMismatch);
         }
 
-        var storedEvents = request.Events
+        var storedEvents = events
             .Select((@event, index) =>
                 ToStoredEvent(
-                    request.StreamId,
-                    request.ExpectedVersion + index + 1,
-                    request.OperationId,
+                    stream.StreamId,
+                    stream.Version + index + 1,
+                    operationId,
                     @event))
             .ToArray();
 
-        if (request.OperationId is { } newOperationId)
+        if (operationId is { } newOperationId)
         {
             metadata.AppliedOperationIds.Add(newOperationId.StableValue);
         }
 
-        metadata.Version += request.Events.Count;
+        metadata.Version += events.Count;
         metadata.UpdatedAtUtc = storedEvents.Length == 0
             ? DateTimeOffset.UtcNow
             : storedEvents.Max(x => x.OccurredAtUtc);
@@ -85,7 +88,7 @@ public sealed class RavenEventStore<TStreamId, TEvent>(
 
         if (beforeSave is not null)
         {
-            await beforeSave(session, request, cancellationToken);
+            await beforeSave(session, stream, events, operationId, cancellationToken);
         }
 
         if (saveChanges)
@@ -93,7 +96,7 @@ public sealed class RavenEventStore<TStreamId, TEvent>(
             await session.SaveChangesAsync(cancellationToken);
         }
 
-        return new AppendResult<TEvent>(true, metadata.Version, request.Events.ToArray(), AppendOutcome.Appended);
+        return new AppendResult<TEvent>(true, metadata.Version, events.ToArray(), AppendOutcome.Appended);
     }
 
     private RavenStoredEventRecord ToStoredEvent(

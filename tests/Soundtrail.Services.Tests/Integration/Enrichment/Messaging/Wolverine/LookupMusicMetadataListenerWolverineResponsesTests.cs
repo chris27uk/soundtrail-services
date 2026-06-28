@@ -45,9 +45,9 @@ public sealed class LookupMusicMetadataListenerWolverineResponsesTests
         var message = TypeTranslationRegistry.Default.ToDto<MusicCatalogLookupAttemptedDto>(
             env.Bus.SentCommands.OfType<MusicCatalogLookupAttempted>().Single());
 
-        message.Outcome.Status.Should().Be("Deferred");
-        message.SourceProvider.Should().Be(LookupSource.MusicBrainz.Value);
-        message.Outcome.Reason.Should().Be("MusicBrainz budget temporarily unavailable");
+        message?.Outcome.Status.Should().Be("Deferred");
+        message?.SourceProvider.Should().Be(LookupSource.MusicBrainz.Value);
+        message?.Outcome.Reason.Should().Be("MusicBrainz budget temporarily unavailable");
     }
 
     [Fact]
@@ -61,9 +61,9 @@ public sealed class LookupMusicMetadataListenerWolverineResponsesTests
         var message = TypeTranslationRegistry.Default.ToDto<MusicCatalogLookupAttemptedDto>(
             env.Bus.SentCommands.OfType<MusicCatalogLookupAttempted>().Single());
 
-        message.Outcome.Status.Should().Be("Failed");
-        message.SourceProvider.Should().Be(LookupSource.MusicBrainz.Value);
-        message.Outcome.Reason.Should().Be("Lookup failed");
+        message?.Outcome.Status.Should().Be("Failed");
+        message?.SourceProvider.Should().Be(LookupSource.MusicBrainz.Value);
+        message?.Outcome.Reason.Should().Be("Lookup failed");
     }
 
     [Fact]

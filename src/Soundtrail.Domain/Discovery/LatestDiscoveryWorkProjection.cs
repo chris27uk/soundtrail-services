@@ -4,11 +4,11 @@ using Soundtrail.Domain.Discovery.Events;
 
 namespace Soundtrail.Domain.Discovery;
 
-public sealed class CatalogDiscoveryWorkSummaryProjection
+public sealed class LatestDiscoveryWorkProjection
 {
-    private readonly EventHandlers<CatalogDiscoveryWorkSummaryProjection> eventHandlers;
+    private readonly EventHandlers<LatestDiscoveryWorkProjection> eventHandlers;
 
-    public CatalogDiscoveryWorkSummaryProjection(MusicCatalogId musicCatalogId)
+    public LatestDiscoveryWorkProjection(MusicCatalogId musicCatalogId)
     {
         MusicCatalogId = musicCatalogId;
         eventHandlers = CreateHandlers();
@@ -34,7 +34,7 @@ public sealed class CatalogDiscoveryWorkSummaryProjection
 
     public int LastAppliedVersion { get; private set; }
 
-    public static CatalogDiscoveryWorkSummaryProjection Load(CatalogDiscoveryWorkSummarySnapshot snapshot) =>
+    public static LatestDiscoveryWorkProjection Load(CatalogDiscoveryWorkSummarySnapshot snapshot) =>
         new(snapshot.MusicCatalogId)
         {
             RequestCount = snapshot.RequestCount,
@@ -83,9 +83,9 @@ public sealed class CatalogDiscoveryWorkSummaryProjection
         LastAppliedVersion = version;
     }
 
-    private EventHandlers<CatalogDiscoveryWorkSummaryProjection> CreateHandlers()
+    private EventHandlers<LatestDiscoveryWorkProjection> CreateHandlers()
     {
-        var handlers = new EventHandlers<CatalogDiscoveryWorkSummaryProjection>();
+        var handlers = new EventHandlers<LatestDiscoveryWorkProjection>();
 
         handlers.Register<CatalogDiscoveryWorkRequested>(requested =>
         {

@@ -21,11 +21,11 @@ public sealed class ApplyMusicCatalogLookupAttemptedToCatalogHandler(
             return;
         }
 
-        var aggregate = await MusicTrack.LoadAsync(
+        var loaded = await MusicTrack.LoadAsync(
             eventRepository,
             fetched.MusicCatalogId,
             cancellationToken);
-        aggregate.MetadataFetched(fetched);
-        await aggregate.SaveAsync(eventRepository, fetched.CommandId, cancellationToken);
+        loaded.Aggregate.MetadataFetched(fetched);
+        await loaded.Aggregate.SaveAsync(eventRepository, loaded.Stream, fetched.CommandId, cancellationToken);
     }
 }

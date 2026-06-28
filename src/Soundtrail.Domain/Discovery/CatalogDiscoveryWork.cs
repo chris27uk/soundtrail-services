@@ -15,15 +15,11 @@ public sealed class CatalogDiscoveryWork
     private int riskScore;
     private CatalogDiscoveryWorkStatus status;
     private DateTimeOffset? nextEligibleAt;
-    private int version;
-
     private CatalogDiscoveryWork(
         MusicCatalogId musicCatalogId,
-        IEnumerable<IDomainEvent> events,
-        int version)
+        IEnumerable<IDomainEvent> events)
     {
         this.musicCatalogId = musicCatalogId;
-        this.version = version;
         eventHandlers = CreateHandlers();
 
         foreach (var @event in events)
@@ -32,13 +28,13 @@ public sealed class CatalogDiscoveryWork
         }
     }
 
-    public static async Task<CatalogDiscoveryWork> LoadAsync(
+    public static async Task<(LoadedEventStream<MusicCatalogId, IDomainEvent> Stream, CatalogDiscoveryWork Aggregate)> LoadAsync(
         IEventStreamRepository<MusicCatalogId, IDomainEvent> repository,
         MusicCatalogId musicCatalogId,
         CancellationToken cancellationToken)
     {
         var stream = await repository.LoadAsync(musicCatalogId, cancellationToken);
-        return new CatalogDiscoveryWork(musicCatalogId, stream.Events, stream.Version);
+        return (stream, new CatalogDiscoveryWork(musicCatalogId, stream.Events));
     }
 
     public void RecordSearchRequested(SearchCatalogRequested requested)
@@ -103,6 +99,7 @@ public sealed class CatalogDiscoveryWork
 
     public async Task<bool> SaveAsync(
         IEventStreamRepository<MusicCatalogId, IDomainEvent> repository,
+        LoadedEventStream<MusicCatalogId, IDomainEvent> stream,
         CancellationToken cancellationToken)
     {
         if (uncommittedEvents.Count == 0)
@@ -111,15 +108,13 @@ public sealed class CatalogDiscoveryWork
         }
 
         var saved = (await repository.AppendAsync(
-            new AppendRequest<MusicCatalogId, IDomainEvent>(
-                RequireMusicCatalogId(),
-                version,
-                uncommittedEvents.AsReadOnly()),
+            stream,
+            uncommittedEvents.AsReadOnly(),
+            null,
             cancellationToken)).Appended;
 
         if (saved)
         {
-            version += uncommittedEvents.Count;
             uncommittedEvents.Clear();
         }
 

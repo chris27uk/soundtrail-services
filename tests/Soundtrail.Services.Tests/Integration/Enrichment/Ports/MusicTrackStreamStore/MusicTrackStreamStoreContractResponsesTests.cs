@@ -176,17 +176,17 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
         {
             if (fake is not null)
             {
-                var aggregate = await MusicTrack.LoadAsync(fake, musicCatalogId, CancellationToken.None);
-                aggregate.MetadataFetched(response);
-                await aggregate.SaveAsync(fake, response.CommandId, CancellationToken.None);
+                var loaded = await MusicTrack.LoadAsync(fake, musicCatalogId, CancellationToken.None);
+                loaded.Aggregate.MetadataFetched(response);
+                await loaded.Aggregate.SaveAsync(fake, loaded.Stream, response.CommandId, CancellationToken.None);
                 return;
             }
 
             using var session = raven!.Store.OpenAsyncSession();
             var store = TestEventStreamRepositories.CreateMusicTrack(session);
-            var ravenAggregate = await MusicTrack.LoadAsync(store, musicCatalogId, CancellationToken.None);
-            ravenAggregate.MetadataFetched(response);
-            await ravenAggregate.SaveAsync(store, response.CommandId, CancellationToken.None);
+            var loadedRaven = await MusicTrack.LoadAsync(store, musicCatalogId, CancellationToken.None);
+            loadedRaven.Aggregate.MetadataFetched(response);
+            await loadedRaven.Aggregate.SaveAsync(store, loadedRaven.Stream, response.CommandId, CancellationToken.None);
             await session.SaveChangesAsync(CancellationToken.None);
         }
 
@@ -205,11 +205,12 @@ public sealed class MusicTrackStreamStoreContractResponsesTests
             using var session = raven!.Store.OpenAsyncSession();
             var store = TestEventStreamRepositories.CreateMusicTrack(session);
             var append = await store.AppendAsync(
-                new AppendRequest<MusicCatalogId, IMusicTrackEvent>(
+                new LoadedEventStream<MusicCatalogId, IMusicTrackEvent>(
                     musicCatalogId,
                     expectedVersion,
-                    events,
-                    OperationId.From(commandId.Value)),
+                    []),
+                events,
+                OperationId.From(commandId.Value),
                 CancellationToken.None);
             await session.SaveChangesAsync(CancellationToken.None);
             return new AppendMusicTrackStreamResult(append.Appended, append.Version, append.Events);

@@ -27,36 +27,39 @@ internal sealed class CatalogSearchDiscoveryRepositoryFake :
             ? events.AsReadOnly()
             : [];
 
-    public Task<EventStream<IDomainEvent>> LoadAsync(
+    public Task<LoadedEventStream<DiscoveryQueryKey, IDomainEvent>> LoadAsync(
         DiscoveryQueryKey streamId,
         CancellationToken cancellationToken)
     {
         _ = cancellationToken;
 
         return Task.FromResult(eventsByCriteria.TryGetValue(streamId.StableValue, out var events)
-            ? new EventStream<IDomainEvent>(events.Count, events.ToArray())
-            : new EventStream<IDomainEvent>(0, []));
+            ? new LoadedEventStream<DiscoveryQueryKey, IDomainEvent>(streamId, events.Count, events.ToArray())
+            : LoadedEventStream<DiscoveryQueryKey, IDomainEvent>.Empty(streamId));
     }
 
     public Task<AppendResult<IDomainEvent>> AppendAsync(
-        AppendRequest<DiscoveryQueryKey, IDomainEvent> request,
+        LoadedEventStream<DiscoveryQueryKey, IDomainEvent> stream,
+        IReadOnlyList<IDomainEvent> events,
+        OperationId? operationId,
         CancellationToken cancellationToken)
     {
         _ = cancellationToken;
+        _ = operationId;
 
-        if (!eventsByCriteria.TryGetValue(request.StreamId.StableValue, out var storedEvents))
+        if (!eventsByCriteria.TryGetValue(stream.StreamId.StableValue, out var storedEvents))
         {
             storedEvents = [];
-            eventsByCriteria[request.StreamId.StableValue] = storedEvents;
+            eventsByCriteria[stream.StreamId.StableValue] = storedEvents;
         }
 
-        if (storedEvents.Count != request.ExpectedVersion)
+        if (storedEvents.Count != stream.Version)
         {
             return Task.FromResult(new AppendResult<IDomainEvent>(false, storedEvents.Count, [], AppendOutcome.VersionMismatch));
         }
 
-        storedEvents.AddRange(request.Events);
-        return Task.FromResult(new AppendResult<IDomainEvent>(true, storedEvents.Count, request.Events.ToArray(), AppendOutcome.Appended));
+        storedEvents.AddRange(events);
+        return Task.FromResult(new AppendResult<IDomainEvent>(true, storedEvents.Count, events.ToArray(), AppendOutcome.Appended));
     }
 
     private static string ToPersistentId(MusicSearchCriteria searchCriteria) =>

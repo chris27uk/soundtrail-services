@@ -14,15 +14,12 @@ public sealed class MusicTrack
     private readonly HashSet<string> discoveredReferenceProviders = [];
     private MusicCatalogId? musicCatalogId;
     private bool streamingLocationsRequired;
-    private int version;
 
     private MusicTrack(
         MusicCatalogId musicCatalogId,
-        IEnumerable<IMusicTrackEvent> events,
-        int version)
+        IEnumerable<IMusicTrackEvent> events)
     {
         this.musicCatalogId = musicCatalogId;
-        this.version = version;
         eventHandlers = CreateHandlers();
 
         foreach (var @event in events)
@@ -31,13 +28,13 @@ public sealed class MusicTrack
         }
     }
 
-    public static async Task<MusicTrack> LoadAsync(
+    public static async Task<(LoadedEventStream<MusicCatalogId, IMusicTrackEvent> Stream, MusicTrack Aggregate)> LoadAsync(
         IEventStreamRepository<MusicCatalogId, IMusicTrackEvent> repository,
         MusicCatalogId musicCatalogId,
         CancellationToken cancellationToken)
     {
         var stream = await repository.LoadAsync(musicCatalogId, cancellationToken);
-        return new MusicTrack(musicCatalogId, stream.Events, stream.Version);
+        return (stream, new MusicTrack(musicCatalogId, stream.Events));
     }
 
     public void MetadataFetched(MusicCatalogMetadataFetched response)
@@ -120,38 +117,37 @@ public sealed class MusicTrack
 
     public Task<AppendMusicTrackStreamResult> SaveAsync(
         IEventStreamRepository<MusicCatalogId, IMusicTrackEvent> repository,
+        LoadedEventStream<MusicCatalogId, IMusicTrackEvent> stream,
         CommandId commandId,
         CancellationToken cancellationToken)
     {
         if (uncommittedEvents.Count == 0)
         {
-            return Task.FromResult(new AppendMusicTrackStreamResult(true, version, []));
+            return Task.FromResult(new AppendMusicTrackStreamResult(true, stream.Version, []));
         }
 
-        return SaveInternalAsync(repository, commandId, cancellationToken);
+        return SaveInternalAsync(repository, stream, commandId, cancellationToken);
     }
 
     private async Task<AppendMusicTrackStreamResult> SaveInternalAsync(
         IEventStreamRepository<MusicCatalogId, IMusicTrackEvent> repository,
+        LoadedEventStream<MusicCatalogId, IMusicTrackEvent> stream,
         CommandId commandId,
         CancellationToken cancellationToken)
     {
         var append = await repository.AppendAsync(
-            new AppendRequest<MusicCatalogId, IMusicTrackEvent>(
-                RequireMusicCatalogId(),
-                version,
-                uncommittedEvents.AsReadOnly(),
-                OperationId.From(commandId.Value)),
+            stream,
+            uncommittedEvents.AsReadOnly(),
+            OperationId.From(commandId.Value),
             cancellationToken);
 
         if (append.Outcome == AppendOutcome.VersionMismatch)
         {
-            throw new MusicTrackStreamConcurrencyException(RequireMusicCatalogId(), version, append.Version);
+            throw new MusicTrackStreamConcurrencyException(RequireMusicCatalogId(), stream.Version, append.Version);
         }
 
         if (append.Appended)
         {
-            version = append.Version;
             uncommittedEvents.Clear();
         }
 

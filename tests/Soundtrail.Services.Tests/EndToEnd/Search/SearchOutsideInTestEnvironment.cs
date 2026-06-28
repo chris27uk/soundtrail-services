@@ -292,10 +292,9 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
         using var session = store.OpenAsyncSession();
         var repository = TestEventStreamRepositories.CreateDiscoveryQuery(session);
         repository.AppendAsync(
-                new AppendRequest<DiscoveryQueryKey, IDomainEvent>(
-                    DiscoveryQueryKey.For(searchCriteria),
-                    0,
-                    events),
+                LoadedEventStream<DiscoveryQueryKey, IDomainEvent>.Empty(DiscoveryQueryKey.For(searchCriteria)),
+                events,
+                null,
                 CancellationToken.None)
             .GetAwaiter()
             .GetResult();
@@ -360,10 +359,9 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
         using var session = store.OpenAsyncSession();
         var repository = TestEventStreamRepositories.CreateDiscoveryQuery(session);
         repository.AppendAsync(
-                new AppendRequest<DiscoveryQueryKey, IDomainEvent>(
-                    DiscoveryQueryKey.For(searchCriteria),
-                    0,
-                    events),
+                LoadedEventStream<DiscoveryQueryKey, IDomainEvent>.Empty(DiscoveryQueryKey.For(searchCriteria)),
+                events,
+                null,
                 CancellationToken.None)
             .GetAwaiter()
             .GetResult();

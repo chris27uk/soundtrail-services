@@ -65,11 +65,9 @@ internal sealed class RavenCatalogProjectionReplayTestEnvironment : IAsyncDispos
         foreach (var stream in storedEvents.OrderBy(x => x.MusicCatalogId, StringComparer.Ordinal).ThenBy(x => x.Version).GroupBy(x => x.MusicCatalogId, StringComparer.Ordinal))
         {
             await repository.AppendAsync(
-                new AppendRequest<MusicCatalogId, IMusicTrackEvent>(
-                    MusicCatalogId.From(stream.Key),
-                    0,
-                    stream.Select(x => x.Event).ToArray(),
-                    OperationId.From($"CatalogReplay:{stream.Key}")),
+                LoadedEventStream<MusicCatalogId, IMusicTrackEvent>.Empty(MusicCatalogId.From(stream.Key)),
+                stream.Select(x => x.Event).ToArray(),
+                OperationId.From($"CatalogReplay:{stream.Key}"),
                 CancellationToken.None);
         }
 

@@ -133,11 +133,9 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
         using var seedSession = raven.Store.OpenAsyncSession();
         var repository = TestEventStreamRepositories.CreateMusicTrack(seedSession);
         await repository.AppendAsync(
-            new AppendRequest<MusicCatalogId, IMusicTrackEvent>(
-                musicCatalogId,
-                0,
-                events.Select(x => x.Event).ToArray(),
-                OperationId.From($"ReplayCatalogProjection:{musicCatalogId.Value}")),
+            LoadedEventStream<MusicCatalogId, IMusicTrackEvent>.Empty(musicCatalogId),
+            events.Select(x => x.Event).ToArray(),
+            OperationId.From($"ReplayCatalogProjection:{musicCatalogId.Value}"),
             CancellationToken.None);
 
         await seedSession.StoreAsync(new CatalogTrackRecordDto

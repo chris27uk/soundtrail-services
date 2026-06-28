@@ -3,8 +3,10 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Subscriptions;
+using Soundtrail.Adapters.Registry;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
+using Soundtrail.Domain.Abstractions.EventSourcing;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogDiscoveryWorkChanged.Adapters;
 
@@ -73,7 +75,9 @@ public sealed class CatalogDiscoveryWorkChangedSubscriptionHostedService(
         {
             await projector.ProjectAsync(
                 MusicCatalogId.From(stream.Key),
-                stream.OrderBy(item => item.Version).ToArray(),
+                stream.OrderBy(item => item.Version)
+                    .Select(item => (item.Version, Event: (IDomainEvent)TypeTranslationRegistry.Default.ToDomainObject(item.Body)))
+                    .ToArray(),
                 cancellationToken);
         }
     }

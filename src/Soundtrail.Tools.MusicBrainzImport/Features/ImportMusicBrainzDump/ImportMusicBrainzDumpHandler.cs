@@ -29,10 +29,10 @@ public sealed class ImportMusicBrainzDumpHandler(
             }
 
             var musicCatalogId = BuildMusicCatalogId(record);
-            var aggregate = await MusicTrack.LoadAsync(repository, musicCatalogId, cancellationToken);
+            var loaded = await MusicTrack.LoadAsync(repository, musicCatalogId, cancellationToken);
             var commandId = BuildCommandId(record);
 
-            aggregate.MetadataFetched(
+            loaded.Aggregate.MetadataFetched(
                 new MusicCatalogMetadataFetched(
                     commandId,
                     musicCatalogId,
@@ -56,7 +56,7 @@ public sealed class ImportMusicBrainzDumpHandler(
                         BuildAlbumId(record)),
                     CorrelationId.From($"musicbrainz-dump:{record.SourceRecordKey}")));
 
-            var append = await aggregate.SaveAsync(repository, commandId, cancellationToken);
+            var append = await loaded.Aggregate.SaveAsync(repository, loaded.Stream, commandId, cancellationToken);
             if (!append.Appended || append.AppendedEvents.Count == 0)
             {
                 continue;

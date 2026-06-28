@@ -56,7 +56,7 @@ public sealed class RavenCatalogDiscoveryWorkSummaryStore(
         CancellationToken cancellationToken)
     {
         var snapshot = await LoadAsync(musicCatalogId, cancellationToken);
-        return snapshot is null ? null : CatalogDiscoveryWorkSummaryProjection.Load(snapshot).ToSummary();
+        return snapshot is null ? null : LatestDiscoveryWorkProjection.Load(snapshot).ToSummary();
     }
 
     public async Task<IReadOnlyList<CatalogDiscoveryWorkSummary>> GetPlanningCandidatesAsync(
@@ -78,7 +78,7 @@ public sealed class RavenCatalogDiscoveryWorkSummaryStore(
                 .ToListAsync(cancellationToken);
 
             return documents
-                .Select(document => CatalogDiscoveryWorkSummaryProjection.Load(ToSnapshot(document)).ToSummary())
+                .Select(document => LatestDiscoveryWorkProjection.Load(ToSnapshot(document)).ToSummary())
                 .ToArray();
         }
     }

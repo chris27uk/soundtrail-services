@@ -65,7 +65,7 @@ public sealed class MusicTrackStreamStoreFake :
         return Task.FromResult(new AppendMusicTrackStreamResult(true, stored.Version, events.ToArray()));
     }
 
-    public Task<EventStream<IMusicTrackEvent>> LoadAsync(
+    public Task<LoadedEventStream<MusicCatalogId, IMusicTrackEvent>> LoadAsync(
         MusicCatalogId streamId,
         CancellationToken cancellationToken)
     {
@@ -73,42 +73,44 @@ public sealed class MusicTrackStreamStoreFake :
 
         if (!streams.TryGetValue(streamId.Value, out var stored))
         {
-            return Task.FromResult(new EventStream<IMusicTrackEvent>(0, []));
+            return Task.FromResult(LoadedEventStream<MusicCatalogId, IMusicTrackEvent>.Empty(streamId));
         }
 
-        return Task.FromResult(new EventStream<IMusicTrackEvent>(stored.Version, stored.Events.ToArray()));
+        return Task.FromResult(new LoadedEventStream<MusicCatalogId, IMusicTrackEvent>(streamId, stored.Version, stored.Events.ToArray()));
     }
 
     public Task<AppendResult<IMusicTrackEvent>> AppendAsync(
-        AppendRequest<MusicCatalogId, IMusicTrackEvent> request,
+        LoadedEventStream<MusicCatalogId, IMusicTrackEvent> stream,
+        IReadOnlyList<IMusicTrackEvent> events,
+        OperationId? operationId,
         CancellationToken cancellationToken)
     {
         _ = cancellationToken;
 
-        if (!streams.TryGetValue(request.StreamId.Value, out var stored))
+        if (!streams.TryGetValue(stream.StreamId.Value, out var stored))
         {
             stored = new StoredStream();
-            streams[request.StreamId.Value] = stored;
+            streams[stream.StreamId.Value] = stored;
         }
 
-        if (request.OperationId is { } operationId && stored.AppliedCommandIds.Contains(operationId.StableValue))
+        if (operationId is { } duplicateOperationId && stored.AppliedCommandIds.Contains(duplicateOperationId.StableValue))
         {
             return Task.FromResult(new AppendResult<IMusicTrackEvent>(false, stored.Version, [], AppendOutcome.DuplicateOperation));
         }
 
-        if (stored.Version != request.ExpectedVersion)
+        if (stored.Version != stream.Version)
         {
             return Task.FromResult(new AppendResult<IMusicTrackEvent>(false, stored.Version, [], AppendOutcome.VersionMismatch));
         }
 
-        if (request.OperationId is { } newOperationId)
+        if (operationId is { } newOperationId)
         {
             stored.AppliedCommandIds.Add(newOperationId.StableValue);
         }
 
-        stored.Events.AddRange(request.Events);
-        stored.Version += request.Events.Count;
-        return Task.FromResult(new AppendResult<IMusicTrackEvent>(true, stored.Version, request.Events.ToArray(), AppendOutcome.Appended));
+        stored.Events.AddRange(events);
+        stored.Version += events.Count;
+        return Task.FromResult(new AppendResult<IMusicTrackEvent>(true, stored.Version, events.ToArray(), AppendOutcome.Appended));
     }
 
     public sealed class StoredStream

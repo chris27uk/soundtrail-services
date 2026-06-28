@@ -11,11 +11,12 @@ public sealed class MusicTrackEventsImportedHandler(IEventStreamRepository<Music
     public async Task Handle(ImportMusicTrackEventsCommand command, CancellationToken cancellationToken = default)
     {
         await repository.AppendAsync(
-            new AppendRequest<MusicCatalogId, IMusicTrackEvent>(
+            new LoadedEventStream<MusicCatalogId, IMusicTrackEvent>(
                 command.MusicCatalogId,
                 command.ExpectedVersion,
-                command.Events,
-                OperationId.From(command.CommandId.Value)),
+                []),
+            command.Events,
+            OperationId.From(command.CommandId.Value),
             cancellationToken);
     }
 }

@@ -1,5 +1,6 @@
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
+using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Search;
@@ -16,11 +17,6 @@ public sealed class SearchCatalogRequestedHandler(
         SearchCatalogRequested requested,
         CancellationToken cancellationToken = default)
     {
-        var history = await SearchOrSeekHistory.LoadAsync(
-            catalogSearchDiscoveryRepository,
-            requested.SearchCriteria,
-            cancellationToken);
-
         var matches = await musicCatalogCandidateSearch.SearchAsync(requested.SearchCriteria, cancellationToken);
         var followUp = await new MusicTrackSearchMatchCollection(matches)
             .DetermineFollowUpAsync(
@@ -29,13 +25,36 @@ public sealed class SearchCatalogRequestedHandler(
                 localMusicTrackSearch,
                 cancellationToken);
 
-        followUp.AppendTo(
-            history,
-            requested.TrustLevel,
-            requested.RiskScore,
-            requested.OccurredAt,
-            requested.CorrelationId);
+        await SearchOrSeekHistory.ApplyAsync(
+            catalogSearchDiscoveryRepository,
+            requested.SearchCriteria,
+            history =>
+            {
+                if (followUp.RequiresTrackMetadataLookup)
+                {
+                    return history.TrackMetadataLookupRequested(
+                        requested.SearchCriteria,
+                        requested.TrustLevel,
+                        requested.RiskScore,
+                        requested.OccurredAt,
+                        requested.CorrelationId);
+                }
 
-        await history.SaveAsync(catalogSearchDiscoveryRepository, cancellationToken);
+                var appended = false;
+                foreach (var lookup in followUp.StreamingLocationLookups)
+                {
+                    history.StreamingLocationsRequired(
+                        lookup.MusicCatalogId,
+                        LookupPriorityBand.Low,
+                        requested.OccurredAt,
+                        requested.CorrelationId,
+                        lookup.SearchCriteria,
+                        lookup.Hierarchy);
+                    appended = true;
+                }
+
+                return appended;
+            },
+            cancellationToken);
     }
 }

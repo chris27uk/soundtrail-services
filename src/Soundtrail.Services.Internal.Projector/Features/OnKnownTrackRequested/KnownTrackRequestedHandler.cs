@@ -19,17 +19,11 @@ public sealed class KnownTrackRequestedHandler(
         {
             var @event = (KnownTrackRequested)item.Event;
             var track = await loadMusicTrackPort.LoadAsync(@event.TrackId, cancellationToken);
-            var history = await SearchOrSeekHistory.LoadAsync(
+            await SearchOrSeekHistory.ApplyAsync(
                 discoveryRepository,
                 command.KnownItem,
+                history => track.AppendFollowUp(history, @event),
                 cancellationToken);
-
-            if (!track.AppendFollowUp(history, @event))
-            {
-                continue;
-            }
-
-            await history.SaveAsync(discoveryRepository, cancellationToken);
         }
     }
 }

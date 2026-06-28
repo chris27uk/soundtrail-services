@@ -21,17 +21,17 @@ public sealed class SearchCatalogHandler(
         if (!local.IsComplete && discovery is null)
         {
             var requested = command.ToCatalogSearchAttempt();
-            var history = await SearchOrSeekHistory.LoadAsync(
+            var saved = await SearchOrSeekHistory.RequestAsync(
                 discoveryRepository,
                 requested.SearchCriteria,
+                requested.TrustLevel,
+                requested.RiskScore,
+                requested.OccurredAt,
+                requested.CorrelationId,
                 cancellationToken);
-            if (history.SearchRequested(requested))
+            if (saved)
             {
-                var saved = await history.SaveAsync(discoveryRepository, cancellationToken);
-                if (saved)
-                {
-                    await commandBus.SendAsync(requested, cancellationToken);
-                }
+                await commandBus.SendAsync(requested, cancellationToken);
             }
 
             discovery = new SearchDiscovery(

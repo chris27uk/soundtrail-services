@@ -79,26 +79,24 @@ public sealed class MusicTrackProjectionReplayResponsesTests
         {
             var repository = TestEventStreamRepositories.CreateMusicTrack(seedSession);
             await repository.AppendAsync(
-                new AppendRequest<MusicCatalogId, IMusicTrackEvent>(
-                    musicCatalogId,
-                    0,
-                    [
-                        new TrackDiscovered(
-                            "Song A",
-                            "Artist A",
-                            123000,
-                            "isrc-1",
-                            "mbid-1",
-                            LookupSource.MusicBrainz,
-                            new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero)),
-                        new ProviderReferenceDiscovered(
-                            ProviderName.AppleMusic,
-                            "apple-1",
-                            new Uri("https://music.apple.com/us/song/song-a?i=apple-1"),
-                            LookupSource.Odesli,
-                            new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero))
-                    ],
-                    OperationId.From("ResolveMusicMetadata:mc_track_1")),
+                LoadedEventStream<MusicCatalogId, IMusicTrackEvent>.Empty(musicCatalogId),
+                [
+                    new TrackDiscovered(
+                        "Song A",
+                        "Artist A",
+                        123000,
+                        "isrc-1",
+                        "mbid-1",
+                        LookupSource.MusicBrainz,
+                        new DateTimeOffset(2026, 6, 6, 12, 0, 0, TimeSpan.Zero)),
+                    new ProviderReferenceDiscovered(
+                        ProviderName.AppleMusic,
+                        "apple-1",
+                        new Uri("https://music.apple.com/us/song/song-a?i=apple-1"),
+                        LookupSource.Odesli,
+                        new DateTimeOffset(2026, 6, 6, 12, 1, 0, TimeSpan.Zero))
+                ],
+                OperationId.From("ResolveMusicMetadata:mc_track_1"),
                 CancellationToken.None);
             await seedSession.SaveChangesAsync(CancellationToken.None);
         }
