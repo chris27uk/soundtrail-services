@@ -1,5 +1,6 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Domain.Enrichment.Responses;
 
@@ -11,9 +12,12 @@ public sealed record MusicCatalogLookupAttempted(
     DateTimeOffset CreatedAt,
     CorrelationId CorrelationId,
     MusicCatalogLookupOutcome Outcome,
-    MusicCatalogMetadataFetched? MusicCatalogMetadataFetched) : ICommand
+    MusicCatalogMetadataFetched? MusicCatalogMetadataFetched,
+    MusicSearchCriteria? SearchCriteria = null) : ICommand
 {
-    public static MusicCatalogLookupAttempted Completed(MusicCatalogMetadataFetched musicCatalogMetadataFetched) =>
+    public static MusicCatalogLookupAttempted Completed(
+        MusicCatalogMetadataFetched musicCatalogMetadataFetched,
+        MusicSearchCriteria? searchCriteria = null) =>
         new(
             musicCatalogMetadataFetched.CommandId,
             musicCatalogMetadataFetched.MusicCatalogId,
@@ -22,7 +26,8 @@ public sealed record MusicCatalogLookupAttempted(
             musicCatalogMetadataFetched.CreatedAt,
             musicCatalogMetadataFetched.CorrelationId,
             MusicCatalogLookupOutcome.Completed(),
-            musicCatalogMetadataFetched);
+            musicCatalogMetadataFetched,
+            searchCriteria);
 
     public static MusicCatalogLookupAttempted Deferred(
         CommandId commandId,
@@ -33,7 +38,8 @@ public sealed record MusicCatalogLookupAttempted(
         CorrelationId correlationId,
         string reason,
         DateTimeOffset? retryAt,
-        int? retryAfterSeconds) =>
+        int? retryAfterSeconds,
+        MusicSearchCriteria? searchCriteria = null) =>
         new(
             commandId,
             musicCatalogId,
@@ -42,7 +48,8 @@ public sealed record MusicCatalogLookupAttempted(
             createdAt,
             correlationId,
             MusicCatalogLookupOutcome.Deferred(reason, retryAt, retryAfterSeconds),
-            null);
+            null,
+            searchCriteria);
 
     public static MusicCatalogLookupAttempted Duplicate(
         CommandId commandId,
@@ -50,7 +57,8 @@ public sealed record MusicCatalogLookupAttempted(
         LookupSource sourceProvider,
         LookupPriorityBand priority,
         DateTimeOffset createdAt,
-        CorrelationId correlationId) =>
+        CorrelationId correlationId,
+        MusicSearchCriteria? searchCriteria = null) =>
         new(
             commandId,
             musicCatalogId,
@@ -59,7 +67,8 @@ public sealed record MusicCatalogLookupAttempted(
             createdAt,
             correlationId,
             MusicCatalogLookupOutcome.Duplicate(),
-            null);
+            null,
+            searchCriteria);
 
     public static MusicCatalogLookupAttempted Failed(
         CommandId commandId,
@@ -68,7 +77,8 @@ public sealed record MusicCatalogLookupAttempted(
         LookupPriorityBand priority,
         DateTimeOffset createdAt,
         CorrelationId correlationId,
-        string reason) =>
+        string reason,
+        MusicSearchCriteria? searchCriteria = null) =>
         new(
             commandId,
             musicCatalogId,
@@ -77,5 +87,6 @@ public sealed record MusicCatalogLookupAttempted(
             createdAt,
             correlationId,
             MusicCatalogLookupOutcome.Failed(reason),
-            null);
+            null,
+            searchCriteria);
 }

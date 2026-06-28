@@ -13,8 +13,7 @@ It is intended to align the current implementation with the business direction a
 This is not a low-level refactor task list only. It is a domain correction plan. The goal is to move the codebase toward a model where:
 
 - catalog streams contain catalog facts
-- discovery streams contain discovery lifecycle facts
-- orchestration owns work planning
+- discovery streams contain discovery request and lookup-journey facts
 - execution owns provider admission and third-party calls
 - integration events are emitted from domain facts, not stored as domain facts
 
@@ -60,7 +59,7 @@ Recent investigation of `SearchCatalogRequestedHandler`, `SearchOrSeekHistory`, 
 The main problems are:
 
 1. The API bug means every request can generate work, whether or not work is actually justified.
-2. Discovery streams are mixing request lifecycle with downstream work instructions.
+2. Discovery streams are mixing legitimate discovery facts with downstream work instructions and integration-shaped events.
 3. Catalog streams are leaking workflow semantics such as `StreamingLocationsRequired`.
 4. Artist and album lookup concepts are modeled as if they are first-class discovery workflows, but the current business direction says artist/album metadata comes from music lookup side effects rather than dedicated MusicBrainz orchestration.
 5. Assessment and planning are track-oriented in practice, while the event model implies broader artist/album workflow support.
@@ -75,9 +74,17 @@ The result is a model where event sourcing is doing double duty as:
 
 That makes the code hard to reason about and weakens the architectural guarantees already stated in the specs.
 
-## Non-Negotiable Constraints
+## Hard Constraints
 
 Nothing in this plan should be interpreted as permission to weaken the current architectural conventions.
+
+These constraints are hard.
+
+They are not guidance, preferences, or aspirations.
+
+They are implementation requirements.
+
+Any implementation step that violates them is wrong, even if it appears to make local progress or preserves temporary backward compatibility.
 
 The redesign must preserve all of the following:
 
@@ -96,6 +103,29 @@ Where there is uncertainty about whether something belongs in the domain model o
 - introduce orchestration only when the domain fact alone is insufficient
 
 In other words, confusion should be resolved in favor of stronger domain modeling, not by prematurely pushing meaning into orchestration.
+
+## Implementation Gating Rule
+
+This plan must be executed with hard implementation gates.
+
+If an implementation step cannot satisfy the full target flow end to end, stop and report that instead of landing a partial architectural rewrite.
+
+For this plan, "full target flow end to end" means the relevant flow is coherent through all of the following:
+
+- request or triggering fact entry
+- domain fact recording in the correct stream
+- assessment and/or planning in the correct model
+- dispatch to the correct worker or downstream command path
+- worker outcome handling
+- application of resulting catalog or discovery facts
+- projection/read-model continuity
+- replay-safe behavior consistent with the target model
+
+It is not acceptable to land a slice that only renames concepts, partially moves ownership, or introduces new aggregates/handlers/flows without the rest of the flow being complete.
+
+It is not acceptable to preserve the old orchestration shape under new names simply because that makes the refactor easier to stage.
+
+If a full target flow cannot be completed safely in the current step, the correct action is to stop, report the gap clearly, and choose a different implementation slice rather than land an incoherent intermediate architecture.
 
 ## Business Direction From Existing Specs
 
@@ -224,14 +254,16 @@ Owns:
 
 - the lifecycle of a user discovery request or known-item request
 - request acceptance
-- planning and deferral decisions
+- resolved identity as it becomes known through the request journey
+- planning, fan-out, and deferral facts about the request journey
 - resolution outcomes
 - the state exposed through discovery status projections
 
 Should not own:
 
-- provider-specific work requests
-- track-level enrichment instructions
+- transport-level message names
+- execution-edge admission data
+- provider-specific worker protocol details
 - catalog facts
 
 ### B. Catalog Domain
@@ -261,27 +293,28 @@ Should not own:
 - worker admission concerns
 - integration DTO semantics
 
-### C. Orchestration / Work Planning Domain
+### C. Execution / Integration Boundary
 
-Keyed by stable work identity appropriate to the work type.
+Execution and messaging remain separate from the domain model.
 
 Owns:
 
-- deciding whether external work is needed
-- deduplicating intent
-- deferral and retry planning
-- dispatching commands to execution
+- dispatching worker commands
+- provider admission
+- third-party calls
+- transport concerns
+- integration event emission
 
 Should not masquerade as:
 
 - catalog facts
-- discovery lifecycle facts
+- discovery facts
 
 ## Proposed Stream Ownership
 
 ### 1. Discovery Stream
 
-The discovery stream should contain only request lifecycle facts.
+The discovery stream should contain request and lookup-journey facts.
 
 Recommended event set:
 
@@ -292,14 +325,21 @@ Recommended event set:
 - `DiscoveryStarted`
 - `DiscoveryCompleted`
 - `DiscoveryFailed`
-
-Optional additions if needed for clarity:
-
 - `DiscoveryResolvedToKnownCatalogItem`
 - `DiscoveryResolvedAsNotFound`
 - `DiscoveryResolvedAsAmbiguous`
+- `CatalogSearchCandidateRecorded`
+- explicit domain facts recording what the request has fanned out to next
 
-These additions would be justified if the current lifecycle events are not expressive enough for resolution outcomes without overloading `Reason`.
+These are facts about the request journey.
+
+They are not permission to store:
+
+- transport message shapes
+- worker admission outcomes
+- command DTO semantics
+- low-level retry mechanics that exist only to drive infrastructure
+- provider-specific execution protocol chatter
 
 ### 2. Catalog Stream
 
@@ -317,19 +357,13 @@ Recommended event set:
 
 If the stream remains track-keyed temporarily, these facts may still be emitted from the track aggregate, but they must stay facts rather than orchestration instructions.
 
-### 3. Work Planning Stream Or Store
+### 3. Execution Boundary
 
-External work planning should move to a dedicated orchestration model.
+The system will still need handlers and ports that translate discovery facts into worker commands and translate worker outcomes back into domain facts.
 
-Recommended ownership:
+Those handlers are part of the execution and integration boundary, not a separate domain event stream by default.
 
-- metadata lookup needed
-- playback/provider lookup needed
-- deferred due to prioritisation
-- scheduled for execution
-- ignored because duplicate or already complete
-
-This could remain event-sourced or move to a dedicated durable store depending on implementation needs. The important point is not the technology choice. The important point is that it is no longer confused with discovery history or catalog history.
+If a future work model gains a strong stable business identity and real domain state, it may be promoted into its own domain model later. This plan does not assume that up front.
 
 ## Event Reclassification
 
@@ -344,6 +378,9 @@ The following current events should be reclassified.
 - `DiscoveryStarted`
 - `DiscoveryCompleted`
 - `DiscoveryFailed`
+- `CatalogSearchCandidateRecorded`
+- explicit resolved-identity facts
+- explicit fan-out facts that describe what the request has been expanded to
 
 ### Remove From Discovery Streams
 
@@ -355,7 +392,7 @@ The following current events should be reclassified.
 
 Reason:
 
-These are not pure lifecycle facts of the discovery request. They are either work requests, alternate request types, or partially resolved workflow signals.
+These are not domain facts about the request journey. They are either work requests, alternate request types leaking through the wrong abstraction, or integration/orchestration-shaped signals.
 
 ### Remove From Catalog Streams
 
@@ -369,7 +406,9 @@ This is a planning instruction, not a stable catalog fact.
 
 - integration DTO semantics
 - transport-level message names
-- execution-edge admission outcomes unless intentionally translated into discovery lifecycle facts
+- execution-edge admission outcomes unless intentionally translated into domain facts
+- provider-specific worker protocol chatter
+- orchestration records whose only meaning is "send this command next"
 
 ## Business Rules To Preserve
 
@@ -384,7 +423,7 @@ Any redesign must preserve these business truths from the specs.
 ### Asynchronous Discovery
 
 - discovery lifecycle remains visible in RavenDB-backed projections
-- planner owns retry estimates
+- discovery owns request-level planning and deferral facts
 - worker owns execution and provider admission
 
 ### Provider Semantics
@@ -406,6 +445,7 @@ Any redesign must preserve these business truths from the specs.
 - aggregates remain persistence-ignorant
 - translation boundaries remain explicit
 - replay remains a first-class supported operation throughout the redesign
+- request journey facts must remain expressible as domain facts rather than hidden in handlers
 
 ### Architectural Conventions
 
@@ -414,6 +454,7 @@ Any redesign must preserve these business truths from the specs.
 - repository and translation layers remain responsible for DTO/event-store mapping
 - handlers may continue to perform multiple downstream reactions to the same fact where appropriate
 - no part of this redesign should rely on bypassing existing infrastructure/domain conventions to appear simpler
+- discovery aggregates may store what has been planned or fanned out to when those are domain facts about the request journey, but they must not store integration events or low-level execution protocol detail
 
 ## Implementation Strategy
 
@@ -428,13 +469,13 @@ Create a shared target language before changing behavior.
 ### Work
 
 - Document the three bounded concerns:
-  - discovery lifecycle
+  - discovery request and lookup journey
   - catalog facts
-  - orchestration/work planning
+  - execution/integration boundary
 - Document the preferred business language for this codebase, including explicit retention of `StreamingLocations` terminology where it better fits the business than older spec wording.
 - Agree on whether discovery should cover both search and known-item requests, or whether seek requests should become a separate concept.
 - Decide whether the long-term catalog aggregate should be artist-keyed or whether that is a later evolution after workflow cleanup.
-- Define what counts as a domain event versus an orchestration event versus an integration event.
+- Define what counts as a discovery fact, a catalog fact, and an integration/execution concern.
 - Define the tie-break rule that ambiguous concepts are modeled in the domain first, not orchestration first.
 
 ### Deliverables

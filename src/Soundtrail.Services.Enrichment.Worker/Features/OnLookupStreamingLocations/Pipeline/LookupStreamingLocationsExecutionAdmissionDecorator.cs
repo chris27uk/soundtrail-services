@@ -30,7 +30,8 @@ public sealed class LookupStreamingLocationsExecutionAdmissionDecorator(
                     command.TargetProvider,
                     command.Priority,
                     command.CreatedAt,
-                    command.CorrelationId), cancellationToken);
+                    command.CorrelationId,
+                    command.LookupKey), cancellationToken);
                 return;
             
             case LookupExecutionAdmissionStatus.Deferred:
@@ -43,7 +44,8 @@ public sealed class LookupStreamingLocationsExecutionAdmissionDecorator(
                     command.CorrelationId,
                     admission.Reason,
                     admission.RetryAt,
-                    admission.RetryAfterSecondsFrom(command.CreatedAt)), cancellationToken);
+                    admission.RetryAfterSecondsFrom(command.CreatedAt),
+                    command.LookupKey), cancellationToken);
                 return;
         }
 

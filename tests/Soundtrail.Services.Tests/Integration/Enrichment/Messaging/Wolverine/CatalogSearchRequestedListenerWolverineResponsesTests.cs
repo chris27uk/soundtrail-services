@@ -8,7 +8,7 @@ namespace Soundtrail.Services.Tests.Integration.Enrichment.Messaging.Wolverine;
 public sealed class CatalogSearchRequestedListenerWolverineResponsesTests
 {
     [Fact]
-    public async Task Given_A_Schedulable_Request_When_Handled_Then_A_Music_Track_Search_Started_Event_Is_Stored()
+    public async Task Given_A_Schedulable_Request_When_Handled_Then_Request_And_Candidate_Facts_Are_Stored()
     {
         var env = CatalogSearchRequestedListenerWolverineTestEnvironment.WithASchedulableRequest();
         var criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
@@ -17,43 +17,34 @@ public sealed class CatalogSearchRequestedListenerWolverineResponsesTests
 
         env.DiscoveryRepository.GetStoredEvents(criteria)
             .Should()
-            .ContainSingle()
-            .Which.Should()
-            .BeOfType<CatalogSearchCandidateRecorded>();
+            .Contain(x => x is DiscoveryRequested)
+            .And.ContainSingle(x => x is CatalogCandidateIdentified);
     }
 
     [Fact]
-    public async Task Given_A_Request_That_Cannot_Be_Resolved_When_Handled_Then_A_Music_Metadata_Required_Event_Is_Stored()
+    public async Task Given_A_Request_That_Cannot_Be_Resolved_When_Handled_Then_Request_And_Synthetic_Candidate_Facts_Are_Stored()
     {
         var env = CatalogSearchRequestedListenerWolverineTestEnvironment.WithAnUnschedulableRequest();
         var criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
 
         await env.HandleUnschedulableRequest();
 
-        env.DiscoveryRepository.GetStoredEvents(criteria).Should().ContainSingle().Which.Should().BeOfType<CatalogSearchCandidateRecorded>();
+        env.DiscoveryRepository.GetStoredEvents(criteria)
+            .Should()
+            .Contain(x => x is DiscoveryRequested)
+            .And.ContainSingle(x => x is CatalogCandidateIdentified);
     }
 
     [Fact]
-    public async Task Given_Local_Search_Has_Isrc_When_Handled_Then_The_Request_Handler_Still_Stores_A_Candidate_Event()
+    public async Task Given_A_Resolvable_Request_When_Handled_Then_Only_Request_And_Candidate_Facts_Are_Stored()
     {
         var env = CatalogSearchRequestedListenerWolverineTestEnvironment.WithASchedulableRequest();
-        env.LocalSearch.Seed(new LocalMusicTrackSearchResult(
-            MusicCatalogId.From("mc_track_1"),
-            "Song A",
-            "Artist A",
-            "Album A",
-            "isrc-1",
-            "mbid-1",
-            123000,
-            IsPlayable: false,
-            AvailableProviders: [],
-            ReleaseDate: null));
 
         await env.HandleSchedulableRequest();
 
         env.DiscoveryRepository
             .GetStoredEvents(MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks))
             .Should()
-            .OnlyContain(x => x is CatalogSearchCandidateRecorded);
+            .OnlyContain(x => x is DiscoveryRequested || x is CatalogCandidateIdentified);
     }
 }

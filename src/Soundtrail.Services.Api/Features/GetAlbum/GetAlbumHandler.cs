@@ -15,6 +15,7 @@ public sealed class GetAlbumHandler(
         var response = await catalogReadPort.GetAlbumAsync(request.ArtistId, request.AlbumId, cancellationToken);
         await commandBus.SendAsync(
             new KnownAlbumRequested(
+                request.ArtistId,
                 request.AlbumId,
                 DateTimeOffset.UtcNow,
                 CorrelationId.New()),

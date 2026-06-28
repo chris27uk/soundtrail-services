@@ -10,6 +10,7 @@ public sealed class SearchDiscoveryHistory
 {
     private readonly EventHandlers<SearchDiscoveryHistory> eventHandlers;
     private readonly List<IDomainEvent> uncommittedEvents = [];
+    private readonly HashSet<string> recordedCandidateKeys = new(StringComparer.Ordinal);
     private MusicSearchCriteria? criteria;
     private CatalogSearchLifecycleStatus? status;
     private LookupPriorityBand? priority;
@@ -69,6 +70,32 @@ public sealed class SearchDiscoveryHistory
                 trustLevel,
                 riskScore,
                 requestedAt,
+                correlationId),
+            isNew: true);
+
+        return true;
+    }
+
+    public bool IdentifyCatalogCandidate(
+        MusicCatalogId musicCatalogId,
+        int trustLevel,
+        int riskScore,
+        DateTimeOffset recordedAt,
+        CorrelationId correlationId)
+    {
+        var candidateKey = ToCandidateKey(musicCatalogId, correlationId);
+        if (recordedCandidateKeys.Contains(candidateKey))
+        {
+            return false;
+        }
+
+        Apply(
+            new CatalogCandidateIdentified(
+                RequireSearchCriteria(),
+                musicCatalogId,
+                trustLevel,
+                riskScore,
+                recordedAt,
                 correlationId),
             isNew: true);
 
@@ -309,6 +336,7 @@ public sealed class SearchDiscoveryHistory
         handlers.Register<DiscoveryFailed>(On);
         handlers.Register<DiscoveryStarted>(On);
         handlers.Register<DiscoveryCompleted>(On);
+        handlers.Register<CatalogCandidateIdentified>(On);
         return handlers;
     }
 
@@ -396,8 +424,17 @@ public sealed class SearchDiscoveryHistory
         hasRequested = true;
     }
 
+    private void On(CatalogCandidateIdentified @event)
+    {
+        criteria = @event.SearchCriteria;
+        recordedCandidateKeys.Add(ToCandidateKey(@event.MusicCatalogId, @event.CorrelationId));
+    }
+
     private MusicSearchCriteria RequireSearchCriteria() =>
         criteria ?? throw new InvalidOperationException("Catalog search term has not been established.");
+
+    private static string ToCandidateKey(MusicCatalogId musicCatalogId, CorrelationId correlationId) =>
+        $"{correlationId.Value}:{musicCatalogId.Value}";
 
     private void EnsureCanTransitionTo(CatalogSearchLifecycleStatus targetStatus)
     {

@@ -16,7 +16,6 @@ public static class ServiceCollectionExtensions
         options.ConfigureDependencies?.Invoke(services);
 
         services.TryAddScoped<MusicCatalogMatchResolver>();
-        services.TryAddScoped<RecordCatalogSearchCandidateHandler>();
         services.TryAddScoped<SearchCatalogRequestedHandler>();
         services.TryAddScoped<SearchCatalogRequestedListener>();
         return services;

@@ -25,7 +25,8 @@ public sealed class LookupTrackMetadataExecutionAdmissionDecorator(ILookupExecut
                 LookupSource.MusicBrainz,
                 command.Priority,
                 command.CreatedAt,
-                command.CorrelationId), cancellationToken);
+                command.CorrelationId,
+                command.SearchCriteria), cancellationToken);
             return;
         }
 
@@ -40,7 +41,8 @@ public sealed class LookupTrackMetadataExecutionAdmissionDecorator(ILookupExecut
                 command.CorrelationId,
                 admission.Reason,
                 admission.RetryAt,
-                admission.RetryAfterSecondsFrom(command.CreatedAt)), cancellationToken);
+                admission.RetryAfterSecondsFrom(command.CreatedAt),
+                command.SearchCriteria), cancellationToken);
             return;
         }
 

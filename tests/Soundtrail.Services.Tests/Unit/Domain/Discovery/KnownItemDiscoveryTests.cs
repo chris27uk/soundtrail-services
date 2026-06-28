@@ -32,11 +32,11 @@ public sealed class KnownItemDiscoveryTests
     public async Task Given_An_Empty_Known_Item_Stream_When_Requesting_An_Album_Then_Album_Catalog_Lookup_Requested_Is_Emitted()
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
-        var knownItem = KnownCatalogItem.ForAlbum(AlbumId.From("album_1"));
+        var knownItem = KnownCatalogItem.ForAlbum(ArtistId.From("artist_1"), AlbumId.From("album_1"));
         var loaded = await KnownItemDiscovery.LoadAsync(repository, knownItem, CancellationToken.None);
 
         var changed = loaded.Aggregate.AlbumRequested(
-            null,
+            ArtistId.From("artist_1"),
             AlbumId.From("album_1"),
             Clock,
             CorrelationId.From("corr-1"));
@@ -62,6 +62,31 @@ public sealed class KnownItemDiscoveryTests
 
         changed.Should().BeTrue();
         repository.GetStoredEvents(knownItem).Should().ContainSingle().Which.Should().BeOfType<KnownTrackRequestedEvent>();
+    }
+
+    [Fact]
+    public async Task Given_A_Known_Track_Request_When_Starting_Track_Discovery_Then_A_Known_Track_Discovery_Started_Event_Is_Emitted()
+    {
+        var repository = new CatalogSearchDiscoveryRepositoryFake();
+        var knownItem = KnownCatalogItem.ForTrack(TrackId.From("track_1"));
+        var loaded = await KnownItemDiscovery.LoadAsync(repository, knownItem, CancellationToken.None);
+        loaded.Aggregate.TrackRequested(
+            TrackId.From("track_1"),
+            PlaybackProviderFilter.Parse("spotify"),
+            Clock,
+            CorrelationId.From("corr-1"));
+        await loaded.Aggregate.SaveAsync(repository, loaded.Stream, CancellationToken.None);
+
+        loaded = await KnownItemDiscovery.LoadAsync(repository, knownItem, CancellationToken.None);
+        var changed = loaded.Aggregate.TrackLookupStarted(
+            TrackId.From("track_1"),
+            LookupPriorityBand.High,
+            "Lookup started",
+            Clock);
+        await loaded.Aggregate.SaveAsync(repository, loaded.Stream, CancellationToken.None);
+
+        changed.Should().BeTrue();
+        repository.GetStoredEvents(knownItem).Last().Should().BeOfType<KnownTrackDiscoveryStarted>();
     }
 
     [Fact]

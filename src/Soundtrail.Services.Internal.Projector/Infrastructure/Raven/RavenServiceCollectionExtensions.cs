@@ -14,8 +14,8 @@ using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adap
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.ProjectionModel;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Ports;
-using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Adapters;
-using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateRecorded.Ports;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogCandidateIdentified.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogCandidateIdentified.Ports;
 using Soundtrail.Adapters.ProjectionDocuments;
 using Soundtrail.Adapters.Registry.CompositionRoot;
 
@@ -48,12 +48,11 @@ public static class RavenServiceCollectionExtensions
         services.TryAddScoped<IAsyncDocumentSession>(sp => sp.GetRequiredService<IDocumentStore>().OpenAsyncSession());
         services.TryAddScoped<ILoadDiscoveryLifecycleProjectionPort, RavenLoadDiscoveryLifecycleProjection>();
         services.TryAddScoped<ISaveDiscoveryLifecycleProjectionPort, RavenSaveDiscoveryLifecycleProjection>();
-        services.TryAddScoped<ILoadCatalogSearchPlannedTrackingPort, RavenLoadCatalogSearchPlannedTracking>();
         services.TryAddScoped<ILoadCatalogSearchPlannedMusicTrackPort, RavenLoadCatalogSearchPlannedMusicTrack>();
         services.TryAddSingleton<RavenDiscoveryLifecycleProjectionMapper>();
-        services.TryAddScoped<ILoadCatalogSearchCandidateMusicTrackPort, RavenLoadCatalogSearchCandidateMusicTrack>();
-        services.TryAddScoped<ILoadCatalogSearchCandidateTrackingPort, RavenLoadCatalogSearchCandidateTracking>();
-        services.TryAddScoped<ISaveCatalogSearchCandidateTrackingPort, RavenSaveCatalogSearchCandidateTracking>();
+        services.TryAddScoped<ILoadCatalogCandidateMusicTrackPort, RavenLoadCatalogCandidateMusicTrack>();
+        services.TryAddScoped<ILoadCatalogCandidateTrackingPort, RavenLoadCatalogCandidateTracking>();
+        services.TryAddScoped<ISaveCatalogCandidateTrackingPort, RavenSaveCatalogCandidateTracking>();
         services.TryAddScoped<ILoadPotentialCatalogLookupWorkPort, RavenLoadPotentialCatalogLookupWork>();
         services.TryAddScoped<ISavePotentialCatalogLookupWorkPort, RavenSavePotentialCatalogLookupWork>();
         services.TryAddScoped<ILoadMusicTrackProjectionPort, RavenLoadMusicTrackProjection>();

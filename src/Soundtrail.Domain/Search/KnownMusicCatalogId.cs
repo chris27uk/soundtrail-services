@@ -13,6 +13,7 @@ namespace Soundtrail.Domain.Search
         
         public static KnownMusicCatalogId FromArtistId(ArtistId artistId) => new(artistId, null, null);
         public static KnownMusicCatalogId FromAlbumId(AlbumId albumId) => new(null, albumId, null);
+        public static KnownMusicCatalogId FromAlbumId(ArtistId artistId, AlbumId albumId) => new(artistId, albumId, null);
         public static KnownMusicCatalogId FromTrackId(TrackId trackId) => new(null, null, trackId);
         
         public ArtistId? ArtistId { get; init; }

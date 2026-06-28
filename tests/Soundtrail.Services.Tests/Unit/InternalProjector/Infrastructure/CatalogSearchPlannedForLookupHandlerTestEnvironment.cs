@@ -12,16 +12,13 @@ namespace Soundtrail.Services.Tests.Unit.InternalProjector.Infrastructure;
 
 internal sealed class CatalogSearchPlannedForLookupHandlerTestEnvironment
 {
-    private readonly LoadCatalogSearchPlannedTrackingPortFake loadTrackingPort;
     private readonly LoadCatalogSearchPlannedMusicTrackPortFake loadMusicTrackPort;
 
     private CatalogSearchPlannedForLookupHandlerTestEnvironment()
     {
-        loadTrackingPort = new LoadCatalogSearchPlannedTrackingPortFake();
         loadMusicTrackPort = new LoadCatalogSearchPlannedMusicTrackPortFake();
         Bus = new CommandBusFake();
         Handler = new CatalogSearchPlannedForLookupHandler(
-            loadTrackingPort,
             loadMusicTrackPort,
             Bus);
     }
@@ -32,19 +29,26 @@ internal sealed class CatalogSearchPlannedForLookupHandlerTestEnvironment
 
     public static CatalogSearchPlannedForLookupHandlerTestEnvironment Create() => new();
 
-    public void TrackingPointsTo(MusicCatalogId musicCatalogId) => loadTrackingPort.Return(new CatalogSearchPlannedTracking(musicCatalogId.Value));
-
     public void TrackIsMissing() => loadMusicTrackPort.Return(null);
 
     public void TrackRequiresMetadata() => loadMusicTrackPort.Return(
         new CatalogSearchPlannedMusicTrack(null, null, false, null, null, null, null, null, null, null));
 
-    public CatalogSearchPlannedForLookupCommand Command(MusicSearchCriteria searchCriteria) =>
+    public CatalogSearchPlannedForLookupCommand Command(MusicSearchCriteria searchCriteria, MusicCatalogId musicCatalogId) =>
         new(
             searchCriteria,
             [
                 new VersionedCatalogSearchDiscoveryEvent(
                     1,
+                    new CatalogCandidateIdentified(
+                        searchCriteria,
+                        musicCatalogId,
+                        1,
+                        10,
+                        Clock.AddSeconds(-5),
+                        CorrelationId.From("corr-1"))),
+                new VersionedCatalogSearchDiscoveryEvent(
+                    2,
                     new DiscoveryPlanned(
                         searchCriteria,
                         LookupPriorityBand.High,
@@ -54,20 +58,6 @@ internal sealed class CatalogSearchPlannedForLookupHandlerTestEnvironment
                         "Planner queued lookup",
                         Clock))
             ]);
-
-    private sealed class LoadCatalogSearchPlannedTrackingPortFake : ILoadCatalogSearchPlannedTrackingPort
-    {
-        private CatalogSearchPlannedTracking? tracking;
-
-        public void Return(CatalogSearchPlannedTracking? value) => tracking = value;
-
-        public Task<CatalogSearchPlannedTracking?> LoadAsync(MusicSearchCriteria searchCriteria, CancellationToken cancellationToken)
-        {
-            _ = searchCriteria;
-            _ = cancellationToken;
-            return Task.FromResult(tracking);
-        }
-    }
 
     private sealed class LoadCatalogSearchPlannedMusicTrackPortFake : ILoadCatalogSearchPlannedMusicTrackPort
     {

@@ -5,6 +5,7 @@ using Soundtrail.Domain.Catalog;
 namespace Soundtrail.Domain.Discovery.Commands;
 
 public sealed record KnownAlbumRequested(
+    ArtistId ArtistId,
     AlbumId AlbumId,
     DateTimeOffset OccurredAt,
     CorrelationId CorrelationId) : ICommand

@@ -1,9 +1,8 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Discovery.Events;
-using Soundtrail.Domain.Search;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Internal.Projector.Features.OnKnownTrackRequested;
 using Soundtrail.Services.Internal.Projector.Features.OnKnownTrackRequested.Ports;
 using Soundtrail.Services.Internal.Projector.Features.OnKnownTrackRequested.Support;
@@ -18,14 +17,14 @@ internal sealed class KnownTrackRequestedHandlerTestEnvironment
 
     private KnownTrackRequestedHandlerTestEnvironment()
     {
-        DiscoveryRepository = new CatalogSearchDiscoveryRepositoryFake();
         loadTrackPort = new LoadKnownTrackRequestedMusicTrackPortFake();
-        Handler = new KnownTrackRequestedHandler(loadTrackPort, DiscoveryRepository);
+        Bus = new CommandBusFake();
+        Handler = new KnownTrackRequestedHandler(loadTrackPort, Bus);
     }
 
     public KnownTrackRequestedHandler Handler { get; }
 
-    public CatalogSearchDiscoveryRepositoryFake DiscoveryRepository { get; }
+    public CommandBusFake Bus { get; }
 
     public static KnownTrackRequestedHandlerTestEnvironment Create() => new();
 
@@ -42,20 +41,6 @@ internal sealed class KnownTrackRequestedHandlerTestEnvironment
                 [],
                 ArtistId.From("artist_1"),
                 AlbumId.From("album_1")));
-
-    public async Task SeedKnownTrackRequestedAsync()
-    {
-        var loaded = await SearchOrSeekHistory.LoadAsync(
-            DiscoveryRepository,
-            KnownCatalogItem.ForTrack(TrackId.From("track_1")),
-            CancellationToken.None);
-        loaded.Aggregate.KnownTrackRequested(
-            TrackId.From("track_1"),
-            PlaybackProviderFilter.Parse("spotify,appleMusic,youtubeMusic"),
-            Clock,
-            CorrelationId.From("corr-track"));
-        await loaded.Aggregate.SaveAsync(DiscoveryRepository, loaded.Stream, CancellationToken.None);
-    }
 
     public KnownTrackRequestedCommand Command() =>
         new(

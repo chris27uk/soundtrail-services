@@ -15,6 +15,11 @@ public sealed class KnownItemDiscovery
     private bool hasKnownTrackRequested;
     private bool hasArtistCatalogLookupRequested;
     private bool hasAlbumCatalogLookupRequested;
+    private CatalogSearchLifecycleStatus? knownTrackStatus;
+    private LookupPriorityBand? knownTrackPriority;
+    private int? knownTrackEstimatedRetryAfterSeconds;
+    private DateTimeOffset? knownTrackEarliestExpectedCompletionAt;
+    private string? knownTrackReason;
 
     private KnownItemDiscovery(IEnumerable<IDomainEvent> events)
     {
@@ -54,6 +59,125 @@ public sealed class KnownItemDiscovery
                 playback,
                 requestedAt,
                 correlationId),
+            isNew: true);
+
+        return true;
+    }
+
+    public bool TrackLookupStarted(
+        TrackId trackId,
+        LookupPriorityBand priority,
+        string reason,
+        DateTimeOffset startedAt)
+    {
+        if (!hasKnownTrackRequested)
+        {
+            return false;
+        }
+
+        if (knownTrackStatus == CatalogSearchLifecycleStatus.InProgress
+            && knownTrackPriority == priority
+            && string.Equals(knownTrackReason, reason, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        Apply(
+            new KnownTrackDiscoveryStarted(
+                trackId,
+                priority,
+                reason,
+                startedAt),
+            isNew: true);
+
+        return true;
+    }
+
+    public bool TrackLookupCompleted(
+        TrackId trackId,
+        LookupPriorityBand priority,
+        string reason,
+        DateTimeOffset completedAt)
+    {
+        if (!hasKnownTrackRequested)
+        {
+            return false;
+        }
+
+        if (knownTrackStatus == CatalogSearchLifecycleStatus.Completed
+            && knownTrackPriority == priority
+            && string.Equals(knownTrackReason, reason, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        Apply(
+            new KnownTrackDiscoveryCompleted(
+                trackId,
+                priority,
+                reason,
+                completedAt),
+            isNew: true);
+
+        return true;
+    }
+
+    public bool TrackLookupDeferred(
+        TrackId trackId,
+        int? estimatedRetryAfterSeconds,
+        DateTimeOffset? earliestExpectedCompletionAt,
+        string reason,
+        DateTimeOffset deferredAt)
+    {
+        if (!hasKnownTrackRequested)
+        {
+            return false;
+        }
+
+        if (knownTrackStatus == CatalogSearchLifecycleStatus.Deferred
+            && knownTrackEstimatedRetryAfterSeconds == estimatedRetryAfterSeconds
+            && knownTrackEarliestExpectedCompletionAt == earliestExpectedCompletionAt
+            && string.Equals(knownTrackReason, reason, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        Apply(
+            new KnownTrackDiscoveryDeferred(
+                trackId,
+                estimatedRetryAfterSeconds,
+                earliestExpectedCompletionAt,
+                reason,
+                deferredAt),
+            isNew: true);
+
+        return true;
+    }
+
+    public bool TrackLookupFailed(
+        TrackId trackId,
+        LookupPriorityBand priority,
+        string reason,
+        DateTimeOffset failedAt)
+    {
+        if (!hasKnownTrackRequested)
+        {
+            return false;
+        }
+
+        if (knownTrackStatus == CatalogSearchLifecycleStatus.Failed
+            && knownTrackPriority == priority
+            && string.Equals(knownTrackReason, reason, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        Apply(
+            new KnownTrackDiscoveryFailed(
+                trackId,
+                priority,
+                reason,
+                failedAt),
             isNew: true);
 
         return true;
@@ -141,6 +265,10 @@ public sealed class KnownItemDiscovery
     {
         var handlers = new EventHandlers<KnownItemDiscovery>();
         handlers.Register<Events.KnownTrackRequested>(On);
+        handlers.Register<KnownTrackDiscoveryStarted>(On);
+        handlers.Register<KnownTrackDiscoveryCompleted>(On);
+        handlers.Register<KnownTrackDiscoveryDeferred>(On);
+        handlers.Register<KnownTrackDiscoveryFailed>(On);
         handlers.Register<ArtistCatalogLookupRequested>(On);
         handlers.Register<AlbumCatalogLookupRequested>(On);
         return handlers;
@@ -152,6 +280,46 @@ public sealed class KnownItemDiscovery
         hasKnownTrackRequested = true;
     }
 
+    private void On(KnownTrackDiscoveryStarted @event)
+    {
+        knownItem ??= KnownCatalogItem.ForTrack(@event.TrackId);
+        knownTrackStatus = CatalogSearchLifecycleStatus.InProgress;
+        knownTrackPriority = @event.Priority;
+        knownTrackEstimatedRetryAfterSeconds = null;
+        knownTrackEarliestExpectedCompletionAt = null;
+        knownTrackReason = @event.Reason;
+    }
+
+    private void On(KnownTrackDiscoveryCompleted @event)
+    {
+        knownItem ??= KnownCatalogItem.ForTrack(@event.TrackId);
+        knownTrackStatus = CatalogSearchLifecycleStatus.Completed;
+        knownTrackPriority = @event.Priority;
+        knownTrackEstimatedRetryAfterSeconds = null;
+        knownTrackEarliestExpectedCompletionAt = null;
+        knownTrackReason = @event.Reason;
+    }
+
+    private void On(KnownTrackDiscoveryDeferred @event)
+    {
+        knownItem ??= KnownCatalogItem.ForTrack(@event.TrackId);
+        knownTrackStatus = CatalogSearchLifecycleStatus.Deferred;
+        knownTrackPriority = null;
+        knownTrackEstimatedRetryAfterSeconds = @event.EstimatedRetryAfterSeconds;
+        knownTrackEarliestExpectedCompletionAt = @event.EarliestExpectedCompletionAt;
+        knownTrackReason = @event.Reason;
+    }
+
+    private void On(KnownTrackDiscoveryFailed @event)
+    {
+        knownItem ??= KnownCatalogItem.ForTrack(@event.TrackId);
+        knownTrackStatus = CatalogSearchLifecycleStatus.Failed;
+        knownTrackPriority = @event.Priority;
+        knownTrackEstimatedRetryAfterSeconds = null;
+        knownTrackEarliestExpectedCompletionAt = null;
+        knownTrackReason = @event.Reason;
+    }
+
     private void On(ArtistCatalogLookupRequested @event)
     {
         knownItem ??= KnownCatalogItem.ForArtist(@event.ArtistId);
@@ -160,7 +328,9 @@ public sealed class KnownItemDiscovery
 
     private void On(AlbumCatalogLookupRequested @event)
     {
-        knownItem ??= KnownCatalogItem.ForAlbum(@event.AlbumId);
+        knownItem ??= KnownCatalogItem.ForAlbum(
+            @event.ArtistId ?? throw new InvalidOperationException("Album lookup requests must include an artist id."),
+            @event.AlbumId);
         hasAlbumCatalogLookupRequested = true;
     }
 }

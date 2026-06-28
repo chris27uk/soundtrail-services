@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Support;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
@@ -9,26 +10,30 @@ namespace Soundtrail.Services.Tests.Unit.Enrichment.Features.Scheduling.NotFound
 public sealed class ResponseTests
 {
     [Fact]
-    public async Task Given_A_Request_That_Cannot_Be_Resolved_When_Handled_Then_A_Synthetic_Candidate_Record_Command_Is_Sent()
+    public async Task Given_A_Request_That_Cannot_Be_Resolved_When_Handled_Then_A_Synthetic_Candidate_Event_Is_Appended()
     {
         var env = CatalogSearchRequestedHandlerTestEnvironment.WithNoExistingCandidates();
         env.Search.Fails();
 
         await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 0, riskScore: 100));
 
-        env.CommandBus.SentCommands.Should().ContainSingle()
-            .Which.Should().BeOfType<RecordCatalogSearchCandidateCommand>();
+        env.DiscoveryRepository
+            .GetStoredEvents(MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks))
+            .Should()
+            .Contain(x => x is CatalogCandidateIdentified);
     }
 
     [Fact]
-    public async Task Given_A_Request_With_A_Weak_Top_Match_When_Handled_Then_A_Synthetic_Candidate_Record_Command_Is_Sent()
+    public async Task Given_A_Request_With_A_Weak_Top_Match_When_Handled_Then_A_Synthetic_Candidate_Event_Is_Appended()
     {
         var env = CatalogSearchRequestedHandlerTestEnvironment.WithNoExistingCandidates();
         env.Search.ReturnMatches(new MusicCatalogMatch(MusicCatalogId.From("mc_track_1"), 0.79m));
 
         await env.Handler.Handle(env.Request("rare unknown song", trustLevel: 0, riskScore: 10));
 
-        env.CommandBus.SentCommands.Should().ContainSingle()
-            .Which.Should().BeOfType<RecordCatalogSearchCandidateCommand>();
+        env.DiscoveryRepository
+            .GetStoredEvents(MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks))
+            .Should()
+            .Contain(x => x is CatalogCandidateIdentified);
     }
 }

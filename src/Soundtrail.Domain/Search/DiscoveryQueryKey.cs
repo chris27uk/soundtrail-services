@@ -22,6 +22,7 @@ public readonly record struct DiscoveryQueryKey(string StableValue) : IValueType
             onSeek: seek => new DiscoveryQueryKey(
                 seek switch
                 {
+                    { ArtistId: not null, AlbumId: not null } => $"album:{seek.ArtistId.Value.Value}:{seek.AlbumId.Value.Value}",
                     { ArtistId: not null } => $"artist:{seek.ArtistId.Value.Value}",
                     { AlbumId: not null } => $"album:{seek.AlbumId.Value.Value}",
                     { TrackId: not null } => $"track:{seek.TrackId.Value.Value}",
@@ -32,8 +33,8 @@ public readonly record struct DiscoveryQueryKey(string StableValue) : IValueType
         new(
             knownItem switch
             {
+                { ArtistId: not null, AlbumId: not null } => $"album:{knownItem.ArtistId.Value.Value}:{knownItem.AlbumId.Value.Value}",
                 { ArtistId: not null } => $"artist:{knownItem.ArtistId.Value.Value}",
-                { AlbumId: not null } => $"album:{knownItem.AlbumId.Value.Value}",
                 { TrackId: not null } => $"track:{knownItem.TrackId.Value.Value}",
                 _ => throw new InvalidOperationException("Known catalog item must contain an artist id, album id or track id.")
             });
@@ -55,7 +56,9 @@ public readonly record struct DiscoveryQueryKey(string StableValue) : IValueType
         return parts[0] switch
         {
             "artist" when parts.Length >= 2 => KnownCatalogItem.ForArtist(ArtistId.From(string.Join(':', parts.Skip(1)))),
-            "album" when parts.Length >= 2 => KnownCatalogItem.ForAlbum(AlbumId.From(string.Join(':', parts.Skip(1)))),
+            "album" when parts.Length >= 3 => KnownCatalogItem.ForAlbum(
+                ArtistId.From(parts[1]),
+                AlbumId.From(string.Join(':', parts.Skip(2)))),
             "track" when parts.Length >= 2 => KnownCatalogItem.ForTrack(TrackId.From(string.Join(':', parts.Skip(1)))),
             _ => throw new InvalidOperationException($"Unsupported known catalog item stable value '{stableValue}'.")
         };
@@ -93,8 +96,10 @@ public readonly record struct DiscoveryQueryKey(string StableValue) : IValueType
             "search" or "isrc" or "track-artist-album" => MusicSeekOrSearchCriteria.FromSearch(ToMusicSearchCriteria(stableValue)),
             "artist" when parts.Length >= 2 => MusicSeekOrSearchCriteria.FromSeek(
                 KnownMusicCatalogId.FromArtistId(ArtistId.From(string.Join(':', parts.Skip(1))))),
-            "album" when parts.Length >= 2 => MusicSeekOrSearchCriteria.FromSeek(
-                KnownMusicCatalogId.FromAlbumId(AlbumId.From(string.Join(':', parts.Skip(1))))),
+            "album" when parts.Length >= 3 => MusicSeekOrSearchCriteria.FromSeek(
+                KnownMusicCatalogId.FromAlbumId(
+                    ArtistId.From(parts[1]),
+                    AlbumId.From(string.Join(':', parts.Skip(2))))),
             "track" when parts.Length >= 2 => MusicSeekOrSearchCriteria.FromSeek(
                 KnownMusicCatalogId.FromTrackId(TrackId.From(string.Join(':', parts.Skip(1))))),
             _ => throw new InvalidOperationException($"Unsupported stable value '{stableValue}'.")
