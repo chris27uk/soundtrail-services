@@ -236,6 +236,7 @@ internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsync
                 null,
                 null,
                 "Stale status",
+                null,
                 Clock,
                 99);
         }
@@ -280,6 +281,7 @@ internal sealed class ReplayDiscoveryLifecycleProjectionTestEnvironment : IAsync
                         string.Empty,
                         string.Empty,
                         false,
+                        null,
                         null,
                         null,
                         null,

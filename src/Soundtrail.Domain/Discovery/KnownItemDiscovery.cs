@@ -16,10 +16,20 @@ public sealed class KnownItemDiscovery
     private bool hasArtistCatalogLookupRequested;
     private bool hasAlbumCatalogLookupRequested;
     private CatalogSearchLifecycleStatus? knownTrackStatus;
+    private CatalogSearchLifecycleStatus? artistStatus;
+    private CatalogSearchLifecycleStatus? albumStatus;
     private LookupPriorityBand? knownTrackPriority;
+    private LookupPriorityBand? artistPriority;
+    private LookupPriorityBand? albumPriority;
     private int? knownTrackEstimatedRetryAfterSeconds;
+    private int? artistEstimatedRetryAfterSeconds;
+    private int? albumEstimatedRetryAfterSeconds;
     private DateTimeOffset? knownTrackEarliestExpectedCompletionAt;
+    private DateTimeOffset? artistEarliestExpectedCompletionAt;
+    private DateTimeOffset? albumEarliestExpectedCompletionAt;
     private string? knownTrackReason;
+    private string? artistReason;
+    private string? albumReason;
 
     private KnownItemDiscovery(IEnumerable<IDomainEvent> events)
     {
@@ -203,6 +213,103 @@ public sealed class KnownItemDiscovery
         return true;
     }
 
+    public bool ArtistLookupStarted(
+        ArtistId artistId,
+        LookupPriorityBand priority,
+        string reason,
+        DateTimeOffset startedAt)
+    {
+        if (!hasArtistCatalogLookupRequested)
+        {
+            return false;
+        }
+
+        if (artistStatus == CatalogSearchLifecycleStatus.InProgress
+            && artistPriority == priority
+            && string.Equals(artistReason, reason, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        Apply(new KnownArtistDiscoveryStarted(artistId, priority, reason, startedAt), isNew: true);
+        return true;
+    }
+
+    public bool ArtistLookupCompleted(
+        ArtistId artistId,
+        LookupPriorityBand priority,
+        string reason,
+        DateTimeOffset completedAt)
+    {
+        if (!hasArtistCatalogLookupRequested)
+        {
+            return false;
+        }
+
+        if (artistStatus == CatalogSearchLifecycleStatus.Completed
+            && artistPriority == priority
+            && string.Equals(artistReason, reason, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        Apply(new KnownArtistDiscoveryCompleted(artistId, priority, reason, completedAt), isNew: true);
+        return true;
+    }
+
+    public bool ArtistLookupDeferred(
+        ArtistId artistId,
+        int? estimatedRetryAfterSeconds,
+        DateTimeOffset? earliestExpectedCompletionAt,
+        string reason,
+        DateTimeOffset deferredAt)
+    {
+        if (!hasArtistCatalogLookupRequested)
+        {
+            return false;
+        }
+
+        if (artistStatus == CatalogSearchLifecycleStatus.Deferred
+            && artistEstimatedRetryAfterSeconds == estimatedRetryAfterSeconds
+            && artistEarliestExpectedCompletionAt == earliestExpectedCompletionAt
+            && string.Equals(artistReason, reason, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        Apply(
+            new KnownArtistDiscoveryDeferred(
+                artistId,
+                estimatedRetryAfterSeconds,
+                earliestExpectedCompletionAt,
+                reason,
+                deferredAt),
+            isNew: true);
+        return true;
+    }
+
+    public bool ArtistLookupFailed(
+        ArtistId artistId,
+        LookupPriorityBand priority,
+        string reason,
+        DateTimeOffset failedAt)
+    {
+        if (!hasArtistCatalogLookupRequested)
+        {
+            return false;
+        }
+
+        if (artistStatus == CatalogSearchLifecycleStatus.Failed
+            && artistPriority == priority
+            && string.Equals(artistReason, reason, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        Apply(new KnownArtistDiscoveryFailed(artistId, priority, reason, failedAt), isNew: true);
+        return true;
+    }
+
     public bool AlbumRequested(
         ArtistId? artistId,
         AlbumId albumId,
@@ -222,6 +329,108 @@ public sealed class KnownItemDiscovery
                 correlationId),
             isNew: true);
 
+        return true;
+    }
+
+    public bool AlbumLookupStarted(
+        ArtistId artistId,
+        AlbumId albumId,
+        LookupPriorityBand priority,
+        string reason,
+        DateTimeOffset startedAt)
+    {
+        if (!hasAlbumCatalogLookupRequested)
+        {
+            return false;
+        }
+
+        if (albumStatus == CatalogSearchLifecycleStatus.InProgress
+            && albumPriority == priority
+            && string.Equals(albumReason, reason, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        Apply(new KnownAlbumDiscoveryStarted(artistId, albumId, priority, reason, startedAt), isNew: true);
+        return true;
+    }
+
+    public bool AlbumLookupCompleted(
+        ArtistId artistId,
+        AlbumId albumId,
+        LookupPriorityBand priority,
+        string reason,
+        DateTimeOffset completedAt)
+    {
+        if (!hasAlbumCatalogLookupRequested)
+        {
+            return false;
+        }
+
+        if (albumStatus == CatalogSearchLifecycleStatus.Completed
+            && albumPriority == priority
+            && string.Equals(albumReason, reason, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        Apply(new KnownAlbumDiscoveryCompleted(artistId, albumId, priority, reason, completedAt), isNew: true);
+        return true;
+    }
+
+    public bool AlbumLookupDeferred(
+        ArtistId artistId,
+        AlbumId albumId,
+        int? estimatedRetryAfterSeconds,
+        DateTimeOffset? earliestExpectedCompletionAt,
+        string reason,
+        DateTimeOffset deferredAt)
+    {
+        if (!hasAlbumCatalogLookupRequested)
+        {
+            return false;
+        }
+
+        if (albumStatus == CatalogSearchLifecycleStatus.Deferred
+            && albumEstimatedRetryAfterSeconds == estimatedRetryAfterSeconds
+            && albumEarliestExpectedCompletionAt == earliestExpectedCompletionAt
+            && string.Equals(albumReason, reason, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        Apply(
+            new KnownAlbumDiscoveryDeferred(
+                artistId,
+                albumId,
+                estimatedRetryAfterSeconds,
+                earliestExpectedCompletionAt,
+                reason,
+                deferredAt),
+            isNew: true);
+        return true;
+    }
+
+    public bool AlbumLookupFailed(
+        ArtistId artistId,
+        AlbumId albumId,
+        LookupPriorityBand priority,
+        string reason,
+        DateTimeOffset failedAt)
+    {
+        if (!hasAlbumCatalogLookupRequested)
+        {
+            return false;
+        }
+
+        if (albumStatus == CatalogSearchLifecycleStatus.Failed
+            && albumPriority == priority
+            && string.Equals(albumReason, reason, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        Apply(new KnownAlbumDiscoveryFailed(artistId, albumId, priority, reason, failedAt), isNew: true);
         return true;
     }
 
@@ -271,6 +480,14 @@ public sealed class KnownItemDiscovery
         handlers.Register<KnownTrackDiscoveryFailed>(On);
         handlers.Register<ArtistCatalogLookupRequested>(On);
         handlers.Register<AlbumCatalogLookupRequested>(On);
+        handlers.Register<KnownArtistDiscoveryStarted>(On);
+        handlers.Register<KnownArtistDiscoveryCompleted>(On);
+        handlers.Register<KnownArtistDiscoveryDeferred>(On);
+        handlers.Register<KnownArtistDiscoveryFailed>(On);
+        handlers.Register<KnownAlbumDiscoveryStarted>(On);
+        handlers.Register<KnownAlbumDiscoveryCompleted>(On);
+        handlers.Register<KnownAlbumDiscoveryDeferred>(On);
+        handlers.Register<KnownAlbumDiscoveryFailed>(On);
         return handlers;
     }
 
@@ -326,11 +543,91 @@ public sealed class KnownItemDiscovery
         hasArtistCatalogLookupRequested = true;
     }
 
+    private void On(KnownArtistDiscoveryStarted @event)
+    {
+        knownItem ??= KnownCatalogItem.ForArtist(@event.ArtistId);
+        artistStatus = CatalogSearchLifecycleStatus.InProgress;
+        artistPriority = @event.Priority;
+        artistEstimatedRetryAfterSeconds = null;
+        artistEarliestExpectedCompletionAt = null;
+        artistReason = @event.Reason;
+    }
+
+    private void On(KnownArtistDiscoveryCompleted @event)
+    {
+        knownItem ??= KnownCatalogItem.ForArtist(@event.ArtistId);
+        artistStatus = CatalogSearchLifecycleStatus.Completed;
+        artistPriority = @event.Priority;
+        artistEstimatedRetryAfterSeconds = null;
+        artistEarliestExpectedCompletionAt = null;
+        artistReason = @event.Reason;
+    }
+
+    private void On(KnownArtistDiscoveryDeferred @event)
+    {
+        knownItem ??= KnownCatalogItem.ForArtist(@event.ArtistId);
+        artistStatus = CatalogSearchLifecycleStatus.Deferred;
+        artistPriority = null;
+        artistEstimatedRetryAfterSeconds = @event.EstimatedRetryAfterSeconds;
+        artistEarliestExpectedCompletionAt = @event.EarliestExpectedCompletionAt;
+        artistReason = @event.Reason;
+    }
+
+    private void On(KnownArtistDiscoveryFailed @event)
+    {
+        knownItem ??= KnownCatalogItem.ForArtist(@event.ArtistId);
+        artistStatus = CatalogSearchLifecycleStatus.Failed;
+        artistPriority = @event.Priority;
+        artistEstimatedRetryAfterSeconds = null;
+        artistEarliestExpectedCompletionAt = null;
+        artistReason = @event.Reason;
+    }
+
     private void On(AlbumCatalogLookupRequested @event)
     {
         knownItem ??= KnownCatalogItem.ForAlbum(
             @event.ArtistId ?? throw new InvalidOperationException("Album lookup requests must include an artist id."),
             @event.AlbumId);
         hasAlbumCatalogLookupRequested = true;
+    }
+
+    private void On(KnownAlbumDiscoveryStarted @event)
+    {
+        knownItem ??= KnownCatalogItem.ForAlbum(@event.ArtistId, @event.AlbumId);
+        albumStatus = CatalogSearchLifecycleStatus.InProgress;
+        albumPriority = @event.Priority;
+        albumEstimatedRetryAfterSeconds = null;
+        albumEarliestExpectedCompletionAt = null;
+        albumReason = @event.Reason;
+    }
+
+    private void On(KnownAlbumDiscoveryCompleted @event)
+    {
+        knownItem ??= KnownCatalogItem.ForAlbum(@event.ArtistId, @event.AlbumId);
+        albumStatus = CatalogSearchLifecycleStatus.Completed;
+        albumPriority = @event.Priority;
+        albumEstimatedRetryAfterSeconds = null;
+        albumEarliestExpectedCompletionAt = null;
+        albumReason = @event.Reason;
+    }
+
+    private void On(KnownAlbumDiscoveryDeferred @event)
+    {
+        knownItem ??= KnownCatalogItem.ForAlbum(@event.ArtistId, @event.AlbumId);
+        albumStatus = CatalogSearchLifecycleStatus.Deferred;
+        albumPriority = null;
+        albumEstimatedRetryAfterSeconds = @event.EstimatedRetryAfterSeconds;
+        albumEarliestExpectedCompletionAt = @event.EarliestExpectedCompletionAt;
+        albumReason = @event.Reason;
+    }
+
+    private void On(KnownAlbumDiscoveryFailed @event)
+    {
+        knownItem ??= KnownCatalogItem.ForAlbum(@event.ArtistId, @event.AlbumId);
+        albumStatus = CatalogSearchLifecycleStatus.Failed;
+        albumPriority = @event.Priority;
+        albumEstimatedRetryAfterSeconds = null;
+        albumEarliestExpectedCompletionAt = null;
+        albumReason = @event.Reason;
     }
 }

@@ -1,4 +1,5 @@
 using Soundtrail.Contracts;
+using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
@@ -21,6 +22,7 @@ public sealed class RavenDiscoveryLifecycleProjectionMapper
             status?.EstimatedRetryAfterSeconds,
             status?.EarliestExpectedCompletionAt,
             status?.Reason,
+            status?.MusicCatalogId is null ? null : MusicCatalogId.From(status.MusicCatalogId),
             status?.UpdatedAt ?? default,
             checkpoint?.LastAppliedVersion ?? 0);
 

@@ -104,6 +104,64 @@ public sealed class DiscoveryQueryStoredEventTranslator : ITypeTranslationRegist
                 dto.FailedAtUtc),
             domainEvent => domainEvent.FailedAt);
 
+        registry.RegisterStoredEventPair<KnownArtistDiscoveryStarted, KnownArtistDiscoveryStartedEventDataRecordDto>(
+            nameof(KnownArtistDiscoveryStarted),
+            domainEvent => new KnownArtistDiscoveryStartedEventDataRecordDto(
+                domainEvent.ArtistId.Value,
+                domainEvent.Priority.ToString(),
+                domainEvent.Reason,
+                domainEvent.StartedAt),
+            dto => new KnownArtistDiscoveryStarted(
+                ArtistId.From(dto.ArtistId),
+                Enum.Parse<LookupPriorityBand>(dto.Priority, ignoreCase: true),
+                dto.Reason,
+                dto.StartedAtUtc),
+            domainEvent => domainEvent.StartedAt);
+
+        registry.RegisterStoredEventPair<KnownArtistDiscoveryCompleted, KnownArtistDiscoveryCompletedEventDataRecordDto>(
+            nameof(KnownArtistDiscoveryCompleted),
+            domainEvent => new KnownArtistDiscoveryCompletedEventDataRecordDto(
+                domainEvent.ArtistId.Value,
+                domainEvent.Priority.ToString(),
+                domainEvent.Reason,
+                domainEvent.CompletedAt),
+            dto => new KnownArtistDiscoveryCompleted(
+                ArtistId.From(dto.ArtistId),
+                Enum.Parse<LookupPriorityBand>(dto.Priority, ignoreCase: true),
+                dto.Reason,
+                dto.CompletedAtUtc),
+            domainEvent => domainEvent.CompletedAt);
+
+        registry.RegisterStoredEventPair<KnownArtistDiscoveryDeferred, KnownArtistDiscoveryDeferredEventDataRecordDto>(
+            nameof(KnownArtistDiscoveryDeferred),
+            domainEvent => new KnownArtistDiscoveryDeferredEventDataRecordDto(
+                domainEvent.ArtistId.Value,
+                domainEvent.EstimatedRetryAfterSeconds,
+                domainEvent.EarliestExpectedCompletionAt,
+                domainEvent.Reason,
+                domainEvent.DeferredAt),
+            dto => new KnownArtistDiscoveryDeferred(
+                ArtistId.From(dto.ArtistId),
+                dto.EstimatedRetryAfterSeconds,
+                dto.EarliestExpectedCompletionAt,
+                dto.Reason,
+                dto.DeferredAtUtc),
+            domainEvent => domainEvent.DeferredAt);
+
+        registry.RegisterStoredEventPair<KnownArtistDiscoveryFailed, KnownArtistDiscoveryFailedEventDataRecordDto>(
+            nameof(KnownArtistDiscoveryFailed),
+            domainEvent => new KnownArtistDiscoveryFailedEventDataRecordDto(
+                domainEvent.ArtistId.Value,
+                domainEvent.Priority.ToString(),
+                domainEvent.Reason,
+                domainEvent.FailedAt),
+            dto => new KnownArtistDiscoveryFailed(
+                ArtistId.From(dto.ArtistId),
+                Enum.Parse<LookupPriorityBand>(dto.Priority, ignoreCase: true),
+                dto.Reason,
+                dto.FailedAtUtc),
+            domainEvent => domainEvent.FailedAt);
+
         registry.RegisterStoredEventPair<ArtistCatalogLookupRequested, ArtistCatalogLookupRequestedEventDataRecordDto>(
             nameof(ArtistCatalogLookupRequested),
             domainEvent => new ArtistCatalogLookupRequestedEventDataRecordDto(
@@ -116,6 +174,72 @@ public sealed class DiscoveryQueryStoredEventTranslator : ITypeTranslationRegist
                 CorrelationId.From(dto.CorrelationId)),
             domainEvent => domainEvent.RequestedAt,
             domainEvent => domainEvent.CorrelationId.Value);
+
+        registry.RegisterStoredEventPair<KnownAlbumDiscoveryStarted, KnownAlbumDiscoveryStartedEventDataRecordDto>(
+            nameof(KnownAlbumDiscoveryStarted),
+            domainEvent => new KnownAlbumDiscoveryStartedEventDataRecordDto(
+                domainEvent.ArtistId.Value,
+                domainEvent.AlbumId.Value,
+                domainEvent.Priority.ToString(),
+                domainEvent.Reason,
+                domainEvent.StartedAt),
+            dto => new KnownAlbumDiscoveryStarted(
+                ArtistId.From(dto.ArtistId),
+                AlbumId.From(dto.AlbumId),
+                Enum.Parse<LookupPriorityBand>(dto.Priority, ignoreCase: true),
+                dto.Reason,
+                dto.StartedAtUtc),
+            domainEvent => domainEvent.StartedAt);
+
+        registry.RegisterStoredEventPair<KnownAlbumDiscoveryCompleted, KnownAlbumDiscoveryCompletedEventDataRecordDto>(
+            nameof(KnownAlbumDiscoveryCompleted),
+            domainEvent => new KnownAlbumDiscoveryCompletedEventDataRecordDto(
+                domainEvent.ArtistId.Value,
+                domainEvent.AlbumId.Value,
+                domainEvent.Priority.ToString(),
+                domainEvent.Reason,
+                domainEvent.CompletedAt),
+            dto => new KnownAlbumDiscoveryCompleted(
+                ArtistId.From(dto.ArtistId),
+                AlbumId.From(dto.AlbumId),
+                Enum.Parse<LookupPriorityBand>(dto.Priority, ignoreCase: true),
+                dto.Reason,
+                dto.CompletedAtUtc),
+            domainEvent => domainEvent.CompletedAt);
+
+        registry.RegisterStoredEventPair<KnownAlbumDiscoveryDeferred, KnownAlbumDiscoveryDeferredEventDataRecordDto>(
+            nameof(KnownAlbumDiscoveryDeferred),
+            domainEvent => new KnownAlbumDiscoveryDeferredEventDataRecordDto(
+                domainEvent.ArtistId.Value,
+                domainEvent.AlbumId.Value,
+                domainEvent.EstimatedRetryAfterSeconds,
+                domainEvent.EarliestExpectedCompletionAt,
+                domainEvent.Reason,
+                domainEvent.DeferredAt),
+            dto => new KnownAlbumDiscoveryDeferred(
+                ArtistId.From(dto.ArtistId),
+                AlbumId.From(dto.AlbumId),
+                dto.EstimatedRetryAfterSeconds,
+                dto.EarliestExpectedCompletionAt,
+                dto.Reason,
+                dto.DeferredAtUtc),
+            domainEvent => domainEvent.DeferredAt);
+
+        registry.RegisterStoredEventPair<KnownAlbumDiscoveryFailed, KnownAlbumDiscoveryFailedEventDataRecordDto>(
+            nameof(KnownAlbumDiscoveryFailed),
+            domainEvent => new KnownAlbumDiscoveryFailedEventDataRecordDto(
+                domainEvent.ArtistId.Value,
+                domainEvent.AlbumId.Value,
+                domainEvent.Priority.ToString(),
+                domainEvent.Reason,
+                domainEvent.FailedAt),
+            dto => new KnownAlbumDiscoveryFailed(
+                ArtistId.From(dto.ArtistId),
+                AlbumId.From(dto.AlbumId),
+                Enum.Parse<LookupPriorityBand>(dto.Priority, ignoreCase: true),
+                dto.Reason,
+                dto.FailedAtUtc),
+            domainEvent => domainEvent.FailedAt);
 
         registry.RegisterStoredEventPair<AlbumCatalogLookupRequested, AlbumCatalogLookupRequestedEventDataRecordDto>(
             nameof(AlbumCatalogLookupRequested),

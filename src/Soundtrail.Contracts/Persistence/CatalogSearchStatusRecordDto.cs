@@ -10,6 +10,8 @@ public sealed class CatalogSearchStatusRecordDto
 
     public string Priority { get; set; } = string.Empty;
 
+    public string? MusicCatalogId { get; set; }
+
     public bool WillBeLookedUp { get; set; }
 
     public int? EstimatedRetryAfterSeconds { get; set; }
