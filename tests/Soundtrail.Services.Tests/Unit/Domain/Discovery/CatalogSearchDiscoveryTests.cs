@@ -14,7 +14,7 @@ public sealed class CatalogSearchDiscoveryTests
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
         var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
-        var loaded = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
+        var loaded = await SearchDiscoveryHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
         var discovery = loaded.Aggregate;
 
         var requested = discovery.SearchRequested(Request(searchTerm));
@@ -32,11 +32,11 @@ public sealed class CatalogSearchDiscoveryTests
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
         var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
-        var loaded = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
+        var loaded = await SearchDiscoveryHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
         var discovery = loaded.Aggregate;
         discovery.SearchRequested(Request(searchTerm));
         await discovery.SaveAsync(repository, loaded.Stream, CancellationToken.None);
-        loaded = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
+        loaded = await SearchDiscoveryHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
         discovery = loaded.Aggregate;
 
         var requested = discovery.SearchRequested(Request(searchTerm));
@@ -50,11 +50,11 @@ public sealed class CatalogSearchDiscoveryTests
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
         var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
-        var loaded = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
+        var loaded = await SearchDiscoveryHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
         var discovery = loaded.Aggregate;
         discovery.SearchRequested(Request(searchTerm));
         await discovery.SaveAsync(repository, loaded.Stream, CancellationToken.None);
-        loaded = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
+        loaded = await SearchDiscoveryHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
         discovery = loaded.Aggregate;
 
         var planned = discovery.Plan(LookupPriorityBand.High, 30, null, "Planner queued lookup", Clock);
@@ -68,15 +68,67 @@ public sealed class CatalogSearchDiscoveryTests
     }
 
     [Fact]
+    public async Task Given_A_Requested_Discovery_When_Recording_A_Candidate_Then_Candidate_Fact_Is_Emitted()
+    {
+        var repository = new CatalogSearchDiscoveryRepositoryFake();
+        var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
+        var loaded = await SearchDiscoveryHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
+        var discovery = loaded.Aggregate;
+        discovery.SearchRequested(Request(searchTerm));
+
+        var recorded = discovery.IdentifyCatalogCandidate(
+            MusicCatalogId.From("mc_track_1"),
+            trustLevel: 1,
+            riskScore: 10,
+            Clock,
+            CorrelationId.From("corr-1"));
+
+        await discovery.SaveAsync(repository, loaded.Stream, CancellationToken.None);
+
+        recorded.Should().BeTrue();
+        repository.GetStoredEvents(searchTerm).Last().Should().BeOfType<CatalogCandidateIdentified>();
+    }
+
+    [Fact]
+    public async Task Given_The_Same_Candidate_For_The_Same_Request_When_Recording_Again_Then_It_Is_Suppressed()
+    {
+        var repository = new CatalogSearchDiscoveryRepositoryFake();
+        var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
+        var loaded = await SearchDiscoveryHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
+        var discovery = loaded.Aggregate;
+        discovery.SearchRequested(Request(searchTerm));
+        discovery.IdentifyCatalogCandidate(
+            MusicCatalogId.From("mc_track_1"),
+            trustLevel: 1,
+            riskScore: 10,
+            Clock,
+            CorrelationId.From("corr-1"));
+
+        await discovery.SaveAsync(repository, loaded.Stream, CancellationToken.None);
+        loaded = await SearchDiscoveryHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
+        discovery = loaded.Aggregate;
+
+        var recorded = discovery.IdentifyCatalogCandidate(
+            MusicCatalogId.From("mc_track_1"),
+            trustLevel: 1,
+            riskScore: 10,
+            Clock,
+            CorrelationId.From("corr-1"));
+
+        recorded.Should().BeFalse();
+        repository.GetStoredEvents(searchTerm).OfType<CatalogCandidateIdentified>().Should().ContainSingle();
+    }
+
+    [Fact]
     public async Task Given_A_Requested_Discovery_When_Deferring_Then_DiscoveryDeferred_Is_Emitted()
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
         var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
-        var loaded = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
+        var loaded = await SearchDiscoveryHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
         var discovery = loaded.Aggregate;
         discovery.SearchRequested(Request(searchTerm));
         await discovery.SaveAsync(repository, loaded.Stream, CancellationToken.None);
-        loaded = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
+        loaded = await SearchDiscoveryHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
         discovery = loaded.Aggregate;
 
         var deferred = discovery.Defer(60, Clock.AddSeconds(60), "Planner deferred lookup", Clock);
@@ -93,7 +145,7 @@ public sealed class CatalogSearchDiscoveryTests
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
         var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
-        var loaded = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
+        var loaded = await SearchDiscoveryHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
         var discovery = loaded.Aggregate;
 
         var rejected = discovery.Reject("Planner rejected lookup", Clock);
@@ -110,7 +162,7 @@ public sealed class CatalogSearchDiscoveryTests
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
         var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
-        var loaded = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
+        var loaded = await SearchDiscoveryHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
         var discovery = loaded.Aggregate;
 
         var failed = discovery.Fail("Lookup failed", Clock);
@@ -127,12 +179,12 @@ public sealed class CatalogSearchDiscoveryTests
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
         var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
-        var loaded = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
+        var loaded = await SearchDiscoveryHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
         var discovery = loaded.Aggregate;
         discovery.SearchRequested(Request(searchTerm));
         discovery.Plan(LookupPriorityBand.High, 30, null, "Planner queued lookup", Clock);
         await discovery.SaveAsync(repository, loaded.Stream, CancellationToken.None);
-        loaded = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
+        loaded = await SearchDiscoveryHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
         discovery = loaded.Aggregate;
 
         var changed = discovery.LookupStarted(LookupPriorityBand.High, Clock.AddSeconds(5));
@@ -147,12 +199,12 @@ public sealed class CatalogSearchDiscoveryTests
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
         var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
-        var loaded = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
+        var loaded = await SearchDiscoveryHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
         var discovery = loaded.Aggregate;
         discovery.SearchRequested(Request(searchTerm));
         discovery.Plan(LookupPriorityBand.High, 30, null, "Planner queued lookup", Clock);
         await discovery.SaveAsync(repository, loaded.Stream, CancellationToken.None);
-        loaded = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
+        loaded = await SearchDiscoveryHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
         discovery = loaded.Aggregate;
 
         var changed = discovery.LookupFailed(LookupPriorityBand.High, "Lookup failed", Clock.AddSeconds(5));
@@ -168,11 +220,11 @@ public sealed class CatalogSearchDiscoveryTests
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
         var searchTerm = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
-        var loaded = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
+        var loaded = await SearchDiscoveryHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
         var discovery = loaded.Aggregate;
         discovery.Reject("Planner rejected lookup", Clock);
         await discovery.SaveAsync(repository, loaded.Stream, CancellationToken.None);
-        loaded = await SearchOrSeekHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
+        loaded = await SearchDiscoveryHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
         discovery = loaded.Aggregate;
 
         var act = () => discovery.Plan(LookupPriorityBand.Low, 30, null, "Planner queued lookup", Clock);

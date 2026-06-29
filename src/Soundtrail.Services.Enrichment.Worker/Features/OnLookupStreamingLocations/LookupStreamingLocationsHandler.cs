@@ -30,7 +30,9 @@ public sealed class LookupStreamingLocationsHandler(IGetMusicTrackReference getM
 
     private static MusicCatalogLookupAttempted Completed(LookupStreamingLocationsCommand command, IReadOnlyList<ExternalReference> references, ProviderLookupFailure[] failures)
     {
-        return MusicCatalogLookupAttempted.Completed(command.ToMusicCatalogMetadataFetched(references, failures));
+        return MusicCatalogLookupAttempted.Completed(
+            command.ToMusicCatalogMetadataFetched(references, failures),
+            command.LookupKey);
     }
 
     private static MusicCatalogLookupAttempted Failed(LookupStreamingLocationsCommand command)
@@ -42,6 +44,7 @@ public sealed class LookupStreamingLocationsHandler(IGetMusicTrackReference getM
             command.Priority,
             command.CreatedAt,
             command.CorrelationId,
-            "Lookup failed");
+            "Lookup failed",
+            command.LookupKey);
     }
 }

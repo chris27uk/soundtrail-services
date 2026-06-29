@@ -10,33 +10,19 @@ namespace Soundtrail.Services.Tests.Integration.Enrichment.Messaging.Wolverine;
 internal sealed class CatalogSearchRequestedListenerWolverineTestEnvironment
 {
     private static readonly DateTimeOffset DefaultOccurredAt = new(2026, 6, 8, 12, 0, 0, TimeSpan.Zero);
-    private readonly LocalMusicTrackSearchFake localSearchFake;
     private readonly CatalogSearchDiscoveryRepositoryFake discoveryRepository;
 
     private CatalogSearchRequestedListenerWolverineTestEnvironment(FakeMusicCatalogCandidateSearch search)
     {
-        localSearchFake = new LocalMusicTrackSearchFake();
         discoveryRepository = new CatalogSearchDiscoveryRepositoryFake();
-        localSearchFake.Seed(new LocalMusicTrackSearchResult(
-            MusicCatalogId.From("mc_track_1"),
-            "Song A",
-            "Artist A",
-            "Album A",
-            null,
-            null,
-            null,
-            IsPlayable: false));
 
         Listener = new SearchCatalogRequestedListener(
             new SearchCatalogRequestedHandler(
                 search,
-                discoveryRepository,
-                localSearchFake));
+                discoveryRepository));
     }
 
     public SearchCatalogRequestedListener Listener { get; }
-
-    public LocalMusicTrackSearchFake LocalSearch => localSearchFake;
 
     public CatalogSearchDiscoveryRepositoryFake DiscoveryRepository => discoveryRepository;
 

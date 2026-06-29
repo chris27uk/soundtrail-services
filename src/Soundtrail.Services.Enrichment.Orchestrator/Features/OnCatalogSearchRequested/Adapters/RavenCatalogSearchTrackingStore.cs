@@ -1,10 +1,10 @@
 using Raven.Client.Documents;
 using Raven.Client.Documents.Linq;
 using Raven.Client.Documents.Session;
+using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters.Documents;
 using Soundtrail.Adapters.Discovery;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
@@ -20,11 +20,11 @@ public sealed class RavenCatalogSearchTrackingStore(
         var (activeSession, dispose) = OpenSession();
         using (dispose)
         {
-            var document = await activeSession.LoadAsync<RavenCatalogSearchTrackingRecordDto>(
-                RavenCatalogSearchTrackingRecordDto.GetDocumentId(DiscoveryQueryKey.StableValueFor(searchCriteria)),
+            var document = await activeSession.LoadAsync<CatalogSearchStatusRecordDto>(
+                CatalogSearchStatusRecordDto.GetDocumentId(DiscoveryQueryKey.StableValueFor(searchCriteria)),
                 cancellationToken);
 
-            return document is null
+            return document is null || string.IsNullOrWhiteSpace(document.MusicCatalogId)
                 ? null
                 : new CatalogSearchTracking(
                     DiscoveryQueryKey.ToMusicSearchCriteria(document.Criteria),
@@ -42,9 +42,9 @@ public sealed class RavenCatalogSearchTrackingStore(
         using (dispose)
         {
             var persistentId = DiscoveryQueryKey.StableValueFor(tracking.SearchCriteria);
-            var documentId = RavenCatalogSearchTrackingRecordDto.GetDocumentId(persistentId);
-            var document = await activeSession.LoadAsync<RavenCatalogSearchTrackingRecordDto>(documentId, cancellationToken)
-                ?? new RavenCatalogSearchTrackingRecordDto
+            var documentId = CatalogSearchStatusRecordDto.GetDocumentId(persistentId);
+            var document = await activeSession.LoadAsync<CatalogSearchStatusRecordDto>(documentId, cancellationToken)
+                ?? new CatalogSearchStatusRecordDto
                 {
                     Id = documentId
                 };
@@ -69,15 +69,16 @@ public sealed class RavenCatalogSearchTrackingStore(
         using (dispose)
         {
             var documents = await activeSession
-                .Query<RavenCatalogSearchTrackingRecordDto>()
+                .Query<CatalogSearchStatusRecordDto>()
                 .Customize(x => x.WaitForNonStaleResults())
                 .Where(document => document.MusicCatalogId == musicCatalogId.Value)
                 .ToListAsync(cancellationToken);
 
             return documents
+                .Where(document => !string.IsNullOrWhiteSpace(document.MusicCatalogId))
                 .Select(document => new CatalogSearchTracking(
                     DiscoveryQueryKey.ToMusicSearchCriteria(document.Criteria),
-                    MusicCatalogId.From(document.MusicCatalogId),
+                    MusicCatalogId.From(document.MusicCatalogId!),
                     document.UpdatedAt))
                 .ToArray();
         }

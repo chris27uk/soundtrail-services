@@ -13,7 +13,11 @@ public sealed class LookupTrackMetadataHandler(IGetTrackMetadata getMetaData, IC
         try
         {
             var songMetadata = await getMetaData.GetMetadataAsync(command.SearchCriteria, cancellationToken);
-            await bus.SendAsync(MusicCatalogLookupAttempted.Completed(command.ToMusicCatalogMetadataFetched(songMetadata)), cancellationToken);
+            await bus.SendAsync(
+                MusicCatalogLookupAttempted.Completed(
+                    command.ToMusicCatalogMetadataFetched(songMetadata),
+                    command.SearchCriteria),
+                cancellationToken);
         }
         catch
         {
@@ -24,7 +28,8 @@ public sealed class LookupTrackMetadataHandler(IGetTrackMetadata getMetaData, IC
                 command.Priority,
                 command.CreatedAt,
                 command.CorrelationId,
-                "Lookup failed"), cancellationToken);
+                "Lookup failed",
+                command.SearchCriteria), cancellationToken);
         }
     }
 }

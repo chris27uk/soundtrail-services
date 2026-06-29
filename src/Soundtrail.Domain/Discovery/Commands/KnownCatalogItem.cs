@@ -19,7 +19,7 @@ namespace Soundtrail.Domain.Discovery.Commands
 
         public static KnownCatalogItem ForArtist(ArtistId artistId) => new(artistId, null, null);
 
-        public static KnownCatalogItem ForAlbum(AlbumId albumId) => new(null, albumId, null);
+        public static KnownCatalogItem ForAlbum(ArtistId artistId, AlbumId albumId) => new(artistId, albumId, null);
 
         public static KnownCatalogItem ForTrack(TrackId trackId) => new(null, null, trackId);
     }

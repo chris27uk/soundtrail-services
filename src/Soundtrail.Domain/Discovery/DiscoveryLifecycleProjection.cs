@@ -2,6 +2,7 @@ using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Search;
+using Soundtrail.Contracts.Common;
 
 namespace Soundtrail.Domain.Discovery;
 
@@ -29,6 +30,8 @@ public sealed class DiscoveryLifecycleProjection
 
     public string? Reason { get; private set; }
 
+    public MusicCatalogId? MusicCatalogId { get; private set; }
+
     public DateTimeOffset UpdatedAt { get; private set; }
 
     public int ProjectionVersion { get; private set; }
@@ -42,6 +45,7 @@ public sealed class DiscoveryLifecycleProjection
             EstimatedRetryAfterSeconds = snapshot.EstimatedRetryAfterSeconds,
             EarliestExpectedCompletionAt = snapshot.EarliestExpectedCompletionAt,
             Reason = snapshot.Reason,
+            MusicCatalogId = snapshot.MusicCatalogId,
             UpdatedAt = snapshot.UpdatedAt,
             ProjectionVersion = snapshot.ProjectionVersion
         };
@@ -55,6 +59,7 @@ public sealed class DiscoveryLifecycleProjection
             EstimatedRetryAfterSeconds,
             EarliestExpectedCompletionAt,
             Reason,
+            MusicCatalogId,
             UpdatedAt,
             ProjectionVersion);
 
@@ -70,6 +75,11 @@ public sealed class DiscoveryLifecycleProjection
 
         handlers.Register<TrackMetadataLookupRequested>(_ => { });
         handlers.Register<StreamingLocationsRequired>(_ => { });
+        handlers.Register<CatalogCandidateIdentified>(@event =>
+        {
+            MusicCatalogId = @event.MusicCatalogId;
+            UpdatedAt = @event.StartedAt;
+        });
 
         handlers.Register<DiscoveryRequested>(@event =>
         {

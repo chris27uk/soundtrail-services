@@ -16,6 +16,7 @@ public sealed class DiscoveryLifecycleProjectionToCatalogSearchStatusRecordTrans
                 document.Criteria = DiscoveryQueryKey.StableValueFor(projection.SearchCriteria);
                 document.Status = projection.Status;
                 document.Priority = projection.Priority;
+                document.MusicCatalogId = projection.MusicCatalogId?.Value;
                 document.WillBeLookedUp = projection.WillBeLookedUp;
                 document.EstimatedRetryAfterSeconds = projection.EstimatedRetryAfterSeconds;
                 document.EarliestExpectedCompletionAt = projection.EarliestExpectedCompletionAt;

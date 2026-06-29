@@ -509,7 +509,9 @@ public sealed class SearchOrSeekHistory
 
     private void On(AlbumCatalogLookupRequested @event)
     {
-        knownItem ??= KnownCatalogItem.ForAlbum(@event.AlbumId);
+        knownItem ??= KnownCatalogItem.ForAlbum(
+            @event.ArtistId ?? throw new InvalidOperationException("Album lookup requests must include an artist id."),
+            @event.AlbumId);
         hasAlbumCatalogLookupRequested = true;
     }
 

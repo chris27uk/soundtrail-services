@@ -2,6 +2,7 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Domain.Enrichment.Responses;
@@ -71,6 +72,20 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
     public static MusicCatalogLookupAttemptedHandlerTestEnvironment WithAPlaybackReferencesResponseAfterResolvedMetadata() => WithAMusicBrainzResponse();
 
     public static MusicCatalogLookupAttemptedHandlerTestEnvironment WithADuplicateMusicBrainzResponse() => WithAMusicBrainzResponse();
+
+    public void ClearSearchTrackings() => trackingStore.Clear();
+
+    public async Task SeedKnownTrackRequestAsync(string trackId = "track_1")
+    {
+        var knownItem = KnownCatalogItem.ForTrack(TrackId.From(trackId));
+        var loaded = await KnownItemDiscovery.LoadAsync(DiscoveryRepository, knownItem, CancellationToken.None);
+        loaded.Aggregate.TrackRequested(
+            TrackId.From(trackId),
+            PlaybackProviderFilter.Parse("spotify,appleMusic,youtubeMusic"),
+            Now,
+            CorrelationId.From("corr-track"));
+        await loaded.Aggregate.SaveAsync(DiscoveryRepository, loaded.Stream, CancellationToken.None);
+    }
 
     public async Task HandleMusicBrainzResponse()
     {

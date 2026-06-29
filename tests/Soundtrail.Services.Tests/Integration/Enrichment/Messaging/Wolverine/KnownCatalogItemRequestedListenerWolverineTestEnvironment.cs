@@ -50,6 +50,7 @@ internal sealed class KnownCatalogItemRequestedListenerWolverineTestEnvironment
     public Task HandleAlbumRequest() =>
         AlbumListener.Handle(
             new KnownAlbumRequestedDto(
+                ArtistId: "artist_1",
                 AlbumId: "album_1",
                 OccurredAt: DefaultOccurredAt,
                 CorrelationId: "corr-album"),

@@ -31,12 +31,12 @@ public sealed class KnownItemRequestedHandlerTests
     public async Task Given_A_Known_Album_Request_When_Handled_Then_An_Album_Catalog_Lookup_Requested_Event_Is_Stored()
     {
         var env = KnownItemRequestedHandlerTestEnvironment.Create();
-        var request = env.AlbumRequest("album_1");
+        var request = env.AlbumRequest("artist_1", "album_1");
 
         await env.AlbumHandler.Handle(request, CancellationToken.None);
 
         env.DiscoveryRepository
-            .GetStoredEvents(KnownCatalogItem.ForAlbum(request.AlbumId))
+            .GetStoredEvents(KnownCatalogItem.ForAlbum(request.ArtistId, request.AlbumId))
             .Should()
             .ContainSingle()
             .Which.Should()

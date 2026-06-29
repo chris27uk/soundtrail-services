@@ -34,8 +34,9 @@ internal sealed class KnownItemRequestedHandlerTestEnvironment
             new DateTimeOffset(2026, 6, 27, 12, 0, 0, TimeSpan.Zero),
             CorrelationId.From("corr-artist"));
 
-    public KnownAlbumRequested AlbumRequest(string albumId) =>
+    public KnownAlbumRequested AlbumRequest(string artistId, string albumId) =>
         new(
+            ArtistId.From(artistId),
             AlbumId.From(albumId),
             new DateTimeOffset(2026, 6, 27, 12, 0, 0, TimeSpan.Zero),
             CorrelationId.From("corr-album"));

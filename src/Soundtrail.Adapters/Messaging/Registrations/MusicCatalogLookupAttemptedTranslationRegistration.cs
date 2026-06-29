@@ -2,6 +2,7 @@ using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Enrichment.Responses;
+using Soundtrail.Domain.Search;
 using Soundtrail.Adapters.Registry;
 
 namespace Soundtrail.Adapters.Messaging.Registrations;
@@ -53,7 +54,10 @@ public sealed class MusicCatalogLookupAttemptedTranslationRegistration : ITypeTr
                                 failure.SourceProvider.Value)).ToArray(),
                             attempted.MusicCatalogMetadataFetched.Hierarchy?.ArtistId?.Value,
                             attempted.MusicCatalogMetadataFetched.Hierarchy?.AlbumId?.Value,
-                            attempted.MusicCatalogMetadataFetched.CorrelationId.Value)),
+                            attempted.MusicCatalogMetadataFetched.CorrelationId.Value),
+                    attempted.SearchCriteria is null
+                        ? null
+                        : DiscoveryQueryKey.StableValueFor(attempted.SearchCriteria)),
             dto =>
                 new MusicCatalogLookupAttempted(
                     CommandId.From(dto.CommandId),
@@ -99,6 +103,9 @@ public sealed class MusicCatalogLookupAttemptedTranslationRegistration : ITypeTr
                                 : new CatalogTrackHierarchy(
                                     dto.MusicCatalogMetadataFetched.ArtistId is null ? null : ArtistId.From(dto.MusicCatalogMetadataFetched.ArtistId),
                                     dto.MusicCatalogMetadataFetched.AlbumId is null ? null : AlbumId.From(dto.MusicCatalogMetadataFetched.AlbumId)),
-                            CorrelationId.From(dto.MusicCatalogMetadataFetched.CorrelationId))));
+                            CorrelationId.From(dto.MusicCatalogMetadataFetched.CorrelationId)),
+                    string.IsNullOrWhiteSpace(dto.SearchCriteria)
+                        ? null
+                        : DiscoveryQueryKey.ToMusicSearchCriteria(dto.SearchCriteria)));
     }
 }

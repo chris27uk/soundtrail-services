@@ -10,4 +10,5 @@ public sealed record MusicCatalogLookupAttemptedDto(
     DateTimeOffset CreatedAt,
     string CorrelationId,
     MusicCatalogLookupOutcomeDto Outcome,
-    MusicCatalogMetadataFetchedDto? MusicCatalogMetadataFetched);
+    MusicCatalogMetadataFetchedDto? MusicCatalogMetadataFetched,
+    string? SearchCriteria = null);

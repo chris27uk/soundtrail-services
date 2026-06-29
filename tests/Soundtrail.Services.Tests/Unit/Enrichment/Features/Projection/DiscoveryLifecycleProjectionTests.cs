@@ -67,6 +67,7 @@ public sealed class DiscoveryLifecycleProjectionTests
                 55,
                 Clock.AddMinutes(1),
                 "Existing status",
+                null,
                 Clock,
                 1));
 
@@ -105,6 +106,24 @@ public sealed class DiscoveryLifecycleProjectionTests
         projection.EstimatedRetryAfterSeconds.Should().BeNull();
         projection.EarliestExpectedCompletionAt.Should().BeNull();
         projection.Reason.Should().Be("Discovery completed");
+    }
+
+    [Fact]
+    public void Given_A_Catalog_Candidate_When_Applied_Then_The_Projection_Remembers_The_Music_Catalog_Id()
+    {
+        var projection = new DiscoveryLifecycleProjection(Criteria);
+
+        projection.Apply(
+            new CatalogCandidateIdentified(
+                Criteria,
+                MusicCatalogId.From("mc_track_1"),
+                1,
+                10,
+                Clock,
+                CorrelationId.From("corr-1")),
+            1);
+
+        projection.MusicCatalogId.Should().Be(MusicCatalogId.From("mc_track_1"));
     }
 
     private static readonly MusicSearchCriteria Criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);

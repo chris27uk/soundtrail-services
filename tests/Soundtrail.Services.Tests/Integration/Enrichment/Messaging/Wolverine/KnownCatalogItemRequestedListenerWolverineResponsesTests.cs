@@ -31,7 +31,7 @@ public sealed class KnownCatalogItemRequestedListenerWolverineResponsesTests
         await env.HandleAlbumRequest();
 
         env.DiscoveryRepository
-            .GetStoredEvents(KnownCatalogItem.ForAlbum(AlbumId.From("album_1")))
+            .GetStoredEvents(KnownCatalogItem.ForAlbum(ArtistId.From("artist_1"), AlbumId.From("album_1")))
             .Should()
             .ContainSingle()
             .Which.Should()

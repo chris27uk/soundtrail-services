@@ -1,7 +1,7 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Domain.Enrichment.Commands;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnKnownTrackRequested.Support;
 
@@ -9,8 +9,7 @@ public abstract class KnownTrackRequestedMusicTrack
 {
     public static KnownTrackRequestedMusicTrack Missing { get; } = new MissingKnownTrackRequestedMusicTrack();
 
-    public abstract bool AppendFollowUp(
-        SearchOrSeekHistory history,
+    public abstract LookupStreamingLocationsCommand? CreateLookupCommand(
         KnownTrackRequested requested);
 
     public static KnownTrackRequestedMusicTrack Available(
@@ -34,13 +33,10 @@ public abstract class KnownTrackRequestedMusicTrack
 
     private sealed class MissingKnownTrackRequestedMusicTrack : KnownTrackRequestedMusicTrack
     {
-        public override bool AppendFollowUp(
-            SearchOrSeekHistory history,
-            KnownTrackRequested requested)
+        public override LookupStreamingLocationsCommand? CreateLookupCommand(KnownTrackRequested requested)
         {
-            _ = history;
             _ = requested;
-            return false;
+            return null;
         }
     }
 
@@ -54,17 +50,16 @@ public abstract class KnownTrackRequestedMusicTrack
         ArtistId? artistId,
         AlbumId? albumId) : KnownTrackRequestedMusicTrack
     {
-        public override bool AppendFollowUp(
-            SearchOrSeekHistory history,
-            KnownTrackRequested requested)
+        public override LookupStreamingLocationsCommand? CreateLookupCommand(KnownTrackRequested requested)
         {
             if (!CanCreateSearchTerm(isrc, title, artist)
                 || !requested.Playback.RequiresAnyMissing(availableProviders))
             {
-                return false;
+                return null;
             }
 
-            return history.RequireStreamingLocationsForKnownTrack(
+            return new LookupStreamingLocationsCommand(
+                LookupStreamingLocationsCommand.Id(musicCatalogId),
                 musicCatalogId,
                 Contracts.Common.LookupPriorityBand.Low,
                 requested.RequestedAt,

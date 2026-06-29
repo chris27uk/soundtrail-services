@@ -6,7 +6,7 @@ using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChang
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.CompositionRoot;
 using Soundtrail.Services.Internal.Projector.Features.OnKnownTrackRequested.CompositionRoot;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.CompositionRoot;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.CompositionRoot;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogCandidateIdentified.CompositionRoot;
 using Soundtrail.Services.Internal.Projector.Infrastructure.Messaging;
 using Soundtrail.Services.Internal.Projector.Infrastructure.Raven;
 
@@ -24,7 +24,7 @@ public static class AppServiceCollectionExtensions
         services.AddOnCatalogSearchPlannedForLookupFeature();
         services.AddOnCatalogSearchStatusChangedFeature();
         services.AddOnKnownTrackRequestedFeature();
-        services.AddOnMusicTrackSearchStartedFeature();
+        services.AddOnCatalogCandidateIdentifiedFeature();
         services.AddOnMusicTrackChangedFeature();
         services.AddOnMusicCatalogChangedFeature();
         return services;

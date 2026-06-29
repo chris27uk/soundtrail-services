@@ -39,12 +39,23 @@ public sealed class CatalogDiscoveryWork
 
     public void RecordSearchRequested(SearchCatalogRequested requested)
     {
+        RecordCandidateIdentified(
+            requested.TrustLevel,
+            requested.RiskScore,
+            requested.OccurredAt);
+    }
+
+    public void RecordCandidateIdentified(
+        int trustLevel,
+        int riskScore,
+        DateTimeOffset requestedAt)
+    {
         Apply(
             new CatalogDiscoveryWorkRequested(
                 RequireMusicCatalogId(),
-                requested.TrustLevel,
-                requested.RiskScore,
-                requested.OccurredAt),
+                trustLevel,
+                riskScore,
+                requestedAt),
             isNew: true);
     }
 
@@ -100,6 +111,7 @@ public sealed class CatalogDiscoveryWork
     public async Task<bool> SaveAsync(
         IEventStreamRepository<MusicCatalogId, IDomainEvent> repository,
         LoadedEventStream<MusicCatalogId, IDomainEvent> stream,
+        OperationId? operationId,
         CancellationToken cancellationToken)
     {
         if (uncommittedEvents.Count == 0)
@@ -110,7 +122,7 @@ public sealed class CatalogDiscoveryWork
         var saved = (await repository.AppendAsync(
             stream,
             uncommittedEvents.AsReadOnly(),
-            null,
+            operationId,
             cancellationToken)).Appended;
 
         if (saved)

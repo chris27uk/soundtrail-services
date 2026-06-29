@@ -1,3 +1,4 @@
+using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Domain.Discovery;
@@ -10,5 +11,6 @@ public sealed record DiscoveryLifecycleProjectionSnapshot(
     int? EstimatedRetryAfterSeconds,
     DateTimeOffset? EarliestExpectedCompletionAt,
     string? Reason,
+    MusicCatalogId? MusicCatalogId,
     DateTimeOffset UpdatedAt,
     int ProjectionVersion);

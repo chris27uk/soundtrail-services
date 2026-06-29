@@ -39,6 +39,8 @@ internal sealed class CatalogSearchTrackingStoreFake : ICatalogSearchTrackingSto
 
     public void Seed(CatalogSearchTracking tracking) => byCriteria[ToPersistentId(tracking.SearchCriteria)] = tracking;
 
+    public void Clear() => byCriteria.Clear();
+
     private static string ToPersistentId(MusicSearchCriteria searchCriteria) =>
         DiscoveryQueryKey.StableValueFor(searchCriteria);
 }

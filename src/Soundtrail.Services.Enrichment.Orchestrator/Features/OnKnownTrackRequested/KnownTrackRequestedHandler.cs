@@ -12,12 +12,12 @@ public sealed class KnownTrackRequestedHandler(IEventStreamRepository<DiscoveryQ
         KnownTrackRequested request,
         CancellationToken cancellationToken = default)
     {
-        var loaded = await SearchOrSeekHistory.LoadAsync(
+        var loaded = await KnownItemDiscovery.LoadAsync(
             discoveryRepository,
             KnownCatalogItem.ForTrack(request.TrackId),
             cancellationToken);
 
-        if (!loaded.Aggregate.KnownTrackRequested(
+        if (!loaded.Aggregate.TrackRequested(
                 request.TrackId,
                 request.Playback,
                 request.OccurredAt,

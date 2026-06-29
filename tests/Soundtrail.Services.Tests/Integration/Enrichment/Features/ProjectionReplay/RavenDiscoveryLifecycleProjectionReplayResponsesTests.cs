@@ -26,12 +26,12 @@ public sealed class RavenDiscoveryLifecycleProjectionReplayResponsesTests
         var criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
         using var repositorySession = raven.Store.OpenAsyncSession();
         var repository = TestEventStreamRepositories.CreateDiscoveryQuery(repositorySession);
-        var loaded = await SearchOrSeekHistory.LoadAsync(repository, criteria, CancellationToken.None);
+        var loaded = await SearchDiscoveryHistory.LoadAsync(repository, criteria, CancellationToken.None);
         var discovery = loaded.Aggregate;
         discovery.SearchRequested(Request(criteria));
         await discovery.SaveAsync(repository, loaded.Stream, CancellationToken.None);
 
-        loaded = await SearchOrSeekHistory.LoadAsync(repository, criteria, CancellationToken.None);
+        loaded = await SearchDiscoveryHistory.LoadAsync(repository, criteria, CancellationToken.None);
         discovery = loaded.Aggregate;
         discovery.Plan(LookupPriorityBand.High, 30, null, "Planner queued lookup", Clock.AddSeconds(5));
         await discovery.SaveAsync(repository, loaded.Stream, CancellationToken.None);
@@ -59,7 +59,7 @@ public sealed class RavenDiscoveryLifecycleProjectionReplayResponsesTests
         var criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
         using var repositorySession = raven.Store.OpenAsyncSession();
         var repository = TestEventStreamRepositories.CreateDiscoveryQuery(repositorySession);
-        var loaded = await SearchOrSeekHistory.LoadAsync(repository, criteria, CancellationToken.None);
+        var loaded = await SearchDiscoveryHistory.LoadAsync(repository, criteria, CancellationToken.None);
         var discovery = loaded.Aggregate;
         discovery.Reject("Planner rejected lookup", Clock);
         await discovery.SaveAsync(repository, loaded.Stream, CancellationToken.None);
@@ -85,7 +85,7 @@ public sealed class RavenDiscoveryLifecycleProjectionReplayResponsesTests
         var criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
         using var repositorySession = raven.Store.OpenAsyncSession();
         var repository = TestEventStreamRepositories.CreateDiscoveryQuery(repositorySession);
-        var loaded = await SearchOrSeekHistory.LoadAsync(repository, criteria, CancellationToken.None);
+        var loaded = await SearchDiscoveryHistory.LoadAsync(repository, criteria, CancellationToken.None);
         var discovery = loaded.Aggregate;
         discovery.Start(LookupPriorityBand.High, "Lookup started", Clock);
         await discovery.SaveAsync(repository, loaded.Stream, CancellationToken.None);
@@ -111,7 +111,7 @@ public sealed class RavenDiscoveryLifecycleProjectionReplayResponsesTests
         var criteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
         using var repositorySession = raven.Store.OpenAsyncSession();
         var repository = TestEventStreamRepositories.CreateDiscoveryQuery(repositorySession);
-        var loaded = await SearchOrSeekHistory.LoadAsync(repository, criteria, CancellationToken.None);
+        var loaded = await SearchDiscoveryHistory.LoadAsync(repository, criteria, CancellationToken.None);
         var discovery = loaded.Aggregate;
         discovery.Complete(LookupPriorityBand.High, "Discovery completed", Clock);
         await discovery.SaveAsync(repository, loaded.Stream, CancellationToken.None);

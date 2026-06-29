@@ -59,7 +59,11 @@ public sealed class ApiHandlerDispatchTests
 
         bus.SentCommands.Should().ContainSingle()
             .Which.Should().BeOfType<KnownAlbumRequested>()
-            .Which.AlbumId.Should().Be(AlbumId.From("album_1"));
+            .Which.Should().BeEquivalentTo(new
+            {
+                ArtistId = ArtistId.From("artist_1"),
+                AlbumId = AlbumId.From("album_1")
+            });
     }
 
     [Fact]
@@ -144,7 +148,11 @@ public sealed class ApiHandlerDispatchTests
 
         bus.SentCommands.Should().ContainSingle()
             .Which.Should().BeOfType<KnownAlbumRequested>()
-            .Which.AlbumId.Should().Be(AlbumId.From("album_1"));
+            .Which.Should().BeEquivalentTo(new
+            {
+                ArtistId = ArtistId.From("artist_1"),
+                AlbumId = AlbumId.From("album_1")
+            });
     }
 
     [Fact]

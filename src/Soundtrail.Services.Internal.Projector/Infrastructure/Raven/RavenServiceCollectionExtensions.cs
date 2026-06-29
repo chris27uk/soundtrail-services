@@ -6,6 +6,8 @@ using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
 using Raven.Client.Documents.Session;
+using Soundtrail.Adapters.Discovery;
+using Soundtrail.Adapters.EventSourcing;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchPlannedForLookup.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchPlannedForLookup.Ports;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
@@ -14,8 +16,12 @@ using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adap
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.ProjectionModel;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Ports;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Adapters;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackSearchStarted.Ports;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogCandidateIdentified.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogCandidateIdentified.Ports;
+using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Abstractions.EventSourcing;
+using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Search;
 using Soundtrail.Adapters.ProjectionDocuments;
 using Soundtrail.Adapters.Registry.CompositionRoot;
 
@@ -46,16 +52,16 @@ public static class RavenServiceCollectionExtensions
             return store.Initialize();
         });
         services.TryAddScoped<IAsyncDocumentSession>(sp => sp.GetRequiredService<IDocumentStore>().OpenAsyncSession());
+        services.TryAddScoped<IEventStreamRepository<MusicCatalogId, IDomainEvent>>(sp =>
+            new RavenEventStreamRepository<MusicCatalogId, IDomainEvent>(
+                sp.GetRequiredService<IAsyncDocumentSession>(),
+                sp.GetRequiredService<Soundtrail.Adapters.Registry.ITypeRegistry>(),
+                CatalogDiscoveryWorkEventStreamDefinition.Create()));
         services.TryAddScoped<ILoadDiscoveryLifecycleProjectionPort, RavenLoadDiscoveryLifecycleProjection>();
         services.TryAddScoped<ISaveDiscoveryLifecycleProjectionPort, RavenSaveDiscoveryLifecycleProjection>();
-        services.TryAddScoped<ILoadCatalogSearchPlannedTrackingPort, RavenLoadCatalogSearchPlannedTracking>();
         services.TryAddScoped<ILoadCatalogSearchPlannedMusicTrackPort, RavenLoadCatalogSearchPlannedMusicTrack>();
         services.TryAddSingleton<RavenDiscoveryLifecycleProjectionMapper>();
-        services.TryAddScoped<ILoadCatalogSearchStartedMusicTrackPort, RavenLoadCatalogSearchStartedMusicTrack>();
-        services.TryAddScoped<ILoadCatalogSearchStartedTrackingPort, RavenLoadCatalogSearchStartedTracking>();
-        services.TryAddScoped<ISaveCatalogSearchStartedTrackingPort, RavenSaveCatalogSearchStartedTracking>();
-        services.TryAddScoped<ILoadPotentialCatalogLookupWorkPort, RavenLoadPotentialCatalogLookupWork>();
-        services.TryAddScoped<ISavePotentialCatalogLookupWorkPort, RavenSavePotentialCatalogLookupWork>();
+        services.TryAddScoped<ILoadCatalogCandidateMusicTrackPort, RavenLoadCatalogCandidateMusicTrack>();
         services.TryAddScoped<ILoadMusicTrackProjectionPort, RavenLoadMusicTrackProjection>();
         services.TryAddScoped<ISaveMusicTrackProjectionPort, RavenSaveMusicTrackProjection>();
         services.TryAddSingleton<RavenMusicTrackProjectionMapper>();
