@@ -1,6 +1,7 @@
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Enrichment.Responses;
-using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Lookup;
+using Soundtrail.Services.Enrichment.Worker.Features.OnLookupTrackMetadata.Lookup;
+using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 

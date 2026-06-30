@@ -6,7 +6,7 @@ using Soundtrail.Adapters.Registry;
 using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Adapters.Messaging;
-using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Adapters;
+using Soundtrail.Services.Enrichment.Worker.Features.OnLookupTrackMetadata.Adapters;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Enrichment.Messaging.Wolverine;

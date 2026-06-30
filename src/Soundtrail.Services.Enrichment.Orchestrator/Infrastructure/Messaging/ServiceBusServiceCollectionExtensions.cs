@@ -3,7 +3,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Soundtrail.Adapters.Messaging;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnAlbumMetadataLookupAttempted.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnAssessMusicTrack.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnArtistMetadataLookupAttempted.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownAlbumRequested.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownArtistRequested.Adapters;
@@ -44,8 +46,8 @@ public static class ServiceBusServiceCollectionExtensions
         opts.Discovery.IncludeType<NextMusicTracksRequestedForLookupListener>();
         opts.Discovery.IncludeType<AssessMusicTrackListener>();
         opts.Discovery.IncludeType<MusicCatalogLookupAttemptedListener>();
-        opts.Discovery.IncludeType<ApplyMusicCatalogLookupAttemptedToCatalogListener>();
-        opts.Discovery.IncludeType<ApplyMusicCatalogLookupAttemptedToDiscoveryListener>();
+        opts.Discovery.IncludeType<ArtistMetadataLookupAttemptedListener>();
+        opts.Discovery.IncludeType<AlbumMetadataLookupAttemptedListener>();
         opts.Discovery.IncludeType<StreamingLocationsRequiredListener>();
         opts.Policies.AutoApplyTransactions();
 
@@ -82,22 +84,14 @@ public static class ServiceBusServiceCollectionExtensions
         opts.ListenToAzureServiceBusQueue(serviceBusOptions.EnrichmentResponsesQueueName)
             .ProcessInline();
 
-        opts.ListenToAzureServiceBusQueue(serviceBusOptions.ApplyMusicCatalogLookupAttemptedToCatalogQueueName)
-            .ProcessInline();
-
-        opts.ListenToAzureServiceBusQueue(serviceBusOptions.ApplyMusicCatalogLookupAttemptedToDiscoveryQueueName)
-            .ProcessInline();
-
         opts.ListenToAzureServiceBusQueue(serviceBusOptions.MusicTrackEventsQueueName)
             .ProcessInline();
 
-        opts.PublishMessage<ApplyMusicCatalogLookupAttemptedToCatalogCommandDto>()
-            .ToAzureServiceBusQueue(serviceBusOptions.ApplyMusicCatalogLookupAttemptedToCatalogQueueName);
-
-        opts.PublishMessage<ApplyMusicCatalogLookupAttemptedToDiscoveryCommandDto>()
-            .ToAzureServiceBusQueue(serviceBusOptions.ApplyMusicCatalogLookupAttemptedToDiscoveryQueueName);
-
         opts.PublishMessage<LookupTrackMetadataCommandDto>()
+            .ToAzureServiceBusQueue(serviceBusOptions.MusicBrainzLookupQueueName);
+        opts.PublishMessage<LookupArtistMetadataCommandDto>()
+            .ToAzureServiceBusQueue(serviceBusOptions.MusicBrainzLookupQueueName);
+        opts.PublishMessage<LookupAlbumMetadataCommandDto>()
             .ToAzureServiceBusQueue(serviceBusOptions.MusicBrainzLookupQueueName);
 
         opts.PublishMessage<LookupStreamingLocationsCommandDto>()

@@ -1,6 +1,8 @@
+using Soundtrail.Contracts.Common;
+
 namespace Soundtrail.Domain.Catalog;
 
-public readonly record struct AlbumId
+public readonly record struct AlbumId : IValueType
 {
     private AlbumId(string value)
     {
@@ -13,6 +15,8 @@ public readonly record struct AlbumId
     }
 
     public string Value { get; }
+
+    public string StableValue => Value;
 
     public static AlbumId From(string value) => new(value);
 

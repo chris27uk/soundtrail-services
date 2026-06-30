@@ -95,6 +95,26 @@ The redesign must preserve all of the following:
 - strict infrastructure/domain separation
 - the ability for handlers, projectors, and subscribers to react to the same domain facts in multiple ways
 
+The redesign must also preserve a single clear consistency boundary per incoming message.
+
+It is not acceptable for one handler, one feature, or one "attempted/applied" chain to imperatively update multiple authoritative streams or models as part of handling a single incoming message unless that write boundary is truly atomic within the target design.
+
+For the avoidance of doubt, this is a hard rule, not a style preference:
+
+- no handler-to-handler orchestration that hides multiple authoritative writes behind ordinary handler calls
+- no split-write flow where one incoming message updates catalog and discovery separately as peer authoritative boundaries
+- no acceptance of "retry will probably fix it" as justification for a broken consistency boundary
+- no landing of an implementation step that depends on all intermediate writes being perfectly idempotent across every failure mode in order to remain coherent
+
+If a design would allow one durable write to succeed and a second durable write to fail or retry later, leaving the system in a subtle partially-applied state, that design is non-compliant with this plan.
+
+Where more than one downstream reaction is needed, the correct shape is:
+
+- one authoritative fact recorded at the correct boundary
+- downstream projections, subscriptions, or follow-on handlers reacting from that fact
+
+The authoritative write must not be obscured behind indirection that makes a multi-boundary consistency problem look like a normal in-process call chain.
+
 This plan is intended to reduce race-prone accidental coupling, not to forbid multiple handlers or multiple projections from responding to the same fact. If a single fact legitimately drives multiple downstream reactions, that remains acceptable. The constraint is that those reactions must remain consistent with event-sourced, replay-safe design rather than collapsing back into hidden orchestration inside aggregates.
 
 Where there is uncertainty about whether something belongs in the domain model or the orchestration model, the default decision should be:
@@ -126,6 +146,12 @@ It is not acceptable to land a slice that only renames concepts, partially moves
 It is not acceptable to preserve the old orchestration shape under new names simply because that makes the refactor easier to stage.
 
 If a full target flow cannot be completed safely in the current step, the correct action is to stop, report the gap clearly, and choose a different implementation slice rather than land an incoherent intermediate architecture.
+
+The same rule applies to consistency boundaries.
+
+If a proposed implementation step requires a temporary split-write, temporary handler-to-handler orchestration, or temporary dual-authority update in order to "get closer" to the target model, that step must not be landed.
+
+The correct action is to stop and report that the slice cannot yet satisfy the hard consistency constraints end to end.
 
 ## Business Direction From Existing Specs
 

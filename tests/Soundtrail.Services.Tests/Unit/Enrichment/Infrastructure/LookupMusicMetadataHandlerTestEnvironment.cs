@@ -2,8 +2,8 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Domain.Enrichment.Responses;
-using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata;
-using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Pipeline;
+using Soundtrail.Services.Enrichment.Worker.Features.OnLookupTrackMetadata;
+using Soundtrail.Services.Enrichment.Worker.Features.OnLookupTrackMetadata.Pipeline;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 

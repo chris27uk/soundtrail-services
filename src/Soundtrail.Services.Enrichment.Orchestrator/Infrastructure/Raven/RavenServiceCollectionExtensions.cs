@@ -7,15 +7,18 @@ using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
 using Raven.Client.Documents.Session;
 using Soundtrail.Adapters.Discovery;
+using Soundtrail.Adapters.Enrichment;
 using Soundtrail.Adapters.EventSourcing;
 using Soundtrail.Adapters.MusicTrackEventStore;
 using Soundtrail.Adapters.Registry;
 using Soundtrail.Adapters.Registry.CompositionRoot;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions.EventSourcing;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Enrichment;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
@@ -64,11 +67,21 @@ public static class RavenServiceCollectionExtensions
                 sp.GetRequiredService<IAsyncDocumentSession>(),
                 sp.GetRequiredService<ITypeRegistry>(),
                 CatalogDiscoveryWorkEventStreamDefinition.Create()));
+        services.TryAddScoped<IEventStreamRepository<MusicCatalogLookupId, IDomainEvent>>(sp =>
+            new RavenEventStreamRepository<MusicCatalogLookupId, IDomainEvent>(
+                sp.GetRequiredService<IAsyncDocumentSession>(),
+                sp.GetRequiredService<ITypeRegistry>(),
+                MusicCatalogLookupEventStreamDefinition.Create()));
         services.TryAddScoped<IEventStreamRepository<MusicCatalogId, IMusicTrackEvent>>(sp =>
             new RavenEventStreamRepository<MusicCatalogId, IMusicTrackEvent>(
                 sp.GetRequiredService<IAsyncDocumentSession>(),
                 sp.GetRequiredService<ITypeRegistry>(),
                 MusicTrackEventStreamDefinition.Create()));
+        services.TryAddScoped<IEventStreamRepository<ArtistId, IDomainEvent>>(sp =>
+            new RavenEventStreamRepository<ArtistId, IDomainEvent>(
+                sp.GetRequiredService<IAsyncDocumentSession>(),
+                sp.GetRequiredService<ITypeRegistry>(),
+                ArtistCatalogEventStreamDefinition.Create()));
         services.TryAddScoped<ICatalogDiscoveryWorkSummaryStore, RavenCatalogDiscoveryWorkSummaryStore>();
         services.TryAddScoped<ICatalogDiscoveryWorkPlanningReadPort>(sp => sp.GetRequiredService<RavenCatalogDiscoveryWorkSummaryStore>());
         services.TryAddScoped<IPotentialCatalogLookupWorkStore, RavenPotentialCatalogLookupWorkStore>();

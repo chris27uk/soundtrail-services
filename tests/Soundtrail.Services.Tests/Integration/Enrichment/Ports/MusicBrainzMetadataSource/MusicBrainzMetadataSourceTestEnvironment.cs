@@ -1,7 +1,8 @@
 using Microsoft.Extensions.Options;
 using Soundtrail.Domain.Enrichment.Responses;
-using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Adapters;
-using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Lookup;
+using Soundtrail.Services.Enrichment.Worker.Features.OnLookupTrackMetadata.Adapters;
+using Soundtrail.Services.Enrichment.Worker.Features.OnLookupTrackMetadata.Lookup;
+using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
 using Soundtrail.Services.Tests.Integration.Enrichment.Ports.ProviderClients;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
