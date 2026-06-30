@@ -123,13 +123,19 @@ public sealed class DiscoveryQueryStoredEventTranslator : ITypeTranslationRegist
             domainEvent => new KnownArtistDiscoveryCompletedEventDataRecordDto(
                 domainEvent.ArtistId.Value,
                 domainEvent.Priority.ToString(),
+                domainEvent.SourceProvider.ToString(),
                 domainEvent.Reason,
-                domainEvent.CompletedAt),
+                domainEvent.CompletedAt,
+                domainEvent.ArtistName,
+                domainEvent.SourceArtistId),
             dto => new KnownArtistDiscoveryCompleted(
                 ArtistId.From(dto.ArtistId),
                 Enum.Parse<LookupPriorityBand>(dto.Priority, ignoreCase: true),
+                Enum.Parse<LookupSource>(dto.SourceProvider, ignoreCase: true),
                 dto.Reason,
-                dto.CompletedAtUtc),
+                dto.CompletedAtUtc,
+                dto.ArtistName,
+                dto.SourceArtistId),
             domainEvent => domainEvent.CompletedAt);
 
         registry.RegisterStoredEventPair<KnownArtistDiscoveryDeferred, KnownArtistDiscoveryDeferredEventDataRecordDto>(
@@ -197,14 +203,26 @@ public sealed class DiscoveryQueryStoredEventTranslator : ITypeTranslationRegist
                 domainEvent.ArtistId.Value,
                 domainEvent.AlbumId.Value,
                 domainEvent.Priority.ToString(),
+                domainEvent.SourceProvider.ToString(),
                 domainEvent.Reason,
-                domainEvent.CompletedAt),
+                domainEvent.CompletedAt,
+                domainEvent.AlbumTitle,
+                domainEvent.ArtistName,
+                domainEvent.SourceAlbumId,
+                domainEvent.SourceArtistId,
+                domainEvent.ReleaseDate),
             dto => new KnownAlbumDiscoveryCompleted(
                 ArtistId.From(dto.ArtistId),
                 AlbumId.From(dto.AlbumId),
                 Enum.Parse<LookupPriorityBand>(dto.Priority, ignoreCase: true),
+                Enum.Parse<LookupSource>(dto.SourceProvider, ignoreCase: true),
                 dto.Reason,
-                dto.CompletedAtUtc),
+                dto.CompletedAtUtc,
+                dto.AlbumTitle,
+                dto.ArtistName,
+                dto.SourceAlbumId,
+                dto.SourceArtistId,
+                dto.ReleaseDate),
             domainEvent => domainEvent.CompletedAt);
 
         registry.RegisterStoredEventPair<KnownAlbumDiscoveryDeferred, KnownAlbumDiscoveryDeferredEventDataRecordDto>(

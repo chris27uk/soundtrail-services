@@ -1,7 +1,8 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
-using Soundtrail.Domain.Enrichment.Commands;
+using Soundtrail.Domain.Enrichment;
+using Soundtrail.Domain.Enrichment.Events;
 using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
@@ -11,7 +12,7 @@ namespace Soundtrail.Services.Tests.Integration.Enrichment.Messaging.Wolverine;
 public sealed class MusicCatalogLookupAttemptedListenerWolverineResponsesTests
 {
     [Fact]
-    public async Task Given_A_Deferred_Report_When_Handled_Then_Catalog_And_Discovery_Follow_Up_Commands_Are_Sent()
+    public async Task Given_A_Deferred_Report_When_Handled_Then_Lookup_History_Is_Written()
     {
         var env = MusicCatalogLookupAttemptedHandlerTestEnvironment.Create();
         var listener = new MusicCatalogLookupAttemptedListener(env.Handler);
@@ -32,12 +33,14 @@ public sealed class MusicCatalogLookupAttemptedListenerWolverineResponsesTests
                 null),
             null!);
 
-        env.Bus.SentCommands.Should().ContainSingle(x => x is ApplyMusicCatalogLookupAttemptedToCatalogCommand);
-        env.Bus.SentCommands.Should().ContainSingle(x => x is ApplyMusicCatalogLookupAttemptedToDiscoveryCommand);
+        env.LookupHistoryRepository
+            .GetStoredEvents(MusicCatalogLookupId.From(MusicCatalogId.From("mc_track_1")))
+            .Should().ContainSingle()
+            .Which.Should().BeOfType<MusicCatalogLookupDeferred>();
     }
 
     [Fact]
-    public async Task Given_A_Failed_Report_When_Handled_Then_The_Original_Lookup_Attempt_Is_Preserved_In_Both_Follow_Up_Commands()
+    public async Task Given_A_Failed_Report_When_Handled_Then_The_Lookup_History_Preserves_The_Failure_Outcome()
     {
         var env = MusicCatalogLookupAttemptedHandlerTestEnvironment.Create();
         var listener = new MusicCatalogLookupAttemptedListener(env.Handler);
@@ -58,9 +61,9 @@ public sealed class MusicCatalogLookupAttemptedListenerWolverineResponsesTests
                 null),
             null!);
 
-        env.Bus.SentCommands.OfType<ApplyMusicCatalogLookupAttemptedToCatalogCommand>().Single().Attempted.Outcome.Status
-            .Should().Be(MusicCatalogLookupOutcomeStatus.Failed);
-        env.Bus.SentCommands.OfType<ApplyMusicCatalogLookupAttemptedToDiscoveryCommand>().Single().Attempted.Outcome.Status
-            .Should().Be(MusicCatalogLookupOutcomeStatus.Failed);
+        env.LookupHistoryRepository
+            .GetStoredEvents(MusicCatalogLookupId.From(MusicCatalogId.From("mc_track_1")))
+            .Single().Should().BeOfType<MusicCatalogLookupFailed>()
+            .Which.Reason.Should().Be("Lookup failed");
     }
 }

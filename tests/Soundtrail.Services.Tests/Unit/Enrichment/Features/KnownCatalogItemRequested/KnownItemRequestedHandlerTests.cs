@@ -4,6 +4,7 @@ using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 using KnownTrackRequestedEvent = Soundtrail.Domain.Discovery.Events.KnownTrackRequested;
 
@@ -25,6 +26,10 @@ public sealed class KnownItemRequestedHandlerTests
             .ContainSingle()
             .Which.Should()
             .BeOfType<ArtistCatalogLookupRequested>();
+
+        env.CommandBus.SentCommands.Should().ContainSingle()
+            .Which.Should().BeOfType<LookupArtistMetadataCommand>()
+            .Which.ArtistId.Should().Be(request.ArtistId);
     }
 
     [Fact]
@@ -41,6 +46,10 @@ public sealed class KnownItemRequestedHandlerTests
             .ContainSingle()
             .Which.Should()
             .BeOfType<AlbumCatalogLookupRequested>();
+
+        env.CommandBus.SentCommands.Should().ContainSingle()
+            .Which.Should().BeOfType<LookupAlbumMetadataCommand>()
+            .Which.AlbumId.Should().Be(request.AlbumId);
     }
 
     [Fact]

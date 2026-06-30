@@ -3,7 +3,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Soundtrail.Adapters.Messaging;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
-using Soundtrail.Services.Enrichment.Worker.Features.OnLookupMusicMetadata.Adapters;
+using Soundtrail.Services.Enrichment.Worker.Features.OnLookupAlbumMetadata.Adapters;
+using Soundtrail.Services.Enrichment.Worker.Features.OnLookupArtistMetadata.Adapters;
+using Soundtrail.Services.Enrichment.Worker.Features.OnLookupTrackMetadata.Adapters;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupStreamingLocations.Adapters;
 using Soundtrail.Services.ServiceDefaults;
 using Wolverine;
@@ -32,6 +34,8 @@ public static class ServiceBusServiceCollectionExtensions
         opts.ServiceLocationPolicy = ServiceLocationPolicy.AllowedButWarn;
         opts.Discovery.DisableConventionalDiscovery();
         opts.Discovery.IncludeType<LookupTrackMetadataListener>();
+        opts.Discovery.IncludeType<LookupArtistMetadataListener>();
+        opts.Discovery.IncludeType<LookupAlbumMetadataListener>();
         opts.Discovery.IncludeType<LookupStreamingLocationsListener>();
         opts.Policies.AutoApplyTransactions();
 
@@ -63,6 +67,10 @@ public static class ServiceBusServiceCollectionExtensions
             .ProcessInline();
 
         opts.PublishMessage<MusicCatalogLookupAttemptedDto>()
+            .ToAzureServiceBusQueue(serviceBusOptions.EnrichmentResponsesQueueName);
+        opts.PublishMessage<ArtistMetadataLookupAttemptedDto>()
+            .ToAzureServiceBusQueue(serviceBusOptions.EnrichmentResponsesQueueName);
+        opts.PublishMessage<AlbumMetadataLookupAttemptedDto>()
             .ToAzureServiceBusQueue(serviceBusOptions.EnrichmentResponsesQueueName);
 
         return opts;

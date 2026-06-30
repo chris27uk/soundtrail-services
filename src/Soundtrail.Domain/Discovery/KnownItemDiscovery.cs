@@ -30,6 +30,11 @@ public sealed class KnownItemDiscovery
     private string? knownTrackReason;
     private string? artistReason;
     private string? albumReason;
+    private string? completedArtistName;
+    private string? completedSourceArtistId;
+    private string? completedAlbumTitle;
+    private string? completedAlbumSourceAlbumId;
+    private DateOnly? completedAlbumReleaseDate;
 
     private KnownItemDiscovery(IEnumerable<IDomainEvent> events)
     {
@@ -238,8 +243,11 @@ public sealed class KnownItemDiscovery
     public bool ArtistLookupCompleted(
         ArtistId artistId,
         LookupPriorityBand priority,
+        LookupSource sourceProvider,
         string reason,
-        DateTimeOffset completedAt)
+        DateTimeOffset completedAt,
+        string artistName,
+        string? sourceArtistId)
     {
         if (!hasArtistCatalogLookupRequested)
         {
@@ -248,12 +256,23 @@ public sealed class KnownItemDiscovery
 
         if (artistStatus == CatalogSearchLifecycleStatus.Completed
             && artistPriority == priority
-            && string.Equals(artistReason, reason, StringComparison.Ordinal))
+            && string.Equals(artistReason, reason, StringComparison.Ordinal)
+            && string.Equals(completedArtistName, artistName, StringComparison.Ordinal)
+            && string.Equals(completedSourceArtistId, sourceArtistId, StringComparison.Ordinal))
         {
             return false;
         }
 
-        Apply(new KnownArtistDiscoveryCompleted(artistId, priority, reason, completedAt), isNew: true);
+        Apply(
+            new KnownArtistDiscoveryCompleted(
+                artistId,
+                priority,
+                sourceProvider,
+                reason,
+                completedAt,
+                artistName,
+                sourceArtistId),
+            isNew: true);
         return true;
     }
 
@@ -359,8 +378,14 @@ public sealed class KnownItemDiscovery
         ArtistId artistId,
         AlbumId albumId,
         LookupPriorityBand priority,
+        LookupSource sourceProvider,
         string reason,
-        DateTimeOffset completedAt)
+        DateTimeOffset completedAt,
+        string albumTitle,
+        string artistName,
+        string? sourceAlbumId,
+        string? sourceArtistId,
+        DateOnly? releaseDate)
     {
         if (!hasAlbumCatalogLookupRequested)
         {
@@ -369,12 +394,30 @@ public sealed class KnownItemDiscovery
 
         if (albumStatus == CatalogSearchLifecycleStatus.Completed
             && albumPriority == priority
-            && string.Equals(albumReason, reason, StringComparison.Ordinal))
+            && string.Equals(albumReason, reason, StringComparison.Ordinal)
+            && string.Equals(completedAlbumTitle, albumTitle, StringComparison.Ordinal)
+            && string.Equals(completedArtistName, artistName, StringComparison.Ordinal)
+            && string.Equals(completedAlbumSourceAlbumId, sourceAlbumId, StringComparison.Ordinal)
+            && string.Equals(completedSourceArtistId, sourceArtistId, StringComparison.Ordinal)
+            && completedAlbumReleaseDate == releaseDate)
         {
             return false;
         }
 
-        Apply(new KnownAlbumDiscoveryCompleted(artistId, albumId, priority, reason, completedAt), isNew: true);
+        Apply(
+            new KnownAlbumDiscoveryCompleted(
+                artistId,
+                albumId,
+                priority,
+                sourceProvider,
+                reason,
+                completedAt,
+                albumTitle,
+                artistName,
+                sourceAlbumId,
+                sourceArtistId,
+                releaseDate),
+            isNew: true);
         return true;
     }
 
@@ -561,6 +604,8 @@ public sealed class KnownItemDiscovery
         artistEstimatedRetryAfterSeconds = null;
         artistEarliestExpectedCompletionAt = null;
         artistReason = @event.Reason;
+        completedArtistName = @event.ArtistName;
+        completedSourceArtistId = @event.SourceArtistId;
     }
 
     private void On(KnownArtistDiscoveryDeferred @event)
@@ -609,6 +654,11 @@ public sealed class KnownItemDiscovery
         albumEstimatedRetryAfterSeconds = null;
         albumEarliestExpectedCompletionAt = null;
         albumReason = @event.Reason;
+        completedArtistName = @event.ArtistName;
+        completedSourceArtistId = @event.SourceArtistId;
+        completedAlbumTitle = @event.AlbumTitle;
+        completedAlbumSourceAlbumId = @event.SourceAlbumId;
+        completedAlbumReleaseDate = @event.ReleaseDate;
     }
 
     private void On(KnownAlbumDiscoveryDeferred @event)

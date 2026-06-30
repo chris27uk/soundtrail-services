@@ -16,15 +16,21 @@ internal sealed class KnownCatalogItemRequestedListenerWolverineTestEnvironment
 {
     private static readonly DateTimeOffset DefaultOccurredAt = new(2026, 6, 27, 12, 0, 0, TimeSpan.Zero);
     private readonly CatalogSearchDiscoveryRepositoryFake discoveryRepository;
+    private readonly CommandBusFake commandBus;
 
     private KnownCatalogItemRequestedListenerWolverineTestEnvironment()
     {
         discoveryRepository = new CatalogSearchDiscoveryRepositoryFake();
+        commandBus = new CommandBusFake();
+        var artistPort = new KnownItemRequestedHandlerTestEnvironment.LoadKnownCatalogArtistPortFake();
+        artistPort.Seed(ArtistId.From("artist_1"), "Artist 1", "mb-artist-1");
+        var albumPort = new KnownItemRequestedHandlerTestEnvironment.LoadKnownCatalogAlbumPortFake();
+        albumPort.Seed(ArtistId.From("artist_1"), AlbumId.From("album_1"), "Artist 1", "Album 1", "mb-artist-1", "mb-release-1");
 
         ArtistListener = new KnownArtistRequestedListener(
-            new KnownArtistRequestedHandler(discoveryRepository));
+            new KnownArtistRequestedHandler(discoveryRepository, artistPort, commandBus));
         AlbumListener = new KnownAlbumRequestedListener(
-            new KnownAlbumRequestedHandler(discoveryRepository));
+            new KnownAlbumRequestedHandler(discoveryRepository, albumPort, commandBus));
         TrackListener = new KnownTrackRequestedListener(
             new KnownTrackRequestedHandler(discoveryRepository));
     }

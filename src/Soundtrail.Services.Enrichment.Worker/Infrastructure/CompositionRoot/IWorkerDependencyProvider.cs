@@ -9,5 +9,9 @@ public interface IWorkerDependencyProvider
 
     void AddLookupTrackMetadataDependencies(IServiceCollection services, IConfiguration configuration);
 
+    void AddLookupArtistMetadataDependencies(IServiceCollection services, IConfiguration configuration);
+
+    void AddLookupAlbumMetadataDependencies(IServiceCollection services, IConfiguration configuration);
+
     void AddLookupStreamingLocationsDependencies(IServiceCollection services, IConfiguration configuration);
 }

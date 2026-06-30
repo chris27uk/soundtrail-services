@@ -8,5 +8,11 @@ public sealed record KnownAlbumDiscoveryCompleted(
     ArtistId ArtistId,
     AlbumId AlbumId,
     LookupPriorityBand Priority,
+    LookupSource SourceProvider,
     string Reason,
-    DateTimeOffset CompletedAt) : IDomainEvent;
+    DateTimeOffset CompletedAt,
+    string AlbumTitle,
+    string ArtistName,
+    string? SourceAlbumId,
+    string? SourceArtistId,
+    DateOnly? ReleaseDate) : IDomainEvent;
