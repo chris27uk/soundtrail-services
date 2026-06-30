@@ -2,8 +2,6 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Catalog.Events;
-using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Domain.Enrichment.Events;
 using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupHistoryChanged.Support;
@@ -11,7 +9,7 @@ using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupH
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupHistoryChanged;
 
 public sealed class ApplyMusicCatalogLookupHistoryChangedToCatalogHandler(
-    IEventStreamRepository<MusicCatalogId, IMusicTrackEvent> catalogRepository) : IHandler<MusicCatalogLookupHistoryChangedCommand>
+    IEventStreamRepository<ArtistId, IDomainEvent> catalogRepository) : IHandler<MusicCatalogLookupHistoryChangedCommand>
 {
     public async Task Handle(
         MusicCatalogLookupHistoryChangedCommand command,
@@ -24,23 +22,25 @@ public sealed class ApplyMusicCatalogLookupHistoryChangedToCatalogHandler(
                 continue;
             }
 
-            var loaded = await MusicTrack.LoadAsync(
-                catalogRepository,
+            var fetched = new MusicCatalogMetadataFetched(
+                CommandId.For($"MusicCatalogLookupCompleted:{command.LookupId.StableValue}:{version}"),
                 completed.MusicCatalogId,
+                completed.SourceProvider,
+                completed.Priority,
+                completed.CompletedAt,
+                completed.Metadata,
+                completed.References,
+                completed.FailedProviders,
+                completed.Hierarchy,
+                CorrelationId.From($"lookup:{command.LookupId.StableValue}:{version}"));
+
+            var artistId = ArtistCatalogIdentity.ResolveArtistId(fetched);
+            var loaded = await ArtistCatalog.LoadAsync(
+                catalogRepository,
+                artistId,
                 cancellationToken);
 
-            loaded.Aggregate.MetadataFetched(
-                new MusicCatalogMetadataFetched(
-                    CommandId.For($"MusicCatalogLookupCompleted:{command.LookupId.StableValue}:{version}"),
-                    completed.MusicCatalogId,
-                    completed.SourceProvider,
-                    completed.Priority,
-                    completed.CompletedAt,
-                    completed.Metadata,
-                    completed.References,
-                    completed.FailedProviders,
-                    completed.Hierarchy,
-                    CorrelationId.From($"lookup:{command.LookupId.StableValue}:{version}")));
+            loaded.Aggregate.TrackMetadataFetched(artistId, fetched);
 
             await loaded.Aggregate.SaveAsync(
                 catalogRepository,

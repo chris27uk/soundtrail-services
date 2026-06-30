@@ -1,6 +1,7 @@
 namespace Soundtrail.Contracts.EventSourcing;
 
 public sealed record MetadataCorrectedEventDataRecordDto(
+    string? MusicCatalogId,
     string Title,
     string ArtistName,
     string? ArtistId,

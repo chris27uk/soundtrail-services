@@ -13,14 +13,17 @@ public sealed class NextMusicTracksRequestedForLookupHandler(ICatalogDiscoveryWo
         var candidates = await discoveryWorkPlanningReadPort.GetPlanningCandidatesAsync(command.CreatedAt, command.BatchSize, cancellationToken);
         foreach (var candidate in candidates)
         {
-            await commandBus.SendAsync(
-                new AssessMusicTrackCommand(
-                    AssessMusicTrackCommand.Id(candidate.MusicCatalogId, command.CreatedAt),
-                    CorrelationId.New(),
-                    command.CreatedAt,
-                    LookupPriorityBand.Low,
-                    candidate.MusicCatalogId),
-                cancellationToken);
+            await commandBus.SendAsync(NewAssessmentCommand(command, candidate), cancellationToken);
         }
+    }
+
+    private static AssessMusicTrackCommand NewAssessmentCommand(RunDiscoveryBacklogSchedulingCommand command, CatalogDiscoveryWorkSummary candidate)
+    {
+        return new AssessMusicTrackCommand(
+            AssessMusicTrackCommand.Id(candidate.MusicCatalogId, command.CreatedAt),
+            CorrelationId.New(),
+            command.CreatedAt,
+            LookupPriorityBand.Low,
+            candidate.MusicCatalogId);
     }
 }

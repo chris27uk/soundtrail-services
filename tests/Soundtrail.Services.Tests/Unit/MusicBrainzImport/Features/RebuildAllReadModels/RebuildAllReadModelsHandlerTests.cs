@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Domain.Discovery;
@@ -31,13 +32,15 @@ public sealed class RebuildAllReadModelsHandlerTests
     public async Task Given_Persisted_State_When_Rebuild_All_Is_Run_Then_Planner_State_Is_Cleared_And_All_Read_Models_Are_Replayed()
     {
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
+        var artistId = ArtistId.From("artist_the_killers");
         var searchTerm = MusicSearchCriteria.ByQuery("mr brightside killers", SearchTypesFilter.Tracks);
 
         var trackEvents = new[]
         {
-            new VersionedMusicTrackEvent(
+            new VersionedCatalogEvent(
                 1,
                 new TrackDiscovered(
+                    musicCatalogId,
                     "Mr. Brightside",
                     "The Killers",
                     222000,
@@ -61,9 +64,9 @@ public sealed class RebuildAllReadModelsHandlerTests
         };
 
         var persistentId = DiscoveryQueryKey.StableValueFor(searchTerm);
-        var plannerEventStore = new FakeMusicTrackReplayEventStore(new Dictionary<string, IReadOnlyList<VersionedMusicTrackEvent>>
+        var plannerEventStore = new FakeCatalogReplayEventStore(new Dictionary<string, IReadOnlyList<VersionedCatalogEvent>>
         {
-            [musicCatalogId.Value] = trackEvents
+            [artistId.Value] = trackEvents
         });
         var plannerProjectionStore = new MusicTrackProjectionStoreFake();
         var plannerResetPort = new FakePlannerMusicTrackProjectionResetPort();
@@ -73,9 +76,9 @@ public sealed class RebuildAllReadModelsHandlerTests
             plannerResetPort,
             new MusicTrackChangedHandler(plannerProjectionStore, plannerProjectionStore));
 
-        var catalogEventStore = new FakeMusicTrackReplayEventStore(new Dictionary<string, IReadOnlyList<VersionedMusicTrackEvent>>
+        var catalogEventStore = new FakeCatalogReplayEventStore(new Dictionary<string, IReadOnlyList<VersionedCatalogEvent>>
         {
-            [musicCatalogId.Value] = trackEvents
+            [artistId.Value] = trackEvents
         });
         var catalogProjectionStore = new FakeCatalogProjectionStore();
         var catalogReplayHandler = new ReplayCatalogProjectionHandler(
@@ -107,33 +110,38 @@ public sealed class RebuildAllReadModelsHandlerTests
         await handler.Handle(new RebuildAllReadModelsCommand(), CancellationToken.None);
 
         plannerResetPort.ResetCatalogIds.Should().ContainSingle().Which.Should().Be(musicCatalogId);
-        catalogProjectionStore.ResetCatalogIds.Should().ContainSingle().Which.Should().Be(musicCatalogId);
+        catalogProjectionStore.ResetCatalogIds.Should().ContainSingle().Which.Should().Be(artistId);
         discoveryProjectionStore.ResetSearchTerms.Should().ContainSingle().Which.Should().Be(searchTerm);
         clearPlannerOperationalStatePort.WasCalled.Should().BeTrue();
 
         plannerProjectionStore.Projections[musicCatalogId.Value].Title.Should().Be("Mr. Brightside");
-        catalogProjectionStore.Projections[musicCatalogId.Value].Track.Title.Should().Be("Mr. Brightside");
+        catalogProjectionStore.Projections[artistId.Value]
+            .GetTracks()
+            .Single()
+            .Title
+            .Should()
+            .Be("Mr. Brightside");
         discoveryProjectionStore.Projections[persistentId].Status.Should().Be(CatalogSearchLifecycleStatus.Planned.ToString());
         discoveryProjectionStore.Projections[persistentId].Reason.Should().Be("Planner queued lookup");
     }
 
     private static readonly DateTimeOffset Clock = new(2026, 6, 22, 12, 0, 0, TimeSpan.Zero);
 
-    private sealed class FakeMusicTrackReplayEventStore(
-        IReadOnlyDictionary<string, IReadOnlyList<VersionedMusicTrackEvent>> eventsByCatalogId) :
+    private sealed class FakeCatalogReplayEventStore(
+        IReadOnlyDictionary<string, IReadOnlyList<VersionedCatalogEvent>> eventsByCatalogId) :
         ILoadCatalogProjectionReplayTargetsPort,
         ILoadMusicTrackEventsForCatalogReplayPort
     {
-        public Task<IReadOnlyList<MusicCatalogId>> LoadAsync(CancellationToken cancellationToken) =>
-            Task.FromResult<IReadOnlyList<MusicCatalogId>>(
-                eventsByCatalogId.Keys.Select(MusicCatalogId.From).ToArray());
+        public Task<IReadOnlyList<ArtistId>> LoadAsync(CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<ArtistId>>(
+                eventsByCatalogId.Keys.Select(ArtistId.From).ToArray());
 
-        public Task<IReadOnlyList<VersionedMusicTrackEvent>> LoadAsync(
-            MusicCatalogId musicCatalogId,
+        public Task<IReadOnlyList<VersionedCatalogEvent>> LoadAsync(
+            ArtistId musicCatalogId,
             CancellationToken cancellationToken) =>
             Task.FromResult(eventsByCatalogId.TryGetValue(musicCatalogId.Value, out var events)
                 ? events
-                : Array.Empty<VersionedMusicTrackEvent>() as IReadOnlyList<VersionedMusicTrackEvent>);
+                : Array.Empty<VersionedCatalogEvent>() as IReadOnlyList<VersionedCatalogEvent>);
     }
 
     private sealed class FakeDiscoveryReplayEventStore(
@@ -169,39 +177,36 @@ public sealed class RebuildAllReadModelsHandlerTests
         ISaveMusicTrackCatalogProjectionPort,
         IResetCatalogProjectionCheckpointPort
     {
-        private readonly Dictionary<string, MusicTrackCatalogProjection> projections = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, ArtistCatalog> projections = new(StringComparer.Ordinal);
 
-        public IReadOnlyDictionary<string, MusicTrackCatalogProjection> Projections => projections;
+        public IReadOnlyDictionary<string, ArtistCatalog> Projections => projections;
 
-        public List<MusicCatalogId> ResetCatalogIds { get; } = [];
+        public List<ArtistId> ResetCatalogIds { get; } = [];
 
-        public Task<MusicTrackCatalogProjection> LoadAsync(
-            MusicCatalogId musicCatalogId,
-            CancellationToken cancellationToken)
+        public Task<MusicTrackCatalogProjection> LoadAsync(MusicCatalogId musicCatalogId, CancellationToken cancellationToken)
         {
-            if (!projections.TryGetValue(musicCatalogId.Value, out var projection))
-            {
-                projection = new MusicTrackCatalogProjection(musicCatalogId);
-                projections[musicCatalogId.Value] = projection;
-            }
-
-            return Task.FromResult(projection);
+            _ = musicCatalogId;
+            _ = cancellationToken;
+            return Task.FromResult(new MusicTrackCatalogProjection(musicCatalogId));
         }
 
         public Task SaveAsync(
-            MusicTrackCatalogProjection projection,
+            ArtistId artistId,
+            int version,
+            ArtistCatalog projection,
             CancellationToken cancellationToken)
         {
-            projections[projection.MusicCatalogId.Value] = projection;
+            _ = version;
+            projections[artistId.Value] = projection;
             return Task.CompletedTask;
         }
 
         public Task ResetAsync(
-            MusicCatalogId musicCatalogId,
+            ArtistId artistId,
             CancellationToken cancellationToken)
         {
-            ResetCatalogIds.Add(musicCatalogId);
-            projections.Remove(musicCatalogId.Value);
+            ResetCatalogIds.Add(artistId);
+            projections.Remove(artistId.Value);
             return Task.CompletedTask;
         }
     }

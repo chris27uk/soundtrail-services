@@ -23,7 +23,7 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
     private MusicCatalogLookupAttemptedHandlerTestEnvironment()
     {
         Now = new DateTimeOffset(2026, 6, 18, 12, 0, 0, TimeSpan.Zero);
-        StreamStore = new MusicTrackStreamStoreFake();
+        StreamStore = new ArtistCatalogEventRepositoryFake();
         discoveryRepository = new CatalogSearchDiscoveryRepositoryFake();
         trackingStore = new CatalogSearchTrackingStoreFake();
         lookupHistoryRepository = new MusicCatalogLookupHistoryRepositoryFake();
@@ -48,7 +48,7 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
 
     public MusicCatalogLookupHistoryChangedHandler DiscoveryHandler { get; }
 
-    public MusicTrackStreamStoreFake StreamStore { get; }
+    public ArtistCatalogEventRepositoryFake StreamStore { get; }
 
     public CatalogSearchTrackingStoreFake CatalogSearchTrackings => trackingStore;
 

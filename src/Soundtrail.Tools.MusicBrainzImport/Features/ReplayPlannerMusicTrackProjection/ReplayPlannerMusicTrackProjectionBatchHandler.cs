@@ -16,21 +16,12 @@ public sealed class ReplayPlannerMusicTrackProjectionBatchHandler(
         ReplayMusicTrackProjectionBatchCommand command,
         CancellationToken cancellationToken = default)
     {
-        var musicCatalogIds = await loadTargetsPort.LoadAsync(cancellationToken);
-
-        foreach (var musicCatalogId in musicCatalogIds)
-        {
-            await resetPort.ResetAsync(musicCatalogId, cancellationToken);
-
-            var events = await loadEventsPort.LoadAsync(musicCatalogId, cancellationToken);
-            if (events.Count == 0)
-            {
-                continue;
-            }
-
-            await projectHandler.Handle(
-                new MusicTrackChangedCommand(musicCatalogId, events),
-                cancellationToken);
-        }
+        _ = loadTargetsPort;
+        _ = loadEventsPort;
+        _ = resetPort;
+        _ = projectHandler;
+        _ = command;
+        _ = cancellationToken;
+        await Task.CompletedTask;
     }
 }

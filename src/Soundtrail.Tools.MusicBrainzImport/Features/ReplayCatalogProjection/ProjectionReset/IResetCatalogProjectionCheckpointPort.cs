@@ -1,10 +1,10 @@
-using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.ProjectionReset;
 
 public interface IResetCatalogProjectionCheckpointPort
 {
     Task ResetAsync(
-        MusicCatalogId musicCatalogId,
+        ArtistId artistId,
         CancellationToken cancellationToken);
 }

@@ -12,12 +12,14 @@ public sealed class ProviderReferenceDiscoveredStoredEventTranslationRegistratio
         registry.RegisterStoredEventPair<ProviderReferenceDiscovered, ProviderReferenceDiscoveredEventDataRecordDto>(
             nameof(ProviderReferenceDiscovered),
             domainEvent => new ProviderReferenceDiscoveredEventDataRecordDto(
+                domainEvent.MusicCatalogId?.Value,
                 domainEvent.Provider.Value,
                 domainEvent.ExternalId,
                 domainEvent.Url.ToString(),
                 domainEvent.SourceProvider.Value,
                 domainEvent.ObservedAt),
             dto => new ProviderReferenceDiscovered(
+                dto.MusicCatalogId is null ? null : MusicCatalogId.From(dto.MusicCatalogId),
                 ProviderName.From(dto.Provider),
                 dto.ExternalId,
                 new Uri(dto.Url),

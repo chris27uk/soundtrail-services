@@ -12,10 +12,12 @@ public sealed class ProviderReferenceLookupFailedStoredEventTranslationRegistrat
         registry.RegisterStoredEventPair<ProviderReferenceLookupFailed, ProviderReferenceLookupFailedEventDataRecordDto>(
             nameof(ProviderReferenceLookupFailed),
             domainEvent => new ProviderReferenceLookupFailedEventDataRecordDto(
+                domainEvent.MusicCatalogId?.Value,
                 domainEvent.Provider.Value,
                 domainEvent.SourceProvider.Value,
                 domainEvent.ObservedAt),
             dto => new ProviderReferenceLookupFailed(
+                dto.MusicCatalogId is null ? null : MusicCatalogId.From(dto.MusicCatalogId),
                 ProviderName.From(dto.Provider),
                 LookupSource.From(dto.SourceProvider),
                 dto.ObservedAt),

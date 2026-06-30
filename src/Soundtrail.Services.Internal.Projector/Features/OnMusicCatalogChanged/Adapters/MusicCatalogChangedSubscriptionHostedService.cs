@@ -4,8 +4,9 @@ using Raven.Client.Documents;
 using Raven.Client.Documents.Subscriptions;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
+using Soundtrail.Domain.Abstractions.EventSourcing;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Commands;
-using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Adapters.Registry;
 
@@ -17,7 +18,7 @@ public sealed class MusicCatalogChangedSubscriptionHostedService(
     ILogger<MusicCatalogChangedSubscriptionHostedService> logger,
     ITypeRegistry translator) : BackgroundService
 {
-    private const string SubscriptionName = "catalog-music-track-projections";
+    private const string SubscriptionName = "catalog-artist-projections";
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -34,13 +35,19 @@ public sealed class MusicCatalogChangedSubscriptionHostedService(
                     {
                         foreach (var stream in batch.Items.Select(item => item.Result).GroupBy(x => x.StreamId, StringComparer.Ordinal))
                         {
+                            var first = stream.First();
+                            if (!string.Equals(first.AggregateType, "artist-catalog", StringComparison.Ordinal))
+                            {
+                                continue;
+                            }
+
                             await handler.Handle(
                                 new MusicCatalogChangedCommand(
-                                    MusicCatalogId.From(stream.Key),
+                                    ArtistId.From(stream.Key),
                                     stream.OrderBy(x => x.Version)
-                                        .Select(x => new VersionedMusicTrackEvent(
+                                        .Select(x => new VersionedCatalogEvent(
                                             x.Version,
-                                            translator.ToDomainObject<IMusicTrackEvent>(
+                                            translator.ToDomainObject<IDomainEvent>(
                                                 x.Body ?? throw new InvalidOperationException($"Stored event '{x.Id}' is missing a body."))))
                                         .ToArray()),
                                 stoppingToken);

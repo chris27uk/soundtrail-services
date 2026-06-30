@@ -3,6 +3,7 @@ using Soundtrail.Adapters.Registry;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Abstractions.EventSourcing;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
@@ -45,11 +46,13 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
     public static async Task<ReplayCatalogProjectionTestEnvironment> CreateAsync(ReplayCatalogProjectionMode mode)
     {
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
+        var artistId = ArtistId.From("artist_the_killers");
         var events = new[]
         {
-            new VersionedMusicTrackEvent(
+            new VersionedCatalogEvent(
                 1,
                 new TrackDiscovered(
+                    musicCatalogId,
                     "Mr. Brightside",
                     "The Killers",
                     222000,
@@ -57,7 +60,7 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
                     "mbid-1",
                     LookupSource.MusicBrainz,
                     Clock)),
-            new VersionedMusicTrackEvent(
+            new VersionedCatalogEvent(
                 2,
                 new ArtistDiscovered(
                     "artist_the_killers",
@@ -65,7 +68,7 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
                     "mb-artist-the-killers",
                     LookupSource.MusicBrainz,
                     Clock.AddMinutes(1))),
-            new VersionedMusicTrackEvent(
+            new VersionedCatalogEvent(
                 3,
                 new AlbumDiscovered(
                     "album_hot_fuss",
@@ -78,8 +81,8 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
 
         return mode switch
         {
-            ReplayCatalogProjectionMode.InProcessFake => CreateFake(musicCatalogId, events),
-            ReplayCatalogProjectionMode.RavenEmbedded => await CreateRavenAsync(musicCatalogId, events),
+            ReplayCatalogProjectionMode.InProcessFake => CreateFake(musicCatalogId, artistId, events),
+            ReplayCatalogProjectionMode.RavenEmbedded => await CreateRavenAsync(musicCatalogId, artistId, events),
             _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
         };
     }
@@ -103,11 +106,12 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
 
     private static ReplayCatalogProjectionTestEnvironment CreateFake(
         MusicCatalogId musicCatalogId,
-        IReadOnlyList<VersionedMusicTrackEvent> events)
+        ArtistId artistId,
+        IReadOnlyList<VersionedCatalogEvent> events)
     {
-        var eventStore = new FakeEventStore(new Dictionary<string, IReadOnlyList<VersionedMusicTrackEvent>>
+        var eventStore = new FakeEventStore(new Dictionary<string, IReadOnlyList<VersionedCatalogEvent>>
         {
-            [musicCatalogId.Value] = events
+            [artistId.Value] = events
         });
         var projectionStore = new FakeProjectionStore();
         projectionStore.SeedStale(musicCatalogId);
@@ -127,15 +131,19 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
 
     private static async Task<ReplayCatalogProjectionTestEnvironment> CreateRavenAsync(
         MusicCatalogId musicCatalogId,
-        IReadOnlyList<VersionedMusicTrackEvent> events)
+        ArtistId artistId,
+        IReadOnlyList<VersionedCatalogEvent> events)
     {
         var raven = RavenEmbeddedTestDatabase.Create();
         using var seedSession = raven.Store.OpenAsyncSession();
-        var repository = TestEventStreamRepositories.CreateMusicTrack(seedSession);
+        var repository = new Soundtrail.Adapters.EventSourcing.RavenEventStreamRepository<ArtistId, IDomainEvent>(
+            seedSession,
+            TypeTranslationRegistry.Default,
+            Soundtrail.Adapters.MusicTrackEventStore.ArtistCatalogEventStreamDefinition.Create());
         await repository.AppendAsync(
-            LoadedEventStream<MusicCatalogId, IMusicTrackEvent>.Empty(musicCatalogId),
+            LoadedEventStream<ArtistId, IDomainEvent>.Empty(artistId),
             events.Select(x => x.Event).ToArray(),
-            OperationId.From($"ReplayCatalogProjection:{musicCatalogId.Value}"),
+            OperationId.From($"ReplayCatalogProjection:{artistId.Value}"),
             CancellationToken.None);
 
         await seedSession.StoreAsync(new CatalogTrackRecordDto
@@ -152,8 +160,8 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
         });
         await seedSession.StoreAsync(new CatalogProjectionCheckpointDocument
         {
-            Id = CatalogProjectionCheckpointDocument.GetDocumentId(musicCatalogId.Value),
-            MusicCatalogId = musicCatalogId.Value,
+            Id = CatalogProjectionCheckpointDocument.GetDocumentId(artistId.Value),
+            ArtistId = artistId.Value,
             LastAppliedVersion = 99,
             UpdatedAt = Clock
         });
@@ -182,7 +190,7 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
             {
                 using var verificationSession = raven.Store.OpenAsyncSession();
                 var checkpoint = await verificationSession.LoadAsync<CatalogProjectionCheckpointDocument>(
-                    CatalogProjectionCheckpointDocument.GetDocumentId(id.Value),
+                    CatalogProjectionCheckpointDocument.GetDocumentId(artistId.Value),
                     CancellationToken.None);
                 return checkpoint?.LastAppliedVersion ?? 0;
             },
@@ -196,20 +204,20 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
     }
 
     private sealed class FakeEventStore(
-        IReadOnlyDictionary<string, IReadOnlyList<VersionedMusicTrackEvent>> eventsByMusicCatalogId) :
+        IReadOnlyDictionary<string, IReadOnlyList<VersionedCatalogEvent>> eventsByMusicCatalogId) :
         ILoadCatalogProjectionReplayTargetsPort,
         ILoadMusicTrackEventsForCatalogReplayPort
     {
-        public Task<IReadOnlyList<MusicCatalogId>> LoadAsync(CancellationToken cancellationToken) =>
-            Task.FromResult<IReadOnlyList<MusicCatalogId>>(
-                eventsByMusicCatalogId.Keys.Select(MusicCatalogId.From).ToArray());
+        public Task<IReadOnlyList<ArtistId>> LoadAsync(CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<ArtistId>>(
+                eventsByMusicCatalogId.Keys.Select(ArtistId.From).ToArray());
 
-        public Task<IReadOnlyList<VersionedMusicTrackEvent>> LoadAsync(
-            MusicCatalogId musicCatalogId,
+        public Task<IReadOnlyList<VersionedCatalogEvent>> LoadAsync(
+            ArtistId musicCatalogId,
             CancellationToken cancellationToken) =>
             Task.FromResult(eventsByMusicCatalogId.TryGetValue(musicCatalogId.Value, out var events)
                 ? events
-                : Array.Empty<VersionedMusicTrackEvent>() as IReadOnlyList<VersionedMusicTrackEvent>);
+                : Array.Empty<VersionedCatalogEvent>() as IReadOnlyList<VersionedCatalogEvent>);
     }
 
     private sealed class FakeProjectionStore :
@@ -217,111 +225,65 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
         ISaveMusicTrackCatalogProjectionPort,
         IResetCatalogProjectionCheckpointPort
     {
-        private readonly Dictionary<string, MusicTrackCatalogProjectionSnapshot> projections = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, ArtistCatalog> projections = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, int> checkpointVersions = new(StringComparer.Ordinal);
 
         public int TrackDocumentCount => projections.Count;
 
-        public void SeedStale(MusicCatalogId musicCatalogId)
-        {
-            projections[musicCatalogId.Value] = new MusicTrackCatalogProjectionSnapshot(
-                musicCatalogId,
-                new CatalogTrackProjection(
-                    musicCatalogId.Value,
-                    "artist_stale",
-                    "album_stale",
-                    "Stale Title",
-                    "stale title",
-                    "Stale Artist",
-                    "Stale Album",
-                    "stale title stale artist",
-                    null,
-                    null,
-                    null,
-                    [],
-                    [],
-                    [],
-                    null,
-                    Clock),
-                null,
-                null,
-                99);
-        }
+        public void SeedStale(MusicCatalogId musicCatalogId) => _ = musicCatalogId;
 
         public CatalogTrackRecordDto? LoadTrackDocument(MusicCatalogId musicCatalogId)
         {
-            if (!projections.TryGetValue(musicCatalogId.Value, out var snapshot))
-            {
-                return null;
-            }
+            var track = projections.Values
+                .SelectMany(x => x.GetTracks())
+                .SingleOrDefault(x => x.MusicCatalogId == musicCatalogId);
 
-            return new CatalogTrackRecordDto
-            {
-                Id = CatalogTrackRecordDto.GetDocumentId(musicCatalogId.Value),
-                TrackId = snapshot.Track.TrackId,
-                ArtistId = snapshot.Track.ArtistId,
-                AlbumId = snapshot.Track.AlbumId,
-                Title = snapshot.Track.Title,
-                NormalizedTitle = snapshot.Track.NormalizedTitle,
-                ArtistName = snapshot.Track.ArtistName,
-                AlbumName = snapshot.Track.AlbumName,
-                SearchText = snapshot.Track.SearchText,
-                MusicBrainzRecordingId = snapshot.Track.MusicBrainzRecordingId,
-                Isrc = snapshot.Track.Isrc,
-                DurationMs = snapshot.Track.DurationMs,
-                UpdatedAt = snapshot.Track.UpdatedAt
-            };
+            return track is null
+                ? null
+                : new CatalogTrackRecordDto
+                {
+                    Id = CatalogTrackRecordDto.GetDocumentId(track.MusicCatalogId.Value),
+                    TrackId = track.MusicCatalogId.Value,
+                    Title = track.Title,
+                    ArtistId = track.ArtistId.Value,
+                    AlbumId = track.AlbumId?.Value,
+                    ArtistName = track.ArtistName,
+                    AlbumName = track.AlbumTitle,
+                    NormalizedTitle = track.Title.ToLowerInvariant(),
+                    SearchText = $"{track.Title} {track.ArtistName}".ToLowerInvariant()
+                };
         }
 
-        public int LoadCheckpointVersion(MusicCatalogId musicCatalogId) =>
-            projections.TryGetValue(musicCatalogId.Value, out var snapshot)
-                ? snapshot.ProjectionVersion
-                : 0;
-
-        public Task<MusicTrackCatalogProjection> LoadAsync(
-            MusicCatalogId musicCatalogId,
-            CancellationToken cancellationToken)
+        public int LoadCheckpointVersion(MusicCatalogId musicCatalogId)
         {
-            var projection = projections.TryGetValue(musicCatalogId.Value, out var snapshot)
-                ? MusicTrackCatalogProjection.Load(snapshot)
-                : MusicTrackCatalogProjection.Load(
-                    new MusicTrackCatalogProjectionSnapshot(
-                        musicCatalogId,
-                        new CatalogTrackProjection(
-                            musicCatalogId.Value,
-                            string.Empty,
-                            string.Empty,
-                            string.Empty,
-                            string.Empty,
-                            string.Empty,
-                            string.Empty,
-                            string.Empty,
-                            null,
-                            null,
-                            null,
-                            [],
-                            [],
-                            [],
-                            null,
-                            default),
-                        null,
-                        null,
-                        0));
-            return Task.FromResult(projection);
+            _ = musicCatalogId;
+            return checkpointVersions.Values.DefaultIfEmpty(0).Max();
+        }
+
+        public Task<MusicTrackCatalogProjection> LoadAsync(MusicCatalogId musicCatalogId, CancellationToken cancellationToken)
+        {
+            _ = musicCatalogId;
+            _ = cancellationToken;
+            return Task.FromResult(new MusicTrackCatalogProjection(musicCatalogId));
         }
 
         public Task SaveAsync(
-            MusicTrackCatalogProjection projection,
+            ArtistId artistId,
+            int version,
+            ArtistCatalog projection,
             CancellationToken cancellationToken)
         {
-            projections[projection.MusicCatalogId.Value] = projection.ToSnapshot();
+            projections[artistId.Value] = projection;
+            checkpointVersions[artistId.Value] = version;
             return Task.CompletedTask;
         }
 
         public Task ResetAsync(
-            MusicCatalogId musicCatalogId,
+            ArtistId artistId,
             CancellationToken cancellationToken)
         {
-            projections.Remove(musicCatalogId.Value);
+            projections.Remove(artistId.Value);
+            checkpointVersions.Remove(artistId.Value);
             return Task.CompletedTask;
         }
     }

@@ -34,7 +34,7 @@ public sealed class ImportMusicBrainzDumpHandlerTests
             new ImportMusicBrainzDumpCommand([], [], Clock),
             CancellationToken.None);
 
-        var stream = await env.StreamStore.LoadStreamAsync(MusicCatalogId.From("mc_track_mbrecording1"), CancellationToken.None);
+        var stream = await env.StreamStore.LoadAsync(ArtistId.From("artist_mbartist1"), CancellationToken.None);
         stream.Events.Should().ContainItemsAssignableTo<TrackDiscovered>();
         stream.Events.Should().ContainItemsAssignableTo<ArtistDiscovered>();
         stream.Events.Should().ContainItemsAssignableTo<AlbumDiscovered>();
@@ -62,7 +62,7 @@ public sealed class ImportMusicBrainzDumpHandlerTests
         await env.Handler.Handle(command, CancellationToken.None);
         await env.Handler.Handle(command, CancellationToken.None);
 
-        var stream = await env.StreamStore.LoadStreamAsync(MusicCatalogId.From("mc_track_mbrecording1"), CancellationToken.None);
+        var stream = await env.StreamStore.LoadAsync(ArtistId.From("artist_mbartist1"), CancellationToken.None);
         stream.Events.Should().ContainSingle(x => x is TrackDiscovered);
         stream.Events.Should().ContainSingle(x => x is ArtistDiscovered);
         stream.Events.Should().ContainSingle(x => x is StreamingLocationsRequired);
@@ -74,7 +74,7 @@ public sealed class ImportMusicBrainzDumpHandlerTests
     {
         private ImportMusicBrainzDumpHandlerTestEnvironment(
             ImportMusicBrainzDumpHandler handler,
-            MusicTrackStreamStoreFake streamStore)
+            ArtistCatalogEventRepositoryFake streamStore)
         {
             Handler = handler;
             StreamStore = streamStore;
@@ -82,12 +82,12 @@ public sealed class ImportMusicBrainzDumpHandlerTests
 
         public ImportMusicBrainzDumpHandler Handler { get; }
 
-        public MusicTrackStreamStoreFake StreamStore { get; }
+        public ArtistCatalogEventRepositoryFake StreamStore { get; }
 
         public static ImportMusicBrainzDumpHandlerTestEnvironment Create(
             IReadOnlyList<MusicBrainzCatalogSeedRecord> records)
         {
-            var streamStore = new MusicTrackStreamStoreFake();
+            var streamStore = new ArtistCatalogEventRepositoryFake();
             var handler = new ImportMusicBrainzDumpHandler(
                 new FakeMusicBrainzDumpReader(records),
                 streamStore);

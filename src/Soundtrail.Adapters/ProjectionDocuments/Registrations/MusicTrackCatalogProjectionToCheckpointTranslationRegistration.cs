@@ -11,7 +11,7 @@ public sealed class MusicTrackCatalogProjectionToCheckpointTranslationRegistrati
         registry.Register<MusicTrackCatalogProjection, CatalogProjectionCheckpointDocument>(
             mapOnto: (projection, document) =>
             {
-                document.MusicCatalogId = projection.MusicCatalogId.Value;
+                document.ArtistId = projection.Artist?.ArtistId ?? string.Empty;
                 document.LastAppliedVersion = projection.ProjectionVersion;
                 document.UpdatedAt = projection.Track.UpdatedAt;
             });
