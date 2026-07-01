@@ -3,8 +3,6 @@ using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Commands;
-using Soundtrail.Domain.Catalog.Events;
-using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump.Input;
 
@@ -12,7 +10,7 @@ namespace Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump;
 
 public sealed class ImportMusicBrainzDumpHandler(
     IReadMusicBrainzDumpPort readPort,
-    IEventStreamRepository<MusicCatalogId, IMusicTrackEvent> repository) : IHandler<ImportMusicBrainzDumpCommand>
+    IEventStreamRepository<ArtistId, IDomainEvent> repository) : IHandler<ImportMusicBrainzDumpCommand>
 {
     public async Task Handle(
         ImportMusicBrainzDumpCommand command,
@@ -29,10 +27,13 @@ public sealed class ImportMusicBrainzDumpHandler(
             }
 
             var musicCatalogId = BuildMusicCatalogId(record);
-            var loaded = await MusicTrack.LoadAsync(repository, musicCatalogId, cancellationToken);
             var commandId = BuildCommandId(record);
+            var artistId = BuildArtistId(record)
+                           ?? throw new InvalidOperationException($"Unable to determine artist id for imported record '{record.SourceRecordKey}'.");
+            var loaded = await ArtistCatalog.LoadAsync(repository, artistId, cancellationToken);
 
-            loaded.Aggregate.MetadataFetched(
+            loaded.Aggregate.TrackMetadataFetched(
+                artistId,
                 new MusicCatalogMetadataFetched(
                     commandId,
                     musicCatalogId,
@@ -52,15 +53,11 @@ public sealed class ImportMusicBrainzDumpHandler(
                     [],
                     [],
                     new CatalogTrackHierarchy(
-                        BuildArtistId(record),
+                        artistId,
                         BuildAlbumId(record)),
                     CorrelationId.From($"musicbrainz-dump:{record.SourceRecordKey}")));
 
-            var append = await loaded.Aggregate.SaveAsync(repository, loaded.Stream, commandId, cancellationToken);
-            if (!append.Appended || append.AppendedEvents.Count == 0)
-            {
-                continue;
-            }
+            await loaded.Aggregate.SaveAsync(repository, loaded.Stream, commandId, cancellationToken);
         }
     }
 
@@ -83,17 +80,7 @@ public sealed class ImportMusicBrainzDumpHandler(
     }
 
     private static ArtistId? BuildArtistId(MusicBrainzCatalogSeedRecord record)
-    {
-        if (!string.IsNullOrWhiteSpace(record.SourceArtistId))
-        {
-            return ArtistId.From($"artist_{MusicIdentityText.NormalizeCompact(record.SourceArtistId)}");
-        }
-
-        var normalized = MusicIdentityText.NormalizeCompact(record.Artist);
-        return string.IsNullOrWhiteSpace(normalized)
-            ? null
-            : ArtistId.From($"artist_{normalized}");
-    }
+        => ArtistCatalogIdentity.ResolveArtistIdOrNull(record.SourceArtistId, record.Artist);
 
     private static AlbumId? BuildAlbumId(MusicBrainzCatalogSeedRecord record)
     {

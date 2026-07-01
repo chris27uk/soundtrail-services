@@ -4,23 +4,24 @@ using Soundtrail.Adapters.Registry;
 using Soundtrail.Contracts;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
-using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Contracts.Persistence;
+using Soundtrail.Domain.Abstractions.EventSourcing;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Enrichment;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupHistoryChanged;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupHistoryChanged.Support;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus;
 using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus.Adapters;
-using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack;
-using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Adapters.ProjectionDocuments;
 using Soundtrail.Services.Tests.Support;
@@ -83,42 +84,47 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
 
     private static async Task ApplyAttemptAsync(IAsyncDocumentSession session, MusicCatalogLookupAttemptedDto dto)
     {
-        var catalogListener = new ApplyMusicCatalogLookupAttemptedToCatalogListener(
-            new ApplyMusicCatalogLookupAttemptedToCatalogHandler(
-                TestEventStreamRepositories.CreateMusicTrack(session)));
-        var discoveryListener = new ApplyMusicCatalogLookupAttemptedToDiscoveryListener(
-            new ApplyMusicCatalogLookupAttemptedToDiscoveryHandler(
-                new RavenCatalogSearchTrackingStore(session.Advanced.DocumentStore, session),
-                TestEventStreamRepositories.CreateDiscoveryQuery(session)));
+        var lookupListener = new MusicCatalogLookupAttemptedListener(
+            new MusicCatalogLookupAttemptedHandler(
+                TestEventStreamRepositories.CreateMusicCatalogLookup(session)));
 
-        await catalogListener.Handle(
-            new ApplyMusicCatalogLookupAttemptedToCatalogCommandDto(dto),
-            session,
-            CancellationToken.None);
-        await discoveryListener.Handle(
-            new ApplyMusicCatalogLookupAttemptedToDiscoveryCommandDto(dto),
-            session,
-            CancellationToken.None);
+        await lookupListener.Handle(dto, session, CancellationToken.None);
+
+        var lookupId = MusicCatalogLookupId.From(MusicCatalogId.From(dto.MusicCatalogId));
+        var historyRepository = TestEventStreamRepositories.CreateMusicCatalogLookup(session);
+        var loaded = await historyRepository.LoadAsync(lookupId, CancellationToken.None);
+        var command = new MusicCatalogLookupHistoryChangedCommand(
+            lookupId,
+            loaded.Events.Select((@event, index) => (index + 1, @event)).ToArray());
+
+        await new ApplyMusicCatalogLookupHistoryChangedToCatalogHandler(
+            historyRepository,
+            TestEventStreamRepositories.CreateArtistCatalog(session)).Handle(command, CancellationToken.None);
+        await new MusicCatalogLookupHistoryChangedHandler(
+            new RavenCatalogSearchTrackingStore(session.Advanced.DocumentStore, session),
+            TestEventStreamRepositories.CreateDiscoveryQuery(session)).Handle(command, CancellationToken.None);
     }
 
     private static async Task ReplayProjectionsAsync(RavenEmbeddedTestDatabase raven)
     {
         using var querySession = raven.Store.OpenAsyncSession();
         var streamMetadata = await querySession.Advanced.LoadStartingWithAsync<RavenEventStreamMetadataRecord>(
-            "music-track-streams/");
-        var musicCatalogIds = streamMetadata.Select(x => x.StreamId).Distinct(StringComparer.Ordinal).ToList();
+            "artist-catalog-streams/");
+        var artistIds = streamMetadata.Select(x => x.StreamId).Distinct(StringComparer.Ordinal).ToList();
 
         using var session = raven.Store.OpenAsyncSession();
-        var replayHandler = new ReplayMusicTrackHandler(
-            new RavenLoadStoredMusicTrackEvents(session, TypeTranslationRegistry.Default),
-            new MusicTrackChangedHandler(
-                new RavenLoadMusicTrackProjection(session, new RavenMusicTrackProjectionMapper()),
-                new RavenSaveMusicTrackProjection(session, Soundtrail.Adapters.Registry.TypeTranslationRegistry.Default)));
+        var replayHandler = new MusicCatalogChangedHandler(
+            TestEventStreamRepositories.CreateArtistCatalog(session),
+            new Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adapters.RavenSaveMusicTrackCatalogProjection(session));
 
-        foreach (var musicCatalogId in musicCatalogIds)
+        foreach (var artistId in artistIds)
         {
+            var repository = TestEventStreamRepositories.CreateArtistCatalog(session);
+            var loaded = await repository.LoadAsync(ArtistId.From(artistId), CancellationToken.None);
             await replayHandler.Handle(
-                new ReplayMusicTrackCommand(MusicCatalogId.From(musicCatalogId)),
+                new MusicCatalogChangedCommand(
+                    ArtistId.From(artistId),
+                    loaded.Events.Select((@event, index) => new Soundtrail.Domain.Catalog.Projection.VersionedCatalogEvent(index + 1, @event)).ToArray()),
                 CancellationToken.None);
         }
     }

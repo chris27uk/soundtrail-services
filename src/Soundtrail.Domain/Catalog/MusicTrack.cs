@@ -68,6 +68,7 @@ public sealed class MusicTrack
             }
 
             Apply(new TrackDiscovered(
+                response.MusicCatalogId,
                 response.Metadata.Title,
                 response.Metadata.Artist,
                 response.Metadata.DurationMs,
@@ -80,6 +81,7 @@ public sealed class MusicTrack
         foreach (var reference in response.References)
         {
             Apply(new ProviderReferenceDiscovered(
+                response.MusicCatalogId,
                 reference.Provider,
                 reference.ExternalId,
                 reference.Url,
@@ -90,6 +92,7 @@ public sealed class MusicTrack
         foreach (var failedProvider in response.FailedProviders)
         {
             Apply(new ProviderReferenceLookupFailed(
+                response.MusicCatalogId,
                 failedProvider.Provider,
                 failedProvider.SourceProvider,
                 response.CreatedAt), isNew: true);

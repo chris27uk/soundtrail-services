@@ -19,8 +19,6 @@ using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChang
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Ports;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.ProjectionModel;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Ports;
 using Soundtrail.Adapters.ProjectionDocuments;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Infrastructure.Raven;
@@ -58,9 +56,6 @@ public static class RavenServiceCollectionExtensions
         services.TryAddScoped<ILoadMusicTrackCatalogProjectionPort, RavenLoadMusicTrackCatalogProjection>();
         services.TryAddScoped<ISaveMusicTrackCatalogProjectionPort, RavenSaveMusicTrackCatalogProjection>();
         services.TryAddSingleton<RavenMusicTrackCatalogProjectionMapper>();
-        services.TryAddScoped<ILoadMusicTrackProjectionPort, RavenLoadMusicTrackProjection>();
-        services.TryAddScoped<ISaveMusicTrackProjectionPort, RavenSaveMusicTrackProjection>();
-        services.TryAddSingleton<RavenMusicTrackProjectionMapper>();
         services.TryAddScoped<ILoadDiscoveryLifecycleProjectionPort, RavenLoadDiscoveryLifecycleProjection>();
         services.TryAddScoped<ISaveDiscoveryLifecycleProjectionPort, RavenSaveDiscoveryLifecycleProjection>();
         services.TryAddSingleton<RavenDiscoveryLifecycleProjectionMapper>();

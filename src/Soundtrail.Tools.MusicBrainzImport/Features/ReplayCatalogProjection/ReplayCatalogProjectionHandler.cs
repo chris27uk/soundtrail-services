@@ -16,20 +16,20 @@ public sealed class ReplayCatalogProjectionHandler(
         ReplayCatalogProjectionCommand command,
         CancellationToken cancellationToken = default)
     {
-        var musicCatalogIds = await loadTargetsPort.LoadAsync(cancellationToken);
+        var artistIds = await loadTargetsPort.LoadAsync(cancellationToken);
 
-        foreach (var musicCatalogId in musicCatalogIds)
+        foreach (var artistId in artistIds)
         {
-            await resetPort.ResetAsync(musicCatalogId, cancellationToken);
+            await resetPort.ResetAsync(artistId, cancellationToken);
 
-            var events = await loadEventsPort.LoadAsync(musicCatalogId, cancellationToken);
+            var events = await loadEventsPort.LoadAsync(artistId, cancellationToken);
             if (events.Count == 0)
             {
                 continue;
             }
 
             await projectHandler.Handle(
-                new(musicCatalogId, events),
+                new(artistId, events),
                 cancellationToken);
         }
     }

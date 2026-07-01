@@ -1,8 +1,8 @@
-using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog;
 
 namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.EventStore;
 
 public interface ILoadCatalogProjectionReplayTargetsPort
 {
-    Task<IReadOnlyList<MusicCatalogId>> LoadAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyList<ArtistId>> LoadAsync(CancellationToken cancellationToken);
 }

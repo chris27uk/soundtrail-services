@@ -1,5 +1,5 @@
 using Raven.Client.Documents.Session;
-using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adapters;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.ProjectionReset;
@@ -10,22 +10,13 @@ public sealed class RavenResetCatalogProjectionCheckpoint(
     IAsyncDocumentSession session) : IResetCatalogProjectionCheckpointPort
 {
     public async Task ResetAsync(
-        MusicCatalogId musicCatalogId,
+        ArtistId artistId,
         CancellationToken cancellationToken)
     {
         var changed = false;
 
-        var trackDocument = await session.LoadAsync<CatalogTrackRecordDto>(
-            CatalogTrackRecordDto.GetDocumentId(musicCatalogId.Value),
-            cancellationToken);
-        if (trackDocument is not null)
-        {
-            session.Delete(trackDocument);
-            changed = true;
-        }
-
         var checkpoint = await session.LoadAsync<CatalogProjectionCheckpointDocument>(
-            CatalogProjectionCheckpointDocument.GetDocumentId(musicCatalogId.Value),
+            CatalogProjectionCheckpointDocument.GetDocumentId(artistId.Value),
             cancellationToken);
         if (checkpoint is not null)
         {

@@ -12,6 +12,7 @@ public sealed class TrackDiscoveredStoredEventTranslationRegistration : ITypeTra
         registry.RegisterStoredEventPair<TrackDiscovered, TrackDiscoveredEventDataRecordDto>(
             nameof(TrackDiscovered),
             domainEvent => new TrackDiscoveredEventDataRecordDto(
+                domainEvent.MusicCatalogId?.Value,
                 domainEvent.Title,
                 domainEvent.Artist,
                 domainEvent.DurationMs,
@@ -20,6 +21,7 @@ public sealed class TrackDiscoveredStoredEventTranslationRegistration : ITypeTra
                 domainEvent.SourceProvider.Value,
                 domainEvent.ObservedAt),
             dto => new TrackDiscovered(
+                dto.MusicCatalogId is null ? null : MusicCatalogId.From(dto.MusicCatalogId),
                 dto.Title,
                 dto.Artist,
                 dto.DurationMs,

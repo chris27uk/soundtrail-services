@@ -1,3 +1,4 @@
+using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Adapters.Registry;
@@ -11,6 +12,7 @@ public sealed class MetadataCorrectedStoredEventTranslationRegistration : ITypeT
         registry.RegisterStoredEventPair<MetadataCorrected, MetadataCorrectedEventDataRecordDto>(
             nameof(MetadataCorrected),
             domainEvent => new MetadataCorrectedEventDataRecordDto(
+                domainEvent.MusicCatalogId?.Value,
                 domainEvent.Title,
                 domainEvent.ArtistName,
                 domainEvent.ArtistId,
@@ -25,6 +27,7 @@ public sealed class MetadataCorrectedStoredEventTranslationRegistration : ITypeT
                 domainEvent.Source,
                 domainEvent.CorrectedAt),
             dto => new MetadataCorrected(
+                dto.MusicCatalogId is null ? null : MusicCatalogId.From(dto.MusicCatalogId),
                 dto.Title,
                 dto.ArtistName,
                 dto.ArtistId,

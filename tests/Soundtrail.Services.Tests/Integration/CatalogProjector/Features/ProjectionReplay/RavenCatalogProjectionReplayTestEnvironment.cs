@@ -1,5 +1,6 @@
 using Raven.Client.Documents;
 using Raven.Client.Documents.Indexes;
+using Raven.Client.Documents.Session;
 using Soundtrail.Adapters.Registry;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
@@ -46,12 +47,12 @@ internal sealed class RavenCatalogProjectionReplayTestEnvironment : IAsyncDispos
             new RavenLoadMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()),
             new RavenSaveMusicTrackCatalogProjection(session, Soundtrail.Adapters.Registry.TypeTranslationRegistry.Default));
 
-        foreach (var stream in storedEvents.OrderBy(x => x.MusicCatalogId, StringComparer.Ordinal).ThenBy(x => x.Version).GroupBy(x => x.MusicCatalogId, StringComparer.Ordinal))
+        foreach (var stream in storedEvents.GroupBy(x => x.ArtistId, StringComparer.Ordinal).OrderBy(x => x.Key, StringComparer.Ordinal))
         {
             await handler.Handle(
                 new MusicCatalogChangedCommand(
-                    MusicCatalogId.From(stream.Key),
-                    stream.Select(item => new VersionedMusicTrackEvent(item.Version, item.Event)).ToArray()),
+                    ArtistId.From(stream.Key),
+                    stream.OrderBy(item => item.Version).Select(item => new VersionedCatalogEvent(item.Version, item.Event)).ToArray()),
                 CancellationToken.None);
         }
     }
@@ -60,13 +61,15 @@ internal sealed class RavenCatalogProjectionReplayTestEnvironment : IAsyncDispos
     {
         using var session = raven.Store.OpenAsyncSession();
         session.Advanced.WaitForIndexesAfterSaveChanges();
-        var repository = TestEventStreamRepositories.CreateMusicTrack(session);
+        var repository = TestEventStreamRepositories.CreateArtistCatalog(session);
 
-        foreach (var stream in storedEvents.OrderBy(x => x.MusicCatalogId, StringComparer.Ordinal).ThenBy(x => x.Version).GroupBy(x => x.MusicCatalogId, StringComparer.Ordinal))
+        foreach (var stream in storedEvents
+                     .GroupBy(x => x.ArtistId, StringComparer.Ordinal)
+                     .OrderBy(x => x.Key, StringComparer.Ordinal))
         {
             await repository.AppendAsync(
-                LoadedEventStream<MusicCatalogId, IMusicTrackEvent>.Empty(MusicCatalogId.From(stream.Key)),
-                stream.Select(x => x.Event).ToArray(),
+                LoadedEventStream<ArtistId, IDomainEvent>.Empty(ArtistId.From(stream.Key)),
+                stream.OrderBy(x => x.Version).Select(x => (IDomainEvent)x.Event).ToArray(),
                 OperationId.From($"CatalogReplay:{stream.Key}"),
                 CancellationToken.None);
         }
@@ -78,20 +81,47 @@ internal sealed class RavenCatalogProjectionReplayTestEnvironment : IAsyncDispos
     {
         using var session = raven.Store.OpenAsyncSession();
         session.Advanced.WaitForIndexesAfterSaveChanges();
+        var artistId = await ResolveArtistIdAsync(session, musicCatalogId, CancellationToken.None);
         var eventsToReplay = (await session.Advanced.LoadStartingWithAsync<RavenStoredEventRecord>(
-                $"music-track-events/{musicCatalogId.Value}/"))
+                $"artist-catalog-events/{artistId.Value}/"))
             .OrderBy(x => x.Version)
-            .Select(x => new VersionedMusicTrackEvent(x.Version, TypeTranslationRegistry.Default.ToDomainObject<IMusicTrackEvent>(x.Body!)))
+            .Select(x => new VersionedCatalogEvent(x.Version, TypeTranslationRegistry.Default.ToDomainObject<IDomainEvent>(x.Body!)))
             .ToArray();
         var handler = new MusicCatalogChangedHandler(
             new RavenLoadMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()),
             new RavenSaveMusicTrackCatalogProjection(session, Soundtrail.Adapters.Registry.TypeTranslationRegistry.Default));
 
         await handler.Handle(
-            new MusicCatalogChangedCommand(musicCatalogId, eventsToReplay),
+            new Domain.Catalog.Commands.MusicCatalogChangedCommand(artistId, eventsToReplay),
             CancellationToken.None);
 
         return eventsToReplay.Length;
+    }
+
+    private static async Task<ArtistId> ResolveArtistIdAsync(IAsyncDocumentSession session, MusicCatalogId musicCatalogId, CancellationToken cancellationToken)
+    {
+        var track = await session.LoadAsync<CatalogTrackRecordDto>(
+            CatalogTrackRecordDto.GetDocumentId(musicCatalogId.Value),
+            cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(track?.ArtistId))
+        {
+            return ArtistId.From(track.ArtistId);
+        }
+
+        var storedEvent = (await session.Advanced.LoadStartingWithAsync<RavenStoredEventRecord>("artist-catalog-events/", pageSize: 512))
+            .OrderBy(x => x.Id, StringComparer.Ordinal)
+            .Select(x => TypeTranslationRegistry.Default.ToDomainObject<IDomainEvent>(x.Body!))
+            .OfType<TrackDiscovered>()
+            .FirstOrDefault(x => x.MusicCatalogId == musicCatalogId);
+
+        if (storedEvent is null)
+        {
+            throw new InvalidOperationException($"Could not resolve artist stream for '{musicCatalogId.Value}'.");
+        }
+
+        return ArtistCatalogIdentity.ResolveArtistIdOrNull(null, storedEvent.Artist)
+               ?? throw new InvalidOperationException($"Could not derive artist id for '{musicCatalogId.Value}'.");
     }
 
     public async Task<CatalogTrackRecordDto?> LoadTrackAsync(string trackId)
@@ -152,5 +182,5 @@ internal sealed class RavenCatalogProjectionReplayTestEnvironment : IAsyncDispos
         ApiAssembly.GetType("Soundtrail.Services.Api.Infrastructure.Raven.Indexes.Tracks_ByIsrc", true)!
     ];
 
-    public sealed record CatalogReplayEvent(string MusicCatalogId, int Version, IMusicTrackEvent Event);
+    public sealed record CatalogReplayEvent(string MusicCatalogId, string ArtistId, int Version, IMusicTrackEvent Event);
 }

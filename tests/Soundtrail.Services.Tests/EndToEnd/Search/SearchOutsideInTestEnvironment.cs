@@ -24,7 +24,6 @@ using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Soundtrail.Services.Api.Infrastructure.Ports;
 using Soundtrail.Services.Api.Infrastructure.Raven;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicTrackEventsImported;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged;
@@ -319,13 +318,13 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
     {
         using (var session = store.OpenAsyncSession())
         {
-            var importHandler = new MusicTrackEventsImportedHandler(TestEventStreamRepositories.CreateMusicTrack(session));
-            importHandler.Handle(
-                    new ImportMusicTrackEventsCommand(
-                        musicCatalogId,
-                        0,
-                        CommandId.For($"ImportMusicTrackEvents:{musicCatalogId.Value}"),
-                        events),
+            var versionedEvents = events.Select((@event, index) => new VersionedMusicTrackEvent(index + 1, @event)).ToArray();
+            var command = new MusicCatalogChangedCommand(musicCatalogId, versionedEvents);
+            var repository = TestEventStreamRepositories.CreateArtistCatalog(session);
+            repository.AppendAsync(
+                    LoadedEventStream<ArtistId, IDomainEvent>.Empty(command.ArtistId),
+                    command.Events.Select(x => x.Event).ToArray(),
+                    OperationId.From($"SeedArtistCatalog:{command.ArtistId.Value}"),
                     CancellationToken.None)
                 .GetAwaiter()
                 .GetResult();
@@ -334,20 +333,54 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
 
         using var replaySession = store.OpenAsyncSession();
         var eventsToReplay = replaySession.Advanced.LoadStartingWithAsync<RavenStoredEventRecord>(
-                $"music-track-events/{musicCatalogId.Value}/")
+                "artist-catalog-events/")
             .GetAwaiter()
             .GetResult()
             .OrderBy(x => x.Version)
-            .Select(x => new VersionedMusicTrackEvent(x.Version, TypeTranslationRegistry.Default.ToDomainObject<IMusicTrackEvent>(x.Body!)))
+            .Select(x => new VersionedCatalogEvent(x.Version, TypeTranslationRegistry.Default.ToDomainObject<IDomainEvent>(x.Body!)))
             .ToArray();
         var projectHandler = new MusicCatalogChangedHandler(
             new RavenLoadMusicTrackCatalogProjection(replaySession, new RavenMusicTrackCatalogProjectionMapper()),
             new RavenSaveMusicTrackCatalogProjection(replaySession, Soundtrail.Adapters.Registry.TypeTranslationRegistry.Default));
         projectHandler.Handle(
-                new MusicCatalogChangedCommand(musicCatalogId, eventsToReplay),
+                new MusicCatalogChangedCommand(ResolveArtistId(eventsToReplay, musicCatalogId), eventsToReplay),
                 CancellationToken.None)
             .GetAwaiter()
             .GetResult();
+    }
+
+    private static ArtistId ResolveArtistId(IReadOnlyList<VersionedCatalogEvent> events, MusicCatalogId musicCatalogId)
+    {
+        var explicitArtistId = events
+            .Select(x => x.Event)
+            .OfType<ArtistDiscovered>()
+            .Select(x => x.ArtistId)
+            .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x));
+
+        if (!string.IsNullOrWhiteSpace(explicitArtistId))
+        {
+            return ArtistId.From(explicitArtistId);
+        }
+
+        var correctedArtistId = events
+            .Select(x => x.Event)
+            .OfType<MetadataCorrected>()
+            .Select(x => x.ArtistId)
+            .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x));
+
+        if (!string.IsNullOrWhiteSpace(correctedArtistId))
+        {
+            return ArtistId.From(correctedArtistId);
+        }
+
+        var artistName = events
+            .Select(x => x.Event)
+            .OfType<TrackDiscovered>()
+            .Select(x => x.Artist)
+            .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x));
+
+        return ArtistCatalogIdentity.ResolveArtistIdOrNull(null, artistName)
+               ?? throw new InvalidOperationException($"Could not resolve artist id for '{musicCatalogId.Value}'.");
     }
 
     public static void SeedRebuiltDiscoveryProjectionFromImportedEvents(
