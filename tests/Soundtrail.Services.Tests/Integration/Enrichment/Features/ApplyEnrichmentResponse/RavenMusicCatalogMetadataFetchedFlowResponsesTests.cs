@@ -20,12 +20,8 @@ using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupH
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus;
 using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus.Adapters;
-using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack;
-using Soundtrail.Services.Internal.Projector.Features.OnReplayMusicTrack.Adapters;
 using Soundtrail.Services.Tests.Integration.Api.Infrastructure;
 using Soundtrail.Adapters.ProjectionDocuments;
 using Soundtrail.Services.Tests.Support;

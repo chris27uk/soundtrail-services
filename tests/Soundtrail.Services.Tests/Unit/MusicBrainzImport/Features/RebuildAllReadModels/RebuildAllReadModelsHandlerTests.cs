@@ -11,8 +11,6 @@ using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChang
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Support;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.ProjectionModel;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicTrackChanged;
-using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 using Soundtrail.Tools.MusicBrainzImport.Features.RebuildAllReadModels;
 using Soundtrail.Tools.MusicBrainzImport.Features.RebuildAllReadModels.OperationalState;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection;
@@ -21,8 +19,6 @@ using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection.Projec
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.EventStore;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecycleProjection.ProjectionReset;
-using Soundtrail.Tools.MusicBrainzImport.Features.ReplayPlannerMusicTrackProjection;
-using Soundtrail.Tools.MusicBrainzImport.Features.ReplayPlannerMusicTrackProjection.ProjectionReset;
 
 namespace Soundtrail.Services.Tests.Unit.MusicBrainzImport.Features.RebuildAllReadModels;
 
@@ -64,18 +60,6 @@ public sealed class RebuildAllReadModelsHandlerTests
         };
 
         var persistentId = DiscoveryQueryKey.StableValueFor(searchTerm);
-        var plannerEventStore = new FakeCatalogReplayEventStore(new Dictionary<string, IReadOnlyList<VersionedCatalogEvent>>
-        {
-            [artistId.Value] = trackEvents
-        });
-        var plannerProjectionStore = new MusicTrackProjectionStoreFake();
-        var plannerResetPort = new FakePlannerMusicTrackProjectionResetPort();
-        var plannerReplayHandler = new ReplayPlannerMusicTrackProjectionBatchHandler(
-            plannerEventStore,
-            plannerEventStore,
-            plannerResetPort,
-            new MusicTrackChangedHandler(plannerProjectionStore, plannerProjectionStore));
-
         var catalogEventStore = new FakeCatalogReplayEventStore(new Dictionary<string, IReadOnlyList<VersionedCatalogEvent>>
         {
             [artistId.Value] = trackEvents
@@ -102,19 +86,16 @@ public sealed class RebuildAllReadModelsHandlerTests
 
         var clearPlannerOperationalStatePort = new FakeClearPlannerOperationalStatePort(3, 4, 5);
         var handler = new RebuildAllReadModelsHandler(
-            plannerReplayHandler,
             catalogReplayHandler,
             discoveryReplayHandler,
             clearPlannerOperationalStatePort);
 
         await handler.Handle(new RebuildAllReadModelsCommand(), CancellationToken.None);
 
-        plannerResetPort.ResetCatalogIds.Should().ContainSingle().Which.Should().Be(musicCatalogId);
         catalogProjectionStore.ResetCatalogIds.Should().ContainSingle().Which.Should().Be(artistId);
         discoveryProjectionStore.ResetSearchTerms.Should().ContainSingle().Which.Should().Be(searchTerm);
         clearPlannerOperationalStatePort.WasCalled.Should().BeTrue();
 
-        plannerProjectionStore.Projections[musicCatalogId.Value].Title.Should().Be("Mr. Brightside");
         catalogProjectionStore.Projections[artistId.Value]
             .GetTracks()
             .Single()
@@ -159,17 +140,6 @@ public sealed class RebuildAllReadModelsHandlerTests
             Task.FromResult(eventsByCriteria.TryGetValue(DiscoveryQueryKey.StableValueFor(searchCriteria), out var events)
                 ? events
                 : Array.Empty<VersionedCatalogSearchDiscoveryEvent>() as IReadOnlyList<VersionedCatalogSearchDiscoveryEvent>);
-    }
-
-    private sealed class FakePlannerMusicTrackProjectionResetPort : IResetPlannerMusicTrackProjectionPort
-    {
-        public List<MusicCatalogId> ResetCatalogIds { get; } = [];
-
-        public Task ResetAsync(MusicCatalogId musicCatalogId, CancellationToken cancellationToken)
-        {
-            ResetCatalogIds.Add(musicCatalogId);
-            return Task.CompletedTask;
-        }
     }
 
     private sealed class FakeCatalogProjectionStore :
