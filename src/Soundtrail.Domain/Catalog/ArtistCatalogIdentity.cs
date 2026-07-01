@@ -5,23 +5,24 @@ namespace Soundtrail.Domain.Catalog;
 
 public static class ArtistCatalogIdentity
 {
-    public static ArtistId ResolveArtistId(MusicCatalogMetadataFetched fetched)
+    public static ArtistId? ResolveArtistIdOrNull(MusicCatalogMetadataFetched fetched)
     {
         if (fetched.Hierarchy?.ArtistId is not null)
         {
             return fetched.Hierarchy.ArtistId.Value;
         }
 
-        var sourceArtistId = fetched.Metadata?.SourceArtistId;
-        if (!string.IsNullOrWhiteSpace(sourceArtistId))
-        {
-            return ArtistId.From($"artist_{MusicIdentityText.NormalizeCompact(sourceArtistId)}");
-        }
+        return ResolveArtistIdOrNull(
+            fetched.Metadata?.SourceArtistId,
+            fetched.Metadata?.Artist);
+    }
 
-        var artistName = fetched.Metadata?.Artist;
-        if (!string.IsNullOrWhiteSpace(artistName))
+    public static ArtistId ResolveArtistId(MusicCatalogMetadataFetched fetched)
+    {
+        var resolved = ResolveArtistIdOrNull(fetched);
+        if (resolved is not null)
         {
-            return ArtistId.From($"artist_{MusicIdentityText.NormalizeCompact(artistName)}");
+            return resolved.Value;
         }
 
         throw new InvalidOperationException("Track metadata lookup must provide hierarchy artist id, source artist id, or artist name.");

@@ -3,12 +3,13 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Subscriptions;
+using Soundtrail.Adapters.Registry;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog.Commands;
 using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Catalog.IntegrationEvents;
-using Soundtrail.Adapters.Registry;
+using Soundtrail.Domain.Abstractions.EventSourcing;
 
 namespace Soundtrail.Services.Public.Projector.Features.PublishMusicTrackEvents.Adapters;
 
@@ -17,7 +18,7 @@ public sealed class MusicTrackEventSubscriptionHostedService(
     IServiceScopeFactory serviceScopeFactory,
     ILogger<MusicTrackEventSubscriptionHostedService> logger) : BackgroundService
 {
-    private const string SubscriptionName = "music-track-events-cdc";
+    private const string SubscriptionName = "artist-catalog-events-public";
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -73,6 +74,7 @@ public sealed class MusicTrackEventSubscriptionHostedService(
         var registry = scope.ServiceProvider.GetRequiredService<ITypeRegistry>();
         var events = batch.Items
             .Select(x => x.Result)
+            .Where(storedEvent => string.Equals(storedEvent.AggregateType, "artist-catalog", StringComparison.Ordinal))
             .Select(storedEvent =>
             {
                 if (storedEvent.Body is null)
@@ -80,7 +82,7 @@ public sealed class MusicTrackEventSubscriptionHostedService(
                     throw new InvalidOperationException($"Stored event '{storedEvent.Id}' is missing a body.");
                 }
 
-                return (Stored: storedEvent, Event: registry.ToDomainObject<IMusicTrackEvent>(storedEvent.Body));
+                return (Stored: storedEvent, Event: registry.ToDomainObject<IDomainEvent>(storedEvent.Body));
             })
             .Where(x => x.Event is StreamingLocationsRequired)
             .Select(x =>

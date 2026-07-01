@@ -76,12 +76,7 @@ public sealed class ArtistCatalog
     {
         EnsureArtistMatch(resolvedArtistId);
 
-        if (fetched.Metadata is null)
-        {
-            return;
-        }
-
-        if (fetched.SourceProvider == LookupSource.MusicBrainz)
+        if (fetched.Metadata is not null && fetched.SourceProvider == LookupSource.MusicBrainz)
         {
             DiscoverArtist(
                 resolvedArtistId,
@@ -138,7 +133,7 @@ public sealed class ArtistCatalog
                 fetched.CreatedAt);
         }
 
-        if (ShouldRequireStreamingLocations(fetched))
+        if (fetched.Metadata is not null && ShouldRequireStreamingLocations(fetched))
         {
             var searchCriteria = !string.IsNullOrWhiteSpace(fetched.Metadata.Isrc)
                 ? MusicSearchCriteria.ByIsrc(fetched.Metadata.Isrc)

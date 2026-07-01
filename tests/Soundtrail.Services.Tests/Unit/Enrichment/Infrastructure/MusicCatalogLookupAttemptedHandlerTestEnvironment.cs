@@ -36,6 +36,7 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
 
         Handler = new MusicCatalogLookupAttemptedHandler(lookupHistoryRepository);
         CatalogHandler = new ApplyMusicCatalogLookupHistoryChangedToCatalogHandler(
+            lookupHistoryRepository,
             StreamStore);
         DiscoveryHandler = new MusicCatalogLookupHistoryChangedHandler(
             trackingStore,

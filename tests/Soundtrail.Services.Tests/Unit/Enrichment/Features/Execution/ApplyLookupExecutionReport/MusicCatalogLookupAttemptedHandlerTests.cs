@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Enrichment;
 using Soundtrail.Domain.Enrichment.Events;
@@ -184,7 +185,7 @@ public sealed class MusicCatalogLookupAttemptedHandlerTests
                 null,
                 [],
                 [],
-                null,
+                new CatalogTrackHierarchy(ArtistId.From("artist_track_1"), null),
                 CorrelationId.From("corr-track"))));
 
         env.StoredEvents("track:track_1").Last().Should().BeOfType<KnownTrackDiscoveryCompleted>();

@@ -91,6 +91,7 @@ public sealed class MusicCatalogLookupAttemptedHandlerTests
     public async Task Given_A_Playback_References_Response_With_Failed_Providers_When_Handled_Then_ProviderReferenceLookupFailed_Facts_Are_Stored()
     {
         var env = MusicCatalogLookupAttemptedHandlerTestEnvironment.WithAMusicBrainzResponse();
+        await env.HandleMusicBrainzResponse();
 
         await env.Handle(
             new MusicCatalogMetadataFetched(
