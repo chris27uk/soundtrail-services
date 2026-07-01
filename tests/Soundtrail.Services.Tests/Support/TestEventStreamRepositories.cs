@@ -7,7 +7,6 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Adapters.Registry;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Enrichment;
 using Soundtrail.Domain.Search;
 
@@ -20,12 +19,6 @@ internal static class TestEventStreamRepositories
             session,
             TypeTranslationRegistry.Default,
             DiscoveryQueryEventStreamDefinition.Create());
-
-    public static IEventStreamRepository<MusicCatalogId, IMusicTrackEvent> CreateMusicTrack(IAsyncDocumentSession session) =>
-        new RavenEventStreamRepository<MusicCatalogId, IMusicTrackEvent>(
-            session,
-            TypeTranslationRegistry.Default,
-            MusicTrackEventStreamDefinition.Create());
 
     public static IEventStreamRepository<ArtistId, IDomainEvent> CreateArtistCatalog(IAsyncDocumentSession session) =>
         new RavenEventStreamRepository<ArtistId, IDomainEvent>(

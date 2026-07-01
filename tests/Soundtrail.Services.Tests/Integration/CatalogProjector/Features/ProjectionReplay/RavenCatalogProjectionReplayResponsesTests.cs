@@ -329,6 +329,7 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
         string artist) =>
         new(
             musicCatalogId,
+            ResolveArtistId(artist),
             version,
             new TrackDiscovered(
                 title,
@@ -346,6 +347,7 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
         string artistName) =>
         new(
             musicCatalogId,
+            artistId,
             version,
             new ArtistDiscovered(
                 artistId,
@@ -361,6 +363,7 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
         string albumName) =>
         new(
             musicCatalogId,
+            "artist_the_killers",
             version,
             new AlbumDiscovered(
                 albumId,
@@ -377,6 +380,7 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
         string externalId) =>
         new(
             musicCatalogId,
+            "artist_the_killers",
             version,
             new ProviderReferenceDiscovered(
                 provider,
@@ -391,6 +395,7 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
         ProviderName provider) =>
         new(
             musicCatalogId,
+            "artist_the_killers",
             version,
             new ProviderReferenceLookupFailed(
                 provider,
@@ -405,6 +410,7 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
         string url) =>
         new(
             musicCatalogId,
+            "artist_the_killers",
             version,
             new ArtworkDiscovered(
                 Enum.Parse<CatalogEntityKind>(entityKind, ignoreCase: true),
@@ -423,6 +429,7 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
         string albumId) =>
         new(
             musicCatalogId,
+            artistId,
             version,
             new MetadataCorrected(
                 title,
@@ -438,4 +445,8 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
                 "mbid-1",
                 "admin/repair",
                 new DateTimeOffset(2026, 6, 15, 12, 5, 0, TimeSpan.Zero)));
+
+    private static string ResolveArtistId(string artistName) =>
+        ArtistCatalogIdentity.ResolveArtistIdOrNull(null, artistName)?.Value
+        ?? throw new InvalidOperationException($"Could not derive artist id for '{artistName}'.");
 }
