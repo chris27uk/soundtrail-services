@@ -78,56 +78,58 @@ public sealed class LatestDiscoveryWorkProjection
         {
             return;
         }
-
-        eventHandlers.Handle(@event);
+        this.eventHandlers.Handle(@event);
         LastAppliedVersion = version;
     }
 
     private EventHandlers<LatestDiscoveryWorkProjection> CreateHandlers()
     {
         var handlers = new EventHandlers<LatestDiscoveryWorkProjection>();
-
-        handlers.Register<CatalogDiscoveryWorkRequested>(requested =>
-        {
-            RequestCount += 1;
-            HighestTrustLevelSeen = Math.Max(HighestTrustLevelSeen, requested.TrustLevel);
-            RiskScore = Math.Max(RiskScore, requested.RiskScore);
-            Status = requested.RiskScore >= 90
-                ? CatalogDiscoveryWorkStatus.Ignored
-                : CatalogDiscoveryWorkStatus.Pending;
-            NextEligibleAt = null;
-            Priority = null;
-            Reason = null;
-            UpdatedAt = requested.RequestedAt;
-        });
-
-        handlers.Register<CatalogDiscoveryWorkDeferred>(deferred =>
-        {
-            Status = CatalogDiscoveryWorkStatus.Pending;
-            NextEligibleAt = deferred.NextEligibleAt;
-            Priority = null;
-            Reason = deferred.Reason;
-            UpdatedAt = deferred.DeferredAt;
-        });
-
-        handlers.Register<CatalogDiscoveryWorkIgnored>(ignored =>
-        {
-            Status = CatalogDiscoveryWorkStatus.Ignored;
-            NextEligibleAt = ignored.NextEligibleAt;
-            Priority = null;
-            Reason = ignored.Reason;
-            UpdatedAt = ignored.IgnoredAt;
-        });
-
-        handlers.Register<CatalogDiscoveryWorkScheduled>(scheduled =>
-        {
-            Status = CatalogDiscoveryWorkStatus.Pending;
-            NextEligibleAt = scheduled.NextEligibleAt;
-            Priority = scheduled.Priority;
-            Reason = scheduled.Reason;
-            UpdatedAt = scheduled.ScheduledAt;
-        });
-
+        handlers.Register<CatalogDiscoveryWorkRequested>(On);
+        handlers.Register<CatalogDiscoveryWorkDeferred>(On);
+        handlers.Register<CatalogDiscoveryWorkIgnored>(On);
+        handlers.Register<CatalogDiscoveryWorkScheduled>(On);
         return handlers;
+    }
+
+    private void On(CatalogDiscoveryWorkRequested @event)
+    {
+        RequestCount += 1;
+        HighestTrustLevelSeen = Math.Max(HighestTrustLevelSeen, @event.TrustLevel);
+        RiskScore = Math.Max(RiskScore, @event.RiskScore);
+        Status = @event.RiskScore >= 90
+            ? CatalogDiscoveryWorkStatus.Ignored
+            : CatalogDiscoveryWorkStatus.Pending;
+        NextEligibleAt = null;
+        Priority = null;
+        Reason = null;
+        UpdatedAt = @event.RequestedAt;
+    }
+
+    private void On(CatalogDiscoveryWorkDeferred @event)
+    {
+        Status = CatalogDiscoveryWorkStatus.Pending;
+        NextEligibleAt = @event.NextEligibleAt;
+        Priority = null;
+        Reason = @event.Reason;
+        UpdatedAt = @event.DeferredAt;
+    }
+
+    private void On(CatalogDiscoveryWorkIgnored @event)
+    {
+        Status = CatalogDiscoveryWorkStatus.Ignored;
+        NextEligibleAt = @event.NextEligibleAt;
+        Priority = null;
+        Reason = @event.Reason;
+        UpdatedAt = @event.IgnoredAt;
+    }
+
+    private void On(CatalogDiscoveryWorkScheduled @event)
+    {
+        Status = CatalogDiscoveryWorkStatus.Pending;
+        NextEligibleAt = @event.NextEligibleAt;
+        Priority = @event.Priority;
+        Reason = @event.Reason;
+        UpdatedAt = @event.ScheduledAt;
     }
 }

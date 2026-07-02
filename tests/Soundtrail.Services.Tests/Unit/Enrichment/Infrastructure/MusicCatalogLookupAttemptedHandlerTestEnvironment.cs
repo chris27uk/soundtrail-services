@@ -38,7 +38,9 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
         CatalogHandler = new ApplyMusicCatalogLookupHistoryChangedToCatalogHandler(
             lookupHistoryRepository,
             StreamStore);
-        DiscoveryHandler = new MusicCatalogLookupHistoryChangedHandler(
+        KnownTrackDiscoveryHandler = new ApplyMusicCatalogLookupHistoryChangedToKnownTrackDiscoveryHandler(
+            discoveryRepository);
+        SearchDiscoveryHandler = new ApplyMusicCatalogLookupHistoryChangedToSearchDiscoveryHandler(
             trackingStore,
             discoveryRepository);
     }
@@ -47,7 +49,9 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
 
     public ApplyMusicCatalogLookupHistoryChangedToCatalogHandler CatalogHandler { get; }
 
-    public MusicCatalogLookupHistoryChangedHandler DiscoveryHandler { get; }
+    public ApplyMusicCatalogLookupHistoryChangedToKnownTrackDiscoveryHandler KnownTrackDiscoveryHandler { get; }
+
+    public ApplyMusicCatalogLookupHistoryChangedToSearchDiscoveryHandler SearchDiscoveryHandler { get; }
 
     public ArtistCatalogEventRepositoryFake StreamStore { get; }
 
@@ -127,7 +131,8 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
 
         var command = new MusicCatalogLookupHistoryChangedCommand(lookupId, events);
         await CatalogHandler.Handle(command, CancellationToken.None);
-        await DiscoveryHandler.Handle(command, CancellationToken.None);
+        await KnownTrackDiscoveryHandler.Handle(command, CancellationToken.None);
+        await SearchDiscoveryHandler.Handle(command, CancellationToken.None);
     }
 
     public IReadOnlyList<IDomainEvent> StoredEvents(string criteria) =>

@@ -69,7 +69,7 @@ public sealed class RebuildAllReadModelsHandlerTests
             catalogEventStore,
             catalogEventStore,
             catalogProjectionStore,
-            new MusicCatalogChangedHandler(catalogProjectionStore, catalogProjectionStore));
+            new MusicCatalogChangedHandler(catalogProjectionStore));
 
         var discoveryEventStore = new FakeDiscoveryReplayEventStore(new Dictionary<string, IReadOnlyList<VersionedCatalogSearchDiscoveryEvent>>
         {
@@ -97,7 +97,7 @@ public sealed class RebuildAllReadModelsHandlerTests
         clearPlannerOperationalStatePort.WasCalled.Should().BeTrue();
 
         catalogProjectionStore.Projections[artistId.Value]
-            .GetTracks()
+            .TrackDocuments
             .Single()
             .Title
             .Should()
@@ -143,31 +143,20 @@ public sealed class RebuildAllReadModelsHandlerTests
     }
 
     private sealed class FakeCatalogProjectionStore :
-        ILoadMusicTrackCatalogProjectionPort,
         ISaveMusicTrackCatalogProjectionPort,
         IResetCatalogProjectionCheckpointPort
     {
-        private readonly Dictionary<string, ArtistCatalog> projections = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, ArtistCatalogProjection> projections = new(StringComparer.Ordinal);
 
-        public IReadOnlyDictionary<string, ArtistCatalog> Projections => projections;
+        public IReadOnlyDictionary<string, ArtistCatalogProjection> Projections => projections;
 
         public List<ArtistId> ResetCatalogIds { get; } = [];
 
-        public Task<MusicTrackCatalogProjection> LoadAsync(MusicCatalogId musicCatalogId, CancellationToken cancellationToken)
-        {
-            _ = musicCatalogId;
-            _ = cancellationToken;
-            return Task.FromResult(new MusicTrackCatalogProjection(musicCatalogId));
-        }
-
         public Task SaveAsync(
-            ArtistId artistId,
-            int version,
-            ArtistCatalog projection,
+            ArtistCatalogProjection projection,
             CancellationToken cancellationToken)
         {
-            _ = version;
-            projections[artistId.Value] = projection;
+            projections[projection.ArtistId.Value] = projection;
             return Task.CompletedTask;
         }
 

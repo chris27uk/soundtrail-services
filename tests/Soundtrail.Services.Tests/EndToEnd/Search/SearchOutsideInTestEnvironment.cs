@@ -340,7 +340,6 @@ public sealed class SearchOutsideInTestEnvironment : IAsyncDisposable
             .Select(x => new VersionedCatalogEvent(x.Version, TypeTranslationRegistry.Default.ToDomainObject<IDomainEvent>(x.Body!)))
             .ToArray();
         var projectHandler = new MusicCatalogChangedHandler(
-            new RavenLoadMusicTrackCatalogProjection(replaySession, new RavenMusicTrackCatalogProjectionMapper()),
             new RavenSaveMusicTrackCatalogProjection(replaySession, Soundtrail.Adapters.Registry.TypeTranslationRegistry.Default));
         projectHandler.Handle(
                 new MusicCatalogChangedCommand(ResolveArtistId(eventsToReplay, musicCatalogId), eventsToReplay),

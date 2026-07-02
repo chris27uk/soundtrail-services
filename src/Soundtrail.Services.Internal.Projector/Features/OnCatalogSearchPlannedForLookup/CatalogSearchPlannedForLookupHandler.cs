@@ -49,9 +49,7 @@ public sealed class CatalogSearchPlannedForLookupHandler(
             return null;
         }
 
-        var track = await loadMusicTrackPort.LoadAsync(
-            candidate.MusicCatalogId,
-            cancellationToken);
+        var track = await loadMusicTrackPort.LoadAsync(candidate.MusicCatalogId, cancellationToken);
         if (track?.IsPlayable == true)
         {
             return null;

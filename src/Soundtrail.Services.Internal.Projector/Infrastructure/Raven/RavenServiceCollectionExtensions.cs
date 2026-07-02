@@ -60,7 +60,6 @@ public static class RavenServiceCollectionExtensions
         services.TryAddScoped<ILoadCatalogSearchPlannedMusicTrackPort, RavenLoadCatalogSearchPlannedMusicTrack>();
         services.TryAddSingleton<RavenDiscoveryLifecycleProjectionMapper>();
         services.TryAddScoped<ILoadCatalogCandidateMusicTrackPort, RavenLoadCatalogCandidateMusicTrack>();
-        services.TryAddScoped<ILoadMusicTrackCatalogProjectionPort, RavenLoadMusicTrackCatalogProjection>();
         services.TryAddScoped<ISaveMusicTrackCatalogProjectionPort, RavenSaveMusicTrackCatalogProjection>();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, RavenDatabaseHostedService>());
 

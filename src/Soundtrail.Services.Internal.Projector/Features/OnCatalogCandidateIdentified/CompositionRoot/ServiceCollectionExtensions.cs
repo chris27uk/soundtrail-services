@@ -9,8 +9,8 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddOnCatalogCandidateIdentifiedFeature(this IServiceCollection services)
     {
-        services.TryAddScoped<CatalogCandidateIdentifiedHandler>();
-        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, CatalogCandidateIdentifiedSubscriptionHostedService>());
+        services.TryAddScoped<DispatchAssessmentForCatalogCandidateIdentifiedHandler>();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, CatalogCandidateIdentifiedToAssessmentSubscriptionHostedService>());
         return services;
     }
 }

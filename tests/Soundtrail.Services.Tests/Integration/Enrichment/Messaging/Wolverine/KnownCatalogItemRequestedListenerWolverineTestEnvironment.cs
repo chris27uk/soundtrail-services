@@ -28,9 +28,9 @@ internal sealed class KnownCatalogItemRequestedListenerWolverineTestEnvironment
         albumPort.Seed(ArtistId.From("artist_1"), AlbumId.From("album_1"), "Artist 1", "Album 1", "mb-artist-1", "mb-release-1");
 
         ArtistListener = new KnownArtistRequestedListener(
-            new KnownArtistRequestedHandler(discoveryRepository, artistPort, commandBus));
+            new KnownArtistRequestedHandler(discoveryRepository));
         AlbumListener = new KnownAlbumRequestedListener(
-            new KnownAlbumRequestedHandler(discoveryRepository, albumPort, commandBus));
+            new KnownAlbumRequestedHandler(discoveryRepository));
         TrackListener = new KnownTrackRequestedListener(
             new KnownTrackRequestedHandler(discoveryRepository));
     }

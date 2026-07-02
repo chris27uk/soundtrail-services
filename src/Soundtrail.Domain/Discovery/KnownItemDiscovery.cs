@@ -57,7 +57,7 @@ public sealed class KnownItemDiscovery
         return (stream, aggregate);
     }
 
-    public bool TrackRequested(
+    public void TrackRequested(
         TrackId trackId,
         PlaybackProviderFilter playback,
         DateTimeOffset requestedAt,
@@ -65,7 +65,7 @@ public sealed class KnownItemDiscovery
     {
         if (hasKnownTrackRequested)
         {
-            return false;
+            return;
         }
 
         Apply(
@@ -75,11 +75,9 @@ public sealed class KnownItemDiscovery
                 requestedAt,
                 correlationId),
             isNew: true);
-
-        return true;
     }
 
-    public bool TrackLookupStarted(
+    public void TrackLookupStarted(
         TrackId trackId,
         LookupPriorityBand priority,
         string reason,
@@ -87,14 +85,14 @@ public sealed class KnownItemDiscovery
     {
         if (!hasKnownTrackRequested)
         {
-            return false;
+            return;
         }
 
         if (knownTrackStatus == CatalogSearchLifecycleStatus.InProgress
             && knownTrackPriority == priority
             && string.Equals(knownTrackReason, reason, StringComparison.Ordinal))
         {
-            return false;
+            return;
         }
 
         Apply(
@@ -104,11 +102,9 @@ public sealed class KnownItemDiscovery
                 reason,
                 startedAt),
             isNew: true);
-
-        return true;
     }
 
-    public bool TrackLookupCompleted(
+    public void TrackLookupCompleted(
         TrackId trackId,
         LookupPriorityBand priority,
         string reason,
@@ -116,14 +112,14 @@ public sealed class KnownItemDiscovery
     {
         if (!hasKnownTrackRequested)
         {
-            return false;
+            return;
         }
 
         if (knownTrackStatus == CatalogSearchLifecycleStatus.Completed
             && knownTrackPriority == priority
             && string.Equals(knownTrackReason, reason, StringComparison.Ordinal))
         {
-            return false;
+            return;
         }
 
         Apply(
@@ -133,8 +129,6 @@ public sealed class KnownItemDiscovery
                 reason,
                 completedAt),
             isNew: true);
-
-        return true;
     }
 
     public bool TrackLookupDeferred(
@@ -169,7 +163,7 @@ public sealed class KnownItemDiscovery
         return true;
     }
 
-    public bool TrackLookupFailed(
+    public void TrackLookupFailed(
         TrackId trackId,
         LookupPriorityBand priority,
         string reason,
@@ -177,14 +171,14 @@ public sealed class KnownItemDiscovery
     {
         if (!hasKnownTrackRequested)
         {
-            return false;
+            return;
         }
 
         if (knownTrackStatus == CatalogSearchLifecycleStatus.Failed
             && knownTrackPriority == priority
             && string.Equals(knownTrackReason, reason, StringComparison.Ordinal))
         {
-            return false;
+            return;
         }
 
         Apply(
@@ -194,18 +188,16 @@ public sealed class KnownItemDiscovery
                 reason,
                 failedAt),
             isNew: true);
-
-        return true;
     }
 
-    public bool ArtistRequested(
+    public void ArtistRequested(
         ArtistId artistId,
         DateTimeOffset requestedAt,
         CorrelationId correlationId)
     {
         if (hasArtistCatalogLookupRequested)
         {
-            return false;
+            return;
         }
 
         Apply(
@@ -214,8 +206,6 @@ public sealed class KnownItemDiscovery
                 requestedAt,
                 correlationId),
             isNew: true);
-
-        return true;
     }
 
     public bool ArtistLookupStarted(

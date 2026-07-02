@@ -86,17 +86,17 @@ public sealed class TypeTranslationRegistry : ITypeRegistry
         storedEventTypesByDomainType[typeof(TDomain)] = registration;
     }
 
-    public object? ToDto(object? domainObject)
+    public object ToDto(object? domainObject)
     {
-        if(domainObject is null) return null;
+        ArgumentNullException.ThrowIfNull(domainObject);
         var dtoType = GetDtoTypeForDomain(domainObject.GetType());
         return Translate(domainObject, dtoType);
     }
 
-    public TDto? ToDto<TDto>(object? domainObject)
+    public TDto ToDto<TDto>(object? domainObject)
         where TDto : class
     {
-        if (domainObject is null) return null;
+        ArgumentNullException.ThrowIfNull(domainObject);
         return (TDto)Translate(domainObject, typeof(TDto));
     }
 
@@ -107,9 +107,10 @@ public sealed class TypeTranslationRegistry : ITypeRegistry
         return Translate(dto, domainType);
     }
 
-    public TDomain ToDomainObject<TDomain>(object? dto)
+    public TDomain ToDomainObject<TDomain>(object dto)
         where TDomain : class
     {
+        ArgumentNullException.ThrowIfNull(dto);
         return (TDomain)Translate(dto, typeof(TDomain));
     }
 

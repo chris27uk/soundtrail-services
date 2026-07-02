@@ -10,33 +10,14 @@ namespace Soundtrail.Services.Tests.Unit.InternalProjector.Features.OnCatalogCan
 public sealed class CatalogCandidateIdentifiedHandlerTests
 {
     [Fact]
-    public async Task Given_A_Catalog_Candidate_When_Handled_Then_Work_Is_Appended_And_Assessment_Is_Requested()
+    public async Task Given_A_Catalog_Candidate_When_Dispatched_For_Assessment_Then_Assessment_Is_Requested()
     {
         var env = CatalogCandidateIdentifiedHandlerTestEnvironment.Create();
         var searchCriteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
 
-        await env.Handler.Handle(env.Command(searchCriteria, musicCatalogId), CancellationToken.None);
+        await env.DispatchAssessmentHandler.Handle(env.Command(searchCriteria, musicCatalogId, version: 4), CancellationToken.None);
 
-        env.WorkRepository.GetStoredEvents(musicCatalogId).Should().ContainSingle()
-            .Which.Should().BeOfType<CatalogDiscoveryWorkRequested>();
-        env.Bus.SentCommands.Should().ContainSingle()
-            .Which.Should().BeOfType<AssessMusicTrackCommand>();
-    }
-
-    [Fact]
-    public async Task Given_The_Same_Catalog_Candidate_Replayed_When_Handled_Twice_Then_Work_And_Assessment_Are_Not_Duplicated()
-    {
-        var env = CatalogCandidateIdentifiedHandlerTestEnvironment.Create();
-        var searchCriteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
-        var musicCatalogId = MusicCatalogId.From("mc_track_1");
-        var command = env.Command(searchCriteria, musicCatalogId, version: 4);
-
-        await env.Handler.Handle(command, CancellationToken.None);
-        await env.Handler.Handle(command, CancellationToken.None);
-
-        env.WorkRepository.GetStoredEvents(musicCatalogId).Should().ContainSingle()
-            .Which.Should().BeOfType<CatalogDiscoveryWorkRequested>();
         env.Bus.SentCommands.Should().ContainSingle()
             .Which.Should().BeOfType<AssessMusicTrackCommand>();
     }

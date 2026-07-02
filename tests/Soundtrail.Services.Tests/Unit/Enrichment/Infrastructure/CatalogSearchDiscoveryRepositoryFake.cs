@@ -14,7 +14,13 @@ internal sealed class CatalogSearchDiscoveryRepositoryFake :
         MusicSearchCriteria searchCriteria,
         params IDomainEvent[] events)
     {
-        eventsByCriteria[ToPersistentId(searchCriteria)] = events.ToList();
+        if (!eventsByCriteria.TryGetValue(ToPersistentId(searchCriteria), out var stored))
+        {
+            stored = [];
+            eventsByCriteria[ToPersistentId(searchCriteria)] = stored;
+        }
+
+        stored.AddRange(events);
     }
 
     public IReadOnlyList<IDomainEvent> GetStoredEvents(MusicSearchCriteria searchCriteria) =>

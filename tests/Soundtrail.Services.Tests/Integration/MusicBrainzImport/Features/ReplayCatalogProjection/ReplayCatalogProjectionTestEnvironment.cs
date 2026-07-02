@@ -76,7 +76,24 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
                     "mb-release-hot-fuss",
                     new DateOnly(2004, 6, 7),
                     LookupSource.MusicBrainz,
-                    Clock.AddMinutes(2)))
+                    Clock.AddMinutes(2))),
+            new VersionedCatalogEvent(
+                4,
+                new MetadataCorrected(
+                    musicCatalogId,
+                    "Mr. Brightside",
+                    "The Killers",
+                    artistId.Value,
+                    "mb-artist-the-killers",
+                    "Hot Fuss",
+                    "album_hot_fuss",
+                    "mb-release-hot-fuss",
+                    new DateOnly(2004, 6, 7),
+                    222000,
+                    "USIR20400274",
+                    "mbid-1",
+                    LookupSource.MusicBrainz.Value,
+                    Clock.AddMinutes(3)))
         };
 
         return mode switch
@@ -120,7 +137,7 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
             eventStore,
             eventStore,
             projectionStore,
-            new MusicCatalogChangedHandler(projectionStore, projectionStore));
+            new MusicCatalogChangedHandler(projectionStore));
 
         return new ReplayCatalogProjectionTestEnvironment(
             handler,
@@ -169,7 +186,6 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
 
         var session = raven.Store.OpenAsyncSession();
         var projectionHandler = new MusicCatalogChangedHandler(
-            new RavenLoadMusicTrackCatalogProjection(session, new RavenMusicTrackCatalogProjectionMapper()),
             new RavenSaveMusicTrackCatalogProjection(session, Soundtrail.Adapters.Registry.TypeTranslationRegistry.Default));
         var handler = new ReplayCatalogProjectionHandler(
             new RavenLoadCatalogProjectionReplayTargets(session),
@@ -221,11 +237,10 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
     }
 
     private sealed class FakeProjectionStore :
-        ILoadMusicTrackCatalogProjectionPort,
         ISaveMusicTrackCatalogProjectionPort,
         IResetCatalogProjectionCheckpointPort
     {
-        private readonly Dictionary<string, ArtistCatalog> projections = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, ArtistCatalogProjection> projections = new(StringComparer.Ordinal);
         private readonly Dictionary<string, int> checkpointVersions = new(StringComparer.Ordinal);
 
         public int TrackDocumentCount => projections.Count;
@@ -235,23 +250,10 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
         public CatalogTrackRecordDto? LoadTrackDocument(MusicCatalogId musicCatalogId)
         {
             var track = projections.Values
-                .SelectMany(x => x.GetTracks())
-                .SingleOrDefault(x => x.MusicCatalogId == musicCatalogId);
+                .SelectMany(x => x.TrackDocuments)
+                .SingleOrDefault(x => x.TrackId == musicCatalogId.Value);
 
-            return track is null
-                ? null
-                : new CatalogTrackRecordDto
-                {
-                    Id = CatalogTrackRecordDto.GetDocumentId(track.MusicCatalogId.Value),
-                    TrackId = track.MusicCatalogId.Value,
-                    Title = track.Title,
-                    ArtistId = track.ArtistId.Value,
-                    AlbumId = track.AlbumId?.Value,
-                    ArtistName = track.ArtistName,
-                    AlbumName = track.AlbumTitle,
-                    NormalizedTitle = track.Title.ToLowerInvariant(),
-                    SearchText = $"{track.Title} {track.ArtistName}".ToLowerInvariant()
-                };
+            return track;
         }
 
         public int LoadCheckpointVersion(MusicCatalogId musicCatalogId)
@@ -260,21 +262,12 @@ internal sealed class ReplayCatalogProjectionTestEnvironment : IAsyncDisposable
             return checkpointVersions.Values.DefaultIfEmpty(0).Max();
         }
 
-        public Task<MusicTrackCatalogProjection> LoadAsync(MusicCatalogId musicCatalogId, CancellationToken cancellationToken)
-        {
-            _ = musicCatalogId;
-            _ = cancellationToken;
-            return Task.FromResult(new MusicTrackCatalogProjection(musicCatalogId));
-        }
-
         public Task SaveAsync(
-            ArtistId artistId,
-            int version,
-            ArtistCatalog projection,
+            ArtistCatalogProjection projection,
             CancellationToken cancellationToken)
         {
-            projections[artistId.Value] = projection;
-            checkpointVersions[artistId.Value] = version;
+            projections[projection.ArtistId.Value] = projection;
+            checkpointVersions[projection.ArtistId.Value] = projection.Version;
             return Task.CompletedTask;
         }
 

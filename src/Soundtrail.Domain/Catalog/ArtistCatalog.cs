@@ -17,11 +17,6 @@ public sealed class ArtistCatalog
     private string? sourceArtistId;
     private string? artworkUrl;
 
-    public ArtistCatalog()
-    {
-        eventHandlers = CreateHandlers();
-    }
-
     private ArtistCatalog(
         ArtistId artistId,
         IEnumerable<IDomainEvent> events)
@@ -42,32 +37,6 @@ public sealed class ArtistCatalog
     {
         var stream = await repository.LoadAsync(artistId, cancellationToken);
         return (stream, new ArtistCatalog(artistId, stream.Events));
-    }
-
-    public void Replay(IDomainEvent @event) => Apply(@event, isNew: false);
-
-    public void ArtistMetadataFetched(ArtistMetadataFetched fetched)
-    {
-        DiscoverArtist(
-            fetched.ArtistId,
-            fetched.Metadata.ArtistName,
-            fetched.Metadata.SourceArtistId,
-            fetched.SourceProvider,
-            fetched.CreatedAt);
-    }
-
-    public void AlbumMetadataFetched(AlbumMetadataFetched fetched)
-    {
-        DiscoverAlbum(
-            fetched.ArtistId,
-            fetched.AlbumId,
-            fetched.Metadata.ArtistName,
-            fetched.Metadata.AlbumTitle,
-            fetched.Metadata.SourceArtistId,
-            fetched.Metadata.SourceAlbumId,
-            fetched.Metadata.ReleaseDate,
-            fetched.SourceProvider,
-            fetched.CreatedAt);
     }
 
     public void TrackMetadataFetched(
@@ -221,101 +190,12 @@ public sealed class ArtistCatalog
             isNew: true);
     }
 
-    public ArtistCatalogArtistView? GetArtist() =>
-        artistId is null || string.IsNullOrWhiteSpace(artistName)
-            ? null
-            : new ArtistCatalogArtistView(
-                artistId.Value,
-                artistName,
-                sourceArtistId,
-                artworkUrl,
-                tracks.Values
-                    .SelectMany(track => track.ProviderReferences.Keys)
-                    .Distinct(StringComparer.Ordinal)
-                    .OrderBy(x => x, StringComparer.Ordinal)
-                    .ToArray(),
-                tracks.Values
-                    .SelectMany(track => track.FailedProviders)
-                    .Distinct(StringComparer.Ordinal)
-                    .OrderBy(x => x, StringComparer.Ordinal)
-                    .ToArray(),
-                tracks.Values
-                    .Select(track => track.UpdatedAt)
-                    .Append(DateTimeOffset.MinValue)
-                    .Max());
-
-    public IReadOnlyList<ArtistCatalogAlbumView> GetAlbums() =>
-        albums.Values
-            .Select(album => new ArtistCatalogAlbumView(
-                album.AlbumId,
-                RequireArtistId(),
-                album.AlbumTitle ?? string.Empty,
-                artistName ?? string.Empty,
-                album.SourceAlbumId,
-                album.ReleaseDate,
-                album.ArtworkUrl,
-                tracks.Values
-                    .Where(track => string.Equals(track.AlbumId, album.AlbumId.Value, StringComparison.Ordinal))
-                    .SelectMany(track => track.ProviderReferences.Keys)
-                    .Distinct(StringComparer.Ordinal)
-                    .OrderBy(x => x, StringComparer.Ordinal)
-                    .ToArray(),
-                tracks.Values
-                    .Where(track => string.Equals(track.AlbumId, album.AlbumId.Value, StringComparison.Ordinal))
-                    .SelectMany(track => track.FailedProviders)
-                    .Distinct(StringComparer.Ordinal)
-                    .OrderBy(x => x, StringComparer.Ordinal)
-                    .ToArray(),
-                tracks.Values
-                    .Where(track => string.Equals(track.AlbumId, album.AlbumId.Value, StringComparison.Ordinal))
-                    .Select(track => track.UpdatedAt)
-                    .Append(album.UpdatedAt)
-                    .Max()))
-            .OrderBy(x => x.AlbumId.Value, StringComparer.Ordinal)
-            .ToArray();
-
-    public IReadOnlyList<ArtistCatalogTrackView> GetTracks() =>
-        tracks.Values
-            .Select(track => new ArtistCatalogTrackView(
-                track.MusicCatalogId,
-                RequireArtistId(),
-                track.AlbumId is null ? null : AlbumId.From(track.AlbumId),
-                track.Title,
-                track.ArtistName,
-                track.AlbumTitle,
-                track.Isrc,
-                track.Mbid,
-                track.DurationMs,
-                track.ReleaseDate,
-                track.ArtworkUrl,
-                track.ProviderReferences.Values
-                    .Select(reference => new ArtistCatalogTrackProviderReferenceView(
-                        reference.Provider,
-                        reference.ExternalId,
-                        reference.Url,
-                        reference.SourceProvider,
-                        reference.ObservedAt))
-                    .OrderBy(x => x.Provider.Value, StringComparer.Ordinal)
-                    .ToArray(),
-                track.FailedProviders
-                    .OrderBy(x => x, StringComparer.Ordinal)
-                    .ToArray(),
-                track.StreamingLocationsRequired,
-                track.UpdatedAt))
-            .OrderBy(x => x.MusicCatalogId.Value, StringComparer.Ordinal)
-            .ToArray();
-
-    public async Task<bool> SaveAsync(
+    public async Task SaveAsync(
         IEventStreamRepository<ArtistId, IDomainEvent> repository,
         LoadedEventStream<ArtistId, IDomainEvent> stream,
         CommandId commandId,
         CancellationToken cancellationToken)
     {
-        if (uncommittedEvents.Count == 0)
-        {
-            return true;
-        }
-
         var append = await repository.AppendAsync(
             stream,
             uncommittedEvents.AsReadOnly(),
@@ -327,12 +207,10 @@ public sealed class ArtistCatalog
             throw new InvalidOperationException($"Artist catalog stream concurrency conflict for '{artistId?.Value}'.");
         }
 
-        if (append.Appended)
+        if (append.Appended || append.Outcome == AppendOutcome.DuplicateOperation)
         {
             uncommittedEvents.Clear();
         }
-
-        return append.Appended || append.Outcome == AppendOutcome.DuplicateOperation;
     }
 
     private void DiscoverTrack(
@@ -469,104 +347,120 @@ public sealed class ArtistCatalog
     private EventHandlers<ArtistCatalog> CreateHandlers()
     {
         var handlers = new EventHandlers<ArtistCatalog>();
-        handlers.Register<ArtistDiscovered>(@event =>
-        {
-            artistId ??= ArtistId.From(@event.ArtistId ?? throw new InvalidOperationException("Artist id is required."));
-            artistName = @event.ArtistName;
-            sourceArtistId = @event.SourceArtistId;
-        });
-        handlers.Register<AlbumDiscovered>(@event =>
-        {
-            var albumId = @event.AlbumId ?? throw new InvalidOperationException("Album id is required.");
-            albums[albumId] = new AlbumState(
-                AlbumId.From(albumId),
-                @event.AlbumTitle,
-                @event.SourceAlbumId,
-                @event.ReleaseDate,
-                albums.TryGetValue(albumId, out var existing) ? existing.ArtworkUrl : null,
-                @event.ObservedAt);
-        });
-        handlers.Register<TrackDiscovered>(@event =>
-        {
-            var musicCatalogId = @event.MusicCatalogId
-                                 ?? throw new InvalidOperationException("Track facts in artist catalog must include a music catalog id.");
-            var track = GetOrCreateTrack(musicCatalogId);
-            track.Title = @event.Title;
-            track.ArtistName = @event.Artist;
-            track.DurationMs = @event.DurationMs;
-            track.Isrc = @event.Isrc;
-            track.Mbid = @event.Mbid;
-            track.UpdatedAt = @event.ObservedAt;
-        });
-        handlers.Register<ProviderReferenceDiscovered>(@event =>
-        {
-            var musicCatalogId = @event.MusicCatalogId
-                                 ?? throw new InvalidOperationException("Provider reference facts in artist catalog must include a music catalog id.");
-            var track = GetOrCreateTrack(musicCatalogId);
-            track.ProviderReferences[@event.Provider.Value] = new ProviderReferenceState(
-                @event.Provider,
-                @event.ExternalId,
-                @event.Url,
-                @event.SourceProvider,
-                @event.ObservedAt);
-            track.FailedProviders.Remove(@event.Provider.Value);
-            track.UpdatedAt = @event.ObservedAt;
-        });
-        handlers.Register<ProviderReferenceLookupFailed>(@event =>
-        {
-            var musicCatalogId = @event.MusicCatalogId
-                                 ?? throw new InvalidOperationException("Provider reference failure facts in artist catalog must include a music catalog id.");
-            var track = GetOrCreateTrack(musicCatalogId);
-            track.ProviderReferences.Remove(@event.Provider.Value);
-            track.FailedProviders.Add(@event.Provider.Value);
-            track.UpdatedAt = @event.ObservedAt;
-        });
-        handlers.Register<StreamingLocationsRequired>(@event =>
-        {
-            var track = GetOrCreateTrack(@event.MusicCatalogId);
-            track.StreamingLocationsRequired = true;
-            track.AlbumId ??= @event.Hierarchy?.AlbumId?.Value;
-            track.UpdatedAt = @event.ObservedAt;
-        });
-        handlers.Register<ArtworkDiscovered>(@event =>
-        {
-            switch (@event.EntityKind)
-            {
-                case CatalogEntityKind.Artist:
-                    artworkUrl = @event.Url.ToString();
-                    break;
-                case CatalogEntityKind.Album when !string.IsNullOrWhiteSpace(@event.EntityId):
-                    if (albums.TryGetValue(@event.EntityId, out var album))
-                    {
-                        album.ArtworkUrl = @event.Url.ToString();
-                        album.UpdatedAt = @event.ObservedAt;
-                    }
-                    break;
-                case CatalogEntityKind.Track when !string.IsNullOrWhiteSpace(@event.EntityId):
-                    if (tracks.TryGetValue(@event.EntityId, out var track))
-                    {
-                        track.ArtworkUrl = @event.Url.ToString();
-                        track.UpdatedAt = @event.ObservedAt;
-                    }
-                    break;
-            }
-        });
-        handlers.Register<MetadataCorrected>(@event =>
-        {
-            var musicCatalogId = @event.MusicCatalogId
-                                 ?? throw new InvalidOperationException("Metadata corrections in artist catalog must include a music catalog id.");
-            var track = GetOrCreateTrack(musicCatalogId);
-            track.Title = @event.Title;
-            track.ArtistName = @event.ArtistName;
-            track.AlbumTitle = @event.AlbumTitle;
-            track.AlbumId = @event.AlbumId;
-            track.Isrc = @event.Isrc;
-            track.Mbid = @event.Mbid;
-            track.DurationMs = @event.DurationMs;
-            track.ReleaseDate = @event.ReleaseDate;
-            track.UpdatedAt = @event.CorrectedAt;
-        });
+        handlers.Register<ArtistDiscovered>(On);
+        handlers.Register<AlbumDiscovered>(On);
+        handlers.Register<TrackDiscovered>(On);
+        handlers.Register<ProviderReferenceDiscovered>(On);
+        handlers.Register<ProviderReferenceLookupFailed>(On);
+        handlers.Register<StreamingLocationsRequired>(On);
+        handlers.Register<ArtworkDiscovered>(On);
+        handlers.Register<MetadataCorrected>(On);
         return handlers;
+    }
+
+    private void On(ArtistDiscovered @event)
+    {
+        artistId ??= ArtistId.From(@event.ArtistId ?? throw new InvalidOperationException("Artist id is required."));
+        artistName = @event.ArtistName;
+        sourceArtistId = @event.SourceArtistId;
+    }
+
+    private void On(AlbumDiscovered @event)
+    {
+        var albumId = @event.AlbumId ?? throw new InvalidOperationException("Album id is required.");
+        albums[albumId] = new AlbumState(
+            AlbumId.From(albumId),
+            @event.AlbumTitle,
+            @event.SourceAlbumId,
+            @event.ReleaseDate,
+            albums.TryGetValue(albumId, out var existing) ? existing.ArtworkUrl : null,
+            @event.ObservedAt);
+    }
+
+    private void On(TrackDiscovered @event)
+    {
+        var musicCatalogId = @event.MusicCatalogId
+                             ?? throw new InvalidOperationException("Track facts in artist catalog must include a music catalog id.");
+        var track = GetOrCreateTrack(musicCatalogId);
+        track.Title = @event.Title;
+        track.ArtistName = @event.Artist;
+        track.DurationMs = @event.DurationMs;
+        track.Isrc = @event.Isrc;
+        track.Mbid = @event.Mbid;
+        track.UpdatedAt = @event.ObservedAt;
+    }
+
+    private void On(ProviderReferenceDiscovered @event)
+    {
+        var musicCatalogId = @event.MusicCatalogId
+                             ?? throw new InvalidOperationException("Provider reference facts in artist catalog must include a music catalog id.");
+        var track = GetOrCreateTrack(musicCatalogId);
+        track.ProviderReferences[@event.Provider.Value] = new ProviderReferenceState(
+            @event.Provider,
+            @event.ExternalId,
+            @event.Url,
+            @event.SourceProvider,
+            @event.ObservedAt);
+        track.FailedProviders.Remove(@event.Provider.Value);
+        track.UpdatedAt = @event.ObservedAt;
+    }
+
+    private void On(ProviderReferenceLookupFailed @event)
+    {
+        var musicCatalogId = @event.MusicCatalogId
+                             ?? throw new InvalidOperationException("Provider reference failure facts in artist catalog must include a music catalog id.");
+        var track = GetOrCreateTrack(musicCatalogId);
+        track.ProviderReferences.Remove(@event.Provider.Value);
+        track.FailedProviders.Add(@event.Provider.Value);
+        track.UpdatedAt = @event.ObservedAt;
+    }
+
+    private void On(StreamingLocationsRequired @event)
+    {
+        var track = GetOrCreateTrack(@event.MusicCatalogId);
+        track.StreamingLocationsRequired = true;
+        track.AlbumId ??= @event.Hierarchy?.AlbumId?.Value;
+        track.UpdatedAt = @event.ObservedAt;
+    }
+
+    private void On(ArtworkDiscovered @event)
+    {
+        switch (@event.EntityKind)
+        {
+            case CatalogEntityKind.Artist:
+                artworkUrl = @event.Url.ToString();
+                break;
+            case CatalogEntityKind.Album when !string.IsNullOrWhiteSpace(@event.EntityId):
+                if (albums.TryGetValue(@event.EntityId, out var album))
+                {
+                    album.ArtworkUrl = @event.Url.ToString();
+                    album.UpdatedAt = @event.ObservedAt;
+                }
+                break;
+            case CatalogEntityKind.Track when !string.IsNullOrWhiteSpace(@event.EntityId):
+                if (tracks.TryGetValue(@event.EntityId, out var track))
+                {
+                    track.ArtworkUrl = @event.Url.ToString();
+                    track.UpdatedAt = @event.ObservedAt;
+                }
+                break;
+        }
+    }
+
+    private void On(MetadataCorrected @event)
+    {
+        var musicCatalogId = @event.MusicCatalogId
+                             ?? throw new InvalidOperationException("Metadata corrections in artist catalog must include a music catalog id.");
+        var track = GetOrCreateTrack(musicCatalogId);
+        track.Title = @event.Title;
+        track.ArtistName = @event.ArtistName;
+        track.AlbumTitle = @event.AlbumTitle;
+        track.AlbumId = @event.AlbumId;
+        track.Isrc = @event.Isrc;
+        track.Mbid = @event.Mbid;
+        track.DurationMs = @event.DurationMs;
+        track.ReleaseDate = @event.ReleaseDate;
+        track.UpdatedAt = @event.CorrectedAt;
     }
 
     private void EnsureArtistMatch(ArtistId expectedArtistId)
@@ -685,48 +579,3 @@ public sealed class ArtistCatalog
         public DateTimeOffset ObservedAt { get; }
     }
 }
-
-public sealed record ArtistCatalogArtistView(
-    ArtistId ArtistId,
-    string Name,
-    string? SourceArtistId,
-    string? ArtworkUrl,
-    IReadOnlyList<string> AvailableProviders,
-    IReadOnlyList<string> TerminallyUnavailableProviders,
-    DateTimeOffset UpdatedAt);
-
-public sealed record ArtistCatalogAlbumView(
-    AlbumId AlbumId,
-    ArtistId ArtistId,
-    string Name,
-    string ArtistName,
-    string? SourceAlbumId,
-    DateOnly? ReleaseDate,
-    string? ArtworkUrl,
-    IReadOnlyList<string> AvailableProviders,
-    IReadOnlyList<string> TerminallyUnavailableProviders,
-    DateTimeOffset UpdatedAt);
-
-public sealed record ArtistCatalogTrackView(
-    MusicCatalogId MusicCatalogId,
-    ArtistId ArtistId,
-    AlbumId? AlbumId,
-    string Title,
-    string ArtistName,
-    string? AlbumTitle,
-    string? Isrc,
-    string? Mbid,
-    int? DurationMs,
-    DateOnly? ReleaseDate,
-    string? ArtworkUrl,
-    IReadOnlyList<ArtistCatalogTrackProviderReferenceView> ProviderReferences,
-    IReadOnlyList<string> TerminallyUnavailableProviders,
-    bool StreamingLocationsRequired,
-    DateTimeOffset UpdatedAt);
-
-public sealed record ArtistCatalogTrackProviderReferenceView(
-    ProviderName Provider,
-    string? ExternalId,
-    Uri Url,
-    LookupSource SourceProvider,
-    DateTimeOffset ObservedAt);

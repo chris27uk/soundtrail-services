@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownAlbumRequested.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownAlbumRequested.Ports;
 
@@ -11,7 +12,9 @@ public static class ServiceCollectionExtensions
     {
         services.TryAddScoped<ILoadKnownCatalogAlbumPort, RavenLoadKnownCatalogAlbumPort>();
         services.TryAddScoped<KnownAlbumRequestedHandler>();
+        services.TryAddScoped<DispatchKnownAlbumLookupCommandHandler>();
         services.TryAddScoped<KnownAlbumRequestedListener>();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, AlbumCatalogLookupRequestedSubscriptionHostedService>());
         return services;
     }
 }

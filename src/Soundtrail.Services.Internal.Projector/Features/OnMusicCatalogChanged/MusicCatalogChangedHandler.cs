@@ -2,6 +2,7 @@ using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Commands;
+using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.ProjectionModel;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged;
@@ -19,30 +20,21 @@ public sealed class MusicCatalogChangedHandler : IHandler<MusicCatalogChangedCom
         this.savePort = savePort;
     }
 
-    public MusicCatalogChangedHandler(
-        ILoadMusicTrackCatalogProjectionPort loadPort,
-        ISaveMusicTrackCatalogProjectionPort savePort)
-    {
-        _ = loadPort;
-        this.savePort = savePort;
-    }
+    public MusicCatalogChangedHandler(ISaveMusicTrackCatalogProjectionPort savePort) => this.savePort = savePort;
 
     public async Task Handle(MusicCatalogChangedCommand command, CancellationToken cancellationToken = default)
     {
         if (repository is not null)
         {
-            var loaded = await ArtistCatalog.LoadAsync(repository, command.ArtistId, cancellationToken);
-            await savePort.SaveAsync(command.ArtistId, loaded.Stream.Version, loaded.Aggregate, cancellationToken);
+            var loaded = await repository.LoadAsync(command.ArtistId, cancellationToken);
+            var projection = ArtistCatalogProjection.Replay(
+                command.ArtistId,
+                loaded.Events.Select((@event, index) => new VersionedCatalogEvent(index + 1, @event)).ToArray());
+            await savePort.SaveAsync(projection, cancellationToken);
             return;
         }
 
-        var aggregate = new ArtistCatalog();
-        foreach (var @event in command.Events.OrderBy(x => x.Version).Select(x => x.Event))
-        {
-            aggregate.Replay(@event);
-        }
-
-        var version = command.Events.Select(x => x.Version).DefaultIfEmpty(0).Max();
-        await savePort.SaveAsync(command.ArtistId, version, aggregate, cancellationToken);
+        var replayProjection = ArtistCatalogProjection.Replay(command.ArtistId, command.Events);
+        await savePort.SaveAsync(replayProjection, cancellationToken);
     }
 }

@@ -53,9 +53,7 @@ public static class RavenServiceCollectionExtensions
                 sp.GetRequiredService<IAsyncDocumentSession>(),
                 sp.GetRequiredService<ITypeRegistry>(),
                 MusicTrackEventStreamDefinition.Create()));
-        services.TryAddScoped<ILoadMusicTrackCatalogProjectionPort, RavenLoadMusicTrackCatalogProjection>();
         services.TryAddScoped<ISaveMusicTrackCatalogProjectionPort, RavenSaveMusicTrackCatalogProjection>();
-        services.TryAddSingleton<RavenMusicTrackCatalogProjectionMapper>();
         services.TryAddScoped<ILoadDiscoveryLifecycleProjectionPort, RavenLoadDiscoveryLifecycleProjection>();
         services.TryAddScoped<ISaveDiscoveryLifecycleProjectionPort, RavenSaveDiscoveryLifecycleProjection>();
         services.TryAddSingleton<RavenDiscoveryLifecycleProjectionMapper>();

@@ -3,7 +3,6 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.Adapters;
-using Soundtrail.Adapters.Discovery;
 
 namespace Soundtrail.Adapters.ProjectionDocuments;
 

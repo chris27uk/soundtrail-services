@@ -131,11 +131,10 @@ public sealed class CatalogSearchDiscoveryTests
         loaded = await SearchDiscoveryHistory.LoadAsync(repository, searchTerm, CancellationToken.None);
         discovery = loaded.Aggregate;
 
-        var deferred = discovery.Defer(60, Clock.AddSeconds(60), "Planner deferred lookup", Clock);
+        discovery.Defer(60, Clock.AddSeconds(60), "Planner deferred lookup", Clock);
         await discovery.SaveAsync(repository, loaded.Stream, CancellationToken.None);
         var @event = repository.GetStoredEvents(searchTerm).Last().Should().BeOfType<DiscoveryDeferred>().Subject;
-
-        deferred.Should().BeTrue();
+        
         @event.EstimatedRetryAfterSeconds.Should().Be(60);
         @event.Reason.Should().Be("Planner deferred lookup");
     }

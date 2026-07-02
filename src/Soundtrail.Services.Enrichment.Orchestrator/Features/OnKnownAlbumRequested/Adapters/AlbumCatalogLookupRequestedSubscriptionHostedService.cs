@@ -4,21 +4,21 @@ using Microsoft.Extensions.Logging;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Subscriptions;
 using Soundtrail.Adapters.Registry;
-using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Abstractions.EventSourcing;
-using Soundtrail.Domain.Enrichment;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupHistoryChanged.Support;
+using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownAlbumRequested.Support;
 
-namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupHistoryChanged.Adapters;
+namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownAlbumRequested.Adapters;
 
-public sealed class MusicCatalogLookupHistoryToDiscoverySubscriptionHostedService(
+public sealed class AlbumCatalogLookupRequestedSubscriptionHostedService(
     IDocumentStore documentStore,
     IServiceScopeFactory scopeFactory,
     ITypeRegistry registry,
-    ILogger<MusicCatalogLookupHistoryToDiscoverySubscriptionHostedService> logger) : BackgroundService
+    ILogger<AlbumCatalogLookupRequestedSubscriptionHostedService> logger) : BackgroundService
 {
-    private const string SubscriptionName = "music-catalog-lookup-history-to-discovery";
+    private const string SubscriptionName = "album-catalog-lookup-requested-dispatch";
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -42,7 +42,7 @@ public sealed class MusicCatalogLookupHistoryToDiscoverySubscriptionHostedServic
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Music catalog lookup history to discovery subscription failed.");
+                logger.LogError(ex, "Album catalog lookup requested subscription failed.");
                 await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
             }
         }
@@ -66,16 +66,19 @@ public sealed class MusicCatalogLookupHistoryToDiscoverySubscriptionHostedServic
         CancellationToken cancellationToken)
     {
         await using var scope = scopeFactory.CreateAsyncScope();
-        var handler = scope.ServiceProvider.GetRequiredService<MusicCatalogLookupHistoryChangedHandler>();
+        var handler = scope.ServiceProvider.GetRequiredService<DispatchKnownAlbumLookupCommandHandler>();
 
-        foreach (var stream in batch.Items.Select(item => item.Result).GroupBy(item => item.StreamId, StringComparer.Ordinal))
+        foreach (var stream in batch.Items
+                     .Select(item => item.Result)
+                     .GroupBy(item => item.StreamId, StringComparer.Ordinal))
         {
             var events = stream
                 .OrderBy(item => item.Version)
-                .Select(item => (item.Version, registry.ToDomainObject<IDomainEvent>(
-                    item.Body ?? throw new InvalidOperationException($"Stored event '{item.Id}' is missing a body."))))
-                .Where(item => item.Item2 is not null)
-                .Select(item => (item.Version, item.Item2!))
+                .Select(item => new VersionedCatalogSearchDiscoveryEvent(
+                    item.Version,
+                    registry.ToDomainObject<IDomainEvent>(
+                        item.Body ?? throw new InvalidOperationException($"Stored event '{item.Id}' is missing a body."))))
+                .Where(item => item.Event is AlbumCatalogLookupRequested)
                 .ToArray();
 
             if (events.Length == 0)
@@ -84,7 +87,7 @@ public sealed class MusicCatalogLookupHistoryToDiscoverySubscriptionHostedServic
             }
 
             await handler.Handle(
-                new MusicCatalogLookupHistoryChangedCommand(MusicCatalogLookupId.From(MusicCatalogId.From(stream.Key)), events),
+                new AlbumCatalogLookupRequestedCommand(stream.Key, events),
                 cancellationToken);
         }
     }

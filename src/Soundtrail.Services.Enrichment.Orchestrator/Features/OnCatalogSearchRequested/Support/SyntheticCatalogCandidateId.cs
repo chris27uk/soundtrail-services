@@ -1,5 +1,4 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Support;

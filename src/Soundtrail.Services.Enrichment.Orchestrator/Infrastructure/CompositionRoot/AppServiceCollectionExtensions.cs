@@ -1,10 +1,10 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnAssessMusicTrack.CompositionRoot;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnAlbumMetadataLookupAttempted.CompositionRoot;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnArtistMetadataLookupAttempted.CompositionRoot;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogDiscoveryWorkChanged.CompositionRoot;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.CompositionRoot;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownAlbumDiscoveryCompleted.CompositionRoot;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownAlbumRequested.CompositionRoot;
@@ -33,11 +33,11 @@ public static class AppServiceCollectionExtensions
 
         services.AddOrchestratorServiceBus(configuration);
         services.TryAddSingleton<DiscoveryPriorityPolicy>();
+        services.TryAddSingleton<IDiscoveryAssessmentPolicy>(sp => sp.GetRequiredService<DiscoveryPriorityPolicy>());
         var dependencyProvider = options.DependencyProvider ?? new ProductionOrchestratorDependencyProvider();
         dependencyProvider.AddSharedDependencies(services, configuration);
 
         services.AddOnMusicTrackEventsImportedFeature();
-        services.AddOnCatalogDiscoveryWorkChangedFeature();
         services.AddOnMusicCatalogLookupAttemptedFeature();
         services.AddOnMusicCatalogLookupHistoryChangedFeature();
         services.AddOnArtistMetadataLookupAttemptedFeature();

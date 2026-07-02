@@ -27,9 +27,7 @@ public sealed class KnownItemRequestedHandlerTests
             .Which.Should()
             .BeOfType<ArtistCatalogLookupRequested>();
 
-        env.CommandBus.SentCommands.Should().ContainSingle()
-            .Which.Should().BeOfType<LookupArtistMetadataCommand>()
-            .Which.ArtistId.Should().Be(request.ArtistId);
+        env.CommandBus.SentCommands.Should().BeEmpty();
     }
 
     [Fact]
@@ -47,9 +45,7 @@ public sealed class KnownItemRequestedHandlerTests
             .Which.Should()
             .BeOfType<AlbumCatalogLookupRequested>();
 
-        env.CommandBus.SentCommands.Should().ContainSingle()
-            .Which.Should().BeOfType<LookupAlbumMetadataCommand>()
-            .Which.AlbumId.Should().Be(request.AlbumId);
+        env.CommandBus.SentCommands.Should().BeEmpty();
     }
 
     [Fact]
@@ -66,5 +62,31 @@ public sealed class KnownItemRequestedHandlerTests
             .ContainSingle()
             .Which.Should()
             .BeOfType<KnownTrackRequestedEvent>();
+    }
+
+    [Fact]
+    public async Task Given_An_Album_Catalog_Lookup_Requested_Event_When_Handled_Then_A_Lookup_Album_Metadata_Command_Is_Sent()
+    {
+        var env = KnownItemRequestedHandlerTestEnvironment.Create();
+        var command = env.AlbumLookupRequestedCommand("artist_1", "album_1");
+
+        await env.AlbumLookupDispatchHandler.Handle(command, CancellationToken.None);
+
+        env.CommandBus.SentCommands.Should().ContainSingle()
+            .Which.Should().BeOfType<LookupAlbumMetadataCommand>()
+            .Which.AlbumId.Should().Be(AlbumId.From("album_1"));
+    }
+
+    [Fact]
+    public async Task Given_An_Artist_Catalog_Lookup_Requested_Event_When_Handled_Then_A_Lookup_Artist_Metadata_Command_Is_Sent()
+    {
+        var env = KnownItemRequestedHandlerTestEnvironment.Create();
+        var command = env.ArtistLookupRequestedCommand("artist_1");
+
+        await env.ArtistLookupDispatchHandler.Handle(command, CancellationToken.None);
+
+        env.CommandBus.SentCommands.Should().ContainSingle()
+            .Which.Should().BeOfType<LookupArtistMetadataCommand>()
+            .Which.ArtistId.Should().Be(ArtistId.From("artist_1"));
     }
 }

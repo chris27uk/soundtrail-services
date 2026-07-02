@@ -86,7 +86,7 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
     }
 
     [Fact]
-    public async Task Given_Persisted_MusicTrack_Stored_Events_For_Multiple_Streams_When_Replaying_One_Stream_Then_Only_That_Stream_Is_Rebuilt()
+    public async Task Given_Persisted_MusicTrack_Stored_Events_For_One_Artist_Stream_When_Replaying_Then_All_Tracks_In_That_Artist_Stream_Are_Rebuilt()
     {
         await using var env = RavenCatalogProjectionReplayTestEnvironment.Create();
 
@@ -100,9 +100,9 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
         var firstTrack = await env.LoadTrackAsync("mc_track_1");
         var secondTrack = await env.LoadTrackAsync("mc_track_2");
 
-        replayedEventCount.Should().Be(2);
+        replayedEventCount.Should().Be(4);
         firstTrack.Should().NotBeNull();
-        secondTrack.Should().BeNull();
+        secondTrack.Should().NotBeNull();
     }
 
     [Fact]
@@ -447,6 +447,5 @@ public sealed class RavenCatalogProjectionReplayResponsesTests
                 new DateTimeOffset(2026, 6, 15, 12, 5, 0, TimeSpan.Zero)));
 
     private static string ResolveArtistId(string artistName) =>
-        ArtistCatalogIdentity.ResolveArtistIdOrNull(null, artistName)?.Value
-        ?? throw new InvalidOperationException($"Could not derive artist id for '{artistName}'.");
+        $"artist_{MusicIdentityText.NormalizeFreeText(artistName).Replace(' ', '_')}";
 }

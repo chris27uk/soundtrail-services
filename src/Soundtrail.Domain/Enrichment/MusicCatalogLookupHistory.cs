@@ -1,7 +1,10 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions.EventSourcing;
+using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Enrichment.Events;
 using Soundtrail.Domain.Enrichment.Responses;
+using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Domain.Enrichment;
 
@@ -24,6 +27,16 @@ public sealed class MusicCatalogLookupHistory
         }
     }
 
+    private MusicCatalogLookupHistory(IEnumerable<IDomainEvent> events)
+    {
+        eventHandlers = CreateHandlers();
+
+        foreach (var @event in events)
+        {
+            Apply(@event, isNew: false);
+        }
+    }
+
     public static async Task<(LoadedEventStream<MusicCatalogLookupId, IDomainEvent> Stream, MusicCatalogLookupHistory Aggregate)> LoadAsync(
         IEventStreamRepository<MusicCatalogLookupId, IDomainEvent> repository,
         MusicCatalogId musicCatalogId,
@@ -31,6 +44,129 @@ public sealed class MusicCatalogLookupHistory
     {
         var stream = await repository.LoadAsync(MusicCatalogLookupId.From(musicCatalogId), cancellationToken);
         return (stream, new MusicCatalogLookupHistory(musicCatalogId, stream.Events));
+    }
+
+    public static MusicCatalogLookupHistory Replay(IEnumerable<IDomainEvent> events) =>
+        new(events);
+
+    public void ApplyToKnownTrackDiscovery(KnownItemDiscovery discovery, IDomainEvent @event)
+    {
+        switch (@event)
+        {
+            case MusicCatalogLookupStarted started:
+                discovery.TrackLookupStarted(
+                    TrackId.From(started.MusicCatalogId.Value),
+                    started.Priority,
+                    "Lookup started",
+                    started.StartedAt);
+                break;
+            case MusicCatalogLookupCompleted completed:
+                discovery.TrackLookupCompleted(
+                    TrackId.From(completed.MusicCatalogId.Value),
+                    completed.Priority,
+                    "Discovery completed",
+                    completed.CompletedAt);
+                break;
+            case MusicCatalogLookupDeferred deferred:
+                discovery.TrackLookupDeferred(
+                    TrackId.From(deferred.MusicCatalogId.Value),
+                    deferred.RetryAfterSeconds,
+                    deferred.RetryAt,
+                    deferred.Reason,
+                    deferred.DeferredAt);
+                break;
+            case MusicCatalogLookupFailed failed:
+                discovery.TrackLookupStarted(
+                    TrackId.From(failed.MusicCatalogId.Value),
+                    failed.Priority,
+                    "Lookup started",
+                    failed.FailedAt);
+                discovery.TrackLookupFailed(
+                    TrackId.From(failed.MusicCatalogId.Value),
+                    failed.Priority,
+                    failed.Reason,
+                    failed.FailedAt);
+                break;
+        }
+    }
+
+    public void ApplyToSearchDiscovery(SearchDiscoveryHistory discovery, IDomainEvent @event)
+    {
+        switch (@event)
+        {
+            case MusicCatalogLookupStarted started:
+                _ = discovery.LookupStarted(started.Priority, started.StartedAt);
+                break;
+            case MusicCatalogLookupCompleted completed:
+                _ = discovery.LookupCompleted(completed.Priority, completed.CompletedAt);
+                break;
+            case MusicCatalogLookupDeferred deferred:
+                discovery.LookupDeferred(
+                    deferred.RetryAfterSeconds,
+                    deferred.RetryAt,
+                    deferred.Reason,
+                    deferred.DeferredAt);
+                break;
+            case MusicCatalogLookupFailed failed:
+                _ = discovery.LookupFailed(
+                    failed.Priority,
+                    failed.Reason,
+                    failed.FailedAt);
+                break;
+        }
+    }
+
+    public IReadOnlyList<MusicSearchCriteria> ResolveSearchTerms(
+        IDomainEvent @event,
+        IReadOnlyList<MusicSearchCriteria> fallbackSearchTerms)
+    {
+        return @event switch
+        {
+            MusicCatalogLookupCompleted completed when completed.Metadata is not null =>
+                MergeSearchTerms(
+                    MusicSearchTermSet.ForResolvedTrack(
+                        completed.MusicCatalogId,
+                        completed.Hierarchy?.ArtistId,
+                        completed.Hierarchy?.AlbumId,
+                        completed.SearchCriteria),
+                    fallbackSearchTerms),
+            MusicCatalogLookupCompleted completed => completed.SearchCriteria is not null
+                ? [completed.SearchCriteria]
+                : fallbackSearchTerms,
+            MusicCatalogLookupDeferred deferred => deferred.SearchCriteria is not null
+                ? [deferred.SearchCriteria]
+                : fallbackSearchTerms,
+            MusicCatalogLookupFailed failed => failed.SearchCriteria is not null
+                ? [failed.SearchCriteria]
+                : fallbackSearchTerms,
+            _ => fallbackSearchTerms
+        };
+    }
+
+    private static IReadOnlyList<MusicSearchCriteria> MergeSearchTerms(
+        IReadOnlyList<MusicSearchCriteria> primary,
+        IReadOnlyList<MusicSearchCriteria> fallback)
+    {
+        var values = new HashSet<MusicSearchCriteria>();
+        var merged = new List<MusicSearchCriteria>();
+
+        foreach (var item in primary)
+        {
+            if (values.Add(item))
+            {
+                merged.Add(item);
+            }
+        }
+
+        foreach (var item in fallback)
+        {
+            if (values.Add(item))
+            {
+                merged.Add(item);
+            }
+        }
+
+        return merged;
     }
 
     public bool Record(MusicCatalogLookupAttempted attempted)

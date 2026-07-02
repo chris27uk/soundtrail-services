@@ -18,13 +18,12 @@ public sealed class KnownItemDiscoveryTests
         var knownItem = KnownCatalogItem.ForArtist(ArtistId.From("artist_1"));
         var loaded = await KnownItemDiscovery.LoadAsync(repository, knownItem, CancellationToken.None);
 
-        var changed = loaded.Aggregate.ArtistRequested(
+        loaded.Aggregate.ArtistRequested(
             ArtistId.From("artist_1"),
             Clock,
             CorrelationId.From("corr-1"));
         await loaded.Aggregate.SaveAsync(repository, loaded.Stream, CancellationToken.None);
-
-        changed.Should().BeTrue();
+        
         repository.GetStoredEvents(knownItem).Should().ContainSingle().Which.Should().BeOfType<ArtistCatalogLookupRequested>();
     }
 
@@ -53,15 +52,15 @@ public sealed class KnownItemDiscoveryTests
         var knownItem = KnownCatalogItem.ForTrack(TrackId.From("track_1"));
         var loaded = await KnownItemDiscovery.LoadAsync(repository, knownItem, CancellationToken.None);
 
-        var changed = loaded.Aggregate.TrackRequested(
+        loaded.Aggregate.TrackRequested(
             TrackId.From("track_1"),
             PlaybackProviderFilter.Parse("spotify"),
             Clock,
             CorrelationId.From("corr-1"));
         await loaded.Aggregate.SaveAsync(repository, loaded.Stream, CancellationToken.None);
 
-        changed.Should().BeTrue();
-        repository.GetStoredEvents(knownItem).Should().ContainSingle().Which.Should().BeOfType<KnownTrackRequestedEvent>();
+        repository.GetStoredEvents(knownItem).Should().ContainSingle().Which.Should()
+            .BeOfType<KnownTrackRequestedEvent>();
     }
 
     [Fact]
@@ -78,14 +77,13 @@ public sealed class KnownItemDiscoveryTests
         await loaded.Aggregate.SaveAsync(repository, loaded.Stream, CancellationToken.None);
 
         loaded = await KnownItemDiscovery.LoadAsync(repository, knownItem, CancellationToken.None);
-        var changed = loaded.Aggregate.TrackLookupStarted(
+        loaded.Aggregate.TrackLookupStarted(
             TrackId.From("track_1"),
             LookupPriorityBand.High,
             "Lookup started",
             Clock);
         await loaded.Aggregate.SaveAsync(repository, loaded.Stream, CancellationToken.None);
-
-        changed.Should().BeTrue();
+        
         repository.GetStoredEvents(knownItem).Last().Should().BeOfType<KnownTrackDiscoveryStarted>();
     }
 
@@ -99,9 +97,8 @@ public sealed class KnownItemDiscoveryTests
         await loaded.Aggregate.SaveAsync(repository, loaded.Stream, CancellationToken.None);
 
         loaded = await KnownItemDiscovery.LoadAsync(repository, knownItem, CancellationToken.None);
-        var changed = loaded.Aggregate.ArtistRequested(ArtistId.From("artist_1"), Clock, CorrelationId.From("corr-1"));
-
-        changed.Should().BeFalse();
+        loaded.Aggregate.ArtistRequested(ArtistId.From("artist_1"), Clock, CorrelationId.From("corr-1"));
+        
         repository.GetStoredEvents(knownItem).Should().ContainSingle();
     }
 

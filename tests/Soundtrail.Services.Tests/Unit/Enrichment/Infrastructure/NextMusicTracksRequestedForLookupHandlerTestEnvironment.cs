@@ -1,7 +1,7 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup;
-using Soundtrail.Services.Enrichment.Orchestrator.Shared.Persistence;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -9,18 +9,13 @@ internal sealed class NextMusicTracksRequestedForLookupHandlerTestEnvironment
 {
     private static readonly DateTimeOffset DefaultNow = new(2026, 5, 31, 12, 0, 0, TimeSpan.Zero);
 
-    private readonly PotentialCatalogLookupWorkStoreFake store;
+    private readonly DiscoveryBacklogPlanningReadPortFake store;
     private readonly CommandBusFake commandBusFake;
 
-    private NextMusicTracksRequestedForLookupHandlerTestEnvironment(params PotentialCatalogLookupWork[] candidates)
+    private NextMusicTracksRequestedForLookupHandlerTestEnvironment(params DiscoveryBacklogCandidate[] candidates)
     {
-        this.store = new PotentialCatalogLookupWorkStoreFake();
-        foreach (var candidate in candidates)
-        {
-            this.store.Seed(candidate);
-        }
-
-        ActiveWorkStore = new ActiveLookupWorkStoreFake();
+        this.store = new DiscoveryBacklogPlanningReadPortFake();
+        this.store.Seed(candidates);
         commandBusFake = new CommandBusFake();
         Scheduler = new NextMusicTracksRequestedForLookupHandler(this.store, commandBusFake);
         Now = DefaultNow;
@@ -28,50 +23,27 @@ internal sealed class NextMusicTracksRequestedForLookupHandlerTestEnvironment
 
     public NextMusicTracksRequestedForLookupHandler Scheduler { get; }
 
-    public ActiveLookupWorkStoreFake ActiveWorkStore { get; }
-
     public DateTimeOffset Now { get; }
 
     public CommandBusFake CommandBus => commandBusFake;
 
     public static NextMusicTracksRequestedForLookupHandlerTestEnvironment WithHighAndLowPriorityEligibleCandidates() =>
         new(
-            Candidates.PopularEligibleCandidate(),
-            Candidates.LowDemandEligibleCandidate());
-
-    public static NextMusicTracksRequestedForLookupHandlerTestEnvironment WithActiveWorkForPopularCandidate()
-    {
-        var env = new NextMusicTracksRequestedForLookupHandlerTestEnvironment(Candidates.PopularEligibleCandidate());
-        env.ActiveWorkStore.TryAcquireAsync(
-            CommandId.For("LookupTrackMetadata:mc_track_high"),
-            env.Now.AddMinutes(5),
-            CancellationToken.None).GetAwaiter().GetResult();
-        return env;
-    }
+            Candidate("rare popular song", "mc_track_high"),
+            Candidate("rare low demand song", "mc_track_low"));
 
     public static NextMusicTracksRequestedForLookupHandlerTestEnvironment WithMoreEligibleCandidatesThanTheBatchSize() =>
         new(
-            Candidates.PopularEligibleCandidate("mc_track_1"),
-            Candidates.ExistingCandidate(MusicCatalogId.From("mc_track_2"), requestCount: 2, highestTrustLevelSeen: 1),
-            Candidates.ExistingCandidate(MusicCatalogId.From("mc_track_3"), requestCount: 1, highestTrustLevelSeen: 0));
-
-    public static NextMusicTracksRequestedForLookupHandlerTestEnvironment WithMediumRiskCandidate() =>
-        new(Candidates.MediumRiskCandidate());
-
-    public static NextMusicTracksRequestedForLookupHandlerTestEnvironment WithHighTrustLowDemandCandidate() =>
-        new(Candidates.HighTrustLowDemandCandidate());
-
-    public static NextMusicTracksRequestedForLookupHandlerTestEnvironment WithHighRiskCandidate() =>
-        new(Candidates.HighRiskCandidate());
+            Candidate("candidate one", "mc_track_1"),
+            Candidate("candidate two", "mc_track_2"),
+            Candidate("candidate three", "mc_track_3"));
 
     public static NextMusicTracksRequestedForLookupHandlerTestEnvironment WithNotYetEligibleCandidate() =>
-        new(Candidates.NotYetEligibleCandidate(MusicCatalogId.From("mc_track_deferred")));
-
-    public static NextMusicTracksRequestedForLookupHandlerTestEnvironment WithResolvedCandidate() =>
-        new(Candidates.ResolvedCandidate());
-
-    public static NextMusicTracksRequestedForLookupHandlerTestEnvironment WithScheduledCandidate() =>
-        new(Candidates.EligibleCandidate());
+        new(new DiscoveryBacklogCandidate(
+            MusicSearchCriteria.ByQuery("not yet eligible", SearchTypesFilter.Tracks),
+            MusicCatalogId.From("mc_track_deferred"),
+            DefaultNow,
+            DefaultNow.AddMinutes(5)));
 
     public Task RunSweep(int take = 10) => Scheduler.Handle(
         new RunDiscoveryBacklogSchedulingCommand(
@@ -80,4 +52,11 @@ internal sealed class NextMusicTracksRequestedForLookupHandlerTestEnvironment
             CorrelationId.New(),
             take),
         CancellationToken.None);
+
+    private static DiscoveryBacklogCandidate Candidate(string query, string musicCatalogId) =>
+        new(
+            MusicSearchCriteria.ByQuery(query, SearchTypesFilter.Tracks),
+            MusicCatalogId.From(musicCatalogId),
+            DefaultNow,
+            null);
 }

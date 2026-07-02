@@ -10,7 +10,6 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddOnMusicCatalogChangedFeature(this IServiceCollection services)
     {
         services.TryAddScoped<MusicCatalogChangedHandler>();
-        services.TryAddSingleton<RavenMusicTrackCatalogProjectionMapper>();
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<IHostedService, MusicCatalogChangedSubscriptionHostedService>());
 

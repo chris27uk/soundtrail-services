@@ -2,30 +2,24 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnAssessMusicTrack;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Prioritisation;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
-using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
 internal sealed class AssessMusicTrackHandlerTestEnvironment
 {
     private readonly CatalogSearchDiscoveryRepositoryFake discoveryRepository;
-    private readonly PotentialCatalogLookupWorkStoreFake workStore;
-    private readonly CatalogSearchTrackingStoreFake trackingStore;
     private readonly LocalMusicTrackSearchFake localSearch;
 
     private AssessMusicTrackHandlerTestEnvironment()
     {
         discoveryRepository = new CatalogSearchDiscoveryRepositoryFake();
-        workStore = new PotentialCatalogLookupWorkStoreFake();
-        trackingStore = new CatalogSearchTrackingStoreFake();
         localSearch = new LocalMusicTrackSearchFake();
         Handler = new AssessMusicTrackHandler(
-            workStore,
-            trackingStore,
             discoveryRepository,
             new DiscoveryPriorityPolicy(),
             localSearch);
@@ -33,24 +27,51 @@ internal sealed class AssessMusicTrackHandlerTestEnvironment
 
     public AssessMusicTrackHandler Handler { get; }
 
-    public void SeedSummary(CatalogDiscoveryWorkSummary summary) => workStore.Seed(summary);
-
     public static AssessMusicTrackHandlerTestEnvironment Create() => new();
-
-    public void SeedTracking(MusicSearchCriteria searchCriteria, MusicCatalogId musicCatalogId) =>
-        trackingStore.Seed(new CatalogSearchTracking(searchCriteria, musicCatalogId, Clock));
 
     public void SeedDiscoveryRequested(MusicSearchCriteria searchCriteria)
     {
         discoveryRepository.Seed(
             searchCriteria,
-            new Soundtrail.Domain.Discovery.Events.DiscoveryRequested(
+            new DiscoveryRequested(
                 searchCriteria,
                 null,
                 1,
                 10,
                 Clock,
                 CorrelationId.From("corr-1")));
+    }
+
+    public void SeedCandidateIdentified(
+        MusicSearchCriteria searchCriteria,
+        MusicCatalogId musicCatalogId,
+        int trustLevel = 1,
+        int riskScore = 10)
+    {
+        discoveryRepository.Seed(
+            searchCriteria,
+            new CatalogCandidateIdentified(
+                searchCriteria,
+                musicCatalogId,
+                trustLevel,
+                riskScore,
+                Clock,
+                CorrelationId.From("corr-1")));
+    }
+
+    public void SeedDiscoveryDeferred(
+        MusicSearchCriteria searchCriteria,
+        DateTimeOffset? earliestExpectedCompletionAt = null)
+    {
+        discoveryRepository.Seed(
+            searchCriteria,
+            new DiscoveryDeferred(
+                searchCriteria,
+                true,
+                60,
+                earliestExpectedCompletionAt ?? Clock.AddSeconds(60),
+                "Planner deferred lookup",
+                Clock));
     }
 
     public void SeedPlayableTrack(MusicCatalogId musicCatalogId)
@@ -86,13 +107,14 @@ internal sealed class AssessMusicTrackHandlerTestEnvironment
             trustLevel,
             riskScore);
 
-    public AssessMusicTrackCommand BacklogCommand(MusicCatalogId musicCatalogId) =>
+    public AssessMusicTrackCommand BacklogCommand(MusicSearchCriteria searchCriteria, MusicCatalogId musicCatalogId) =>
         new(
             AssessMusicTrackCommand.Id(musicCatalogId, Clock),
             CorrelationId.From("corr-1"),
             Clock,
             LookupPriorityBand.Low,
-            musicCatalogId);
+            musicCatalogId,
+            searchCriteria);
 
     private static readonly DateTimeOffset Clock = new(2026, 6, 28, 12, 0, 0, TimeSpan.Zero);
 }

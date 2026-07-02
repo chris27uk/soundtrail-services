@@ -19,6 +19,9 @@ public sealed class SearchDiscoveryHistory
     private DateTimeOffset? earliestExpectedCompletionAt;
     private string? reason;
     private bool hasRequested;
+    private int trustLevel;
+    private int riskScore;
+    private MusicCatalogId? latestCandidateMusicCatalogId;
 
     private SearchDiscoveryHistory(IEnumerable<IDomainEvent> events)
     {
@@ -102,6 +105,64 @@ public sealed class SearchDiscoveryHistory
         return true;
     }
 
+    public bool Assess(
+        IDiscoveryAssessmentPolicy policy,
+        DateTimeOffset now,
+        bool localTrackIsPlayable,
+        MusicCatalogId musicCatalogId)
+    {
+        if (!hasRequested || latestCandidateMusicCatalogId is null || latestCandidateMusicCatalogId != musicCatalogId)
+        {
+            return false;
+        }
+
+        var currentStatus = status ?? CatalogSearchLifecycleStatus.Requested;
+        if (currentStatus is CatalogSearchLifecycleStatus.Completed
+            or CatalogSearchLifecycleStatus.InProgress
+            or CatalogSearchLifecycleStatus.Failed
+            or CatalogSearchLifecycleStatus.Rejected)
+        {
+            return false;
+        }
+
+        var assessment = policy.Assess(
+            new DiscoveryAssessmentSummary(
+                musicCatalogId,
+                trustLevel,
+                riskScore,
+                currentStatus,
+                earliestExpectedCompletionAt),
+            now);
+
+        if (assessment.Action == DiscoveryAssessmentAction.Schedule && localTrackIsPlayable)
+        {
+            assessment = new DiscoveryAssessment(
+                DiscoveryAssessmentAction.Defer,
+                Priority: null,
+                EstimatedRetryAfterSeconds: 60,
+                EarliestExpectedCompletionAt: now.AddSeconds(60),
+                Reason: "Planner deferred lookup");
+        }
+
+        return assessment.Action switch
+        {
+            DiscoveryAssessmentAction.Schedule when assessment.Priority is not null =>
+                Plan(
+                    assessment.Priority.Value,
+                    assessment.EstimatedRetryAfterSeconds,
+                    assessment.EarliestExpectedCompletionAt,
+                    assessment.Reason,
+                    now),
+            DiscoveryAssessmentAction.Defer or DiscoveryAssessmentAction.Ignore =>
+                DeferInternal(
+                    assessment.EstimatedRetryAfterSeconds,
+                    assessment.EarliestExpectedCompletionAt,
+                    assessment.Reason,
+                    now),
+            _ => false
+        };
+    }
+
     public bool Plan(
         LookupPriorityBand priority,
         int? estimatedRetryAfterSeconds,
@@ -135,7 +196,20 @@ public sealed class SearchDiscoveryHistory
         return true;
     }
 
-    public bool Defer(
+    public void Defer(
+        int? estimatedRetryAfterSeconds,
+        DateTimeOffset? earliestExpectedCompletionAt,
+        string reason,
+        DateTimeOffset deferredAt)
+    {
+        DeferInternal(
+            estimatedRetryAfterSeconds,
+            earliestExpectedCompletionAt,
+            reason,
+            deferredAt);
+    }
+
+    private bool DeferInternal(
         int? estimatedRetryAfterSeconds,
         DateTimeOffset? earliestExpectedCompletionAt,
         string reason,
@@ -270,7 +344,7 @@ public sealed class SearchDiscoveryHistory
         DateTimeOffset completedAt) =>
         Complete(priority, "Discovery completed", completedAt);
 
-    public bool LookupDeferred(
+    public void LookupDeferred(
         int? estimatedRetryAfterSeconds,
         DateTimeOffset? earliestExpectedCompletionAt,
         string reason,
@@ -344,6 +418,8 @@ public sealed class SearchDiscoveryHistory
     {
         criteria = @event.SearchCriteria;
         status = CatalogSearchLifecycleStatus.Requested;
+        trustLevel = @event.TrustLevel;
+        riskScore = @event.RiskScore;
         priority = null;
         willBeLookedUp = true;
         estimatedRetryAfterSeconds = null;
@@ -427,6 +503,9 @@ public sealed class SearchDiscoveryHistory
     private void On(CatalogCandidateIdentified @event)
     {
         criteria = @event.SearchCriteria;
+        latestCandidateMusicCatalogId = @event.MusicCatalogId;
+        trustLevel = Math.Max(trustLevel, @event.TrustLevel);
+        riskScore = Math.Max(riskScore, @event.RiskScore);
         recordedCandidateKeys.Add(ToCandidateKey(@event.MusicCatalogId, @event.CorrelationId));
     }
 

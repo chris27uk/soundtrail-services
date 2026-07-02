@@ -9,10 +9,12 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddOnMusicCatalogLookupHistoryChangedFeature(this IServiceCollection services)
     {
-        services.TryAddScoped<MusicCatalogLookupHistoryChangedHandler>();
+        services.TryAddScoped<ApplyMusicCatalogLookupHistoryChangedToKnownTrackDiscoveryHandler>();
+        services.TryAddScoped<ApplyMusicCatalogLookupHistoryChangedToSearchDiscoveryHandler>();
         services.TryAddScoped<ApplyMusicCatalogLookupHistoryChangedToCatalogHandler>();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, MusicCatalogLookupHistoryToCatalogSubscriptionHostedService>());
-        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, MusicCatalogLookupHistoryToDiscoverySubscriptionHostedService>());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, MusicCatalogLookupHistoryToKnownTrackDiscoverySubscriptionHostedService>());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, MusicCatalogLookupHistoryToSearchDiscoverySubscriptionHostedService>());
         return services;
     }
 }

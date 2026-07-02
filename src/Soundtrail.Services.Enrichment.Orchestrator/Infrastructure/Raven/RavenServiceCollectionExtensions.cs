@@ -84,6 +84,7 @@ public static class RavenServiceCollectionExtensions
                 ArtistCatalogEventStreamDefinition.Create()));
         services.TryAddScoped<ICatalogDiscoveryWorkSummaryStore, RavenCatalogDiscoveryWorkSummaryStore>();
         services.TryAddScoped<ICatalogDiscoveryWorkPlanningReadPort>(sp => sp.GetRequiredService<RavenCatalogDiscoveryWorkSummaryStore>());
+        services.TryAddScoped<IDiscoveryBacklogPlanningReadPort, RavenDiscoveryBacklogPlanningReadPort>();
         services.TryAddScoped<IPotentialCatalogLookupWorkStore, RavenPotentialCatalogLookupWorkStore>();
         services.TryAddScoped<ICatalogSearchTrackingStore, RavenCatalogSearchTrackingStore>();
         services.TryAddScoped<IActiveLookupWorkStore, RavenActiveLookupWorkStore>();

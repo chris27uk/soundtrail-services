@@ -1,4 +1,5 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Catalog.Projection;
 
@@ -9,7 +10,9 @@ public sealed record MusicCatalogChangedCommand(ArtistId ArtistId, IReadOnlyList
     public MusicCatalogChangedCommand(
         MusicCatalogId musicCatalogId,
         IReadOnlyList<VersionedMusicTrackEvent> events)
-        : this(ResolveArtistId(musicCatalogId, events), events.Select(x => new VersionedCatalogEvent(x.Version, x.Event)).ToArray())
+        : this(
+            ResolveArtistId(musicCatalogId, events),
+            events.Select(x => new VersionedCatalogEvent(x.Version, EnrichLegacyTrackEvent(musicCatalogId, x.Event))).ToArray())
     {
     }
 
@@ -53,4 +56,20 @@ public sealed record MusicCatalogChangedCommand(ArtistId ArtistId, IReadOnlyList
 
         return ArtistId.From($"artist_{MusicIdentityText.NormalizeCompact(musicCatalogId.Value)}");
     }
+
+    private static IDomainEvent EnrichLegacyTrackEvent(
+        MusicCatalogId musicCatalogId,
+        IMusicTrackEvent @event) =>
+        @event switch
+        {
+            TrackDiscovered discovered when discovered.MusicCatalogId is null =>
+                discovered with { MusicCatalogId = musicCatalogId },
+            ProviderReferenceDiscovered discovered when discovered.MusicCatalogId is null =>
+                discovered with { MusicCatalogId = musicCatalogId },
+            ProviderReferenceLookupFailed failed when failed.MusicCatalogId is null =>
+                failed with { MusicCatalogId = musicCatalogId },
+            MetadataCorrected corrected when corrected.MusicCatalogId is null =>
+                corrected with { MusicCatalogId = musicCatalogId },
+            _ => @event
+        };
 }

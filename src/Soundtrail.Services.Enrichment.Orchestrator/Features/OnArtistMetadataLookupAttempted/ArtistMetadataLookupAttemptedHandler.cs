@@ -17,16 +17,9 @@ public sealed class ArtistMetadataLookupAttemptedHandler(
             KnownCatalogItem.ForArtist(attempted.ArtistId),
             cancellationToken);
 
-        var changed = attempted.ArtistMetadataFetched is not null
-            ? loaded.Aggregate.ArtistLookupCompleted(
-                attempted.ArtistId,
-                attempted.Priority,
-                attempted.SourceProvider,
-                "Discovery completed",
-                attempted.CreatedAt,
-                attempted.ArtistMetadataFetched.Metadata.ArtistName,
-                attempted.ArtistMetadataFetched.Metadata.SourceArtistId)
-            : attempted.Outcome.Status switch
+        if (attempted.ArtistMetadataFetched is null)
+        {
+            _ = attempted.Outcome.Status switch
             {
                 MusicCatalogLookupOutcomeStatus.Deferred => loaded.Aggregate.ArtistLookupDeferred(
                     attempted.ArtistId,
@@ -46,10 +39,17 @@ public sealed class ArtistMetadataLookupAttemptedHandler(
                     "Lookup started",
                     attempted.CreatedAt)
             };
-
-        if (!changed)
+        }
+        else
         {
-            return;
+            _ = loaded.Aggregate.ArtistLookupCompleted(
+                attempted.ArtistId,
+                attempted.Priority,
+                attempted.SourceProvider,
+                "Discovery completed",
+                attempted.CreatedAt,
+                attempted.ArtistMetadataFetched.Metadata.ArtistName,
+                attempted.ArtistMetadataFetched.Metadata.SourceArtistId);
         }
 
         await loaded.Aggregate.SaveAsync(discoveryRepository, loaded.Stream, cancellationToken);

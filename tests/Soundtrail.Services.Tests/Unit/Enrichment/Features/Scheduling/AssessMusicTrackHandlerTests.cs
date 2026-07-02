@@ -14,6 +14,7 @@ public sealed class AssessMusicTrackHandlerTests
         var env = AssessMusicTrackHandlerTestEnvironment.Create();
         var searchCriteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
         env.SeedDiscoveryRequested(searchCriteria);
+        env.SeedCandidateIdentified(searchCriteria, MusicCatalogId.From("mc_track_1"));
 
         await env.Handler.Handle(
             env.ImmediateCommand(searchCriteria, MusicCatalogId.From("mc_track_1"), trustLevel: 1, riskScore: 10),
@@ -28,6 +29,7 @@ public sealed class AssessMusicTrackHandlerTests
         var env = AssessMusicTrackHandlerTestEnvironment.Create();
         var searchCriteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
         env.SeedDiscoveryRequested(searchCriteria);
+        env.SeedCandidateIdentified(searchCriteria, MusicCatalogId.From("mc_track_1"), riskScore: 60);
 
         await env.Handler.Handle(
             env.ImmediateCommand(searchCriteria, MusicCatalogId.From("mc_track_1"), trustLevel: 1, riskScore: 60),
@@ -43,6 +45,7 @@ public sealed class AssessMusicTrackHandlerTests
         var searchCriteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
         env.SeedDiscoveryRequested(searchCriteria);
+        env.SeedCandidateIdentified(searchCriteria, musicCatalogId);
         env.SeedPlayableTrack(musicCatalogId);
 
         await env.Handler.Handle(
@@ -53,25 +56,17 @@ public sealed class AssessMusicTrackHandlerTests
     }
 
     [Fact]
-    public async Task Given_A_Backlog_Candidate_Summary_When_Assessed_Then_The_Tracked_Discovery_Is_Planned()
+    public async Task Given_A_Deferred_Discovery_Candidate_When_Assessed_From_Backlog_Then_The_Discovery_Is_Planned()
     {
         var env = AssessMusicTrackHandlerTestEnvironment.Create();
         var searchCriteria = MusicSearchCriteria.ByQuery("rare unknown song", SearchTypesFilter.Tracks);
         var musicCatalogId = MusicCatalogId.From("mc_track_1");
         env.SeedDiscoveryRequested(searchCriteria);
-        env.SeedTracking(searchCriteria, musicCatalogId);
-        env.SeedSummary(new Soundtrail.Domain.Discovery.CatalogDiscoveryWorkSummary(
-            musicCatalogId,
-            RequestCount: 2,
-            HighestTrustLevelSeen: 2,
-            RiskScore: 10,
-            Status: Soundtrail.Domain.Discovery.CatalogDiscoveryWorkStatus.Pending,
-            NextEligibleAt: null,
-            Priority: LookupPriorityBand.High,
-            Reason: "Planner queued lookup"));
+        env.SeedCandidateIdentified(searchCriteria, musicCatalogId, trustLevel: 2, riskScore: 10);
+        env.SeedDiscoveryDeferred(searchCriteria, env.ImmediateCommand(searchCriteria, musicCatalogId).CreatedAt.AddSeconds(-1));
 
         await env.Handler.Handle(
-            env.BacklogCommand(musicCatalogId),
+            env.BacklogCommand(searchCriteria, musicCatalogId),
             CancellationToken.None);
 
         env.StoredEvents(searchCriteria).Last().Should().BeOfType<DiscoveryPlanned>();

@@ -12,16 +12,11 @@ internal sealed class CatalogCandidateIdentifiedHandlerTestEnvironment
 {
     private CatalogCandidateIdentifiedHandlerTestEnvironment()
     {
-        WorkRepository = new CatalogDiscoveryWorkRepositoryFake();
         Bus = new CommandBusFake();
-        Handler = new CatalogCandidateIdentifiedHandler(
-            WorkRepository,
-            Bus);
+        DispatchAssessmentHandler = new DispatchAssessmentForCatalogCandidateIdentifiedHandler(Bus);
     }
 
-    public CatalogCandidateIdentifiedHandler Handler { get; }
-
-    public CatalogDiscoveryWorkRepositoryFake WorkRepository { get; }
+    public DispatchAssessmentForCatalogCandidateIdentifiedHandler DispatchAssessmentHandler { get; }
 
     public CommandBusFake Bus { get; }
 

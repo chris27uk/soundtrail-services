@@ -1,6 +1,5 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions.EventSourcing;
-using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Discovery.Events;
 
 namespace Soundtrail.Domain.Discovery;
@@ -15,6 +14,8 @@ public sealed class CatalogDiscoveryWork
     private int riskScore;
     private CatalogDiscoveryWorkStatus status;
     private DateTimeOffset? nextEligibleAt;
+    private LookupPriorityBand? priority;
+    private string? reason;
     private CatalogDiscoveryWork(
         MusicCatalogId musicCatalogId,
         IEnumerable<IDomainEvent> events)
@@ -37,15 +38,7 @@ public sealed class CatalogDiscoveryWork
         return (stream, new CatalogDiscoveryWork(musicCatalogId, stream.Events));
     }
 
-    public void RecordSearchRequested(SearchCatalogRequested requested)
-    {
-        RecordCandidateIdentified(
-            requested.TrustLevel,
-            requested.RiskScore,
-            requested.OccurredAt);
-    }
-
-    public void RecordCandidateIdentified(
+    public void CandidateIdentified(
         int trustLevel,
         int riskScore,
         DateTimeOffset requestedAt)
@@ -59,64 +52,58 @@ public sealed class CatalogDiscoveryWork
             isNew: true);
     }
 
-    public void Assess(
+    public CatalogDiscoveryAssessmentResult Assess(
         ICatalogDiscoveryWorkPlanningPolicy policy,
-        DateTimeOffset now)
+        DateTimeOffset now,
+        bool localTrackIsPlayable,
+        int? trustLevel = null,
+        int? riskScore = null)
     {
-        var assessment = policy.Assess(
-            new CatalogDiscoveryWorkSummary(
-                RequireMusicCatalogId(),
-                requestCount,
-                highestTrustLevelSeen,
-                riskScore,
-                status,
-                nextEligibleAt,
-                Priority: null,
-                Reason: null),
-            now);
-
-        switch (assessment.Action)
+        if (trustLevel is not null && riskScore is not null)
         {
-            case CatalogDiscoveryWorkAction.Schedule:
-                Apply(
-                    new CatalogDiscoveryWorkScheduled(
-                        RequireMusicCatalogId(),
-                        assessment.Priority ?? throw new InvalidOperationException("Scheduled assessment must have a priority."),
-                        now,
-                        assessment.Reason,
-                        now),
-                    isNew: true);
-                break;
-            case CatalogDiscoveryWorkAction.Defer:
-                Apply(
-                    new CatalogDiscoveryWorkDeferred(
-                        RequireMusicCatalogId(),
-                        assessment.EarliestExpectedCompletionAt ?? now.AddSeconds(60),
-                        assessment.Reason,
-                        now),
-                    isNew: true);
-                break;
-            case CatalogDiscoveryWorkAction.Ignore:
-                Apply(
-                    new CatalogDiscoveryWorkIgnored(
-                        RequireMusicCatalogId(),
-                        assessment.EarliestExpectedCompletionAt,
-                        assessment.Reason,
-                        now),
-                    isNew: true);
-                break;
+            CandidateIdentified(trustLevel.Value, riskScore.Value, now);
         }
+
+        if (requestCount == 0)
+        {
+            return CatalogDiscoveryAssessmentResult.Noop();
+        }
+
+        var assessment = policy.Assess(ToSummary(), now);
+        if (assessment.Action == CatalogDiscoveryWorkAction.Schedule && localTrackIsPlayable)
+        {
+            assessment = new CatalogDiscoveryWorkAssessment(
+                CatalogDiscoveryWorkAction.Defer,
+                Priority: null,
+                EstimatedRetryAfterSeconds: 60,
+                EarliestExpectedCompletionAt: now.AddSeconds(60),
+                Reason: "Planner deferred lookup");
+        }
+
+        var changed = assessment.Action switch
+        {
+            CatalogDiscoveryWorkAction.Schedule => Schedule(assessment, now),
+            CatalogDiscoveryWorkAction.Defer => Defer(assessment, now),
+            CatalogDiscoveryWorkAction.Ignore => Ignore(assessment, now),
+            _ => false
+        };
+
+        return new CatalogDiscoveryAssessmentResult(
+            assessment.Action,
+            assessment.Priority,
+            assessment.EstimatedRetryAfterSeconds,
+            assessment.EarliestExpectedCompletionAt,
+            assessment.Reason);
     }
 
-    public async Task<bool> SaveAsync(
-        IEventStreamRepository<MusicCatalogId, IDomainEvent> repository,
+    public async Task SaveAsync(IEventStreamRepository<MusicCatalogId, IDomainEvent> repository,
         LoadedEventStream<MusicCatalogId, IDomainEvent> stream,
         OperationId? operationId,
         CancellationToken cancellationToken)
     {
         if (uncommittedEvents.Count == 0)
         {
-            return true;
+            return;
         }
 
         var saved = (await repository.AppendAsync(
@@ -129,8 +116,6 @@ public sealed class CatalogDiscoveryWork
         {
             uncommittedEvents.Clear();
         }
-
-        return saved;
     }
 
     private void Apply(IDomainEvent @event, bool isNew)
@@ -145,6 +130,17 @@ public sealed class CatalogDiscoveryWork
 
     private MusicCatalogId RequireMusicCatalogId() =>
         musicCatalogId ?? throw new InvalidOperationException("Catalog discovery work music catalog id has not been established.");
+
+    private CatalogDiscoveryWorkSummary ToSummary() =>
+        new(
+            RequireMusicCatalogId(),
+            requestCount,
+            highestTrustLevelSeen,
+            riskScore,
+            status,
+            nextEligibleAt,
+            priority,
+            reason);
 
     private EventHandlers<CatalogDiscoveryWork> CreateHandlers()
     {
@@ -164,9 +160,9 @@ public sealed class CatalogDiscoveryWork
         highestTrustLevelSeen = Math.Max(highestTrustLevelSeen, @event.TrustLevel);
         riskScore = Math.Max(riskScore, @event.RiskScore);
         status = nextStatus;
-        nextEligibleAt = nextStatus == CatalogDiscoveryWorkStatus.Ignored
-            ? nextEligibleAt
-            : nextEligibleAt;
+        nextEligibleAt = null;
+        priority = null;
+        reason = null;
     }
 
     private void On(CatalogDiscoveryWorkDeferred @event)
@@ -174,6 +170,8 @@ public sealed class CatalogDiscoveryWork
         musicCatalogId = @event.MusicCatalogId;
         status = CatalogDiscoveryWorkStatus.Pending;
         nextEligibleAt = @event.NextEligibleAt;
+        priority = null;
+        reason = @event.Reason;
     }
 
     private void On(CatalogDiscoveryWorkIgnored @event)
@@ -181,6 +179,8 @@ public sealed class CatalogDiscoveryWork
         musicCatalogId = @event.MusicCatalogId;
         status = CatalogDiscoveryWorkStatus.Ignored;
         nextEligibleAt = @event.NextEligibleAt;
+        priority = null;
+        reason = @event.Reason;
     }
 
     private void On(CatalogDiscoveryWorkScheduled @event)
@@ -188,10 +188,83 @@ public sealed class CatalogDiscoveryWork
         musicCatalogId = @event.MusicCatalogId;
         status = CatalogDiscoveryWorkStatus.Pending;
         nextEligibleAt = null;
+        priority = @event.Priority;
+        reason = @event.Reason;
     }
 
     private static CatalogDiscoveryWorkStatus ToStatus(int riskScore) =>
         riskScore >= 90
             ? CatalogDiscoveryWorkStatus.Ignored
             : CatalogDiscoveryWorkStatus.Pending;
+
+    private bool Schedule(CatalogDiscoveryWorkAssessment assessment, DateTimeOffset now)
+    {
+        var scheduledPriority = assessment.Priority
+                                ?? throw new InvalidOperationException("Scheduled assessment must have a priority.");
+        var scheduledReason = assessment.Reason;
+
+        if (status == CatalogDiscoveryWorkStatus.Pending
+            && nextEligibleAt is null
+            && priority == scheduledPriority
+            && string.Equals(reason, scheduledReason, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        Apply(
+            new CatalogDiscoveryWorkScheduled(
+                RequireMusicCatalogId(),
+                scheduledPriority,
+                now,
+                scheduledReason,
+                now),
+            isNew: true);
+        return true;
+    }
+
+    private bool Defer(CatalogDiscoveryWorkAssessment assessment, DateTimeOffset now)
+    {
+        var deferredUntil = assessment.EarliestExpectedCompletionAt ?? now.AddSeconds(60);
+        var deferredReason = assessment.Reason;
+
+        if (status == CatalogDiscoveryWorkStatus.Pending
+            && nextEligibleAt == deferredUntil
+            && priority is null
+            && string.Equals(reason, deferredReason, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        Apply(
+            new CatalogDiscoveryWorkDeferred(
+                RequireMusicCatalogId(),
+                deferredUntil,
+                deferredReason,
+                now),
+            isNew: true);
+        return true;
+    }
+
+    private bool Ignore(CatalogDiscoveryWorkAssessment assessment, DateTimeOffset now)
+    {
+        var ignoredUntil = assessment.EarliestExpectedCompletionAt;
+        var ignoredReason = assessment.Reason;
+
+        if (status == CatalogDiscoveryWorkStatus.Ignored
+            && nextEligibleAt == ignoredUntil
+            && priority is null
+            && string.Equals(reason, ignoredReason, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        Apply(
+            new CatalogDiscoveryWorkIgnored(
+                RequireMusicCatalogId(),
+                ignoredUntil,
+                ignoredReason,
+                now),
+            isNew: true);
+        return true;
+    }
 }

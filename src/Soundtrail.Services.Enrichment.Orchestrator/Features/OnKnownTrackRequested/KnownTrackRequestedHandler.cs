@@ -17,14 +17,11 @@ public sealed class KnownTrackRequestedHandler(IEventStreamRepository<DiscoveryQ
             KnownCatalogItem.ForTrack(request.TrackId),
             cancellationToken);
 
-        if (!loaded.Aggregate.TrackRequested(
-                request.TrackId,
-                request.Playback,
-                request.OccurredAt,
-                request.CorrelationId))
-        {
-            return;
-        }
+        loaded.Aggregate.TrackRequested(
+            request.TrackId,
+            request.Playback,
+            request.OccurredAt,
+            request.CorrelationId);
 
         await loaded.Aggregate.SaveAsync(discoveryRepository, loaded.Stream, cancellationToken);
     }

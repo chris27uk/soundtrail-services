@@ -100,7 +100,9 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
         await new ApplyMusicCatalogLookupHistoryChangedToCatalogHandler(
             historyRepository,
             TestEventStreamRepositories.CreateArtistCatalog(session)).Handle(command, CancellationToken.None);
-        await new MusicCatalogLookupHistoryChangedHandler(
+        await new ApplyMusicCatalogLookupHistoryChangedToKnownTrackDiscoveryHandler(
+            TestEventStreamRepositories.CreateDiscoveryQuery(session)).Handle(command, CancellationToken.None);
+        await new ApplyMusicCatalogLookupHistoryChangedToSearchDiscoveryHandler(
             new RavenCatalogSearchTrackingStore(session.Advanced.DocumentStore, session),
             TestEventStreamRepositories.CreateDiscoveryQuery(session)).Handle(command, CancellationToken.None);
     }

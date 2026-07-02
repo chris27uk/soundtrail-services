@@ -27,7 +27,7 @@ public sealed class ReplayCatalogProjectionResponsesTests
         track.AlbumId.Should().Be("album_hot_fuss");
 
         var checkpointVersion = await env.LoadCheckpointVersionAsync(musicCatalogId);
-        checkpointVersion.Should().Be(3);
+        checkpointVersion.Should().Be(4);
     }
 
     [Fact]

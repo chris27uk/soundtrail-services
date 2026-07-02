@@ -1,17 +1,14 @@
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogCandidateIdentified.Support;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogCandidateIdentified;
 
-public sealed class CatalogCandidateIdentifiedHandler(
-    IEventStreamRepository<MusicCatalogId, IDomainEvent> workRepository,
-    ICommandBus commandBus)
+public sealed class ApplyCatalogCandidateIdentifiedToWorkHandler(
+    IEventStreamRepository<MusicCatalogId, IDomainEvent> workRepository)
 {
     public async Task Handle(
         CatalogCandidateIdentifiedCommand command,
@@ -27,33 +24,16 @@ public sealed class CatalogCandidateIdentifiedHandler(
                 workRepository,
                 @event.MusicCatalogId,
                 cancellationToken);
-            loadedWork.Aggregate.RecordCandidateIdentified(
+            loadedWork.Aggregate.CandidateIdentified(
                 @event.TrustLevel,
                 @event.RiskScore,
                 @event.StartedAt);
 
-            var saved = await loadedWork.Aggregate.SaveAsync(
+            await loadedWork.Aggregate.SaveAsync(
                 workRepository,
                 loadedWork.Stream,
                 operationId,
                 cancellationToken);
-            if (!saved)
-            {
-                continue;
-            }
-
-            await commandBus.SendAsync(
-                new AssessMusicTrackCommand(
-                    AssessMusicTrackCommand.Id(@event.MusicCatalogId, @event.StartedAt),
-                    @event.CorrelationId,
-                    @event.StartedAt,
-                    LookupPriorityBand.Low,
-                    @event.MusicCatalogId,
-                    @event.SearchCriteria,
-                    @event.TrustLevel,
-                    @event.RiskScore),
-                cancellationToken);
         }
-
     }
 }

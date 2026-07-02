@@ -3,23 +3,23 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Subscriptions;
+using Soundtrail.Adapters.Registry;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogCandidateIdentified.Support;
-using Soundtrail.Adapters.Registry;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogCandidateIdentified.Adapters;
 
-public sealed class CatalogCandidateIdentifiedSubscriptionHostedService(
+public sealed class CatalogCandidateIdentifiedToAssessmentSubscriptionHostedService(
     IDocumentStore documentStore,
     IServiceScopeFactory scopeFactory,
     ITypeRegistry registry,
-    ILogger<CatalogCandidateIdentifiedSubscriptionHostedService> logger) : BackgroundService
+    ILogger<CatalogCandidateIdentifiedToAssessmentSubscriptionHostedService> logger) : BackgroundService
 {
-    private const string SubscriptionName = "catalog-search-candidate-recorded-projections";
+    private const string SubscriptionName = "catalog-candidate-identified-to-assessment";
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -43,7 +43,7 @@ public sealed class CatalogCandidateIdentifiedSubscriptionHostedService(
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Catalog candidate identified subscription failed.");
+                logger.LogError(ex, "Catalog candidate identified to assessment subscription failed.");
                 await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
             }
         }
@@ -54,10 +54,7 @@ public sealed class CatalogCandidateIdentifiedSubscriptionHostedService(
         try
         {
             await documentStore.Subscriptions.CreateAsync<RavenStoredEventRecord>(
-                new SubscriptionCreationOptions
-                {
-                    Name = SubscriptionName
-                },
+                new SubscriptionCreationOptions { Name = SubscriptionName },
                 token: cancellationToken);
         }
         catch (Exception)
@@ -70,7 +67,7 @@ public sealed class CatalogCandidateIdentifiedSubscriptionHostedService(
         CancellationToken cancellationToken)
     {
         await using var scope = scopeFactory.CreateAsyncScope();
-        var handler = scope.ServiceProvider.GetRequiredService<CatalogCandidateIdentifiedHandler>();
+        var handler = scope.ServiceProvider.GetRequiredService<DispatchAssessmentForCatalogCandidateIdentifiedHandler>();
 
         foreach (var stream in batch.Items
                      .Select(item => item.Result)
