@@ -13,7 +13,7 @@ public sealed class SearchOrSeekHistory
     private readonly EventHandlers<SearchOrSeekHistory> eventHandlers;
     private readonly List<IDomainEvent> uncommittedEvents = [];
     private MusicSearchCriteria? criteria;
-    private KnownCatalogItem? knownItem;
+    private KnownCatalogId? knownItem;
     private CatalogSearchLifecycleStatus? status;
     private LookupPriorityBand? priority;
     private bool willBeLookedUp;
@@ -50,12 +50,12 @@ public sealed class SearchOrSeekHistory
 
     public static async Task<(LoadedEventStream<DiscoveryQueryKey, IDomainEvent> Stream, SearchOrSeekHistory Aggregate)> LoadAsync(
         IEventStreamRepository<DiscoveryQueryKey, IDomainEvent> repository,
-        KnownCatalogItem knownItem,
+        KnownCatalogId knownId,
         CancellationToken cancellationToken)
     {
-        var stream = await repository.LoadAsync(DiscoveryQueryKey.For(knownItem), cancellationToken);
+        var stream = await repository.LoadAsync(DiscoveryQueryKey.For(knownId), cancellationToken);
         var aggregate = new SearchOrSeekHistory(stream.Events);
-        aggregate.knownItem ??= knownItem;
+        aggregate.knownItem ??= knownId;
         return (stream, aggregate);
     }
 
@@ -497,19 +497,19 @@ public sealed class SearchOrSeekHistory
 
     private void On(Events.KnownTrackRequested @event)
     {
-        knownItem ??= KnownCatalogItem.ForTrack(@event.TrackId);
+        knownItem ??= KnownCatalogId.ForTrack(@event.TrackId);
         hasKnownTrackRequested = true;
     }
 
     private void On(ArtistCatalogLookupRequested @event)
     {
-        knownItem ??= KnownCatalogItem.ForArtist(@event.ArtistId);
+        knownItem ??= KnownCatalogId.ForArtist(@event.ArtistId);
         hasArtistCatalogLookupRequested = true;
     }
 
     private void On(AlbumCatalogLookupRequested @event)
     {
-        knownItem ??= KnownCatalogItem.ForAlbum(
+        knownItem ??= KnownCatalogId.ForAlbum(
             @event.ArtistId ?? throw new InvalidOperationException("Album lookup requests must include an artist id."),
             @event.AlbumId);
         hasAlbumCatalogLookupRequested = true;

@@ -14,7 +14,7 @@ public sealed class NextMusicTracksRequestedForLookupHandlerTests
         await env.RunSweep();
 
         env.CommandBus.SentCommands.Should().HaveCount(2);
-        env.CommandBus.SentCommands.Should().OnlyContain(x => x is AssessMusicTrackCommand);
+        env.CommandBus.SentCommands.Should().OnlyContain(x => x is AssessMusicCatalogItemCommand);
     }
 
     [Fact]

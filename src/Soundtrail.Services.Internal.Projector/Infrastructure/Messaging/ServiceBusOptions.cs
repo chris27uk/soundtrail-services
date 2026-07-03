@@ -6,7 +6,7 @@ public sealed class ServiceBusOptions
 
     public string ConnectionString { get; init; } = string.Empty;
 
-    public string AssessMusicTrackQueueName { get; init; } = "assess-music-track";
+    public string AssessMusicCatalogItemQueueName { get; init; } = "assess-music-catalog-item";
 
     public string CatalogSearchAttemptsQueueName { get; init; } = "catalog-search-attempts";
 

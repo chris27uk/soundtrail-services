@@ -16,7 +16,7 @@ public sealed class KnownArtistRequestedHandler(
     {
         var loaded = await KnownItemDiscovery.LoadAsync(
             discoveryRepository,
-            KnownCatalogItem.ForArtist(request.ArtistId),
+            KnownCatalogId.ForArtist(request.ArtistId),
             cancellationToken);
 
         loaded.Aggregate.ArtistRequested(

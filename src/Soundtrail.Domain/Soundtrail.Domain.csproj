@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Dunet" Version="1.16.2" />
     <ProjectReference Include="..\Soundtrail.Contracts\Soundtrail.Contracts.csproj" />
   </ItemGroup>
 </Project>

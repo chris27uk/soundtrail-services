@@ -29,13 +29,13 @@ public readonly record struct DiscoveryQueryKey(string StableValue) : IValueType
                     _ => throw new InvalidOperationException("Known music catalog id must contain an artist id, album id or track id.")
                 }));
 
-    public static DiscoveryQueryKey For(KnownCatalogItem knownItem) =>
+    public static DiscoveryQueryKey For(KnownCatalogId knownId) =>
         new(
-            knownItem switch
+            knownId switch
             {
-                { ArtistId: not null, AlbumId: not null } => $"album:{knownItem.ArtistId.Value.Value}:{knownItem.AlbumId.Value.Value}",
-                { ArtistId: not null } => $"artist:{knownItem.ArtistId.Value.Value}",
-                { TrackId: not null } => $"track:{knownItem.TrackId.Value.Value}",
+                { ArtistId: not null, AlbumId: not null } => $"album:{knownId.ArtistId.Value.Value}:{knownId.AlbumId.Value.Value}",
+                { ArtistId: not null } => $"artist:{knownId.ArtistId.Value.Value}",
+                { TrackId: not null } => $"track:{knownId.TrackId.Value.Value}",
                 _ => throw new InvalidOperationException("Known catalog item must contain an artist id, album id or track id.")
             });
 
@@ -43,9 +43,9 @@ public readonly record struct DiscoveryQueryKey(string StableValue) : IValueType
 
     public static string StableValueFor(MusicSeekOrSearchCriteria criteria) => For(criteria).StableValue;
 
-    public static string StableValueFor(KnownCatalogItem knownItem) => For(knownItem).StableValue;
+    public static string StableValueFor(KnownCatalogId knownId) => For(knownId).StableValue;
 
-    public static KnownCatalogItem ToKnownCatalogItem(string stableValue)
+    public static KnownCatalogId ToKnownCatalogItem(string stableValue)
     {
         if (string.IsNullOrWhiteSpace(stableValue))
         {
@@ -55,11 +55,11 @@ public readonly record struct DiscoveryQueryKey(string StableValue) : IValueType
         var parts = stableValue.Split(':', StringSplitOptions.None);
         return parts[0] switch
         {
-            "artist" when parts.Length >= 2 => KnownCatalogItem.ForArtist(ArtistId.From(string.Join(':', parts.Skip(1)))),
-            "album" when parts.Length >= 3 => KnownCatalogItem.ForAlbum(
+            "artist" when parts.Length >= 2 => KnownCatalogId.ForArtist(ArtistId.From(string.Join(':', parts.Skip(1)))),
+            "album" when parts.Length >= 3 => KnownCatalogId.ForAlbum(
                 ArtistId.From(parts[1]),
                 AlbumId.From(string.Join(':', parts.Skip(2)))),
-            "track" when parts.Length >= 2 => KnownCatalogItem.ForTrack(TrackId.From(string.Join(':', parts.Skip(1)))),
+            "track" when parts.Length >= 2 => KnownCatalogId.ForTrack(TrackId.From(string.Join(':', parts.Skip(1)))),
             _ => throw new InvalidOperationException($"Unsupported known catalog item stable value '{stableValue}'.")
         };
     }

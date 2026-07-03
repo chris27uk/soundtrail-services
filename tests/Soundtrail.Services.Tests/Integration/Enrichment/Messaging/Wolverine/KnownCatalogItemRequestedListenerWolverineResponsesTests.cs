@@ -16,7 +16,7 @@ public sealed class KnownCatalogItemRequestedListenerWolverineResponsesTests
         await env.HandleArtistRequest();
 
         env.DiscoveryRepository
-            .GetStoredEvents(KnownCatalogItem.ForArtist(ArtistId.From("artist_1")))
+            .GetStoredEvents(KnownCatalogId.ForArtist(ArtistId.From("artist_1")))
             .Should()
             .ContainSingle()
             .Which.Should()
@@ -31,7 +31,7 @@ public sealed class KnownCatalogItemRequestedListenerWolverineResponsesTests
         await env.HandleAlbumRequest();
 
         env.DiscoveryRepository
-            .GetStoredEvents(KnownCatalogItem.ForAlbum(ArtistId.From("artist_1"), AlbumId.From("album_1")))
+            .GetStoredEvents(KnownCatalogId.ForAlbum(ArtistId.From("artist_1"), AlbumId.From("album_1")))
             .Should()
             .ContainSingle()
             .Which.Should()
@@ -46,7 +46,7 @@ public sealed class KnownCatalogItemRequestedListenerWolverineResponsesTests
         await env.HandleTrackRequest("track_1");
 
         env.DiscoveryRepository
-            .GetStoredEvents(KnownCatalogItem.ForTrack(TrackId.From("track_1")))
+            .GetStoredEvents(KnownCatalogId.ForTrack(TrackId.From("track_1")))
             .Should()
             .ContainSingle()
             .Which.Should()

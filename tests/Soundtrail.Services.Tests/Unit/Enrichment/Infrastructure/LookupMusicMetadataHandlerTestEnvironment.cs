@@ -40,7 +40,7 @@ internal sealed class LookupMusicMetadataHandlerTestEnvironment
 
     public void Throw(Exception ex) => Metadata.Throw(ex);
 
-    public async Task<MusicCatalogLookupAttempted> HandleNewExecutionCommand(MusicSearchCriteria? searchTerm = null)
+    public async Task<CatalogItemLookupAttempted> HandleNewExecutionCommand(MusicSearchCriteria? searchTerm = null)
     {
         await Handler.Handle(
             new LookupTrackMetadataCommand(
@@ -55,7 +55,7 @@ internal sealed class LookupMusicMetadataHandlerTestEnvironment
         return LastAttempt();
     }
 
-    public async Task<MusicCatalogLookupAttempted> HandleDuplicateExecutionCommand(MusicSearchCriteria? searchTerm = null)
+    public async Task<CatalogItemLookupAttempted> HandleDuplicateExecutionCommand(MusicSearchCriteria? searchTerm = null)
     {
         var command = new LookupTrackMetadataCommand(
             CommandId.For("LookupTrackMetadata:mc_track_1"),
@@ -69,6 +69,6 @@ internal sealed class LookupMusicMetadataHandlerTestEnvironment
         return LastAttempt();
     }
 
-    private MusicCatalogLookupAttempted LastAttempt() =>
-        Bus.SentCommands.OfType<MusicCatalogLookupAttempted>().Last();
+    private CatalogItemLookupAttempted LastAttempt() =>
+        Bus.SentCommands.OfType<CatalogItemLookupAttempted>().Last();
 }

@@ -24,7 +24,7 @@ public sealed class LookupStreamingLocationsExecutionAdmissionDecorator(
         switch (admission.Status)
         {
             case LookupExecutionAdmissionStatus.Duplicate:
-                await bus.SendAsync(MusicCatalogLookupAttempted.Duplicate(
+                await bus.SendAsync(CatalogItemLookupAttempted.Duplicate(
                     command.CommandId,
                     command.MusicCatalogId,
                     command.TargetProvider,
@@ -35,7 +35,7 @@ public sealed class LookupStreamingLocationsExecutionAdmissionDecorator(
                 return;
             
             case LookupExecutionAdmissionStatus.Deferred:
-                await bus.SendAsync(MusicCatalogLookupAttempted.Deferred(
+                await bus.SendAsync(CatalogItemLookupAttempted.Deferred(
                     command.CommandId,
                     command.MusicCatalogId,
                     command.TargetProvider,

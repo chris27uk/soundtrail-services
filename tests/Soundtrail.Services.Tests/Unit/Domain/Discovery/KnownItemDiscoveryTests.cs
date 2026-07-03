@@ -15,7 +15,7 @@ public sealed class KnownItemDiscoveryTests
     public async Task Given_An_Empty_Known_Item_Stream_When_Requesting_An_Artist_Then_Artist_Catalog_Lookup_Requested_Is_Emitted()
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
-        var knownItem = KnownCatalogItem.ForArtist(ArtistId.From("artist_1"));
+        var knownItem = KnownCatalogId.ForArtist(ArtistId.From("artist_1"));
         var loaded = await KnownItemDiscovery.LoadAsync(repository, knownItem, CancellationToken.None);
 
         loaded.Aggregate.ArtistRequested(
@@ -31,17 +31,16 @@ public sealed class KnownItemDiscoveryTests
     public async Task Given_An_Empty_Known_Item_Stream_When_Requesting_An_Album_Then_Album_Catalog_Lookup_Requested_Is_Emitted()
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
-        var knownItem = KnownCatalogItem.ForAlbum(ArtistId.From("artist_1"), AlbumId.From("album_1"));
+        var knownItem = KnownCatalogId.ForAlbum(ArtistId.From("artist_1"), AlbumId.From("album_1"));
         var loaded = await KnownItemDiscovery.LoadAsync(repository, knownItem, CancellationToken.None);
 
-        var changed = loaded.Aggregate.AlbumRequested(
+        loaded.Aggregate.AlbumRequested(
             ArtistId.From("artist_1"),
             AlbumId.From("album_1"),
             Clock,
             CorrelationId.From("corr-1"));
         await loaded.Aggregate.SaveAsync(repository, loaded.Stream, CancellationToken.None);
 
-        changed.Should().BeTrue();
         repository.GetStoredEvents(knownItem).Should().ContainSingle().Which.Should().BeOfType<AlbumCatalogLookupRequested>();
     }
 
@@ -49,7 +48,7 @@ public sealed class KnownItemDiscoveryTests
     public async Task Given_An_Empty_Known_Item_Stream_When_Requesting_A_Track_Then_Known_Track_Requested_Is_Emitted()
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
-        var knownItem = KnownCatalogItem.ForTrack(TrackId.From("track_1"));
+        var knownItem = KnownCatalogId.ForTrack(TrackId.From("track_1"));
         var loaded = await KnownItemDiscovery.LoadAsync(repository, knownItem, CancellationToken.None);
 
         loaded.Aggregate.TrackRequested(
@@ -67,7 +66,7 @@ public sealed class KnownItemDiscoveryTests
     public async Task Given_A_Known_Track_Request_When_Starting_Track_Discovery_Then_A_Known_Track_Discovery_Started_Event_Is_Emitted()
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
-        var knownItem = KnownCatalogItem.ForTrack(TrackId.From("track_1"));
+        var knownItem = KnownCatalogId.ForTrack(TrackId.From("track_1"));
         var loaded = await KnownItemDiscovery.LoadAsync(repository, knownItem, CancellationToken.None);
         loaded.Aggregate.TrackRequested(
             TrackId.From("track_1"),
@@ -91,7 +90,7 @@ public sealed class KnownItemDiscoveryTests
     public async Task Given_An_Already_Requested_Known_Artist_When_Requesting_Again_Then_No_New_Event_Is_Emitted()
     {
         var repository = new CatalogSearchDiscoveryRepositoryFake();
-        var knownItem = KnownCatalogItem.ForArtist(ArtistId.From("artist_1"));
+        var knownItem = KnownCatalogId.ForArtist(ArtistId.From("artist_1"));
         var loaded = await KnownItemDiscovery.LoadAsync(repository, knownItem, CancellationToken.None);
         loaded.Aggregate.ArtistRequested(ArtistId.From("artist_1"), Clock, CorrelationId.From("corr-1"));
         await loaded.Aggregate.SaveAsync(repository, loaded.Stream, CancellationToken.None);

@@ -1,5 +1,6 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Enrichment.Commands;
@@ -17,14 +18,17 @@ public sealed class NextMusicTracksRequestedForLookupHandler(IDiscoveryBacklogPl
         }
     }
 
-    private static AssessMusicTrackCommand NewAssessmentCommand(RunDiscoveryBacklogSchedulingCommand command, DiscoveryBacklogCandidate candidate)
+    private static AssessMusicCatalogItemCommand NewAssessmentCommand(RunDiscoveryBacklogSchedulingCommand command, DiscoveryBacklogCandidate candidate)
     {
-        return new AssessMusicTrackCommand(
-            AssessMusicTrackCommand.Id(candidate.MusicCatalogId, command.CreatedAt),
+        var itemId = new CatalogItemId.Track(TrackId.From(candidate.MusicCatalogId.Value));
+        var resource = CatalogItemResource.ForSearch(candidate.SearchCriteria);
+
+        return new AssessMusicCatalogItemCommand(
+            AssessMusicCatalogItemCommand.Id(itemId, resource, command.CreatedAt),
             CorrelationId.New(),
             command.CreatedAt,
             LookupPriorityBand.Low,
-            candidate.MusicCatalogId,
-            candidate.SearchCriteria);
+            itemId,
+            resource);
     }
 }

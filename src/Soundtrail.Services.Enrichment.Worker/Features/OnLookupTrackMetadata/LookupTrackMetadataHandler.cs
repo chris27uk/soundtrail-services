@@ -14,14 +14,14 @@ public sealed class LookupTrackMetadataHandler(IGetTrackMetadata getMetaData, IC
         {
             var songMetadata = await getMetaData.GetMetadataAsync(command.SearchCriteria, cancellationToken);
             await bus.SendAsync(
-                MusicCatalogLookupAttempted.Completed(
+                CatalogItemLookupAttempted.Completed(
                     command.ToMusicCatalogMetadataFetched(songMetadata),
                     command.SearchCriteria),
                 cancellationToken);
         }
         catch
         {
-            await bus.SendAsync(MusicCatalogLookupAttempted.Failed(
+            await bus.SendAsync(CatalogItemLookupAttempted.Failed(
                 command.CommandId,
                 command.MusicCatalogId,
                 LookupSource.MusicBrainz,

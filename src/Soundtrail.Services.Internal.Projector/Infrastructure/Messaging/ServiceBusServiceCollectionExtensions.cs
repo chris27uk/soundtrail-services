@@ -44,8 +44,8 @@ public static class ServiceBusServiceCollectionExtensions
                 .EnableWolverineControlQueues();
         }
 
-        opts.PublishMessage<AssessMusicTrackCommandDto>()
-            .ToAzureServiceBusQueue(serviceBusOptions.AssessMusicTrackQueueName);
+        opts.PublishMessage<AssessMusicCatalogItemCommandDto>()
+            .ToAzureServiceBusQueue(serviceBusOptions.AssessMusicCatalogItemQueueName);
 
         opts.PublishMessage<CatalogSearchAttemptDto>()
             .ToAzureServiceBusQueue(serviceBusOptions.CatalogSearchAttemptsQueueName);

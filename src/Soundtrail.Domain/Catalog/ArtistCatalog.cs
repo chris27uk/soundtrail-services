@@ -10,8 +10,8 @@ public sealed class ArtistCatalog
 {
     private readonly EventHandlers<ArtistCatalog> eventHandlers;
     private readonly List<IDomainEvent> uncommittedEvents = [];
-    private readonly Dictionary<string, AlbumState> albums = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, TrackState> tracks = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Album> albums = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Track> tracks = new(StringComparer.Ordinal);
     private ArtistId? artistId;
     private string? artistName;
     private string? sourceArtistId;
@@ -39,16 +39,14 @@ public sealed class ArtistCatalog
         return (stream, new ArtistCatalog(artistId, stream.Events));
     }
 
-    public void TrackMetadataFetched(
-        ArtistId resolvedArtistId,
-        MusicCatalogMetadataFetched fetched)
+    public void TrackMetadataFetched(ArtistId artist, MusicCatalogMetadataFetched fetched)
     {
-        EnsureArtistMatch(resolvedArtistId);
+        EnsureArtistMatch(artist);
 
         if (fetched.Metadata is not null && fetched.SourceProvider == LookupSource.MusicBrainz)
         {
             DiscoverArtist(
-                resolvedArtistId,
+                artist,
                 fetched.Metadata.Artist,
                 fetched.Metadata.SourceArtistId,
                 fetched.SourceProvider,
@@ -57,7 +55,7 @@ public sealed class ArtistCatalog
             if (fetched.Hierarchy?.AlbumId is not null)
             {
                 DiscoverAlbum(
-                    resolvedArtistId,
+                    artist,
                     fetched.Hierarchy.AlbumId.Value,
                     fetched.Metadata.Artist,
                     fetched.Metadata.AlbumTitle ?? string.Empty,
@@ -120,7 +118,7 @@ public sealed class ArtistCatalog
                     fetched.CreatedAt,
                     searchCriteria,
                     new CatalogTrackHierarchy(
-                        resolvedArtistId,
+                        artist,
                         fetched.Hierarchy?.AlbumId)),
                 isNew: true);
         }
@@ -368,7 +366,7 @@ public sealed class ArtistCatalog
     private void On(AlbumDiscovered @event)
     {
         var albumId = @event.AlbumId ?? throw new InvalidOperationException("Album id is required.");
-        albums[albumId] = new AlbumState(
+        albums[albumId] = new Album(
             AlbumId.From(albumId),
             @event.AlbumTitle,
             @event.SourceAlbumId,
@@ -395,7 +393,7 @@ public sealed class ArtistCatalog
         var musicCatalogId = @event.MusicCatalogId
                              ?? throw new InvalidOperationException("Provider reference facts in artist catalog must include a music catalog id.");
         var track = GetOrCreateTrack(musicCatalogId);
-        track.ProviderReferences[@event.Provider.Value] = new ProviderReferenceState(
+        track.ProviderReferences[@event.Provider.Value] = new StreamingLocation(
             @event.Provider,
             @event.ExternalId,
             @event.Url,
@@ -474,108 +472,15 @@ public sealed class ArtistCatalog
     private ArtistId RequireArtistId() =>
         artistId ?? throw new InvalidOperationException("Artist catalog id has not been established.");
 
-    private TrackState GetOrCreateTrack(MusicCatalogId musicCatalogId)
+    private Track GetOrCreateTrack(MusicCatalogId musicCatalogId)
     {
-        if (!tracks.TryGetValue(musicCatalogId.Value, out var track))
+        if (this.tracks.TryGetValue(musicCatalogId.Value, out var track))
         {
-            track = new TrackState(musicCatalogId);
-            tracks[musicCatalogId.Value] = track;
+            return track;
         }
-
+        
+        track = new Track(musicCatalogId);
+        this.tracks[musicCatalogId.Value] = track;
         return track;
-    }
-
-    private sealed class AlbumState
-    {
-        public AlbumState(
-            AlbumId albumId,
-            string? albumTitle,
-            string? sourceAlbumId,
-            DateOnly? releaseDate,
-            string? artworkUrl,
-            DateTimeOffset updatedAt)
-        {
-            AlbumId = albumId;
-            AlbumTitle = albumTitle;
-            SourceAlbumId = sourceAlbumId;
-            ReleaseDate = releaseDate;
-            ArtworkUrl = artworkUrl;
-            UpdatedAt = updatedAt;
-        }
-
-        public AlbumId AlbumId { get; }
-
-        public string? AlbumTitle { get; }
-
-        public string? SourceAlbumId { get; }
-
-        public DateOnly? ReleaseDate { get; }
-
-        public string? ArtworkUrl { get; set; }
-
-        public DateTimeOffset UpdatedAt { get; set; }
-    }
-
-    private sealed class TrackState
-    {
-        public TrackState(MusicCatalogId musicCatalogId)
-        {
-            MusicCatalogId = musicCatalogId;
-        }
-
-        public MusicCatalogId MusicCatalogId { get; }
-
-        public string Title { get; set; } = string.Empty;
-
-        public string ArtistName { get; set; } = string.Empty;
-
-        public string? AlbumTitle { get; set; }
-
-        public string? AlbumId { get; set; }
-
-        public int? DurationMs { get; set; }
-
-        public string? Isrc { get; set; }
-
-        public string? Mbid { get; set; }
-
-        public DateOnly? ReleaseDate { get; set; }
-
-        public string? ArtworkUrl { get; set; }
-
-        public bool StreamingLocationsRequired { get; set; }
-
-        public DateTimeOffset UpdatedAt { get; set; }
-
-        public Dictionary<string, ProviderReferenceState> ProviderReferences { get; } = new(StringComparer.Ordinal);
-
-        public HashSet<string> FailedProviders { get; } = new(StringComparer.Ordinal);
-    }
-
-    private sealed class ProviderReferenceState
-    {
-        public ProviderReferenceState(
-            ProviderName provider,
-            string? externalId,
-            Uri url,
-            LookupSource sourceProvider,
-            DateTimeOffset observedAt)
-        {
-            Provider = provider;
-            ExternalId = externalId;
-            Url = url;
-            SourceProvider = sourceProvider;
-            ObservedAt = observedAt;
-        }
-
-        public ProviderName Provider { get; }
-
-        public string? ExternalId { get; }
-
-        public Uri Url { get; }
-
-        public LookupSource SourceProvider { get; }
-
-        public DateTimeOffset ObservedAt { get; }
     }
 }

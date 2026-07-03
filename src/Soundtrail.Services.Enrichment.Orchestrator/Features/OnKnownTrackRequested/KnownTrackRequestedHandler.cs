@@ -14,7 +14,7 @@ public sealed class KnownTrackRequestedHandler(IEventStreamRepository<DiscoveryQ
     {
         var loaded = await KnownItemDiscovery.LoadAsync(
             discoveryRepository,
-            KnownCatalogItem.ForTrack(request.TrackId),
+            KnownCatalogId.ForTrack(request.TrackId),
             cancellationToken);
 
         loaded.Aggregate.TrackRequested(

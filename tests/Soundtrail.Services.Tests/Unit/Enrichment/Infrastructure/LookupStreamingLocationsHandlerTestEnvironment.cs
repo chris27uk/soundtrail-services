@@ -35,7 +35,7 @@ internal sealed class LookupStreamingLocationsHandlerTestEnvironment
     public void Seed(MusicSearchCriteria lookupKey, params ExternalReference[] references) =>
         GetMusicTrackReference.Seed(lookupKey, references);
 
-    public async Task<MusicCatalogLookupAttempted> HandleNewExecutionCommand(MusicSearchCriteria? searchTerm = null)
+    public async Task<CatalogItemLookupAttempted> HandleNewExecutionCommand(MusicSearchCriteria? searchTerm = null)
     {
         await Handler.Handle(
             new LookupStreamingLocationsCommand(
@@ -50,7 +50,7 @@ internal sealed class LookupStreamingLocationsHandlerTestEnvironment
         return LastAttempt();
     }
 
-    public async Task<MusicCatalogLookupAttempted> HandleDuplicateExecutionCommand(MusicSearchCriteria? searchTerm = null)
+    public async Task<CatalogItemLookupAttempted> HandleDuplicateExecutionCommand(MusicSearchCriteria? searchTerm = null)
     {
         var command = new LookupStreamingLocationsCommand(
             CommandId.For("LookupStreamingLocations:mc_track_1"),
@@ -66,6 +66,6 @@ internal sealed class LookupStreamingLocationsHandlerTestEnvironment
 
     public void Throw(Exception ex) => GetMusicTrackReference.Throw(ex);
 
-    private MusicCatalogLookupAttempted LastAttempt() =>
-        Bus.SentCommands.OfType<MusicCatalogLookupAttempted>().Last();
+    private CatalogItemLookupAttempted LastAttempt() =>
+        Bus.SentCommands.OfType<CatalogItemLookupAttempted>().Last();
 }

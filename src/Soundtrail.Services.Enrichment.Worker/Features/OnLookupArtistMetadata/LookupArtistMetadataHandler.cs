@@ -20,7 +20,7 @@ public sealed class LookupArtistMetadataHandler(IGetArtistMetadata getArtistMeta
             if (metadata is null)
             {
                 await bus.SendAsync(
-                    ArtistMetadataLookupAttempted.Failed(
+                    CatalogItemLookupAttempted.Failed(
                         command.CommandId,
                         command.ArtistId,
                         LookupSource.MusicBrainz,
@@ -33,13 +33,13 @@ public sealed class LookupArtistMetadataHandler(IGetArtistMetadata getArtistMeta
             }
 
             await bus.SendAsync(
-                ArtistMetadataLookupAttempted.Completed(command.ToArtistMetadataFetched(metadata)),
+                CatalogItemLookupAttempted.Completed(command.ToArtistMetadataFetched(metadata)),
                 cancellationToken);
         }
         catch
         {
             await bus.SendAsync(
-                ArtistMetadataLookupAttempted.Failed(
+                CatalogItemLookupAttempted.Failed(
                     command.CommandId,
                     command.ArtistId,
                     LookupSource.MusicBrainz,

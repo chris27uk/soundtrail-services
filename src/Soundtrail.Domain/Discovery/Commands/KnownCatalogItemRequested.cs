@@ -4,7 +4,7 @@ using Soundtrail.Domain.Search;
 namespace Soundtrail.Domain.Discovery.Commands;
 
 public sealed record KnownCatalogItemRequested(
-    KnownCatalogItem KnownItem,
+    KnownCatalogId KnownId,
     PlaybackProviderFilter Playback,
     int TrustLevel,
     int RiskScore,

@@ -23,7 +23,7 @@ public sealed class LookupAlbumMetadataExecutionAdmissionDecorator(
         if (admission.Status == LookupExecutionAdmissionStatus.Duplicate)
         {
             await bus.SendAsync(
-                AlbumMetadataLookupAttempted.Duplicate(
+                CatalogItemLookupAttempted.Duplicate(
                     command.CommandId,
                     command.ArtistId,
                     command.AlbumId,
@@ -38,7 +38,7 @@ public sealed class LookupAlbumMetadataExecutionAdmissionDecorator(
         if (admission.Status == LookupExecutionAdmissionStatus.Deferred)
         {
             await bus.SendAsync(
-                AlbumMetadataLookupAttempted.Deferred(
+                CatalogItemLookupAttempted.Deferred(
                     command.CommandId,
                     command.ArtistId,
                     command.AlbumId,

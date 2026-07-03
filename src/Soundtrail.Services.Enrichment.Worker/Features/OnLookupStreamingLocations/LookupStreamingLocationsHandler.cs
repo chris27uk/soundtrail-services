@@ -28,16 +28,16 @@ public sealed class LookupStreamingLocationsHandler(IGetMusicTrackReference getM
         }
     }
 
-    private static MusicCatalogLookupAttempted Completed(LookupStreamingLocationsCommand command, IReadOnlyList<ExternalReference> references, ProviderLookupFailure[] failures)
+    private static CatalogItemLookupAttempted Completed(LookupStreamingLocationsCommand command, IReadOnlyList<ExternalReference> references, ProviderLookupFailure[] failures)
     {
-        return MusicCatalogLookupAttempted.Completed(
+        return CatalogItemLookupAttempted.Completed(
             command.ToMusicCatalogMetadataFetched(references, failures),
             command.LookupKey);
     }
 
-    private static MusicCatalogLookupAttempted Failed(LookupStreamingLocationsCommand command)
+    private static CatalogItemLookupAttempted Failed(LookupStreamingLocationsCommand command)
     {
-        return MusicCatalogLookupAttempted.Failed(
+        return CatalogItemLookupAttempted.Failed(
             command.CommandId,
             command.MusicCatalogId,
             command.TargetProvider,

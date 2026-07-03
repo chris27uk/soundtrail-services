@@ -44,7 +44,7 @@ internal sealed class KnownTrackRequestedHandlerTestEnvironment
 
     public KnownTrackRequestedCommand Command() =>
         new(
-            KnownCatalogItem.ForTrack(TrackId.From("track_1")),
+            KnownCatalogId.ForTrack(TrackId.From("track_1")),
             [new VersionedCatalogSearchDiscoveryEvent(
                 1,
                 new KnownTrackRequestedEvent(

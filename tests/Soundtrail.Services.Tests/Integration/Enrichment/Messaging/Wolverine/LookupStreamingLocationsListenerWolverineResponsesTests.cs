@@ -25,13 +25,13 @@ public sealed class LookupStreamingLocationsListenerWolverineResponsesTests
 
         await listener.Handle(Command(), null!);
 
-        env.Bus.SentCommands.Should().ContainSingle().Which.Should().BeOfType<MusicCatalogLookupAttempted>();
+        env.Bus.SentCommands.Should().ContainSingle().Which.Should().BeOfType<CatalogItemLookupAttempted>();
         TypeTranslationRegistry.Default
-            .ToDto<MusicCatalogLookupAttemptedDto>(env.Bus.SentCommands
-                .OfType<MusicCatalogLookupAttempted>()
+            .ToDto<CatalogItemLookupAttemptedDto>(env.Bus.SentCommands
+                .OfType<CatalogItemLookupAttempted>()
                 .Single())
             .Should()
-            .BeOfType<MusicCatalogLookupAttemptedDto>();
+            .BeOfType<CatalogItemLookupAttemptedDto>();
     }
 
     [Fact]
@@ -45,8 +45,8 @@ public sealed class LookupStreamingLocationsListenerWolverineResponsesTests
         var listener = new LookupStreamingLocationsListener(env.Handler);
 
         await listener.Handle(Command(), null!);
-        var message = TypeTranslationRegistry.Default.ToDto<MusicCatalogLookupAttemptedDto>(
-            env.Bus.SentCommands.OfType<MusicCatalogLookupAttempted>().Single());
+        var message = TypeTranslationRegistry.Default.ToDto<CatalogItemLookupAttemptedDto>(
+            env.Bus.SentCommands.OfType<CatalogItemLookupAttempted>().Single());
 
         message.Outcome.Status.Should().Be("Deferred");
         message.SourceProvider.Should().Be(LookupSource.Odesli.Value);
@@ -61,8 +61,8 @@ public sealed class LookupStreamingLocationsListenerWolverineResponsesTests
         var listener = new LookupStreamingLocationsListener(env.Handler);
 
         await listener.Handle(Command(), null!);
-        var message = TypeTranslationRegistry.Default.ToDto<MusicCatalogLookupAttemptedDto>(
-            env.Bus.SentCommands.OfType<MusicCatalogLookupAttempted>().Single());
+        var message = TypeTranslationRegistry.Default.ToDto<CatalogItemLookupAttemptedDto>(
+            env.Bus.SentCommands.OfType<CatalogItemLookupAttempted>().Single());
 
         message.Outcome.Status.Should().Be("Failed");
         message.SourceProvider.Should().Be(LookupSource.Odesli.Value);

@@ -12,6 +12,8 @@ using Soundtrail.Domain.Catalog.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Enrichment;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogItemLookupAttempted;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogItemLookupAttempted.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
@@ -82,15 +84,17 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
         status!.Status.Should().Be("Completed");
     }
 
-    private static async Task ApplyAttemptAsync(IAsyncDocumentSession session, MusicCatalogLookupAttemptedDto dto)
+    private static async Task ApplyAttemptAsync(IAsyncDocumentSession session, CatalogItemLookupAttemptedDto dto)
     {
-        var lookupListener = new MusicCatalogLookupAttemptedListener(
-            new MusicCatalogLookupAttemptedHandler(
-                TestEventStreamRepositories.CreateMusicCatalogLookup(session)));
+        var lookupListener = new CatalogItemLookupAttemptedListener(
+            new CatalogItemLookupAttemptedHandler(
+                new MusicCatalogLookupAttemptedHandler(TestEventStreamRepositories.CreateMusicCatalogLookup(session)),
+                null!,
+                null!));
 
         await lookupListener.Handle(dto, session, CancellationToken.None);
 
-        var lookupId = MusicCatalogLookupId.From(MusicCatalogId.From(dto.MusicCatalogId));
+        var lookupId = MusicCatalogLookupId.From(MusicCatalogId.From(dto.ItemValue));
         var historyRepository = TestEventStreamRepositories.CreateMusicCatalogLookup(session);
         var loaded = await historyRepository.LoadAsync(lookupId, CancellationToken.None);
         var command = new MusicCatalogLookupHistoryChangedCommand(
@@ -153,9 +157,10 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
         }
     }
 
-    private static MusicCatalogLookupAttemptedDto ResolvedMetadataAttemptDto() =>
+    private static CatalogItemLookupAttemptedDto ResolvedMetadataAttemptDto() =>
         new(
             CommandId.For("ResolveMusicMetadata:mc_track_1").Value,
+            CatalogItemKind.Track,
             "mc_track_1",
             LookupSource.MusicBrainz.Value,
             LookupPriorityBand.High,
@@ -173,11 +178,14 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
                 [],
                 "artist_test_artist",
                 "album_rare_album",
-                "corr-1"));
+                "corr-1"),
+            null,
+            null);
 
-    private static MusicCatalogLookupAttemptedDto PlaybackAttemptDto() =>
+    private static CatalogItemLookupAttemptedDto PlaybackAttemptDto() =>
         new(
             CommandId.For("LookupStreamingLocations:mc_track_1").Value,
+            CatalogItemKind.Track,
             "mc_track_1",
             LookupSource.Odesli.Value,
             LookupPriorityBand.High,
@@ -195,5 +203,7 @@ public sealed class RavenMusicCatalogMetadataFetchedFlowResponsesTests
                 [],
                 "artist_test_artist",
                 "album_rare_album",
-                "corr-2"));
+                "corr-2"),
+            null,
+            null);
 }

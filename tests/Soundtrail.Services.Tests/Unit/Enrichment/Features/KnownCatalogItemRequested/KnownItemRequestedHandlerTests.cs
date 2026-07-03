@@ -21,7 +21,7 @@ public sealed class KnownItemRequestedHandlerTests
         await env.ArtistHandler.Handle(request, CancellationToken.None);
 
         env.DiscoveryRepository
-            .GetStoredEvents(KnownCatalogItem.ForArtist(request.ArtistId))
+            .GetStoredEvents(KnownCatalogId.ForArtist(request.ArtistId))
             .Should()
             .ContainSingle()
             .Which.Should()
@@ -39,7 +39,7 @@ public sealed class KnownItemRequestedHandlerTests
         await env.AlbumHandler.Handle(request, CancellationToken.None);
 
         env.DiscoveryRepository
-            .GetStoredEvents(KnownCatalogItem.ForAlbum(request.ArtistId, request.AlbumId))
+            .GetStoredEvents(KnownCatalogId.ForAlbum(request.ArtistId, request.AlbumId))
             .Should()
             .ContainSingle()
             .Which.Should()
@@ -57,7 +57,7 @@ public sealed class KnownItemRequestedHandlerTests
         await env.TrackHandler.Handle(request, CancellationToken.None);
 
         env.DiscoveryRepository
-            .GetStoredEvents(KnownCatalogItem.ForTrack(request.TrackId))
+            .GetStoredEvents(KnownCatalogId.ForTrack(request.TrackId))
             .Should()
             .ContainSingle()
             .Which.Should()

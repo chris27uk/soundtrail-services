@@ -27,7 +27,7 @@ public sealed class ApplyMusicCatalogLookupHistoryChangedToKnownTrackDiscoveryHa
                 continue;
             }
 
-            var knownItem = KnownCatalogItem.ForTrack(TrackId.From(musicCatalogId.Value));
+            var knownItem = KnownCatalogId.ForTrack(TrackId.From(musicCatalogId.Value));
             var loaded = await KnownItemDiscovery.LoadAsync(discoveryRepository, knownItem, cancellationToken);
             if (!loaded.Stream.Events.OfType<Soundtrail.Domain.Discovery.Events.KnownTrackRequested>().Any())
             {

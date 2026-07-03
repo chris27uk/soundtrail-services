@@ -28,8 +28,8 @@ internal sealed class CatalogSearchDiscoveryRepositoryFake :
             ? events.AsReadOnly()
             : [];
 
-    public IReadOnlyList<IDomainEvent> GetStoredEvents(KnownCatalogItem knownItem) =>
-        eventsByCriteria.TryGetValue(ToPersistentId(knownItem), out var events)
+    public IReadOnlyList<IDomainEvent> GetStoredEvents(KnownCatalogId knownId) =>
+        eventsByCriteria.TryGetValue(ToPersistentId(knownId), out var events)
             ? events.AsReadOnly()
             : [];
 
@@ -71,6 +71,6 @@ internal sealed class CatalogSearchDiscoveryRepositoryFake :
     private static string ToPersistentId(MusicSearchCriteria searchCriteria) =>
         DiscoveryQueryKey.StableValueFor(searchCriteria);
 
-    private static string ToPersistentId(KnownCatalogItem knownItem) =>
-        DiscoveryQueryKey.StableValueFor(knownItem);
+    private static string ToPersistentId(KnownCatalogId knownId) =>
+        DiscoveryQueryKey.StableValueFor(knownId);
 }

@@ -3,14 +3,12 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Soundtrail.Adapters.Messaging;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnAlbumMetadataLookupAttempted.Adapters;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnAssessMusicTrack.Adapters;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnArtistMetadataLookupAttempted.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnAssessMusicCatalogItem.Adapters;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogItemLookupAttempted.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownAlbumRequested.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownArtistRequested.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownTrackRequested.Adapters;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnNextMusicTracksRequestedForLookup.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnStreamingLocationsRequired.Adapters;
 using Soundtrail.Services.ServiceDefaults;
@@ -44,10 +42,8 @@ public static class ServiceBusServiceCollectionExtensions
         opts.Discovery.IncludeType<KnownAlbumRequestedListener>();
         opts.Discovery.IncludeType<KnownTrackRequestedListener>();
         opts.Discovery.IncludeType<NextMusicTracksRequestedForLookupListener>();
-        opts.Discovery.IncludeType<AssessMusicTrackListener>();
-        opts.Discovery.IncludeType<MusicCatalogLookupAttemptedListener>();
-        opts.Discovery.IncludeType<ArtistMetadataLookupAttemptedListener>();
-        opts.Discovery.IncludeType<AlbumMetadataLookupAttemptedListener>();
+        opts.Discovery.IncludeType<AssessMusicCatalogItemListener>();
+        opts.Discovery.IncludeType<CatalogItemLookupAttemptedListener>();
         opts.Discovery.IncludeType<StreamingLocationsRequiredListener>();
         opts.Policies.AutoApplyTransactions();
 
@@ -78,7 +74,7 @@ public static class ServiceBusServiceCollectionExtensions
         opts.ListenToAzureServiceBusQueue(serviceBusOptions.DiscoveryBacklogSchedulingQueueName)
             .ProcessInline();
 
-        opts.ListenToAzureServiceBusQueue(serviceBusOptions.AssessMusicTrackQueueName)
+        opts.ListenToAzureServiceBusQueue(serviceBusOptions.AssessMusicCatalogItemQueueName)
             .ProcessInline();
 
         opts.ListenToAzureServiceBusQueue(serviceBusOptions.EnrichmentResponsesQueueName)

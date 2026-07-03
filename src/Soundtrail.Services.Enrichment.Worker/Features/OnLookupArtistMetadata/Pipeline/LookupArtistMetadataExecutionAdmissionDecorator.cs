@@ -23,7 +23,7 @@ public sealed class LookupArtistMetadataExecutionAdmissionDecorator(
         if (admission.Status == LookupExecutionAdmissionStatus.Duplicate)
         {
             await bus.SendAsync(
-                ArtistMetadataLookupAttempted.Duplicate(
+                CatalogItemLookupAttempted.Duplicate(
                     command.CommandId,
                     command.ArtistId,
                     LookupSource.MusicBrainz,
@@ -37,7 +37,7 @@ public sealed class LookupArtistMetadataExecutionAdmissionDecorator(
         if (admission.Status == LookupExecutionAdmissionStatus.Deferred)
         {
             await bus.SendAsync(
-                ArtistMetadataLookupAttempted.Deferred(
+                CatalogItemLookupAttempted.Deferred(
                     command.CommandId,
                     command.ArtistId,
                     LookupSource.MusicBrainz,

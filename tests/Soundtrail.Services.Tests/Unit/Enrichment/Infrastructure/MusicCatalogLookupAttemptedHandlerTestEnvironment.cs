@@ -85,7 +85,7 @@ internal sealed class MusicCatalogLookupAttemptedHandlerTestEnvironment
 
     public async Task SeedKnownTrackRequestAsync(string trackId = "track_1")
     {
-        var knownItem = KnownCatalogItem.ForTrack(TrackId.From(trackId));
+        var knownItem = KnownCatalogId.ForTrack(TrackId.From(trackId));
         var loaded = await KnownItemDiscovery.LoadAsync(DiscoveryRepository, knownItem, CancellationToken.None);
         loaded.Aggregate.TrackRequested(
             TrackId.From(trackId),

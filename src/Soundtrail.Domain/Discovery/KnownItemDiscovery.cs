@@ -11,7 +11,7 @@ public sealed class KnownItemDiscovery
 {
     private readonly EventHandlers<KnownItemDiscovery> eventHandlers;
     private readonly List<IDomainEvent> uncommittedEvents = [];
-    private KnownCatalogItem? knownItem;
+    private KnownCatalogId? knownItem;
     private bool hasKnownTrackRequested;
     private bool hasArtistCatalogLookupRequested;
     private bool hasAlbumCatalogLookupRequested;
@@ -48,12 +48,12 @@ public sealed class KnownItemDiscovery
 
     public static async Task<(LoadedEventStream<DiscoveryQueryKey, IDomainEvent> Stream, KnownItemDiscovery Aggregate)> LoadAsync(
         IEventStreamRepository<DiscoveryQueryKey, IDomainEvent> repository,
-        KnownCatalogItem knownItem,
+        KnownCatalogId knownId,
         CancellationToken cancellationToken)
     {
-        var stream = await repository.LoadAsync(DiscoveryQueryKey.For(knownItem), cancellationToken);
+        var stream = await repository.LoadAsync(DiscoveryQueryKey.For(knownId), cancellationToken);
         var aggregate = new KnownItemDiscovery(stream.Events);
-        aggregate.knownItem ??= knownItem;
+        aggregate.knownItem ??= knownId;
         return (stream, aggregate);
     }
 
@@ -319,7 +319,7 @@ public sealed class KnownItemDiscovery
         return true;
     }
 
-    public bool AlbumRequested(
+    public void AlbumRequested(
         ArtistId? artistId,
         AlbumId albumId,
         DateTimeOffset requestedAt,
@@ -327,7 +327,7 @@ public sealed class KnownItemDiscovery
     {
         if (hasAlbumCatalogLookupRequested)
         {
-            return false;
+            return;
         }
 
         Apply(
@@ -338,7 +338,6 @@ public sealed class KnownItemDiscovery
                 correlationId),
             isNew: true);
 
-        return true;
     }
 
     public bool AlbumLookupStarted(
@@ -526,13 +525,13 @@ public sealed class KnownItemDiscovery
 
     private void On(Events.KnownTrackRequested @event)
     {
-        knownItem ??= KnownCatalogItem.ForTrack(@event.TrackId);
+        knownItem ??= KnownCatalogId.ForTrack(@event.TrackId);
         hasKnownTrackRequested = true;
     }
 
     private void On(KnownTrackDiscoveryStarted @event)
     {
-        knownItem ??= KnownCatalogItem.ForTrack(@event.TrackId);
+        knownItem ??= KnownCatalogId.ForTrack(@event.TrackId);
         knownTrackStatus = CatalogSearchLifecycleStatus.InProgress;
         knownTrackPriority = @event.Priority;
         knownTrackEstimatedRetryAfterSeconds = null;
@@ -542,7 +541,7 @@ public sealed class KnownItemDiscovery
 
     private void On(KnownTrackDiscoveryCompleted @event)
     {
-        knownItem ??= KnownCatalogItem.ForTrack(@event.TrackId);
+        knownItem ??= KnownCatalogId.ForTrack(@event.TrackId);
         knownTrackStatus = CatalogSearchLifecycleStatus.Completed;
         knownTrackPriority = @event.Priority;
         knownTrackEstimatedRetryAfterSeconds = null;
@@ -552,7 +551,7 @@ public sealed class KnownItemDiscovery
 
     private void On(KnownTrackDiscoveryDeferred @event)
     {
-        knownItem ??= KnownCatalogItem.ForTrack(@event.TrackId);
+        knownItem ??= KnownCatalogId.ForTrack(@event.TrackId);
         knownTrackStatus = CatalogSearchLifecycleStatus.Deferred;
         knownTrackPriority = null;
         knownTrackEstimatedRetryAfterSeconds = @event.EstimatedRetryAfterSeconds;
@@ -562,7 +561,7 @@ public sealed class KnownItemDiscovery
 
     private void On(KnownTrackDiscoveryFailed @event)
     {
-        knownItem ??= KnownCatalogItem.ForTrack(@event.TrackId);
+        knownItem ??= KnownCatalogId.ForTrack(@event.TrackId);
         knownTrackStatus = CatalogSearchLifecycleStatus.Failed;
         knownTrackPriority = @event.Priority;
         knownTrackEstimatedRetryAfterSeconds = null;
@@ -572,13 +571,13 @@ public sealed class KnownItemDiscovery
 
     private void On(ArtistCatalogLookupRequested @event)
     {
-        knownItem ??= KnownCatalogItem.ForArtist(@event.ArtistId);
+        knownItem ??= KnownCatalogId.ForArtist(@event.ArtistId);
         hasArtistCatalogLookupRequested = true;
     }
 
     private void On(KnownArtistDiscoveryStarted @event)
     {
-        knownItem ??= KnownCatalogItem.ForArtist(@event.ArtistId);
+        knownItem ??= KnownCatalogId.ForArtist(@event.ArtistId);
         artistStatus = CatalogSearchLifecycleStatus.InProgress;
         artistPriority = @event.Priority;
         artistEstimatedRetryAfterSeconds = null;
@@ -588,7 +587,7 @@ public sealed class KnownItemDiscovery
 
     private void On(KnownArtistDiscoveryCompleted @event)
     {
-        knownItem ??= KnownCatalogItem.ForArtist(@event.ArtistId);
+        knownItem ??= KnownCatalogId.ForArtist(@event.ArtistId);
         artistStatus = CatalogSearchLifecycleStatus.Completed;
         artistPriority = @event.Priority;
         artistEstimatedRetryAfterSeconds = null;
@@ -600,7 +599,7 @@ public sealed class KnownItemDiscovery
 
     private void On(KnownArtistDiscoveryDeferred @event)
     {
-        knownItem ??= KnownCatalogItem.ForArtist(@event.ArtistId);
+        knownItem ??= KnownCatalogId.ForArtist(@event.ArtistId);
         artistStatus = CatalogSearchLifecycleStatus.Deferred;
         artistPriority = null;
         artistEstimatedRetryAfterSeconds = @event.EstimatedRetryAfterSeconds;
@@ -610,7 +609,7 @@ public sealed class KnownItemDiscovery
 
     private void On(KnownArtistDiscoveryFailed @event)
     {
-        knownItem ??= KnownCatalogItem.ForArtist(@event.ArtistId);
+        knownItem ??= KnownCatalogId.ForArtist(@event.ArtistId);
         artistStatus = CatalogSearchLifecycleStatus.Failed;
         artistPriority = @event.Priority;
         artistEstimatedRetryAfterSeconds = null;
@@ -620,7 +619,7 @@ public sealed class KnownItemDiscovery
 
     private void On(AlbumCatalogLookupRequested @event)
     {
-        knownItem ??= KnownCatalogItem.ForAlbum(
+        knownItem ??= KnownCatalogId.ForAlbum(
             @event.ArtistId ?? throw new InvalidOperationException("Album lookup requests must include an artist id."),
             @event.AlbumId);
         hasAlbumCatalogLookupRequested = true;
@@ -628,7 +627,7 @@ public sealed class KnownItemDiscovery
 
     private void On(KnownAlbumDiscoveryStarted @event)
     {
-        knownItem ??= KnownCatalogItem.ForAlbum(@event.ArtistId, @event.AlbumId);
+        knownItem ??= KnownCatalogId.ForAlbum(@event.ArtistId, @event.AlbumId);
         albumStatus = CatalogSearchLifecycleStatus.InProgress;
         albumPriority = @event.Priority;
         albumEstimatedRetryAfterSeconds = null;
@@ -638,7 +637,7 @@ public sealed class KnownItemDiscovery
 
     private void On(KnownAlbumDiscoveryCompleted @event)
     {
-        knownItem ??= KnownCatalogItem.ForAlbum(@event.ArtistId, @event.AlbumId);
+        knownItem ??= KnownCatalogId.ForAlbum(@event.ArtistId, @event.AlbumId);
         albumStatus = CatalogSearchLifecycleStatus.Completed;
         albumPriority = @event.Priority;
         albumEstimatedRetryAfterSeconds = null;
@@ -653,7 +652,7 @@ public sealed class KnownItemDiscovery
 
     private void On(KnownAlbumDiscoveryDeferred @event)
     {
-        knownItem ??= KnownCatalogItem.ForAlbum(@event.ArtistId, @event.AlbumId);
+        knownItem ??= KnownCatalogId.ForAlbum(@event.ArtistId, @event.AlbumId);
         albumStatus = CatalogSearchLifecycleStatus.Deferred;
         albumPriority = null;
         albumEstimatedRetryAfterSeconds = @event.EstimatedRetryAfterSeconds;
@@ -663,7 +662,7 @@ public sealed class KnownItemDiscovery
 
     private void On(KnownAlbumDiscoveryFailed @event)
     {
-        knownItem ??= KnownCatalogItem.ForAlbum(@event.ArtistId, @event.AlbumId);
+        knownItem ??= KnownCatalogId.ForAlbum(@event.ArtistId, @event.AlbumId);
         albumStatus = CatalogSearchLifecycleStatus.Failed;
         albumPriority = @event.Priority;
         albumEstimatedRetryAfterSeconds = null;

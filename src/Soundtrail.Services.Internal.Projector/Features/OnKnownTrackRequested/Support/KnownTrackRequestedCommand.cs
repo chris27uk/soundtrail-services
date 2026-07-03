@@ -4,5 +4,5 @@ using Soundtrail.Domain.Discovery.Commands;
 namespace Soundtrail.Services.Internal.Projector.Features.OnKnownTrackRequested.Support;
 
 public sealed record KnownTrackRequestedCommand(
-    KnownCatalogItem KnownItem,
+    KnownCatalogId KnownId,
     IReadOnlyList<VersionedCatalogSearchDiscoveryEvent> Events);

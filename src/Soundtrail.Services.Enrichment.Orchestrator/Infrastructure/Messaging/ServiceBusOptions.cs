@@ -10,7 +10,7 @@ public sealed class ServiceBusOptions
 
     public string DiscoveryBacklogSchedulingQueueName { get; init; } = "discovery-backlog-scheduling";
 
-    public string AssessMusicTrackQueueName { get; init; } = "assess-music-track";
+    public string AssessMusicCatalogItemQueueName { get; init; } = "assess-music-catalog-item";
 
     public string MusicBrainzLookupQueueName { get; init; } = "lookup-musicbrainz";
 

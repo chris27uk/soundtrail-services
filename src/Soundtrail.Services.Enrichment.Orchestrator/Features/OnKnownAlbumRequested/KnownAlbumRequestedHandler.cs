@@ -14,21 +14,15 @@ public sealed class KnownAlbumRequestedHandler(
         KnownAlbumRequested request,
         CancellationToken cancellationToken = default)
     {
-        var album = KnownCatalogItem.ForAlbum(request.ArtistId, request.AlbumId);
-        var loaded = await KnownItemDiscovery.LoadAsync(
-            discoveryRepository,
-            album,
-            cancellationToken);
+        var catalogId = KnownCatalogId.ForAlbum(request.ArtistId, request.AlbumId);
+        var loaded = await KnownItemDiscovery.LoadAsync(discoveryRepository, catalogId, cancellationToken);
 
-        if (!loaded.Aggregate.AlbumRequested(
+        loaded.Aggregate.AlbumRequested(
                 request.ArtistId,
                 request.AlbumId,
                 request.OccurredAt,
-                request.CorrelationId))
-        {
-            return;
-        }
-
+                request.CorrelationId);
+        
         await loaded.Aggregate.SaveAsync(discoveryRepository, loaded.Stream, cancellationToken);
     }
 }

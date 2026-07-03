@@ -22,7 +22,7 @@ public sealed class LookupAlbumMetadataHandler(IGetAlbumMetadata getAlbumMetadat
             if (metadata is null)
             {
                 await bus.SendAsync(
-                    AlbumMetadataLookupAttempted.Failed(
+                    CatalogItemLookupAttempted.Failed(
                         command.CommandId,
                         command.ArtistId,
                         command.AlbumId,
@@ -36,13 +36,13 @@ public sealed class LookupAlbumMetadataHandler(IGetAlbumMetadata getAlbumMetadat
             }
 
             await bus.SendAsync(
-                AlbumMetadataLookupAttempted.Completed(command.ToAlbumMetadataFetched(metadata)),
+                CatalogItemLookupAttempted.Completed(command.ToAlbumMetadataFetched(metadata)),
                 cancellationToken);
         }
         catch
         {
             await bus.SendAsync(
-                AlbumMetadataLookupAttempted.Failed(
+                CatalogItemLookupAttempted.Failed(
                     command.CommandId,
                     command.ArtistId,
                     command.AlbumId,

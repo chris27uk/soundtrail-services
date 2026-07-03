@@ -5,8 +5,7 @@ using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnAlbumMetadataLookupAttempted;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnArtistMetadataLookupAttempted;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogItemLookupAttempted;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownAlbumDiscoveryCompleted;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownAlbumDiscoveryCompleted.Support;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownArtistDiscoveryCompleted;
@@ -20,8 +19,8 @@ internal sealed class KnownItemDiscoveryCompletionTestEnvironment
     {
         DiscoveryRepository = new CatalogSearchDiscoveryRepositoryFake();
         ArtistCatalogRepository = new ArtistCatalogEventRepositoryFake();
-        ArtistAttemptedHandler = new ArtistMetadataLookupAttemptedHandler(DiscoveryRepository);
-        AlbumAttemptedHandler = new AlbumMetadataLookupAttemptedHandler(DiscoveryRepository);
+        ApplyArtistAttemptedToDiscovery = new ApplyCatalogItemLookupAttemptedToArtistDiscovery(DiscoveryRepository);
+        ApplyAlbumAttemptedToDiscovery = new ApplyCatalogItemLookupAttemptedToAlbumDiscovery(DiscoveryRepository);
         ApplyArtistDiscoveryCompletedHandler = new ApplyKnownArtistDiscoveryCompletedToArtistCatalogHandler(ArtistCatalogRepository);
         ApplyAlbumDiscoveryCompletedHandler = new ApplyKnownAlbumDiscoveryCompletedToArtistCatalogHandler(ArtistCatalogRepository);
     }
@@ -30,9 +29,9 @@ internal sealed class KnownItemDiscoveryCompletionTestEnvironment
 
     public ArtistCatalogEventRepositoryFake ArtistCatalogRepository { get; }
 
-    public ArtistMetadataLookupAttemptedHandler ArtistAttemptedHandler { get; }
+    public ApplyCatalogItemLookupAttemptedToArtistDiscovery ApplyArtistAttemptedToDiscovery { get; }
 
-    public AlbumMetadataLookupAttemptedHandler AlbumAttemptedHandler { get; }
+    public ApplyCatalogItemLookupAttemptedToAlbumDiscovery ApplyAlbumAttemptedToDiscovery { get; }
 
     public ApplyKnownArtistDiscoveryCompletedToArtistCatalogHandler ApplyArtistDiscoveryCompletedHandler { get; }
 
@@ -42,7 +41,7 @@ internal sealed class KnownItemDiscoveryCompletionTestEnvironment
 
     public async Task SeedKnownArtistAsync(string artistId = "artist_1")
     {
-        var knownItem = KnownCatalogItem.ForArtist(ArtistId.From(artistId));
+        var knownItem = KnownCatalogId.ForArtist(ArtistId.From(artistId));
         var loaded = await global::Soundtrail.Domain.Discovery.KnownItemDiscovery.LoadAsync(DiscoveryRepository, knownItem, CancellationToken.None);
         loaded.Aggregate.ArtistRequested(ArtistId.From(artistId), Clock, CorrelationId.From("corr-artist"));
         await loaded.Aggregate.SaveAsync(DiscoveryRepository, loaded.Stream, CancellationToken.None);
@@ -50,7 +49,7 @@ internal sealed class KnownItemDiscoveryCompletionTestEnvironment
 
     public async Task SeedKnownAlbumAsync(string artistId = "artist_1", string albumId = "album_1")
     {
-        var knownItem = KnownCatalogItem.ForAlbum(ArtistId.From(artistId), AlbumId.From(albumId));
+        var knownItem = KnownCatalogId.ForAlbum(ArtistId.From(artistId), AlbumId.From(albumId));
         var loaded = await global::Soundtrail.Domain.Discovery.KnownItemDiscovery.LoadAsync(DiscoveryRepository, knownItem, CancellationToken.None);
         loaded.Aggregate.AlbumRequested(ArtistId.From(artistId), AlbumId.From(albumId), Clock, CorrelationId.From("corr-album"));
         await loaded.Aggregate.SaveAsync(DiscoveryRepository, loaded.Stream, CancellationToken.None);
@@ -81,7 +80,7 @@ internal sealed class KnownItemDiscoveryCompletionTestEnvironment
 
     public KnownArtistDiscoveryCompletedCommand ArtistCompletedCommand()
     {
-        var knownItem = KnownCatalogItem.ForArtist(ArtistId.From("artist_1"));
+        var knownItem = KnownCatalogId.ForArtist(ArtistId.From("artist_1"));
         return new KnownArtistDiscoveryCompletedCommand(
             DiscoveryQueryKey.StableValueFor(knownItem),
             [new VersionedCatalogSearchDiscoveryEvent(2, new KnownArtistDiscoveryCompleted(
@@ -96,7 +95,7 @@ internal sealed class KnownItemDiscoveryCompletionTestEnvironment
 
     public KnownAlbumDiscoveryCompletedCommand AlbumCompletedCommand()
     {
-        var knownItem = KnownCatalogItem.ForAlbum(ArtistId.From("artist_1"), AlbumId.From("album_1"));
+        var knownItem = KnownCatalogId.ForAlbum(ArtistId.From("artist_1"), AlbumId.From("album_1"));
         return new KnownAlbumDiscoveryCompletedCommand(
             DiscoveryQueryKey.StableValueFor(knownItem),
             [new VersionedCatalogSearchDiscoveryEvent(2, new KnownAlbumDiscoveryCompleted(

@@ -4,6 +4,8 @@ using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Domain.Enrichment;
 using Soundtrail.Domain.Enrichment.Events;
 using Soundtrail.Domain.Enrichment.Responses;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogItemLookupAttempted;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogItemLookupAttempted.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicCatalogLookupAttempted.Adapters;
 using Soundtrail.Services.Tests.Unit.Enrichment.Infrastructure;
 
@@ -15,11 +17,13 @@ public sealed class MusicCatalogLookupAttemptedListenerWolverineResponsesTests
     public async Task Given_A_Deferred_Report_When_Handled_Then_Lookup_History_Is_Written()
     {
         var env = MusicCatalogLookupAttemptedHandlerTestEnvironment.Create();
-        var listener = new MusicCatalogLookupAttemptedListener(env.Handler);
+        var listener = new CatalogItemLookupAttemptedListener(
+            new CatalogItemLookupAttemptedHandler(env.Handler, null!, null!));
 
         await listener.Handle(
-            new MusicCatalogLookupAttemptedDto(
+            new CatalogItemLookupAttemptedDto(
                 "LookupTrackMetadata:mc_track_1",
+                CatalogItemKind.Track,
                 "mc_track_1",
                 LookupSource.MusicBrainz.Value,
                 LookupPriorityBand.High,
@@ -30,6 +34,8 @@ public sealed class MusicCatalogLookupAttemptedListenerWolverineResponsesTests
                     "MusicBrainz budget temporarily unavailable",
                     env.Now.AddMinutes(1),
                     60),
+                null,
+                null,
                 null),
             null!);
 
@@ -43,11 +49,13 @@ public sealed class MusicCatalogLookupAttemptedListenerWolverineResponsesTests
     public async Task Given_A_Failed_Report_When_Handled_Then_The_Lookup_History_Preserves_The_Failure_Outcome()
     {
         var env = MusicCatalogLookupAttemptedHandlerTestEnvironment.Create();
-        var listener = new MusicCatalogLookupAttemptedListener(env.Handler);
+        var listener = new CatalogItemLookupAttemptedListener(
+            new CatalogItemLookupAttemptedHandler(env.Handler, null!, null!));
 
         await listener.Handle(
-            new MusicCatalogLookupAttemptedDto(
+            new CatalogItemLookupAttemptedDto(
                 "LookupTrackMetadata:mc_track_1",
+                CatalogItemKind.Track,
                 "mc_track_1",
                 LookupSource.MusicBrainz.Value,
                 LookupPriorityBand.High,
@@ -58,6 +66,8 @@ public sealed class MusicCatalogLookupAttemptedListenerWolverineResponsesTests
                     "Lookup failed",
                     null,
                     null),
+                null,
+                null,
                 null),
             null!);
 

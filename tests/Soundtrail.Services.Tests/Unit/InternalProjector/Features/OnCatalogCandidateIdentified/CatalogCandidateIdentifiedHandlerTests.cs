@@ -19,6 +19,6 @@ public sealed class CatalogCandidateIdentifiedHandlerTests
         await env.DispatchAssessmentHandler.Handle(env.Command(searchCriteria, musicCatalogId, version: 4), CancellationToken.None);
 
         env.Bus.SentCommands.Should().ContainSingle()
-            .Which.Should().BeOfType<AssessMusicTrackCommand>();
+            .Which.Should().BeOfType<AssessMusicCatalogItemCommand>();
     }
 }

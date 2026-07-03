@@ -2,9 +2,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnAssessMusicTrack.CompositionRoot;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnAlbumMetadataLookupAttempted.CompositionRoot;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnArtistMetadataLookupAttempted.CompositionRoot;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnAssessMusicCatalogItem.CompositionRoot;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogItemLookupAttempted.CompositionRoot;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.CompositionRoot;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownAlbumDiscoveryCompleted.CompositionRoot;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownAlbumRequested.CompositionRoot;
@@ -38,13 +37,12 @@ public static class AppServiceCollectionExtensions
         dependencyProvider.AddSharedDependencies(services, configuration);
 
         services.AddOnMusicTrackEventsImportedFeature();
+        services.AddOnCatalogItemLookupAttemptedFeature();
         services.AddOnMusicCatalogLookupAttemptedFeature();
         services.AddOnMusicCatalogLookupHistoryChangedFeature();
-        services.AddOnArtistMetadataLookupAttemptedFeature();
-        services.AddOnAlbumMetadataLookupAttemptedFeature();
         services.AddOnKnownArtistDiscoveryCompletedFeature();
         services.AddOnKnownAlbumDiscoveryCompletedFeature();
-        services.AddOnAssessMusicTrackFeature();
+        services.AddOnAssessMusicCatalogItemFeature();
         services.AddOnKnownArtistRequestedFeature();
         services.AddOnKnownAlbumRequestedFeature();
         services.AddOnKnownTrackRequestedFeature();

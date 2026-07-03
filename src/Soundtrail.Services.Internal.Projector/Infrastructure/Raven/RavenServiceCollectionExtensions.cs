@@ -55,6 +55,7 @@ public static class RavenServiceCollectionExtensions
                 sp.GetRequiredService<IAsyncDocumentSession>(),
                 sp.GetRequiredService<Soundtrail.Adapters.Registry.ITypeRegistry>(),
                 CatalogDiscoveryWorkEventStreamDefinition.Create()));
+        services.TryAddScoped<ICatalogDiscoveryWorkSummaryStore, RavenCatalogDiscoveryWorkSummaryStore>();
         services.TryAddScoped<ILoadDiscoveryLifecycleProjectionPort, RavenLoadDiscoveryLifecycleProjection>();
         services.TryAddScoped<ISaveDiscoveryLifecycleProjectionPort, RavenSaveDiscoveryLifecycleProjection>();
         services.TryAddScoped<ILoadCatalogSearchPlannedMusicTrackPort, RavenLoadCatalogSearchPlannedMusicTrack>();

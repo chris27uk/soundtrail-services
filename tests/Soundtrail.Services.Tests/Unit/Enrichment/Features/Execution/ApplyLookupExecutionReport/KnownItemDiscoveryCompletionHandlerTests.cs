@@ -16,10 +16,18 @@ public sealed class KnownItemDiscoveryCompletionHandlerTests
         var env = KnownItemDiscoveryCompletionTestEnvironment.Create();
         await env.SeedKnownArtistAsync();
 
-        await env.ArtistAttemptedHandler.Handle(env.CompletedArtistAttempted(), CancellationToken.None);
+        var attempted = env.CompletedArtistAttempted();
+        await env.ApplyArtistAttemptedToDiscovery.Handle(
+            attempted.ArtistId,
+            attempted.SourceProvider,
+            attempted.Priority,
+            attempted.CreatedAt,
+            attempted.Outcome,
+            attempted.ArtistMetadataFetched,
+            CancellationToken.None);
 
         env.DiscoveryRepository
-            .GetStoredEvents(KnownCatalogItem.ForArtist(ArtistId.From("artist_1")))
+            .GetStoredEvents(KnownCatalogId.ForArtist(ArtistId.From("artist_1")))
             .Last().Should().BeEquivalentTo(new KnownArtistDiscoveryCompleted(
                 ArtistId.From("artist_1"),
                 LookupPriorityBand.High,
@@ -36,10 +44,19 @@ public sealed class KnownItemDiscoveryCompletionHandlerTests
         var env = KnownItemDiscoveryCompletionTestEnvironment.Create();
         await env.SeedKnownAlbumAsync();
 
-        await env.AlbumAttemptedHandler.Handle(env.CompletedAlbumAttempted(), CancellationToken.None);
+        var attempted = env.CompletedAlbumAttempted();
+        await env.ApplyAlbumAttemptedToDiscovery.Handle(
+            attempted.ArtistId,
+            attempted.AlbumId,
+            attempted.SourceProvider,
+            attempted.Priority,
+            attempted.CreatedAt,
+            attempted.Outcome,
+            attempted.AlbumMetadataFetched,
+            CancellationToken.None);
 
         env.DiscoveryRepository
-            .GetStoredEvents(KnownCatalogItem.ForAlbum(ArtistId.From("artist_1"), AlbumId.From("album_1")))
+            .GetStoredEvents(KnownCatalogId.ForAlbum(ArtistId.From("artist_1"), AlbumId.From("album_1")))
             .Last().Should().BeEquivalentTo(new KnownAlbumDiscoveryCompleted(
                 ArtistId.From("artist_1"),
                 AlbumId.From("album_1"),

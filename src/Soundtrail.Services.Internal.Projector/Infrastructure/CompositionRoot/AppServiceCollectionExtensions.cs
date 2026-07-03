@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogDiscoveryWorkChanged.CompositionRoot;
 using Soundtrail.Services.Internal.Projector.Features.OnDiscoveryRequested.CompositionRoot;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchPlannedForLookup.CompositionRoot;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged.CompositionRoot;
@@ -25,6 +26,7 @@ public static class AppServiceCollectionExtensions
         services.AddOnKnownTrackRequestedFeature();
         services.AddOnCatalogCandidateIdentifiedFeature();
         services.AddOnMusicCatalogChangedFeature();
+        services.AddOnCatalogDiscoveryWorkChangedFeature();
         return services;
     }
 }

@@ -85,7 +85,7 @@ internal sealed class KnownItemRequestedHandlerTestEnvironment
         LoadKnownCatalogArtistPort.Seed(ArtistId.From(artistId), "Artist 1", "mb-artist-1");
 
         return new ArtistCatalogLookupRequestedCommand(
-            DiscoveryQueryKey.StableValueFor(KnownCatalogItem.ForArtist(ArtistId.From(artistId))),
+            DiscoveryQueryKey.StableValueFor(KnownCatalogId.ForArtist(ArtistId.From(artistId))),
             [
                 new VersionedCatalogSearchDiscoveryEvent(
                     1,
@@ -107,7 +107,7 @@ internal sealed class KnownItemRequestedHandlerTestEnvironment
             "mb-release-1");
 
         return new AlbumCatalogLookupRequestedCommand(
-            DiscoveryQueryKey.StableValueFor(KnownCatalogItem.ForAlbum(ArtistId.From(artistId), AlbumId.From(albumId))),
+            DiscoveryQueryKey.StableValueFor(KnownCatalogId.ForAlbum(ArtistId.From(artistId), AlbumId.From(albumId))),
             [
                 new VersionedCatalogSearchDiscoveryEvent(
                     1,
