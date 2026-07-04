@@ -3,7 +3,6 @@ using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Events;
-using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adapters;
 
@@ -11,7 +10,7 @@ namespace Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.
 
 public sealed class ArtistCatalogProjection
 {
-    private readonly EventHandlers<ArtistCatalogProjection> eventHandlers;
+    private readonly EventHandlers eventHandlers;
     private readonly Dictionary<string, AlbumState> albums = new(StringComparer.Ordinal);
     private readonly Dictionary<string, TrackState> tracks = new(StringComparer.Ordinal);
     private string? artistName;
@@ -70,22 +69,22 @@ public sealed class ArtistCatalogProjection
         albums.Values
             .Select(album => new CatalogAlbumRecordDto
             {
-                Id = CatalogAlbumRecordDto.GetDocumentId(album.AlbumId.Value),
+                Id = CatalogAlbumRecordDto.GetDocumentId(album.AlbumId.ArtistAlbumId),
                 ArtistId = ArtistId.Value,
-                AlbumId = album.AlbumId.Value,
+                AlbumId = album.AlbumId.ArtistAlbumId,
                 Name = album.AlbumTitle ?? string.Empty,
                 NormalizedName = NormalizeFreeText(album.AlbumTitle),
                 ArtistName = artistName ?? string.Empty,
                 SearchText = NormalizeFreeText($"{album.AlbumTitle} {artistName}".Trim()),
                 MusicBrainzReleaseId = album.SourceAlbumId,
                 AvailableProviders = tracks.Values
-                    .Where(track => string.Equals(track.AlbumId, album.AlbumId.Value, StringComparison.Ordinal))
+                    .Where(track => string.Equals(track.AlbumId, album.AlbumId.ArtistAlbumId, StringComparison.Ordinal))
                     .SelectMany(track => track.ProviderReferences.Keys)
                     .Distinct(StringComparer.Ordinal)
                     .OrderBy(x => x, StringComparer.Ordinal)
                     .ToArray(),
                 TerminallyUnavailableProviders = tracks.Values
-                    .Where(track => string.Equals(track.AlbumId, album.AlbumId.Value, StringComparison.Ordinal))
+                    .Where(track => string.Equals(track.AlbumId, album.AlbumId.ArtistAlbumId, StringComparison.Ordinal))
                     .SelectMany(track => track.FailedProviders)
                     .Distinct(StringComparer.Ordinal)
                     .OrderBy(x => x, StringComparer.Ordinal)
@@ -93,7 +92,7 @@ public sealed class ArtistCatalogProjection
                 ArtworkUrl = album.ArtworkUrl,
                 ReleaseDate = album.ReleaseDate,
                 UpdatedAt = tracks.Values
-                    .Where(track => string.Equals(track.AlbumId, album.AlbumId.Value, StringComparison.Ordinal))
+                    .Where(track => string.Equals(track.AlbumId, album.AlbumId.ArtistAlbumId, StringComparison.Ordinal))
                     .Select(track => track.UpdatedAt)
                     .Append(album.UpdatedAt)
                     .Max()
@@ -195,9 +194,9 @@ public sealed class ArtistCatalogProjection
         Version = version;
     }
 
-    private EventHandlers<ArtistCatalogProjection> CreateHandlers()
+    private EventHandlers CreateHandlers()
     {
-        var handlers = new EventHandlers<ArtistCatalogProjection>();
+        var handlers = new EventHandlers();
 
         handlers.Register<ArtistDiscovered>(@event =>
         {
@@ -249,7 +248,7 @@ public sealed class ArtistCatalogProjection
             track.UpdatedAt = @event.ObservedAt;
         });
 
-        handlers.Register<ProviderReferenceDiscovered>(@event =>
+        handlers.Register<StreamingLocationDiscovered>(@event =>
         {
             var musicCatalogId = @event.MusicCatalogId
                                  ?? throw new InvalidOperationException("Provider reference facts in artist catalog must include a music catalog id.");

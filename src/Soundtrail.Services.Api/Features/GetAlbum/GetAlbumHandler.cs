@@ -1,7 +1,5 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Catalog.Browsing;
-using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Services.Api.Infrastructure.Ports;
 
 namespace Soundtrail.Services.Api.Features.GetAlbum;

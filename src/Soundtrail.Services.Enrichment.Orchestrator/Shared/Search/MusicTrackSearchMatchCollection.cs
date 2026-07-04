@@ -9,7 +9,7 @@ public sealed class MusicTrackSearchMatchCollection(
 {
     private const decimal MinimumAcceptedScore = 0.80m;
 
-    public IReadOnlyList<MusicCatalogMatch> Query(MusicSearchCriteria searchCriteria)
+    public IReadOnlyList<MusicCatalogMatch> Query(LookupCriteria searchCriteria)
     {
         var normalizedQuery = searchCriteria.UnifiedQuery;
         if (!string.IsNullOrWhiteSpace(normalizedQuery))

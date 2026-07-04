@@ -6,6 +6,6 @@ namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecyclePr
 public interface ILoadDiscoveryLifecycleEventsForReplayPort
 {
     Task<IReadOnlyList<VersionedCatalogSearchDiscoveryEvent>> LoadAsync(
-        MusicSearchCriteria searchCriteria,
+        LookupCriteria searchCriteria,
         CancellationToken cancellationToken);
 }

@@ -2,6 +2,7 @@ using Raven.Client.Documents;
 using Raven.Client.Documents.Session;
 using Raven.Client.Exceptions;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Discovery.Budget;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Shared.SourceBudgets.Adapters;
 

@@ -37,11 +37,11 @@ public sealed class LookupStreamingLocationsCommandTranslationRegistration : ITy
                     CorrelationId.From(dto.CorrelationId),
                     dto.SearchTerm.Kind switch
                     {
-                        MusicSearchKind.UnifiedSearch => MusicSearchCriteria.ByQuery(
+                        MusicSearchKind.UnifiedSearch => LookupCriteria.Query(
                             dto.SearchTerm.Query ?? throw new InvalidOperationException("Unified streaming locations lookup requires a query.")),
-                        MusicSearchKind.Isrc => MusicSearchCriteria.ByIsrc(
+                        MusicSearchKind.Isrc => LookupCriteria.ExactIsrc(
                             dto.SearchTerm.Isrc ?? throw new InvalidOperationException("ISRC streaming locations lookup requires an ISRC.")),
-                        MusicSearchKind.TrackArtistAlbum => MusicSearchCriteria.ByTrackArtistAlbum(
+                        MusicSearchKind.TrackArtistAlbum => LookupCriteria.ByTrackArtistAlbum(
                             dto.SearchTerm.Title ?? throw new InvalidOperationException("Track/artist/album streaming locations lookup requires a title."),
                             dto.SearchTerm.Artist ?? throw new InvalidOperationException("Track/artist/album streaming locations lookup requires an artist."),
                             dto.SearchTerm.Album),

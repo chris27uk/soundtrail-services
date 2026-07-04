@@ -8,7 +8,7 @@ namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecyclePr
 public sealed class RavenLoadDiscoveryLifecycleReplayTargets(
     IAsyncDocumentSession session) : ILoadDiscoveryLifecycleReplayTargetsPort
 {
-    public async Task<IReadOnlyList<MusicSearchCriteria>> LoadAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<LookupCriteria>> LoadAsync(CancellationToken cancellationToken)
     {
         var metadata = await session.Advanced.LoadStartingWithAsync<RavenEventStreamMetadataRecord>(
             "discovery-query-streams/",

@@ -14,7 +14,7 @@ public sealed class RavenCatalogSearchTrackingStore(
     IAsyncDocumentSession? session = null) : ICatalogSearchTrackingStore
 {
     public async Task<CatalogSearchTracking?> FindByCriteriaAsync(
-        MusicSearchCriteria searchCriteria,
+        LookupCriteria searchCriteria,
         CancellationToken cancellationToken)
     {
         var (activeSession, dispose) = OpenSession();

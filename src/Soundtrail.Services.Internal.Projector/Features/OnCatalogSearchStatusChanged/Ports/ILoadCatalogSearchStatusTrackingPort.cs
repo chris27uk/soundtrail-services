@@ -6,6 +6,6 @@ namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusC
 public interface ILoadCatalogSearchStatusTrackingPort
 {
     Task<CatalogSearchStatusTracking?> LoadAsync(
-        MusicSearchCriteria searchCriteria,
+        LookupCriteria searchCriteria,
         CancellationToken cancellationToken);
 }

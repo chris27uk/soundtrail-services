@@ -1,6 +1,5 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Services.Internal.Projector.Features.OnDiscoveryRequested.Support;
 

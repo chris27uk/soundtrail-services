@@ -42,7 +42,7 @@ public sealed class MusicCatalogChangedSubscriptionHostedService(
                             }
 
                             await handler.Handle(
-                                new MusicCatalogChangedCommand(
+                                new ArtistChanged(
                                     ArtistId.From(stream.Key),
                                     stream.OrderBy(x => x.Version)
                                         .Select(x => new VersionedCatalogEvent(

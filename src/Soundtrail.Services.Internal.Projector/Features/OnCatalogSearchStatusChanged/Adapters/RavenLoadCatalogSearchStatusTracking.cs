@@ -10,7 +10,7 @@ namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusC
 public sealed class RavenLoadCatalogSearchStatusTracking(IAsyncDocumentSession session) : ILoadCatalogSearchStatusTrackingPort
 {
     public async Task<CatalogSearchStatusTracking?> LoadAsync(
-        MusicSearchCriteria searchCriteria,
+        LookupCriteria searchCriteria,
         CancellationToken cancellationToken)
     {
         var document = await session.LoadAsync<CatalogSearchTrackingRecordDto>(

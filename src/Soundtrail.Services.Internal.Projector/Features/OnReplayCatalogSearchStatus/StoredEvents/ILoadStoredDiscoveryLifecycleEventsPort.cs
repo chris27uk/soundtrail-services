@@ -6,6 +6,6 @@ namespace Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchS
 public interface ILoadStoredDiscoveryLifecycleEventsPort
 {
     Task<IReadOnlyList<VersionedCatalogSearchDiscoveryEvent>> LoadAsync(
-        MusicSearchCriteria searchCriteria,
+        LookupCriteria searchCriteria,
         CancellationToken cancellationToken);
 }

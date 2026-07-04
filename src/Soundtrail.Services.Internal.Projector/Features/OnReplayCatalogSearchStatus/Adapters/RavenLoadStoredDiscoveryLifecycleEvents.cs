@@ -13,7 +13,7 @@ public sealed class RavenLoadStoredDiscoveryLifecycleEvents(
     ITypeRegistry registry) : ILoadStoredDiscoveryLifecycleEventsPort
 {
     public async Task<IReadOnlyList<VersionedCatalogSearchDiscoveryEvent>> LoadAsync(
-        MusicSearchCriteria searchCriteria,
+        LookupCriteria searchCriteria,
         CancellationToken cancellationToken)
     {
         var persistentId = DiscoveryQueryKey.StableValueFor(searchCriteria);

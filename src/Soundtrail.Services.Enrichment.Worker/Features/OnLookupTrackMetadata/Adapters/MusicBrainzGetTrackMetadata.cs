@@ -10,7 +10,7 @@ namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupTrackMetadata.A
 public sealed class MusicBrainzGetTrackMetadata(HttpClient httpClient) : IGetTrackMetadata
 {
     public async Task<SongMetadata?> GetMetadataAsync(
-        MusicSearchCriteria searchCriteria,
+        LookupCriteria searchCriteria,
         CancellationToken cancellationToken)
     {
         var recording = await searchCriteria.Match(

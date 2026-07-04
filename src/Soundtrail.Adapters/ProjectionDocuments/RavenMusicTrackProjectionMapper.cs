@@ -42,7 +42,7 @@ public sealed class RavenMusicTrackProjectionMapper
                 document.ProjectionVersion));
     }
 
-    private static ProjectedProviderReference ToDomain(RavenProviderReferenceRecordDto reference) =>
+    private static ProjectedStreamingReference ToDomain(RavenProviderReferenceRecordDto reference) =>
         new(
             ProviderName.From(reference.Provider),
             new Uri(reference.Url),

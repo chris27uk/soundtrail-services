@@ -1,6 +1,5 @@
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Search;
 using Soundtrail.Adapters.Discovery;
 using Soundtrail.Adapters.Registry;
@@ -29,7 +28,7 @@ public sealed class SearchCatalogRequestedToCatalogSearchAttemptTranslationRegis
                 new SearchCatalogRequested(
                     !string.IsNullOrWhiteSpace(dto.Criteria)
                         ? DiscoveryQueryKey.ToMusicSearchCriteria(dto.Criteria)
-                        : MusicSearchCriteria.ByQuery(dto.Query),
+                        : LookupCriteria.Query(dto.Query),
                     PlaybackProviderFilter.Parse(dto.Playback),
                     dto.TrustLevel,
                     dto.RiskScore,

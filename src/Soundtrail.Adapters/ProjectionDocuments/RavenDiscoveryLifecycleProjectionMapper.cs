@@ -9,7 +9,7 @@ namespace Soundtrail.Adapters.ProjectionDocuments;
 public sealed class RavenDiscoveryLifecycleProjectionMapper
 {
     public DiscoveryLifecycleProjection ToDomain(
-        MusicSearchCriteria searchCriteria,
+        LookupCriteria searchCriteria,
         CatalogSearchStatusRecordDto? status,
         DiscoveryLifecycleProjectionCheckpointDocument? checkpoint)
     {

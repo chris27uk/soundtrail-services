@@ -29,14 +29,14 @@ public sealed class LookupTrackMetadataListener(IHandler<LookupTrackMetadataComm
         await handler.Handle(command, cancellationToken);
     }
 
-    private static MusicSearchCriteria ToSearchTerm(LookupTrackMetadataCommandDto dto) =>
+    private static LookupCriteria ToSearchTerm(LookupTrackMetadataCommandDto dto) =>
         dto.SearchKind switch
         {
-            MusicSearchKind.UnifiedSearch => MusicSearchCriteria.ByQuery(
+            MusicSearchKind.UnifiedSearch => LookupCriteria.Query(
                 dto.Query ?? throw new InvalidOperationException("Unified music metadata lookup requires a query.")),
-            MusicSearchKind.Isrc => MusicSearchCriteria.ByIsrc(
+            MusicSearchKind.Isrc => LookupCriteria.ExactIsrc(
                 dto.Isrc ?? throw new InvalidOperationException("ISRC music metadata lookup requires an ISRC.")),
-            MusicSearchKind.TrackArtistAlbum => MusicSearchCriteria.ByTrackArtistAlbum(
+            MusicSearchKind.TrackArtistAlbum => LookupCriteria.ByTrackArtistAlbum(
                 dto.TrackName ?? throw new InvalidOperationException("Track/artist/album music metadata lookup requires a track name."),
                 dto.ArtistName ?? throw new InvalidOperationException("Track/artist/album music metadata lookup requires an artist name."),
                 dto.AlbumName),

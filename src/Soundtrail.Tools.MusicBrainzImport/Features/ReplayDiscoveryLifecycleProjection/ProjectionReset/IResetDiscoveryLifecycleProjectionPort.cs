@@ -5,6 +5,6 @@ namespace Soundtrail.Tools.MusicBrainzImport.Features.ReplayDiscoveryLifecyclePr
 public interface IResetDiscoveryLifecycleProjectionPort
 {
     Task ResetAsync(
-        MusicSearchCriteria searchCriteria,
+        LookupCriteria searchCriteria,
         CancellationToken cancellationToken);
 }

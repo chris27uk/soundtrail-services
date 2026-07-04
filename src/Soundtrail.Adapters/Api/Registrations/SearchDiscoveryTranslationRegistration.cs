@@ -8,7 +8,7 @@ public sealed class SearchDiscoveryTranslationRegistration : ITypeTranslationReg
 {
     public void Register(TypeTranslationRegistry registry)
     {
-        registry.Register<SearchDiscovery, SearchDiscoveryResponseDto>(
+        registry.Register<EnrichmentDecision, SearchDiscoveryResponseDto>(
             translate: discovery =>
                 new SearchDiscoveryResponseDto(
                     discovery.WillBeLookedUp,

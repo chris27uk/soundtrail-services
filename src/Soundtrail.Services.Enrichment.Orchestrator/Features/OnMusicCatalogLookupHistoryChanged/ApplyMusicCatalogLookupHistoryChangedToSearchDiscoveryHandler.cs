@@ -29,14 +29,14 @@ public sealed class ApplyMusicCatalogLookupHistoryChangedToSearchDiscoveryHandle
             var fallbackSearchTerms = await ResolveFallbackSearchTermsAsync(musicCatalogId, cancellationToken);
             foreach (var searchTerm in history.ResolveSearchTerms(@event, fallbackSearchTerms))
             {
-                var loaded = await SearchDiscoveryHistory.LoadAsync(discoveryRepository, searchTerm, cancellationToken);
+                var loaded = await DiscoveryHistory.LoadAsync(discoveryRepository, searchTerm, cancellationToken);
                 history.ApplyToSearchDiscovery(loaded.Aggregate, @event);
                 await loaded.Aggregate.SaveAsync(discoveryRepository, loaded.Stream, cancellationToken);
             }
         }
     }
 
-    private async Task<IReadOnlyList<MusicSearchCriteria>> ResolveFallbackSearchTermsAsync(
+    private async Task<IReadOnlyList<LookupCriteria>> ResolveFallbackSearchTermsAsync(
         MusicCatalogId musicCatalogId,
         CancellationToken cancellationToken)
     {

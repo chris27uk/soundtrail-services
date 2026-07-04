@@ -1,6 +1,5 @@
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog.Commands;
-using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Operations;
 using Soundtrail.Tools.MusicBrainzImport.Features.RebuildAllReadModels.OperationalState;
 using Soundtrail.Tools.MusicBrainzImport.Features.ReplayCatalogProjection;

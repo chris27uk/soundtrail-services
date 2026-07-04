@@ -9,6 +9,6 @@ public sealed record ScheduleStreamingLocationsLookupCommand(
     LookupPriorityBand Priority,
     DateTimeOffset ObservedAt,
     CorrelationId CorrelationId,
-    MusicSearchCriteria SearchCriteria,
+    LookupCriteria SearchCriteria,
     ArtistId? ArtistId,
     AlbumId? AlbumId);

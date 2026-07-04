@@ -70,7 +70,7 @@ public sealed class CatalogSearchPlannedForLookupHandler(
                 planned.Priority,
                 planned.PlannedAt,
                 CorrelationId.New(),
-                MusicSearchCriteria.ByIsrc(track!.ResolvedIsrc ?? track.Isrc!),
+                LookupCriteria.ExactIsrc(track!.ResolvedIsrc ?? track.Isrc!),
                 hierarchy);
         }
 
@@ -95,7 +95,7 @@ public sealed class CatalogSearchPlannedForLookupHandler(
             planned.Priority,
             planned.PlannedAt,
             CorrelationId.New(),
-            MusicSearchCriteria.ByTrackArtistAlbum(title, artist, track.AlbumTitle),
+            LookupCriteria.ByTrackArtistAlbum(title, artist, track.AlbumTitle),
             hierarchy);
     }
 }

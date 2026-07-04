@@ -24,14 +24,14 @@ public sealed class CatalogDiscoveryWorkStoredEventTranslator : ITypeTranslation
                 dto.RequestedAtUtc),
             domainEvent => domainEvent.RequestedAt);
 
-        registry.RegisterStoredEventPair<CatalogDiscoveryWorkDeferred, CatalogDiscoveryWorkDeferredEventDataRecordDto>(
-            nameof(CatalogDiscoveryWorkDeferred),
+        registry.RegisterStoredEventPair<WorkDeferred, CatalogDiscoveryWorkDeferredEventDataRecordDto>(
+            nameof(WorkDeferred),
             domainEvent => new CatalogDiscoveryWorkDeferredEventDataRecordDto(
                 domainEvent.MusicCatalogId.Value,
                 domainEvent.NextEligibleAt,
                 domainEvent.Reason,
                 domainEvent.DeferredAt),
-            dto => new CatalogDiscoveryWorkDeferred(
+            dto => new WorkDeferred(
                 MusicCatalogId.From(dto.MusicCatalogId),
                 dto.NextEligibleAtUtc,
                 dto.Reason,
@@ -52,15 +52,15 @@ public sealed class CatalogDiscoveryWorkStoredEventTranslator : ITypeTranslation
                 dto.IgnoredAtUtc),
             domainEvent => domainEvent.IgnoredAt);
 
-        registry.RegisterStoredEventPair<CatalogDiscoveryWorkScheduled, CatalogDiscoveryWorkScheduledEventDataRecordDto>(
-            nameof(CatalogDiscoveryWorkScheduled),
+        registry.RegisterStoredEventPair<WorkScheduled, CatalogDiscoveryWorkScheduledEventDataRecordDto>(
+            nameof(WorkScheduled),
             domainEvent => new CatalogDiscoveryWorkScheduledEventDataRecordDto(
                 domainEvent.MusicCatalogId.Value,
                 domainEvent.Priority.ToString(),
-                domainEvent.NextEligibleAt,
+                domainEvent.For,
                 domainEvent.Reason,
                 domainEvent.ScheduledAt),
-            dto => new CatalogDiscoveryWorkScheduled(
+            dto => new WorkScheduled(
                 MusicCatalogId.From(dto.MusicCatalogId),
                 Enum.Parse<LookupPriorityBand>(dto.Priority, ignoreCase: true),
                 dto.NextEligibleAtUtc,

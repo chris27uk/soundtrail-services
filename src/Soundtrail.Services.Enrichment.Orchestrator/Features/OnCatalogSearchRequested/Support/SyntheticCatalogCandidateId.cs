@@ -5,7 +5,7 @@ namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRe
 
 public static class SyntheticCatalogCandidateId
 {
-    public static MusicCatalogId ForSearch(MusicSearchCriteria searchCriteria) =>
+    public static MusicCatalogId ForSearch(LookupCriteria searchCriteria) =>
         MusicCatalogId.From(
             $"discovery_{DiscoveryQueryKey.StableValueFor(searchCriteria).Replace(':', '_')}");
 }

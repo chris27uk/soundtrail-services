@@ -1,6 +1,5 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
-using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Adapters.Registry;
 using Wolverine.Attributes;
 

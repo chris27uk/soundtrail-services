@@ -2,7 +2,7 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Discovery.Assesment;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogCandidateIdentified.Support;
 
@@ -21,16 +21,16 @@ public sealed class DispatchAssessmentForCatalogCandidateIdentifiedHandler(
             var itemId = new CatalogItemId.Track(TrackId.From(@event.MusicCatalogId.Value));
 
             await commandBus.SendAsync(
-                new AssessMusicCatalogItemCommand(
-                    AssessMusicCatalogItemCommand.Id(
+                new AssessWorkCommand(
+                    AssessWorkCommand.Id(
                         itemId,
-                        CatalogItemResource.ForSearch(@event.SearchCriteria),
+                        EnrichmentQuery.ForSearch(@event.SearchCriteria),
                         @event.StartedAt),
                     @event.CorrelationId,
                     @event.StartedAt,
                     LookupPriorityBand.Low,
                     itemId,
-                    CatalogItemResource.ForSearch(@event.SearchCriteria),
+                    EnrichmentQuery.ForSearch(@event.SearchCriteria),
                     @event.TrustLevel,
                     @event.RiskScore),
                 cancellationToken);

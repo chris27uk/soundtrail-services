@@ -6,6 +6,6 @@ namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusC
 public interface ILoadDiscoveryLifecycleProjectionPort
 {
     Task<DiscoveryLifecycleProjection> LoadAsync(
-        MusicSearchCriteria searchCriteria,
+        LookupCriteria searchCriteria,
         CancellationToken cancellationToken);
 }

@@ -14,7 +14,7 @@ public sealed class RavenLoadKnownCatalogAlbumPort(IDocumentStore documentStore)
     {
         using var session = documentStore.OpenAsyncSession();
         var document = await session.LoadAsync<CatalogAlbumRecordDto>(
-            CatalogAlbumRecordDto.GetDocumentId(albumId.Value),
+            CatalogAlbumRecordDto.GetDocumentId(albumId.ArtistAlbumId),
             cancellationToken);
 
         if (document is null)
@@ -25,7 +25,7 @@ public sealed class RavenLoadKnownCatalogAlbumPort(IDocumentStore documentStore)
         if (!string.Equals(document.ArtistId, artistId.Value, StringComparison.Ordinal))
         {
             throw new InvalidOperationException(
-                $"Known album '{albumId.Value}' is not owned by artist '{artistId.Value}'.");
+                $"Known album '{albumId.ArtistAlbumId}' is not owned by artist '{artistId.Value}'.");
         }
 
         var artist = await session.LoadAsync<CatalogArtistRecordDto>(

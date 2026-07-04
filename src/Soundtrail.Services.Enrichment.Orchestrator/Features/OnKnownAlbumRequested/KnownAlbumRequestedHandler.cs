@@ -2,7 +2,6 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownAlbumRequested;

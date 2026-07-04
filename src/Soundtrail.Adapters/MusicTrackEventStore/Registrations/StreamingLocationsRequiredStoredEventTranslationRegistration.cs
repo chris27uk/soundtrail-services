@@ -35,11 +35,11 @@ public sealed class StreamingLocationsRequiredStoredEventTranslationRegistration
                 dto.ObservedAt,
                 dto.SearchKind switch
                 {
-                    MusicSearchKind.UnifiedSearch => MusicSearchCriteria.ByQuery(
+                    MusicSearchKind.UnifiedSearch => LookupCriteria.Query(
                         dto.Query ?? throw new InvalidOperationException("Stored unified streaming locations event requires a query.")),
-                    MusicSearchKind.Isrc => MusicSearchCriteria.ByIsrc(
+                    MusicSearchKind.Isrc => LookupCriteria.ExactIsrc(
                         dto.Isrc ?? throw new InvalidOperationException("Stored ISRC streaming locations event requires an ISRC.")),
-                    MusicSearchKind.TrackArtistAlbum => MusicSearchCriteria.ByTrackArtistAlbum(
+                    MusicSearchKind.TrackArtistAlbum => LookupCriteria.ByTrackArtistAlbum(
                         dto.Title ?? throw new InvalidOperationException("Stored track/artist/album streaming locations event requires a title."),
                         dto.Artist ?? throw new InvalidOperationException("Stored track/artist/album streaming locations event requires an artist."),
                         dto.Album),

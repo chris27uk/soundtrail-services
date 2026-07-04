@@ -5,7 +5,6 @@ using Raven.Client.Documents;
 using Raven.Client.Documents.Subscriptions;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Abstractions.EventSourcing;
-using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Search;
 using Soundtrail.Adapters.Registry;

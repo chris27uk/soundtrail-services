@@ -1,7 +1,6 @@
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Contracts.IntegrationMessaging.Responses;
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Adapters.Registry;

@@ -1,7 +1,6 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Search;
 using Soundtrail.Adapters.Registry;
 

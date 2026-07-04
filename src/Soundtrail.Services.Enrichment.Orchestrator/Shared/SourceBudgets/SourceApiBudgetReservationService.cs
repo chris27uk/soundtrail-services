@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Discovery.Budget;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.SourceBudgets.Configuration;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Shared.SourceBudgets;

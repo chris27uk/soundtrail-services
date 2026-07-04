@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Discovery.Budget;
 using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Raven;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.SourceBudgets;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.SourceBudgets.Adapters;

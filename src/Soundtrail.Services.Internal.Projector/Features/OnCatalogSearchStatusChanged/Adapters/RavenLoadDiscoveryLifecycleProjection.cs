@@ -13,7 +13,7 @@ public sealed class RavenLoadDiscoveryLifecycleProjection(
     RavenDiscoveryLifecycleProjectionMapper mapper) : ILoadDiscoveryLifecycleProjectionPort
 {
     public async Task<DiscoveryLifecycleProjection> LoadAsync(
-        MusicSearchCriteria searchCriteria,
+        LookupCriteria searchCriteria,
         CancellationToken cancellationToken)
     {
         var persistentId = DiscoveryQueryKey.StableValueFor(searchCriteria);

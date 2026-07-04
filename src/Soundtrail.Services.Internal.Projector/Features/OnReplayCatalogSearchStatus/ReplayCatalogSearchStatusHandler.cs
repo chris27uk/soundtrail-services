@@ -1,5 +1,5 @@
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Operations;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchStatusChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnReplayCatalogSearchStatus.StoredEvents;
 

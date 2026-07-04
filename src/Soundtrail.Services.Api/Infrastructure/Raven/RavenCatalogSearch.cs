@@ -7,21 +7,22 @@ using Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Api.Infrastructure.Raven.Indexes;
 using Soundtrail.Adapters.Discovery;
+using Soundtrail.Domain.Discovery.Candidates;
 
 namespace Soundtrail.Services.Api.Infrastructure.Raven;
 
 public sealed class RavenCatalogSearch(IDocumentStore documentStore) : ICatalogSearchPort
 {
-    public async Task<LocalCatalogSearchResponse> SearchAsync(
+    public async Task<CandidateSearchResponse> SearchAsync(
         SearchCatalogCommand command,
         CancellationToken cancellationToken)
     {
         using var session = documentStore.OpenAsyncSession();
         var take = command.Offset.Value + command.Limit.Value;
 
-        var results = new List<SearchCatalogResult>();
+        var results = new List<CandidateResult>();
 
-        if (command.Types.Includes(SearchResultType.Artist))
+        if (command.Types.Includes(SearchType.Artist))
         {
             var artists = await session
                 .Query<CatalogArtistRecordDto, Search_Artists>()
@@ -31,8 +32,8 @@ public sealed class RavenCatalogSearch(IDocumentStore documentStore) : ICatalogS
 
             results.AddRange(artists
                 .Where(artist => command.Playback.AllowsAny(ToProviders(artist.AvailableProviders)))
-                .Select(artist => new SearchCatalogResult(
-                    SearchResultType.Artist,
+                .Select(artist => new CandidateResult(
+                    SearchType.Artist,
                     artist.ArtistId,
                     artist.Name,
                     artist.ArtistId,
@@ -45,7 +46,7 @@ public sealed class RavenCatalogSearch(IDocumentStore documentStore) : ICatalogS
                     [])));
         }
 
-        if (command.Types.Includes(SearchResultType.Album))
+        if (command.Types.Includes(SearchType.Album))
         {
             var albums = await session
                 .Query<CatalogAlbumRecordDto, Search_Albums>()
@@ -55,8 +56,8 @@ public sealed class RavenCatalogSearch(IDocumentStore documentStore) : ICatalogS
 
             results.AddRange(albums
                 .Where(album => command.Playback.AllowsAny(ToProviders(album.AvailableProviders)))
-                .Select(album => new SearchCatalogResult(
-                    SearchResultType.Album,
+                .Select(album => new CandidateResult(
+                    SearchType.Album,
                     album.AlbumId,
                     album.Name,
                     album.ArtistId,
@@ -69,7 +70,7 @@ public sealed class RavenCatalogSearch(IDocumentStore documentStore) : ICatalogS
                     [])));
         }
 
-        if (command.Types.Includes(SearchResultType.Track))
+        if (command.Types.Includes(SearchType.Track))
         {
             var tracks = await session
                 .Query<CatalogTrackRecordDto, Search_Tracks>()
@@ -79,8 +80,8 @@ public sealed class RavenCatalogSearch(IDocumentStore documentStore) : ICatalogS
 
             results.AddRange(tracks
                 .Where(track => command.Playback.AllowsAny(ToProviders(track.AvailableProviders)))
-                .Select(track => new SearchCatalogResult(
-                    SearchResultType.Track,
+                .Select(track => new CandidateResult(
+                    SearchType.Track,
                     track.TrackId,
                     track.Title,
                     track.ArtistId,
@@ -103,11 +104,11 @@ public sealed class RavenCatalogSearch(IDocumentStore documentStore) : ICatalogS
                 DiscoveryQueryKey.StableValueFor(command.ToMusicSearchTerm())),
             cancellationToken);
 
-        return new LocalCatalogSearchResponse(
+        return new CandidateSearchResponse(
             pagedResults,
             discoveryStatus is null
                 ? null
-                : new SearchDiscovery(
+                : new EnrichmentDecision(
                     discoveryStatus.WillBeLookedUp,
                     discoveryStatus.Reason,
                     discoveryStatus.EstimatedRetryAfterSeconds),

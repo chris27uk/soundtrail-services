@@ -74,7 +74,7 @@ public abstract class KnownTrackRequestedMusicTrack
             !string.IsNullOrWhiteSpace(currentIsrc)
             || (!string.IsNullOrWhiteSpace(currentTitle) && !string.IsNullOrWhiteSpace(currentArtist));
 
-        private static Domain.Search.MusicSearchCriteria BuildSearchCriteria(
+        private static Domain.Search.LookupCriteria BuildSearchCriteria(
             string? currentIsrc,
             string? currentTitle,
             string? currentArtist,
@@ -82,10 +82,10 @@ public abstract class KnownTrackRequestedMusicTrack
         {
             if (!string.IsNullOrWhiteSpace(currentIsrc))
             {
-                return Domain.Search.MusicSearchCriteria.ByIsrc(currentIsrc);
+                return Domain.Search.LookupCriteria.ExactIsrc(currentIsrc);
             }
 
-            return Domain.Search.MusicSearchCriteria.ByTrackArtistAlbum(
+            return Domain.Search.LookupCriteria.ByTrackArtistAlbum(
                 currentTitle!,
                 currentArtist!,
                 currentAlbumTitle);

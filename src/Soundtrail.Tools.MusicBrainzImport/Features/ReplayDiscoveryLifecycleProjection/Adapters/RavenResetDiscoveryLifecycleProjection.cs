@@ -11,7 +11,7 @@ public sealed class RavenResetDiscoveryLifecycleProjection(
     IAsyncDocumentSession session) : IResetDiscoveryLifecycleProjectionPort
 {
     public async Task ResetAsync(
-        MusicSearchCriteria searchCriteria,
+        LookupCriteria searchCriteria,
         CancellationToken cancellationToken)
     {
         var persistentId = DiscoveryQueryKey.StableValueFor(searchCriteria);

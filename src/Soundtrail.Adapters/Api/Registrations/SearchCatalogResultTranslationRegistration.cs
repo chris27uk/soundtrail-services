@@ -1,6 +1,7 @@
 using Soundtrail.Contracts.Api;
 using Soundtrail.Domain.Search;
 using Soundtrail.Adapters.Registry;
+using Soundtrail.Domain.Discovery.Candidates;
 
 namespace Soundtrail.Adapters.Api.Registrations;
 
@@ -8,7 +9,7 @@ public sealed class SearchCatalogResultTranslationRegistration : ITypeTranslatio
 {
     public void Register(TypeTranslationRegistry registry)
     {
-        registry.Register<SearchCatalogResult, SearchCatalogResultResponseDto>(
+        registry.Register<CandidateResult, SearchCatalogResultResponseDto>(
             translate: result =>
                 new SearchCatalogResultResponseDto(
                     ToResponseType(result.Type),
@@ -24,12 +25,12 @@ public sealed class SearchCatalogResultTranslationRegistration : ITypeTranslatio
                     result.ProviderReferences.Select(x => registry.ToDto<ProviderReferenceResponseDto>(x)).ToArray()));
     }
 
-    private static string ToResponseType(SearchResultType type) =>
+    private static string ToResponseType(SearchType type) =>
         type switch
         {
-            SearchResultType.Artist => "artist",
-            SearchResultType.Album => "album",
-            SearchResultType.Track => "track",
+            SearchType.Artist => "artist",
+            SearchType.Album => "album",
+            SearchType.Track => "track",
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
         };
 }

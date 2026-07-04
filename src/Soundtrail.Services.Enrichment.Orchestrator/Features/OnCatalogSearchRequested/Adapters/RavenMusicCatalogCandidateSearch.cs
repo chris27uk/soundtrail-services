@@ -13,7 +13,7 @@ namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRe
 public sealed class RavenMusicCatalogCandidateSearch(IDocumentStore documentStore) : IMusicCatalogCandidateSearch
 {
     public async Task<IReadOnlyList<MusicCatalogMatch>> SearchAsync(
-        MusicSearchCriteria searchCriteria,
+        LookupCriteria searchCriteria,
         CancellationToken cancellationToken)
     {
         var normalizedQuery = ToNormalizedQuery(searchCriteria);
@@ -140,7 +140,7 @@ public sealed class RavenMusicCatalogCandidateSearch(IDocumentStore documentStor
                 document.NormalizedAlbumTitle
             }.Where(static value => !string.IsNullOrWhiteSpace(value)));
 
-    private static string? ToNormalizedQuery(MusicSearchCriteria searchCriteria) =>
+    private static string? ToNormalizedQuery(LookupCriteria searchCriteria) =>
         searchCriteria.Match(
             withQuery: static query => query,
             withTitleAndArtist: static (title, artist, album) => MusicIdentityText.NormalizeFreeText(

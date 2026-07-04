@@ -1,7 +1,6 @@
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Support;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.Search;
@@ -16,7 +15,7 @@ public sealed class SearchCatalogRequestedHandler(
         SearchCatalogRequested requested,
         CancellationToken cancellationToken = default)
     {
-        var loaded = await SearchDiscoveryHistory.LoadAsync(
+        var loaded = await DiscoveryHistory.LoadAsync(
             discoveryRepository,
             requested.SearchCriteria,
             cancellationToken);

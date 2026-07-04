@@ -51,7 +51,7 @@ public sealed class RavenCatalogReadPort(IDocumentStore documentStore) : ICatalo
         using var session = documentStore.OpenAsyncSession();
 
         var album = await session.LoadAsync<CatalogAlbumRecordDto>(
-            CatalogAlbumRecordDto.GetDocumentId(albumId.Value),
+            CatalogAlbumRecordDto.GetDocumentId(albumId.ArtistAlbumId),
             cancellationToken);
 
         if (album is null || album.ArtistId != artistId.Value)
@@ -60,7 +60,7 @@ public sealed class RavenCatalogReadPort(IDocumentStore documentStore) : ICatalo
         }
 
         var tracks = await session.Query<CatalogTrackRecordDto>()
-            .Where(x => x.AlbumId == albumId.Value && x.ArtistId == artistId.Value)
+            .Where(x => x.AlbumId == albumId.ArtistAlbumId && x.ArtistId == artistId.Value)
             .OrderBy(x => x.Title)
             .ToListAsync(cancellationToken);
 
@@ -78,7 +78,7 @@ public sealed class RavenCatalogReadPort(IDocumentStore documentStore) : ICatalo
         using var session = documentStore.OpenAsyncSession();
 
         var album = await session.LoadAsync<CatalogAlbumRecordDto>(
-            CatalogAlbumRecordDto.GetDocumentId(albumId.Value),
+            CatalogAlbumRecordDto.GetDocumentId(albumId.ArtistAlbumId),
             cancellationToken);
 
         if (album is null || album.ArtistId != artistId.Value)
@@ -87,7 +87,7 @@ public sealed class RavenCatalogReadPort(IDocumentStore documentStore) : ICatalo
         }
 
         var tracks = await session.Query<CatalogTrackRecordDto>()
-            .Where(x => x.AlbumId == albumId.Value && x.ArtistId == artistId.Value)
+            .Where(x => x.AlbumId == albumId.ArtistAlbumId && x.ArtistId == artistId.Value)
             .OrderBy(x => x.Title)
             .ToListAsync(cancellationToken);
 
@@ -107,7 +107,7 @@ public sealed class RavenCatalogReadPort(IDocumentStore documentStore) : ICatalo
             CatalogTrackRecordDto.GetDocumentId(trackId.Value),
             cancellationToken);
 
-        return track is null || track.ArtistId != artistId.Value || track.AlbumId != albumId.Value
+        return track is null || track.ArtistId != artistId.Value || track.AlbumId != albumId.ArtistAlbumId
             ? null
             : new TrackDetailsResponse(
                 ArtistId.From(track.ArtistId),

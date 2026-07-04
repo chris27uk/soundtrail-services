@@ -29,14 +29,14 @@ public sealed class LookupStreamingLocationsListener(IHandler<LookupStreamingLoc
         await handler.Handle(command, cancellationToken);
     }
 
-    private static MusicSearchCriteria ToSearchTerm(StreamingLocationSearchTermDto dto) =>
+    private static LookupCriteria ToSearchTerm(StreamingLocationSearchTermDto dto) =>
         dto.Kind switch
         {
-            MusicSearchKind.UnifiedSearch => MusicSearchCriteria.ByQuery(
+            MusicSearchKind.UnifiedSearch => LookupCriteria.Query(
                 dto.Query ?? throw new InvalidOperationException("Unified streaming locations lookup requires a query.")),
-            MusicSearchKind.Isrc => MusicSearchCriteria.ByIsrc(
+            MusicSearchKind.Isrc => LookupCriteria.ExactIsrc(
                 dto.Isrc ?? throw new InvalidOperationException("ISRC streaming locations lookup requires an ISRC.")),
-            MusicSearchKind.TrackArtistAlbum => MusicSearchCriteria.ByTrackArtistAlbum(
+            MusicSearchKind.TrackArtistAlbum => LookupCriteria.ByTrackArtistAlbum(
                 dto.Title ?? throw new InvalidOperationException("Track/artist/album streaming locations lookup requires a title."),
                 dto.Artist ?? throw new InvalidOperationException("Track/artist/album streaming locations lookup requires an artist."),
                 dto.Album),

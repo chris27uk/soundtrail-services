@@ -27,7 +27,6 @@ namespace Soundtrail.Contracts.Common
         public override string ToString() => Value;
 
         public static ProviderName[] All => [Spotify, AppleMusic, YoutubeMusic];
-
         
         public string StableValue =>
             this.Value switch

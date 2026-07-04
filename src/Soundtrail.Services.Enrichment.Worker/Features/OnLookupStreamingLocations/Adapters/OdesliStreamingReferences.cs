@@ -15,7 +15,7 @@ public sealed class OdesliStreamingReferences(
     private readonly OdesliOptions options = options.Value;
 
     public async Task<IReadOnlyList<ExternalReference>> GetReferenceToMusicTrack(
-        MusicSearchCriteria searchCriteria,
+        LookupCriteria searchCriteria,
         CancellationToken cancellationToken)
     {
         var requestUri = BuildRequestUri(searchCriteria);
@@ -48,7 +48,7 @@ public sealed class OdesliStreamingReferences(
         return references;
     }
 
-    private string BuildRequestUri(MusicSearchCriteria searchCriteria)
+    private string BuildRequestUri(LookupCriteria searchCriteria)
     {
         return searchCriteria.Match(
             query =>

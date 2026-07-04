@@ -37,11 +37,11 @@ public sealed class StreamingLocationsRequiredIntegrationEventTranslationRegistr
                     dto.ObservedAt,
                     dto.SearchTerm.Kind switch
                     {
-                        MusicSearchKind.UnifiedSearch => MusicSearchCriteria.ByQuery(
+                        MusicSearchKind.UnifiedSearch => LookupCriteria.Query(
                             dto.SearchTerm.Query ?? throw new InvalidOperationException("Streaming locations lookup requires a query for unified search.")),
-                        MusicSearchKind.Isrc => MusicSearchCriteria.ByIsrc(
+                        MusicSearchKind.Isrc => LookupCriteria.ExactIsrc(
                             dto.SearchTerm.Isrc ?? throw new InvalidOperationException("Streaming locations lookup requires an ISRC for ISRC lookups.")),
-                        MusicSearchKind.TrackArtistAlbum => MusicSearchCriteria.ByTrackArtistAlbum(
+                        MusicSearchKind.TrackArtistAlbum => LookupCriteria.ByTrackArtistAlbum(
                             dto.SearchTerm.Title ?? throw new InvalidOperationException("Streaming locations lookup requires a title for track/artist/album lookups."),
                             dto.SearchTerm.Artist ?? throw new InvalidOperationException("Streaming locations lookup requires an artist for track/artist/album lookups."),
                             dto.SearchTerm.Album),

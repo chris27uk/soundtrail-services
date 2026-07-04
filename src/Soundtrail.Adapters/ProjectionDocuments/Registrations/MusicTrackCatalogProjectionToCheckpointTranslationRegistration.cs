@@ -1,6 +1,7 @@
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.ProjectionModel;
 using Soundtrail.Adapters.Registry;
+using Soundtrail.Domain.Catalog.CatalogProjection;
 
 namespace Soundtrail.Adapters.ProjectionDocuments.Registrations;
 

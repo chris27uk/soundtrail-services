@@ -17,7 +17,7 @@ public sealed class DispatchKnownAlbumLookupCommandHandler(
     {
         foreach (var item in command.Events)
         {
-            if (item.Event is not AlbumCatalogLookupRequested requested)
+            if (item.Event is not CatalogLookupRequested requested)
             {
                 continue;
             }

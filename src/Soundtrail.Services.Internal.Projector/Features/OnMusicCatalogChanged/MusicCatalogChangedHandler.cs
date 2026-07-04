@@ -7,7 +7,7 @@ using Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged.Proj
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnMusicCatalogChanged;
 
-public sealed class MusicCatalogChangedHandler : IHandler<MusicCatalogChangedCommand>
+public sealed class MusicCatalogChangedHandler : IHandler<ArtistChanged>
 {
     private readonly IEventStreamRepository<ArtistId, IDomainEvent>? repository;
     private readonly ISaveMusicTrackCatalogProjectionPort savePort;
@@ -22,7 +22,7 @@ public sealed class MusicCatalogChangedHandler : IHandler<MusicCatalogChangedCom
 
     public MusicCatalogChangedHandler(ISaveMusicTrackCatalogProjectionPort savePort) => this.savePort = savePort;
 
-    public async Task Handle(MusicCatalogChangedCommand command, CancellationToken cancellationToken = default)
+    public async Task Handle(ArtistChanged command, CancellationToken cancellationToken = default)
     {
         if (repository is not null)
         {

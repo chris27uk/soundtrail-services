@@ -2,7 +2,6 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Events;
-using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Search;
 using Soundtrail.Adapters.Registry;
@@ -259,14 +258,14 @@ public sealed class DiscoveryQueryStoredEventTranslator : ITypeTranslationRegist
                 dto.FailedAtUtc),
             domainEvent => domainEvent.FailedAt);
 
-        registry.RegisterStoredEventPair<AlbumCatalogLookupRequested, AlbumCatalogLookupRequestedEventDataRecordDto>(
-            nameof(AlbumCatalogLookupRequested),
+        registry.RegisterStoredEventPair<CatalogLookupRequested, AlbumCatalogLookupRequestedEventDataRecordDto>(
+            nameof(CatalogLookupRequested),
             domainEvent => new AlbumCatalogLookupRequestedEventDataRecordDto(
                 domainEvent.ArtistId?.Value,
                 domainEvent.AlbumId.Value,
                 domainEvent.RequestedAt,
                 domainEvent.CorrelationId.Value),
-            dto => new AlbumCatalogLookupRequested(
+            dto => new CatalogLookupRequested(
                 dto.ArtistId is null ? null : ArtistId.From(dto.ArtistId),
                 AlbumId.From(dto.AlbumId),
                 dto.RequestedAtUtc,
@@ -298,11 +297,11 @@ public sealed class DiscoveryQueryStoredEventTranslator : ITypeTranslationRegist
                 dto.ObservedAt,
                 dto.SearchKind switch
                 {
-                    MusicSearchKind.UnifiedSearch => MusicSearchCriteria.ByQuery(
+                    MusicSearchKind.UnifiedSearch => LookupCriteria.Query(
                         dto.Query ?? throw new InvalidOperationException("Stored unified streaming locations event requires a query.")),
-                    MusicSearchKind.Isrc => MusicSearchCriteria.ByIsrc(
+                    MusicSearchKind.Isrc => LookupCriteria.ExactIsrc(
                         dto.Isrc ?? throw new InvalidOperationException("Stored ISRC streaming locations event requires an ISRC.")),
-                    MusicSearchKind.TrackArtistAlbum => MusicSearchCriteria.ByTrackArtistAlbum(
+                    MusicSearchKind.TrackArtistAlbum => LookupCriteria.ByTrackArtistAlbum(
                         dto.Title ?? throw new InvalidOperationException("Stored track/artist/album streaming locations event requires a title."),
                         dto.Artist ?? throw new InvalidOperationException("Stored track/artist/album streaming locations event requires an artist."),
                         dto.Album),
@@ -374,28 +373,28 @@ public sealed class DiscoveryQueryStoredEventTranslator : ITypeTranslationRegist
                 dto.DeferredAtUtc),
             domainEvent => domainEvent.DeferredAt);
 
-        registry.RegisterStoredEventPair<DiscoveryRejected, DiscoveryRejectedEventDataRecordDto>(
-            nameof(DiscoveryRejected),
+        registry.RegisterStoredEventPair<WorkRejected, DiscoveryRejectedEventDataRecordDto>(
+            nameof(WorkRejected),
             domainEvent => new DiscoveryRejectedEventDataRecordDto(
                 DiscoveryQueryKey.StableValueFor(domainEvent.SearchCriteria),
                 domainEvent.WillBeLookedUp,
                 domainEvent.Reason,
                 domainEvent.RejectedAt),
-            dto => new DiscoveryRejected(
+            dto => new WorkRejected(
                 DiscoveryQueryKey.ToMusicSearchCriteria(dto.Criteria),
                 dto.WillBeLookedUp,
                 dto.Reason,
                 dto.RejectedAtUtc),
             domainEvent => domainEvent.RejectedAt);
 
-        registry.RegisterStoredEventPair<DiscoveryFailed, DiscoveryFailedEventDataRecordDto>(
-            nameof(DiscoveryFailed),
+        registry.RegisterStoredEventPair<WorkAttemptFailed, DiscoveryFailedEventDataRecordDto>(
+            nameof(WorkAttemptFailed),
             domainEvent => new DiscoveryFailedEventDataRecordDto(
                 DiscoveryQueryKey.StableValueFor(domainEvent.SearchCriteria),
                 domainEvent.WillBeLookedUp,
                 domainEvent.Reason,
                 domainEvent.FailedAt),
-            dto => new DiscoveryFailed(
+            dto => new WorkAttemptFailed(
                 DiscoveryQueryKey.ToMusicSearchCriteria(dto.Criteria),
                 dto.WillBeLookedUp,
                 dto.Reason,
@@ -418,15 +417,15 @@ public sealed class DiscoveryQueryStoredEventTranslator : ITypeTranslationRegist
                 dto.StartedAtUtc),
             domainEvent => domainEvent.StartedAt);
 
-        registry.RegisterStoredEventPair<DiscoveryCompleted, DiscoveryCompletedEventDataRecordDto>(
-            nameof(DiscoveryCompleted),
+        registry.RegisterStoredEventPair<WorkCompleted, DiscoveryCompletedEventDataRecordDto>(
+            nameof(WorkCompleted),
             domainEvent => new DiscoveryCompletedEventDataRecordDto(
                 DiscoveryQueryKey.StableValueFor(domainEvent.SearchCriteria),
                 domainEvent.Priority.ToString(),
                 domainEvent.WillBeLookedUp,
                 domainEvent.Reason,
                 domainEvent.CompletedAt),
-            dto => new DiscoveryCompleted(
+            dto => new WorkCompleted(
                 DiscoveryQueryKey.ToMusicSearchCriteria(dto.Criteria),
                 Enum.Parse<LookupPriorityBand>(dto.Priority, ignoreCase: true),
                 dto.WillBeLookedUp,

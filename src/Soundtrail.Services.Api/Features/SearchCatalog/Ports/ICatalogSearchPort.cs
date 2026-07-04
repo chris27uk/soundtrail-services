@@ -4,5 +4,5 @@ namespace Soundtrail.Services.Api.Features.SearchCatalog.Ports;
 
 public interface ICatalogSearchPort
 {
-    Task<LocalCatalogSearchResponse> SearchAsync(SearchCatalogCommand command, CancellationToken cancellationToken);
+    Task<CandidateSearchResponse> SearchAsync(SearchCatalogCommand command, CancellationToken cancellationToken);
 }

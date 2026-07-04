@@ -46,7 +46,7 @@ public sealed class MusicTrackProjectionToRavenTrackRecordTranslationRegistratio
             });
     }
 
-    private static RavenProviderReferenceRecordDto ToDocument(ProjectedProviderReference reference) =>
+    private static RavenProviderReferenceRecordDto ToDocument(ProjectedStreamingReference reference) =>
         new()
         {
             Provider = reference.Provider.Value,

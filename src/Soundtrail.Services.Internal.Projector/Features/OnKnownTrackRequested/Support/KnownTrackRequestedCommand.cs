@@ -1,5 +1,4 @@
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Discovery.Commands;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnKnownTrackRequested.Support;
 

@@ -3,7 +3,7 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Discovery.Assesment;
 using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Adapters.Messaging.Registrations;
@@ -12,10 +12,10 @@ public sealed class AssessMusicCatalogItemCommandTranslationRegistration : IType
 {
     public void Register(TypeTranslationRegistry registry)
     {
-        registry.RegisterPair<AssessMusicCatalogItemCommand, AssessMusicCatalogItemCommandDto>(
+        registry.RegisterPair<AssessWorkCommand, AssessMusicCatalogItemCommandDto>(
             command =>
             {
-                var (resourceKind, resourceValue, resourceItemKind) = ToDtoResource(command.Resource);
+                var (resourceKind, resourceValue, resourceItemKind) = ToDtoResource(command.Query);
 
                 return new AssessMusicCatalogItemCommandDto(
                     command.CommandId.Value,
@@ -31,7 +31,7 @@ public sealed class AssessMusicCatalogItemCommandTranslationRegistration : IType
                     command.RiskScore);
             },
             dto =>
-                new AssessMusicCatalogItemCommand(
+                new AssessWorkCommand(
                     CommandId.For(dto.CommandId),
                     CorrelationId.From(dto.CorrelationId),
                     dto.CreatedAt,
@@ -42,30 +42,30 @@ public sealed class AssessMusicCatalogItemCommandTranslationRegistration : IType
                     dto.RiskScore));
     }
 
-    private static (CatalogItemResourceKind ResourceKind, string ResourceValue, CatalogItemKind? ResourceItemKind) ToDtoResource(CatalogItemResource resource) =>
+    private static (CatalogItemResourceKind ResourceKind, string ResourceValue, CatalogItemKind? ResourceItemKind) ToDtoResource(EnrichmentQuery resource) =>
         resource switch
         {
-            CatalogItemResource.SearchCriteria(var searchCriteria) => (
+            EnrichmentQuery.SearchCriteria(var searchCriteria) => (
                 CatalogItemResourceKind.SearchCriteria,
                 DiscoveryQueryKey.StableValueFor(searchCriteria),
                 null),
-            CatalogItemResource.CatalogItem(var itemId) => (
+            EnrichmentQuery.CatalogItem(var itemId) => (
                 CatalogItemResourceKind.CatalogItemId,
                 itemId.StableValue,
                 ToDtoKind(itemId.EntityKind)),
             _ => throw new InvalidOperationException($"Unsupported catalog item resource type '{resource.GetType().Name}'.")
         };
 
-    private static CatalogItemResource ToDomainResource(
+    private static EnrichmentQuery ToDomainResource(
         CatalogItemResourceKind resourceKind,
         string resourceValue,
         CatalogItemKind? resourceItemKind)
     {
         return resourceKind switch
         {
-            CatalogItemResourceKind.SearchCriteria => CatalogItemResource.ForSearch(DiscoveryQueryKey.ToMusicSearchCriteria(resourceValue)),
+            CatalogItemResourceKind.SearchCriteria => EnrichmentQuery.ForSearch(DiscoveryQueryKey.ToMusicSearchCriteria(resourceValue)),
             CatalogItemResourceKind.CatalogItemId when resourceItemKind is not null =>
-                CatalogItemResource.ForCatalogItem(ToDomainItemId(resourceItemKind.Value, resourceValue)),
+                EnrichmentQuery.ForCatalogItem(ToDomainItemId(resourceItemKind.Value, resourceValue)),
             CatalogItemResourceKind.CatalogItemId =>
                 throw new InvalidOperationException("Catalog item resource kind requires a resource item kind."),
             _ => throw new InvalidOperationException($"Unsupported catalog item resource kind '{resourceKind}'.")

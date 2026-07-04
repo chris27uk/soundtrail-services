@@ -2,7 +2,6 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Domain.Search;
 

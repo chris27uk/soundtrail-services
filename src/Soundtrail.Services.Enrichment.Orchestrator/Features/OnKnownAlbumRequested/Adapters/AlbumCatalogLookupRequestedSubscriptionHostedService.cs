@@ -78,7 +78,7 @@ public sealed class AlbumCatalogLookupRequestedSubscriptionHostedService(
                     item.Version,
                     registry.ToDomainObject<IDomainEvent>(
                         item.Body ?? throw new InvalidOperationException($"Stored event '{item.Id}' is missing a body."))))
-                .Where(item => item.Event is AlbumCatalogLookupRequested)
+                .Where(item => item.Event is CatalogLookupRequested)
                 .ToArray();
 
             if (events.Length == 0)

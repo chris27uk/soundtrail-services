@@ -9,7 +9,5 @@ namespace Soundtrail.Domain.Abstractions
         CorrelationId CorrelationId { get; }
         
         DateTimeOffset CreatedAt { get; }
-        
-        LookupPriorityBand Priority { get; }
     }
 }

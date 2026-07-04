@@ -100,16 +100,16 @@ public sealed record LocalMusicTrackSearchResult
     public bool RequiresStreamingLocations(PlaybackProviderFilter playback) =>
         playback.RequiresAnyMissing(AvailableProviders);
 
-    public MusicSearchCriteria ToSearchTerm()
+    public LookupCriteria ToSearchTerm()
     {
         if (HasIsrc())
         {
-            return MusicSearchCriteria.ByIsrc(Isrc!);
+            return LookupCriteria.ExactIsrc(Isrc!);
         }
 
         if (HasEnoughMusicCharacteristicsForSearch())
         {
-            return MusicSearchCriteria.ByTrackArtistAlbum(Title!, Artist!, AlbumTitle);
+            return LookupCriteria.ByTrackArtistAlbum(Title!, Artist!, AlbumTitle);
         }
 
         throw new InvalidOperationException("Cannot create a music search term for a track without an ISRC or track and artist details.");

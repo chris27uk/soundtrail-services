@@ -14,7 +14,7 @@ public sealed class RavenLoadDiscoveryLifecycleEventsForReplay(
     ITypeRegistry registry) : ILoadDiscoveryLifecycleEventsForReplayPort
 {
     public async Task<IReadOnlyList<VersionedCatalogSearchDiscoveryEvent>> LoadAsync(
-        MusicSearchCriteria searchCriteria,
+        LookupCriteria searchCriteria,
         CancellationToken cancellationToken)
     {
         var persistentId = DiscoveryQueryKey.StableValueFor(searchCriteria);

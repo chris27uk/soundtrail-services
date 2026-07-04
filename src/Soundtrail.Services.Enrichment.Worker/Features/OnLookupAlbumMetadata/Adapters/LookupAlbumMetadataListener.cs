@@ -1,8 +1,7 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Adapters.Registry;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
-using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Enrichment.Commands;
+using Soundtrail.Domain.Abstractions; 
 using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupAlbumMetadata.Adapters;

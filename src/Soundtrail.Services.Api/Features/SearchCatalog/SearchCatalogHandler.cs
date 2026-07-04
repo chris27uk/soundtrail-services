@@ -20,7 +20,7 @@ public sealed class SearchCatalogHandler(
         if (!local.IsComplete && discovery is null)
         {
             var requested = command.ToCatalogSearchAttempt();
-            var loaded = await SearchDiscoveryHistory.LoadAsync(
+            var loaded = await DiscoveryHistory.LoadAsync(
                 discoveryRepository,
                 requested.SearchCriteria,
                 cancellationToken);
@@ -29,7 +29,7 @@ public sealed class SearchCatalogHandler(
                 await loaded.Aggregate.SaveAsync(discoveryRepository, loaded.Stream, cancellationToken);
             }
 
-            discovery = new SearchDiscovery(
+            discovery = new EnrichmentDecision(
                 WillBeLookedUp: true,
                 Reason: "Local results incomplete",
                 RetryAfterSeconds: null);
@@ -38,6 +38,6 @@ public sealed class SearchCatalogHandler(
         return new SearchCatalogResponse(
             command.Query,
             local.Results,
-            discovery ?? new SearchDiscovery(false, null, null));
+            discovery ?? new EnrichmentDecision(false, null, null));
     }
 }

@@ -9,8 +9,8 @@ public sealed class ProviderReferenceDiscoveredStoredEventTranslationRegistratio
 {
     public void Register(TypeTranslationRegistry registry)
     {
-        registry.RegisterStoredEventPair<ProviderReferenceDiscovered, ProviderReferenceDiscoveredEventDataRecordDto>(
-            nameof(ProviderReferenceDiscovered),
+        registry.RegisterStoredEventPair<StreamingLocationDiscovered, ProviderReferenceDiscoveredEventDataRecordDto>(
+            nameof(StreamingLocationDiscovered),
             domainEvent => new ProviderReferenceDiscoveredEventDataRecordDto(
                 domainEvent.MusicCatalogId?.Value,
                 domainEvent.Provider.Value,
@@ -18,7 +18,7 @@ public sealed class ProviderReferenceDiscoveredStoredEventTranslationRegistratio
                 domainEvent.Url.ToString(),
                 domainEvent.SourceProvider.Value,
                 domainEvent.ObservedAt),
-            dto => new ProviderReferenceDiscovered(
+            dto => new StreamingLocationDiscovered(
                 dto.MusicCatalogId is null ? null : MusicCatalogId.From(dto.MusicCatalogId),
                 ProviderName.From(dto.Provider),
                 dto.ExternalId,
