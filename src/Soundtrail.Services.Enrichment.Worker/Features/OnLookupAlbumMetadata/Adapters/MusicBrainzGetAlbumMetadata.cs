@@ -1,4 +1,5 @@
-using Soundtrail.Domain.Enrichment.Responses;
+using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupAlbumMetadata.Lookup;
 using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
 using System.Net.Http.Json;
@@ -8,30 +9,9 @@ namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupAlbumMetadata.A
 
 public sealed class MusicBrainzGetAlbumMetadata(HttpClient httpClient) : IGetAlbumMetadata
 {
-    public async Task<AlbumMetadata?> GetMetadataAsync(
-        string artistName,
-        string albumTitle,
-        string? sourceAlbumId,
-        string? sourceArtistId,
-        CancellationToken cancellationToken)
+    public async Task<Album?> GetMetadataAsync(LookupCriteria criteria, CancellationToken cancellationToken)
     {
-        var release = !string.IsNullOrWhiteSpace(sourceAlbumId)
-            ? await LookupByIdAsync(sourceAlbumId, cancellationToken)
-            : await SearchByNameAsync(artistName, albumTitle, cancellationToken);
-
-        if (release is null)
-        {
-            return null;
-        }
-
-        var resolvedArtistName = release.ArtistCredit?.FirstOrDefault()?.Name ?? artistName;
-        var resolvedArtistId = release.ArtistCredit?.FirstOrDefault()?.Artist?.Id ?? sourceArtistId;
-        return new AlbumMetadata(
-            release.Title ?? albumTitle,
-            resolvedArtistName,
-            release.Id,
-            resolvedArtistId,
-            ParseReleaseDate(release.Date));
+        
     }
 
     private async Task<MusicBrainzReleaseDto?> LookupByIdAsync(string releaseId, CancellationToken cancellationToken) =>

@@ -1,14 +1,12 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Enrichment.Commands;
-using Soundtrail.Domain.Enrichment.Responses;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupAlbumMetadata.Lookup;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupAlbumMetadata;
 
-public sealed class LookupAlbumMetadataHandler(IGetAlbumMetadata getAlbumMetadata, ICommandBus bus) : IHandler<LookupAlbumMetadataCommand>
+public sealed class LookupAlbumMetadataHandler(IGetAlbumMetadata getAlbumMetadata, ICommandBus bus) : IHandler<LookupAlbumCommand>
 {
-    public async Task Handle(LookupAlbumMetadataCommand command, CancellationToken cancellationToken = default)
+    public async Task Handle(LookupAlbumCommand command, CancellationToken cancellationToken = default)
     {
         try
         {

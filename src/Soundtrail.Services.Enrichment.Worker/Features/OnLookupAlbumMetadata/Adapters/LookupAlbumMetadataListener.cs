@@ -6,7 +6,7 @@ using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupAlbumMetadata.Adapters;
 
-public sealed class LookupAlbumMetadataListener(IHandler<LookupAlbumMetadataCommand> handler)
+public sealed class LookupAlbumMetadataListener(IHandler<LookupAlbumCommand> handler)
 {
     [WolverineHandler]
     [Transactional]
@@ -14,5 +14,5 @@ public sealed class LookupAlbumMetadataListener(IHandler<LookupAlbumMetadataComm
         LookupAlbumMetadataCommandDto dto,
         IAsyncDocumentSession _,
         CancellationToken cancellationToken = default) =>
-        handler.Handle(TypeTranslationRegistry.Default.ToDomainObject<LookupAlbumMetadataCommand>(dto), cancellationToken);
+        handler.Handle(TypeTranslationRegistry.Default.ToDomainObject<LookupAlbumCommand>(dto), cancellationToken);
 }

@@ -25,6 +25,8 @@ public readonly record struct AlbumId : IValueType
 
     public string StableValue => value;
 
+    public static AlbumId From(string artistId, string albumId) => new($"{artistId}:{albumId}");
+    
     public static AlbumId From(string value) => new(value);
 
     public override string ToString() => value;

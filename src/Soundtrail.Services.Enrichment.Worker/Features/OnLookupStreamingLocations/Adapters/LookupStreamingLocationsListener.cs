@@ -3,7 +3,6 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Enrichment.Commands;
 using Soundtrail.Domain.Search;
 using Wolverine.Attributes;
 
@@ -34,7 +33,7 @@ public sealed class LookupStreamingLocationsListener(IHandler<LookupStreamingLoc
         {
             MusicSearchKind.UnifiedSearch => LookupCriteria.Query(
                 dto.Query ?? throw new InvalidOperationException("Unified streaming locations lookup requires a query.")),
-            MusicSearchKind.Isrc => LookupCriteria.ExactIsrc(
+            MusicSearchKind.Isrc => LookupCriteria.(
                 dto.Isrc ?? throw new InvalidOperationException("ISRC streaming locations lookup requires an ISRC.")),
             MusicSearchKind.TrackArtistAlbum => LookupCriteria.ByTrackArtistAlbum(
                 dto.Title ?? throw new InvalidOperationException("Track/artist/album streaming locations lookup requires a title."),

@@ -7,7 +7,7 @@ using Wolverine.Attributes;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupArtistMetadata.Adapters;
 
-public sealed class LookupArtistMetadataListener(IHandler<LookupArtistMetadataCommand> handler)
+public sealed class LookupArtistMetadataListener(IHandler<LookupArtist> handler)
 {
     [WolverineHandler]
     [Transactional]

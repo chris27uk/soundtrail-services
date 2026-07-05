@@ -1,14 +1,13 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Enrichment.Commands;
-using Soundtrail.Domain.Enrichment.Responses;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Worker.Features.OnLookupTrackMetadata.Lookup;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupTrackMetadata;
 
-public sealed class LookupTrackMetadataHandler(IGetTrackMetadata getMetaData, ICommandBus bus) : IHandler<LookupTrackMetadataCommand>
+public sealed class LookupTrackMetadataHandler(IGetTrackMetadata getMetaData, ICommandBus bus) : IHandler<LookupTrackCommand>
 {
-    public async Task Handle(LookupTrackMetadataCommand command, CancellationToken cancellationToken = default)
+    public async Task Handle(LookupTrackCommand command, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -32,4 +31,9 @@ public sealed class LookupTrackMetadataHandler(IGetTrackMetadata getMetaData, IC
                 command.SearchCriteria), cancellationToken);
         }
     }
+}
+
+public class LookupTrackCommand(LookupCriteria searchCriteria)
+{
+    public LookupCriteria SearchCriteria { get;} = searchCriteria;
 }

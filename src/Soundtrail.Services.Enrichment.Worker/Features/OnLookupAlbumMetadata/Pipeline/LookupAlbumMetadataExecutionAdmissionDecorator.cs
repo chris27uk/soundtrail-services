@@ -1,17 +1,17 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Enrichment.Commands;
-using Soundtrail.Domain.Enrichment.Responses;
+using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.OnLookupAlbumMetadata.Pipeline;
 
 public sealed class LookupAlbumMetadataExecutionAdmissionDecorator(
     ILookupExecutionAdmissionPort executionAdmissionPort,
-    IHandler<LookupAlbumMetadataCommand> inner,
-    ICommandBus bus) : IHandler<LookupAlbumMetadataCommand>
+    IHandler<LookupAlbumCommand> inner,
+    ICommandBus bus) : IHandler<LookupAlbumCommand>
 {
-    public async Task Handle(LookupAlbumMetadataCommand command, CancellationToken cancellationToken = default)
+    public async Task Handle(LookupAlbumCommand command, CancellationToken cancellationToken = default)
     {
         var admission = await executionAdmissionPort.TryAcquireAsync(
             new LookupExecutionAdmissionRequest(
@@ -20,48 +20,36 @@ public sealed class LookupAlbumMetadataExecutionAdmissionDecorator(
                 command.CreatedAt),
             cancellationToken);
 
-        if (admission.Status == LookupExecutionAdmissionStatus.Duplicate)
+        admission.Status switch
         {
-            await bus.SendAsync(
-                CatalogItemLookupAttempted.Duplicate(
-                    command.CommandId,
-                    command.ArtistId,
-                    command.AlbumId,
-                    LookupSource.MusicBrainz,
-                    command.Priority,
-                    command.CreatedAt,
-                    command.CorrelationId),
-                cancellationToken);
-            return;
-        }
+            LookupExecutionAdmissionStatus.Duplicate => await bus.SendAsync(new CatalogLookupCompleted(new LookupResult.Duplicate()), cancellationToken);
+            LookupExecutionAdmissionStatus.Deferred => 
+                await bus.SendAsync(
+                    new CatalogLookupCompleted(new LookupResult.Deferred(
+                        command.CommandId,
+                        command.ArtistId,
+                        command.AlbumId,
+                        LookupSource.MusicBrainz,
+                        command.Priority,
+                        command.CreatedAt,
+                        command.CorrelationId,
+                        admission.Reason,
+                        admission.RetryAt),
+                    cancellationToken);
+                return;
 
-        if (admission.Status == LookupExecutionAdmissionStatus.Deferred)
-        {
-            await bus.SendAsync(
-                CatalogItemLookupAttempted.Deferred(
-                    command.CommandId,
-                    command.ArtistId,
-                    command.AlbumId,
-                    LookupSource.MusicBrainz,
-                    command.Priority,
-                    command.CreatedAt,
-                    command.CorrelationId,
-                    admission.Reason,
-                    admission.RetryAt,
-                    admission.RetryAfterSecondsFrom(command.CreatedAt)),
-                cancellationToken);
-            return;
-        }
-
-        try
-        {
-            await inner.Handle(command, cancellationToken);
-            await executionAdmissionPort.CommitAsync(command.CommandId, cancellationToken);
-        }
-        catch
-        {
-            await executionAdmissionPort.ReleaseAsync(command.CommandId, cancellationToken);
-            throw;
+            default:
+                try
+                {
+                    await inner.Handle(command, cancellationToken);
+                    await executionAdmissionPort.CommitAsync(command.CommandId, cancellationToken);
+                }
+                catch
+                {
+                    await executionAdmissionPort.ReleaseAsync(command.CommandId, cancellationToken);
+                    throw;
+                }
+                break;
         }
     }
 }

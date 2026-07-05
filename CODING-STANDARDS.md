@@ -382,7 +382,7 @@ Follow the naming style already used in the repository.
 - name handlers as `<UseCase>Handler`
 - name request and response models as `<UseCase>Request` and `<UseCase>Response`
 - name interfaces by role, for example `ICatalogSearchPort`
-- name tests in `Given_When_Then` style
+- name test methods in `Given_When_Then` style
 - keep the file path for handlers as `Features/<FeatureName>/<UseCase>Handler.cs`
 
 Avoid vague names such as `Helper`, `Utils`, `Manager`, or `Processor` unless the type genuinely matches that abstraction.
@@ -431,6 +431,18 @@ Unit tests should not target transport adapters such as listeners, endpoints, ho
 
 Those adapters belong in integration coverage.
 
+Additional unit-test rules:
+
+- place unit tests under a `Unit` folder
+- name unit test files by business scenario, for example `AlbumExistsTests.cs`
+- do not use `GivenWhenThen` as a test file name
+- keep test class names scenario-focused and business-readable
+- keep test method names business-driven and avoid technical concepts such as handler, endpoint, controller, listener, or adapter unless the technical boundary is the actual business subject under test
+- do not add comments such as `Given`, `When`, or `Then` inside the test body
+- each test should validate one observable property or business outcome
+- each test should usually specify only the one field relevant to that test and rely on defaults for the rest
+- prefer helper or data-factory methods with optional parameters and sensible defaults so irrelevant setup stays implicit
+
 ### Solitary Tests
 
 Solitary tests are acceptable when a type has meaningful standalone behavior that would become awkward or noisy to prove indirectly.
@@ -451,6 +463,7 @@ Fakes should:
 - be simple to read
 - capture the behavior needed by the test
 - expose recorded interactions only where that interaction is part of the business outcome
+- follow the name pattern `<Role>Fake`, for example `CommandBusFake` for `ICommandBus`
 
 Do not add a mocking library for routine application tests.
 
@@ -479,9 +492,10 @@ Mirror the production feature layout in tests.
 
 Examples:
 
-- `Api/Unit/Features/Search/...`
-- `Enrichment/Unit/Features/Scheduling/...`
-- `Api/Integration/Ports/CatalogSearch/...`
+- `Unit/GetAlbum/...`
+- `Unit/SearchCatalog/...`
+- `Integration/GetAlbum/...`
+- `Integration/Ports/CatalogSearch/...`
 
 Prefer scenario-focused test classes over giant omnibus fixtures.
 
@@ -505,6 +519,7 @@ Rules:
 - add one error-model mapping test only when the route has a non-trivial error contract worth proving
 - do not use Web API route tests to prove business rules, response-shaping branches, or adapter semantics that belong in handler, port, or technology-specific tests
 - keep deeper response and storage behavior in unit tests, port contract tests, or technology-focused integration tests
+- when response mapping is tested at the HTTP layer, keep each test focused on one returned field or one observable HTTP concern
 
 ### Integration Test Environments
 
@@ -516,6 +531,9 @@ Rules:
 - prefer `Create(...)` or `CreateAsync(...)` as the entry point for building an environment
 - let the environment own setup, seeding, HTTP client creation, and disposal
 - keep tests focused on scenario intent rather than host wiring
+- place the test environment in a separate file rather than inside the test class file
+- keep the test environment constructor private
+- expose scenario-based static factory methods so there is one standard way to create each business setup
 
 ### What New Feature Work Must Test
 

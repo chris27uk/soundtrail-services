@@ -10,31 +10,32 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="10.0.0" />
     <PackageReference Include="xunit" Version="2.4.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="FluentAssertions" Version="6.12.0" />
-    <PackageReference Include="RavenDB.Embedded" Version="7.1.1" />
-    <PackageReference Include="StackExchange.Redis" Version="2.8.58" />
-    <PackageReference Include="WolverineFx.RuntimeCompilation" Version="6.5.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Soundtrail.Services.Api\Soundtrail.Services.Api.csproj" />
-    <ProjectReference Include="..\..\src\Soundtrail.Services.Public.Projector\Soundtrail.Services.Public.Projector.csproj" />
     <ProjectReference Include="..\..\src\Soundtrail.Domain\Soundtrail.Domain.csproj" />
-    <ProjectReference Include="..\..\src\Soundtrail.Services.Internal.Projector\Soundtrail.Services.Internal.Projector.csproj" />
-    <ProjectReference Include="..\..\src\Soundtrail.Services.Enrichment.Scheduler\Soundtrail.Services.Enrichment.Scheduler.csproj" />
-    <ProjectReference Include="..\..\src\Soundtrail.Services.Enrichment.Orchestrator\Soundtrail.Services.Enrichment.Orchestrator.csproj" />
-    <ProjectReference Include="..\..\src\Soundtrail.Services.Enrichment.Worker\Soundtrail.Services.Enrichment.Worker.csproj" />
-    <ProjectReference Include="..\..\src\Soundtrail.Tools.MusicBrainzImport\Soundtrail.Tools.MusicBrainzImport.csproj" />
     <ProjectReference Include="..\..\src\Soundtrail.Contracts\Soundtrail.Contracts.csproj" />
-    <ProjectReference Include="..\..\src\Soundtrail.Adapters\Soundtrail.Adapters.csproj" />
-    <ProjectReference Include="..\..\Soundtrail.Services.ServiceDefaults\Soundtrail.Services.ServiceDefaults.csproj" />
-    <ProjectReference Include="..\..\Soundtrail.Services.AppHost\Soundtrail.Services.AppHost.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\Soundtrail.Infrastructure\TypeRegistry\ITypeRegistry.cs" Link="Api\TypeRegistry\ITypeRegistry.cs" />
+    <Compile Include="..\..\src\Soundtrail.Services.Api\Features\GetAlbum\Contract\GetAlbumRequest.cs" Link="Api\Features\GetAlbum\Contract\GetAlbumRequest.cs" />
+    <Compile Include="..\..\src\Soundtrail.Services.Api\Features\GetAlbum\Contract\GetAlbumResponse.cs" Link="Api\Features\GetAlbum\Contract\GetAlbumResponse.cs" />
+    <Compile Include="..\..\src\Soundtrail.Services.Api\Features\GetAlbum\Adapters\IGetAlbumPort.cs" Link="Api\Features\GetAlbum\Adapters\IGetAlbumPort.cs" />
+    <Compile Include="..\..\src\Soundtrail.Services.Api\Features\GetAlbum\Adapters\GetAlbumEndpoints.cs" Link="Api\Features\GetAlbum\Adapters\GetAlbumEndpoints.cs" />
+    <Compile Include="..\..\src\Soundtrail.Services.Api\Features\GetAlbum\GetAlbumHandler.cs" Link="Api\Features\GetAlbum\GetAlbumHandler.cs" />
+    <Compile Include="..\..\src\Soundtrail.Services.Api\Features\GetAlbum\Adapters\GetAlbumResponseDto.cs" Link="Api\Features\GetAlbum\Adapters\GetAlbumResponseDto.cs" />
   </ItemGroup>
 
 </Project>

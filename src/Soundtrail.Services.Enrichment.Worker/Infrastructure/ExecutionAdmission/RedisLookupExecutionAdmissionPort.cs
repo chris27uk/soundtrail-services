@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Options;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Services.Enrichment.Orchestrator.Shared.SourceBudgets.Configuration;
 using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
 using StackExchange.Redis;
 

@@ -15,7 +15,7 @@ public sealed class LookupStreamingLocationsHandler(IGetMusicTrackReference getM
     {
         try
         {
-            var references = await getMusicTrackReference.GetReferenceToMusicTrack(command.LookupKey, cancellationToken);
+            var references = await getMusicTrackReference.GetStreamingLocations(command.LookupKey, cancellationToken);
             var failures = SupportedPlaybackProviders
                 .Where(provider => references.All(reference => reference.Provider != provider))
                 .Select(provider => new ProviderLookupFailure(provider, command.TargetProvider))
