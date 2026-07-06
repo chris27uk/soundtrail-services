@@ -1,22 +1,25 @@
 using Microsoft.AspNetCore.TestHost;
 using Soundtrail.Adapters.Registry;
 using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Services.Api.Features.GetAlbum.Adapters;
 using Soundtrail.Services.Api.Features.GetAlbum.Contract;
 using Soundtrail.Services.Api.Features.GetAlbum.Registrations;
 
-namespace Soundtrail.Services.Tests.Integration.GetAlbum;
+namespace Soundtrail.Services.Tests.Integration.Api.GetAlbum;
 
-internal sealed class MissingAlbumIntegrationTestEnvironment : IDisposable
+internal sealed class GetAlbumRouteTestEnvironment : IDisposable
 {
     private readonly WebApplication app;
 
-    private MissingAlbumIntegrationTestEnvironment(WebApplication app)
+    private GetAlbumRouteTestEnvironment(WebApplication app)
     {
         this.app = app;
     }
 
-    public static MissingAlbumIntegrationTestEnvironment ForMissingAlbum()
+    public HttpClient Client => app.GetTestClient();
+
+    public static GetAlbumRouteTestEnvironment ForExistingAlbum()
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
@@ -24,10 +27,8 @@ internal sealed class MissingAlbumIntegrationTestEnvironment : IDisposable
         var app = builder.Build();
         app.MapGetAlbumEndpoints(new TypeRegistryFake());
         app.StartAsync().GetAwaiter().GetResult();
-        return new MissingAlbumIntegrationTestEnvironment(app);
+        return new GetAlbumRouteTestEnvironment(app);
     }
-
-    public async Task<HttpResponseMessage> GetAsync() => await app.GetTestClient().GetAsync("/artists/artist-401/albums/album-701");
 
     public void Dispose()
     {
@@ -38,7 +39,13 @@ internal sealed class MissingAlbumIntegrationTestEnvironment : IDisposable
     private sealed class GetAlbumHandlerFake : IApiHandler<GetAlbumRequest, GetAlbumResponse?>
     {
         public Task<GetAlbumResponse?> Handle(GetAlbumRequest request, CancellationToken cancellationToken = default) =>
-            Task.FromResult<GetAlbumResponse?>(null);
+            Task.FromResult<GetAlbumResponse?>(
+                new GetAlbumResponse(
+                    ArtistId.From("artist-301"),
+                    ArtistName.From("The Artist"),
+                    AlbumId.From("artist-301", "album-501"),
+                    "The Album",
+                    new DateOnly(2024, 6, 7)));
     }
 
     private sealed class TypeRegistryFake : ITypeRegistry
