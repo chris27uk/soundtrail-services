@@ -36,6 +36,12 @@
     <Compile Include="..\..\src\Soundtrail.Services.Api\Features\GetAlbum\Adapters\GetAlbumEndpoints.cs" Link="Api\Features\GetAlbum\Adapters\GetAlbumEndpoints.cs" />
     <Compile Include="..\..\src\Soundtrail.Services.Api\Features\GetAlbum\GetAlbumHandler.cs" Link="Api\Features\GetAlbum\GetAlbumHandler.cs" />
     <Compile Include="..\..\src\Soundtrail.Services.Api\Features\GetAlbum\Adapters\GetAlbumResponseDto.cs" Link="Api\Features\GetAlbum\Adapters\GetAlbumResponseDto.cs" />
+    <Compile Include="..\..\src\Soundtrail.Services.Api\Features\GetArtist\Contract\GetArtistRequest.cs" Link="Api\Features\GetArtist\Contract\GetArtistRequest.cs" />
+    <Compile Include="..\..\src\Soundtrail.Services.Api\Features\GetArtist\Contract\GetArtistResponse.cs" Link="Api\Features\GetArtist\Contract\GetArtistResponse.cs" />
+    <Compile Include="..\..\src\Soundtrail.Services.Api\Features\GetArtist\Adapters\IGetArtistPort.cs" Link="Api\Features\GetArtist\Adapters\IGetArtistPort.cs" />
+    <Compile Include="..\..\src\Soundtrail.Services.Api\Features\GetArtist\Adapters\GetArtistEndpoints.cs" Link="Api\Features\GetArtist\Adapters\GetArtistEndpoints.cs" />
+    <Compile Include="..\..\src\Soundtrail.Services.Api\Features\GetArtist\GetArtistHandler.cs" Link="Api\Features\GetArtist\GetArtistHandler.cs" />
+    <Compile Include="..\..\src\Soundtrail.Services.Api\Features\GetArtist\Adapters\GetArtistResponseDto.cs" Link="Api\Features\GetArtist\Adapters\GetArtistResponseDto.cs" />
   </ItemGroup>
 
 </Project>
