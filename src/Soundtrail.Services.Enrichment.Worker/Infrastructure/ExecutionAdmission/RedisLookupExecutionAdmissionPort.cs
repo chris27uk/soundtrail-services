@@ -235,7 +235,7 @@ internal sealed class RedisLookupExecutionAdmissionPort(
             .ToArray();
     }
 
-    private SourceApiBudgetPolicyOptions GetPolicy(LookupSource provider) =>
+    private ApiBudgetPolicy GetPolicy(LookupSource provider) =>
         provider == LookupSource.MusicBrainz
             ? sourceBudgetOptions.MusicBrainz
             : provider == LookupSource.Odesli
@@ -258,4 +258,18 @@ internal sealed class RedisLookupExecutionAdmissionPort(
 
         public static WindowReservationResult Rejected(RedisKey key, DateTimeOffset retryAt) => new(false, key, retryAt);
     }
+}
+
+public class SourceApiBudgetsOptions
+{
+    public ApiBudgetPolicy MusicBrainz { get; set; }
+    public ApiBudgetPolicy Odesli { get; set; }
+}
+
+public class ApiBudgetPolicy
+{
+    public int MaxRequests { get; set; }
+    public int MinimumSpacingSeconds { get; set; }
+    public int SafetyMarginPercent { get; set; }
+    public int WindowSeconds { get; set; }
 }

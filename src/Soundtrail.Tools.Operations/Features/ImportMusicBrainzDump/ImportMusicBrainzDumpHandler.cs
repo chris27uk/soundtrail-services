@@ -1,4 +1,3 @@
-using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
@@ -66,17 +65,17 @@ public sealed class ImportMusicBrainzDumpHandler(
         var compactRecordingId = MusicIdentityText.NormalizeCompact(record.MusicBrainzRecordingId);
         if (!string.IsNullOrWhiteSpace(compactRecordingId))
         {
-            return MusicCatalogId.From($"mc_track_{compactRecordingId}");
+            return new MusicCatalogId.Track(TrackId.From($"track_{compactRecordingId}"));
         }
 
         var compactTrackId = MusicIdentityText.NormalizeCompact(record.SourceTrackId);
         if (!string.IsNullOrWhiteSpace(compactTrackId))
         {
-            return MusicCatalogId.From($"mc_track_{compactTrackId}");
+            return new MusicCatalogId.Track(TrackId.From($"track_{compactTrackId}"));
         }
 
-        return MusicCatalogId.From(
-            $"mc_track_{MusicIdentityText.NormalizeCompact($"{record.Title}_{record.Artist}_{record.AlbumTitle}")}");
+        return new MusicCatalogId.Track(
+            TrackId.From($"track_{MusicIdentityText.NormalizeCompact($"{record.Title}_{record.Artist}_{record.AlbumTitle}")}"));
     }
 
     private static ArtistId? BuildArtistId(MusicBrainzCatalogSeedRecord record)

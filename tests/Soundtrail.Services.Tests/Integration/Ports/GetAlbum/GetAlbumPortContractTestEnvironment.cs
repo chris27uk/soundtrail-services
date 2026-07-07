@@ -112,7 +112,13 @@ internal sealed class GetAlbumPortContractTestEnvironment : IAsyncDisposable
             return;
         }
 
-        EmbeddedServer.Instance.StartServer();
+        try
+        {
+            EmbeddedServer.Instance.StartServer();
+        }
+        catch (InvalidOperationException exception) when (exception.Message.Contains("already started", StringComparison.OrdinalIgnoreCase))
+        {
+        }
     }
 
     private sealed class TypeRegistryFake : ITypeRegistry

@@ -107,8 +107,7 @@ public sealed class ArtistCatalog
 
     private void On(TrackDiscovered @event)
     {
-        var musicCatalogId = @event.Track.MusicCatalogId;
-        var track = GetOrCreateTrack(musicCatalogId);
+        var track = GetOrCreateTrack(@event.Track.TrackId);
         track.Title = @event.Track.Title;
         track.ArtistName = @event.Track.ArtistName;
         track.DurationMs = @event.Track.DurationMs;
@@ -119,8 +118,12 @@ public sealed class ArtistCatalog
 
     private void On(StreamingLocationDiscovered @event)
     {
-        var musicCatalogId = @event.MusicCatalogId ?? throw new InvalidOperationException("Provider reference facts in artist catalog must include a music catalog id.");
-        var track = GetOrCreateTrack(musicCatalogId);
+        var trackId = @event.MusicCatalogId?.Match(
+            track => track.Value,
+            _ => throw new InvalidOperationException("Provider reference facts in artist catalog must refer to a track."),
+            _ => throw new InvalidOperationException("Provider reference facts in artist catalog must refer to a track."))
+            ?? throw new InvalidOperationException("Provider reference facts in artist catalog must include a music catalog id.");
+        var track = GetOrCreateTrack(trackId);
         track.ProviderReferences[@event.Provider.Value] = new StreamingLocation(
             @event.Provider,
             @event.ExternalId,
@@ -162,15 +165,15 @@ public sealed class ArtistCatalog
         }
     }
 
-    private Track GetOrCreateTrack(MusicCatalogId musicCatalogId)
+    private Track GetOrCreateTrack(TrackId trackId)
     {
-        if (this.tracks.TryGetValue(musicCatalogId.Value, out var track))
+        if (this.tracks.TryGetValue(trackId.Value, out var track))
         {
             return track;
         }
         
-        track = new Track(musicCatalogId);
-        this.tracks[musicCatalogId.Value] = track;
+        track = new Track(trackId);
+        this.tracks[trackId.Value] = track;
         return track;
     }
 }

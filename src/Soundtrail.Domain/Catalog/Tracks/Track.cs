@@ -1,10 +1,8 @@
-using Soundtrail.Contracts.Common;
-
 namespace Soundtrail.Domain.Catalog
 {
-    public sealed class Track(MusicCatalogId musicCatalogId)
+    public sealed class Track(TrackId trackId)
     {
-        public MusicCatalogId MusicCatalogId { get; } = musicCatalogId;
+        public TrackId TrackId { get; } = trackId;
 
         public string Title { get; set; } = string.Empty;
 
