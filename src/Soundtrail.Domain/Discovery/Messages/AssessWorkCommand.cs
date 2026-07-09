@@ -7,9 +7,9 @@ public sealed record AssessWorkCommand(
     CommandId CommandId,
     CorrelationId CorrelationId,
     DateTimeOffset CreatedAt,
-    EnrichmentQuery Query,
+    EnrichmentFilter Filter,
     int? TrustLevel = null,
     int? RiskScore = null) : ICommand
 {
-    public static CommandId Id(EnrichmentQuery query, DateTimeOffset createdAt) => CommandId.For($"AssessWork:{query.NormalisedIdentifier}:{createdAt}");
+    public static CommandId Id(EnrichmentFilter filter, DateTimeOffset createdAt) => CommandId.For($"AssessWork:{filter.NormalisedIdentifier}:{createdAt}");
 }

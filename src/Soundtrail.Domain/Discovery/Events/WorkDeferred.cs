@@ -3,6 +3,6 @@ using Soundtrail.Domain.Abstractions.EventSourcing;
 namespace Soundtrail.Domain.Discovery.Events;
 
 public sealed record WorkDeferred(
-    EnrichmentQuery Query,
+    EnrichmentFilter Filter,
     string Reason,
     DateTimeOffset DeferredAt) : IDomainEvent;

@@ -1,11 +1,6 @@
-using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Abstractions.EventSourcing;
+using Soundtrail.Domain.Catalog;
 
-namespace Soundtrail.Domain.Discovery.Events;
-
-public sealed record CatalogDiscoveryWorkRequested(
-    EnrichmentQuery Query,
-    LookupPriorityBand Priority,
-    int TrustLevel,
-    int RiskScore,
-    DateTimeOffset RequestedAt) : IDomainEvent;
+namespace Soundtrail.Domain.Discovery.Events
+{
+    public record WorkRequested(CatalogItemId CatalogItemId);
+}

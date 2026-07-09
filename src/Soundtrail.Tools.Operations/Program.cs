@@ -1,31 +1,42 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Services.ServiceDefaults;
-using Soundtrail.Tools.MusicBrainzImport.Features.ImportMusicBrainzDump.Adapters;
-using Soundtrail.Tools.MusicBrainzImport.Infrastructure.CompositionRoot;
-
-if (!MusicBrainzDumpCommandLine.TryParse(args, out var command, out var error))
-{
-    Console.WriteLine(MusicBrainzDumpCommandLine.Usage());
-
-    if (!string.IsNullOrWhiteSpace(error))
-    {
-        Console.Error.WriteLine(error);
-        return 1;
-    }
-
-    return 0;
-}
+using Soundtrail.Tools.Operations;
+using Soundtrail.Tools.Operations.Infrastructure.CommandLine;
+using Soundtrail.Tools.Operations.Infrastructure;
+using Wolverine;
 
 var builder = Host.CreateApplicationBuilder(args);
 builder.AddServiceDefaults();
-builder.Services.AddMusicBrainzImportAppServices(builder.Configuration);
 
-using var host = builder.Build();
-await host.StartAsync();
+using (var _ = FeatureEnvironment.Live())
+{
+    builder.Services.AddFeatures<OperationsAssemblyMarker>();
+#pragma warning disable ASP0000
+    using var serviceProvider = builder.Services.BuildServiceProvider();
+#pragma warning restore ASP0000
+    var features = serviceProvider.GetServices<IFeature>().ToArray();
 
-var runner = host.Services.GetRequiredService<MusicBrainzDumpCommandLineRunner>();
-var exitCode = await runner.RunAsync(command!, CancellationToken.None);
+    foreach (var feature in features)
+    {
+        feature.ConfigureServices(builder.Services, builder.Configuration);
+    }
 
-await host.StopAsync();
-return exitCode;
+    builder.Services.AddWolverine(opts =>
+    {
+        foreach (var feature in features.OfType<IOperationsFeature>())
+        {
+            feature.ConfigureMessaging(opts, builder.Configuration, builder.Environment);
+        }
+    });
+
+    using var host = builder.Build();
+    await host.StartAsync();
+
+    var dispatcher = host.Services.GetRequiredService<CommandLineDispatcher>();
+    var exitCode = await dispatcher.DispatchAsync(args, CancellationToken.None);
+
+    await host.StopAsync();
+    return exitCode;
+}

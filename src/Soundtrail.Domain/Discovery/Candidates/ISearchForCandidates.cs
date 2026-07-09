@@ -4,6 +4,6 @@ namespace Soundtrail.Domain.Discovery.Candidates
 {
     public interface ISearchForCandidates
     {
-        CandidateResults Search(EnrichmentQuery query);
+        CandidateResults Search(EnrichmentFilter filter);
     }
 }

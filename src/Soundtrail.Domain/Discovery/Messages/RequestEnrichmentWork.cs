@@ -4,7 +4,7 @@ using Soundtrail.Domain.Abstractions;
 namespace Soundtrail.Domain.Discovery.Commands
 {
     public record RequestEnrichmentWork(
-        EnrichmentQuery Query,
+        EnrichmentFilter Filter,
         CommandId CommandId,
         CorrelationId CorrelationId,
         DateTimeOffset CreatedAt) : ICommand;

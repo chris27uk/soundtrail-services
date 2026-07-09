@@ -1,7 +1,12 @@
+using System.Text.RegularExpressions;
+
 namespace Soundtrail.Domain.Catalog;
 
-public static class MusicIdentityText
+public static partial class MusicIdentityText
 {
+    [GeneratedRegex(@"\s*(\([^)]*\)|\[[^\]]*\])", RegexOptions.Compiled)]
+    private static partial Regex BracketedMetadataPattern();
+
     public static string NormalizeFreeText(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -33,6 +38,17 @@ public static class MusicIdentityText
             .Where(char.IsLetterOrDigit)
             .Select(char.ToLowerInvariant)
             .ToArray());
+    }
+
+    public static string NormalizeMatchText(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var withoutBracketedMetadata = BracketedMetadataPattern().Replace(value, " ");
+        return NormalizeCompact(withoutBracketedMetadata);
     }
 
     public static bool LooksLikeIsrc(string compactValue) =>

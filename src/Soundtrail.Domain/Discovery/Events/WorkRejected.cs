@@ -4,6 +4,6 @@ using Soundtrail.Domain.Search;
 namespace Soundtrail.Domain.Discovery.Events;
 
 public sealed record WorkRejected(
-    EnrichmentQuery Query,
+    EnrichmentFilter Filter,
     string Reason,
     DateTimeOffset RejectedAt) : IDomainEvent;
