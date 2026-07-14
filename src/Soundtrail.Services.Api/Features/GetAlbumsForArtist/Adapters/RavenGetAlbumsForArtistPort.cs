@@ -2,6 +2,7 @@ using Raven.Client.Documents;
 using Soundtrail.Adapters.Registry;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Services.Api.Features.GetAlbumsForArtist.Contract;
 
 namespace Soundtrail.Services.Api.Features.GetAlbumsForArtist.Adapters;

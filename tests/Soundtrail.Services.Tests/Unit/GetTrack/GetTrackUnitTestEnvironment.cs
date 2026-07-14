@@ -1,4 +1,5 @@
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Api.Features.GetTrack;
 using Soundtrail.Services.Api.Features.GetTrack.Adapters;
 using Soundtrail.Services.Api.Features.GetTrack.Contract;

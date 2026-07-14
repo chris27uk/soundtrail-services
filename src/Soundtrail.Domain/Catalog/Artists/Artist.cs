@@ -1,6 +1,6 @@
-namespace Soundtrail.Domain.Catalog
+namespace Soundtrail.Domain.Catalog.Artists
 {
-    public record Artist
+    public class Artist
     {
         public ArtistId Id { get; init; }
         public ArtistName Name { get; init; }

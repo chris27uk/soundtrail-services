@@ -5,6 +5,6 @@ namespace Soundtrail.Domain.Discovery.Events;
 
 public sealed record WorkCompleted(
     EnrichmentFilter Filter,
-    LookupPriorityBand Priority,
+    LookupPriorityBandDto Priority,
     string Reason,
     DateTimeOffset CompletedAt) : IDomainEvent;

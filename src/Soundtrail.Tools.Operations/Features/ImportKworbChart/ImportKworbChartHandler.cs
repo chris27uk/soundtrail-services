@@ -1,5 +1,6 @@
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Operations;
 using Soundtrail.Tools.Operations.Features.ImportKworbChart.Ports;
 

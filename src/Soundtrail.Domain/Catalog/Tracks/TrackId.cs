@@ -1,4 +1,4 @@
-namespace Soundtrail.Domain.Catalog;
+namespace Soundtrail.Domain.Catalog.Tracks;
 
 public readonly record struct TrackId
 {

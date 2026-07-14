@@ -1,4 +1,6 @@
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Artists;
+using Soundtrail.Domain.Catalog.Tracks;
 
 namespace Soundtrail.Services.Tests.Integration.Ports.GetTracksForArtist;
 
@@ -73,7 +75,7 @@ public sealed class ArtistTracksExistTests
 
         var result = await environment.Subject.GetTracksForArtistAsync(environment.ArtistId, CancellationToken.None);
 
-        result!.Tracks[0].MusicCatalogId.Should().Be(new MusicCatalogId.Track(TrackId.From("track-2804")));
+        result!.Tracks[0].MusicCatalogId.Should().Be(new CatalogItemId.Track(TrackId.From("track-2804")));
     }
 
     [Theory]

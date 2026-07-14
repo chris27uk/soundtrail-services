@@ -1,3 +1,5 @@
+using Soundtrail.Domain.Catalog.Tracks;
+
 namespace Soundtrail.Services.Tests.Unit.ImportKworbChart;
 
 public sealed class ChartContainsUnmatchedTracksTests
@@ -12,7 +14,7 @@ public sealed class ChartContainsUnmatchedTracksTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().Tracks.Should().Equal(Soundtrail.Domain.Catalog.TrackId.From("track-1701"));
+        environment.CommandBus.Commands.Single().Tracks.Should().Equal(TrackId.From("track-1701"));
     }
 
     [Fact]

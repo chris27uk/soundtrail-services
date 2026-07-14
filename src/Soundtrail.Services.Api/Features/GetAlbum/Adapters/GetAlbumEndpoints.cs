@@ -1,6 +1,7 @@
 using Soundtrail.Adapters.Registry;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Services.Api.Features.GetAlbum.Contract;
 
 namespace Soundtrail.Services.Api.Features.GetAlbum.Adapters;

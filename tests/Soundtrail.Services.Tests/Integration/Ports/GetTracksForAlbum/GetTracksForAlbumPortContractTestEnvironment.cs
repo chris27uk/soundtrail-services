@@ -3,6 +3,9 @@ using Raven.Embedded;
 using Soundtrail.Adapters.Registry;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Albums;
+using Soundtrail.Domain.Catalog.Artists;
+using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Api.Features.GetTracksForAlbum.Adapters;
 using Soundtrail.Services.Api.Features.GetTracksForAlbum.Contract;
 
@@ -50,7 +53,7 @@ internal sealed class GetTracksForAlbumPortContractTestEnvironment : IAsyncDispo
             [
                 new GetTracksForAlbumTrackResponse(
                     resolvedTrackId,
-                    new MusicCatalogId.Track(resolvedTrackId),
+                    new CatalogItemId.Track(resolvedTrackId),
                     title,
                     artistName,
                     durationMs,
@@ -167,7 +170,7 @@ internal sealed class GetTracksForAlbumPortContractTestEnvironment : IAsyncDispo
                 record.Tracks.Select(
                         track => new GetTracksForAlbumTrackResponse(
                             TrackId.From(track.TrackId),
-                            new MusicCatalogId.Track(TrackId.From(track.TrackId)),
+                            new CatalogItemId.Track(TrackId.From(track.TrackId)),
                             track.Title,
                             track.ArtistName,
                             track.DurationMs,

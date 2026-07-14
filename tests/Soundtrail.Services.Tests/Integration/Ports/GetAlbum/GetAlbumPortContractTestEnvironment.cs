@@ -3,6 +3,8 @@ using Raven.Embedded;
 using Soundtrail.Adapters.Registry;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Albums;
+using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Services.Api.Features.GetAlbum.Adapters;
 using Soundtrail.Services.Api.Features.GetAlbum.Contract;
 

@@ -15,14 +15,15 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.8" />
     <PackageReference Include="RavenDB.Client" Version="7.1.2" />
+    <PackageReference Include="WolverineFx" Version="6.18.0" />
+    <PackageReference Include="WolverineFx.AzureServiceBus" Version="6.18.0" />
+    <PackageReference Include="WolverineFx.RuntimeCompilation" Version="6.18.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Soundtrail.Services.ServiceDefaults\Soundtrail.Services.ServiceDefaults.csproj" />
     <ProjectReference Include="..\Soundtrail.Contracts\Soundtrail.Contracts.csproj" />
     <ProjectReference Include="..\Soundtrail.Domain\Soundtrail.Domain.csproj" />
-    <ProjectReference Include="..\Soundtrail.Services.Projector\Soundtrail.Services.Projector.csproj" />
-    <ProjectReference Include="..\Soundtrail.Services.Enrichment.Orchestrator\Soundtrail.Services.Enrichment.Orchestrator.csproj" />
     <ProjectReference Include="..\Soundtrail.Infrastructure\Soundtrail.Infrastructure.csproj" />
   </ItemGroup>
 

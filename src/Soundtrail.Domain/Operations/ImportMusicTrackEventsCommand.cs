@@ -1,10 +1,11 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Events;
 
-namespace Soundtrail.Domain.Catalog.Commands;
+namespace Soundtrail.Domain.Operations;
 
 public sealed record ImportMusicTrackEventsCommand(
-    MusicCatalogId MusicCatalogId,
+    CatalogItemId MusicCatalogId,
     int ExpectedVersion,
     CommandId CommandId,
     IReadOnlyList<IMusicTrackEvent> Events);

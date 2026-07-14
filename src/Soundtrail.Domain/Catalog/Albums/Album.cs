@@ -1,4 +1,4 @@
-namespace Soundtrail.Domain.Catalog
+namespace Soundtrail.Domain.Catalog.Albums
 {
     public sealed class Album(
         AlbumId albumId,

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.RegularExpressions;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Tools.Operations.Features.ImportKworbChart.Ports;
 
 namespace Soundtrail.Tools.Operations.Features.ImportKworbChart.Adapters;

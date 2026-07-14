@@ -1,6 +1,6 @@
 using Soundtrail.Contracts.Common;
 
-namespace Soundtrail.Domain.Catalog;
+namespace Soundtrail.Domain.Catalog.Artists;
 
 public readonly record struct ArtistId : IValueType
 {

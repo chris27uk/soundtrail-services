@@ -1,6 +1,7 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Tracks;
 
 namespace Soundtrail.Domain.Operations;
 

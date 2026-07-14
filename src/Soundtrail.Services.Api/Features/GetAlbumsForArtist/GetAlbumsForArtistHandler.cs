@@ -21,7 +21,7 @@ public sealed class GetAlbumsForArtistHandler(
             new SearchForCatalogItemsCommand(
                 new EnrichmentFilter.CatalogItem(new CatalogItemId.Artist(request.ArtistId)),
                 RequiredCatalogType.Albums,
-                LookupPriorityBand.High,
+                LookupPriorityBandDto.High,
                 100,
                 0,
                 requestedAt)

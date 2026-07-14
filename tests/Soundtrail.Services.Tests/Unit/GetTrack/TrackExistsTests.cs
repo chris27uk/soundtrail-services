@@ -1,5 +1,6 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Tracks;
 
 namespace Soundtrail.Services.Tests.Unit.GetTrack;
 
@@ -35,7 +36,7 @@ public sealed class TrackExistsTests
 
         var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        result!.MusicCatalogId.Should().Be(new MusicCatalogId.Track(trackId));
+        result!.MusicCatalogId.Should().Be(new CatalogItemId.Track(trackId));
     }
 
     [Fact]

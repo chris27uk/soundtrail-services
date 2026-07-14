@@ -1,6 +1,6 @@
 namespace Soundtrail.Contracts.Common;
 
-public enum LookupPriorityBand
+public enum LookupPriorityBandDto
 {
     Low = 0,
     High = 1

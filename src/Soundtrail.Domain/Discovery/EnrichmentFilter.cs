@@ -1,13 +1,12 @@
 using Dunet;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Domain.Discovery;
 
 [Union]
 public partial record EnrichmentFilter
 {
-    public partial record SearchCriteria(LookupCriteria Value);
+    public partial record SearchCriteria(Search.SearchCriteria Value);
 
     public partial record CatalogItem(CatalogItemId Value);
 

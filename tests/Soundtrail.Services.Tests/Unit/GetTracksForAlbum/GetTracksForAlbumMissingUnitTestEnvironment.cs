@@ -1,6 +1,7 @@
 using Soundtrail.Adapters.Timing;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Api.Features.GetTracksForAlbum;
 using Soundtrail.Services.Api.Features.GetTracksForAlbum.Adapters;

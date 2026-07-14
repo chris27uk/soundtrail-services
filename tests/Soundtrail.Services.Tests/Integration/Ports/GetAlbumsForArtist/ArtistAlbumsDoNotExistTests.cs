@@ -1,4 +1,5 @@
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Artists;
 
 namespace Soundtrail.Services.Tests.Integration.Ports.GetAlbumsForArtist;
 

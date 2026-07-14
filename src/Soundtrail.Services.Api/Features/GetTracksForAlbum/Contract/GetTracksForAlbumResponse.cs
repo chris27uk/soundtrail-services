@@ -1,4 +1,7 @@
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Albums;
+using Soundtrail.Domain.Catalog.Artists;
+using Soundtrail.Domain.Catalog.Tracks;
 
 namespace Soundtrail.Services.Api.Features.GetTracksForAlbum.Contract;
 
@@ -10,7 +13,7 @@ public sealed record GetTracksForAlbumResponse(
 
 public sealed record GetTracksForAlbumTrackResponse(
     TrackId TrackId,
-    MusicCatalogId MusicCatalogId,
+    CatalogItemId MusicCatalogId,
     string Title,
     string ArtistName,
     int? DurationMs,

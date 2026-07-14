@@ -1,8 +1,8 @@
-namespace Soundtrail.Domain.Catalog;
+namespace Soundtrail.Domain.Catalog.Artists;
 
-public readonly record struct AlbumTitle
+public readonly record struct ArtistName
 {
-    private AlbumTitle(string value)
+    private ArtistName(string value)
     {
         Value = value;
         Normalized = Normalize(value);
@@ -14,9 +14,9 @@ public readonly record struct AlbumTitle
 
     public bool HasValue => !string.IsNullOrWhiteSpace(Value);
 
-    public static AlbumTitle Empty => new(string.Empty);
+    public static ArtistName Empty => new(string.Empty);
 
-    public static AlbumTitle From(string? value) => new(value?.Trim() ?? string.Empty);
+    public static ArtistName From(string? value) => new(value?.Trim() ?? string.Empty);
 
     public override string ToString() => Value;
 

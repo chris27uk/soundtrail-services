@@ -7,7 +7,7 @@ namespace Soundtrail.Domain.Discovery;
 public sealed record SearchForCatalogItemsCommand(
     EnrichmentFilter Filter,
     RequiredCatalogType RequiredCatalogType,
-    LookupPriorityBand Priority,
+    LookupPriorityBandDto Priority,
     int TrustLevel,
     int RiskScore,
     DateTimeOffset RequestedAt) : ICommand

@@ -1,4 +1,4 @@
-using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog.Albums;
 
 namespace Soundtrail.Domain.Catalog.Events;
 

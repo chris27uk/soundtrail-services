@@ -1,4 +1,7 @@
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Albums;
+using Soundtrail.Domain.Catalog.Artists;
+using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Api.Features.GetTracksForAlbum.Contract;
 
 namespace Soundtrail.Services.Tests.Unit.GetTracksForAlbum;
@@ -30,7 +33,7 @@ internal static class AlbumTracks
             [
                 new GetTracksForAlbumTrackResponse(
                     resolvedTrackId,
-                    new MusicCatalogId.Track(resolvedTrackId),
+                    new CatalogItemId.Track(resolvedTrackId),
                     title,
                     artistName,
                     durationMs,

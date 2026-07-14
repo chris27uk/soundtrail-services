@@ -1,6 +1,6 @@
 namespace Soundtrail.Contracts.Common;
 
-public enum MusicSearchKind
+public enum MusicSearchKindDto
 {
     UnifiedSearch = 0,
     Isrc = 1,

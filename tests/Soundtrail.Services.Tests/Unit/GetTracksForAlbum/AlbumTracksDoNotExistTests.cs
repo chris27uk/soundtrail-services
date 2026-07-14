@@ -1,4 +1,4 @@
-using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Albums;
 
 namespace Soundtrail.Services.Tests.Unit.GetTracksForAlbum;
 

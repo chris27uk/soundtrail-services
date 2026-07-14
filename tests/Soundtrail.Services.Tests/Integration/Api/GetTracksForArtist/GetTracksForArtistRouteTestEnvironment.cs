@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.TestHost;
 using Soundtrail.Adapters.Registry;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Artists;
+using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Api.Features.GetTracksForArtist.Adapters;
 using Soundtrail.Services.Api.Features.GetTracksForArtist.Contract;
 using Soundtrail.Services.Api.Features.GetTracksForArtist.Registrations;
@@ -46,7 +48,7 @@ internal sealed class GetTracksForArtistRouteTestEnvironment : IDisposable
                     [
                         new GetTracksForArtistTrackResponse(
                             TrackId.From("track-2601"),
-                            new MusicCatalogId.Track(TrackId.From("track-2601")),
+                            new CatalogItemId.Track(TrackId.From("track-2601")),
                             "The Track",
                             "The Artist",
                             "The Album",

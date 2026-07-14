@@ -7,7 +7,7 @@ public sealed record AlbumMetadataFetchedDto(
     string ArtistId,
     string AlbumId,
     string SourceProvider,
-    LookupPriorityBand Priority,
+    LookupPriorityBandDto Priority,
     DateTimeOffset CreatedAt,
     AlbumMetadataDto Metadata,
     string CorrelationId);

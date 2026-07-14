@@ -2,6 +2,7 @@ using Raven.Client.Documents;
 using Soundtrail.Adapters.Registry;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Api.Features.GetTrack.Contract;
 
 namespace Soundtrail.Services.Api.Features.GetTrack.Adapters;

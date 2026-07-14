@@ -1,4 +1,6 @@
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Albums;
+using Soundtrail.Domain.Catalog.Artists;
 
 namespace Soundtrail.Services.Api.Features.GetAlbumsForArtist.Contract;
 
@@ -9,7 +11,7 @@ public sealed record GetAlbumsForArtistResponse(
 
 public sealed record GetAlbumsForArtistAlbumResponse(
     AlbumId AlbumId,
-    MusicCatalogId MusicCatalogId,
+    CatalogItemId MusicCatalogId,
     string AlbumTitle,
     DateOnly? ReleaseDate,
     string? ArtworkUrl);

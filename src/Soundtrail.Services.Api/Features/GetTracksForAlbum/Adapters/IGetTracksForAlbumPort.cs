@@ -1,4 +1,4 @@
-using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Services.Api.Features.GetTracksForAlbum.Contract;
 
 namespace Soundtrail.Services.Api.Features.GetTracksForAlbum.Adapters;

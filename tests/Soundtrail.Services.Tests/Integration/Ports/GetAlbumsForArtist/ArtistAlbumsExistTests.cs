@@ -1,4 +1,6 @@
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Albums;
+using Soundtrail.Domain.Catalog.Artists;
 
 namespace Soundtrail.Services.Tests.Integration.Ports.GetAlbumsForArtist;
 
@@ -73,7 +75,7 @@ public sealed class ArtistAlbumsExistTests
 
         var result = await environment.Subject.GetAlbumsForArtistAsync(environment.ArtistId, CancellationToken.None);
 
-        result!.Albums[0].MusicCatalogId.Should().Be(new MusicCatalogId.Album(AlbumId.From("artist-2106", "album-2206")));
+        result!.Albums[0].MusicCatalogId.Should().Be(new CatalogItemId.Album(AlbumId.From("artist-2106", "album-2206")));
     }
 
     [Theory]

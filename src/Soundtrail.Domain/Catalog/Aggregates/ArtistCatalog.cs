@@ -1,6 +1,9 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions.EventSourcing;
+using Soundtrail.Domain.Catalog.Albums;
+using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Domain.Catalog.Tracks;
 
 namespace Soundtrail.Domain.Catalog;
 
@@ -41,7 +44,8 @@ public sealed class ArtistCatalog
         catalogItem.Match(
             artist => AddArtist(artist.Artist),
             album => AddAlbum(album.Album),
-            track => AddTrack(track.Track));
+            track => AddTrack(track.Track),
+            playlist => { });
     }
 
     private void AddTrack(Track track) => this.Apply(new TrackDiscovered(track, ObservedAt: DateTimeOffset.UtcNow), true);
@@ -121,6 +125,7 @@ public sealed class ArtistCatalog
         var trackId = @event.MusicCatalogId?.Match(
             track => track.Value,
             _ => throw new InvalidOperationException("Provider reference facts in artist catalog must refer to a track."),
+            _ => throw new InvalidOperationException("Provider reference facts in artist catalog must refer to a track."),
             _ => throw new InvalidOperationException("Provider reference facts in artist catalog must refer to a track."))
             ?? throw new InvalidOperationException("Provider reference facts in artist catalog must include a music catalog id.");
         var track = GetOrCreateTrack(trackId);
@@ -139,7 +144,8 @@ public sealed class ArtistCatalog
         @event.CatalogItemId.Match(
             trackId => UpdateTrackArtwork(trackId.Value, @event.Url, @event.ObservedAt), 
             _ => UpdateArtistArtwork(@event.Url), 
-            albumId => UpdateAlbumArtwork(albumId.Value, @event.Url, @event.ObservedAt));
+            albumId => UpdateAlbumArtwork(albumId.Value, @event.Url, @event.ObservedAt),
+            _ => { });
     }
 
     private void UpdateAlbumArtwork(AlbumId albumId, Uri eventUrl, DateTimeOffset observedAt)

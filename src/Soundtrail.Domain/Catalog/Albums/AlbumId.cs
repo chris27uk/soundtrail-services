@@ -1,6 +1,6 @@
 using Soundtrail.Contracts.Common;
 
-namespace Soundtrail.Domain.Catalog;
+namespace Soundtrail.Domain.Catalog.Albums;
 
 public readonly record struct AlbumId : IValueType
 {
@@ -23,13 +23,13 @@ public readonly record struct AlbumId : IValueType
     
     public string ArtistAlbumId { get; }
 
-    public string StableValue => value;
+    public string StableValue => this.value;
 
     public static AlbumId From(string artistId, string albumId) => new($"{artistId}:{albumId}");
     
     public static AlbumId From(string value) => new(value);
 
-    public override string ToString() => value;
+    public override string ToString() => this.value;
 
     public static implicit operator string(AlbumId albumId) => albumId.value;
 }

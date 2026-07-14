@@ -1,6 +1,8 @@
 using Soundtrail.Adapters.Registry;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Artists;
+using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Api.Features.GetTracksForArtist.Contract;
 
 namespace Soundtrail.Services.Api.Features.GetTracksForArtist.Registrations;
@@ -33,7 +35,7 @@ public sealed class GetTracksForArtistResponseTranslationRegistration : ITypeTra
                     dto.Tracks.Select(
                             track => new GetTracksForArtistTrackResponse(
                                 TrackId.From(track.TrackId),
-                                new MusicCatalogId.Track(TrackId.From(track.TrackId)),
+                                new CatalogItemId.Track(TrackId.From(track.TrackId)),
                                 track.Title,
                                 track.ArtistName,
                                 track.AlbumTitle,
@@ -51,7 +53,7 @@ public sealed class GetTracksForArtistResponseTranslationRegistration : ITypeTra
                     record.Tracks.Select(
                             track => new GetTracksForArtistTrackResponse(
                                 TrackId.From(track.TrackId),
-                                new MusicCatalogId.Track(TrackId.From(track.TrackId)),
+                                new CatalogItemId.Track(TrackId.From(track.TrackId)),
                                 track.Title,
                                 track.ArtistName,
                                 track.AlbumTitle,

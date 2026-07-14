@@ -2,6 +2,7 @@ using Raven.Client.Documents;
 using Raven.Embedded;
 using Soundtrail.Adapters.Registry;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Services.Api.Features.GetArtist.Adapters;
 using Soundtrail.Services.Api.Features.GetArtist.Contract;
 using Soundtrail.Services.Api.Infrastructure.Raven.Documents;

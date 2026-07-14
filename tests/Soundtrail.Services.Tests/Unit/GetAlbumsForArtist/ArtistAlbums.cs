@@ -1,4 +1,6 @@
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Albums;
+using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Services.Api.Features.GetAlbumsForArtist.Contract;
 
 namespace Soundtrail.Services.Tests.Unit.GetAlbumsForArtist;
@@ -24,7 +26,7 @@ internal static class ArtistAlbums
             [
                 new GetAlbumsForArtistAlbumResponse(
                     resolvedAlbumId,
-                    new MusicCatalogId.Album(resolvedAlbumId),
+                    new CatalogItemId.Album(resolvedAlbumId),
                     albumTitle,
                     releaseDate ?? new DateOnly(2024, 1, 2),
                     artworkUrl)

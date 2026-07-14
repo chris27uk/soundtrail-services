@@ -6,7 +6,7 @@ public sealed record MusicCatalogLookupAttemptedDto(
     string CommandId,
     string MusicCatalogId,
     string SourceProvider,
-    LookupPriorityBand Priority,
+    LookupPriorityBandDto Priority,
     DateTimeOffset CreatedAt,
     string CorrelationId,
     MusicCatalogLookupOutcomeDto Outcome,

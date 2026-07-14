@@ -5,7 +5,7 @@ namespace Soundtrail.Contracts.IntegrationMessaging.Commands;
 public sealed record LookupStreamingLocationsCommandDto(
     string CommandId,
     string MusicCatalogId,
-    LookupPriorityBand Priority,
+    LookupPriorityBandDto Priority,
     DateTimeOffset CreatedAt,
     string CorrelationId,
     StreamingLocationSearchTermDto SearchTerm,

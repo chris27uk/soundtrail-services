@@ -4,10 +4,10 @@ namespace Soundtrail.Contracts.IntegrationMessaging.Responses;
 
 public sealed record CatalogItemLookupAttemptedDto(
     string CommandId,
-    CatalogItemKind ItemKind,
+    CatalogItemKindDto ItemKindDto,
     string ItemValue,
     string SourceProvider,
-    LookupPriorityBand Priority,
+    LookupPriorityBandDto Priority,
     DateTimeOffset CreatedAt,
     string CorrelationId,
     MusicCatalogLookupOutcomeDto Outcome,

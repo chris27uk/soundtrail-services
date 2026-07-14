@@ -21,7 +21,7 @@ public sealed class GetTracksForAlbumHandler(
             new SearchForCatalogItemsCommand(
                 new EnrichmentFilter.CatalogItem(new CatalogItemId.Album(request.AlbumId)),
                 RequiredCatalogType.Tracks,
-                LookupPriorityBand.High,
+                LookupPriorityBandDto.High,
                 100,
                 0,
                 requestedAt)

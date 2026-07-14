@@ -177,12 +177,7 @@ public sealed class TypeTranslationRegistry : ITypeRegistry
         ArgumentNullException.ThrowIfNull(targetType);
 
         var key = (source.GetType(), targetType);
-        if (translators.TryGetValue(key, out var translate))
-        {
-            return translate(source);
-        }
-
-        if (TryFindAssignableTranslation(source.GetType(), targetType, out translate))
+        if ((this.translators.TryGetValue(key, out var translate) || TryFindAssignableTranslation(source.GetType(), targetType, out translate)) && translate != null)
         {
             return translate(source);
         }
@@ -194,15 +189,15 @@ public sealed class TypeTranslationRegistry : ITypeRegistry
     private bool TryFindAssignableTranslation(
         Type sourceType,
         Type targetType,
-        out Mapper translate)
+        out Mapper? translate)
     {
         var match = this.translators
             .Where(candidate => candidate.Key.SourceType == sourceType)
             .FirstOrDefault(candidate => targetType.IsAssignableFrom(candidate.Key.TargetType));
 
-        if (default(KeyValuePair<TypeMapping, Mapper>).Equals(match))
+        if (match.Equals(default(KeyValuePair<TypeMapping, Mapper>)))
         {
-            translate = default(Mapper);
+            translate = null;
             return false;
         }
         

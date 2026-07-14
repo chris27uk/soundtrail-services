@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.TestHost;
 using Soundtrail.Adapters.Registry;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Albums;
+using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Services.Api.Features.GetAlbumsForArtist.Adapters;
 using Soundtrail.Services.Api.Features.GetAlbumsForArtist.Contract;
 using Soundtrail.Services.Api.Features.GetAlbumsForArtist.Registrations;
@@ -46,7 +48,7 @@ internal sealed class GetAlbumsForArtistRouteTestEnvironment : IDisposable
                     [
                         new GetAlbumsForArtistAlbumResponse(
                             AlbumId.From("artist-1901", "album-2001"),
-                            new MusicCatalogId.Album(AlbumId.From("artist-1901", "album-2001")),
+                            new CatalogItemId.Album(AlbumId.From("artist-1901", "album-2001")),
                             "The Album",
                             new DateOnly(2024, 6, 7),
                             "https://cdn.soundtrail.test/albums/album-2001.jpg")

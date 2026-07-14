@@ -9,10 +9,10 @@ namespace Soundtrail.Domain.Discovery
     {
         public partial record Data(LookedUpData Value);
         
-        public partial record Duplicate(LookupCriteria Criteria, CatalogItem Value);
+        public partial record Duplicate(SearchCriteria Criteria, CatalogItem Value);
 
-        public partial record NotFound(LookupCriteria Criteria);
+        public partial record NotFound(SearchCriteria Criteria);
         
-        public partial record Deferred(LookupCriteria Criteria, DateTimeOffset DeferredUntil);
+        public partial record Deferred(SearchCriteria Criteria, DateTimeOffset DeferredUntil);
     }
 }

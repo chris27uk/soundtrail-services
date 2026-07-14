@@ -1,4 +1,5 @@
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Tracks;
 
 namespace Soundtrail.Services.Tests.Integration.Ports.GetTrack;
 
@@ -40,7 +41,7 @@ public sealed class TrackExistsTests
 
         var result = await environment.Subject.GetTrackAsync(environment.TrackId, CancellationToken.None);
 
-        result!.MusicCatalogId.Should().Be(new MusicCatalogId.Track(TrackId.From("track-603")));
+        result!.MusicCatalogId.Should().Be(new CatalogItemId.Track(TrackId.From("track-603")));
     }
 
     [Theory]

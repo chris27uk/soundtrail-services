@@ -1,4 +1,5 @@
-using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Albums;
+using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Services.Api.Features.GetAlbum.Contract;
 
 namespace Soundtrail.Services.Tests.Unit.GetAlbum;

@@ -235,12 +235,20 @@ internal sealed class RedisLookupExecutionAdmissionPort(
             .ToArray();
     }
 
-    private ApiBudgetPolicy GetPolicy(LookupSource provider) =>
-        provider == LookupSource.MusicBrainz
-            ? sourceBudgetOptions.MusicBrainz
-            : provider == LookupSource.Odesli
-                ? sourceBudgetOptions.Odesli
-                : throw new ArgumentOutOfRangeException(nameof(provider), provider, "Unsupported source budget.");
+    private ApiBudgetPolicy GetPolicy(LookupSource provider)
+    {
+        if (provider == LookupSource.MusicBrainz && this.sourceBudgetOptions.MusicBrainz != null)
+        {
+            return sourceBudgetOptions.MusicBrainz;
+        }
+
+        if (provider == LookupSource.Odesli && this.sourceBudgetOptions.Odesli != null)
+        {
+            return sourceBudgetOptions.Odesli;
+        }
+        
+        throw new ArgumentOutOfRangeException(nameof(provider));
+    }
 
     private static DateTimeOffset AlignToWindow(DateTimeOffset timestamp, int windowSeconds)
     {
@@ -262,8 +270,9 @@ internal sealed class RedisLookupExecutionAdmissionPort(
 
 public class SourceApiBudgetsOptions
 {
-    public ApiBudgetPolicy MusicBrainz { get; set; }
-    public ApiBudgetPolicy Odesli { get; set; }
+    public ApiBudgetPolicy? MusicBrainz { get; set; }
+    
+    public ApiBudgetPolicy? Odesli { get; set; }
 }
 
 public class ApiBudgetPolicy

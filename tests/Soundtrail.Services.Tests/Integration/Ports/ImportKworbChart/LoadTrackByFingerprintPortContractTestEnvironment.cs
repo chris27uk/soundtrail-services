@@ -2,6 +2,7 @@ using Raven.Client.Documents;
 using Raven.Embedded;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Tools.Operations.Features.ImportKworbChart.Adapters;
 using Soundtrail.Tools.Operations.Features.ImportKworbChart.Ports;
 

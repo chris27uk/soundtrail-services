@@ -1,4 +1,4 @@
-namespace Soundtrail.Domain.Catalog
+namespace Soundtrail.Domain.Catalog.Tracks
 {
     public sealed class Track(TrackId trackId)
     {

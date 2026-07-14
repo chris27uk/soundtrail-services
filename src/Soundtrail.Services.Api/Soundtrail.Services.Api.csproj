@@ -23,6 +23,7 @@
     <Folder Include="Features\GetArtist\" />
     <Folder Include="Features\GetTracksForAlbum\" />
     <Folder Include="Features\GetTracksForArtist\" />
+    <Folder Include="Features\GetTracksForPlaylist\" />
     <Folder Include="Features\GetTrack\" />
     <Folder Include="Features\Search\" />
   </ItemGroup>

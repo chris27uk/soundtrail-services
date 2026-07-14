@@ -1,6 +1,6 @@
 namespace Soundtrail.Contracts.Common;
 
-public enum CatalogItemKind
+public enum CatalogItemKindDto
 {
     Track = 0,
     Artist = 1,

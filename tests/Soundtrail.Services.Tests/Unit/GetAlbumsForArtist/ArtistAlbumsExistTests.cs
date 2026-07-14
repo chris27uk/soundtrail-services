@@ -1,5 +1,7 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Albums;
+using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
 
@@ -71,7 +73,7 @@ public sealed class ArtistAlbumsExistTests
 
         var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        result!.Albums[0].MusicCatalogId.Should().Be(new MusicCatalogId.Album(AlbumId.From("artist-1706", "album-1806")));
+        result!.Albums[0].MusicCatalogId.Should().Be(new CatalogItemId.Album(AlbumId.From("artist-1706", "album-1806")));
     }
 
     [Fact]
@@ -157,7 +159,7 @@ public sealed class ArtistAlbumsExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().Priority.Should().Be(LookupPriorityBand.High);
+        environment.CommandBus.Commands.Single().Priority.Should().Be(LookupPriorityBandDto.High);
     }
 
     [Fact]
