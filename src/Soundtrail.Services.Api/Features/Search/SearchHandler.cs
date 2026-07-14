@@ -1,6 +1,7 @@
 using Soundtrail.Adapters.Timing;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Search;
@@ -23,7 +24,7 @@ public sealed class SearchHandler(
             new SearchForCatalogItemsCommand(
                 new EnrichmentFilter.SearchCriteria(searchCriteria),
                 RequiredCatalogType.None,
-                LookupPriorityBandDto.High,
+                (LookupPriorityBand)LookupPriorityBandDto.High,
                 100,
                 0,
                 requestedAt)

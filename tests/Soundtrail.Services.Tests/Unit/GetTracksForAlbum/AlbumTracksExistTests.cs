@@ -4,6 +4,7 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog.Tracks;
+using Soundtrail.Domain.Common;
 
 namespace Soundtrail.Services.Tests.Unit.GetTracksForAlbum;
 
@@ -203,7 +204,7 @@ public sealed class AlbumTracksExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().Priority.Should().Be(LookupPriorityBandDto.High);
+        environment.CommandBus.Commands.Single().Priority.Should().Be(LookupPriorityBand.High);
     }
 
     [Fact]

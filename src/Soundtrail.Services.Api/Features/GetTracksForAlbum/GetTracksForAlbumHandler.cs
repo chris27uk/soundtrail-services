@@ -1,7 +1,7 @@
 using Soundtrail.Adapters.Timing;
-using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Services.Api.Features.GetTracksForAlbum.Adapters;
@@ -21,7 +21,7 @@ public sealed class GetTracksForAlbumHandler(
             new SearchForCatalogItemsCommand(
                 new EnrichmentFilter.CatalogItem(new CatalogItemId.Album(request.AlbumId)),
                 RequiredCatalogType.Tracks,
-                LookupPriorityBandDto.High,
+                LookupPriorityBand.High,
                 100,
                 0,
                 requestedAt)

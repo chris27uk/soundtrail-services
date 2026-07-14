@@ -4,6 +4,7 @@ using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Search;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog.Tracks;
+using Soundtrail.Domain.Common;
 using Soundtrail.Services.Api.Features.Search.Contract;
 
 namespace Soundtrail.Services.Tests.Unit.Search;
@@ -163,7 +164,7 @@ public sealed class SearchResultsExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().Priority.Should().Be(LookupPriorityBandDto.High);
+        environment.CommandBus.Commands.Single().Priority.Should().Be(LookupPriorityBand.High);
     }
 
     [Fact]

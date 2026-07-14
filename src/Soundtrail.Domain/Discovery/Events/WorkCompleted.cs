@@ -1,10 +1,10 @@
-using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions.EventSourcing;
+using Soundtrail.Domain.Common;
 
 namespace Soundtrail.Domain.Discovery.Events;
 
 public sealed record WorkCompleted(
     EnrichmentFilter Filter,
-    LookupPriorityBandDto Priority,
+    LookupPriorityBand Priority,
     string Reason,
     DateTimeOffset CompletedAt) : IDomainEvent;

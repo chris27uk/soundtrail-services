@@ -1,5 +1,6 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery.Events;
 
 namespace Soundtrail.Domain.Discovery;
@@ -7,7 +8,7 @@ namespace Soundtrail.Domain.Discovery;
 public sealed record SearchForCatalogItemsCommand(
     EnrichmentFilter Filter,
     RequiredCatalogType RequiredCatalogType,
-    LookupPriorityBandDto Priority,
+    LookupPriorityBand Priority,
     int TrustLevel,
     int RiskScore,
     DateTimeOffset RequestedAt) : ICommand

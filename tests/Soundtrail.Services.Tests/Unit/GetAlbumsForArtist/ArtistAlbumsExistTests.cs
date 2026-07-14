@@ -2,6 +2,7 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
+using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
 
@@ -159,7 +160,7 @@ public sealed class ArtistAlbumsExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().Priority.Should().Be(LookupPriorityBandDto.High);
+        environment.CommandBus.Commands.Single().Priority.Should().Be(LookupPriorityBand.High);
     }
 
     [Fact]

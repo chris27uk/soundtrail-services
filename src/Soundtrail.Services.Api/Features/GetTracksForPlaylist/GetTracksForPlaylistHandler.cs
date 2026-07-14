@@ -2,6 +2,7 @@ using Soundtrail.Adapters.Timing;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Services.Api.Features.GetTracksForPlaylist.Adapters;
@@ -21,7 +22,7 @@ public sealed class GetTracksForPlaylistHandler(
             new SearchForCatalogItemsCommand(
                 new EnrichmentFilter.CatalogItem(new CatalogItemId.Playlist(request.PlaylistId)),
                 RequiredCatalogType.Tracks,
-                LookupPriorityBandDto.High,
+                LookupPriorityBand.High,
                 100,
                 0,
                 requestedAt)
