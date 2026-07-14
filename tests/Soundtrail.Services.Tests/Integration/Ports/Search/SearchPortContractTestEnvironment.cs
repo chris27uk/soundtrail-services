@@ -1,5 +1,4 @@
 using Raven.Client.Documents;
-using Raven.Embedded;
 using Soundtrail.Adapters.Registry;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
@@ -9,22 +8,25 @@ using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.Search.Adapters;
 using Soundtrail.Services.Api.Features.Search.Contract;
+using Soundtrail.Services.Tests.Integration.Ports;
 
 namespace Soundtrail.Services.Tests.Integration.Ports.Search;
 
 internal sealed class SearchPortContractTestEnvironment : IAsyncDisposable
 {
-    private static int serverStarted;
     private readonly IDocumentStore? documentStore;
+    private readonly string? databaseName;
 
     private SearchPortContractTestEnvironment(
         ISearchPort subject,
         SearchCriteria searchCriteria,
-        IDocumentStore? documentStore = null)
+        IDocumentStore? documentStore = null,
+        string? databaseName = null)
     {
         Subject = subject;
         SearchCriteria = searchCriteria;
         this.documentStore = documentStore;
+        this.databaseName = databaseName;
     }
 
     public ISearchPort Subject { get; }
@@ -104,16 +106,14 @@ internal sealed class SearchPortContractTestEnvironment : IAsyncDisposable
 
     public ValueTask DisposeAsync()
     {
-        documentStore?.Dispose();
-        return ValueTask.CompletedTask;
+        return EmbeddedRavenTestServer.DisposeAsync(documentStore, databaseName);
     }
 
     private static async Task<SearchPortContractTestEnvironment> CreateRavenEnvironmentAsync(
         SearchCriteria searchCriteria,
         CatalogSearchRecordDto? existingRecord = null)
     {
-        EnsureEmbeddedServerStarted();
-        var store = EmbeddedServer.Instance.GetDocumentStore($"soundtrail-services-tests-{Guid.NewGuid():N}");
+        var store = EmbeddedRavenTestServer.CreateDocumentStore();
 
         if (existingRecord is not null)
         {
@@ -125,23 +125,8 @@ internal sealed class SearchPortContractTestEnvironment : IAsyncDisposable
         return new SearchPortContractTestEnvironment(
             new RavenSearchPort(store, new TypeRegistryFake()),
             searchCriteria,
-            store);
-    }
-
-    private static void EnsureEmbeddedServerStarted()
-    {
-        if (Interlocked.Exchange(ref serverStarted, 1) == 1)
-        {
-            return;
-        }
-
-        try
-        {
-            EmbeddedServer.Instance.StartServer();
-        }
-        catch (InvalidOperationException exception) when (exception.Message.Contains("already started", StringComparison.OrdinalIgnoreCase))
-        {
-        }
+            store,
+            existingRecord?.Id);
     }
 
     private sealed class TypeRegistryFake : ITypeRegistry

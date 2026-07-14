@@ -1,40 +1,43 @@
 using JasperFx.CodeGeneration.Model;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
+using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Adapters.Messaging;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Services.ServiceDefaults;
 using Wolverine;
 using Wolverine.AzureServiceBus;
-using ICommandBus = Soundtrail.Domain.Abstractions.ICommandBus;
 
 namespace Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Messaging;
 
-public static class ServiceBusServiceCollectionExtensions
+[Autodiscover]
+public sealed class SchedulerMessagingFeature : ISchedulerFeature
 {
-    public static IServiceCollection AddSchedulerServiceBus(
-        this IServiceCollection services,
-        IConfiguration configuration)
+    public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
-        services.AddScoped<ICommandBus, WolverineCommandBus>();
-        return services;
+        services.TryAddScoped<Soundtrail.Domain.Abstractions.ICommandBus, WolverineCommandBus>();
     }
 
-    public static WolverineOptions UseSchedulerServiceBusMessaging(
-        this WolverineOptions opts,
-        IConfiguration configuration)
+    public void ConfigureApplication(WebApplication app)
     {
-        opts.UseRuntimeCompilation();
-        opts.ServiceLocationPolicy = ServiceLocationPolicy.AllowedButWarn;
-        opts.Discovery.DisableConventionalDiscovery();
+    }
+
+    public void ConfigureMessaging(WolverineOptions options, IConfiguration configuration, IHostEnvironment environment)
+    {
+        options.UseRuntimeCompilation();
+        options.ServiceLocationPolicy = ServiceLocationPolicy.AllowedButWarn;
+        options.Discovery.DisableConventionalDiscovery();
 
         var serviceBusOptions = configuration
             .GetSection(ServiceBusOptions.SectionName)
             .Get<ServiceBusOptions>() ?? throw new InvalidOperationException("ServiceBus configuration is required.");
         var useDevelopmentEmulator = serviceBusOptions.ConnectionString.IsDevelopmentEmulatorConnectionString();
 
-        var transport = opts.UseAzureServiceBus(serviceBusOptions.ConnectionString);
+        var transport = options.UseAzureServiceBus(serviceBusOptions.ConnectionString);
         if (useDevelopmentEmulator)
         {
             transport.SystemQueuesAreEnabled(false);
@@ -45,9 +48,7 @@ public static class ServiceBusServiceCollectionExtensions
                 .EnableWolverineControlQueues();
         }
 
-        opts.PublishMessage<RunDiscoveryBacklogSchedulingCommandDto>()
+        options.PublishMessage<RunDiscoveryBacklogSchedulingCommandDto>()
             .ToAzureServiceBusQueue(serviceBusOptions.DiscoveryBacklogSchedulingQueueName);
-
-        return opts;
     }
 }

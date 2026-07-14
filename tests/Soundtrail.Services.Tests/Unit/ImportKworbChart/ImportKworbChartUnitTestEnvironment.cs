@@ -2,9 +2,8 @@ using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Operations;
-using Soundtrail.Tools.MusicBrainzImport.Features.ImportKworbChart;
-using Soundtrail.Tools.Operations.Features.ImportKworbChart;
-using Soundtrail.Tools.Operations.Features.ImportKworbChart.Ports;
+using Soundtrail.Services.Enrichment.Scheduler.Features.ImportKworbChart;
+using Soundtrail.Services.Enrichment.Scheduler.Features.ImportKworbChart.Ports;
 
 namespace Soundtrail.Services.Tests.Unit.ImportKworbChart;
 

@@ -24,7 +24,7 @@ public sealed class SearchHandler(
             new SearchForCatalogItemsCommand(
                 new EnrichmentFilter.SearchCriteria(searchCriteria),
                 RequiredCatalogType.None,
-                (LookupPriorityBand)LookupPriorityBandDto.High,
+                LookupPriorityBand.High,
                 100,
                 0,
                 requestedAt)

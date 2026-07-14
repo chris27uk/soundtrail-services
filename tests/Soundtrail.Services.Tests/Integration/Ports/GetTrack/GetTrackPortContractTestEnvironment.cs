@@ -1,27 +1,29 @@
 using Raven.Client.Documents;
-using Raven.Embedded;
 using Soundtrail.Adapters.Registry;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Api.Features.GetTrack.Adapters;
 using Soundtrail.Services.Api.Features.GetTrack.Contract;
+using Soundtrail.Services.Tests.Integration.Ports;
 
 namespace Soundtrail.Services.Tests.Integration.Ports.GetTrack;
 
 internal sealed class GetTrackPortContractTestEnvironment : IAsyncDisposable
 {
-    private static int serverStarted;
     private readonly IDocumentStore? documentStore;
+    private readonly string? databaseName;
 
     private GetTrackPortContractTestEnvironment(
         IGetTrackPort subject,
         TrackId trackId,
-        IDocumentStore? documentStore = null)
+        IDocumentStore? documentStore = null,
+        string? databaseName = null)
     {
         Subject = subject;
         TrackId = trackId;
         this.documentStore = documentStore;
+        this.databaseName = databaseName;
     }
 
     public IGetTrackPort Subject { get; }
@@ -94,16 +96,14 @@ internal sealed class GetTrackPortContractTestEnvironment : IAsyncDisposable
 
     public ValueTask DisposeAsync()
     {
-        documentStore?.Dispose();
-        return ValueTask.CompletedTask;
+        return EmbeddedRavenTestServer.DisposeAsync(documentStore, databaseName);
     }
 
     private static async Task<GetTrackPortContractTestEnvironment> CreateRavenEnvironmentAsync(
         TrackId trackId,
         CatalogTrackRecordDto? existingRecord = null)
     {
-        EnsureEmbeddedServerStarted();
-        var store = EmbeddedServer.Instance.GetDocumentStore($"soundtrail-services-tests-{Guid.NewGuid():N}");
+        var store = EmbeddedRavenTestServer.CreateDocumentStore();
 
         if (existingRecord is not null)
         {
@@ -115,23 +115,8 @@ internal sealed class GetTrackPortContractTestEnvironment : IAsyncDisposable
         return new GetTrackPortContractTestEnvironment(
             new RavenGetTrackPort(store, new TypeRegistryFake()),
             trackId,
-            store);
-    }
-
-    private static void EnsureEmbeddedServerStarted()
-    {
-        if (Interlocked.Exchange(ref serverStarted, 1) == 1)
-        {
-            return;
-        }
-
-        try
-        {
-            EmbeddedServer.Instance.StartServer();
-        }
-        catch (InvalidOperationException exception) when (exception.Message.Contains("already started", StringComparison.OrdinalIgnoreCase))
-        {
-        }
+            store,
+            existingRecord?.Id);
     }
 
     private sealed class TypeRegistryFake : ITypeRegistry

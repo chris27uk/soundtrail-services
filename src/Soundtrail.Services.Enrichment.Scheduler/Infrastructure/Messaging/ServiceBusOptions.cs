@@ -7,4 +7,6 @@ public sealed class ServiceBusOptions
     public string ConnectionString { get; init; } = string.Empty;
 
     public string DiscoveryBacklogSchedulingQueueName { get; init; } = "discovery-backlog-scheduling";
+
+    public string PlaylistUpdatesQueueName { get; init; } = "playlist-updates";
 }

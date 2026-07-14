@@ -2,9 +2,9 @@ using Raven.Client.Documents;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Tracks;
-using Soundtrail.Tools.Operations.Features.ImportKworbChart.Ports;
+using Soundtrail.Services.Enrichment.Scheduler.Features.ImportKworbChart.Ports;
 
-namespace Soundtrail.Tools.Operations.Features.ImportKworbChart.Adapters;
+namespace Soundtrail.Services.Enrichment.Scheduler.Features.ImportKworbChart.Adapters;
 
 public sealed class RavenLoadTrackByFingerprintPort(IDocumentStore documentStore) : ILoadTrackByFingerprintPort
 {

@@ -2,9 +2,9 @@ using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Operations;
-using Soundtrail.Tools.Operations.Features.ImportKworbChart.Ports;
+using Soundtrail.Services.Enrichment.Scheduler.Features.ImportKworbChart.Ports;
 
-namespace Soundtrail.Tools.MusicBrainzImport.Features.ImportKworbChart;
+namespace Soundtrail.Services.Enrichment.Scheduler.Features.ImportKworbChart;
 
 public sealed class ImportKworbChartHandler(
     IReadKworbChartPort readKworbChartPort,

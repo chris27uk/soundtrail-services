@@ -1,5 +1,4 @@
 using Raven.Client.Documents;
-using Raven.Embedded;
 using Soundtrail.Adapters.Registry;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
@@ -7,22 +6,25 @@ using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Services.Api.Features.GetAlbum.Adapters;
 using Soundtrail.Services.Api.Features.GetAlbum.Contract;
+using Soundtrail.Services.Tests.Integration.Ports;
 
 namespace Soundtrail.Services.Tests.Integration.Ports.GetAlbum;
 
 internal sealed class GetAlbumPortContractTestEnvironment : IAsyncDisposable
 {
-    private static int serverStarted;
     private readonly IDocumentStore? documentStore;
+    private readonly string? databaseName;
 
     private GetAlbumPortContractTestEnvironment(
         IGetAlbumPort subject,
         AlbumId albumId,
-        IDocumentStore? documentStore = null)
+        IDocumentStore? documentStore = null,
+        string? databaseName = null)
     {
         Subject = subject;
         AlbumId = albumId;
         this.documentStore = documentStore;
+        this.databaseName = databaseName;
     }
 
     public IGetAlbumPort Subject { get; }
@@ -83,16 +85,14 @@ internal sealed class GetAlbumPortContractTestEnvironment : IAsyncDisposable
 
     public ValueTask DisposeAsync()
     {
-        documentStore?.Dispose();
-        return ValueTask.CompletedTask;
+        return EmbeddedRavenTestServer.DisposeAsync(documentStore, databaseName);
     }
 
     private static async Task<GetAlbumPortContractTestEnvironment> CreateRavenEnvironmentAsync(
         AlbumId albumId,
         CatalogAlbumRecordDto? existingRecord = null)
     {
-        EnsureEmbeddedServerStarted();
-        var store = EmbeddedServer.Instance.GetDocumentStore($"soundtrail-services-tests-{Guid.NewGuid():N}");
+        var store = EmbeddedRavenTestServer.CreateDocumentStore();
 
         if (existingRecord is not null)
         {
@@ -104,23 +104,8 @@ internal sealed class GetAlbumPortContractTestEnvironment : IAsyncDisposable
         return new GetAlbumPortContractTestEnvironment(
             new RavenGetAlbumPort(store, new TypeRegistryFake()),
             albumId,
-            store);
-    }
-
-    private static void EnsureEmbeddedServerStarted()
-    {
-        if (Interlocked.Exchange(ref serverStarted, 1) == 1)
-        {
-            return;
-        }
-
-        try
-        {
-            EmbeddedServer.Instance.StartServer();
-        }
-        catch (InvalidOperationException exception) when (exception.Message.Contains("already started", StringComparison.OrdinalIgnoreCase))
-        {
-        }
+            store,
+            existingRecord?.Id);
     }
 
     private sealed class TypeRegistryFake : ITypeRegistry

@@ -1,5 +1,5 @@
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Tools.Operations.Features.ImportKworbChart.Ports;
+using Soundtrail.Services.Enrichment.Scheduler.Features.ImportKworbChart.Ports;
 
 namespace Soundtrail.Services.Tests.Integration.Ports.ImportKworbChart;
 

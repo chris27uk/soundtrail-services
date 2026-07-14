@@ -1,26 +1,28 @@
 using Raven.Client.Documents;
-using Raven.Embedded;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Tracks;
-using Soundtrail.Tools.Operations.Features.ImportKworbChart.Adapters;
-using Soundtrail.Tools.Operations.Features.ImportKworbChart.Ports;
+using Soundtrail.Services.Enrichment.Scheduler.Features.ImportKworbChart.Adapters;
+using Soundtrail.Services.Enrichment.Scheduler.Features.ImportKworbChart.Ports;
+using Soundtrail.Services.Tests.Integration.Ports;
 
 namespace Soundtrail.Services.Tests.Integration.Ports.ImportKworbChart;
 
 internal sealed class LoadTrackByFingerprintPortContractTestEnvironment : IAsyncDisposable
 {
-    private static int serverStarted;
     private readonly IDocumentStore? documentStore;
+    private readonly string? databaseName;
 
     private LoadTrackByFingerprintPortContractTestEnvironment(
         ILoadTrackByFingerprintPort subject,
         TrackMatchFingerprint fingerprint,
-        IDocumentStore? documentStore = null)
+        IDocumentStore? documentStore = null,
+        string? databaseName = null)
     {
         Subject = subject;
         Fingerprint = fingerprint;
         this.documentStore = documentStore;
+        this.databaseName = databaseName;
     }
 
     public ILoadTrackByFingerprintPort Subject { get; }
@@ -82,16 +84,14 @@ internal sealed class LoadTrackByFingerprintPortContractTestEnvironment : IAsync
 
     public ValueTask DisposeAsync()
     {
-        documentStore?.Dispose();
-        return ValueTask.CompletedTask;
+        return EmbeddedRavenTestServer.DisposeAsync(documentStore, databaseName);
     }
 
     private static async Task<LoadTrackByFingerprintPortContractTestEnvironment> CreateRavenEnvironmentAsync(
         TrackMatchFingerprint fingerprint,
         CatalogTrackMatchFingerprintRecordDto? existingRecord = null)
     {
-        EnsureEmbeddedServerStarted();
-        var store = EmbeddedServer.Instance.GetDocumentStore($"soundtrail-services-tests-{Guid.NewGuid():N}");
+        var store = EmbeddedRavenTestServer.CreateDocumentStore();
 
         if (existingRecord is not null)
         {
@@ -103,23 +103,8 @@ internal sealed class LoadTrackByFingerprintPortContractTestEnvironment : IAsync
         return new LoadTrackByFingerprintPortContractTestEnvironment(
             new RavenLoadTrackByFingerprintPort(store),
             fingerprint,
-            store);
-    }
-
-    private static void EnsureEmbeddedServerStarted()
-    {
-        if (Interlocked.Exchange(ref serverStarted, 1) == 1)
-        {
-            return;
-        }
-
-        try
-        {
-            EmbeddedServer.Instance.StartServer();
-        }
-        catch (InvalidOperationException exception) when (exception.Message.Contains("already started", StringComparison.OrdinalIgnoreCase))
-        {
-        }
+            store,
+            existingRecord?.Id);
     }
 }
 

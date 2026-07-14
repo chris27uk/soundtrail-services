@@ -1,6 +1,6 @@
 using Soundtrail.Domain.Catalog;
 
-namespace Soundtrail.Tools.Operations.Features.ImportKworbChart.Ports;
+namespace Soundtrail.Services.Enrichment.Scheduler.Features.ImportKworbChart.Ports;
 
 public interface IReadKworbChartPort
 {
