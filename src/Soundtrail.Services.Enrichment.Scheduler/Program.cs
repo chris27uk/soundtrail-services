@@ -1,15 +1,43 @@
 using Microsoft.AspNetCore.Builder;
-using Soundtrail.Services.Enrichment.Scheduler.Infrastructure.CompositionRoot;
-using Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Messaging;
+using Microsoft.Extensions.DependencyInjection;
+using Soundtrail.Adapters.FeatureOrchestration;
+using Soundtrail.Services.Enrichment.Scheduler;
+using Soundtrail.Services.Enrichment.Scheduler.Infrastructure;
 using Soundtrail.Services.ServiceDefaults;
 using Wolverine;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
-builder.Host.UseWolverine(opts => opts.UseSchedulerServiceBusMessaging(builder.Configuration));
-builder.Services.AddSchedulerAppServices(builder.Configuration);
 
-var app = builder.Build();
-app.MapDefaultEndpoints();
+using (var _ = FeatureEnvironment.Live())
+{
+    builder.Services.AddFeatures<SchedulerAssemblyMarker>();
+#pragma warning disable ASP0000
+    using var serviceProvider = builder.Services.BuildServiceProvider();
+#pragma warning restore ASP0000
+    var features = serviceProvider.GetServices<IFeature>().ToArray();
 
-await app.RunAsync();
+    foreach (var feature in features)
+    {
+        feature.ConfigureServices(builder.Services, builder.Configuration);
+    }
+
+    builder.Host.UseWolverine(
+        options =>
+        {
+            foreach (var feature in features.OfType<ISchedulerFeature>())
+            {
+                feature.ConfigureMessaging(options, builder.Configuration, builder.Environment);
+            }
+        });
+
+    var app = builder.Build();
+
+    foreach (var feature in features.OfType<ISchedulerFeature>())
+    {
+        feature.ConfigureApplication(app);
+    }
+
+    app.MapDefaultEndpoints();
+    await app.RunAsync();
+}

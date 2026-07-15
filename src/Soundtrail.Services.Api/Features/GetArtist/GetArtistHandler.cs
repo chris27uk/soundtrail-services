@@ -1,24 +1,11 @@
-using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Catalog.Browsing;
-using Soundtrail.Domain.Discovery.Commands;
-using Soundtrail.Services.Api.Infrastructure.Ports;
+using Soundtrail.Services.Api.Features.GetArtist.Adapters;
+using Soundtrail.Services.Api.Features.GetArtist.Contract;
 
 namespace Soundtrail.Services.Api.Features.GetArtist;
 
-public sealed class GetArtistHandler(
-    ICatalogReadPort catalogReadPort,
-    ICommandBus commandBus) : IApiHandler<GetArtistCommand, ArtistDetailsResponse?>
+public sealed class GetArtistHandler(IGetArtistPort getArtistPort) : IApiHandler<GetArtistRequest, GetArtistResponse?>
 {
-    public async Task<ArtistDetailsResponse?> Handle(GetArtistCommand request, CancellationToken cancellationToken = default)
-    {
-        var response = await catalogReadPort.GetArtistAsync(request.ArtistId, cancellationToken);
-        await commandBus.SendAsync(
-            new KnownArtistRequested(
-                request.ArtistId,
-                DateTimeOffset.UtcNow,
-                CorrelationId.New()),
-            cancellationToken);
-        return response;
-    }
+    public async Task<GetArtistResponse?> Handle(GetArtistRequest request, CancellationToken cancellationToken = default) =>
+        await getArtistPort.GetArtistAsync(request.ArtistId, cancellationToken);
 }

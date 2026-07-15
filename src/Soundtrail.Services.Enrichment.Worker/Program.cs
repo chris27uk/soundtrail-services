@@ -1,15 +1,25 @@
 using Microsoft.AspNetCore.Builder;
-using Soundtrail.Services.Enrichment.Worker.Infrastructure.CompositionRoot;
-using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
+using Microsoft.Extensions.DependencyInjection;
+using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Services.ServiceDefaults;
-using Wolverine;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
-builder.Host.UseWolverine(opts => opts.UseWorkerServiceBusMessaging(builder.Configuration));
-builder.Services.AddWorkerAppServices(builder.Configuration);
 
-var app = builder.Build();
-app.MapDefaultEndpoints();
+using (var _ = FeatureEnvironment.Live())
+{
+    builder.Services.AddFeatures<Program>();
+#pragma warning disable ASP0000
+    using var serviceProvider = builder.Services.BuildServiceProvider();
+#pragma warning restore ASP0000
+    var features = serviceProvider.GetServices<IFeature>().ToArray();
 
-await app.RunAsync();
+    foreach (var initializer in features)
+    {
+        initializer.ConfigureServices(builder.Services, builder.Configuration);
+    }
+
+    var app = builder.Build();
+    app.MapDefaultEndpoints();
+    await app.RunAsync();
+}

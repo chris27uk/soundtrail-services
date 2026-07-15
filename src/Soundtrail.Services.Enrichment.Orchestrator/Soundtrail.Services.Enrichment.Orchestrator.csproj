@@ -23,7 +23,14 @@
     <ProjectReference Include="..\..\Soundtrail.Services.ServiceDefaults\Soundtrail.Services.ServiceDefaults.csproj" />
     <ProjectReference Include="..\Soundtrail.Contracts\Soundtrail.Contracts.csproj" />
     <ProjectReference Include="..\Soundtrail.Domain\Soundtrail.Domain.csproj" />
-    <ProjectReference Include="..\Soundtrail.Adapters\Soundtrail.Adapters.csproj" />
+    <ProjectReference Include="..\Soundtrail.Infrastructure\Soundtrail.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Features\OnLookupCompleted\" />
+    <Folder Include="Features\OnMusicAssessmentRequired\" />
+    <Folder Include="Features\OnMusicDataRequested\" />
+    <Folder Include="Infrastructure\" />
   </ItemGroup>
 
 </Project>

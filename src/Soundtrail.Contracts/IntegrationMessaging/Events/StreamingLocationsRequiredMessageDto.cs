@@ -5,7 +5,7 @@ namespace Soundtrail.Contracts.IntegrationMessaging.Events;
 
 public sealed record StreamingLocationsRequiredMessageDto(
     string MusicCatalogId,
-    LookupPriorityBand Priority,
+    LookupPriorityBandDto Priority,
     string CorrelationId,
     string SourceProvider,
     DateTimeOffset ObservedAt,

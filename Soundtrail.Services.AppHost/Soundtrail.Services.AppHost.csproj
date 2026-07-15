@@ -11,14 +11,13 @@
     <ItemGroup>
       <PackageReference Include="MessagePack" Version="2.5.301" />
       <ProjectReference Include="..\src\Soundtrail.Services.Api\Soundtrail.Services.Api.csproj" />
-      <ProjectReference Include="..\src\Soundtrail.Services.Public.Projector\Soundtrail.Services.Public.Projector.csproj" />
       <ProjectReference Include="..\src\Soundtrail.Services.Enrichment.Scheduler\Soundtrail.Services.Enrichment.Scheduler.csproj" />
       <ProjectReference Include="..\src\Soundtrail.Services.Enrichment.Orchestrator\Soundtrail.Services.Enrichment.Orchestrator.csproj" />
       <ProjectReference Include="..\src\Soundtrail.Services.Enrichment.Worker\Soundtrail.Services.Enrichment.Worker.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\src\Soundtrail.Services.Internal.Projector\Soundtrail.Services.Internal.Projector.csproj" />
+      <ProjectReference Include="..\src\Soundtrail.Services.Projector\Soundtrail.Services.Projector.csproj" />
     </ItemGroup>
 
 </Project>

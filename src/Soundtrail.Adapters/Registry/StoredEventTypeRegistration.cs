@@ -1,8 +1,0 @@
-namespace Soundtrail.Adapters.Registry;
-
-public sealed record StoredEventTypeRegistration(
-    string EventType,
-    Type DomainType,
-    Type DtoType,
-    Func<object, DateTimeOffset> OccurredAtUtc,
-    Func<object, string?> CorrelationId);

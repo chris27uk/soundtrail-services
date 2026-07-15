@@ -1,6 +1,6 @@
 namespace Soundtrail.Domain.Abstractions.EventSourcing;
 
-public sealed class EventHandlers<TAggregate>
+public sealed class EventHandlers
 {
     private readonly Dictionary<Type, Action<IDomainEvent>> handlers = [];
 

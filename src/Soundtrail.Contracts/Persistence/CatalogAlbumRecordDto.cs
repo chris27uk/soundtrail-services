@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Api.Infrastructure.Raven.Documents;
+namespace Soundtrail.Contracts.Persistence;
 
 public sealed class CatalogAlbumRecordDto
 {

@@ -8,6 +8,5 @@ public sealed record LoadedEventStream<TStreamId, TEvent>(
     IReadOnlyList<TEvent> Events)
     where TStreamId : IValueType
 {
-    public static LoadedEventStream<TStreamId, TEvent> Empty(TStreamId streamId) =>
-        new(streamId, 0, []);
+    public static LoadedEventStream<TStreamId, TEvent> Empty(TStreamId streamId) => new(streamId, 0, []);
 }

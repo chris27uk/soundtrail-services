@@ -7,7 +7,7 @@ public sealed record AlbumMetadataLookupAttemptedDto(
     string ArtistId,
     string AlbumId,
     string SourceProvider,
-    LookupPriorityBand Priority,
+    LookupPriorityBandDto Priority,
     DateTimeOffset CreatedAt,
     string CorrelationId,
     MusicCatalogLookupOutcomeDto Outcome,

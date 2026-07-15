@@ -3,7 +3,7 @@ using Soundtrail.Contracts.Common;
 namespace Soundtrail.Contracts.IntegrationMessaging.Commands;
 
 public sealed record StreamingLocationSearchTermDto(
-    MusicSearchKind Kind,
+    MusicSearchKindDto KindDto,
     string? Query,
     string? Isrc,
     string? Title,

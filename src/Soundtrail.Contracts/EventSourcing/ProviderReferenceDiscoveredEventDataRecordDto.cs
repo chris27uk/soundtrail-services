@@ -1,6 +1,7 @@
 namespace Soundtrail.Contracts.EventSourcing;
 
 public sealed record ProviderReferenceDiscoveredEventDataRecordDto(
+    string? MusicCatalogId,
     string Provider,
     string? ExternalId,
     string Url,

@@ -5,7 +5,7 @@ namespace Soundtrail.Contracts.IntegrationMessaging.Commands;
 public sealed record LookupArtistMetadataCommandDto(
     string CommandId,
     string ArtistId,
-    LookupPriorityBand Priority,
+    LookupPriorityBandDto Priority,
     DateTimeOffset CreatedAt,
     string CorrelationId,
     string ArtistName,

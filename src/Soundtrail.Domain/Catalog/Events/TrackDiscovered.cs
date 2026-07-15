@@ -1,12 +1,5 @@
-using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Catalog.Tracks;
 
 namespace Soundtrail.Domain.Catalog.Events;
 
-public sealed record TrackDiscovered(
-    string Title,
-    string Artist,
-    int? DurationMs,
-    string? Isrc,
-    string? Mbid,
-    LookupSource SourceProvider,
-    DateTimeOffset ObservedAt) : IMusicTrackEvent;
+public sealed record TrackDiscovered(Track Track, DateTimeOffset ObservedAt) : IMusicTrackEvent;

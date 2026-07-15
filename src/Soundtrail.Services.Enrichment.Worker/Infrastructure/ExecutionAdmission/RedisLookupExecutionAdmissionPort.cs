@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Options;
 using Soundtrail.Contracts.Common;
-using Soundtrail.Services.Enrichment.Orchestrator.Shared.SourceBudgets.Configuration;
 using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
 using StackExchange.Redis;
 
@@ -13,16 +12,21 @@ internal sealed class RedisLookupExecutionAdmissionPort(
 {
     private const string ActiveState = "active";
     private const string CompletedState = "completed";
+    private const char StateSeparator = '|';
+    private const char ReservationSeparator = ',';
 
     private static readonly LuaScript ReserveWindowScript = LuaScript.Prepare(
         """
-        local current = redis.call('INCRBY', @key, @requestedAmount)
-        if current == @requestedAmount then
-            redis.call('PEXPIRE', @key, @ttlMilliseconds)
+        local requestedAmount = tonumber(@requestedAmount)
+        local safeMax = tonumber(@safeMax)
+        local ttlMilliseconds = tonumber(@ttlMilliseconds)
+        local current = redis.call('INCRBY', @key, requestedAmount)
+        if current == requestedAmount then
+            redis.call('PEXPIRE', @key, ttlMilliseconds)
         end
 
-        if current > @safeMax then
-            redis.call('DECRBY', @key, @requestedAmount)
+        if current > safeMax then
+            redis.call('DECRBY', @key, requestedAmount)
             return 0
         end
 
@@ -102,6 +106,12 @@ internal sealed class RedisLookupExecutionAdmissionPort(
                 return await RejectAsync(db, commandKey, mainReservation.RetryAt, request.Provider, cancellationToken);
             }
 
+            reservedKeys.Add(mainReservation.Key);
+            await db.StringSetAsync(
+                commandKey,
+                SerializeActiveCommand(reservedKeys),
+                expiry: TimeSpan.FromSeconds(redisOptions.ActiveLeaseSeconds));
+
             return LookupExecutionAdmissionResult.Acquired();
         }
         catch
@@ -126,13 +136,27 @@ internal sealed class RedisLookupExecutionAdmissionPort(
     {
         cancellationToken.ThrowIfCancellationRequested();
         var db = connectionMultiplexer.GetDatabase();
-        await db.ScriptEvaluateAsync(
-            ReleaseIfActiveScript,
-            new
-            {
-                key = GetCommandKey(commandId),
-                activeState = ActiveState
-            });
+        var commandKey = GetCommandKey(commandId);
+        var current = await db.StringGetAsync(commandKey);
+        if (!current.HasValue)
+        {
+            return;
+        }
+
+        var payload = current.ToString();
+        if (string.Equals(payload, CompletedState, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (!payload.StartsWith(ActiveState, StringComparison.Ordinal))
+        {
+            await db.KeyDeleteAsync(commandKey);
+            return;
+        }
+
+        await RollbackReservationsAsync(db, ParseReservedKeys(payload));
+        await db.KeyDeleteAsync(commandKey);
     }
 
     private async Task<WindowReservationResult> TryReserveWindowAsync(
@@ -194,12 +218,37 @@ internal sealed class RedisLookupExecutionAdmissionPort(
         }
     }
 
-    private SourceApiBudgetPolicyOptions GetPolicy(LookupSource provider) =>
-        provider == LookupSource.MusicBrainz
-            ? sourceBudgetOptions.MusicBrainz
-            : provider == LookupSource.Odesli
-                ? sourceBudgetOptions.Odesli
-                : throw new ArgumentOutOfRangeException(nameof(provider), provider, "Unsupported source budget.");
+    private static string SerializeActiveCommand(IEnumerable<RedisKey> reservedKeys) =>
+        $"{ActiveState}{StateSeparator}{string.Join(ReservationSeparator, reservedKeys.Select(key => key.ToString()))}";
+
+    private static IReadOnlyList<RedisKey> ParseReservedKeys(string payload)
+    {
+        var separatorIndex = payload.IndexOf(StateSeparator);
+        if (separatorIndex < 0 || separatorIndex == payload.Length - 1)
+        {
+            return [];
+        }
+
+        return payload[(separatorIndex + 1)..]
+            .Split(ReservationSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(key => (RedisKey)key)
+            .ToArray();
+    }
+
+    private ApiBudgetPolicy GetPolicy(LookupSource provider)
+    {
+        if (provider == LookupSource.MusicBrainz && this.sourceBudgetOptions.MusicBrainz != null)
+        {
+            return sourceBudgetOptions.MusicBrainz;
+        }
+
+        if (provider == LookupSource.Odesli && this.sourceBudgetOptions.Odesli != null)
+        {
+            return sourceBudgetOptions.Odesli;
+        }
+        
+        throw new ArgumentOutOfRangeException(nameof(provider));
+    }
 
     private static DateTimeOffset AlignToWindow(DateTimeOffset timestamp, int windowSeconds)
     {
@@ -217,4 +266,19 @@ internal sealed class RedisLookupExecutionAdmissionPort(
 
         public static WindowReservationResult Rejected(RedisKey key, DateTimeOffset retryAt) => new(false, key, retryAt);
     }
+}
+
+public class SourceApiBudgetsOptions
+{
+    public ApiBudgetPolicy? MusicBrainz { get; set; }
+    
+    public ApiBudgetPolicy? Odesli { get; set; }
+}
+
+public class ApiBudgetPolicy
+{
+    public int MaxRequests { get; set; }
+    public int MinimumSpacingSeconds { get; set; }
+    public int SafetyMarginPercent { get; set; }
+    public int WindowSeconds { get; set; }
 }

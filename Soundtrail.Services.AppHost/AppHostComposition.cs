@@ -77,7 +77,7 @@ public static class AppHostComposition
             api = api.WaitFor(serviceBusEmulator);
         }
 
-        var publicProjector = builder.AddProject<Soundtrail_Services_Public_Projector>("soundtrail-services-public-projector")
+        var publicProjector = builder.AddProject<Soundtrail_Services_Projector>("soundtrail-services-public-projector")
             .WithHttpEndpoint(name: "http")
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
@@ -91,7 +91,7 @@ public static class AppHostComposition
             publicProjector = publicProjector.WaitFor(serviceBusEmulator);
         }
 
-        var internalProjector = builder.AddProject<Soundtrail_Services_Internal_Projector>("soundtrail-services-internal-projector")
+        var internalProjector = builder.AddProject<Soundtrail_Services_Projector>("soundtrail-services-internal-projector")
             .WithHttpEndpoint(name: "http")
             .WaitFor(ravenDb)
             .WithEnvironment("RavenDb__Urls__0", ravenDb.GetEndpoint("http"))
@@ -100,8 +100,12 @@ public static class AppHostComposition
         var scheduler = builder.AddProject<Soundtrail_Services_Enrichment_Scheduler>("soundtrail-services-enrichment-scheduler")
             .WithHttpEndpoint(name: "http")
             .WithReference(serviceBus)
+            .WaitFor(ravenDb)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
-            .WithEnvironment("ServiceBus__DiscoveryBacklogSchedulingQueueName", "discovery-backlog-scheduling");
+            .WithEnvironment("ServiceBus__DiscoveryBacklogSchedulingQueueName", "discovery-backlog-scheduling")
+            .WithEnvironment("ServiceBus__PlaylistUpdatesQueueName", "playlist-updates")
+            .WithEnvironment("RavenDb__Urls__0", ravenDb.GetEndpoint("http"))
+            .WithEnvironment("RavenDb__Database", "soundtrail");
 
         if (serviceBusEmulator is not null)
         {

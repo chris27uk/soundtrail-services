@@ -8,7 +8,7 @@ public sealed record StreamingLocationsRequiredEventDataRecordDto(
     string CorrelationId,
     string SourceProvider,
     DateTimeOffset ObservedAt,
-    MusicSearchKind SearchKind,
+    MusicSearchKindDto SearchKindDto,
     string? Query,
     string? Isrc,
     string? Title,

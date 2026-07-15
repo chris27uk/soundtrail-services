@@ -1,7 +1,6 @@
 using JasperFx.CodeGeneration.Model;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Adapters.Messaging;
-using Soundtrail.Domain.Abstractions;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Services.ServiceDefaults;
 using Wolverine;
@@ -17,7 +16,7 @@ public static class ServiceBusServiceCollectionExtensions
         IConfiguration configuration)
     {
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
-        services.TryAddScoped<ICommandBus, WolverineCommandBus>();
+        services.AddWolverineCommandBus();
         return services;
     }
 

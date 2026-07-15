@@ -6,7 +6,7 @@ public sealed record LookupAlbumMetadataCommandDto(
     string CommandId,
     string ArtistId,
     string AlbumId,
-    LookupPriorityBand Priority,
+    LookupPriorityBandDto Priority,
     DateTimeOffset CreatedAt,
     string CorrelationId,
     string ArtistName,
