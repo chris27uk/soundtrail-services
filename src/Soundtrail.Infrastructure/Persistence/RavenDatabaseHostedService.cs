@@ -8,7 +8,7 @@ using Raven.Client.ServerWide.Operations;
 
 namespace Soundtrail.Adapters.Persistence;
 
-public sealed class RavenDatabaseHostedService(IDocumentStore documentStore) : IHostedService
+internal sealed class RavenDatabaseHostedService(IDocumentStore documentStore) : IHostedService
 {
     public async Task StartAsync(CancellationToken cancellationToken)
     {

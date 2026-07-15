@@ -47,8 +47,8 @@ public class SearchFeature(
         services.Add(ServiceDescriptor.Singleton(createClockPort));
     }
 
-    public void ConfigureApplication(IApplicationBuilder app)
+    public void ConfigureApplication(WebApplication app)
     {
-        app.UseEndpoints(endpoints => endpoints.MapSearchEndpoints(AppTypeRegistry.ServiceLocation));
+        app.MapSearchEndpoints(AppTypeRegistry.ServiceLocation);
     }
 }

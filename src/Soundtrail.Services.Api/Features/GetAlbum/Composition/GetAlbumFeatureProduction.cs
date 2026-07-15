@@ -45,9 +45,9 @@ namespace Soundtrail.Services.Api.Features.GetAlbum.Composition
             services.Add(ServiceDescriptor.Singleton(createClockPort));
         }
 
-        public void ConfigureApplication(IApplicationBuilder app)
+        public void ConfigureApplication(WebApplication app)
         {
-            app.UseEndpoints(endpoints => endpoints.MapGetAlbumEndpoints(AppTypeRegistry.ServiceLocation));
+            app.MapGetAlbumEndpoints(AppTypeRegistry.ServiceLocation);
         }
     }
 }

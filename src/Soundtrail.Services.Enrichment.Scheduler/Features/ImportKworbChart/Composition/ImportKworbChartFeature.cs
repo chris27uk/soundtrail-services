@@ -45,6 +45,14 @@ public sealed class ImportKworbChartFeature : ISchedulerFeature
             .GetSection(ServiceBusOptions.SectionName)
             .Get<ServiceBusOptions>() ?? throw new InvalidOperationException("ServiceBus configuration is required.");
 
+        if (ShouldUseLocalMessaging(serviceBusOptions.ConnectionString, environment))
+        {
+            options.StubAllExternalTransports();
+            options.PublishMessage<PlaylistUpdated>()
+                .ToLocalQueue(serviceBusOptions.PlaylistUpdatesQueueName);
+            return;
+        }
+
         if (environment.IsEnvironment("Testing"))
         {
             options.StubAllExternalTransports();
@@ -52,5 +60,12 @@ public sealed class ImportKworbChartFeature : ISchedulerFeature
 
         options.PublishMessage<PlaylistUpdated>()
             .ToAzureServiceBusQueue(serviceBusOptions.PlaylistUpdatesQueueName);
+    }
+
+    private static bool ShouldUseLocalMessaging(string? connectionString, IHostEnvironment environment)
+    {
+        return environment.IsDevelopment()
+               && (string.IsNullOrWhiteSpace(connectionString)
+                   || connectionString.Contains("replace-me", StringComparison.OrdinalIgnoreCase));
     }
 }

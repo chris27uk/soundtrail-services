@@ -5,7 +5,7 @@ using ICommandBus = Soundtrail.Domain.Abstractions.ICommandBus;
 
 namespace Soundtrail.Adapters.Messaging;
 
-public sealed class WolverineCommandBus(IMessageBus messageBus) : ICommandBus
+internal sealed class WolverineCommandBus(IMessageBus messageBus) : ICommandBus
 {
     public Task SendAsync(ICommand command, CancellationToken cancellationToken = default)
     {

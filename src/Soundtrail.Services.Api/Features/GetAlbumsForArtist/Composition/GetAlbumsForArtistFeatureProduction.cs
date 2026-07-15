@@ -47,8 +47,8 @@ public class GetAlbumsForArtistFeature(
         services.Add(ServiceDescriptor.Singleton(createClockPort));
     }
 
-    public void ConfigureApplication(IApplicationBuilder app)
+    public void ConfigureApplication(WebApplication app)
     {
-        app.UseEndpoints(endpoints => endpoints.MapGetAlbumsForArtistEndpoints(AppTypeRegistry.ServiceLocation));
+        app.MapGetAlbumsForArtistEndpoints(AppTypeRegistry.ServiceLocation);
     }
 }

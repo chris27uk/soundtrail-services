@@ -19,7 +19,7 @@ public sealed class SchedulerMessagingFeature : ISchedulerFeature
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
-        services.TryAddScoped<Soundtrail.Domain.Abstractions.ICommandBus, WolverineCommandBus>();
+        services.AddWolverineCommandBus();
     }
 
     public void ConfigureApplication(WebApplication app)
@@ -35,6 +35,15 @@ public sealed class SchedulerMessagingFeature : ISchedulerFeature
         var serviceBusOptions = configuration
             .GetSection(ServiceBusOptions.SectionName)
             .Get<ServiceBusOptions>() ?? throw new InvalidOperationException("ServiceBus configuration is required.");
+
+        if (ShouldUseLocalMessaging(serviceBusOptions.ConnectionString, environment))
+        {
+            options.StubAllExternalTransports();
+            options.PublishMessage<RunDiscoveryBacklogSchedulingCommandDto>()
+                .ToLocalQueue(serviceBusOptions.DiscoveryBacklogSchedulingQueueName);
+            return;
+        }
+
         var useDevelopmentEmulator = serviceBusOptions.ConnectionString.IsDevelopmentEmulatorConnectionString();
 
         var transport = options.UseAzureServiceBus(serviceBusOptions.ConnectionString);
@@ -50,5 +59,12 @@ public sealed class SchedulerMessagingFeature : ISchedulerFeature
 
         options.PublishMessage<RunDiscoveryBacklogSchedulingCommandDto>()
             .ToAzureServiceBusQueue(serviceBusOptions.DiscoveryBacklogSchedulingQueueName);
+    }
+
+    private static bool ShouldUseLocalMessaging(string? connectionString, IHostEnvironment environment)
+    {
+        return environment.IsDevelopment()
+               && (string.IsNullOrWhiteSpace(connectionString)
+                   || connectionString.Contains("replace-me", StringComparison.OrdinalIgnoreCase));
     }
 }

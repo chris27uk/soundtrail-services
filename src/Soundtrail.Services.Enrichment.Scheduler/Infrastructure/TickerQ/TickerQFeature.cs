@@ -36,7 +36,7 @@ public sealed class TickerQFeature : ISchedulerFeature
                     .AddOperationalStore(
                         efConfiguration => efConfiguration.UseTickerQDbContext<TickerQDbContext>(
                             optionsAction => optionsAction.UseSqlite(tickerQOptions.ConnectionString),
-                            string.Empty))
+                            null!))
                     .AddDashboard(
                         dashboard =>
                         {
@@ -56,6 +56,10 @@ public sealed class TickerQFeature : ISchedulerFeature
 
     public void ConfigureApplication(WebApplication app)
     {
+        using var scope = app.Services.CreateScope();
+        using var dbContext = scope.ServiceProvider.GetRequiredService<TickerQDbContext>();
+        dbContext.Database.EnsureCreated();
+
         app.UseTickerQ(TickerQStartMode.Immediate);
     }
 

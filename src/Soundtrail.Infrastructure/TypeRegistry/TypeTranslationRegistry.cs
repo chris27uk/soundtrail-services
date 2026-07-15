@@ -140,7 +140,7 @@ public sealed class TypeTranslationRegistry : ITypeRegistry
             $"No domain type registration exists for DTO type '{dtoType.FullName}'.");
     }
 
-    public StoredEventTypeRegistration GetStoredEventRegistrationForDomain(Type domainType)
+    internal StoredEventTypeRegistration GetStoredEventRegistrationForDomain(Type domainType)
     {
         ArgumentNullException.ThrowIfNull(domainType);
 

@@ -16,7 +16,7 @@ public static class ServiceBusServiceCollectionExtensions
         IConfiguration configuration)
     {
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
-        services.TryAddScoped<ICommandBus, WolverineCommandBus>();
+        services.AddWolverineCommandBus();
         return services;
     }
 

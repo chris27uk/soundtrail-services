@@ -100,8 +100,12 @@ public static class AppHostComposition
         var scheduler = builder.AddProject<Soundtrail_Services_Enrichment_Scheduler>("soundtrail-services-enrichment-scheduler")
             .WithHttpEndpoint(name: "http")
             .WithReference(serviceBus)
+            .WaitFor(ravenDb)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
-            .WithEnvironment("ServiceBus__DiscoveryBacklogSchedulingQueueName", "discovery-backlog-scheduling");
+            .WithEnvironment("ServiceBus__DiscoveryBacklogSchedulingQueueName", "discovery-backlog-scheduling")
+            .WithEnvironment("ServiceBus__PlaylistUpdatesQueueName", "playlist-updates")
+            .WithEnvironment("RavenDb__Urls__0", ravenDb.GetEndpoint("http"))
+            .WithEnvironment("RavenDb__Database", "soundtrail");
 
         if (serviceBusEmulator is not null)
         {

@@ -2,28 +2,29 @@ using System.Collections.Concurrent;
 
 namespace Soundtrail.Adapters.FeatureOrchestration
 {
-    public class FeatureEnvironment : IDisposable
+    public static class FeatureEnvironment
     {
-        private readonly bool isLive;
-        
-        private FeatureEnvironment(bool isLive) => this.isLive = isLive;
+        private static readonly ConcurrentStack<Scope> Environments = new();
 
-        private static readonly ConcurrentStack<FeatureEnvironment> Environments = new();
-        
-        public static FeatureEnvironment Live()
+        public static IDisposable Live()
         {
-            var environment = new FeatureEnvironment(true);
+            var environment = new Scope(isLive: true);
             Environments.Push(environment);
             return environment;
         }
         
-        public static bool IsProduction() => Environments.TryPeek(out var env) && env.isLive;
-        
-        public void Dispose()
+        public static bool IsProduction() => Environments.TryPeek(out var env) && env.IsLive;
+
+        private sealed class Scope(bool isLive) : IDisposable
         {
-            if (Environments.Contains(this))
+            public bool IsLive { get; } = isLive;
+
+            public void Dispose()
             {
-                Environments.TryPop(out _);   
+                if (Environments.Contains(this))
+                {
+                    Environments.TryPop(out _);
+                }
             }
         }
     }

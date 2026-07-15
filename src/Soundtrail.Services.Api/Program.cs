@@ -7,6 +7,7 @@ using Wolverine;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
+builder.Services.AddCatalogSearchAttemptQueue(builder.Configuration);
 builder.Host.UseWolverine(opts => opts.UseApiServiceBusMessaging(builder.Configuration, builder.Environment));
 
 using (var _ = FeatureEnvironment.Live())

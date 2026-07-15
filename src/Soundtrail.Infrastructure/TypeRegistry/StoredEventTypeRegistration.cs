@@ -1,6 +1,6 @@
 namespace Soundtrail.Adapters.Registry;
 
-public sealed record StoredEventTypeRegistration(
+internal sealed record StoredEventTypeRegistration(
     string EventType,
     Type DomainType,
     Type DtoType,

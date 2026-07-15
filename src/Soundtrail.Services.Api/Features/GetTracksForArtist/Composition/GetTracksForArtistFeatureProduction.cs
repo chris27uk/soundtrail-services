@@ -47,8 +47,8 @@ public class GetTracksForArtistFeature(
         services.Add(ServiceDescriptor.Singleton(createClockPort));
     }
 
-    public void ConfigureApplication(IApplicationBuilder app)
+    public void ConfigureApplication(WebApplication app)
     {
-        app.UseEndpoints(endpoints => endpoints.MapGetTracksForArtistEndpoints(AppTypeRegistry.ServiceLocation));
+        app.MapGetTracksForArtistEndpoints(AppTypeRegistry.ServiceLocation);
     }
 }

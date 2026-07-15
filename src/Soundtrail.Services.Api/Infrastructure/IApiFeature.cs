@@ -4,6 +4,6 @@ namespace Soundtrail.Services.Api.Infrastructure
 {
     public interface IApiFeature : IFeature
     {
-        void ConfigureApplication(IApplicationBuilder app);
+        void ConfigureApplication(WebApplication app);
     }
 }
