@@ -124,7 +124,7 @@ public sealed class SearchResultsExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.Port.RequestedSearchCriteria.Single().Should().Be(new SearchCriteria("u2", SearchTypes.Artist));
+        environment.Port.RequestedSearchCriteria.Single().Should().Be(new SearchCriteria("u2", SearchFilter.Artist));
     }
 
     [Fact]
@@ -144,7 +144,7 @@ public sealed class SearchResultsExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().Filter.Should().Be(new EnrichmentFilter.SearchCriteria(new SearchCriteria("u2", SearchTypes.Artist)));
+        environment.CommandBus.Commands.Single().Target.Should().Be(new EnrichmentTarget.Unknown(new SearchCriteria("u2", SearchFilter.Artist)));
     }
 
     [Fact]

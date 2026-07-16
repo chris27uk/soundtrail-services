@@ -4,6 +4,7 @@ namespace Soundtrail.Domain.Discovery.Events
     {
         None = 0,
         Tracks = 1,
-        Albums = 2
+        Albums = 2,
+        All = Tracks | Albums
     }
 }

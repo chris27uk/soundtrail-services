@@ -20,7 +20,7 @@ public sealed class GetAlbumsForArtistHandler(
         var requestedAt = clock.UtcNow;
         await commandBus.SendAsync(
             new SearchForCatalogItemsCommand(
-                new EnrichmentFilter.CatalogItem(new CatalogItemId.Artist(request.ArtistId)),
+                new EnrichmentTarget.Existing(new CatalogItemId.Artist(request.ArtistId)),
                 RequiredCatalogType.Albums,
                 LookupPriorityBand.High,
                 100,

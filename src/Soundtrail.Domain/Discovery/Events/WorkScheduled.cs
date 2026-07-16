@@ -4,7 +4,7 @@ using Soundtrail.Domain.Common;
 namespace Soundtrail.Domain.Discovery.Events;
 
 public sealed record WorkScheduled(
-    EnrichmentFilter Filter,
+    EnrichmentTarget Target,
     LookupPriorityBand Priority,
     string Reason,
     DateTimeOffset ScheduledAt) : IDomainEvent;

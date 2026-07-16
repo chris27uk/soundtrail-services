@@ -44,7 +44,7 @@ internal sealed class SearchPortContractTestEnvironment : IAsyncDisposable
         string? albumTitle = null,
         string? artworkUrl = "https://cdn.soundtrail.test/artists/artist-3101.jpg")
     {
-        var searchCriteria = new SearchCriteria(queryText, MapSearchTypes(filter));
+        var searchCriteria = new SearchCriteria(queryText, filter);
         var response = new SearchResponse(
             queryText,
             filter,
@@ -92,8 +92,7 @@ internal sealed class SearchPortContractTestEnvironment : IAsyncDisposable
         string queryText = "u2",
         SearchFilter filter = SearchFilter.Artist)
     {
-        var searchCriteria = new SearchCriteria(queryText, MapSearchTypes(filter));
-
+        var searchCriteria = new SearchCriteria(queryText, filter);
         return implementation switch
         {
             SearchPortImplementation.Fake => new SearchPortContractTestEnvironment(
@@ -162,15 +161,6 @@ internal sealed class SearchPortContractTestEnvironment : IAsyncDisposable
             where TSource : class
             where TTarget : class => throw new NotSupportedException();
     }
-
-    private static SearchTypes MapSearchTypes(SearchFilter filter) =>
-        filter switch
-        {
-            SearchFilter.Artist => SearchTypes.Artist,
-            SearchFilter.Album => SearchTypes.Album,
-            SearchFilter.Track => SearchTypes.Track,
-            _ => throw new InvalidOperationException($"Unsupported search filter '{filter}'.")
-        };
 
     private static CatalogItemId ParseMusicCatalogId(string value, SearchFilter filter) =>
         filter switch

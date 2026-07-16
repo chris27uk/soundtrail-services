@@ -6,7 +6,7 @@ using Soundtrail.Domain.Discovery.Events;
 namespace Soundtrail.Domain.Discovery;
 
 public sealed record SearchForCatalogItemsCommand(
-    EnrichmentFilter Filter,
+    EnrichmentTarget Target,
     RequiredCatalogType RequiredCatalogType,
     LookupPriorityBand Priority,
     int TrustLevel,

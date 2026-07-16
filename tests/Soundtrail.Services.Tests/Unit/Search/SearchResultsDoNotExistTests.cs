@@ -22,6 +22,6 @@ public sealed class SearchResultsDoNotExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.Port.RequestedSearchCriteria.Single().Should().Be(new SearchCriteria("u2", SearchTypes.Artist));
+        environment.Port.RequestedSearchCriteria.Single().Should().Be(new SearchCriteria("u2", SearchFilter.Artist));
     }
 }

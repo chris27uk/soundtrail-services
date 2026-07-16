@@ -58,7 +58,7 @@ public static class AppHostComposition
                     isReadOnly: true)
             : null;
 
-        var api = builder.AddProject<Soundtrail_Services_Api>("soundtrail-services-api")
+        var api = builder.AddProject<Soundtrail_Services_Api>("soundtrail-api")
             .WithHttpEndpoint(name: "http")
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
@@ -77,7 +77,7 @@ public static class AppHostComposition
             api = api.WaitFor(serviceBusEmulator);
         }
 
-        var publicProjector = builder.AddProject<Soundtrail_Services_Projector>("soundtrail-services-public-projector")
+        var projector = builder.AddProject<Soundtrail_Services_Projector>("soundtrail-projector")
             .WithHttpEndpoint(name: "http")
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
@@ -88,16 +88,10 @@ public static class AppHostComposition
 
         if (serviceBusEmulator is not null)
         {
-            publicProjector = publicProjector.WaitFor(serviceBusEmulator);
+            projector = projector.WaitFor(serviceBusEmulator);
         }
 
-        var internalProjector = builder.AddProject<Soundtrail_Services_Projector>("soundtrail-services-internal-projector")
-            .WithHttpEndpoint(name: "http")
-            .WaitFor(ravenDb)
-            .WithEnvironment("RavenDb__Urls__0", ravenDb.GetEndpoint("http"))
-            .WithEnvironment("RavenDb__Database", "soundtrail");
-
-        var scheduler = builder.AddProject<Soundtrail_Services_Enrichment_Scheduler>("soundtrail-services-enrichment-scheduler")
+        var scheduler = builder.AddProject<Soundtrail_Services_Enrichment_Scheduler>("soundtrail-scheduler")
             .WithHttpEndpoint(name: "http")
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
@@ -112,7 +106,7 @@ public static class AppHostComposition
             scheduler = scheduler.WaitFor(serviceBusEmulator);
         }
 
-        var orchestrator = builder.AddProject<Soundtrail_Services_Enrichment_Orchestrator>("soundtrail-services-enrichment-orchestrator")
+        var orchestrator = builder.AddProject<Soundtrail_Services_Enrichment_Orchestrator>("soundtrail-orchestrator")
             .WithHttpEndpoint(name: "http")
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
@@ -133,7 +127,7 @@ public static class AppHostComposition
             orchestrator = orchestrator.WaitFor(serviceBusEmulator);
         }
 
-        var worker = builder.AddProject<Soundtrail_Services_Enrichment_Worker>("soundtrail-services-enrichment-worker")
+        var worker = builder.AddProject<Soundtrail_Services_Enrichment_Worker>("soundtrail-worker")
             .WithHttpEndpoint(name: "http")
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
@@ -142,7 +136,7 @@ public static class AppHostComposition
             .WithEnvironment("ServiceBus__MusicBrainzLookupQueueName", "lookup-musicbrainz")
             .WithEnvironment("ServiceBus__PlaybackReferencesLookupQueueName", "lookup-playback-references")
             .WithEnvironment("ServiceBus__EnrichmentResponsesQueueName", "enrichment-responses")
-            .WithEnvironment("ConnectionStrings__Redis", $"{redis.GetEndpoint("tcp").Property(Aspire.Hosting.ApplicationModel.EndpointProperty.Host)}:{redis.GetEndpoint("tcp").Property(Aspire.Hosting.ApplicationModel.EndpointProperty.Port)},abortConnect=false")
+            .WithEnvironment("ConnectionStrings__Redis", $"{redis.GetEndpoint("tcp").Property(EndpointProperty.Host)}:{redis.GetEndpoint("tcp").Property(EndpointProperty.Port)},abortConnect=false")
             .WithEnvironment("RavenDb__Urls__0", ravenDb.GetEndpoint("http"))
             .WithEnvironment("RavenDb__Database", "soundtrail");
 

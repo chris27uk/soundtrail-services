@@ -173,7 +173,7 @@ public sealed class PlaylistTracksExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().Filter.Should().Be(new EnrichmentFilter.CatalogItem(new CatalogItemId.Playlist(playlistId)));
+        environment.CommandBus.Commands.Single().Target.Should().Be(new EnrichmentTarget.Existing(new CatalogItemId.Playlist(playlistId)));
     }
 
     [Fact]

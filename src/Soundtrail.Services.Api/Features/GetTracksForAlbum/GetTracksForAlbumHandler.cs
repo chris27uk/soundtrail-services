@@ -19,7 +19,7 @@ public sealed class GetTracksForAlbumHandler(
         var requestedAt = clock.UtcNow;
         await commandBus.SendAsync(
             new SearchForCatalogItemsCommand(
-                new EnrichmentFilter.CatalogItem(new CatalogItemId.Album(request.AlbumId)),
+                new EnrichmentTarget.Existing(new CatalogItemId.Album(request.AlbumId)),
                 RequiredCatalogType.Tracks,
                 LookupPriorityBand.High,
                 100,
