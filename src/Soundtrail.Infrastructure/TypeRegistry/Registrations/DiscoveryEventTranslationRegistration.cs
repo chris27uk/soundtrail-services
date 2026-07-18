@@ -5,6 +5,7 @@ using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Catalog.Tracks;
+using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Search;
@@ -21,18 +22,79 @@ public sealed class DiscoveryEventTranslationRegistration : ITypeTranslationRegi
                 GetResourceKind(@event.Target),
                 GetResourceValue(@event.Target),
                 GetResourceItemKind(@event.Target),
+                @event.Priority.ToString(),
                 @event.TrustLevel,
                 @event.RiskScore,
                 @event.RequestedAt,
                 @event.CorrelationId.Value),
             toDomainObject: dto => new WorkRequested(
                 ParseFilter(dto.ResourceKind, dto.ResourceValue, dto.ResourceItemKind),
+                ParsePriority(dto.Priority),
                 dto.TrustLevel,
                 dto.RiskScore,
                 dto.RequestedAtUtc,
                 CorrelationId.From(dto.CorrelationId)),
             occurredAtUtc: @event => @event.RequestedAt,
             correlationId: @event => @event.CorrelationId.Value);
+
+        registry.RegisterStoredEventPair<WorkScheduled, CatalogDiscoveryWorkScheduledEventDataRecordDto>(
+            eventType: "work-scheduled",
+            toDto: @event => new CatalogDiscoveryWorkScheduledEventDataRecordDto(
+                @event.Target.NormalisedIdentifier,
+                @event.Priority.ToString(),
+                @event.NextEligibleAt,
+                @event.EarliestExpectedCompletionAt,
+                @event.Reason,
+                @event.ScheduledAt),
+            toDomainObject: dto => new WorkScheduled(
+                ParseTargetByIdentifier(dto.MusicCatalogId),
+                ParsePriority(dto.Priority),
+                dto.NextEligibleAtUtc,
+                dto.EarliestExpectedCompletionAt,
+                dto.Reason,
+                dto.ScheduledAtUtc),
+            occurredAtUtc: @event => @event.ScheduledAt,
+            correlationId: _ => null);
+
+        registry.RegisterStoredEventPair<WorkDeferred, CatalogDiscoveryWorkDeferredEventDataRecordDto>(
+            eventType: "work-deferred",
+            toDto: @event => new CatalogDiscoveryWorkDeferredEventDataRecordDto(
+                @event.Target.NormalisedIdentifier,
+                @event.Priority.ToString(),
+                @event.NextEligibleAt,
+                @event.EstimatedRetryAfterSeconds,
+                @event.Reason,
+                @event.DeferredAt),
+            toDomainObject: dto => new WorkDeferred(
+                ParseTargetByIdentifier(dto.MusicCatalogId),
+                ParsePriority(dto.Priority),
+                dto.NextEligibleAtUtc,
+                dto.EstimatedRetryAfterSeconds,
+                dto.Reason,
+                dto.DeferredAtUtc),
+            occurredAtUtc: @event => @event.DeferredAt,
+            correlationId: _ => null);
+
+        registry.RegisterStoredEventPair<WorkIgnored, CatalogDiscoveryWorkIgnoredEventDataRecordDto>(
+            eventType: "work-ignored",
+            toDto: @event => new CatalogDiscoveryWorkIgnoredEventDataRecordDto(
+                @event.Target.NormalisedIdentifier,
+                @event.Priority.ToString(),
+                @event.NextEligibleAt,
+                @event.EstimatedRetryAfterSeconds,
+                @event.EarliestExpectedCompletionAt,
+                @event.Reason,
+                @event.IgnoredAt),
+            toDomainObject: dto => new WorkIgnored(
+                ParseTargetByIdentifier(dto.MusicCatalogId),
+                ParsePriority(dto.Priority),
+                dto.NextEligibleAtUtc,
+                dto.EstimatedRetryAfterSeconds,
+                dto.EarliestExpectedCompletionAt,
+                dto.Reason,
+                dto.IgnoredAtUtc),
+            occurredAtUtc: @event => @event.IgnoredAt,
+            correlationId: _ => null);
     }
 
     private static string GetResourceKind(EnrichmentTarget target) =>
@@ -141,5 +203,35 @@ public sealed class DiscoveryEventTranslationRegistration : ITypeTranslationRegi
         }
 
         return PlaylistId.FromPlaylistName(resourceValue);
+    }
+
+    private static LookupPriorityBand ParsePriority(string priority) =>
+        Enum.Parse<LookupPriorityBand>(priority, ignoreCase: true);
+
+    private static EnrichmentTarget ParseTargetByIdentifier(string identifier)
+    {
+        if (identifier.StartsWith("search:", StringComparison.Ordinal))
+        {
+            return new EnrichmentTarget.SearchForUnknownCatalogItem(new SearchCriteria(identifier["search:".Length..]));
+        }
+
+        var separatorIndex = identifier.IndexOf(':');
+        if (separatorIndex < 0)
+        {
+            throw new InvalidOperationException($"Unsupported target identifier '{identifier}'.");
+        }
+
+        var kind = identifier[..separatorIndex];
+        var value = identifier[(separatorIndex + 1)..];
+
+        return kind switch
+        {
+            "streaming_location_for_track" => new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.StreamingLocationForTrack(TrackId.From(value))),
+            "child_albums_for_artist" => new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.ChildAlbumsForArtist(ArtistId.From(value))),
+            "child_tracks_for_artist" => new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.ChildTracksForArtist(ArtistId.From(value))),
+            "child_tracks_for_album" => new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.ChildTracksForAlbum(AlbumId.From(value))),
+            "child_tracks_for_playlist" => new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.ChildTracksForPlaylist(PlaylistId.FromPlaylistName(value))),
+            _ => throw new InvalidOperationException($"Unsupported target identifier '{identifier}'.")
+        };
     }
 }

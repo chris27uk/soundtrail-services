@@ -1,4 +1,5 @@
 using Soundtrail.Domain.Discovery.Assesment;
+using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.Search.Contract;
 using Soundtrail.Services.Projector.Features.OnMusicDataRequested;
@@ -68,5 +69,17 @@ public sealed class WorkRequestedProjectsAssessWorkTests
         await subject.Handle(WorkRequestedProjectorUnitTestEnvironment.CreateSearchCriteriaWorkRequested(riskScore: 12));
 
         environment.CommandBus.Commands.Cast<AssessWorkCommand>().Single().RiskScore.Should().Be(12);
+    }
+
+    [Fact]
+    public async Task Given_A_WorkRequested_Event_When_Projecting_Then_The_Priority_Is_Preserved()
+    {
+        var environment = WorkRequestedProjectorUnitTestEnvironment.Create();
+        var subject = environment.CreateSubject();
+
+        await subject.Handle(
+            WorkRequestedProjectorUnitTestEnvironment.CreateSearchCriteriaWorkRequested(priority: LookupPriorityBand.Low));
+
+        environment.CommandBus.Commands.Cast<AssessWorkCommand>().Single().Priority.Should().Be(LookupPriorityBand.Low);
     }
 }
