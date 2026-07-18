@@ -9,35 +9,32 @@ using Wolverine;
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
-using (var _ = FeatureEnvironment.Live())
-{
-    builder.Services.AddFeatures<OrchestratorAssemblyMarker>();
+builder.Services.AddFeatures<OrchestratorAssemblyMarker>();
 #pragma warning disable ASP0000
-    using var serviceProvider = builder.Services.BuildServiceProvider();
+using var serviceProvider = builder.Services.BuildServiceProvider();
 #pragma warning restore ASP0000
-    var features = serviceProvider.GetServices<IFeature>().ToArray();
+var features = serviceProvider.GetServices<IFeature>().ToArray();
 
-    foreach (var feature in features)
-    {
-        feature.ConfigureServices(builder.Services, builder.Configuration);
-    }
-
-    builder.Host.UseWolverine(
-        options =>
-        {
-            foreach (var feature in features.OfType<IOrchestratorFeature>())
-            {
-                feature.ConfigureMessaging(options, builder.Configuration, builder.Environment);
-            }
-        });
-
-    var app = builder.Build();
-
-    foreach (var feature in features.OfType<IOrchestratorFeature>())
-    {
-        feature.ConfigureApplication(app);
-    }
-
-    app.MapDefaultEndpoints();
-    await app.RunAsync();
+foreach (var feature in features)
+{
+    feature.ConfigureServices(builder.Services, builder.Configuration);
 }
+
+builder.Host.UseWolverine(
+    options =>
+    {
+        foreach (var feature in features.OfType<IOrchestratorFeature>())
+        {
+            feature.ConfigureMessaging(options, builder.Configuration, builder.Environment);
+        }
+    });
+
+var app = builder.Build();
+
+foreach (var feature in features.OfType<IOrchestratorFeature>())
+{
+    feature.ConfigureApplication(app);
+}
+
+app.MapDefaultEndpoints();
+await app.RunAsync();

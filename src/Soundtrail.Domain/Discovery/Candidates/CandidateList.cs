@@ -3,7 +3,7 @@ using System.Collections;
 
 namespace Soundtrail.Domain.Discovery.Candidates;
 
-public sealed class CandidateList : IEnumerable<ScoredCandidate>
+public sealed class CandidateList : IEnumerable<ScoredCandidate>, IEnumerable<CatalogItemId>
 {
     private readonly SortedSet<ScoredCandidate> candidates;
 
@@ -12,15 +12,18 @@ public sealed class CandidateList : IEnumerable<ScoredCandidate>
         this.candidates = new SortedSet<ScoredCandidate>(candidates);
     }
 
-    public bool Any() => candidates.Count > 0;
-
     public static CandidateList From(List<ScoredCandidate> candidates) => new CandidateList(candidates);
+
+    public IEnumerable<ScoredCandidate> AsCandidates() => this;
+    
+    public IEnumerable<CatalogItemId> AsCandidateIds() => this;
     
     public static CandidateList From(CandidatesResult result)
     {
         var allCandidates = result switch
         {
             CandidatesResult.Results found => found.CandidateList
+                .AsCandidates()
                 .OrderByDescending(candidate => candidate.Score)
                 .ToArray(),
             CandidatesResult.None => [],
@@ -41,8 +44,8 @@ public sealed class CandidateList : IEnumerable<ScoredCandidate>
         return new CandidateList(qualified);
     }
 
-    public CatalogItemId[] Ids => this.candidates.Select(candidate => candidate.Id).ToArray();
-    
+    IEnumerator<CatalogItemId> IEnumerable<CatalogItemId>.GetEnumerator() => this.candidates.Select(candidate => candidate.Id).GetEnumerator();
+
     public IEnumerator<ScoredCandidate> GetEnumerator() => this.candidates.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

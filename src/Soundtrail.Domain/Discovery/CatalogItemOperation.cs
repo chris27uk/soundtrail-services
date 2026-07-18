@@ -26,6 +26,7 @@ namespace Soundtrail.Domain.Discovery
                 ChildAlbumsForArtist (var artistId) => $"child_albums_for_artist:{artistId.Value}",
                 ChildTracksForArtist (var artistId) => $"child_tracks_for_artist:{artistId.Value}",
                 ChildTracksForAlbum (var albumId) => $"child_tracks_for_album:{albumId.StableValue}",
+                ChildTracksForPlaylist (var playlistId) => $"child_tracks_for_playlist:{playlistId.Value}",
                 StreamingLocationForTrack (var trackId) => $"streaming_location_for_track:{trackId.Value}",
                 _ => throw new InvalidOperationException($"Unsupported catalog item resource type '{GetType().Name}'.")
             };

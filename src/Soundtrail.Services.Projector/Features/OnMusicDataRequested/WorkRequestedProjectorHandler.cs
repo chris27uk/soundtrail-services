@@ -14,6 +14,7 @@ public sealed class WorkRequestedProjectorHandler(ICommandBus commandBus)
             CorrelationId: @event.CorrelationId,
             CreatedAt: @event.RequestedAt,
             Target: @event.Target,
+            Priority: @event.Priority,
             TrustLevel: @event.TrustLevel,
             RiskScore: @event.RiskScore);
 

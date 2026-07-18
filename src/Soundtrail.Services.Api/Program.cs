@@ -10,26 +10,23 @@ builder.AddServiceDefaults();
 builder.Services.AddCatalogSearchAttemptQueue(builder.Configuration);
 builder.Host.UseWolverine(opts => opts.UseApiServiceBusMessaging(builder.Configuration, builder.Environment));
 
-using (var _ = FeatureEnvironment.Live())
-{
-    builder.Services.AddFeatures<ApiAssemblyMarker>();
+builder.Services.AddFeatures<ApiAssemblyMarker>();
 #pragma warning disable ASP0000
-    using var serviceProvider = builder.Services.BuildServiceProvider();
+using var serviceProvider = builder.Services.BuildServiceProvider();
 #pragma warning restore ASP0000
-    var features = serviceProvider.GetServices<IFeature>().ToArray();
+var features = serviceProvider.GetServices<IFeature>().ToArray();
 
-    foreach (var initializer in features)
-    {
-        initializer.ConfigureServices(builder.Services, builder.Configuration);
-    }
-
-    var app = builder.Build();
-
-    foreach (var initializer in features.OfType<IApiFeature>())
-    {
-        initializer.ConfigureApplication(app);
-    }
-    
-    app.MapDefaultEndpoints();
-    app.Run();
+foreach (var initializer in features)
+{
+    initializer.ConfigureServices(builder.Services, builder.Configuration);
 }
+
+var app = builder.Build();
+
+foreach (var initializer in features.OfType<IApiFeature>())
+{
+    initializer.ConfigureApplication(app);
+}
+
+app.MapDefaultEndpoints();
+app.Run();
