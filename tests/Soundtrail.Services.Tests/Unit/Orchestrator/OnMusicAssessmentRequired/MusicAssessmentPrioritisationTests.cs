@@ -1,5 +1,6 @@
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Domain.Discovery;
 
 namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnMusicAssessmentRequired;
 
@@ -48,5 +49,55 @@ public sealed class MusicAssessmentPrioritisationTests
         var ignored = environment.Repository.AppendedEvents.OfType<WorkIgnored>().Single();
         ignored.Reason.Should().Contain("already planned");
         ignored.EarliestExpectedCompletionAt.Should().Be(expectedCompletion);
+    }
+
+    [Fact]
+    public async Task Given_Completed_Work_When_Assessing_Then_The_Request_Is_Ignored()
+    {
+        var environment = OnMusicAssessmentRequiredHandlerUnitTestEnvironment.Create();
+        var target = Work.EnrichTrackStreamingLocation(Soundtrail.Domain.Catalog.Tracks.TrackId.From("track-123"));
+        environment.Repository.SeedEvents =
+        [
+            new WorkCompleted(target, LookupPriorityBand.High, "done", new DateTimeOffset(2026, 7, 18, 9, 25, 0, TimeSpan.Zero))
+        ];
+        var subject = environment.CreateSubject();
+
+        await subject.Handle(OnMusicAssessmentRequiredHandlerUnitTestEnvironment.CreateRequest(target: target));
+
+        environment.Repository.AppendedEvents.OfType<WorkIgnored>().Single().Reason.Should().Contain("completed");
+    }
+
+    [Fact]
+    public async Task Given_Previously_Rejected_Work_When_Assessing_Then_The_Request_Is_Rejected_Again()
+    {
+        var environment = OnMusicAssessmentRequiredHandlerUnitTestEnvironment.Create();
+        var target = Work.EnrichTrackStreamingLocation(Soundtrail.Domain.Catalog.Tracks.TrackId.From("track-123"));
+        environment.Repository.SeedEvents =
+        [
+            new WorkRejected(target, LookupPriorityBand.High, "blocked", new DateTimeOffset(2026, 7, 18, 9, 25, 0, TimeSpan.Zero))
+        ];
+        var subject = environment.CreateSubject();
+
+        await subject.Handle(OnMusicAssessmentRequiredHandlerUnitTestEnvironment.CreateRequest(target: target));
+
+        environment.Repository.AppendedEvents.OfType<WorkRejected>().Single().Reason.Should().Contain("previously rejected");
+    }
+
+    [Fact]
+    public async Task Given_A_High_Priority_Request_When_Low_Priority_Capacity_Is_Reserved_Then_Work_Is_Still_Scheduled()
+    {
+        var environment = OnMusicAssessmentRequiredHandlerUnitTestEnvironment.Create(new Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicAssessmentRequired.Planning.PlanningAssessmentOptions
+        {
+            MaxConcurrentPlannedWork = 10,
+            ReservedSlotsForHighPriority = 3,
+            DefaultDeferredSeconds = 45
+        });
+        environment.ProjectionReader.ProjectionToReturn = new(false, null, 7, 3);
+        var subject = environment.CreateSubject();
+
+        await subject.Handle(OnMusicAssessmentRequiredHandlerUnitTestEnvironment.CreateRequest(priority: LookupPriorityBand.High));
+
+        environment.Repository.AppendedEvents.OfType<WorkScheduled>().Should().ContainSingle();
+        environment.Repository.AppendedEvents.Should().NotContain(x => x is WorkDeferred);
     }
 }
