@@ -36,15 +36,15 @@ internal sealed class SearchPortContractTestEnvironment : IAsyncDisposable
     public static async Task<SearchPortContractTestEnvironment> ForExistingResults(
         SearchPortImplementation implementation,
         string queryText = "u2",
-        SearchFilter filter = SearchFilter.Artist,
+        SearchType filter = SearchType.Artist,
         string musicCatalogId = "artist-3101",
-        SearchFilter resultType = SearchFilter.Artist,
+        SearchType resultType = SearchType.Artist,
         string title = "U2",
         string? artistName = null,
         string? albumTitle = null,
         string? artworkUrl = "https://cdn.soundtrail.test/artists/artist-3101.jpg")
     {
-        var searchCriteria = new SearchCriteria(queryText, MapSearchTypes(filter));
+        var searchCriteria = new SearchCriteria(queryText, filter);
         var response = new SearchResponse(
             queryText,
             filter,
@@ -90,10 +90,9 @@ internal sealed class SearchPortContractTestEnvironment : IAsyncDisposable
     public static async Task<SearchPortContractTestEnvironment> ForMissingResults(
         SearchPortImplementation implementation,
         string queryText = "u2",
-        SearchFilter filter = SearchFilter.Artist)
+        SearchType filter = SearchType.Artist)
     {
-        var searchCriteria = new SearchCriteria(queryText, MapSearchTypes(filter));
-
+        var searchCriteria = new SearchCriteria(queryText, filter);
         return implementation switch
         {
             SearchPortImplementation.Fake => new SearchPortContractTestEnvironment(
@@ -142,11 +141,11 @@ internal sealed class SearchPortContractTestEnvironment : IAsyncDisposable
             var record = (CatalogSearchRecordDto)dto!;
             return new SearchResponse(
                 record.QueryText,
-                Enum.Parse<SearchFilter>(record.Filter, true),
+                Enum.Parse<SearchType>(record.Filter, true),
                 record.Results.Select(
                         result =>
                         {
-                            var resultType = Enum.Parse<SearchFilter>(result.ResultType, true);
+                            var resultType = Enum.Parse<SearchType>(result.ResultType, true);
                             return new SearchResultResponse(
                                 ParseMusicCatalogId(result.MusicCatalogId, resultType),
                                 resultType,
@@ -163,21 +162,12 @@ internal sealed class SearchPortContractTestEnvironment : IAsyncDisposable
             where TTarget : class => throw new NotSupportedException();
     }
 
-    private static SearchTypes MapSearchTypes(SearchFilter filter) =>
+    private static CatalogItemId ParseMusicCatalogId(string value, SearchType filter) =>
         filter switch
         {
-            SearchFilter.Artist => SearchTypes.Artist,
-            SearchFilter.Album => SearchTypes.Album,
-            SearchFilter.Track => SearchTypes.Track,
-            _ => throw new InvalidOperationException($"Unsupported search filter '{filter}'.")
-        };
-
-    private static CatalogItemId ParseMusicCatalogId(string value, SearchFilter filter) =>
-        filter switch
-        {
-            SearchFilter.Artist => new CatalogItemId.Artist(ArtistId.From(value)),
-            SearchFilter.Album => new CatalogItemId.Album(AlbumId.From(value)),
-            SearchFilter.Track => new CatalogItemId.Track(TrackId.From(value)),
+            SearchType.Artist => new CatalogItemId.Artist(ArtistId.From(value)),
+            SearchType.Album => new CatalogItemId.Album(AlbumId.From(value)),
+            SearchType.Track => new CatalogItemId.Track(TrackId.From(value)),
             _ => throw new InvalidOperationException($"Unsupported search filter '{filter}'.")
         };
 }

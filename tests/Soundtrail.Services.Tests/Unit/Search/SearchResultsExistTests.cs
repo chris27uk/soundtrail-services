@@ -35,11 +35,11 @@ public sealed class SearchResultsExistTests
     [Fact]
     public async Task Given_Existing_Search_Results_When_Searching_Then_The_Filter_Is_Returned()
     {
-        var environment = SearchUnitTestEnvironment.ForSearch(filter: SearchFilter.Album, response: SearchResults.CreateResponse(filter: SearchFilter.Album));
+        var environment = SearchUnitTestEnvironment.ForSearch(filter: SearchType.Album, response: SearchResults.CreateResponse(filter: SearchType.Album));
 
         var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        result!.Filter.Should().Be(SearchFilter.Album);
+        result!.Filter.Should().Be(SearchType.Album);
     }
 
     [Fact]
@@ -57,8 +57,8 @@ public sealed class SearchResultsExistTests
     {
         var musicCatalogId = new CatalogItemId.Track(TrackId.From("track-2903"));
         var environment = SearchUnitTestEnvironment.ForSearch(
-            filter: SearchFilter.Track,
-            response: SearchResults.CreateResponse(filter: SearchFilter.Track, musicCatalogId: musicCatalogId, resultType: SearchFilter.Track));
+            filter: SearchType.Track,
+            response: SearchResults.CreateResponse(filter: SearchType.Track, musicCatalogId: musicCatalogId, resultType: SearchType.Track));
 
         var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
@@ -69,12 +69,12 @@ public sealed class SearchResultsExistTests
     public async Task Given_Existing_Search_Results_When_Searching_Then_The_Result_Type_Is_Returned()
     {
         var environment = SearchUnitTestEnvironment.ForSearch(
-            filter: SearchFilter.Track,
-            response: SearchResults.CreateResponse(filter: SearchFilter.Track, resultType: SearchFilter.Track));
+            filter: SearchType.Track,
+            response: SearchResults.CreateResponse(filter: SearchType.Track, resultType: SearchType.Track));
 
         var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        result!.Results[0].ResultType.Should().Be(SearchFilter.Track);
+        result!.Results[0].ResultType.Should().Be(SearchType.Track);
     }
 
     [Fact]
@@ -120,11 +120,11 @@ public sealed class SearchResultsExistTests
     [Fact]
     public async Task Given_Existing_Search_Results_When_Searching_Then_The_Requested_Search_Criteria_Is_Read()
     {
-        var environment = SearchUnitTestEnvironment.ForSearch(queryText: "u2", filter: SearchFilter.Artist);
+        var environment = SearchUnitTestEnvironment.ForSearch(queryText: "u2", filter: SearchType.Artist);
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.Port.RequestedSearchCriteria.Single().Should().Be(new SearchCriteria("u2", SearchTypes.Artist));
+        environment.Port.RequestedSearchCriteria.Single().Should().Be(new SearchCriteria("u2", SearchType.Artist));
     }
 
     [Fact]
@@ -140,21 +140,11 @@ public sealed class SearchResultsExistTests
     [Fact]
     public async Task Given_Existing_Search_Results_When_Searching_Then_The_Search_Command_Filter_Is_Search_Criteria_Based()
     {
-        var environment = SearchUnitTestEnvironment.ForSearch(queryText: "u2", filter: SearchFilter.Artist);
+        var environment = SearchUnitTestEnvironment.ForSearch(queryText: "u2", filter: SearchType.Artist);
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().Filter.Should().Be(new EnrichmentFilter.SearchCriteria(new SearchCriteria("u2", SearchTypes.Artist)));
-    }
-
-    [Fact]
-    public async Task Given_Existing_Search_Results_When_Searching_Then_The_Search_Command_Required_Catalog_Type_Is_None()
-    {
-        var environment = SearchUnitTestEnvironment.ForSearch();
-
-        await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
-
-        environment.CommandBus.Commands.Single().RequiredCatalogType.Should().Be(RequiredCatalogType.None);
+        environment.CommandBus.Commands.Single().SearchCriteria.Should().Be(new SearchCriteria("u2", SearchType.Artist));
     }
 
     [Fact]

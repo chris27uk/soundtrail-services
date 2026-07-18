@@ -56,15 +56,15 @@ public sealed class SearchResponseTranslationRegistration : ITypeTranslationRegi
                         .ToArray()));
     }
 
-    private static SearchFilter ParseFilter(string value) =>
-        Enum.Parse<SearchFilter>(value, true);
+    private static SearchType ParseFilter(string value) =>
+        Enum.Parse<SearchType>(value, true);
 
-    private static CatalogItemId ParseMusicCatalogId(string value, SearchFilter filter) =>
+    private static CatalogItemId ParseMusicCatalogId(string value, SearchType filter) =>
         filter switch
         {
-            SearchFilter.Artist => new CatalogItemId.Artist(ArtistId.From(value)),
-            SearchFilter.Album => new CatalogItemId.Album(AlbumId.From(value)),
-            SearchFilter.Track => new CatalogItemId.Track(TrackId.From(value)),
+            SearchType.Artist => new CatalogItemId.Artist(ArtistId.From(value)),
+            SearchType.Album => new CatalogItemId.Album(AlbumId.From(value)),
+            SearchType.Track => new CatalogItemId.Track(TrackId.From(value)),
             _ => throw new InvalidOperationException($"Unsupported search filter '{filter}'.")
         };
 }

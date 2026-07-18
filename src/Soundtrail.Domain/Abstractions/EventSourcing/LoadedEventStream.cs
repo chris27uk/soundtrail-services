@@ -2,11 +2,11 @@ using Soundtrail.Contracts.Common;
 
 namespace Soundtrail.Domain.Abstractions.EventSourcing;
 
-public sealed record LoadedEventStream<TStreamId, TEvent>(
+public sealed record LoadedEventStream<TStreamId>(
     TStreamId StreamId,
     int Version,
-    IReadOnlyList<TEvent> Events)
+    IReadOnlyList<IDomainEvent> Events)
     where TStreamId : IValueType
 {
-    public static LoadedEventStream<TStreamId, TEvent> Empty(TStreamId streamId) => new(streamId, 0, []);
+    public static LoadedEventStream<TStreamId> Empty(TStreamId streamId) => new(streamId, 0, []);
 }

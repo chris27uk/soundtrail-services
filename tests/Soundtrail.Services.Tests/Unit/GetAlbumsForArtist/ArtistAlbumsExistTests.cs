@@ -140,17 +140,7 @@ public sealed class ArtistAlbumsExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().Filter.Should().Be(new EnrichmentFilter.CatalogItem(new CatalogItemId.Artist(artistId)));
-    }
-
-    [Fact]
-    public async Task Given_Existing_Artist_Albums_When_Requesting_The_Artist_Albums_Then_The_Search_Command_Requests_Albums()
-    {
-        var environment = GetAlbumsForArtistUnitTestEnvironment.ForExistingArtistAlbums();
-
-        await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
-
-        environment.CommandBus.Commands.Single().RequiredCatalogType.Should().Be(RequiredCatalogType.Albums);
+        environment.CommandBus.Commands.Single().Operation.Should().Be(new CatalogItemOperation.ChildAlbumsForArtist(artistId));
     }
 
     [Fact]

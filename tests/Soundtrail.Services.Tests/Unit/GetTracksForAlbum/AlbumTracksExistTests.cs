@@ -184,17 +184,7 @@ public sealed class AlbumTracksExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().Filter.Should().Be(new EnrichmentFilter.CatalogItem(new CatalogItemId.Album(albumId)));
-    }
-
-    [Fact]
-    public async Task Given_Existing_Album_Tracks_When_Requesting_The_Album_Tracks_Then_The_Search_Command_Requests_Tracks()
-    {
-        var environment = GetTracksForAlbumUnitTestEnvironment.ForExistingAlbumTracks();
-
-        await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
-
-        environment.CommandBus.Commands.Single().RequiredCatalogType.Should().Be(RequiredCatalogType.Tracks);
+        environment.CommandBus.Commands.Single().Operation.Should().Be(new CatalogItemOperation.ChildTracksForAlbum(albumId));
     }
 
     [Fact]

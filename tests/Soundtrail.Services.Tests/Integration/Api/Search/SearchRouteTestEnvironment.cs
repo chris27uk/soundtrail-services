@@ -43,11 +43,11 @@ internal sealed class SearchRouteTestEnvironment : IDisposable
             Task.FromResult<SearchResponse?>(
                 new SearchResponse(
                     "u2",
-                    SearchFilter.Artist,
+                    SearchType.Artist,
                     [
                         new SearchResultResponse(
                             new CatalogItemId.Artist(ArtistId.From("artist-3001")),
-                            SearchFilter.Artist,
+                            SearchType.Artist,
                             "U2",
                             null,
                             null,

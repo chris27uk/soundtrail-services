@@ -21,7 +21,7 @@ public static class SearchEndpoints
                     return Results.BadRequest();
                 }
 
-                if (!Enum.TryParse<SearchFilter>(filter, true, out var resolvedFilter))
+                if (!Enum.TryParse<SearchType>(filter, true, out var resolvedFilter))
                 {
                     return Results.BadRequest();
                 }

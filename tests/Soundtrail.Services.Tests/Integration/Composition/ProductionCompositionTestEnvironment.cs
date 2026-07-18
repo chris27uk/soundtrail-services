@@ -5,8 +5,12 @@ using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Services.Api;
 using Soundtrail.Services.Api.Infrastructure;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
+using Soundtrail.Services.Enrichment.Orchestrator;
+using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure;
 using Soundtrail.Services.Enrichment.Scheduler;
 using Soundtrail.Services.Enrichment.Scheduler.Infrastructure;
+using Soundtrail.Services.Projector;
+using Soundtrail.Services.Projector.Infrastructure;
 using Soundtrail.Services.ServiceDefaults;
 using Wolverine;
 
@@ -125,6 +129,106 @@ internal static class ProductionCompositionTestEnvironment
                 ValidateOnBuild = true,
                 ValidateScopes = true
             });
+    }
+
+    public static void ValidateOrchestratorComposition()
+    {
+        var builder = CreateBuilder();
+
+        using var _ = FeatureEnvironment.Live();
+        builder.Services.AddFeatures<OrchestratorAssemblyMarker>();
+#pragma warning disable ASP0000
+        using var bootstrapProvider = builder.Services.BuildServiceProvider();
+#pragma warning restore ASP0000
+        var features = bootstrapProvider.GetServices<IFeature>().ToArray();
+
+        foreach (var feature in features)
+        {
+            feature.ConfigureServices(builder.Services, builder.Configuration);
+        }
+
+        foreach (var descriptor in builder.Services
+                     .Where(descriptor => descriptor.ServiceType == typeof(IHostedService)
+                         && descriptor.ImplementationType?.FullName is "Soundtrail.Adapters.Persistence.RavenDatabaseHostedService")
+                     .ToArray())
+        {
+            builder.Services.Remove(descriptor);
+        }
+
+        builder.Host.UseWolverine(
+            options =>
+            {
+                foreach (var feature in features.OfType<IOrchestratorFeature>())
+                {
+                    feature.ConfigureMessaging(options, builder.Configuration, builder.Environment);
+                }
+            });
+
+        builder.Services.BuildServiceProvider(
+            new ServiceProviderOptions
+            {
+                ValidateOnBuild = true,
+                ValidateScopes = true
+            });
+
+        var app = builder.Build();
+
+        foreach (var feature in features.OfType<IOrchestratorFeature>())
+        {
+            feature.ConfigureApplication(app);
+        }
+
+        app.MapDefaultEndpoints();
+    }
+
+    public static void ValidateProjectorComposition()
+    {
+        var builder = CreateBuilder();
+
+        using var _ = FeatureEnvironment.Live();
+        builder.Services.AddFeatures<ProjectorAssemblyMarker>();
+#pragma warning disable ASP0000
+        using var bootstrapProvider = builder.Services.BuildServiceProvider();
+#pragma warning restore ASP0000
+        var features = bootstrapProvider.GetServices<IFeature>().ToArray();
+
+        foreach (var feature in features)
+        {
+            feature.ConfigureServices(builder.Services, builder.Configuration);
+        }
+
+        foreach (var descriptor in builder.Services
+                     .Where(descriptor => descriptor.ServiceType == typeof(IHostedService)
+                         && descriptor.ImplementationType?.FullName is "Soundtrail.Adapters.Persistence.RavenDatabaseHostedService")
+                     .ToArray())
+        {
+            builder.Services.Remove(descriptor);
+        }
+
+        builder.Host.UseWolverine(
+            options =>
+            {
+                foreach (var feature in features.OfType<IProjectorFeature>())
+                {
+                    feature.ConfigureMessaging(options, builder.Configuration, builder.Environment);
+                }
+            });
+
+        builder.Services.BuildServiceProvider(
+            new ServiceProviderOptions
+            {
+                ValidateOnBuild = true,
+                ValidateScopes = true
+            });
+
+        var app = builder.Build();
+
+        foreach (var feature in features.OfType<IProjectorFeature>())
+        {
+            feature.ConfigureApplication(app);
+        }
+
+        app.MapDefaultEndpoints();
     }
 
     private static WebApplicationBuilder CreateBuilder()

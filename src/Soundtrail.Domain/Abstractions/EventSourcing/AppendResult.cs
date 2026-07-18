@@ -1,7 +1,7 @@
 namespace Soundtrail.Domain.Abstractions.EventSourcing;
 
-public sealed record AppendResult<TEvent>(
+public sealed record AppendResult(
     bool Appended,
     int Version,
-    IReadOnlyList<TEvent> Events,
+    IReadOnlyList<IDomainEvent> Events,
     AppendOutcome Outcome);

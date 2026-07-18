@@ -4,12 +4,12 @@ using Soundtrail.Domain.Catalog;
 namespace Soundtrail.Domain.Discovery.Candidates
 {
     [Union]
-    public partial record CandidateResults
+    public partial record CandidatesResult
     {
-        public partial record CandidateFound(List<CandidateFound> Value);
+        public partial record Results(CandidateList CandidateList);
 
         partial record None;
     }
 
-    public record CandidateFound(CatalogItemId Value, int Score);
+    public record ScoredCandidate(CatalogItemId Id, int Score);
 }

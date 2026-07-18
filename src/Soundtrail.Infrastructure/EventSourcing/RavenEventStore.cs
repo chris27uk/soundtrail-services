@@ -6,13 +6,13 @@ using Soundtrail.Domain.Abstractions.EventSourcing;
 
 namespace Soundtrail.Adapters.EventSourcing;
 
-internal sealed class RavenEventStore<TStreamId, TEvent>(
+internal sealed class RavenEventStore<TStreamId>(
     IAsyncDocumentSession session,
     ITypeRegistry typeRegistry,
     RavenEventStreamDefinition definition)
     where TStreamId : IValueType
 {
-    public async Task<LoadedEventStream<TStreamId, TEvent>> LoadAsync(
+    public async Task<LoadedEventStream<TStreamId>> LoadAsync(
         TStreamId streamId,
         CancellationToken cancellationToken)
     {
@@ -20,7 +20,7 @@ internal sealed class RavenEventStore<TStreamId, TEvent>(
         var metadata = await session.LoadAsync<RavenEventStreamMetadataRecord>(metadataId, cancellationToken);
         if (metadata is null)
         {
-            return LoadedEventStream<TStreamId, TEvent>.Empty(streamId);
+            return LoadedEventStream<TStreamId>.Empty(streamId);
         }
 
         var storedEvents = (await session.Advanced.LoadStartingWithAsync<RavenStoredEventRecord>(GetEventPrefix(streamId), token: cancellationToken))
@@ -28,20 +28,20 @@ internal sealed class RavenEventStore<TStreamId, TEvent>(
             .ToList();
 
         return storedEvents.Count == 0
-            ? new LoadedEventStream<TStreamId, TEvent>(streamId, metadata.Version, [])
-            : new LoadedEventStream<TStreamId, TEvent>(
+            ? new LoadedEventStream<TStreamId>(streamId, metadata.Version, [])
+            : new LoadedEventStream<TStreamId>(
                 streamId,
                 metadata.Version,
                 storedEvents.Select(ToDomainEvent).ToArray());
     }
 
-    public async Task<AppendResult<TEvent>> AppendAsync(
-        LoadedEventStream<TStreamId, TEvent> stream,
-        IReadOnlyList<TEvent> events,
+    public async Task<AppendResult> AppendAsync(
+        LoadedEventStream<TStreamId> stream,
+        IReadOnlyList<IDomainEvent> events,
         OperationId? operationId,
         CancellationToken cancellationToken,
         bool saveChanges = false,
-        Func<IAsyncDocumentSession, LoadedEventStream<TStreamId, TEvent>, IReadOnlyList<TEvent>, OperationId?, CancellationToken, Task>? beforeSave = null)
+        Func<IAsyncDocumentSession, LoadedEventStream<TStreamId>, IReadOnlyList<IDomainEvent>, OperationId?, CancellationToken, Task>? beforeSave = null)
     {
         session.Advanced.UseOptimisticConcurrency = true;
 
@@ -52,12 +52,12 @@ internal sealed class RavenEventStore<TStreamId, TEvent>(
         if (operationId is { } duplicateCheckOperationId &&
             metadata.AppliedOperationIds.Contains(duplicateCheckOperationId.StableValue))
         {
-            return new AppendResult<TEvent>(false, metadata.Version, [], AppendOutcome.DuplicateOperation);
+            return new AppendResult(false, metadata.Version, [], AppendOutcome.DuplicateOperation);
         }
 
         if (metadata.Version != stream.Version)
         {
-            return new AppendResult<TEvent>(false, metadata.Version, [], AppendOutcome.VersionMismatch);
+            return new AppendResult(false, metadata.Version, [], AppendOutcome.VersionMismatch);
         }
 
         var storedEvents = events
@@ -96,14 +96,14 @@ internal sealed class RavenEventStore<TStreamId, TEvent>(
             await session.SaveChangesAsync(cancellationToken);
         }
 
-        return new AppendResult<TEvent>(true, metadata.Version, events.ToArray(), AppendOutcome.Appended);
+        return new AppendResult(true, metadata.Version, events.ToArray(), AppendOutcome.Appended);
     }
 
     private RavenStoredEventRecord ToStoredEvent(
         TStreamId streamId,
         int version,
         OperationId? operationId,
-        TEvent @event)
+        IDomainEvent @event)
     {
         ArgumentNullException.ThrowIfNull(@event);
 
@@ -127,14 +127,14 @@ internal sealed class RavenEventStore<TStreamId, TEvent>(
         };
     }
 
-    private TEvent ToDomainEvent(RavenStoredEventRecord storedEvent)
+    private IDomainEvent ToDomainEvent(RavenStoredEventRecord storedEvent)
     {
         if (storedEvent.Body is null)
         {
             throw new InvalidOperationException($"Stored event '{storedEvent.Id}' is missing a body.");
         }
 
-        return (TEvent)typeRegistry.ToDomainObject(storedEvent.Body);
+        return (IDomainEvent)typeRegistry.ToDomainObject(storedEvent.Body);
     }
 
     private RavenEventStreamMetadataRecord CreateMetadata(TStreamId streamId, string metadataId) =>

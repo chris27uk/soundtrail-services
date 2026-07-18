@@ -1,10 +1,3 @@
 namespace Soundtrail.Services.Api.Features.Search.Contract;
 
-public sealed record SearchRequest(string QueryText, SearchFilter Filter);
-
-public enum SearchFilter
-{
-    Artist,
-    Album,
-    Track
-}
+public sealed record SearchRequest(string QueryText, SearchType Filter);

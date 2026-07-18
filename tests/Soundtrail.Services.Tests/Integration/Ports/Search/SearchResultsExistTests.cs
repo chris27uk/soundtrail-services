@@ -39,11 +39,11 @@ public sealed class SearchResultsExistTests
     [MemberData(nameof(Implementations))]
     public async Task Given_Existing_Search_Results_When_Searching_Then_The_Filter_Is_Returned(SearchPortImplementation implementation)
     {
-        await using var environment = await SearchPortContractTestEnvironment.ForExistingResults(implementation, filter: SearchFilter.Album, musicCatalogId: "artist-3101:album-3201", resultType: SearchFilter.Album);
+        await using var environment = await SearchPortContractTestEnvironment.ForExistingResults(implementation, filter: SearchType.Album, musicCatalogId: "artist-3101:album-3201", resultType: SearchType.Album);
 
         var result = await environment.Subject.SearchAsync(environment.SearchCriteria, CancellationToken.None);
 
-        result!.Filter.Should().Be(SearchFilter.Album);
+        result!.Filter.Should().Be(SearchType.Album);
     }
 
     [Theory]
@@ -61,7 +61,7 @@ public sealed class SearchResultsExistTests
     [MemberData(nameof(Implementations))]
     public async Task Given_Existing_Search_Results_When_Searching_Then_The_Music_Catalog_Id_Is_Returned(SearchPortImplementation implementation)
     {
-        await using var environment = await SearchPortContractTestEnvironment.ForExistingResults(implementation, filter: SearchFilter.Track, musicCatalogId: "track-3103", resultType: SearchFilter.Track);
+        await using var environment = await SearchPortContractTestEnvironment.ForExistingResults(implementation, filter: SearchType.Track, musicCatalogId: "track-3103", resultType: SearchType.Track);
 
         var result = await environment.Subject.SearchAsync(environment.SearchCriteria, CancellationToken.None);
 
@@ -72,11 +72,11 @@ public sealed class SearchResultsExistTests
     [MemberData(nameof(Implementations))]
     public async Task Given_Existing_Search_Results_When_Searching_Then_The_Result_Type_Is_Returned(SearchPortImplementation implementation)
     {
-        await using var environment = await SearchPortContractTestEnvironment.ForExistingResults(implementation, filter: SearchFilter.Track, musicCatalogId: "track-3104", resultType: SearchFilter.Track);
+        await using var environment = await SearchPortContractTestEnvironment.ForExistingResults(implementation, filter: SearchType.Track, musicCatalogId: "track-3104", resultType: SearchType.Track);
 
         var result = await environment.Subject.SearchAsync(environment.SearchCriteria, CancellationToken.None);
 
-        result!.Results[0].ResultType.Should().Be(SearchFilter.Track);
+        result!.Results[0].ResultType.Should().Be(SearchType.Track);
     }
 
     [Theory]

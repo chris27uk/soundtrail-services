@@ -17,20 +17,6 @@ public sealed class GetTracksForPlaylistHandler(
 {
     public async Task<GetTracksForPlaylistResponse?> Handle(GetTracksForPlaylistRequest request, CancellationToken cancellationToken = default)
     {
-        var requestedAt = clock.UtcNow;
-        await commandBus.SendAsync(
-            new SearchForCatalogItemsCommand(
-                new EnrichmentFilter.CatalogItem(new CatalogItemId.Playlist(request.PlaylistId)),
-                RequiredCatalogType.Tracks,
-                LookupPriorityBand.High,
-                100,
-                0,
-                requestedAt)
-            {
-                CreatedAt = requestedAt
-            },
-            cancellationToken);
-
         return await getTracksForPlaylistPort.GetTracksForPlaylistAsync(request.PlaylistId, cancellationToken);
     }
 }

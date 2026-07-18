@@ -5,26 +5,26 @@ using Soundtrail.Domain.Abstractions.EventSourcing;
 
 namespace Soundtrail.Adapters.EventSourcing;
 
-internal sealed class RavenEventStreamRepository<TStreamId, TEvent>(
+internal sealed class RavenEventStreamRepository<TStreamId>(
     IAsyncDocumentSession session,
     ITypeRegistry typeRegistry,
-    RavenEventStreamDefinition definition) : IEventStreamRepository<TStreamId, TEvent>
+    RavenEventStreamDefinition definition) : IEventStreamRepository<TStreamId>
     where TStreamId : IValueType
 {
-    private readonly RavenEventStore<TStreamId, TEvent> eventStore =
+    private readonly RavenEventStore<TStreamId> eventStore =
         new(
             session,
             typeRegistry,
             definition);
 
-    public Task<LoadedEventStream<TStreamId, TEvent>> LoadAsync(
+    public Task<LoadedEventStream<TStreamId>> LoadAsync(
         TStreamId streamId,
         CancellationToken cancellationToken) =>
         eventStore.LoadAsync(streamId, cancellationToken);
 
-    public Task<AppendResult<TEvent>> AppendAsync(
-        LoadedEventStream<TStreamId, TEvent> stream,
-        IReadOnlyList<TEvent> events,
+    public Task<AppendResult> AppendAsync(
+        LoadedEventStream<TStreamId> stream,
+        IReadOnlyList<IDomainEvent> events,
         OperationId? operationId,
         CancellationToken cancellationToken) =>
         eventStore.AppendAsync(
