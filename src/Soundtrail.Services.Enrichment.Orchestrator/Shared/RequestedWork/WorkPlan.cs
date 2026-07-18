@@ -1,6 +1,6 @@
 using Soundtrail.Domain.Discovery;
 
-namespace Soundtrail.Services.Enrichment.Orchestrator.Features.RequestedWork;
+namespace Soundtrail.Services.Enrichment.Orchestrator.Shared.RequestedWork;
 
 public sealed class WorkPlan
 {

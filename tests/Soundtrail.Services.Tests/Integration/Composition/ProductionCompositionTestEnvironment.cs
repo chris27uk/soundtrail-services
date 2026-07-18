@@ -25,7 +25,6 @@ internal static class ProductionCompositionTestEnvironment
         builder.Host.UseWolverine(
             options => options.UseApiServiceBusMessaging(builder.Configuration, builder.Environment));
 
-        using var _ = FeatureEnvironment.Live();
         builder.Services.AddFeatures<ApiAssemblyMarker>();
 #pragma warning disable ASP0000
         using var bootstrapProvider = builder.Services.BuildServiceProvider();
@@ -58,7 +57,6 @@ internal static class ProductionCompositionTestEnvironment
     {
         var builder = CreateBuilder();
 
-        using var _ = FeatureEnvironment.Live();
         builder.Services.AddFeatures<SchedulerAssemblyMarker>();
 #pragma warning disable ASP0000
         using var bootstrapProvider = builder.Services.BuildServiceProvider();
@@ -111,7 +109,6 @@ internal static class ProductionCompositionTestEnvironment
     {
         var builder = CreateBuilder();
 
-        using var _ = FeatureEnvironment.Live();
         builder.Services.AddFeatures<Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging.ServiceBusOptions>();
 #pragma warning disable ASP0000
         using var bootstrapProvider = builder.Services.BuildServiceProvider();
@@ -135,7 +132,6 @@ internal static class ProductionCompositionTestEnvironment
     {
         var builder = CreateBuilder();
 
-        using var _ = FeatureEnvironment.Live();
         builder.Services.AddFeatures<OrchestratorAssemblyMarker>();
 #pragma warning disable ASP0000
         using var bootstrapProvider = builder.Services.BuildServiceProvider();
@@ -185,7 +181,6 @@ internal static class ProductionCompositionTestEnvironment
     {
         var builder = CreateBuilder();
 
-        using var _ = FeatureEnvironment.Live();
         builder.Services.AddFeatures<ProjectorAssemblyMarker>();
 #pragma warning disable ASP0000
         using var bootstrapProvider = builder.Services.BuildServiceProvider();

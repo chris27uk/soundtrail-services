@@ -1,6 +1,9 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions.EventSourcing;
+using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
+using Soundtrail.Domain.Catalog.Playlists;
+using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Aggregates;
@@ -39,6 +42,61 @@ internal sealed class OnKnownMusicDataRequestedHandlerUnitTestEnvironment
         string correlationId = "corr-1") =>
         new(
             new CatalogItemOperation.ChildTracksForArtist(ArtistId.From(artistId)),
+            LookupPriorityBand.High,
+            trustLevel,
+            riskScore,
+            requestedAt ?? new DateTimeOffset(2026, 7, 16, 10, 0, 0, TimeSpan.Zero))
+        {
+            CommandId = CommandId.For(commandId),
+            CorrelationId = CorrelationId.From(correlationId)
+        };
+
+    public static RequestKnownMusicDataCommand CreateKnownTrackRequest(
+        string trackId = "track-123",
+        int trustLevel = 100,
+        int riskScore = 0,
+        DateTimeOffset? requestedAt = null,
+        string commandId = "cmd-track",
+        string correlationId = "corr-track") =>
+        new(
+            new CatalogItemOperation.StreamingLocationForTrack(TrackId.From(trackId)),
+            LookupPriorityBand.High,
+            trustLevel,
+            riskScore,
+            requestedAt ?? new DateTimeOffset(2026, 7, 16, 10, 0, 0, TimeSpan.Zero))
+        {
+            CommandId = CommandId.For(commandId),
+            CorrelationId = CorrelationId.From(correlationId)
+        };
+
+    public static RequestKnownMusicDataCommand CreateKnownAlbumRequest(
+        string artistId = "artist-123",
+        string albumId = "album-123",
+        int trustLevel = 100,
+        int riskScore = 0,
+        DateTimeOffset? requestedAt = null,
+        string commandId = "cmd-album",
+        string correlationId = "corr-album") =>
+        new(
+            new CatalogItemOperation.ChildTracksForAlbum(AlbumId.From(artistId, albumId)),
+            LookupPriorityBand.High,
+            trustLevel,
+            riskScore,
+            requestedAt ?? new DateTimeOffset(2026, 7, 16, 10, 0, 0, TimeSpan.Zero))
+        {
+            CommandId = CommandId.For(commandId),
+            CorrelationId = CorrelationId.From(correlationId)
+        };
+
+    public static RequestKnownMusicDataCommand CreateKnownPlaylistRequest(
+        string playlistName = "road trip",
+        int trustLevel = 100,
+        int riskScore = 0,
+        DateTimeOffset? requestedAt = null,
+        string commandId = "cmd-playlist",
+        string correlationId = "corr-playlist") =>
+        new(
+            new CatalogItemOperation.ChildTracksForPlaylist(PlaylistId.FromPlaylistName(playlistName)),
             LookupPriorityBand.High,
             trustLevel,
             riskScore,

@@ -3,10 +3,11 @@ using Soundtrail.Domain.Abstractions.EventSourcing;
 
 namespace Soundtrail.Domain.Discovery.Events;
 
-public sealed record WorkDeferred(
+public sealed record WorkIgnored(
     EnrichmentTarget Target,
     LookupPriorityBand Priority,
-    DateTimeOffset NextEligibleAt,
+    DateTimeOffset? NextEligibleAt,
     int? EstimatedRetryAfterSeconds,
+    DateTimeOffset? EarliestExpectedCompletionAt,
     string Reason,
-    DateTimeOffset DeferredAt) : IDomainEvent;
+    DateTimeOffset IgnoredAt) : IDomainEvent;

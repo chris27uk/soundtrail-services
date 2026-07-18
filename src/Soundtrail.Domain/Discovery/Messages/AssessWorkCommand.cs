@@ -1,5 +1,6 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Common;
 
 namespace Soundtrail.Domain.Discovery.Assesment;
 
@@ -8,6 +9,7 @@ public sealed record AssessWorkCommand(
     CorrelationId CorrelationId,
     DateTimeOffset CreatedAt,
     EnrichmentTarget Target,
+    LookupPriorityBand Priority,
     int? TrustLevel = null,
     int? RiskScore = null) : ICommand
 {
