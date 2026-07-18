@@ -1,7 +1,9 @@
 using Soundtrail.Domain.Discovery.Assesment;
+using Soundtrail.Domain.Search;
+using Soundtrail.Services.Api.Features.Search.Contract;
 using Soundtrail.Services.Projector.Features.OnMusicDataRequested;
 
-namespace Soundtrail.Services.Tests.Unit.Projector;
+namespace Soundtrail.Services.Tests.Unit.Projector.OnMusicDataRequested;
 
 public sealed class WorkRequestedProjectsAssessWorkTests
 {
@@ -21,15 +23,15 @@ public sealed class WorkRequestedProjectsAssessWorkTests
     {
         var environment = WorkRequestedProjectorUnitTestEnvironment.Create();
         var subject = environment.CreateSubject();
-        var requestedAt = new DateTimeOffset(2026, 7, 15, 8, 11, 0, TimeSpan.Zero);
-        var @event = WorkRequestedProjectorUnitTestEnvironment.CreateSearchCriteriaWorkRequested(
-            query: "u2",
-            trustLevel: 100,
-            riskScore: 0,
-            requestedAt: requestedAt,
-            correlationId: "correlation-1");
 
-        await subject.Handle(@event);
+        await subject.Handle(
+            WorkRequestedProjectorUnitTestEnvironment.CreateSearchCriteriaWorkRequested(
+                query: "u2",
+                searchType: SearchType.Artist,
+                trustLevel: 100,
+                riskScore: 0,
+                requestedAt: new DateTimeOffset(2026, 7, 15, 8, 11, 0, TimeSpan.Zero),
+                correlationId: "correlation-1"));
 
         environment.CommandBus.Commands.Cast<AssessWorkCommand>().Single().CommandId.Value
             .Should().Be("AssessWork:search:u2:100:0:correlation-1");
@@ -47,15 +49,24 @@ public sealed class WorkRequestedProjectsAssessWorkTests
     }
 
     [Fact]
-    public async Task Given_A_WorkRequested_Event_When_Projecting_Then_Trust_And_Risk_Are_Preserved()
+    public async Task Given_A_WorkRequested_Event_When_Projecting_Then_The_Trust_Level_Is_Preserved()
     {
         var environment = WorkRequestedProjectorUnitTestEnvironment.Create();
         var subject = environment.CreateSubject();
 
-        await subject.Handle(WorkRequestedProjectorUnitTestEnvironment.CreateSearchCriteriaWorkRequested(trustLevel: 77, riskScore: 12));
+        await subject.Handle(WorkRequestedProjectorUnitTestEnvironment.CreateSearchCriteriaWorkRequested(trustLevel: 77));
 
-        var command = environment.CommandBus.Commands.Cast<AssessWorkCommand>().Single();
-        command.TrustLevel.Should().Be(77);
-        command.RiskScore.Should().Be(12);
+        environment.CommandBus.Commands.Cast<AssessWorkCommand>().Single().TrustLevel.Should().Be(77);
+    }
+
+    [Fact]
+    public async Task Given_A_WorkRequested_Event_When_Projecting_Then_The_Risk_Score_Is_Preserved()
+    {
+        var environment = WorkRequestedProjectorUnitTestEnvironment.Create();
+        var subject = environment.CreateSubject();
+
+        await subject.Handle(WorkRequestedProjectorUnitTestEnvironment.CreateSearchCriteriaWorkRequested(riskScore: 12));
+
+        environment.CommandBus.Commands.Cast<AssessWorkCommand>().Single().RiskScore.Should().Be(12);
     }
 }

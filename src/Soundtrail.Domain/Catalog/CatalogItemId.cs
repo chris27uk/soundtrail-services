@@ -9,11 +9,11 @@ namespace Soundtrail.Domain.Catalog;
 [Union]
 public partial record CatalogItemId
 {
-    public partial record Track(TrackId Value);
+    public partial record Track(TrackId Id);
 
-    public partial record Artist(ArtistId Value);
+    public partial record Artist(ArtistId Id);
 
-    public partial record Album(AlbumId Value);
+    public partial record Album(AlbumId Id);
 
     public partial record Playlist(PlaylistId Value);
 

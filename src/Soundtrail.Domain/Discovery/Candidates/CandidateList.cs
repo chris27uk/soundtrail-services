@@ -1,3 +1,4 @@
+using Soundtrail.Domain.Catalog;
 using System.Collections;
 
 namespace Soundtrail.Domain.Discovery.Candidates;
@@ -19,7 +20,7 @@ public sealed class CandidateList : IEnumerable<ScoredCandidate>
     {
         var allCandidates = result switch
         {
-            CandidatesResult.Results found => found.Value
+            CandidatesResult.Results found => found.CandidateList
                 .OrderByDescending(candidate => candidate.Score)
                 .ToArray(),
             CandidatesResult.None => [],
@@ -40,6 +41,8 @@ public sealed class CandidateList : IEnumerable<ScoredCandidate>
         return new CandidateList(qualified);
     }
 
+    public CatalogItemId[] Ids => this.candidates.Select(candidate => candidate.Id).ToArray();
+    
     public IEnumerator<ScoredCandidate> GetEnumerator() => this.candidates.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

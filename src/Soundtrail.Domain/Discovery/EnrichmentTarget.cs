@@ -1,20 +1,20 @@
 using Dunet;
-using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Domain.Discovery;
 
 [Union]
 public partial record EnrichmentTarget
 {
-    public partial record Unknown(Search.SearchCriteria Value);
-
-    public partial record Existing(CatalogItemId Value);
-
+    public partial record SearchForUnknownCatalogItem(SearchCriteria Criteria);
+    
+    public partial record KnownCatalogItemOperation(CatalogItemOperation Operation);
+    
     public string NormalisedIdentifier =>
         this switch
         {
-            Unknown(var searchCriteria) => searchCriteria.NormalisedIdentifier,
-            Existing(var itemId) => $"catalog-item:{itemId.NormalisedIdentifier}",
+            SearchForUnknownCatalogItem(var searchCriteria) => searchCriteria.NormalisedIdentifier,
+            KnownCatalogItemOperation(var operation) => operation.StableIdentifier(),
             _ => throw new InvalidOperationException($"Unsupported catalog item resource type '{GetType().Name}'.")
         };
 }

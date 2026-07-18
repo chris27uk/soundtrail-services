@@ -1,9 +1,9 @@
 using Soundtrail.Adapters.Registry;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
-using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
+using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
@@ -38,47 +38,108 @@ public sealed class DiscoveryEventTranslationRegistration : ITypeTranslationRegi
     private static string GetResourceKind(EnrichmentTarget target) =>
         target switch
         {
-            EnrichmentTarget.Unknown => "search-criteria",
-            EnrichmentTarget.Existing => "catalog-item",
+            EnrichmentTarget.SearchForUnknownCatalogItem => "search-criteria",
+            EnrichmentTarget.KnownCatalogItemOperation(var operation) => GetOperationResourceKind(operation),
             _ => throw new InvalidOperationException($"Unsupported enrichment filter '{target.GetType().Name}'.")
         };
 
     private static string GetResourceValue(EnrichmentTarget target) =>
         target switch
         {
-            EnrichmentTarget.Unknown(var searchCriteria) => searchCriteria.Query,
-            EnrichmentTarget.Existing(var itemId) => itemId.NormalisedIdentifier,
+            EnrichmentTarget.SearchForUnknownCatalogItem(var searchCriteria) => searchCriteria.Query,
+            EnrichmentTarget.KnownCatalogItemOperation(var operation) => GetOperationResourceValue(operation),
             _ => throw new InvalidOperationException($"Unsupported enrichment filter '{target.GetType().Name}'.")
         };
 
     private static string? GetResourceItemKind(EnrichmentTarget target) =>
         target switch
         {
-            EnrichmentTarget.Existing(var itemId) => itemId switch
-            {
-                CatalogItemId.Track => "track",
-                CatalogItemId.Artist => "artist",
-                CatalogItemId.Album => "album",
-                CatalogItemId.Playlist => "playlist",
-                _ => throw new InvalidOperationException($"Unsupported catalog item id '{itemId.GetType().Name}'.")
-            },
+            EnrichmentTarget.KnownCatalogItemOperation(var operation) => GetOperationResourceItemKind(operation),
             _ => null
         };
 
     private static EnrichmentTarget ParseFilter(string resourceKind, string resourceValue, string? resourceItemKind) =>
         resourceKind switch
         {
-            "search-criteria" => new EnrichmentTarget.Unknown(new SearchCriteria(resourceValue)),
-            "catalog-item" => new EnrichmentTarget.Existing(ParseCatalogItemId(resourceValue, resourceItemKind)),
+            "search-criteria" => new EnrichmentTarget.SearchForUnknownCatalogItem(new SearchCriteria(resourceValue)),
+            "streaming_location_for_track" => new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.StreamingLocationForTrack(ParseTrackId(resourceValue, resourceItemKind))),
+            "child_albums_for_artist" => new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.ChildAlbumsForArtist(ParseArtistId(resourceValue, resourceItemKind))),
+            "child_tracks_for_artist" => new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.ChildTracksForArtist(ParseArtistId(resourceValue, resourceItemKind))),
+            "child_tracks_for_album" => new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.ChildTracksForAlbum(ParseAlbumId(resourceValue, resourceItemKind))),
+            "child_tracks_for_playlist" => new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.ChildTracksForPlaylist(ParsePlaylistId(resourceValue, resourceItemKind))),
             _ => throw new InvalidOperationException($"Unsupported resource kind '{resourceKind}'.")
         };
 
-    private static CatalogItemId ParseCatalogItemId(string resourceValue, string? resourceItemKind) =>
-        resourceItemKind switch
+    private static string GetOperationResourceKind(CatalogItemOperation operation) =>
+        operation switch
         {
-            "track" => new CatalogItemId.Track(TrackId.From(resourceValue)),
-            "artist" => new CatalogItemId.Artist(ArtistId.From(resourceValue)),
-            "album" => new CatalogItemId.Album(AlbumId.From(resourceValue)),
-            _ => throw new InvalidOperationException($"Unsupported resource item kind '{resourceItemKind}'.")
+            CatalogItemOperation.ChildAlbumsForArtist => "child_albums_for_artist",
+            CatalogItemOperation.ChildTracksForArtist => "child_tracks_for_artist",
+            CatalogItemOperation.ChildTracksForAlbum => "child_tracks_for_album",
+            CatalogItemOperation.ChildTracksForPlaylist => "child_tracks_for_playlist",
+            CatalogItemOperation.StreamingLocationForTrack => "streaming_location_for_track",
+            _ => throw new InvalidOperationException($"Unsupported catalog item operation '{operation.GetType().Name}'.")
         };
+
+    private static string GetOperationResourceValue(CatalogItemOperation operation) =>
+        operation switch
+        {
+            CatalogItemOperation.ChildAlbumsForArtist(var artistId) => artistId.Value,
+            CatalogItemOperation.ChildTracksForArtist(var artistId) => artistId.Value,
+            CatalogItemOperation.ChildTracksForAlbum(var albumId) => albumId.StableValue,
+            CatalogItemOperation.ChildTracksForPlaylist(var playlistId) => playlistId.Value,
+            CatalogItemOperation.StreamingLocationForTrack(var trackId) => trackId.Value,
+            _ => throw new InvalidOperationException($"Unsupported catalog item operation '{operation.GetType().Name}'.")
+        };
+
+    private static string GetOperationResourceItemKind(CatalogItemOperation operation) =>
+        operation switch
+        {
+            CatalogItemOperation.StreamingLocationForTrack => "track",
+            CatalogItemOperation.ChildAlbumsForArtist => "artist",
+            CatalogItemOperation.ChildTracksForArtist => "artist",
+            CatalogItemOperation.ChildTracksForAlbum => "album",
+            CatalogItemOperation.ChildTracksForPlaylist => "playlist",
+            _ => throw new InvalidOperationException($"Unsupported catalog item operation '{operation.GetType().Name}'.")
+        };
+
+    private static TrackId ParseTrackId(string resourceValue, string? resourceItemKind)
+    {
+        if (resourceItemKind != "track")
+        {
+            throw new InvalidOperationException($"Unsupported resource item kind '{resourceItemKind}'.");
+        }
+
+        return TrackId.From(resourceValue);
+    }
+
+    private static ArtistId ParseArtistId(string resourceValue, string? resourceItemKind)
+    {
+        if (resourceItemKind != "artist")
+        {
+            throw new InvalidOperationException($"Unsupported resource item kind '{resourceItemKind}'.");
+        }
+
+        return ArtistId.From(resourceValue);
+    }
+
+    private static AlbumId ParseAlbumId(string resourceValue, string? resourceItemKind)
+    {
+        if (resourceItemKind != "album")
+        {
+            throw new InvalidOperationException($"Unsupported resource item kind '{resourceItemKind}'.");
+        }
+
+        return AlbumId.From(resourceValue);
+    }
+
+    private static PlaylistId ParsePlaylistId(string resourceValue, string? resourceItemKind)
+    {
+        if (resourceItemKind != "playlist")
+        {
+            throw new InvalidOperationException($"Unsupported resource item kind '{resourceItemKind}'.");
+        }
+
+        return PlaylistId.FromPlaylistName(resourceValue);
+    }
 }

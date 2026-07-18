@@ -7,9 +7,8 @@ using Soundtrail.Adapters.Registry;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Discovery.Events;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicDataRequested;
 
-namespace Soundtrail.Services.Projector.Features.OnMusicDataRequested.Adapters;
+namespace Soundtrail.Services.Internal.Projector.Features.OnMusicDataRequested.Adapters;
 
 internal sealed class WorkRequestedCdcService(
     IServiceScopeFactory scopeFactory,
@@ -22,12 +21,12 @@ internal sealed class WorkRequestedCdcService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        changes = documentStore.Changes();
-        await changes.EnsureConnectedNow();
+        this.changes = documentStore.Changes();
+        await this.changes.EnsureConnectedNow();
 
         await CatchUpAsync(stoppingToken);
 
-        subscription = changes
+        this.subscription = this.changes
             .ForDocumentsInCollection(nameof(RavenStoredEventRecord))
             .Subscribe(new DocumentChangeObserver(change =>
             {
@@ -48,14 +47,14 @@ internal sealed class WorkRequestedCdcService(
 
     public override void Dispose()
     {
-        subscription?.Dispose();
-        gate.Dispose();
+        this.subscription?.Dispose();
+        this.gate.Dispose();
         base.Dispose();
     }
 
     private async Task CatchUpAsync(CancellationToken cancellationToken)
     {
-        if (!await gate.WaitAsync(TimeSpan.Zero, cancellationToken))
+        if (!await this.gate.WaitAsync(TimeSpan.Zero, cancellationToken))
         {
             return;
         }
@@ -105,7 +104,7 @@ internal sealed class WorkRequestedCdcService(
         }
         finally
         {
-            gate.Release();
+            this.gate.Release();
         }
     }
 

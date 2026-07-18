@@ -12,8 +12,8 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddCatalogSearchEventStreamRepository(this IServiceCollection services)
     {
-        services.TryAddScoped<IEventStreamRepository<CatalogSearchId, IDomainEvent>>(
-            sp => new RavenEventStreamRepository<CatalogSearchId, IDomainEvent>(
+        services.TryAddScoped<IEventStreamRepository<CatalogWorkId>>(
+            sp => new RavenEventStreamRepository<CatalogWorkId>(
                 sp.GetRequiredService<IAsyncDocumentSession>(),
                 sp.GetRequiredService<ITypeRegistry>(),
                 CatalogSearchEventStreamDefinition.Create()));

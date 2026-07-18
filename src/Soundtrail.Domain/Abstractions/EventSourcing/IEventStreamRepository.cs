@@ -2,16 +2,16 @@ using Soundtrail.Contracts.Common;
 
 namespace Soundtrail.Domain.Abstractions.EventSourcing;
 
-public interface IEventStreamRepository<TStreamId, TEvent>
+public interface IEventStreamRepository<TStreamId>
     where TStreamId : IValueType
 {
-    Task<LoadedEventStream<TStreamId, TEvent>> LoadAsync(
+    Task<LoadedEventStream<TStreamId>> LoadAsync(
         TStreamId streamId,
         CancellationToken cancellationToken);
 
-    Task<AppendResult<TEvent>> AppendAsync(
-        LoadedEventStream<TStreamId, TEvent> stream,
-        IReadOnlyList<TEvent> events,
+    Task<AppendResult> AppendAsync(
+        LoadedEventStream<TStreamId> stream,
+        IReadOnlyList<IDomainEvent> events,
         OperationId? operationId,
         CancellationToken cancellationToken);
 }

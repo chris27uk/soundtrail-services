@@ -4,6 +4,7 @@ using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.GetTracksForArtist.Adapters;
 using Soundtrail.Services.Api.Features.GetTracksForArtist.Contract;
 
@@ -18,9 +19,8 @@ public sealed class GetTracksForArtistHandler(
     {
         var requestedAt = clock.UtcNow;
         await commandBus.SendAsync(
-            new SearchForCatalogItemsCommand(
-                new EnrichmentTarget.Existing(new CatalogItemId.Artist(request.ArtistId)),
-                RequiredCatalogType.Tracks,
+            new RequestKnownMusicDataCommand(
+                new CatalogItemOperation.ChildTracksForArtist(request.ArtistId),
                 LookupPriorityBand.High,
                 100,
                 0,

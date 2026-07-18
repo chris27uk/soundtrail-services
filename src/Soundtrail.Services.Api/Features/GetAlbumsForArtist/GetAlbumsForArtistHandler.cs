@@ -1,10 +1,7 @@
 using Soundtrail.Adapters.Timing;
-using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Services.Api.Features.GetAlbumsForArtist.Adapters;
 using Soundtrail.Services.Api.Features.GetAlbumsForArtist.Contract;
 
@@ -19,9 +16,8 @@ public sealed class GetAlbumsForArtistHandler(
     {
         var requestedAt = clock.UtcNow;
         await commandBus.SendAsync(
-            new SearchForCatalogItemsCommand(
-                new EnrichmentTarget.Existing(new CatalogItemId.Artist(request.ArtistId)),
-                RequiredCatalogType.Albums,
+            new RequestKnownMusicDataCommand(
+                new CatalogItemOperation.ChildAlbumsForArtist(request.ArtistId),
                 LookupPriorityBand.High,
                 100,
                 0,

@@ -1,13 +1,12 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Common;
-using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Domain.Discovery;
 
-public sealed record SearchForCatalogItemsCommand(
-    EnrichmentTarget Target,
-    RequiredCatalogType RequiredCatalogType,
+public sealed record RequestUnknownMusicDataCommand(
+    SearchCriteria SearchCriteria,
     LookupPriorityBand Priority,
     int TrustLevel,
     int RiskScore,

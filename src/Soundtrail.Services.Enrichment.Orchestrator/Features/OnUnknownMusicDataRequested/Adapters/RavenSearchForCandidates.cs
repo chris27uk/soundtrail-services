@@ -10,7 +10,7 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Candidates;
 using Soundtrail.Services.Api.Features.Search.Contract;
 
-namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicDataRequested.Adapters;
+namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnUnknownMusicDataRequested.Adapters;
 
 public sealed class RavenSearchForCandidates(IDocumentStore documentStore) : ISearchForCandidates
 {
@@ -20,7 +20,7 @@ public sealed class RavenSearchForCandidates(IDocumentStore documentStore) : ISe
     
     public CandidatesResult Search(EnrichmentTarget target)
     {
-        if (target is not EnrichmentTarget.Unknown(var searchCriteria))
+        if (target is not EnrichmentTarget.SearchForUnknownCatalogItem(var searchCriteria))
         {
             return new CandidatesResult.None();
         }
@@ -29,7 +29,7 @@ public sealed class RavenSearchForCandidates(IDocumentStore documentStore) : ISe
         IQueryable<CatalogSearchCandidateRecordDto> query = session.Query<CatalogSearchCandidateRecordDto>()
             .Search(x => x.SearchText, searchCriteria.Query);
 
-        if (searchCriteria.SearchTypes != SearchFilter.All)
+        if (searchCriteria.SearchTypes != SearchType.All)
         {
             query = query.Where(x => x.CandidateKind == searchCriteria.SearchTypes.ToString());
         }

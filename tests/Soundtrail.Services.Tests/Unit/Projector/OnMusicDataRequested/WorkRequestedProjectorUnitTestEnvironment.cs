@@ -4,10 +4,10 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Assesment;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Search;
+using Soundtrail.Services.Api.Features.Search.Contract;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicDataRequested;
-using Soundtrail.Services.Projector.Features.OnMusicDataRequested;
 
-namespace Soundtrail.Services.Tests.Unit.Projector;
+namespace Soundtrail.Services.Tests.Unit.Projector.OnMusicDataRequested;
 
 internal sealed class WorkRequestedProjectorUnitTestEnvironment
 {
@@ -24,12 +24,13 @@ internal sealed class WorkRequestedProjectorUnitTestEnvironment
 
     public static WorkRequested CreateSearchCriteriaWorkRequested(
         string query = "u2",
+        SearchType searchType = SearchType.Artist,
         int? trustLevel = 100,
         int? riskScore = 0,
         DateTimeOffset? requestedAt = null,
         string correlationId = "correlation-1") =>
         new(
-            new EnrichmentTarget.Unknown(new SearchCriteria(query)),
+            new EnrichmentTarget.SearchForUnknownCatalogItem(new SearchCriteria(query, searchType)),
             trustLevel,
             riskScore,
             requestedAt ?? new DateTimeOffset(2026, 7, 15, 8, 11, 0, TimeSpan.Zero),

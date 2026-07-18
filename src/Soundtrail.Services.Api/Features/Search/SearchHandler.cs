@@ -21,9 +21,8 @@ public sealed class SearchHandler(
         var requestedAt = clock.UtcNow;
 
         await commandBus.SendAsync(
-            new SearchForCatalogItemsCommand(
-                new EnrichmentTarget.Unknown(searchCriteria),
-                RequiredCatalogType.None,
+            new RequestUnknownMusicDataCommand(
+                searchCriteria,
                 LookupPriorityBand.High,
                 100,
                 0,

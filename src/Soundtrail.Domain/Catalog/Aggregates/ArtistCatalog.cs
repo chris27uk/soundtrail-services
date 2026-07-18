@@ -30,8 +30,8 @@ public sealed class ArtistCatalog
         }
     }
 
-    public static async Task<(LoadedEventStream<ArtistId, IDomainEvent> Stream, ArtistCatalog Aggregate)> LoadAsync(
-        IEventStreamRepository<ArtistId, IDomainEvent> repository,
+    public static async Task<(LoadedEventStream<ArtistId> Stream, ArtistCatalog Aggregate)> LoadAsync(
+        IEventStreamRepository<ArtistId> repository,
         ArtistId artistId,
         CancellationToken cancellationToken)
     {
@@ -55,8 +55,8 @@ public sealed class ArtistCatalog
     private void AddArtist(Artist artist) => this.Apply(new ArtistDiscovered(artist, ObservedAt: DateTimeOffset.UtcNow), true);
 
     public async Task SaveAsync(
-        IEventStreamRepository<ArtistId, IDomainEvent> repository,
-        LoadedEventStream<ArtistId, IDomainEvent> stream,
+        IEventStreamRepository<ArtistId> repository,
+        LoadedEventStream<ArtistId> stream,
         CommandId commandId,
         CancellationToken cancellationToken)
     {
@@ -123,7 +123,7 @@ public sealed class ArtistCatalog
     private void On(StreamingLocationDiscovered @event)
     {
         var trackId = @event.MusicCatalogId?.Match(
-            track => track.Value,
+            track => track.Id,
             _ => throw new InvalidOperationException("Provider reference facts in artist catalog must refer to a track."),
             _ => throw new InvalidOperationException("Provider reference facts in artist catalog must refer to a track."),
             _ => throw new InvalidOperationException("Provider reference facts in artist catalog must refer to a track."))
@@ -142,9 +142,9 @@ public sealed class ArtistCatalog
     private void On(ArtworkDiscovered @event)
     {
         @event.CatalogItemId.Match(
-            trackId => UpdateTrackArtwork(trackId.Value, @event.Url, @event.ObservedAt), 
+            trackId => UpdateTrackArtwork(trackId.Id, @event.Url, @event.ObservedAt), 
             _ => UpdateArtistArtwork(@event.Url), 
-            albumId => UpdateAlbumArtwork(albumId.Value, @event.Url, @event.ObservedAt),
+            albumId => UpdateAlbumArtwork(albumId.Id, @event.Url, @event.ObservedAt),
             _ => { });
     }
 

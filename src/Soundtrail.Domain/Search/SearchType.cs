@@ -1,6 +1,6 @@
 namespace Soundtrail.Services.Api.Features.Search.Contract
 {
-    public enum SearchFilter
+    public enum SearchType
     {
         Artist,
         Album,

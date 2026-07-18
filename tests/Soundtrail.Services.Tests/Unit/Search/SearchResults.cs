@@ -8,9 +8,9 @@ internal static class SearchResults
 {
     public static SearchResponse CreateResponse(
         string queryText = "u2",
-        SearchFilter filter = SearchFilter.Artist,
+        SearchType filter = SearchType.Artist,
         CatalogItemId? musicCatalogId = null,
-        SearchFilter? resultType = null,
+        SearchType? resultType = null,
         string title = "U2",
         string? artistName = null,
         string? albumTitle = null,

@@ -6,7 +6,7 @@ namespace Soundtrail.Domain.Discovery.Candidates
     [Union]
     public partial record CandidatesResult
     {
-        public partial record Results(CandidateList Value);
+        public partial record Results(CandidateList CandidateList);
 
         partial record None;
     }

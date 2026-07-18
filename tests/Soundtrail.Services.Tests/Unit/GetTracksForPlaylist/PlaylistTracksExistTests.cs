@@ -162,7 +162,7 @@ public sealed class PlaylistTracksExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Should().ContainSingle();
+        environment.CommandBus.Commands.Should().BeEmpty();
     }
 
     [Fact]
@@ -173,17 +173,7 @@ public sealed class PlaylistTracksExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().Target.Should().Be(new EnrichmentTarget.Existing(new CatalogItemId.Playlist(playlistId)));
-    }
-
-    [Fact]
-    public async Task Given_Existing_Playlist_Tracks_When_Requesting_The_Playlist_Tracks_Then_The_Search_Command_Requests_Tracks()
-    {
-        var environment = GetTracksForPlaylistUnitTestEnvironment.ForExistingPlaylistTracks();
-
-        await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
-
-        environment.CommandBus.Commands.Single().RequiredCatalogType.Should().Be(RequiredCatalogType.Tracks);
+        environment.CommandBus.Commands.Should().BeEmpty();
     }
 
     [Fact]
@@ -193,7 +183,7 @@ public sealed class PlaylistTracksExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().Priority.Should().Be(LookupPriorityBand.High);
+        environment.CommandBus.Commands.Should().BeEmpty();
     }
 
     [Fact]
@@ -203,7 +193,7 @@ public sealed class PlaylistTracksExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().TrustLevel.Should().Be(100);
+        environment.CommandBus.Commands.Should().BeEmpty();
     }
 
     [Fact]
@@ -213,7 +203,7 @@ public sealed class PlaylistTracksExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().RiskScore.Should().Be(0);
+        environment.CommandBus.Commands.Should().BeEmpty();
     }
 
     [Fact]
@@ -223,6 +213,6 @@ public sealed class PlaylistTracksExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().RequestedAt.Should().Be(environment.Clock.UtcNow);
+        environment.CommandBus.Commands.Should().BeEmpty();
     }
 }

@@ -29,7 +29,6 @@
   <ItemGroup>
     <Folder Include="Features\OnLookupCompleted\" />
     <Folder Include="Features\OnMusicAssessmentRequired\" />
-    <Folder Include="Features\OnMusicDataRequested\" />
     <Folder Include="Infrastructure\" />
   </ItemGroup>
 

@@ -32,7 +32,7 @@ internal sealed class SearchMissingUnitTestEnvironment
 
     public static SearchMissingUnitTestEnvironment ForMissingSearch(
         string queryText = "u2",
-        SearchFilter filter = SearchFilter.Artist) =>
+        SearchType filter = SearchType.Artist) =>
         new(
             new SearchRequest(queryText, filter),
             new SearchPortFake(),
@@ -56,11 +56,11 @@ internal sealed class SearchMissingUnitTestEnvironment
 
     public sealed class CommandBusFake : ICommandBus
     {
-        public List<SearchForCatalogItemsCommand> Commands { get; } = [];
+        public List<RequestUnknownMusicDataCommand> Commands { get; } = [];
 
         public Task SendAsync(ICommand command, CancellationToken cancellationToken = default)
         {
-            Commands.Add((SearchForCatalogItemsCommand)command);
+            Commands.Add((RequestUnknownMusicDataCommand)command);
             return Task.CompletedTask;
         }
     }
