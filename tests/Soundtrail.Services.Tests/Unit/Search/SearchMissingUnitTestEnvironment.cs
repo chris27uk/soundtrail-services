@@ -13,11 +13,13 @@ internal sealed class SearchMissingUnitTestEnvironment
     private SearchMissingUnitTestEnvironment(
         SearchRequest request,
         SearchPortFake port,
+        DiscoveryFeedbackPortFake discoveryFeedbackPort,
         CommandBusFake commandBus,
         ClockPortFake clock)
     {
         Request = request;
         Port = port;
+        DiscoveryFeedbackPort = discoveryFeedbackPort;
         CommandBus = commandBus;
         Clock = clock;
     }
@@ -25,6 +27,8 @@ internal sealed class SearchMissingUnitTestEnvironment
     public SearchRequest Request { get; }
 
     public SearchPortFake Port { get; }
+
+    public DiscoveryFeedbackPortFake DiscoveryFeedbackPort { get; }
 
     public CommandBusFake CommandBus { get; }
 
@@ -36,10 +40,11 @@ internal sealed class SearchMissingUnitTestEnvironment
         new(
             new SearchRequest(queryText, filter),
             new SearchPortFake(),
+            new DiscoveryFeedbackPortFake(),
             new CommandBusFake(),
             new ClockPortFake(new DateTimeOffset(2024, 6, 7, 8, 9, 10, TimeSpan.Zero)));
 
-    public SearchHandler CreateSubjectUnderTest() => new(Port, CommandBus, Clock);
+    public SearchHandler CreateSubjectUnderTest() => new(Port, CommandBus, DiscoveryFeedbackPort, Clock);
 
     public SearchRequest CreateRequest() => Request;
 
@@ -63,6 +68,12 @@ internal sealed class SearchMissingUnitTestEnvironment
             Commands.Add((RequestUnknownMusicDataCommand)command);
             return Task.CompletedTask;
         }
+    }
+
+    public sealed class DiscoveryFeedbackPortFake : IDiscoveryFeedbackPort
+    {
+        public Task<DiscoveryFeedbackResponse?> GetAsync(EnrichmentTarget target, CancellationToken cancellationToken) =>
+            Task.FromResult<DiscoveryFeedbackResponse?>(null);
     }
 
     public sealed class ClockPortFake(DateTimeOffset utcNow) : IClockPort

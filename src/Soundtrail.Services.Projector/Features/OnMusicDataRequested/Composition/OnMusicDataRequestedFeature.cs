@@ -5,7 +5,6 @@ using Microsoft.Extensions.Hosting;
 using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Adapters.Messaging;
 using Soundtrail.Adapters.Persistence;
-using Soundtrail.Domain.Abstractions;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicDataRequested;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicDataRequested.Adapters;
 using Soundtrail.Services.Projector.Features.OnMusicDataRequested.Adapters;

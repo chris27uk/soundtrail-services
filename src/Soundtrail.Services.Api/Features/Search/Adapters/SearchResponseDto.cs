@@ -3,7 +3,8 @@ namespace Soundtrail.Services.Api.Features.Search.Registrations;
 public sealed record SearchResponseDto(
     string QueryText,
     string Filter,
-    SearchResultResponseDto[] Results);
+    SearchResultResponseDto[] Results,
+    DiscoveryFeedbackResponseDto? Discovery);
 
 public sealed record SearchResultResponseDto(
     string MusicCatalogId,
@@ -12,3 +13,11 @@ public sealed record SearchResultResponseDto(
     string? ArtistName,
     string? AlbumTitle,
     string? ArtworkUrl);
+
+public sealed record DiscoveryFeedbackResponseDto(
+    string Status,
+    string Priority,
+    DateTimeOffset? NextEligibleAtUtc,
+    DateTimeOffset? EarliestExpectedCompletionAtUtc,
+    string Reason,
+    DateTimeOffset UpdatedAtUtc);

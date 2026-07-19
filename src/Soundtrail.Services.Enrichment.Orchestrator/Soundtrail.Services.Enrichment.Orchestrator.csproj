@@ -27,7 +27,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Features\OnLookupCompleted\" />
+    <Folder Include="Features\Processing\OnLookupCompleted\" />
+    <Folder Include="Features\Prioritisation\" />
+    <Folder Include="Features\IncomingWork\" />
     <Folder Include="Infrastructure\" />
   </ItemGroup>
 

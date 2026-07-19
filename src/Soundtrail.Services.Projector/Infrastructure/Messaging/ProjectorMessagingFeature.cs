@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Domain.Discovery.Assesment;
+using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Services.Projector.Infrastructure;
 using Soundtrail.Services.ServiceDefaults;
 using Wolverine;
@@ -47,5 +48,8 @@ public sealed class ProjectorMessagingFeature : IProjectorFeature
 
         options.PublishMessage<AssessWorkCommand>()
             .ToAzureServiceBusQueue(serviceBusOptions.AssessMusicCatalogItemQueueName);
+
+        options.PublishMessage<DispatchLookupWork>()
+            .ToAzureServiceBusQueue(serviceBusOptions.DispatchLookupWorkQueueName);
     }
 }

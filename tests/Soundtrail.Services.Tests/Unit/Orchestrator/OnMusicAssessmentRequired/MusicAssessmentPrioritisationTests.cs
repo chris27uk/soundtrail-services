@@ -1,6 +1,7 @@
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.Prioritisation.OnMusicAssessmentRequired.Planning;
 
 namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnMusicAssessmentRequired;
 
@@ -20,7 +21,7 @@ public sealed class MusicAssessmentPrioritisationTests
     [Fact]
     public async Task Given_A_Low_Priority_Request_When_High_Priority_Headroom_Is_Reserved_Then_Work_Is_Deferred()
     {
-        var environment = OnMusicAssessmentRequiredHandlerUnitTestEnvironment.Create(new Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicAssessmentRequired.Planning.PlanningAssessmentOptions
+        var environment = OnMusicAssessmentRequiredHandlerUnitTestEnvironment.Create(new PlanningAssessmentOptions
         {
             MaxConcurrentPlannedWork = 10,
             ReservedSlotsForHighPriority = 3,
@@ -86,7 +87,7 @@ public sealed class MusicAssessmentPrioritisationTests
     [Fact]
     public async Task Given_A_High_Priority_Request_When_Low_Priority_Capacity_Is_Reserved_Then_Work_Is_Still_Scheduled()
     {
-        var environment = OnMusicAssessmentRequiredHandlerUnitTestEnvironment.Create(new Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicAssessmentRequired.Planning.PlanningAssessmentOptions
+        var environment = OnMusicAssessmentRequiredHandlerUnitTestEnvironment.Create(new PlanningAssessmentOptions
         {
             MaxConcurrentPlannedWork = 10,
             ReservedSlotsForHighPriority = 3,
