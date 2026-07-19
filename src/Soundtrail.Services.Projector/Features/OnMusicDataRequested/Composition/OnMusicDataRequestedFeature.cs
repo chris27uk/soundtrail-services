@@ -19,8 +19,9 @@ public sealed class OnMusicDataRequestedFeature : IProjectorFeature
     {
         services.AddRavenDocumentStore(configuration);
         services.AddWolverineCommandBus();
+        services.TryAddScoped<CatalogSearchCandidateProjectorHandler>();
         services.TryAddScoped<WorkRequestedProjectorHandler>();
-        services.AddHostedService<CatalogSearchCandidateProjectionPollingService>();
+        services.AddHostedService<CatalogSearchCandidateCdcService>();
         services.AddHostedService<WorkRequestedCdcService>();
     }
 
