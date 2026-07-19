@@ -1,4 +1,5 @@
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.RequestedWork;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Shared.RequestedWork;
 
