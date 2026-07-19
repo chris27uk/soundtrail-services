@@ -9,7 +9,7 @@ public sealed class SearchRouteExistsTests
     {
         using var environment = SearchRouteTestEnvironment.ForExistingSearchResults();
 
-        var response = await environment.Client.GetAsync("/search?query=u2&filter=artist");
+        var response = await environment.Client.GetAsync("/catalog/search?query=u2&filter=artist");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }

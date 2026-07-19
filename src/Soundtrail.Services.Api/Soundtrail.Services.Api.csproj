@@ -19,13 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Features\GetAlbumsForArtist\" />
-    <Folder Include="Features\GetArtist\" />
-    <Folder Include="Features\GetTracksForAlbum\" />
-    <Folder Include="Features\GetTracksForArtist\" />
-    <Folder Include="Features\GetTracksForPlaylist\" />
-    <Folder Include="Features\GetTrack\" />
-    <Folder Include="Features\Search\" />
+    <Folder Include="Features\Catalog\" />
   </ItemGroup>
 
 </Project>

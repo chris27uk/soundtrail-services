@@ -17,6 +17,12 @@ public partial record CatalogItemId
 
     public partial record Playlist(PlaylistId Value);
 
+    public TrackId AsTrack() => this switch
+    {
+        Track track => track.Id, 
+        _ => throw new InvalidOperationException("AsTrack must refer to a track.")
+    };
+    
     public string NormalisedIdentifier =>
         this switch
         {

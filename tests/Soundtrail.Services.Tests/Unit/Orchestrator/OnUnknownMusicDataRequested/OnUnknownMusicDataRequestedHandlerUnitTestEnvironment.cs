@@ -11,7 +11,6 @@ using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Domain.Discovery.Candidates;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Api.Features.Search.Contract;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.IncomingWork.OnUnknownMusicDataRequested;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.RequestedWork;
 

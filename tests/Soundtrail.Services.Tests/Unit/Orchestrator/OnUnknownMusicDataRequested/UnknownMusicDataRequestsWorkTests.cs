@@ -5,7 +5,6 @@ using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Api.Features.Search.Contract;
 
 namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnUnknownMusicDataRequested;
 

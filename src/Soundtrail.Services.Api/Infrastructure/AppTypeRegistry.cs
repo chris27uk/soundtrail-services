@@ -1,5 +1,5 @@
 using Soundtrail.Adapters.TypeRegistry;
-using Soundtrail.Services.Api.Features.GetAlbum.Composition;
+using Soundtrail.Services.Api.Features.Catalog.GetAlbum.Composition;
 
 namespace Soundtrail.Services.Api.Infrastructure
 {

@@ -6,9 +6,11 @@ using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogTrackChanged;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Operations;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogItemChanged;
+using Soundtrail.Services.Internal.Projector.Features.OnPlaylistTracksDiscovered.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnPlaylistTracksDiscovered;
 
 namespace Soundtrail.Services.Tests.Unit.Projector.OnCatalogItemChanged;
@@ -17,22 +19,28 @@ internal sealed class CatalogItemChangedProjectorUnitTestEnvironment
 {
     private CatalogItemChangedProjectorUnitTestEnvironment(
         CommandBusFake commandBus,
-        ArtistCatalogRepositoryFake repository)
+        ArtistCatalogRepositoryFake repository,
+        StorePlaylistTracksReadModelPortFake storePlaylistTracksReadModelPort)
     {
         CommandBus = commandBus;
         Repository = repository;
+        StorePlaylistTracksReadModelPort = storePlaylistTracksReadModelPort;
     }
 
     public CommandBusFake CommandBus { get; }
 
     public ArtistCatalogRepositoryFake Repository { get; }
 
+    public StorePlaylistTracksReadModelPortFake StorePlaylistTracksReadModelPort { get; }
+
     public static CatalogItemChangedProjectorUnitTestEnvironment Create() =>
-        new(new CommandBusFake(), new ArtistCatalogRepositoryFake());
+        new(new CommandBusFake(), new ArtistCatalogRepositoryFake(), new StorePlaylistTracksReadModelPortFake());
 
     public CatalogItemChangedProjectorHandler CreateCatalogItemSubject() => new(Repository);
 
-    public PlaylistTracksDiscoveredProjectorHandler CreatePlaylistSubject() => new(CommandBus);
+    public PlaylistTracksDiscoveredProjectorHandler CreatePlaylistSubject() => new(CommandBus, StorePlaylistTracksReadModelPort);
+
+    public CatalogTrackChangedProjectorHandler CreateCatalogTrackChangedSubject() => new(StorePlaylistTracksReadModelPort);
 
     public static TrackDiscovered CreateTrackDiscovered() =>
         new(
@@ -94,6 +102,25 @@ internal sealed class CatalogItemChangedProjectorUnitTestEnvironment
         {
             AppendedEvents = events.ToArray();
             return Task.FromResult(new AppendResult(true, stream.Version + events.Count, events.ToArray(), AppendOutcome.Appended));
+        }
+    }
+
+    public sealed class StorePlaylistTracksReadModelPortFake : IStorePlaylistTracksReadModelPort
+    {
+        public PlaylistTracksDiscovered? StoredEvent { get; private set; }
+
+        public TrackId? RepairedTrackId { get; private set; }
+
+        public Task StoreAsync(PlaylistTracksDiscovered @event, CancellationToken cancellationToken)
+        {
+            StoredEvent = @event;
+            return Task.CompletedTask;
+        }
+
+        public Task RepairTrackAsync(TrackId trackId, CancellationToken cancellationToken)
+        {
+            RepairedTrackId = trackId;
+            return Task.CompletedTask;
         }
     }
 }

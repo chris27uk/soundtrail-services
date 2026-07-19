@@ -6,7 +6,9 @@ using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery.Assesment;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
+using CatalogItemOperation = Soundtrail.Domain.Discovery.CatalogItemOperation;
 
 namespace Soundtrail.Domain.Discovery.Aggregates;
 
@@ -68,7 +70,7 @@ public sealed class DiscoveryHistory
 
     public PlanningAssessmentFlow Assess(PlanningAssessment assessment) => new(this, assessment);
 
-    public void Complete(
+    public void ApplyWorkedCompleted(
         EnrichmentTarget target,
         LookupPriorityBand priority,
         string reason,
@@ -101,6 +103,22 @@ public sealed class DiscoveryHistory
         DateTimeOffset failedAt)
     {
         Apply(new WorkAttemptFailed(target, reason, failedAt), isNew: true);
+    }
+
+    public void ApplyLookupResult(LookupResult result)
+    {
+        var completion = ResolveCompletionContext();
+
+        result.Match(
+            succeeded =>
+            {
+                ApplyDataReceived(succeeded, completion.Target);
+                ApplyWorkedCompleted(completion.Target, completion.Priority, "Lookup completed.", succeeded.CompletedAt);
+            },
+            duplicate => ApplyWorkedCompleted(completion.Target, completion.Priority, duplicate.Reason, duplicate.CompletedAt),
+            notFound => FailAttempt(completion.Target, notFound.Reason, notFound.CompletedAt),
+            deferred => DeferResult(completion.Target, completion.Priority, deferred.DeferredUntil, deferred.Reason, deferred.CompletedAt),
+            failed => FailAttempt(completion.Target, failed.Reason, failed.CompletedAt));
     }
 
     public void Discover(
@@ -150,6 +168,63 @@ public sealed class DiscoveryHistory
         DateTimeOffset observedAt)
     {
         Apply(new PlaylistTracksDiscovered(playlistId, tracks, observedAt), isNew: true);
+    }
+
+    private void ApplyDataReceived(
+        LookupResult.Succeeded result,
+        EnrichmentTarget target)
+    {
+        result.Value.Match(
+            entries =>
+            {
+                foreach (var entry in entries.Values)
+                {
+                    Discover(entry, result.CompletedAt);
+                }
+
+                if (target is EnrichmentTarget.KnownCatalogItemOperation(CatalogItemOperation.ChildTracksForPlaylist(var playlistId)))
+                {
+                    DiscoverPlaylistTracks(
+                        playlistId,
+                        entries.Values
+                            .Select(entry => entry.Item)
+                            .OfType<CatalogItem.MusicTrack>()
+                            .Select(track => track.Track.TrackId)
+                            .ToArray(),
+                        result.CompletedAt);
+                }
+            },
+            link => DiscoverStreamingLocation(link.ArtistId, link.TrackId, link.Value, result.CompletedAt));
+    }
+
+    private CompletionContext ResolveCompletionContext()
+    {
+        var matchingScheduled = stream.Events
+            .OfType<WorkScheduled>()
+            .LastOrDefault(IsMatchForLookupCompletion);
+
+        if (matchingScheduled is not null)
+        {
+            return new CompletionContext(matchingScheduled.Target, matchingScheduled.Priority);
+        }
+
+        var matchingRequested = stream.Events
+            .OfType<WorkRequested>()
+            .LastOrDefault(x => x.SubsequentDeterministicId("AssessWork") == requestContext.CommandId);
+
+        if (matchingRequested is not null)
+        {
+            return new CompletionContext(matchingRequested.Target, matchingRequested.Priority);
+        }
+
+        throw new InvalidOperationException(
+            $"No matching discovery work exists for command '{requestContext.CommandId.Value}' in stream '{stream.StreamId.StableValue}'.");
+    }
+
+    private bool IsMatchForLookupCompletion(WorkScheduled scheduled)
+    {
+        var dispatchCommandId = CommandId.For($"DispatchLookupWork:{scheduled.Target.NormalisedIdentifier}:{scheduled.ScheduledAt:O}");
+        return requestContext.CommandId.Value.StartsWith($"{dispatchCommandId.Value}:", StringComparison.Ordinal);
     }
 
     private void Schedule(
@@ -268,6 +343,10 @@ public sealed class DiscoveryHistory
         int RiskScore,
         DateTimeOffset RequestedAt,
         CorrelationId CorrelationId);
+
+    private sealed record CompletionContext(
+        EnrichmentTarget Target,
+        LookupPriorityBand Priority);
 
     public sealed class PlanningAssessmentFlow
     {

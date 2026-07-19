@@ -3,9 +3,9 @@ using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Services.Api.Features.GetAlbumsForArtist;
-using Soundtrail.Services.Api.Features.GetAlbumsForArtist.Adapters;
-using Soundtrail.Services.Api.Features.GetAlbumsForArtist.Contract;
+using Soundtrail.Services.Api.Features.Catalog.GetAlbumsForArtist;
+using Soundtrail.Services.Api.Features.Catalog.GetAlbumsForArtist.Adapters;
+using Soundtrail.Services.Api.Features.Catalog.GetAlbumsForArtist.Contract;
 
 namespace Soundtrail.Services.Tests.Unit.GetAlbumsForArtist;
 

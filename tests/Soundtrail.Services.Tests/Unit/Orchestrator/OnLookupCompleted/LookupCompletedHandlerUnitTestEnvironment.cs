@@ -31,7 +31,8 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
     public static CatalogLookupCompleted CreateStreamingLocationCompleted(
         ArtistId? artistId = null,
         TrackId? trackId = null,
-        DateTimeOffset? completedAt = null)
+        DateTimeOffset? completedAt = null,
+        CommandId? originalCommandId = null)
     {
         var resolvedTrackId = trackId ?? TestTrackIds.Create("lookup-streaming-1");
         var resolvedArtistId = artistId ?? ArtistId.From("artist-lookup-1");
@@ -41,7 +42,10 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
             new LookupResult.Succeeded(
                 new LookupResultContext(
                     CatalogWorkId.From(new CatalogItemOperation.StreamingLocationForTrack(resolvedTrackId)),
-                    CommandId.For("worker-streaming-completed")),
+                    originalCommandId ?? CreateWorkerCommandIdForScheduledWork(
+                        Work.EnrichTrackStreamingLocation(resolvedTrackId),
+                        new DateTimeOffset(2026, 7, 19, 9, 45, 30, TimeSpan.Zero),
+                        "streaming-isrc:Spotify")),
                 new LookedUpData.TrackStreamingLink(
                     resolvedArtistId,
                     resolvedTrackId,
@@ -56,7 +60,8 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
 
     public static CatalogLookupCompleted CreatePlaylistCompleted(
         string playlistName = "Road Trip",
-        DateTimeOffset? completedAt = null)
+        DateTimeOffset? completedAt = null,
+        CommandId? originalCommandId = null)
     {
         var when = completedAt ?? new DateTimeOffset(2026, 7, 19, 10, 5, 0, TimeSpan.Zero);
         var playlistId = PlaylistId.FromPlaylistName(playlistName);
@@ -66,7 +71,10 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
             new LookupResult.Succeeded(
                 new LookupResultContext(
                     CatalogWorkId.From(new CatalogItemOperation.ChildTracksForPlaylist(playlistId)),
-                    CommandId.For("worker-playlist-completed")),
+                    originalCommandId ?? CreateWorkerCommandIdForScheduledWork(
+                        Work.DiscoverPlaylistTracks(playlistId),
+                        new DateTimeOffset(2026, 7, 19, 9, 50, 30, TimeSpan.Zero),
+                        "playlist:Spotify")),
                 new LookedUpData.CatalogEntries([
                     new CatalogDiscoveryEntry(
                         ArtistId.From("artist-playlist-1"),
@@ -77,7 +85,8 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
 
     public static CatalogLookupCompleted CreateDeferred(
         DateTimeOffset? completedAt = null,
-        DateTimeOffset? deferredUntil = null)
+        DateTimeOffset? deferredUntil = null,
+        CommandId? originalCommandId = null)
     {
         var when = completedAt ?? new DateTimeOffset(2026, 7, 19, 10, 10, 0, TimeSpan.Zero);
         var trackId = TestTrackIds.Create("lookup-deferred-1");
@@ -86,7 +95,10 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
             new LookupResult.Deferred(
                 new LookupResultContext(
                     CatalogWorkId.From(new CatalogItemOperation.StreamingLocationForTrack(trackId)),
-                    CommandId.For("worker-deferred-completed")),
+                    originalCommandId ?? CreateWorkerCommandIdForScheduledWork(
+                        Work.EnrichTrackStreamingLocation(trackId),
+                        new DateTimeOffset(2026, 7, 19, 9, 45, 30, TimeSpan.Zero),
+                        "streaming-isrc:Spotify")),
                 deferredUntil ?? when.AddMinutes(15),
                 "Rate limited.",
                 when));
@@ -112,6 +124,47 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
                 new DateTimeOffset(2026, 7, 19, 9, 45, 30, TimeSpan.Zero))
         ];
     }
+
+    public void SeedWithMultipleScheduledStreamingLookups(TrackId firstTrackId, TrackId secondTrackId)
+    {
+        SeedEvents =
+        [
+            new WorkRequested(
+                Work.EnrichTrackStreamingLocation(firstTrackId),
+                LookupPriorityBand.Low,
+                50,
+                5,
+                new DateTimeOffset(2026, 7, 19, 9, 40, 0, TimeSpan.Zero),
+                CorrelationId.From("corr-first")),
+            new WorkScheduled(
+                Work.EnrichTrackStreamingLocation(firstTrackId),
+                LookupPriorityBand.Low,
+                new DateTimeOffset(2026, 7, 19, 9, 41, 0, TimeSpan.Zero),
+                new DateTimeOffset(2026, 7, 19, 9, 45, 0, TimeSpan.Zero),
+                "Scheduled first.",
+                new DateTimeOffset(2026, 7, 19, 9, 40, 30, TimeSpan.Zero)),
+            new WorkRequested(
+                Work.EnrichTrackStreamingLocation(secondTrackId),
+                LookupPriorityBand.High,
+                90,
+                1,
+                new DateTimeOffset(2026, 7, 19, 9, 50, 0, TimeSpan.Zero),
+                CorrelationId.From("corr-second")),
+            new WorkScheduled(
+                Work.EnrichTrackStreamingLocation(secondTrackId),
+                LookupPriorityBand.High,
+                new DateTimeOffset(2026, 7, 19, 9, 51, 0, TimeSpan.Zero),
+                new DateTimeOffset(2026, 7, 19, 9, 55, 0, TimeSpan.Zero),
+                "Scheduled second.",
+                new DateTimeOffset(2026, 7, 19, 9, 50, 30, TimeSpan.Zero))
+        ];
+    }
+
+    public static CommandId CreateWorkerCommandIdForScheduledWork(
+        EnrichmentTarget target,
+        DateTimeOffset scheduledAt,
+        string suffix) =>
+        CommandId.For($"DispatchLookupWork:{target.NormalisedIdentifier}:{scheduledAt:O}:{suffix}");
 
     public void SeedForPlaylist(string playlistName = "Road Trip")
     {
@@ -159,8 +212,11 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
 
         public IReadOnlyList<IDomainEvent> AppendedEvents { get; private set; } = [];
 
+        public int LoadCalls { get; private set; }
+
         public Task<LoadedEventStream<CatalogWorkId>> LoadAsync(CatalogWorkId streamId, CancellationToken cancellationToken)
         {
+            LoadCalls++;
             return Task.FromResult(
                 SeedEvents.Count == 0
                     ? LoadedEventStream<CatalogWorkId>.Empty(streamId)

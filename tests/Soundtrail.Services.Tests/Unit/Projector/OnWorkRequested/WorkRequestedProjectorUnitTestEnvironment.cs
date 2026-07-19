@@ -5,7 +5,6 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Assesment;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Api.Features.Search.Contract;
 using Soundtrail.Services.Internal.Projector.Features.OnWorkRequested;
 
 namespace Soundtrail.Services.Tests.Unit.Projector.OnWorkRequested;

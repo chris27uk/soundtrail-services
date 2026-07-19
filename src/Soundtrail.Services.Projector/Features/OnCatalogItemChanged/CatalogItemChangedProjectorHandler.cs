@@ -38,15 +38,10 @@ public sealed class CatalogItemChangedProjectorHandler(
 
     public async Task Handle(StreamingLocationDiscovered @event, CancellationToken cancellationToken = default)
     {
-        var artistId = @event.Hierarchy.ArtistId
-            ?? throw new InvalidOperationException("StreamingLocationDiscovered must include artist ownership hierarchy.");
-        var trackId = @event.MusicCatalogId?.Match(
-            track => track.Id,
-            _ => throw new InvalidOperationException("StreamingLocationDiscovered must refer to a track."),
-            _ => throw new InvalidOperationException("StreamingLocationDiscovered must refer to a track."),
-            _ => throw new InvalidOperationException("StreamingLocationDiscovered must refer to a track."))
-            ?? throw new InvalidOperationException("StreamingLocationDiscovered must include a track id.");
+        var artistId = @event.Hierarchy.ArtistId ?? throw new InvalidOperationException("StreamingLocationDiscovered must include artist ownership hierarchy.");
+        var trackId = @event.MusicCatalogId.AsTrack();
         var (stream, catalog) = await ArtistCatalog.LoadAsync(repository, artistId, cancellationToken);
+        
         catalog.StreamingLocationDiscovered(
             trackId,
             new Domain.Catalog.StreamingLocation(
@@ -55,6 +50,7 @@ public sealed class CatalogItemChangedProjectorHandler(
                 @event.Url,
                 @event.SourceProvider,
                 @event.ObservedAt));
+        
         await catalog.SaveAsync(
             repository,
             stream,

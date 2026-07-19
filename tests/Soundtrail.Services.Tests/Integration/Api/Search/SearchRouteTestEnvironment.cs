@@ -4,9 +4,8 @@ using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Api.Features.Search.Adapters;
-using Soundtrail.Services.Api.Features.Search.Contract;
-using Soundtrail.Services.Api.Features.Search.Registrations;
+using Soundtrail.Services.Api.Features.Catalog.Search.Adapters;
+using Soundtrail.Services.Api.Features.Catalog.Search.Contract;
 
 namespace Soundtrail.Services.Tests.Integration.Api.Search;
 

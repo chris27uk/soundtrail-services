@@ -1,6 +1,6 @@
 using Soundtrail.Domain.Catalog.Playlists;
-using Soundtrail.Services.Api.Features.GetTracksForPlaylist.Adapters;
-using Soundtrail.Services.Api.Features.GetTracksForPlaylist.Contract;
+using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Adapters;
+using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Contract;
 
 namespace Soundtrail.Services.Tests.Integration.Ports.GetTracksForPlaylist;
 

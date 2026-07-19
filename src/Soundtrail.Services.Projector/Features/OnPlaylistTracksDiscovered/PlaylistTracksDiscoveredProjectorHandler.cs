@@ -3,14 +3,19 @@ using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Operations;
+using Soundtrail.Services.Internal.Projector.Features.OnPlaylistTracksDiscovered.Adapters;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnPlaylistTracksDiscovered;
 
-public sealed class PlaylistTracksDiscoveredProjectorHandler(ICommandBus commandBus)
+public sealed class PlaylistTracksDiscoveredProjectorHandler(
+    ICommandBus commandBus,
+    IStorePlaylistTracksReadModelPort storePlaylistTracksReadModelPort)
 {
-    public Task Handle(PlaylistTracksDiscovered @event, CancellationToken cancellationToken = default)
+    public async Task Handle(PlaylistTracksDiscovered @event, CancellationToken cancellationToken = default)
     {
-        return commandBus.SendAsync(
+        await storePlaylistTracksReadModelPort.StoreAsync(@event, cancellationToken);
+
+        await commandBus.SendAsync(
             new PlaylistUpdated(@event.PlaylistId.Value, @event.Tracks)
             {
                 CommandId = CommandId.For($"PlaylistUpdated:{@event.PlaylistId.Value}:{@event.ObservedAt:O}"),

@@ -9,7 +9,7 @@ public sealed class AlbumRouteExistsTests
     {
         using var environment = GetAlbumRouteTestEnvironment.ForExistingAlbum();
 
-        var response = await environment.Client.GetAsync("/artists/artist-301/albums/album-501");
+        var response = await environment.Client.GetAsync("/catalog/artists/artist-301/albums/album-501");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }

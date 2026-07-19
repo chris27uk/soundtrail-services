@@ -4,7 +4,6 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Domain.Discovery.Planning;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Api.Features.Search.Contract;
 
 namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnLookupWorkReady;
 

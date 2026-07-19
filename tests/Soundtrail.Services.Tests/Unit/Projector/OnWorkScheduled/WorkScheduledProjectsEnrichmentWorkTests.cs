@@ -26,16 +26,4 @@ public sealed class WorkScheduledProjectsEnrichmentWorkTests
 
         environment.CommandBus.Commands.Cast<DispatchLookupWork>().Single().Priority.Should().Be(LookupPriorityBand.Low);
     }
-
-    [Fact]
-    public async Task Given_A_WorkScheduled_Event_When_Projecting_Then_The_Feedback_Port_Is_Updated()
-    {
-        var environment = WorkScheduledProjectorUnitTestEnvironment.Create();
-        var subject = environment.CreateSubject();
-        var @event = WorkScheduledProjectorUnitTestEnvironment.CreateEvent();
-
-        await subject.Handle(@event);
-
-        environment.StoreDiscoveryFeedbackPort.StoredEvent.Should().BeSameAs(@event);
-    }
 }

@@ -17,6 +17,7 @@ public sealed class OnCatalogSearchCandidateChangedFeature : IProjectorFeature
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddRavenDocumentStore(configuration);
+        services.TryAddScoped<IStoreCatalogSearchCandidatePort, RavenStoreCatalogSearchCandidatePort>();
         services.TryAddScoped<CatalogSearchCandidateChangedProjectorHandler>();
         services.AddHostedService<CatalogSearchCandidateChangedCdcService>();
     }

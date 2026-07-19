@@ -3,13 +3,11 @@ using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Discovery.Messages;
-using Soundtrail.Services.Internal.Projector.Features.OnWorkScheduled.Adapters;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnWorkScheduled;
 
 public sealed class WorkScheduledProjectorHandler(
-    ICommandBus commandBus,
-    IStoreDiscoveryFeedbackPort storeDiscoveryFeedbackPort)
+    ICommandBus commandBus)
 {
     public async Task Handle(WorkScheduled @event, CancellationToken cancellationToken = default)
     {
@@ -21,6 +19,5 @@ public sealed class WorkScheduledProjectorHandler(
             @event.ScheduledAt);
 
         await commandBus.SendAsync(command, cancellationToken);
-        await storeDiscoveryFeedbackPort.StoreAsync(@event, cancellationToken);
     }
 }
