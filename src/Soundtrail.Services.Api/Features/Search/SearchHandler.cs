@@ -27,10 +27,7 @@ public sealed class SearchHandler(
                 LookupPriorityBand.High,
                 100,
                 0,
-                requestedAt)
-            {
-                CreatedAt = requestedAt
-            },
+                requestedAt),
             cancellationToken);
 
         var response = await searchPort.SearchAsync(searchCriteria, cancellationToken);

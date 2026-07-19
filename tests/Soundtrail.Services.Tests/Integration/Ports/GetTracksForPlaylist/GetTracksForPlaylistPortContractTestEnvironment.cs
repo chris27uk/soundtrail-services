@@ -1,5 +1,5 @@
 using Raven.Client.Documents;
-using Soundtrail.Adapters.Registry;
+using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Playlists;
@@ -34,7 +34,7 @@ internal sealed class GetTracksForPlaylistPortContractTestEnvironment : IAsyncDi
     public static async Task<GetTracksForPlaylistPortContractTestEnvironment> ForExistingPlaylistTracks(
         GetTracksForPlaylistPortImplementation implementation,
         string playlistName = "WorldwideSongChart",
-        string trackId = "track-3501",
+        string? trackId = null,
         string musicCatalogId = "track-3501",
         string title = "The Track",
         string artistName = "The Artist",
@@ -45,7 +45,8 @@ internal sealed class GetTracksForPlaylistPortContractTestEnvironment : IAsyncDi
         string? artworkUrl = "https://cdn.soundtrail.test/tracks/track-3501.jpg")
     {
         var resolvedPlaylistId = PlaylistId.FromPlaylistName(playlistName);
-        var resolvedTrackId = TrackId.From(trackId);
+        var trackIdValue = trackId ?? global::Soundtrail.Services.Tests.TestTrackIds.Value("track-3501");
+        var resolvedTrackId = TrackId.From(trackIdValue);
         var response = new GetTracksForPlaylistResponse(
             resolvedPlaylistId,
             [
@@ -76,7 +77,7 @@ internal sealed class GetTracksForPlaylistPortContractTestEnvironment : IAsyncDi
                     [
                         new CatalogPlaylistTrackRecordDto
                         {
-                            TrackId = trackId,
+                            TrackId = trackIdValue,
                             MusicCatalogId = musicCatalogId,
                             Title = title,
                             ArtistName = artistName,

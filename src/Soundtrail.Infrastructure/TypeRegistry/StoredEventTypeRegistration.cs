@@ -1,4 +1,4 @@
-namespace Soundtrail.Adapters.Registry;
+namespace Soundtrail.Adapters.TypeRegistry;
 
 internal sealed record StoredEventTypeRegistration(
     string EventType,

@@ -1,5 +1,9 @@
-using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions.EventSourcing;
+using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Artists;
+using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Domain.Catalog.Playlists;
+using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery.Assesment;
 using Soundtrail.Domain.Discovery.Events;
@@ -33,6 +37,11 @@ public sealed class DiscoveryHistory
         this.eventHandlers.Register<WorkCompleted>(@event => completedTargets.Add(@event.Target.NormalisedIdentifier));
         this.eventHandlers.Register<WorkRejected>(@event => rejectedTargets.Add(@event.Target.NormalisedIdentifier));
         this.eventHandlers.Register<WorkIgnored>(@event => ignoredTargets.Add(@event.Target.NormalisedIdentifier));
+        this.eventHandlers.Register<ArtistDiscovered>(_ => { });
+        this.eventHandlers.Register<AlbumDiscovered>(_ => { });
+        this.eventHandlers.Register<TrackDiscovered>(_ => { });
+        this.eventHandlers.Register<StreamingLocationDiscovered>(_ => { });
+        this.eventHandlers.Register<PlaylistTracksDiscovered>(_ => { });
         foreach (var @event in stream.Events)
         {
             Apply(@event, isNew: false);
@@ -58,6 +67,90 @@ public sealed class DiscoveryHistory
     }
 
     public PlanningAssessmentFlow Assess(PlanningAssessment assessment) => new(this, assessment);
+
+    public void Complete(
+        EnrichmentTarget target,
+        LookupPriorityBand priority,
+        string reason,
+        DateTimeOffset completedAt)
+    {
+        Apply(new WorkCompleted(target, priority, reason, completedAt), isNew: true);
+    }
+
+    public void DeferResult(
+        EnrichmentTarget target,
+        LookupPriorityBand priority,
+        DateTimeOffset nextEligibleAt,
+        string reason,
+        DateTimeOffset deferredAt)
+    {
+        Apply(
+            new WorkDeferred(
+                target,
+                priority,
+                nextEligibleAt,
+                EstimateRetryAfterSeconds(nextEligibleAt, deferredAt),
+                reason,
+                deferredAt),
+            isNew: true);
+    }
+
+    public void FailAttempt(
+        EnrichmentTarget target,
+        string reason,
+        DateTimeOffset failedAt)
+    {
+        Apply(new WorkAttemptFailed(target, reason, failedAt), isNew: true);
+    }
+
+    public void Discover(
+        CatalogDiscoveryEntry entry,
+        DateTimeOffset observedAt)
+    {
+        IDomainEvent @event = entry.Item switch
+        {
+            CatalogItem.MusicArtist(var artist) => new ArtistDiscovered(artist, observedAt),
+            CatalogItem.MusicAlbum(var album) => new AlbumDiscovered(album, observedAt),
+            CatalogItem.MusicTrack(var track) => new TrackDiscovered(
+                track,
+                new CatalogTrackHierarchy(
+                    entry.ArtistId,
+                    string.IsNullOrWhiteSpace(track.AlbumId)
+                        ? null
+                        : Soundtrail.Domain.Catalog.Albums.AlbumId.From(track.AlbumId)),
+                observedAt),
+            CatalogItem.MusicPlaylist => throw new InvalidOperationException("Playlist catalog items are not supported in discovery history."),
+            _ => throw new InvalidOperationException($"Unsupported catalog item '{entry.Item.GetType().Name}'.")
+        };
+
+        Apply(@event, isNew: true);
+    }
+
+    public void DiscoverStreamingLocation(
+        ArtistId artistId,
+        TrackId trackId,
+        StreamingLocation streamingLocation,
+        DateTimeOffset observedAt)
+    {
+        Apply(
+            new StreamingLocationDiscovered(
+                new CatalogItemId.Track(trackId),
+                new CatalogTrackHierarchy(artistId, null),
+                streamingLocation.Provider,
+                streamingLocation.ExternalId,
+                streamingLocation.Url,
+                streamingLocation.SourceProvider,
+                observedAt),
+            isNew: true);
+    }
+
+    public void DiscoverPlaylistTracks(
+        PlaylistId playlistId,
+        TrackId[] tracks,
+        DateTimeOffset observedAt)
+    {
+        Apply(new PlaylistTracksDiscovered(playlistId, tracks, observedAt), isNew: true);
+    }
 
     private void Schedule(
         EnrichmentTarget target,
@@ -160,6 +253,12 @@ public sealed class DiscoveryHistory
     private int EstimateRetryAfterSeconds(DateTimeOffset nextEligibleAt)
     {
         var delay = nextEligibleAt - requestContext.RequestedAt;
+        return Math.Max(0, (int)Math.Ceiling(delay.TotalSeconds));
+    }
+
+    private static int EstimateRetryAfterSeconds(DateTimeOffset nextEligibleAt, DateTimeOffset observedAt)
+    {
+        var delay = nextEligibleAt - observedAt;
         return Math.Max(0, (int)Math.Ceiling(delay.TotalSeconds));
     }
 

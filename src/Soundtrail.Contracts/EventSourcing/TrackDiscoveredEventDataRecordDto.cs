@@ -2,6 +2,8 @@ namespace Soundtrail.Contracts.EventSourcing;
 
 public sealed record TrackDiscoveredEventDataRecordDto(
     string? MusicCatalogId,
+    string? ArtistId,
+    string? AlbumId,
     string? TrackIdBaseKeyHigh,
     string? TrackIdBaseKeyLow,
     string? TrackIdSpecificKey,

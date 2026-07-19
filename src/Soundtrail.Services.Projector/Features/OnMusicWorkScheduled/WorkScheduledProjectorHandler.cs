@@ -1,7 +1,8 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Domain.Discovery.Messages;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnMusicWorkScheduled;
 

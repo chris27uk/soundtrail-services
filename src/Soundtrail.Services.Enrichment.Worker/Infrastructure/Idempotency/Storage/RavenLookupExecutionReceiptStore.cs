@@ -1,5 +1,6 @@
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Common;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
 

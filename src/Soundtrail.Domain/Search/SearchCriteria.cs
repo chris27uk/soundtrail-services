@@ -1,5 +1,3 @@
-using Soundtrail.Services.Api.Features.Search.Contract;
-
 namespace Soundtrail.Domain.Search;
 
 public record SearchCriteria(string Query, SearchType SearchTypes = SearchType.All)

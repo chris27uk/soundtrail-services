@@ -17,7 +17,7 @@ public sealed class TrackDoesNotExistTests
     {
         await using var environment = await GetTrackPortContractTestEnvironment.ForMissingTrack(
             implementation,
-            TrackId.From("track-609"));
+            global::Soundtrail.Services.Tests.TestTrackIds.Create("track-609"));
 
         var result = await environment.Subject.GetTrackAsync(environment.TrackId, CancellationToken.None);
 

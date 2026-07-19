@@ -1,3 +1,3 @@
-namespace Soundtrail.Services.Projector;
+namespace Soundtrail.Services.Internal.Projector;
 
 public sealed class ProjectorAssemblyMarker;

@@ -60,22 +60,22 @@ public sealed class ArtistTracksExistTests
     [MemberData(nameof(Implementations))]
     public async Task Given_Existing_Artist_Tracks_When_Requesting_The_Artist_Tracks_Then_The_Track_Id_Is_Returned(GetTracksForArtistPortImplementation implementation)
     {
-        await using var environment = await GetTracksForArtistPortContractTestEnvironment.ForExistingArtistTracks(implementation, trackId: "track-2803");
+        await using var environment = await GetTracksForArtistPortContractTestEnvironment.ForExistingArtistTracks(implementation, trackId: global::Soundtrail.Services.Tests.TestTrackIds.Value("track-2803"));
 
         var result = await environment.Subject.GetTracksForArtistAsync(environment.ArtistId, CancellationToken.None);
 
-        result!.Tracks[0].TrackId.Should().Be(TrackId.From("track-2803"));
+        result!.Tracks[0].TrackId.Should().Be(global::Soundtrail.Services.Tests.TestTrackIds.Create("track-2803"));
     }
 
     [Theory]
     [MemberData(nameof(Implementations))]
     public async Task Given_Existing_Artist_Tracks_When_Requesting_The_Artist_Tracks_Then_The_Music_Catalog_Id_Is_Returned(GetTracksForArtistPortImplementation implementation)
     {
-        await using var environment = await GetTracksForArtistPortContractTestEnvironment.ForExistingArtistTracks(implementation, trackId: "track-2804");
+        await using var environment = await GetTracksForArtistPortContractTestEnvironment.ForExistingArtistTracks(implementation, trackId: global::Soundtrail.Services.Tests.TestTrackIds.Value("track-2804"));
 
         var result = await environment.Subject.GetTracksForArtistAsync(environment.ArtistId, CancellationToken.None);
 
-        result!.Tracks[0].MusicCatalogId.Should().Be(new CatalogItemId.Track(TrackId.From("track-2804")));
+        result!.Tracks[0].MusicCatalogId.Should().Be(new CatalogItemId.Track(global::Soundtrail.Services.Tests.TestTrackIds.Create("track-2804")));
     }
 
     [Theory]

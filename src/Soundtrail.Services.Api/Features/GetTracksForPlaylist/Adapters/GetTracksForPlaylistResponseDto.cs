@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Api.Features.GetTracksForPlaylist.Registrations;
+namespace Soundtrail.Services.Api.Features.GetTracksForPlaylist.Adapters;
 
 public sealed record GetTracksForPlaylistResponseDto(
     string PlaylistId,

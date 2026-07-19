@@ -1,4 +1,5 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Common;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency;

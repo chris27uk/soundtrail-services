@@ -1,6 +1,6 @@
 using Soundtrail.Domain.Catalog;
 using Microsoft.AspNetCore.TestHost;
-using Soundtrail.Adapters.Registry;
+using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Api.Features.GetTrack.Adapters;
@@ -42,8 +42,8 @@ internal sealed class GetTrackRouteTestEnvironment : IDisposable
         public Task<GetTrackResponse?> Handle(GetTrackRequest request, CancellationToken cancellationToken = default) =>
             Task.FromResult<GetTrackResponse?>(
                 new GetTrackResponse(
-                    TrackId.From("track-501"),
-                    new CatalogItemId.Track(TrackId.From("track-501")),
+                    global::Soundtrail.Services.Tests.TestTrackIds.Create("track-501"),
+                    new CatalogItemId.Track(global::Soundtrail.Services.Tests.TestTrackIds.Create("track-501")),
                     "The Track",
                     "The Artist",
                     "The Album",

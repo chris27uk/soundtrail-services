@@ -1,8 +1,9 @@
-using Soundtrail.Adapters.Registry;
+using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Tracks;
+using Soundtrail.Services.Api.Features.GetTracksForArtist.Adapters;
 using Soundtrail.Services.Api.Features.GetTracksForArtist.Contract;
 
 namespace Soundtrail.Services.Api.Features.GetTracksForArtist.Registrations;

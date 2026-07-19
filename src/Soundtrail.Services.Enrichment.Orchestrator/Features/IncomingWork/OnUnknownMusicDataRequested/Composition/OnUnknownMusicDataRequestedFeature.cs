@@ -5,7 +5,7 @@ using Microsoft.Extensions.Hosting;
 using Soundtrail.Adapters.EventSourcing.CompositionRoot;
 using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Adapters.Persistence;
-using Soundtrail.Adapters.Registry;
+using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Candidates;

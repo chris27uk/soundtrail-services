@@ -1,10 +1,10 @@
 using Raven.Client.Documents;
-using Soundtrail.Adapters.Registry;
+using Soundtrail.Adapters.TypeRegistry;
+using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Services.Api.Features.GetArtist.Adapters;
 using Soundtrail.Services.Api.Features.GetArtist.Contract;
-using Soundtrail.Services.Api.Infrastructure.Raven.Documents;
 using Soundtrail.Services.Tests.Integration.Ports;
 
 namespace Soundtrail.Services.Tests.Integration.Ports.GetArtist;

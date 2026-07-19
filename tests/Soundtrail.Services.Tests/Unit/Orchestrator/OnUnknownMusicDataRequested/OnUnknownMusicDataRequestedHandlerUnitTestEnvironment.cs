@@ -56,9 +56,9 @@ internal sealed class OnUnknownMusicDataRequestedHandlerUnitTestEnvironment
             CorrelationId = CorrelationId.From(correlationId)
         };
 
-    public static CandidatesResult CreateTrackCandidates(string trackId = "track-123") =>
+    public static CandidatesResult CreateTrackCandidates(string? trackId = null) =>
         new CandidatesResult.Results(CandidateList.From([
-            new ScoredCandidate(new CatalogItemId.Track(TrackId.From(trackId)), 900)
+            new ScoredCandidate(new CatalogItemId.Track(TrackId.From(trackId ?? global::Soundtrail.Services.Tests.TestTrackIds.Value("track-123"))), 900)
         ]));
 
     public static CandidatesResult CreateArtistCandidates(string artistId = "artist-123") =>

@@ -1,6 +1,6 @@
-using Soundtrail.Adapters.Registry;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Playlists;
@@ -95,6 +95,50 @@ public sealed class DiscoveryEventTranslationRegistration : ITypeTranslationRegi
                 dto.IgnoredAtUtc),
             occurredAtUtc: @event => @event.IgnoredAt,
             correlationId: _ => null);
+
+        registry.RegisterStoredEventPair<WorkCompleted, CatalogDiscoveryWorkCompletedEventDataRecordDto>(
+            eventType: "work-completed",
+            toDto: @event => new CatalogDiscoveryWorkCompletedEventDataRecordDto(
+                @event.Target.NormalisedIdentifier,
+                @event.Priority.ToString(),
+                @event.Reason,
+                @event.CompletedAt),
+            toDomainObject: dto => new WorkCompleted(
+                ParseTargetByIdentifier(dto.MusicCatalogId),
+                ParsePriority(dto.Priority),
+                dto.Reason,
+                dto.CompletedAtUtc),
+            occurredAtUtc: @event => @event.CompletedAt,
+            correlationId: _ => null);
+
+        registry.RegisterStoredEventPair<WorkRejected, CatalogDiscoveryWorkRejectedEventDataRecordDto>(
+            eventType: "work-rejected",
+            toDto: @event => new CatalogDiscoveryWorkRejectedEventDataRecordDto(
+                @event.Target.NormalisedIdentifier,
+                @event.Priority.ToString(),
+                @event.Reason,
+                @event.RejectedAt),
+            toDomainObject: dto => new WorkRejected(
+                ParseTargetByIdentifier(dto.MusicCatalogId),
+                ParsePriority(dto.Priority),
+                dto.Reason,
+                dto.RejectedAtUtc),
+            occurredAtUtc: @event => @event.RejectedAt,
+            correlationId: _ => null);
+
+        registry.RegisterStoredEventPair<WorkAttemptFailed, CatalogDiscoveryWorkAttemptFailedEventDataRecordDto>(
+            eventType: "work-attempt-failed",
+            toDto: @event => new CatalogDiscoveryWorkAttemptFailedEventDataRecordDto(
+                @event.Target.NormalisedIdentifier,
+                @event.Reason,
+                @event.FailedAt),
+            toDomainObject: dto => new WorkAttemptFailed(
+                ParseTargetByIdentifier(dto.MusicCatalogId),
+                dto.Reason,
+                dto.FailedAtUtc),
+            occurredAtUtc: @event => @event.FailedAt,
+            correlationId: _ => null);
+
     }
 
     private static string GetResourceKind(EnrichmentTarget target) =>

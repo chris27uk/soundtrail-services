@@ -5,7 +5,7 @@ using Raven.Client.Documents.Linq;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Contracts.Persistence;
 
-namespace Soundtrail.Services.Projector.Features.OnMusicDataRequested.Adapters;
+namespace Soundtrail.Services.Internal.Projector.Features.OnMusicDataRequested.Adapters;
 
 internal sealed class CatalogSearchCandidateProjectionPollingService(IServiceScopeFactory scopeFactory) : BackgroundService
 {

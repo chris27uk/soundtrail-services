@@ -1,8 +1,7 @@
-using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Common;
 
-namespace Soundtrail.Domain.Discovery.Assesment;
+namespace Soundtrail.Domain.Discovery.Messages;
 
 public sealed record AssessWorkCommand(
     CommandId CommandId,
@@ -11,7 +10,9 @@ public sealed record AssessWorkCommand(
     EnrichmentTarget Target,
     LookupPriorityBand Priority,
     int? TrustLevel = null,
-    int? RiskScore = null) : ICommand
+    int? RiskScore = null) : IPrioritisedCommand
 {
+    public DateTimeOffset RequestedAt => CreatedAt;
+
     public static CommandId Id(EnrichmentTarget target, DateTimeOffset createdAt) => CommandId.For($"AssessWork:{target.NormalisedIdentifier}:{createdAt}");
 }

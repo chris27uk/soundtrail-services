@@ -1,5 +1,4 @@
 using Dunet;
-using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Playlists;

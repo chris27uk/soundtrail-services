@@ -1,8 +1,6 @@
-using Soundtrail.Domain.Discovery.Assesment;
 using Soundtrail.Domain.Common;
+using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Api.Features.Search.Contract;
-using Soundtrail.Services.Projector.Features.OnMusicDataRequested;
 
 namespace Soundtrail.Services.Tests.Unit.Projector.OnMusicDataRequested;
 

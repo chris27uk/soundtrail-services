@@ -1,4 +1,4 @@
-namespace Soundtrail.Contracts.Common;
+namespace Soundtrail.Domain.Common;
 
 public readonly record struct CorrelationId(string Value)
 {

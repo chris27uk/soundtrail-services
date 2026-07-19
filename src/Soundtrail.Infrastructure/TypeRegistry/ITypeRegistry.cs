@@ -1,4 +1,4 @@
-namespace Soundtrail.Adapters.Registry;
+namespace Soundtrail.Adapters.TypeRegistry;
 
 public interface ITypeRegistry
 {

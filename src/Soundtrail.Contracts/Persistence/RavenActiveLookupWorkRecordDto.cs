@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Enrichment.Orchestrator.Features.OnCatalogSearchRequested.Adapters.Documents;
+namespace Soundtrail.Contracts.Persistence;
 
 public sealed class RavenActiveLookupWorkRecordDto
 {

@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.TestHost;
-using Soundtrail.Adapters.Registry;
+using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Artists;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.Search.Adapters;
 using Soundtrail.Services.Api.Features.Search.Contract;
 using Soundtrail.Services.Api.Features.Search.Registrations;

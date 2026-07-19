@@ -7,7 +7,7 @@ using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Candidates;
-using Soundtrail.Services.Api.Features.Search.Contract;
+using Soundtrail.Domain.Search;
 using System.Globalization;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.IncomingWork.OnUnknownMusicDataRequested.Adapters;

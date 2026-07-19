@@ -1,7 +1,7 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Domain.Discovery.Planning;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.Search.Contract;

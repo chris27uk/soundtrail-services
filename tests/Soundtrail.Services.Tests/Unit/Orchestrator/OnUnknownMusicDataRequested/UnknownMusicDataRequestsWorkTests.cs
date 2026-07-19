@@ -4,6 +4,7 @@ using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.Search.Contract;
 
 namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnUnknownMusicDataRequested;
@@ -26,7 +27,7 @@ public sealed class UnknownMusicDataRequestsWorkTests
     public async Task Given_A_Track_Candidate_When_Handling_Then_Track_Streaming_Location_Work_Is_Requested()
     {
         var environment = OnUnknownMusicDataRequestedHandlerUnitTestEnvironment.Create();
-        environment.SearchForCandidates.ResultToReturn = OnUnknownMusicDataRequestedHandlerUnitTestEnvironment.CreateTrackCandidates("track-123");
+        environment.SearchForCandidates.ResultToReturn = OnUnknownMusicDataRequestedHandlerUnitTestEnvironment.CreateTrackCandidates(TestTrackIds.Value("track-123"));
         var subject = environment.CreateSubject();
 
         await subject.Handle(OnUnknownMusicDataRequestedHandlerUnitTestEnvironment.CreateUnknownRequest());

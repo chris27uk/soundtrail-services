@@ -1,5 +1,5 @@
 using Raven.Client.Documents;
-using Soundtrail.Adapters.Registry;
+using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Services.Api.Features.GetTracksForAlbum.Contract;

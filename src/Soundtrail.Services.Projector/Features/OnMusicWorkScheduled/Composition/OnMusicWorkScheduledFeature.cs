@@ -5,13 +5,12 @@ using Microsoft.Extensions.Hosting;
 using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Adapters.Messaging;
 using Soundtrail.Adapters.Persistence;
-using Soundtrail.Services.Internal.Projector.Features.OnMusicWorkScheduled;
 using Soundtrail.Services.Internal.Projector.Features.OnMusicWorkScheduled.Adapters;
-using Soundtrail.Services.Projector.Infrastructure;
+using Soundtrail.Services.Internal.Projector.Infrastructure;
 using Wolverine;
 using WebApplication = Microsoft.AspNetCore.Builder.WebApplication;
 
-namespace Soundtrail.Services.Projector.Features.OnMusicWorkScheduled.Composition;
+namespace Soundtrail.Services.Internal.Projector.Features.OnMusicWorkScheduled.Composition;
 
 [Autodiscover]
 public sealed class OnMusicWorkScheduledFeature : IProjectorFeature

@@ -32,14 +32,15 @@ internal sealed class LoadTrackByFingerprintPortContractTestEnvironment : IAsync
     public static async Task<LoadTrackByFingerprintPortContractTestEnvironment> ForExistingTrack(
         LoadTrackByFingerprintPortImplementation implementation,
         TrackMatchFingerprint? fingerprint = null,
-        string trackId = "track-1801")
+        string? trackId = null)
     {
         var resolvedFingerprint = fingerprint ?? TrackMatchFingerprint.FromArtistAndTitle("Artist 1801", "Track 1801");
+        var trackIdValue = trackId ?? global::Soundtrail.Services.Tests.TestTrackIds.Value("track-1801");
 
         return implementation switch
         {
             LoadTrackByFingerprintPortImplementation.Fake => new LoadTrackByFingerprintPortContractTestEnvironment(
-                new LoadTrackByFingerprintPortFake(TrackId.From(trackId)),
+                new LoadTrackByFingerprintPortFake(TrackId.From(trackIdValue)),
                 resolvedFingerprint),
             LoadTrackByFingerprintPortImplementation.Raven => await CreateRavenEnvironmentAsync(
                 resolvedFingerprint,
@@ -47,7 +48,7 @@ internal sealed class LoadTrackByFingerprintPortContractTestEnvironment : IAsync
                 {
                     Id = CatalogTrackMatchFingerprintRecordDto.GetDocumentId(resolvedFingerprint.Value),
                     Fingerprint = resolvedFingerprint.Value,
-                    TrackId = trackId
+                    TrackId = trackIdValue
                 }),
             _ => throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null)
         };

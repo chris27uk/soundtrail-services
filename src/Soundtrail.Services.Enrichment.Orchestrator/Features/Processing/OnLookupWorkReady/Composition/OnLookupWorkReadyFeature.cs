@@ -5,7 +5,7 @@ using Microsoft.Extensions.Hosting;
 using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Adapters.Messaging;
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure;
 using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Messaging;
 using Soundtrail.Services.ServiceDefaults;

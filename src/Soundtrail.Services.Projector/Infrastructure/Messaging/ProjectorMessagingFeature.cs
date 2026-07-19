@@ -2,15 +2,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Soundtrail.Adapters.FeatureOrchestration;
-using Soundtrail.Domain.Discovery.Assesment;
-using Soundtrail.Domain.Discovery.Commands;
-using Soundtrail.Services.Projector.Infrastructure;
+using Soundtrail.Domain.Discovery.Messages;
+using Soundtrail.Domain.Operations;
 using Soundtrail.Services.ServiceDefaults;
 using Wolverine;
 using Wolverine.AzureServiceBus;
 using WebApplication = Microsoft.AspNetCore.Builder.WebApplication;
 
-namespace Soundtrail.Services.Projector.Infrastructure.Messaging;
+namespace Soundtrail.Services.Internal.Projector.Infrastructure.Messaging;
 
 [Autodiscover]
 public sealed class ProjectorMessagingFeature : IProjectorFeature
@@ -51,5 +50,8 @@ public sealed class ProjectorMessagingFeature : IProjectorFeature
 
         options.PublishMessage<DispatchLookupWork>()
             .ToAzureServiceBusQueue(serviceBusOptions.DispatchLookupWorkQueueName);
+
+        options.PublishMessage<PlaylistUpdated>()
+            .ToAzureServiceBusQueue(serviceBusOptions.PlaylistUpdatesQueueName);
     }
 }

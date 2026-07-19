@@ -6,6 +6,7 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Domain.Discovery.Assesment;
 using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.Prioritisation.OnMusicAssessmentRequired;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.Prioritisation.OnMusicAssessmentRequired.Planning;
 

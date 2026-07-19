@@ -1,6 +1,5 @@
-using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Common;
-using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Discovery.Messages;
 
 namespace Soundtrail.Domain.Discovery.Planning;
 

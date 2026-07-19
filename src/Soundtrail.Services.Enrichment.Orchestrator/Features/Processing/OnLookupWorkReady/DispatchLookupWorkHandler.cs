@@ -1,5 +1,5 @@
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Domain.Discovery.Planning;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.Processing.OnLookupWorkReady.Collaborators;
 

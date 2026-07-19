@@ -9,8 +9,8 @@ using Soundtrail.Services.Enrichment.Orchestrator;
 using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure;
 using Soundtrail.Services.Enrichment.Scheduler;
 using Soundtrail.Services.Enrichment.Scheduler.Infrastructure;
-using Soundtrail.Services.Projector;
-using Soundtrail.Services.Projector.Infrastructure;
+using Soundtrail.Services.Internal.Projector;
+using Soundtrail.Services.Internal.Projector.Infrastructure;
 using Soundtrail.Services.ServiceDefaults;
 using Wolverine;
 

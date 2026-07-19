@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.TestHost;
-using Soundtrail.Adapters.Registry;
+using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Playlists;
@@ -46,8 +46,8 @@ internal sealed class GetTracksForPlaylistRouteTestEnvironment : IDisposable
                     PlaylistId.FromPlaylistName("WorldwideSongChart"),
                     [
                         new GetTracksForPlaylistTrackResponse(
-                            TrackId.From("track-3401"),
-                            new CatalogItemId.Track(TrackId.From("track-3401")),
+                            global::Soundtrail.Services.Tests.TestTrackIds.Create("track-3401"),
+                            new CatalogItemId.Track(global::Soundtrail.Services.Tests.TestTrackIds.Create("track-3401")),
                             "The Track",
                             "The Artist",
                             "The Album",

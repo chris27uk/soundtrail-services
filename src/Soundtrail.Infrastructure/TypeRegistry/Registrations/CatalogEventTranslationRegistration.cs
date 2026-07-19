@@ -1,9 +1,13 @@
-using Soundtrail.Adapters.Registry;
+using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.EventSourcing;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Catalog.Tracks;
+using Soundtrail.Domain.Common;
+using Soundtrail.Domain.Discovery.Events;
 
 namespace Soundtrail.Adapters.TypeRegistry.Registrations;
 
@@ -52,6 +56,8 @@ public sealed class CatalogEventTranslationRegistration : ITypeTranslationRegist
             eventType: "track-discovered",
             toDto: @event => new TrackDiscoveredEventDataRecordDto(
                 @event.Track.TrackId.Value,
+                @event.Hierarchy.ArtistId?.Value,
+                @event.Hierarchy.AlbumId?.StableValue,
                 @event.Track.TrackId.BaseKeyHigh,
                 @event.Track.TrackId.BaseKeyLow,
                 @event.Track.TrackId.SpecificKey,
@@ -75,6 +81,7 @@ public sealed class CatalogEventTranslationRegistration : ITypeTranslationRegist
                 {
                     Title = dto.Title,
                     ArtistName = dto.Artist,
+                    AlbumId = dto.AlbumId,
                     AlbumTitle = dto.AlbumTitle,
                     DurationMs = dto.DurationMs,
                     Isrc = dto.Isrc,
@@ -84,8 +91,47 @@ public sealed class CatalogEventTranslationRegistration : ITypeTranslationRegist
                     UpdatedAt = dto.ObservedAt
                 };
 
-                return new TrackDiscovered(track, dto.ObservedAt);
+                return new TrackDiscovered(
+                    track,
+                    new CatalogTrackHierarchy(
+                        string.IsNullOrWhiteSpace(dto.ArtistId) ? null : ArtistId.From(dto.ArtistId),
+                        string.IsNullOrWhiteSpace(dto.AlbumId) ? null : AlbumId.From(dto.AlbumId)),
+                    dto.ObservedAt);
             },
+            occurredAtUtc: @event => @event.ObservedAt);
+
+        registry.RegisterStoredEventPair<StreamingLocationDiscovered, ProviderReferenceDiscoveredEventDataRecordDto>(
+            eventType: "streaming-location-discovered",
+            toDto: @event => new ProviderReferenceDiscoveredEventDataRecordDto(
+                @event.MusicCatalogId?.NormalisedIdentifier,
+                @event.Hierarchy.ArtistId?.Value,
+                @event.Provider.Value,
+                @event.ExternalId,
+                @event.Url.ToString(),
+                @event.SourceProvider.Value,
+                @event.ObservedAt),
+            toDomainObject: dto => new StreamingLocationDiscovered(
+                string.IsNullOrWhiteSpace(dto.MusicCatalogId) ? null : new CatalogItemId.Track(TrackId.From(dto.MusicCatalogId)),
+                new CatalogTrackHierarchy(
+                    string.IsNullOrWhiteSpace(dto.ArtistId) ? null : ArtistId.From(dto.ArtistId),
+                    null),
+                ProviderName.From(dto.Provider),
+                dto.ExternalId,
+                new Uri(dto.Url, UriKind.Absolute),
+                LookupSource.From(dto.SourceProvider),
+                dto.ObservedAt),
+            occurredAtUtc: @event => @event.ObservedAt);
+
+        registry.RegisterStoredEventPair<PlaylistTracksDiscovered, PlaylistTracksDiscoveredEventDataRecordDto>(
+            eventType: "playlist-tracks-discovered",
+            toDto: @event => new PlaylistTracksDiscoveredEventDataRecordDto(
+                @event.PlaylistId.Value,
+                @event.Tracks.Select(trackId => trackId.Value).ToArray(),
+                @event.ObservedAt),
+            toDomainObject: dto => new PlaylistTracksDiscovered(
+                PlaylistId.FromPlaylistName(dto.PlaylistId),
+                dto.TrackIds.Select(TrackId.From).ToArray(),
+                dto.ObservedAtUtc),
             occurredAtUtc: @event => @event.ObservedAt);
     }
 }

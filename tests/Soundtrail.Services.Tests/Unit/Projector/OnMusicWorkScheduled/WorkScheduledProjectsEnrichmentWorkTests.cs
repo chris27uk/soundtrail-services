@@ -1,5 +1,5 @@
-using Soundtrail.Domain.Discovery.Commands;
 using Soundtrail.Domain.Common;
+using Soundtrail.Domain.Discovery.Messages;
 
 namespace Soundtrail.Services.Tests.Unit.Projector.OnMusicWorkScheduled;
 

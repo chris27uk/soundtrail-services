@@ -1,5 +1,6 @@
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Common;
+using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Services.Api.Features.Search.Contract;
 

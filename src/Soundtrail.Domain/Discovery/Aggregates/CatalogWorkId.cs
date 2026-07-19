@@ -1,4 +1,4 @@
-using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Domain.Discovery.Aggregates;

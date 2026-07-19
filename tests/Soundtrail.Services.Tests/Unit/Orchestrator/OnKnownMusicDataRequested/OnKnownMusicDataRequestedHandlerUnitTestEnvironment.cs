@@ -52,14 +52,14 @@ internal sealed class OnKnownMusicDataRequestedHandlerUnitTestEnvironment
         };
 
     public static RequestKnownMusicDataCommand CreateKnownTrackRequest(
-        string trackId = "track-123",
+        string? trackId = null,
         int trustLevel = 100,
         int riskScore = 0,
         DateTimeOffset? requestedAt = null,
         string commandId = "cmd-track",
         string correlationId = "corr-track") =>
         new(
-            new CatalogItemOperation.StreamingLocationForTrack(TrackId.From(trackId)),
+            new CatalogItemOperation.StreamingLocationForTrack(TrackId.From(trackId ?? global::Soundtrail.Services.Tests.TestTrackIds.Value("track-123"))),
             LookupPriorityBand.High,
             trustLevel,
             riskScore,

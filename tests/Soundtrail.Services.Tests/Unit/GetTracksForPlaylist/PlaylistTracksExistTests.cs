@@ -1,10 +1,6 @@
-using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Catalog.Tracks;
-using Soundtrail.Domain.Common;
-using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Discovery.Events;
 
 namespace Soundtrail.Services.Tests.Unit.GetTracksForPlaylist;
 
@@ -45,7 +41,7 @@ public sealed class PlaylistTracksExistTests
     [Fact]
     public async Task Given_Existing_Playlist_Tracks_When_Requesting_The_Playlist_Tracks_Then_The_Track_Id_Is_Returned()
     {
-        var trackId = TrackId.From("track-3303");
+        var trackId = TestTrackIds.Create("track-3303");
         var environment = GetTracksForPlaylistUnitTestEnvironment.ForExistingPlaylistTracks(
             response: PlaylistTracks.CreateResponse(trackId: trackId));
 
@@ -57,7 +53,7 @@ public sealed class PlaylistTracksExistTests
     [Fact]
     public async Task Given_Existing_Playlist_Tracks_When_Requesting_The_Playlist_Tracks_Then_The_Music_Catalog_Id_Is_Returned()
     {
-        var trackId = TrackId.From("track-3304");
+        var trackId = TestTrackIds.Create("track-3304");
         var environment = GetTracksForPlaylistUnitTestEnvironment.ForExistingPlaylistTracks(
             response: PlaylistTracks.CreateResponse(trackId: trackId));
 

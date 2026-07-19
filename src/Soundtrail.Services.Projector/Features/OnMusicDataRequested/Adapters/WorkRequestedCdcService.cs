@@ -3,7 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Changes;
 using Raven.Client.Documents.Linq;
-using Soundtrail.Adapters.Registry;
+using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Discovery.Events;

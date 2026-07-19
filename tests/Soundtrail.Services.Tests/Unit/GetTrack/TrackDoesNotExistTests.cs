@@ -18,7 +18,7 @@ public sealed class TrackDoesNotExistTests
     [Fact]
     public async Task Given_A_Missing_Track_When_Requesting_The_Track_Then_The_Requested_Track_Id_Is_Read()
     {
-        var trackId = TrackId.From("track-402");
+        var trackId = global::Soundtrail.Services.Tests.TestTrackIds.Create("track-402");
         var environment = GetTrackMissingUnitTestEnvironment.ForMissingTrack(trackId);
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
