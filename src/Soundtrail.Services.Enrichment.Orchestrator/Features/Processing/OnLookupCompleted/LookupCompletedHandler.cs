@@ -1,7 +1,6 @@
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery.Aggregates;
-using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.Processing.OnLookupCompleted.Collaborators;
 
