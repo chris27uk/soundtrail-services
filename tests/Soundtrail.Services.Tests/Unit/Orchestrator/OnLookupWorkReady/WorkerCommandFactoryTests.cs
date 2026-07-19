@@ -16,7 +16,7 @@ public sealed class WorkerCommandFactoryTests
 
         var command = WorkerCommandFactory.Create(
             request,
-            new PlannedLookup.MusicbrainzSearch(
+            new LookupAttempt.MusicbrainzSearchCatalogItems(
                 new Soundtrail.Domain.Search.SearchCriteria("u2", SearchType.Artist),
                 LookupPriorityBand.High));
 
@@ -31,7 +31,7 @@ public sealed class WorkerCommandFactoryTests
 
         var command = WorkerCommandFactory.Create(
             request,
-            new PlannedLookup.StreamingLocationByIsrc(
+            new LookupAttempt.StreamingLocationByIsrc(
                 TestTrackIds.Create("track-2901"),
                 ProviderName.Spotify,
                 LookupPriorityBand.Low));

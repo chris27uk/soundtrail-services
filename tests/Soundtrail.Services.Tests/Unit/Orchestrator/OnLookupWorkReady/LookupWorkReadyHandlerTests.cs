@@ -14,6 +14,6 @@ public sealed class LookupWorkReadyHandlerTests
 
         await subject.Handle(request);
 
-        environment.CommandBus.Commands.Should().HaveCount(plan.Lookups.Count);
+        environment.CommandBus.Commands.Should().HaveCount(plan.Attempts.Count);
     }
 }

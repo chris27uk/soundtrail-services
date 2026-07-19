@@ -5,7 +5,6 @@ using Microsoft.Extensions.Hosting;
 using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Adapters.Persistence;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogTrackChanged.Adapters;
-using Soundtrail.Services.Internal.Projector.Features.OnPlaylistTracksDiscovered.Adapters;
 using Soundtrail.Services.Internal.Projector.Infrastructure;
 using Wolverine;
 using WebApplication = Microsoft.AspNetCore.Builder.WebApplication;
@@ -18,7 +17,6 @@ public sealed class OnCatalogTrackChangedFeature : IProjectorFeature
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddRavenDocumentStore(configuration);
-        services.TryAddScoped<IStorePlaylistTracksReadModelPort, RavenStorePlaylistTracksReadModelPort>();
         services.TryAddScoped<CatalogTrackChangedProjectorHandler>();
         services.AddHostedService<CatalogTrackChangedCdcService>();
     }

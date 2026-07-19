@@ -8,12 +8,62 @@ using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Domain.Discovery.Planning;
 
-public sealed record LookupPlan(IReadOnlyList<PlannedLookup> Lookups);
+public sealed record LookupPlan(IReadOnlyList<LookupIntent> Intents)
+{
+    public IReadOnlyList<LookupAttempt> Attempts =>
+        Intents.SelectMany(static intent => intent.Attempts()).ToArray();
+}
 
 [Union]
-public partial record PlannedLookup
+public partial record LookupIntent
 {
-    public partial record MusicbrainzSearch(
+    public partial record SearchCatalogItems(
+        SearchCriteria SearchCriteria,
+        LookupPriorityBand Priority,
+        IReadOnlyList<LookupAttempt> Attempts);
+
+    public partial record ArtistAlbums(
+        ArtistId ArtistId,
+        LookupPriorityBand Priority,
+        IReadOnlyList<LookupAttempt> Attempts);
+
+    public partial record ArtistTracks(
+        ArtistId ArtistId,
+        LookupPriorityBand Priority,
+        IReadOnlyList<LookupAttempt> Attempts);
+
+    public partial record AlbumTracks(
+        AlbumId AlbumId,
+        LookupPriorityBand Priority,
+        IReadOnlyList<LookupAttempt> Attempts);
+
+    public partial record StreamingLocation(
+        TrackId TrackId,
+        LookupPriorityBand Priority,
+        IReadOnlyList<LookupAttempt> Attempts);
+
+    public partial record PlaylistTracks(
+        PlaylistId PlaylistId,
+        LookupPriorityBand Priority,
+        IReadOnlyList<LookupAttempt> Attempts);
+}
+
+public static class LookupIntentExtensions
+{
+    public static IReadOnlyList<LookupAttempt> Attempts(this LookupIntent intent) =>
+        intent.Match(
+            search => search.Attempts,
+            artistAlbums => artistAlbums.Attempts,
+            artistTracks => artistTracks.Attempts,
+            albumTracks => albumTracks.Attempts,
+            streamingLocation => streamingLocation.Attempts,
+            playlistTracks => playlistTracks.Attempts);
+}
+
+[Union]
+public partial record LookupAttempt
+{
+    public partial record MusicbrainzSearchCatalogItems(
         SearchCriteria SearchCriteria,
         LookupPriorityBand Priority);
 
