@@ -17,7 +17,7 @@ public sealed class KnownCatalogItemOperationMappingsTests
         await subject.Handle(OnKnownMusicDataRequestedHandlerUnitTestEnvironment.CreateKnownTrackRequest(trackId: "track-123"));
 
         environment.Repository.AppendedEvents.OfType<WorkRequested>().Single().Target
-            .Should().Be(Work.EnrichTrackStreamingLocation(TrackId.From("track-123")));
+            .Should().Be(Work.EnrichTrackStreamingLocation(TestTrackIds.Create("track-123")));
     }
 
     [Fact]

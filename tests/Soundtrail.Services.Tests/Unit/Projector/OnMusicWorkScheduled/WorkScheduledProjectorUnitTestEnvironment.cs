@@ -31,7 +31,7 @@ internal sealed class WorkScheduledProjectorUnitTestEnvironment
         LookupPriorityBand priority = LookupPriorityBand.High,
         DateTimeOffset? scheduledAt = null) =>
         new(
-            target ?? Work.EnrichTrackStreamingLocation(Soundtrail.Domain.Catalog.Tracks.TrackId.From("track-2901")),
+            target ?? Work.EnrichTrackStreamingLocation(TestTrackIds.Create("track-2901")),
             priority,
             new DateTimeOffset(2026, 7, 18, 9, 0, 0, TimeSpan.Zero),
             new DateTimeOffset(2026, 7, 18, 9, 2, 0, TimeSpan.Zero),

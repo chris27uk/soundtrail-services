@@ -31,7 +31,7 @@ public sealed class WorkerCommandFactoryTests
         var command = WorkerCommandFactory.Create(
             request,
             new PlannedLookup.StreamingLocationByIsrc(
-                Soundtrail.Domain.Catalog.Tracks.TrackId.From("track-2901"),
+                TestTrackIds.Create("track-2901"),
                 ProviderName.Spotify,
                 LookupPriorityBand.Low));
 

@@ -10,5 +10,6 @@
 
   <ItemGroup>
     <PackageReference Include="Dunet" Version="1.16.2" />
+    <PackageReference Include="SauceControl.Blake2Fast" Version="2.0.0" />
   </ItemGroup>
 </Project>

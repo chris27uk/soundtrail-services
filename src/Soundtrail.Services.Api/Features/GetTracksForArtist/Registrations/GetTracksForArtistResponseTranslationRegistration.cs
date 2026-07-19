@@ -52,8 +52,15 @@ public sealed class GetTracksForArtistResponseTranslationRegistration : ITypeTra
                     ArtistName.From(record.ArtistName),
                     record.Tracks.Select(
                             track => new GetTracksForArtistTrackResponse(
-                                TrackId.From(track.TrackId),
-                                new CatalogItemId.Track(TrackId.From(track.TrackId)),
+                                TrackId.FromKeyParts(
+                                    track.TrackIdBaseKeyHigh ?? throw new InvalidOperationException("Track base key high is required."),
+                                    track.TrackIdBaseKeyLow ?? throw new InvalidOperationException("Track base key low is required."),
+                                    track.TrackIdSpecificKey ?? throw new InvalidOperationException("Track specific key is required.")),
+                                new CatalogItemId.Track(
+                                    TrackId.FromKeyParts(
+                                        track.TrackIdBaseKeyHigh ?? throw new InvalidOperationException("Track base key high is required."),
+                                        track.TrackIdBaseKeyLow ?? throw new InvalidOperationException("Track base key low is required."),
+                                        track.TrackIdSpecificKey ?? throw new InvalidOperationException("Track specific key is required."))),
                                 track.Title,
                                 track.ArtistName,
                                 track.AlbumTitle,

@@ -6,7 +6,7 @@ namespace Soundtrail.Services.Tests.Unit.GetTrack
 {
     internal static class Tracks
     {
-        public static TrackId DefaultTrackId => TrackId.From("track-201");
+        public static TrackId DefaultTrackId => TestTrackIds.Create("track-201");
 
         public static GetTrackResponse CreateTrackResponse(
             TrackId? trackId = null,

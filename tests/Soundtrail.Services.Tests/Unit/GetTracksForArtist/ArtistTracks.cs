@@ -9,7 +9,7 @@ internal static class ArtistTracks
 {
     public static ArtistId DefaultArtistId => ArtistId.From("artist-2301");
 
-    public static TrackId DefaultTrackId => TrackId.From("track-2401");
+    public static TrackId DefaultTrackId => TestTrackIds.Create("track-2401");
 
     public static GetTracksForArtistResponse CreateResponse(
         ArtistId? artistId = null,

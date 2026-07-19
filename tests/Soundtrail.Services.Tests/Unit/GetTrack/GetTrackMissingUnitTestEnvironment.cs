@@ -22,7 +22,7 @@ internal sealed class GetTrackMissingUnitTestEnvironment
 
     public static GetTrackMissingUnitTestEnvironment ForMissingTrack(TrackId? trackId = null) =>
         new(
-            trackId ?? TrackId.From("track-401"),
+            trackId ?? TestTrackIds.Create("track-401"),
             new GetTrackPortFake());
 
     public GetTrackHandler CreateSubjectUnderTest() => new(Port);

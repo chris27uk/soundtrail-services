@@ -114,9 +114,12 @@ public sealed class ArtistCatalog
         var track = GetOrCreateTrack(@event.Track.TrackId);
         track.Title = @event.Track.Title;
         track.ArtistName = @event.Track.ArtistName;
+        track.AlbumTitle = @event.Track.AlbumTitle;
         track.DurationMs = @event.Track.DurationMs;
         track.Isrc = @event.Track.Isrc;
         track.Mbid = @event.Track.Mbid;
+        track.ReleaseDate = @event.Track.ReleaseDate;
+        track.ReleaseType = @event.Track.ReleaseType;
         track.UpdatedAt = @event.ObservedAt;
     }
 

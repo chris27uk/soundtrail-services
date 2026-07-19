@@ -51,7 +51,7 @@ internal sealed class OnMusicAssessmentRequiredHandlerUnitTestEnvironment
             CommandId.For(commandId),
             CorrelationId.From(correlationId),
             createdAt ?? new DateTimeOffset(2026, 7, 18, 9, 30, 0, TimeSpan.Zero),
-            target ?? Work.EnrichTrackStreamingLocation(Soundtrail.Domain.Catalog.Tracks.TrackId.From("track-123")),
+            target ?? Work.EnrichTrackStreamingLocation(TestTrackIds.Create("track-123")),
             priority,
             trustLevel,
             riskScore);

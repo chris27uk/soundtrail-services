@@ -34,7 +34,7 @@ internal sealed class LookupWorkReadyHandlerUnitTestEnvironment
 
     public static DispatchLookupWork CreateStreamingLocationRequest() =>
         new(
-            Work.EnrichTrackStreamingLocation(TrackId.From("track-2901")),
+            Work.EnrichTrackStreamingLocation(TestTrackIds.Create("track-2901")),
             LookupPriorityBand.Low,
             CommandId.For("cmd-streaming"),
             CorrelationId.From("corr-streaming"),

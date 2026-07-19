@@ -335,6 +335,12 @@ Short justification:
 - RavenDB queries are simpler and safer when the grouping key is stored explicitly
 - construction must work even when names are known but not pre-normalized
 
+An implementation may use the `SauceControl.Blake2Fast` NuGet package for the unkeyed `BLAKE2b` hashing step.
+
+Source:
+
+- [SauceControl.Blake2Fast on NuGet](https://www.nuget.org/packages/SauceControl.Blake2Fast)
+
 ## Key Derivation
 
 Given canonical parts:
@@ -392,6 +398,143 @@ Short justification:
 - this keeps the exact identity structured and durable
 - this avoids relying on a native 384-bit primitive that C# and RavenDB do not provide
 
+## RavenDB Persistence Shape
+
+For RavenDB document storage and indexing, the preferred shape is:
+
+- persist exact identity as named scalar fields
+- persist the canonical source fields alongside the derived keys
+- query by base-key equality rather than by reparsing text identity
+
+The recommended document fields for a track projection are:
+
+- `TrackIdBaseKeyHigh`
+- `TrackIdBaseKeyLow`
+- `TrackIdSpecificKey`
+- `CanonicalArtistName`
+- `CanonicalTrackName`
+- `CanonicalAlbumName`
+- `CanonicalReleaseDate`
+- `CanonicalReleaseType`
+- `ObservedAt`
+
+Optional convenience fields may also be stored:
+
+- `TrackIdDisplay`
+- `BaseKeyDisplay`
+
+These convenience fields are for debugging and operational visibility only. They are not authoritative and must not be used as the source of identity logic.
+
+Short justification:
+
+- RavenDB queries and indexes work best with explicit scalar fields
+- the canonical fields remain available for debugging, projections, and collision investigation
+- the derived keys remain the authoritative query identity
+
+## RavenDB Index Shape
+
+The preferred index shape for sibling-track queries is an index keyed by the base-key parts and the observed ordering field.
+
+An illustrative static index shape is:
+
+```csharp
+public sealed class Tracks_ByBaseKey : AbstractIndexCreationTask<TrackDocument>
+{
+    public Tracks_ByBaseKey()
+    {
+        Map = tracks => from track in tracks
+                        select new
+                        {
+                            track.TrackIdBaseKeyHigh,
+                            track.TrackIdBaseKeyLow,
+                            track.TrackIdSpecificKey,
+                            track.ObservedAt
+                        };
+    }
+}
+```
+
+Short justification:
+
+- the base-key fields support exact sibling lookup
+- the specific key distinguishes exact tracks within the same base identity
+- the ordering field supports preferred-track selection
+
+## RavenDB Query Semantics
+
+The primary sibling query should be expressed as equality on the base-key fields:
+
+```csharp
+var siblings = await session.Query<TrackDocument, Tracks_ByBaseKey>()
+    .Where(x =>
+        x.TrackIdBaseKeyHigh == baseKey.High &&
+        x.TrackIdBaseKeyLow == baseKey.Low)
+    .OrderByDescending(x => x.ObservedAt)
+    .ToListAsync(cancellationToken);
+```
+
+The preferred exact track for a base identity is then:
+
+- the first result ordered by the chosen ordering rule
+
+Short justification:
+
+- this avoids fuzzy logic and reparsing
+- this keeps the database query aligned to the mathematical grouping model
+
+## RavenDB Range Note
+
+This specification does not require a single-field numeric `BETWEEN` query over a packed 384-bit scalar.
+
+Instead, for RavenDB, the required operational behavior is:
+
+- equality query on `TrackIdBaseKeyHigh`
+- equality query on `TrackIdBaseKeyLow`
+- optional ordering or filtering within that sibling set
+
+This still satisfies the core range intent:
+
+- all tracks that belong to the same non-release identity are queryable directly and efficiently by their shared base-key parts
+
+Short justification:
+
+- RavenDB handles indexed scalar equality queries naturally
+- this preserves collision resistance without forcing an unnatural giant primitive representation
+
+## Example Document Shape
+
+An illustrative RavenDB document shape is:
+
+```csharp
+public sealed class TrackDocument
+{
+    public string Id { get; init; } = string.Empty;
+
+    public UInt128 TrackIdBaseKeyHigh { get; init; }
+
+    public UInt128 TrackIdBaseKeyLow { get; init; }
+
+    public UInt128 TrackIdSpecificKey { get; init; }
+
+    public string CanonicalArtistName { get; init; } = string.Empty;
+
+    public string CanonicalTrackName { get; init; } = string.Empty;
+
+    public string? CanonicalAlbumName { get; init; }
+
+    public DateOnly? CanonicalReleaseDate { get; init; }
+
+    public string? CanonicalReleaseType { get; init; }
+
+    public DateTimeOffset ObservedAt { get; init; }
+}
+```
+
+Short justification:
+
+- the document shape keeps derived identity and canonical facts side by side
+- this supports replay-safe projections, diagnostics, and future collision checks
+
 ## Query Rule
 
 The required grouping query is:
@@ -411,8 +554,8 @@ The following code is illustrative. It is not a final API contract, but it demon
 
 ```csharp
 using System.Buffers.Binary;
-using System.Security.Cryptography;
 using System.Text;
+using Blake2Fast;
 using Soundtrail.Domain.Catalog.Tracks;
 
 namespace Soundtrail.Domain.Catalog.Identity;
@@ -516,9 +659,7 @@ public static class CanonicalTrackIdentity
 
     private static byte[] Blake2b(byte[] bytes, int outputLength)
     {
-        using var algorithm = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-        algorithm.AppendData(bytes);
-        return algorithm.GetHashAndReset()[..outputLength];
+        return Blake2b.ComputeHash(outputLength, bytes).ToArray();
     }
 }
 
@@ -550,8 +691,7 @@ This example shows the core invariants:
 
 Note:
 
-- the code above uses a `SHA256` placeholder because this document is illustrative only
-- the intended implementation choice is `BLAKE2b`
+- the code above is illustrative and assumes the `SauceControl.Blake2Fast` package API shown in its documentation
 
 ## Example Projection Rule
 

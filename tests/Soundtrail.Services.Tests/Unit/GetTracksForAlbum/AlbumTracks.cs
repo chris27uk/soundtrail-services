@@ -10,7 +10,7 @@ internal static class AlbumTracks
 {
     public static AlbumId DefaultAlbumId => AlbumId.From("artist-1401", "album-1501");
 
-    public static TrackId DefaultTrackId => TrackId.From("track-1601");
+    public static TrackId DefaultTrackId => TestTrackIds.Create("track-1601");
 
     public static GetTracksForAlbumResponse CreateResponse(
         AlbumId? albumId = null,

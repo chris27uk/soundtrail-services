@@ -20,6 +20,8 @@ namespace Soundtrail.Domain.Catalog.Tracks
 
         public DateOnly? ReleaseDate { get; set; }
 
+        public string? ReleaseType { get; set; }
+
         public string? ArtworkUrl { get; set; }
 
         public bool StreamingLocationsRequired { get; set; }

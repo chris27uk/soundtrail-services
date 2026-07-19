@@ -52,22 +52,35 @@ public sealed class CatalogEventTranslationRegistration : ITypeTranslationRegist
             eventType: "track-discovered",
             toDto: @event => new TrackDiscoveredEventDataRecordDto(
                 @event.Track.TrackId.Value,
+                @event.Track.TrackId.BaseKeyHigh,
+                @event.Track.TrackId.BaseKeyLow,
+                @event.Track.TrackId.SpecificKey,
                 @event.Track.Title,
                 @event.Track.ArtistName,
+                @event.Track.AlbumTitle,
                 @event.Track.DurationMs,
                 @event.Track.Isrc,
                 @event.Track.Mbid,
+                @event.Track.ReleaseDate,
+                @event.Track.ReleaseType,
                 "catalog",
                 @event.ObservedAt),
             toDomainObject: dto =>
             {
-                var track = new Track(TrackId.From(dto.MusicCatalogId ?? throw new InvalidOperationException("Track id is required.")))
+                var track = new Track(
+                    TrackId.FromKeyParts(
+                        dto.TrackIdBaseKeyHigh ?? throw new InvalidOperationException("Track base key high is required."),
+                        dto.TrackIdBaseKeyLow ?? throw new InvalidOperationException("Track base key low is required."),
+                        dto.TrackIdSpecificKey ?? throw new InvalidOperationException("Track specific key is required.")))
                 {
                     Title = dto.Title,
                     ArtistName = dto.Artist,
+                    AlbumTitle = dto.AlbumTitle,
                     DurationMs = dto.DurationMs,
                     Isrc = dto.Isrc,
                     Mbid = dto.Mbid,
+                    ReleaseDate = dto.ReleaseDate,
+                    ReleaseType = dto.ReleaseType,
                     UpdatedAt = dto.ObservedAt
                 };
 
