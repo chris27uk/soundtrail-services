@@ -8,6 +8,7 @@ namespace Soundtrail.Services.Enrichment.Orchestrator.Features.Prioritisation.On
         public static DiscoveryHistory.SearchRequestContext ToAggregateContext(this AssessWorkCommand request)
         {
             return new DiscoveryHistory.SearchRequestContext(
+                request.CommandId,
                 request.TrustLevel ?? 0,
                 request.RiskScore ?? 0,
                 request.CreatedAt,

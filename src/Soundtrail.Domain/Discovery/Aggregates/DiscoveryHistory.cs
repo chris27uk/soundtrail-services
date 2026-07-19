@@ -133,7 +133,7 @@ public sealed class DiscoveryHistory
         var append = await this.repository.AppendAsync(
             this.stream,
             uncommittedEvents.AsReadOnly(),
-            OperationId.From(this.requestContext.CorrelationId),
+            OperationId.From(this.requestContext.CommandId.Value),
             cancellationToken);
 
         if (append.Outcome == AppendOutcome.VersionMismatch)
@@ -164,6 +164,7 @@ public sealed class DiscoveryHistory
     }
 
     public sealed record SearchRequestContext(
+        CommandId CommandId,
         int TrustLevel,
         int RiskScore,
         DateTimeOffset RequestedAt,

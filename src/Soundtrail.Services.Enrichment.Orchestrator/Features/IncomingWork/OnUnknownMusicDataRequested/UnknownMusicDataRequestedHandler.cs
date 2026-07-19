@@ -14,7 +14,12 @@ public sealed class OnUnknownMusicDataRequestedHandler(
 {
     public async Task Handle(RequestUnknownMusicDataCommand request, CancellationToken cancellationToken = default)
     {
-        var context = new DiscoveryHistory.SearchRequestContext(request.TrustLevel, request.RiskScore, request.RequestedAt, request.CorrelationId);
+        var context = new DiscoveryHistory.SearchRequestContext(
+            request.CommandId,
+            request.TrustLevel,
+            request.RiskScore,
+            request.RequestedAt,
+            request.CorrelationId);
         var streamId = CatalogWorkId.From(request.SearchCriteria);
         var search = new EnrichmentTarget.SearchForUnknownCatalogItem(request.SearchCriteria);
         var result = searchForCandidates.Search(search);

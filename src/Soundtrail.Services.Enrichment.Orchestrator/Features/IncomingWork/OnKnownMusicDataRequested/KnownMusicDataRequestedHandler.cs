@@ -12,7 +12,12 @@ public sealed class OnKnownMusicDataRequestedHandler(
 {
     public async Task Handle(RequestKnownMusicDataCommand request, CancellationToken cancellationToken = default)
     {
-        var context = new DiscoveryHistory.SearchRequestContext(request.TrustLevel, request.RiskScore, request.RequestedAt, request.CorrelationId);
+        var context = new DiscoveryHistory.SearchRequestContext(
+            request.CommandId,
+            request.TrustLevel,
+            request.RiskScore,
+            request.RequestedAt,
+            request.CorrelationId);
         var streamId = CatalogWorkId.From(request.Operation);
         await using var scope = await DiscoveryHistoryScope.LoadFromEventStreamAsync(repository, streamId, context, cancellationToken);
         
