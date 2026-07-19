@@ -13,6 +13,7 @@ namespace Soundtrail.Services.Api.Features.Search;
 public sealed class SearchHandler(
     ISearchPort searchPort,
     ICommandBus commandBus,
+    IDiscoveryFeedbackPort discoveryFeedbackPort,
     IClockPort clock) : IApiHandler<SearchRequest, SearchResponse?>
 {
     public async Task<SearchResponse?> Handle(SearchRequest request, CancellationToken cancellationToken = default)
@@ -32,6 +33,16 @@ public sealed class SearchHandler(
             },
             cancellationToken);
 
-        return await searchPort.SearchAsync(searchCriteria, cancellationToken);
+        var response = await searchPort.SearchAsync(searchCriteria, cancellationToken);
+        if (response is null)
+        {
+            return null;
+        }
+
+        var discovery = await discoveryFeedbackPort.GetAsync(
+            new EnrichmentTarget.SearchForUnknownCatalogItem(searchCriteria),
+            cancellationToken);
+
+        return response with { Discovery = discovery };
     }
 }

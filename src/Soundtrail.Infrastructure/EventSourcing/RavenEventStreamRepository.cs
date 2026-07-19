@@ -8,14 +8,14 @@ namespace Soundtrail.Adapters.EventSourcing;
 internal sealed class RavenEventStreamRepository<TStreamId>(
     IAsyncDocumentSession session,
     ITypeRegistry typeRegistry,
-    RavenEventStreamDefinition definition) : IEventStreamRepository<TStreamId>
+    string streamName) : IEventStreamRepository<TStreamId>
     where TStreamId : IValueType
 {
     private readonly RavenEventStore<TStreamId> eventStore =
         new(
             session,
             typeRegistry,
-            definition);
+            streamName);
 
     public Task<LoadedEventStream<TStreamId>> LoadAsync(
         TStreamId streamId,

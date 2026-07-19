@@ -1,8 +1,7 @@
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Services.Enrichment.Orchestrator.Shared.RequestedWork;
 
-namespace Soundtrail.Services.Enrichment.Orchestrator.Features.RequestedWork;
+namespace Soundtrail.Services.Enrichment.Orchestrator.Shared.RequestedWork;
 
 public static class Rule
 {
@@ -37,13 +36,13 @@ public static class Rule
 
         public TypedCatalogItemRuleBuilder<TInput> Then(Func<TInput, EnrichmentTarget> then)
         {
-            steps.Add(then);
+            this.steps.Add(then);
             return this;
         }
 
         public TypedCatalogItemRuleBuilder<TInput> And(Func<TInput, EnrichmentTarget> then)
         {
-            steps.Add(then);
+            this.steps.Add(then);
             return this;
         }
 
@@ -51,7 +50,7 @@ public static class Rule
 
         public IReadOnlyList<EnrichmentTarget> Apply(object input) =>
             input is TInput typed
-                ? steps.Select(step => step(typed)).ToArray()
+                ? this.steps.Select(step => step(typed)).ToArray()
                 : [];
     }
 }

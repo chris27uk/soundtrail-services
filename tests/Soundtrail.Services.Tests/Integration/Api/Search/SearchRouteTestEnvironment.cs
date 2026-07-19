@@ -73,7 +73,8 @@ internal sealed class SearchRouteTestEnvironment : IDisposable
                             result.ArtistName,
                             result.AlbumTitle,
                             result.ArtworkUrl))
-                    .ToArray());
+                    .ToArray(),
+                null);
         }
 
         public TDomain ToDomainObject<TDomain>(object dto) where TDomain : class => throw new NotSupportedException();

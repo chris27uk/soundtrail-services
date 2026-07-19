@@ -1,7 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Raven.Client.Documents.Session;
-using Soundtrail.Adapters.EventSourcing.CommonStores;
 using Soundtrail.Adapters.Registry;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery.Aggregates;
@@ -16,7 +15,7 @@ public static class ServiceCollectionExtensions
             sp => new RavenEventStreamRepository<CatalogWorkId>(
                 sp.GetRequiredService<IAsyncDocumentSession>(),
                 sp.GetRequiredService<ITypeRegistry>(),
-                CatalogSearchEventStreamDefinition.Create()));
+                "catalog-stream"));
 
         return services;
     }

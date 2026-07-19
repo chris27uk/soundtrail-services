@@ -9,8 +9,8 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Domain.Discovery.Candidates;
 using Soundtrail.Domain.Discovery.Events;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnKnownMusicDataRequested;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.RequestedWork;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.IncomingWork.OnKnownMusicDataRequested;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared.RequestedWork;
 
 namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnKnownMusicDataRequested;
 

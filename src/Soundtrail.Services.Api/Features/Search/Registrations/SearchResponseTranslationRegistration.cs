@@ -4,6 +4,7 @@ using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Tracks;
+using Soundtrail.Domain.Common;
 using Soundtrail.Services.Api.Features.Search.Contract;
 
 namespace Soundtrail.Services.Api.Features.Search.Registrations;
@@ -25,7 +26,16 @@ public sealed class SearchResponseTranslationRegistration : ITypeTranslationRegi
                                 result.ArtistName,
                                 result.AlbumTitle,
                                 result.ArtworkUrl))
-                        .ToArray()),
+                        .ToArray(),
+                    response.Discovery is null
+                        ? null
+                        : new DiscoveryFeedbackResponseDto(
+                            response.Discovery.Status,
+                            response.Discovery.Priority.ToString(),
+                            response.Discovery.NextEligibleAt,
+                            response.Discovery.EarliestExpectedCompletionAt,
+                            response.Discovery.Reason,
+                            response.Discovery.UpdatedAtUtc)),
             toDomainObject: dto =>
                 new SearchResponse(
                     dto.QueryText,
@@ -38,7 +48,16 @@ public sealed class SearchResponseTranslationRegistration : ITypeTranslationRegi
                                 result.ArtistName,
                                 result.AlbumTitle,
                                 result.ArtworkUrl))
-                        .ToArray()));
+                        .ToArray(),
+                    dto.Discovery is null
+                        ? null
+                        : new DiscoveryFeedbackResponse(
+                            dto.Discovery.Status,
+                            Enum.Parse<LookupPriorityBand>(dto.Discovery.Priority, true),
+                            dto.Discovery.NextEligibleAtUtc,
+                            dto.Discovery.EarliestExpectedCompletionAtUtc,
+                            dto.Discovery.Reason,
+                            dto.Discovery.UpdatedAtUtc)));
 
         registry.Register<CatalogSearchRecordDto, SearchResponse>(
             translate: record =>

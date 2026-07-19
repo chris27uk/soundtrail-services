@@ -6,8 +6,8 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Domain.Discovery.Assesment;
 using Soundtrail.Domain.Discovery.Events;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicAssessmentRequired;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.OnMusicAssessmentRequired.Planning;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.Prioritisation.OnMusicAssessmentRequired;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.Prioritisation.OnMusicAssessmentRequired.Planning;
 
 namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnMusicAssessmentRequired;
 

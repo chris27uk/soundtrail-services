@@ -19,7 +19,8 @@ public sealed class SearchResultsExistTests
 
         var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        result.Should().BeSameAs(response);
+        result.Should().NotBeSameAs(response);
+        result.Should().BeEquivalentTo(response);
     }
 
     [Fact]
@@ -185,5 +186,33 @@ public sealed class SearchResultsExistTests
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
         environment.CommandBus.Commands.Single().RequestedAt.Should().Be(environment.Clock.UtcNow);
+    }
+
+    [Fact]
+    public async Task Given_Existing_Search_Results_When_Searching_Then_Discovery_Feedback_Is_Requested_For_The_Search_Target()
+    {
+        var environment = SearchUnitTestEnvironment.ForSearch(queryText: "u2", filter: SearchType.Artist);
+
+        await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
+
+        environment.DiscoveryFeedbackPort.RequestedTarget
+            .Should().Be(new EnrichmentTarget.SearchForUnknownCatalogItem(new SearchCriteria("u2", SearchType.Artist)));
+    }
+
+    [Fact]
+    public async Task Given_Stored_Discovery_Feedback_When_Searching_Then_It_Is_Returned()
+    {
+        var environment = SearchUnitTestEnvironment.ForSearch();
+        environment.DiscoveryFeedbackPort.Response = new DiscoveryFeedbackResponse(
+            "scheduled",
+            LookupPriorityBand.High,
+            new DateTimeOffset(2026, 7, 18, 9, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2026, 7, 18, 9, 2, 0, TimeSpan.Zero),
+            "Equivalent work is scheduled.",
+            new DateTimeOffset(2026, 7, 18, 8, 59, 0, TimeSpan.Zero));
+
+        var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
+
+        result!.Discovery.Should().Be(environment.DiscoveryFeedbackPort.Response);
     }
 }

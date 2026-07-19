@@ -9,7 +9,7 @@ namespace Soundtrail.Adapters.EventSourcing;
 internal sealed class RavenEventStore<TStreamId>(
     IAsyncDocumentSession session,
     ITypeRegistry typeRegistry,
-    RavenEventStreamDefinition definition)
+    string streamName)
     where TStreamId : IValueType
 {
     public async Task<LoadedEventStream<TStreamId>> LoadAsync(
@@ -115,7 +115,7 @@ internal sealed class RavenEventStore<TStreamId>(
         {
             Id = GetEventId(streamId, version),
             StreamId = streamId.StableValue,
-            AggregateType = definition.StreamName,
+            AggregateType = streamName,
             Version = version,
             EventId = $"{streamId.StableValue}:{version:D10}",
             EventType = registration.EventType,
@@ -142,14 +142,14 @@ internal sealed class RavenEventStore<TStreamId>(
         {
             Id = metadataId,
             StreamId = streamId.StableValue,
-            AggregateType = definition.StreamName
+            AggregateType = streamName
         };
 
     private string GetMetadataId(TStreamId streamId) =>
-        $"{definition.StreamName}-streams/{streamId.StableValue}";
+        $"{streamName}-streams/{streamId.StableValue}";
 
     private string GetEventPrefix(TStreamId streamId) =>
-        $"{definition.StreamName}-events/{streamId.StableValue}/";
+        $"{streamName}-events/{streamId.StableValue}/";
 
     private string GetEventId(TStreamId streamId, int version) =>
         $"{GetEventPrefix(streamId)}{version:D10}";

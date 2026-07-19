@@ -15,7 +15,8 @@ namespace Soundtrail.Services.Api.Features.Search.Composition;
 [Autodiscover]
 public sealed class SearchFeatureProduction() : SearchFeature(
     _ => new SystemClockPort(),
-    sp => new RavenSearchPort(CreateDocumentStore(sp), AppTypeRegistry.ServiceLocation))
+    sp => new RavenSearchPort(CreateDocumentStore(sp), AppTypeRegistry.ServiceLocation),
+    sp => new RavenDiscoveryFeedbackPort(CreateDocumentStore(sp)))
 {
     private static IDocumentStore CreateDocumentStore(IServiceProvider sp)
     {
@@ -36,7 +37,8 @@ public sealed class SearchFeatureProduction() : SearchFeature(
 
 public class SearchFeature(
     Func<IServiceProvider, IClockPort> createClockPort,
-    Func<IServiceProvider, ISearchPort> createSearchPort) : IApiFeature
+    Func<IServiceProvider, ISearchPort> createSearchPort,
+    Func<IServiceProvider, IDiscoveryFeedbackPort> createDiscoveryFeedbackPort) : IApiFeature
 {
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
@@ -44,6 +46,7 @@ public class SearchFeature(
         services.Add(ServiceDescriptor.Singleton(AppTypeRegistry.ServiceLocation));
         services.TryAddScoped<IApiHandler<SearchRequest, SearchResponse?>, SearchHandler>();
         services.Add(ServiceDescriptor.Singleton(createSearchPort));
+        services.Add(ServiceDescriptor.Singleton(createDiscoveryFeedbackPort));
         services.Add(ServiceDescriptor.Singleton(createClockPort));
     }
 
