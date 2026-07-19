@@ -1,10 +1,12 @@
-using Soundtrail.Adapters.Registry;
+using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
+using Soundtrail.Domain.Search;
+using Soundtrail.Services.Api.Features.Search.Adapters;
 using Soundtrail.Services.Api.Features.Search.Contract;
 
 namespace Soundtrail.Services.Api.Features.Search.Registrations;

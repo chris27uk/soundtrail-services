@@ -6,6 +6,7 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Domain.Discovery.Assesment;
 using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.Prioritisation.OnMusicAssessmentRequired;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.Prioritisation.OnMusicAssessmentRequired.Planning;
 
@@ -51,7 +52,7 @@ internal sealed class OnMusicAssessmentRequiredHandlerUnitTestEnvironment
             CommandId.For(commandId),
             CorrelationId.From(correlationId),
             createdAt ?? new DateTimeOffset(2026, 7, 18, 9, 30, 0, TimeSpan.Zero),
-            target ?? Work.EnrichTrackStreamingLocation(Soundtrail.Domain.Catalog.Tracks.TrackId.From("track-123")),
+            target ?? Work.EnrichTrackStreamingLocation(TestTrackIds.Create("track-123")),
             priority,
             trustLevel,
             riskScore);

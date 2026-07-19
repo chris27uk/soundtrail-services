@@ -12,7 +12,6 @@ namespace Soundtrail.Adapters.FeatureOrchestration
                 .AddClasses(classes => classes.AssignableTo<IFeature>().WithAttribute<AutodiscoverAttribute>())
                 .AsImplementedInterfaces()
                 .WithScopedLifetime());
-            
             return services;
         }
     }

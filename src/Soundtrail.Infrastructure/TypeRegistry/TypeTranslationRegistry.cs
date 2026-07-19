@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace Soundtrail.Adapters.Registry;
+namespace Soundtrail.Adapters.TypeRegistry;
 
 using Mapper = Func<object, object>;
 using TypeMapping = (Type SourceType, Type TargetType);
@@ -43,12 +43,12 @@ public sealed class TypeTranslationRegistry : ITypeRegistry
 
         if (translate is not null)
         {
-            translators[key] = source => translate((TSource)source);
+            this.translators[key] = source => translate((TSource)source);
         }
 
         if (mapOnto is not null)
         {
-            mapOntoHandlers[key] = (source, target) => mapOnto((TSource)source, (TTarget)target);
+            this.mapOntoHandlers[key] = (source, target) => mapOnto((TSource)source, (TTarget)target);
         }
     }
 
@@ -83,7 +83,7 @@ public sealed class TypeTranslationRegistry : ITypeRegistry
             source => occurredAtUtc((TDomain)source),
             source => correlationId?.Invoke((TDomain)source));
 
-        storedEventTypesByDomainType[typeof(TDomain)] = registration;
+        this.storedEventTypesByDomainType[typeof(TDomain)] = registration;
     }
 
     public object ToDto(object? domainObject)
@@ -118,7 +118,7 @@ public sealed class TypeTranslationRegistry : ITypeRegistry
     {
         ArgumentNullException.ThrowIfNull(domainType);
 
-        if (dtoTypesByDomainType.TryGetValue(domainType, out var dtoType))
+        if (this.dtoTypesByDomainType.TryGetValue(domainType, out var dtoType))
         {
             return dtoType;
         }
@@ -131,7 +131,7 @@ public sealed class TypeTranslationRegistry : ITypeRegistry
     {
         ArgumentNullException.ThrowIfNull(dtoType);
 
-        if (domainTypesByDtoType.TryGetValue(dtoType, out var domainType))
+        if (this.domainTypesByDtoType.TryGetValue(dtoType, out var domainType))
         {
             return domainType;
         }
@@ -144,7 +144,7 @@ public sealed class TypeTranslationRegistry : ITypeRegistry
     {
         ArgumentNullException.ThrowIfNull(domainType);
 
-        if (storedEventTypesByDomainType.TryGetValue(domainType, out var registration))
+        if (this.storedEventTypesByDomainType.TryGetValue(domainType, out var registration))
         {
             return registration;
         }
@@ -161,7 +161,7 @@ public sealed class TypeTranslationRegistry : ITypeRegistry
         ArgumentNullException.ThrowIfNull(target);
 
         var key = (typeof(TSource), typeof(TTarget));
-        if (mapOntoHandlers.TryGetValue(key, out var mapOnto))
+        if (this.mapOntoHandlers.TryGetValue(key, out var mapOnto))
         {
             mapOnto(source, target);
             return;
@@ -207,20 +207,20 @@ public sealed class TypeTranslationRegistry : ITypeRegistry
 
     private void RegisterPairMetadata(Type domainType, Type dtoType)
     {
-        if (dtoTypesByDomainType.TryGetValue(domainType, out var existingDtoType) && existingDtoType != dtoType)
+        if (this.dtoTypesByDomainType.TryGetValue(domainType, out var existingDtoType) && existingDtoType != dtoType)
         {
             throw new InvalidOperationException(
                 $"Domain type '{domainType.FullName}' is already registered to DTO type '{existingDtoType.FullName}'.");
         }
 
-        if (domainTypesByDtoType.TryGetValue(dtoType, out var existingDomainType) && existingDomainType != domainType)
+        if (this.domainTypesByDtoType.TryGetValue(dtoType, out var existingDomainType) && existingDomainType != domainType)
         {
             throw new InvalidOperationException(
                 $"DTO type '{dtoType.FullName}' is already registered to domain type '{existingDomainType.FullName}'.");
         }
 
-        dtoTypesByDomainType[domainType] = dtoType;
-        domainTypesByDtoType[dtoType] = domainType;
+        this.dtoTypesByDomainType[domainType] = dtoType;
+        this.domainTypesByDtoType[dtoType] = domainType;
     }
 
     private static TypeTranslationRegistry CreateDefault() =>

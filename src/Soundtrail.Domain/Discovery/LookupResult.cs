@@ -1,18 +1,36 @@
 using Dunet;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Domain.Discovery
 {
     [Union]
     public partial record LookupResult
     {
-        public partial record Data(LookedUpData Value);
-        
-        public partial record Duplicate(SearchCriteria Criteria, CatalogItem Value);
+        public partial record Succeeded(
+            LookupResultContext Context,
+            LookedUpData Value,
+            DateTimeOffset CompletedAt);
 
-        public partial record NotFound(SearchCriteria Criteria);
-        
-        public partial record Deferred(SearchCriteria Criteria, DateTimeOffset DeferredUntil);
+        public partial record Duplicate(
+            LookupResultContext Context,
+            CatalogItem ExistingItem,
+            string Reason,
+            DateTimeOffset CompletedAt);
+
+        public partial record NotFound(
+            LookupResultContext Context,
+            string Reason,
+            DateTimeOffset CompletedAt);
+
+        public partial record Deferred(
+            LookupResultContext Context,
+            DateTimeOffset DeferredUntil,
+            string Reason,
+            DateTimeOffset CompletedAt);
+
+        public partial record Failed(
+            LookupResultContext Context,
+            string Reason,
+            DateTimeOffset CompletedAt);
     }
 }

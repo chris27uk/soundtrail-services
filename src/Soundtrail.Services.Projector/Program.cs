@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Soundtrail.Adapters.FeatureOrchestration;
-using Soundtrail.Services.Projector;
-using Soundtrail.Services.Projector.Infrastructure;
+using Soundtrail.Services.Internal.Projector;
+using Soundtrail.Services.Internal.Projector.Infrastructure;
 using Soundtrail.Services.ServiceDefaults;
 using Wolverine;
 

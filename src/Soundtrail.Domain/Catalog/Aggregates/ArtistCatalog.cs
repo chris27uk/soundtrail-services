@@ -1,11 +1,11 @@
-using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Catalog.Tracks;
+using Soundtrail.Domain.Common;
 
-namespace Soundtrail.Domain.Catalog;
+namespace Soundtrail.Domain.Catalog.Aggregates;
 
 public sealed class ArtistCatalog
 {
@@ -22,7 +22,7 @@ public sealed class ArtistCatalog
         IEnumerable<IDomainEvent> events)
     {
         this.artistId = artistId;
-        eventHandlers = CreateHandlers();
+        this.eventHandlers = CreateHandlers();
 
         foreach (var @event in events)
         {
@@ -48,7 +48,21 @@ public sealed class ArtistCatalog
             playlist => { });
     }
 
-    private void AddTrack(Track track) => this.Apply(new TrackDiscovered(track, ObservedAt: DateTimeOffset.UtcNow), true);
+    public void StreamingLocationDiscovered(TrackId trackId, StreamingLocation streamingLocation)
+    {
+        this.Apply(
+            new Events.StreamingLocationDiscovered(
+                new CatalogItemId.Track(trackId),
+                new CatalogTrackHierarchy(this.artistId, null),
+                streamingLocation.Provider,
+                streamingLocation.ExternalId,
+                streamingLocation.Url,
+                streamingLocation.SourceProvider,
+                streamingLocation.ObservedAt),
+            true);
+    }
+
+    private void AddTrack(Track track) => this.Apply(new TrackDiscovered(track, BuildHierarchy(track), ObservedAt: DateTimeOffset.UtcNow), true);
     
     private void AddAlbum(Album album) => this.Apply(new AlbumDiscovered(album, ObservedAt: DateTimeOffset.UtcNow), true);
     
@@ -62,28 +76,28 @@ public sealed class ArtistCatalog
     {
         var append = await repository.AppendAsync(
             stream,
-            uncommittedEvents.AsReadOnly(),
+            this.uncommittedEvents.AsReadOnly(),
             OperationId.From(commandId.Value),
             cancellationToken);
 
         if (append.Outcome == AppendOutcome.VersionMismatch)
         {
-            throw new InvalidOperationException($"Artist catalog stream concurrency conflict for '{artistId?.Value}'.");
+            throw new InvalidOperationException($"Artist catalog stream concurrency conflict for '{this.artistId?.Value}'.");
         }
 
         if (append.Appended || append.Outcome == AppendOutcome.DuplicateOperation)
         {
-            uncommittedEvents.Clear();
+            this.uncommittedEvents.Clear();
         }
     }
 
     private void Apply(IDomainEvent @event, bool isNew)
     {
-        eventHandlers.Handle(@event);
+        this.eventHandlers.Handle(@event);
 
         if (isNew)
         {
-            uncommittedEvents.Add(@event);
+            this.uncommittedEvents.Add(@event);
         }
     }
 
@@ -100,13 +114,13 @@ public sealed class ArtistCatalog
 
     private void On(ArtistDiscovered @event)
     {
-        artistId ??= @event.Artist.Id;
-        artistName = @event.Artist.Name;
+        this.artistId ??= @event.Artist.Id;
+        this.artistName = @event.Artist.Name;
     }
 
     private void On(AlbumDiscovered @event)
     {
-        albums[@event.Album.AlbumId] = @event.Album;
+        this.albums[@event.Album.AlbumId] = @event.Album;
     }
 
     private void On(TrackDiscovered @event)
@@ -114,9 +128,13 @@ public sealed class ArtistCatalog
         var track = GetOrCreateTrack(@event.Track.TrackId);
         track.Title = @event.Track.Title;
         track.ArtistName = @event.Track.ArtistName;
+        track.AlbumId = @event.Hierarchy.AlbumId?.StableValue ?? @event.Track.AlbumId;
+        track.AlbumTitle = @event.Track.AlbumTitle;
         track.DurationMs = @event.Track.DurationMs;
         track.Isrc = @event.Track.Isrc;
         track.Mbid = @event.Track.Mbid;
+        track.ReleaseDate = @event.Track.ReleaseDate;
+        track.ReleaseType = @event.Track.ReleaseType;
         track.UpdatedAt = @event.ObservedAt;
     }
 
@@ -139,6 +157,16 @@ public sealed class ArtistCatalog
         track.UpdatedAt = @event.ObservedAt;
     }
 
+    private CatalogTrackHierarchy BuildHierarchy(Track track)
+    {
+        var hierarchyArtistId = this.artistId;
+        Soundtrail.Domain.Catalog.Albums.AlbumId? hierarchyAlbumId =
+            string.IsNullOrWhiteSpace(track.AlbumId)
+                ? null
+                : Soundtrail.Domain.Catalog.Albums.AlbumId.From(track.AlbumId);
+        return new CatalogTrackHierarchy(hierarchyArtistId, hierarchyAlbumId);
+    }
+
     private void On(ArtworkDiscovered @event)
     {
         @event.CatalogItemId.Match(
@@ -150,7 +178,7 @@ public sealed class ArtistCatalog
 
     private void UpdateAlbumArtwork(AlbumId albumId, Uri eventUrl, DateTimeOffset observedAt)
     {
-        if (albums.TryGetValue(albumId.StableValue, out var album))
+        if (this.albums.TryGetValue(albumId.StableValue, out var album))
         {
             album.ArtworkUrl = eventUrl.ToString();
             album.UpdatedAt = observedAt;
@@ -159,12 +187,12 @@ public sealed class ArtistCatalog
 
     private void UpdateArtistArtwork(Uri artworkUri)
     {
-        artworkUrl = artworkUri;
+        this.artworkUrl = artworkUri;
     }
 
     private void UpdateTrackArtwork(TrackId trackId, Uri eventUrl, DateTimeOffset observedAt)
     {
-        if (tracks.TryGetValue(trackId.Value, out var track))
+        if (this.tracks.TryGetValue(trackId.Value, out var track))
         {
             track.ArtworkUrl = eventUrl.ToString();
             track.UpdatedAt = observedAt;

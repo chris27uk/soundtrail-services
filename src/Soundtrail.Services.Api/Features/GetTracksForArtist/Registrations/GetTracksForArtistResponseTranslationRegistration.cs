@@ -1,8 +1,9 @@
-using Soundtrail.Adapters.Registry;
+using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Tracks;
+using Soundtrail.Services.Api.Features.GetTracksForArtist.Adapters;
 using Soundtrail.Services.Api.Features.GetTracksForArtist.Contract;
 
 namespace Soundtrail.Services.Api.Features.GetTracksForArtist.Registrations;
@@ -52,8 +53,15 @@ public sealed class GetTracksForArtistResponseTranslationRegistration : ITypeTra
                     ArtistName.From(record.ArtistName),
                     record.Tracks.Select(
                             track => new GetTracksForArtistTrackResponse(
-                                TrackId.From(track.TrackId),
-                                new CatalogItemId.Track(TrackId.From(track.TrackId)),
+                                TrackId.FromKeyParts(
+                                    track.TrackIdBaseKeyHigh ?? throw new InvalidOperationException("Track base key high is required."),
+                                    track.TrackIdBaseKeyLow ?? throw new InvalidOperationException("Track base key low is required."),
+                                    track.TrackIdSpecificKey ?? throw new InvalidOperationException("Track specific key is required.")),
+                                new CatalogItemId.Track(
+                                    TrackId.FromKeyParts(
+                                        track.TrackIdBaseKeyHigh ?? throw new InvalidOperationException("Track base key high is required."),
+                                        track.TrackIdBaseKeyLow ?? throw new InvalidOperationException("Track base key low is required."),
+                                        track.TrackIdSpecificKey ?? throw new InvalidOperationException("Track specific key is required."))),
                                 track.Title,
                                 track.ArtistName,
                                 track.AlbumTitle,

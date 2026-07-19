@@ -31,7 +31,7 @@ internal sealed class ImportKworbChartUnitTestEnvironment
             chartRows ?? ImportKworbChartTracks.CreateChartRows(("Artist 1", "Track 1")),
             trackIdsByFingerprint ?? new Dictionary<TrackMatchFingerprint, TrackId>
             {
-                [ImportKworbChartTracks.Fingerprint("Artist 1", "Track 1")] = TrackId.From("track-1701")
+                [ImportKworbChartTracks.Fingerprint("Artist 1", "Track 1")] = TestTrackIds.Create("track-1701")
             });
 
     public ImportKworbChartHandler CreateSubjectUnderTest() =>

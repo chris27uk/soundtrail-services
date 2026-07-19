@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Api.Features.Search.Registrations;
+namespace Soundtrail.Services.Api.Features.Search.Adapters;
 
 public sealed record SearchResponseDto(
     string QueryText,

@@ -1,4 +1,5 @@
-using Soundtrail.Adapters.Registry;
+using Soundtrail.Adapters.TypeRegistry;
+using Soundtrail.Services.Api.Features.GetAlbum.Adapters;
 using Soundtrail.Services.Api.Features.GetAlbum.Contract;
 
 namespace Soundtrail.Services.Api.Features.GetAlbum.Registrations;

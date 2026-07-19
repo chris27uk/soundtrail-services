@@ -42,7 +42,7 @@ public sealed class ChartContainsMatchingTracksTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().Tracks.Single().Should().Be(TrackId.From("track-1701"));
+        environment.CommandBus.Commands.Single().Tracks.Single().Should().Be(global::Soundtrail.Services.Tests.TestTrackIds.Create("track-1701"));
     }
 
     [Fact]
@@ -65,12 +65,12 @@ public sealed class ChartContainsMatchingTracksTests
                 ("Artist 1", "Track 1")),
             trackIdsByFingerprint: new Dictionary<TrackMatchFingerprint, TrackId>
             {
-                [ImportKworbChartTracks.Fingerprint("Artist 1", "Track 1")] = TrackId.From("track-1701"),
-                [ImportKworbChartTracks.Fingerprint("Artist 2", "Track 2")] = TrackId.From("track-1702")
+                [ImportKworbChartTracks.Fingerprint("Artist 1", "Track 1")] = global::Soundtrail.Services.Tests.TestTrackIds.Create("track-1701"),
+                [ImportKworbChartTracks.Fingerprint("Artist 2", "Track 2")] = global::Soundtrail.Services.Tests.TestTrackIds.Create("track-1702")
             });
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().Tracks.Should().Equal(TrackId.From("track-1702"), TrackId.From("track-1701"));
+        environment.CommandBus.Commands.Single().Tracks.Should().Equal(global::Soundtrail.Services.Tests.TestTrackIds.Create("track-1702"), global::Soundtrail.Services.Tests.TestTrackIds.Create("track-1701"));
     }
 }

@@ -56,7 +56,7 @@ public sealed class SearchResultsExistTests
     [Fact]
     public async Task Given_Existing_Search_Results_When_Searching_Then_The_Music_Catalog_Id_Is_Returned()
     {
-        var musicCatalogId = new CatalogItemId.Track(TrackId.From("track-2903"));
+        var musicCatalogId = new CatalogItemId.Track(global::Soundtrail.Services.Tests.TestTrackIds.Create("track-2903"));
         var environment = SearchUnitTestEnvironment.ForSearch(
             filter: SearchType.Track,
             response: SearchResults.CreateResponse(filter: SearchType.Track, musicCatalogId: musicCatalogId, resultType: SearchType.Track));

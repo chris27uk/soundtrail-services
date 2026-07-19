@@ -56,7 +56,7 @@ public sealed class MusicAssessmentPrioritisationTests
     public async Task Given_Completed_Work_When_Assessing_Then_The_Request_Is_Ignored()
     {
         var environment = OnMusicAssessmentRequiredHandlerUnitTestEnvironment.Create();
-        var target = Work.EnrichTrackStreamingLocation(Soundtrail.Domain.Catalog.Tracks.TrackId.From("track-123"));
+        var target = Work.EnrichTrackStreamingLocation(TestTrackIds.Create("track-123"));
         environment.Repository.SeedEvents =
         [
             new WorkCompleted(target, LookupPriorityBand.High, "done", new DateTimeOffset(2026, 7, 18, 9, 25, 0, TimeSpan.Zero))
@@ -72,7 +72,7 @@ public sealed class MusicAssessmentPrioritisationTests
     public async Task Given_Previously_Rejected_Work_When_Assessing_Then_The_Request_Is_Rejected_Again()
     {
         var environment = OnMusicAssessmentRequiredHandlerUnitTestEnvironment.Create();
-        var target = Work.EnrichTrackStreamingLocation(Soundtrail.Domain.Catalog.Tracks.TrackId.From("track-123"));
+        var target = Work.EnrichTrackStreamingLocation(TestTrackIds.Create("track-123"));
         environment.Repository.SeedEvents =
         [
             new WorkRejected(target, LookupPriorityBand.High, "blocked", new DateTimeOffset(2026, 7, 18, 9, 25, 0, TimeSpan.Zero))

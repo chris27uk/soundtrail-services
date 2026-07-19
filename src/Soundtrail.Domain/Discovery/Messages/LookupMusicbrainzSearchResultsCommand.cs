@@ -1,14 +1,15 @@
-using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Api.Features.Search.Contract;
 
-namespace Soundtrail.Domain.Discovery.Commands;
+namespace Soundtrail.Domain.Discovery.Messages;
 
 public sealed record LookupMusicbrainzSearchResultsCommand(
     CommandId CommandId,
     CorrelationId CorrelationId,
     DateTimeOffset CreatedAt,
     LookupPriorityBand Priority,
-    SearchCriteria SearchCriteria) : ICommand;
+    SearchCriteria SearchCriteria) : ICommand
+{
+    public DateTimeOffset RequestedAt => CreatedAt;
+}

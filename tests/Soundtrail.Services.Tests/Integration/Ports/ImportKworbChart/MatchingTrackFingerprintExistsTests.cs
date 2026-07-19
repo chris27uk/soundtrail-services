@@ -28,10 +28,10 @@ public sealed class MatchingTrackFingerprintExistsTests
     {
         await using var environment = await LoadTrackByFingerprintPortContractTestEnvironment.ForExistingTrack(
             implementation,
-            trackId: "track-1803");
+            trackId: global::Soundtrail.Services.Tests.TestTrackIds.Value("track-1803"));
 
         var result = await environment.Subject.LoadTrackIdAsync(environment.Fingerprint, CancellationToken.None);
 
-        result.Should().Be(TrackId.From("track-1803"));
+        result.Should().Be(global::Soundtrail.Services.Tests.TestTrackIds.Create("track-1803"));
     }
 }

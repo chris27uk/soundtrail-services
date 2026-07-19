@@ -1,5 +1,5 @@
 using Raven.Client.Documents;
-using Soundtrail.Adapters.Registry;
+using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Tracks;
@@ -32,7 +32,7 @@ internal sealed class GetTrackPortContractTestEnvironment : IAsyncDisposable
 
     public static async Task<GetTrackPortContractTestEnvironment> ForExistingTrack(
         GetTrackPortImplementation implementation,
-        string trackId = "track-601",
+        string? trackId = null,
         string musicCatalogId = "mc_track_601",
         string title = "The Track",
         string artistName = "The Artist",
@@ -42,7 +42,8 @@ internal sealed class GetTrackPortContractTestEnvironment : IAsyncDisposable
         DateOnly? releaseDate = null,
         string? artworkUrl = "https://cdn.soundtrail.test/tracks/mc_track_601.jpg")
     {
-        var resolvedTrackId = TrackId.From(trackId);
+        var trackIdValue = trackId ?? global::Soundtrail.Services.Tests.TestTrackIds.Value("track-601");
+        var resolvedTrackId = TrackId.From(trackIdValue);
         var response = new GetTrackResponse(
             resolvedTrackId,
             new CatalogItemId.Track(resolvedTrackId),
@@ -63,8 +64,8 @@ internal sealed class GetTrackPortContractTestEnvironment : IAsyncDisposable
                 resolvedTrackId,
                 new CatalogTrackRecordDto
                 {
-                    Id = CatalogTrackRecordDto.GetDocumentId(trackId),
-                    TrackId = trackId,
+                    Id = CatalogTrackRecordDto.GetDocumentId(trackIdValue),
+                    TrackId = trackIdValue,
                     MusicCatalogId = musicCatalogId,
                     Title = title,
                     ArtistName = artistName,
@@ -82,7 +83,7 @@ internal sealed class GetTrackPortContractTestEnvironment : IAsyncDisposable
         GetTrackPortImplementation implementation,
         TrackId? trackId = null)
     {
-        var resolvedTrackId = trackId ?? TrackId.From("track-602");
+        var resolvedTrackId = trackId ?? global::Soundtrail.Services.Tests.TestTrackIds.Create("track-602");
 
         return implementation switch
         {

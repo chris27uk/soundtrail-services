@@ -1,9 +1,8 @@
-using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
 
-namespace Soundtrail.Domain.Discovery.Commands;
+namespace Soundtrail.Domain.Discovery.Messages;
 
 public sealed record LookupStreamingLocationByTrackMetadataCommand(
     CommandId CommandId,
@@ -11,4 +10,7 @@ public sealed record LookupStreamingLocationByTrackMetadataCommand(
     DateTimeOffset CreatedAt,
     LookupPriorityBand Priority,
     TrackId TrackId,
-    ProviderName Provider) : ICommand;
+    ProviderName Provider) : ICommand
+{
+    public DateTimeOffset RequestedAt => CreatedAt;
+}

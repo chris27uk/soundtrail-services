@@ -17,6 +17,12 @@ public sealed class CatalogPlaylistTrackRecordDto
 {
     public string TrackId { get; set; } = string.Empty;
 
+    public string? TrackIdBaseKeyHigh { get; set; }
+
+    public string? TrackIdBaseKeyLow { get; set; }
+
+    public string? TrackIdSpecificKey { get; set; }
+
     public string MusicCatalogId { get; set; } = string.Empty;
 
     public string Title { get; set; } = string.Empty;
@@ -30,6 +36,8 @@ public sealed class CatalogPlaylistTrackRecordDto
     public string? Isrc { get; set; }
 
     public DateOnly? ReleaseDate { get; set; }
+
+    public string? ReleaseType { get; set; }
 
     public string? ArtworkUrl { get; set; }
 }

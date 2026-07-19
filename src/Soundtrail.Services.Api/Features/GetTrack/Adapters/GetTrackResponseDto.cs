@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Api.Features.GetTrack.Registrations;
+namespace Soundtrail.Services.Api.Features.GetTrack.Adapters;
 
 public sealed record GetTrackResponseDto(
     string TrackId,

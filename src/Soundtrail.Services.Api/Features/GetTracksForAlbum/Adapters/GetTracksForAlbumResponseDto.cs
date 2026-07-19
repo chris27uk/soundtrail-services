@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Api.Features.GetTracksForAlbum.Registrations;
+namespace Soundtrail.Services.Api.Features.GetTracksForAlbum.Adapters;
 
 public sealed record GetTracksForAlbumResponseDto(
     string ArtistId,

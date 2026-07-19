@@ -1,4 +1,4 @@
-using Soundtrail.Adapters.Registry;
+using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Services.Api.Features.GetTracksForPlaylist.Contract;

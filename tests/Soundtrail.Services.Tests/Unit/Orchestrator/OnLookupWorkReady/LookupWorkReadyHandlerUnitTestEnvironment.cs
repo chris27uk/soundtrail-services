@@ -4,7 +4,7 @@ using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.Search.Contract;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.Processing.OnLookupWorkReady;
@@ -34,7 +34,7 @@ internal sealed class LookupWorkReadyHandlerUnitTestEnvironment
 
     public static DispatchLookupWork CreateStreamingLocationRequest() =>
         new(
-            Work.EnrichTrackStreamingLocation(TrackId.From("track-2901")),
+            Work.EnrichTrackStreamingLocation(TestTrackIds.Create("track-2901")),
             LookupPriorityBand.Low,
             CommandId.For("cmd-streaming"),
             CorrelationId.From("corr-streaming"),

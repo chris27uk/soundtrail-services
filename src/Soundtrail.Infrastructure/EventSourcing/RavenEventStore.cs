@@ -1,8 +1,8 @@
 using Raven.Client.Documents.Session;
-using Soundtrail.Contracts.Common;
+using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Contracts.EventSourcing;
-using Soundtrail.Adapters.Registry;
 using Soundtrail.Domain.Abstractions.EventSourcing;
+using Soundtrail.Domain.Common;
 
 namespace Soundtrail.Adapters.EventSourcing;
 

@@ -56,7 +56,7 @@ public sealed class ArtistTracksExistTests
     [Fact]
     public async Task Given_Existing_Artist_Tracks_When_Requesting_The_Artist_Tracks_Then_The_Track_Id_Is_Returned()
     {
-        var trackId = TrackId.From("track-2403");
+        var trackId = global::Soundtrail.Services.Tests.TestTrackIds.Create("track-2403");
         var environment = GetTracksForArtistUnitTestEnvironment.ForExistingArtistTracks(
             response: ArtistTracks.CreateResponse(trackId: trackId));
 
@@ -68,7 +68,7 @@ public sealed class ArtistTracksExistTests
     [Fact]
     public async Task Given_Existing_Artist_Tracks_When_Requesting_The_Artist_Tracks_Then_The_Music_Catalog_Id_Is_Returned()
     {
-        var trackId = TrackId.From("track-2404");
+        var trackId = global::Soundtrail.Services.Tests.TestTrackIds.Create("track-2404");
         var environment = GetTracksForArtistUnitTestEnvironment.ForExistingArtistTracks(
             response: ArtistTracks.CreateResponse(trackId: trackId));
 

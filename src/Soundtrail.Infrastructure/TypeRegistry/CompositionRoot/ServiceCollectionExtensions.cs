@@ -2,7 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Reflection;
 
-namespace Soundtrail.Adapters.Registry.CompositionRoot;
+namespace Soundtrail.Adapters.TypeRegistry.CompositionRoot;
 
 public static class ServiceCollectionExtensions
 {

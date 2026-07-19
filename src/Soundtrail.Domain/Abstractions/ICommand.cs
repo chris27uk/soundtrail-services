@@ -1,4 +1,4 @@
-using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Common;
 
 namespace Soundtrail.Domain.Abstractions
 {
@@ -8,6 +8,6 @@ namespace Soundtrail.Domain.Abstractions
         
         CorrelationId CorrelationId { get; }
         
-        DateTimeOffset CreatedAt { get; }
+        DateTimeOffset RequestedAt { get; }
     }
 }

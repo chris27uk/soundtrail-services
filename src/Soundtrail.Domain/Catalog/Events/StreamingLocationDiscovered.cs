@@ -1,9 +1,10 @@
-using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Common;
 
 namespace Soundtrail.Domain.Catalog.Events;
 
 public sealed record StreamingLocationDiscovered(
     CatalogItemId? MusicCatalogId,
+    CatalogTrackHierarchy Hierarchy,
     ProviderName Provider,
     string? ExternalId,
     Uri Url,

@@ -1,4 +1,5 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Common;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Shared.Idempotency;
 

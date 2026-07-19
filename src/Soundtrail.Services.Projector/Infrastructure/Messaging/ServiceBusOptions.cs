@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Projector.Infrastructure.Messaging;
+namespace Soundtrail.Services.Internal.Projector.Infrastructure.Messaging;
 
 public sealed class ServiceBusOptions
 {
@@ -9,4 +9,6 @@ public sealed class ServiceBusOptions
     public string AssessMusicCatalogItemQueueName { get; init; } = "assess-music-catalog-item";
 
     public string DispatchLookupWorkQueueName { get; init; } = "dispatch-lookup-work";
+
+    public string PlaylistUpdatesQueueName { get; init; } = "playlist-updates";
 }

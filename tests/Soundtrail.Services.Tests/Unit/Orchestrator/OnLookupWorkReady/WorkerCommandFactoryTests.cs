@@ -1,7 +1,8 @@
 using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Common;
-using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Domain.Discovery.Planning;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.Processing.OnLookupWorkReady.Collaborators;
 
 namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnLookupWorkReady;
@@ -16,7 +17,7 @@ public sealed class WorkerCommandFactoryTests
         var command = WorkerCommandFactory.Create(
             request,
             new PlannedLookup.MusicbrainzSearch(
-                new Soundtrail.Domain.Search.SearchCriteria("u2", Soundtrail.Services.Api.Features.Search.Contract.SearchType.Artist),
+                new Soundtrail.Domain.Search.SearchCriteria("u2", SearchType.Artist),
                 LookupPriorityBand.High));
 
         command.Should().BeOfType<LookupMusicbrainzSearchResultsCommand>();
@@ -31,7 +32,7 @@ public sealed class WorkerCommandFactoryTests
         var command = WorkerCommandFactory.Create(
             request,
             new PlannedLookup.StreamingLocationByIsrc(
-                Soundtrail.Domain.Catalog.Tracks.TrackId.From("track-2901"),
+                TestTrackIds.Create("track-2901"),
                 ProviderName.Spotify,
                 LookupPriorityBand.Low));
 

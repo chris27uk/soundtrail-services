@@ -1,7 +1,7 @@
-using Soundtrail.Adapters.Registry;
+using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Services.Api.Features.GetAlbum.Composition;
 
-namespace Soundtrail.Services.Api
+namespace Soundtrail.Services.Api.Infrastructure
 {
     public static class AppTypeRegistry
     {

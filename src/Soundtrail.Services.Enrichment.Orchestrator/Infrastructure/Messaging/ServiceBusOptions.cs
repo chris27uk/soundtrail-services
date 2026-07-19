@@ -14,6 +14,8 @@ public sealed class ServiceBusOptions
 
     public string DispatchLookupWorkQueueName { get; init; } = "dispatch-lookup-work";
 
+    public string CatalogLookupCompletedQueueName { get; init; } = "catalog-lookup-completed";
+
     public string MusicBrainzLookupQueueName { get; init; } = "lookup-musicbrainz";
 
     public string PlaybackReferencesLookupQueueName { get; init; } = "lookup-playback-references";

@@ -1,9 +1,10 @@
-using Soundtrail.Adapters.Registry;
+using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Tracks;
+using Soundtrail.Services.Api.Features.GetTracksForAlbum.Adapters;
 using Soundtrail.Services.Api.Features.GetTracksForAlbum.Contract;
 
 namespace Soundtrail.Services.Api.Features.GetTracksForAlbum.Registrations;
@@ -54,8 +55,15 @@ public sealed class GetTracksForAlbumResponseTranslationRegistration : ITypeTran
                     record.AlbumTitle,
                     record.Tracks.Select(
                             track => new GetTracksForAlbumTrackResponse(
-                                TrackId.From(track.TrackId),
-                                new CatalogItemId.Track(TrackId.From(track.TrackId)),
+                                TrackId.FromKeyParts(
+                                    track.TrackIdBaseKeyHigh ?? throw new InvalidOperationException("Track base key high is required."),
+                                    track.TrackIdBaseKeyLow ?? throw new InvalidOperationException("Track base key low is required."),
+                                    track.TrackIdSpecificKey ?? throw new InvalidOperationException("Track specific key is required.")),
+                                new CatalogItemId.Track(
+                                    TrackId.FromKeyParts(
+                                        track.TrackIdBaseKeyHigh ?? throw new InvalidOperationException("Track base key high is required."),
+                                        track.TrackIdBaseKeyLow ?? throw new InvalidOperationException("Track base key low is required."),
+                                        track.TrackIdSpecificKey ?? throw new InvalidOperationException("Track specific key is required."))),
                                 track.Title,
                                 track.ArtistName,
                                 track.DurationMs,

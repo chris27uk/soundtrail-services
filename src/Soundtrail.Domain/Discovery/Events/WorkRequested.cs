@@ -1,4 +1,3 @@
-using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Common;
 

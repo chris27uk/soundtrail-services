@@ -67,7 +67,7 @@ public sealed class AlbumTracksExistTests
     [Fact]
     public async Task Given_Existing_Album_Tracks_When_Requesting_The_Album_Tracks_Then_The_Track_Id_Is_Returned()
     {
-        var trackId = TrackId.From("track-1603");
+        var trackId = global::Soundtrail.Services.Tests.TestTrackIds.Create("track-1603");
         var environment = GetTracksForAlbumUnitTestEnvironment.ForExistingAlbumTracks(
             response: AlbumTracks.CreateResponse(trackId: trackId));
 
@@ -79,7 +79,7 @@ public sealed class AlbumTracksExistTests
     [Fact]
     public async Task Given_Existing_Album_Tracks_When_Requesting_The_Album_Tracks_Then_The_Music_Catalog_Id_Is_Returned()
     {
-        var trackId = TrackId.From("track-1604");
+        var trackId = global::Soundtrail.Services.Tests.TestTrackIds.Create("track-1604");
         var environment = GetTracksForAlbumUnitTestEnvironment.ForExistingAlbumTracks(
             response: AlbumTracks.CreateResponse(trackId: trackId));
 

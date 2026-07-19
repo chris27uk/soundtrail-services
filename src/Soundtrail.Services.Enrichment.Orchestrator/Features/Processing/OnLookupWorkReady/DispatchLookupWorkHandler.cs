@@ -1,5 +1,5 @@
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Discovery.Commands;
+using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Domain.Discovery.Planning;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.Processing.OnLookupWorkReady.Collaborators;
 
@@ -10,7 +10,6 @@ public sealed class LookupWorkReadyHandler(ICommandBus commandBus) : IHandler<Di
     public async Task Handle(DispatchLookupWork request, CancellationToken cancellationToken = default)
     {
         var plan = LookupPlanningPolicy.Build(request);
-
         foreach (var command in plan.Lookups.Select(lookup => WorkerCommandFactory.Create(request, lookup)))
         {
             await commandBus.SendAsync(command, cancellationToken);

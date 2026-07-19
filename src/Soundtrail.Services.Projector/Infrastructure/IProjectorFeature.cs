@@ -4,7 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Soundtrail.Adapters.FeatureOrchestration;
 using Wolverine;
 
-namespace Soundtrail.Services.Projector.Infrastructure;
+namespace Soundtrail.Services.Internal.Projector.Infrastructure;
 
 public interface IProjectorFeature : IFeature
 {

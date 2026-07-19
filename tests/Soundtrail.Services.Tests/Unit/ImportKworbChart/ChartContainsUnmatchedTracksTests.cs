@@ -14,7 +14,7 @@ public sealed class ChartContainsUnmatchedTracksTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().Tracks.Should().Equal(TrackId.From("track-1701"));
+        environment.CommandBus.Commands.Single().Tracks.Should().Equal(global::Soundtrail.Services.Tests.TestTrackIds.Create("track-1701"));
     }
 
     [Fact]

@@ -9,7 +9,7 @@ internal static class PlaylistTracks
 {
     public static PlaylistId DefaultPlaylistId => PlaylistId.FromPlaylistName("WorldwideSongChart");
 
-    public static TrackId DefaultTrackId => TrackId.From("track-3201");
+    public static TrackId DefaultTrackId => TestTrackIds.Create("track-3201");
 
     public static GetTracksForPlaylistResponse CreateResponse(
         PlaylistId? playlistId = null,

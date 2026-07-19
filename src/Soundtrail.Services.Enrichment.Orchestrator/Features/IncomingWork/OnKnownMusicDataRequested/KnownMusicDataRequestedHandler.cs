@@ -2,6 +2,7 @@ using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Aggregates;
+using Soundtrail.Services.Enrichment.Orchestrator.Shared;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.RequestedWork;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.IncomingWork.OnKnownMusicDataRequested;
@@ -12,7 +13,7 @@ public sealed class OnKnownMusicDataRequestedHandler(
 {
     public async Task Handle(RequestKnownMusicDataCommand request, CancellationToken cancellationToken = default)
     {
-        var context = new DiscoveryHistory.SearchRequestContext(request.TrustLevel, request.RiskScore, request.RequestedAt, request.CorrelationId);
+        var context = request.ToAggregateContext();
         var streamId = CatalogWorkId.From(request.Operation);
         await using var scope = await DiscoveryHistoryScope.LoadFromEventStreamAsync(repository, streamId, context, cancellationToken);
         

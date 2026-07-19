@@ -1,5 +1,5 @@
+using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Adapters.Registry;
 using Wolverine;
 using ICommandBus = Soundtrail.Domain.Abstractions.ICommandBus;
 

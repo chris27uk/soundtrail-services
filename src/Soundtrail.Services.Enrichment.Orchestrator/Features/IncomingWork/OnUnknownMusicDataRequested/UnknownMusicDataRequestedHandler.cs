@@ -3,6 +3,7 @@ using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Domain.Discovery.Candidates;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.Prioritisation.OnMusicAssessmentRequired.Extensions;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.RequestedWork;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.IncomingWork.OnUnknownMusicDataRequested;
@@ -14,7 +15,7 @@ public sealed class OnUnknownMusicDataRequestedHandler(
 {
     public async Task Handle(RequestUnknownMusicDataCommand request, CancellationToken cancellationToken = default)
     {
-        var context = new DiscoveryHistory.SearchRequestContext(request.TrustLevel, request.RiskScore, request.RequestedAt, request.CorrelationId);
+        var context = request.ToAggregateContext();
         var streamId = CatalogWorkId.From(request.SearchCriteria);
         var search = new EnrichmentTarget.SearchForUnknownCatalogItem(request.SearchCriteria);
         var result = searchForCandidates.Search(search);
