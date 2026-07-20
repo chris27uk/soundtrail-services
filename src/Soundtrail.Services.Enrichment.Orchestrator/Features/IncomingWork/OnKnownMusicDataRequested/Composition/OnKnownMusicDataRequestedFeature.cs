@@ -27,7 +27,7 @@ public sealed class OnKnownMusicDataRequestedFeature : IOrchestratorFeature
         services.TryAddSingleton<ITypeRegistry>(_ => TypeTranslationRegistry.Default);
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
         services.TryAddSingleton<IWorkPlanner, WorkPlanner>();
-        services.TryAddScoped<IHandler<RequestKnownMusicDataCommand>, OnKnownMusicDataRequestedHandler>();
+        services.TryAddScoped<IHandler<RequestKnownMusicDataMessage>, OnKnownMusicDataRequestedHandler>();
         services.AddCatalogSearchEventStreamRepository();
     }
 
@@ -60,7 +60,7 @@ public sealed class OnKnownMusicDataRequestedFeature : IOrchestratorFeature
         options.ListenToAzureServiceBusQueue(serviceBusOptions.KnownMusicDataRequestsQueueName)
             .ProcessInline();
 
-        options.PublishMessage<RequestKnownMusicDataCommand>()
+        options.PublishMessage<RequestKnownMusicDataMessage>()
             .ToAzureServiceBusQueue(serviceBusOptions.KnownMusicDataRequestsQueueName);
     }
 }

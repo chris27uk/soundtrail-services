@@ -13,4 +13,14 @@ public sealed class KworbImportJobExistsTests
 
         environment.Handler.Calls.Should().Be(1);
     }
+
+    [Fact]
+    public async Task Given_The_Kworb_Import_Job_When_Executing_Then_An_Import_Command_Is_Forwarded_To_The_Handler()
+    {
+        var environment = KworbImportJobUnitTestEnvironment.Create();
+
+        await environment.CreateSubjectUnderTest().ImportKworbChart(new TickerFunctionContext(), CancellationToken.None);
+
+        environment.Handler.Request.Should().NotBeNull();
+    }
 }

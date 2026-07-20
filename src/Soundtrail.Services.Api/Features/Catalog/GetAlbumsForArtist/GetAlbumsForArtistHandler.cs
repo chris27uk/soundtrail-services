@@ -16,7 +16,7 @@ public sealed class GetAlbumsForArtistHandler(
     {
         var requestedAt = clock.UtcNow;
         await commandBus.SendAsync(
-            new RequestKnownMusicDataCommand(
+            new RequestKnownMusicDataMessage(
                 new CatalogItemOperation.ChildAlbumsForArtist(request.ArtistId),
                 LookupPriorityBand.High,
                 100,

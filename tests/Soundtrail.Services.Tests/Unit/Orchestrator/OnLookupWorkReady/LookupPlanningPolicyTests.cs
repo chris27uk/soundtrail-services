@@ -55,7 +55,7 @@ public sealed class LookupPlanningPolicyTests
             new EnrichmentTarget.KnownCatalogItemOperation(
                 new CatalogItemOperation.ChildAlbumsForArtist(Soundtrail.Domain.Catalog.Artists.ArtistId.From("artist-42"))),
             LookupPriorityBand.High,
-            CommandId.For("cmd-artist-albums"),
+            MessageId.For("cmd-artist-albums"),
             CorrelationId.From("corr-artist-albums"),
             new DateTimeOffset(2026, 7, 18, 9, 20, 0, TimeSpan.Zero));
 

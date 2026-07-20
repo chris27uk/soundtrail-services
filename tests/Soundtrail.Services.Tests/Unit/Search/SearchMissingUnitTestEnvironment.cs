@@ -61,11 +61,11 @@ internal sealed class SearchMissingUnitTestEnvironment
 
     public sealed class CommandBusFake : ICommandBus
     {
-        public List<RequestUnknownMusicDataCommand> Commands { get; } = [];
+        public List<RequestUnknownMusicDataMessage> Commands { get; } = [];
 
-        public Task SendAsync(ICommand command, CancellationToken cancellationToken = default)
+        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
         {
-            Commands.Add((RequestUnknownMusicDataCommand)command);
+            Commands.Add((RequestUnknownMusicDataMessage)message);
             return Task.CompletedTask;
         }
     }

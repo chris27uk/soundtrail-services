@@ -13,6 +13,6 @@ public sealed class ImportKworbChartTickerFunctions(IHandler<ImportKworbChartCom
     [TickerFunction(FunctionName, DefaultCronExpression, TickerTaskPriority.Normal, 1)]
     public async Task ImportKworbChart(TickerFunctionContext _, CancellationToken cancellationToken)
     {
-        await handler.Handle(new ImportKworbChartCommand(), cancellationToken);
+        await handler.Handle(new ImportKworbChartCommand(DateTimeOffset.UtcNow), cancellationToken);
     }
 }

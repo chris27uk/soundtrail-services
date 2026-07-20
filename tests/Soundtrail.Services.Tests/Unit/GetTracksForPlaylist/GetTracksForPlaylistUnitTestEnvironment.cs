@@ -56,11 +56,11 @@ internal sealed class GetTracksForPlaylistUnitTestEnvironment
 
     public sealed class CommandBusFake : ICommandBus
     {
-        public List<ICommand> Commands { get; } = [];
+        public List<IMessage> Commands { get; } = [];
 
-        public Task SendAsync(ICommand command, CancellationToken cancellationToken = default)
+        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
         {
-            Commands.Add(command);
+            Commands.Add(message);
             return Task.CompletedTask;
         }
     }

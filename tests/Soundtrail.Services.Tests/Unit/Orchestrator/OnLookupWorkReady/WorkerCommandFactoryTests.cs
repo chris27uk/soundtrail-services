@@ -20,8 +20,8 @@ public sealed class WorkerCommandFactoryTests
                 new Soundtrail.Domain.Search.SearchCriteria("u2", SearchType.Artist),
                 LookupPriorityBand.High));
 
-        command.Should().BeOfType<LookupMusicbrainzSearchResultsCommand>();
-        ((LookupMusicbrainzSearchResultsCommand)command).CommandId.Value.Should().Be("cmd-search:musicbrainz-search");
+        command.Should().BeOfType<LookupMusicbrainzSearchResultsMessage>();
+        ((LookupMusicbrainzSearchResultsMessage)command).Id.Value.Should().Be("cmd-search:musicbrainz-search");
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public sealed class WorkerCommandFactoryTests
                 ProviderName.Spotify,
                 LookupPriorityBand.Low));
 
-        command.Should().BeOfType<LookupStreamingLocationByIsrcCommand>();
-        ((LookupStreamingLocationByIsrcCommand)command).CommandId.Value.Should().Be("cmd-streaming:streaming-isrc:Spotify");
+        command.Should().BeOfType<LookupStreamingLocationByIsrcMessage>();
+        ((LookupStreamingLocationByIsrcMessage)command).Id.Value.Should().Be("cmd-streaming:streaming-isrc:Spotify");
     }
 }

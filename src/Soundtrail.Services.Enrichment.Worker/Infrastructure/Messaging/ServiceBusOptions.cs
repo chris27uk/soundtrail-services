@@ -10,5 +10,7 @@ public sealed class ServiceBusOptions
 
     public string PlaybackReferencesLookupQueueName { get; init; } = "lookup-playback-references";
 
-    public string EnrichmentResponsesQueueName { get; init; } = "enrichment-responses";
+    public string MusicPlaylistLookupQueueName { get; init; } = "lookup-music-playlists";
+
+    public string CatalogLookupCompletedQueueName { get; init; } = "catalog-lookup-completed";
 }

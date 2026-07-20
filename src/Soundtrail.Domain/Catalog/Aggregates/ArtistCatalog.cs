@@ -71,7 +71,7 @@ public sealed class ArtistCatalog
     public async Task SaveAsync(
         IEventStreamRepository<ArtistId> repository,
         LoadedEventStream<ArtistId> stream,
-        CommandId commandId,
+        MessageId commandId,
         CancellationToken cancellationToken)
     {
         var append = await repository.AppendAsync(

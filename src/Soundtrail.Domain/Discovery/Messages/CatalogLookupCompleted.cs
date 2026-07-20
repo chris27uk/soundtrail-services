@@ -1,4 +1,11 @@
+using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Common;
+
 namespace Soundtrail.Domain.Discovery.Messages
 {
-    public record CatalogLookupCompleted(LookupResult Result);
+    public record CatalogLookupCompleted(
+        MessageId Id, 
+        DateTimeOffset RequestedAt, 
+        CorrelationId CorrelationId, 
+        LookupResult Result) : IMessage;
 }

@@ -33,7 +33,7 @@ internal sealed class OnKnownMusicDataRequestedHandlerUnitTestEnvironment
 
     public OnKnownMusicDataRequestedHandler CreateSubject() => new(new WorkPlanner(), Repository);
 
-    public static RequestKnownMusicDataCommand CreateKnownArtistRequest(
+    public static RequestKnownMusicDataMessage CreateKnownArtistRequest(
         string artistId = "artist-123",
         int trustLevel = 100,
         int riskScore = 0,
@@ -47,11 +47,11 @@ internal sealed class OnKnownMusicDataRequestedHandlerUnitTestEnvironment
             riskScore,
             requestedAt ?? new DateTimeOffset(2026, 7, 16, 10, 0, 0, TimeSpan.Zero))
         {
-            CommandId = CommandId.For(commandId),
+            Id = MessageId.For(commandId),
             CorrelationId = CorrelationId.From(correlationId)
         };
 
-    public static RequestKnownMusicDataCommand CreateKnownTrackRequest(
+    public static RequestKnownMusicDataMessage CreateKnownTrackRequest(
         string? trackId = null,
         int trustLevel = 100,
         int riskScore = 0,
@@ -65,11 +65,11 @@ internal sealed class OnKnownMusicDataRequestedHandlerUnitTestEnvironment
             riskScore,
             requestedAt ?? new DateTimeOffset(2026, 7, 16, 10, 0, 0, TimeSpan.Zero))
         {
-            CommandId = CommandId.For(commandId),
+            Id = MessageId.For(commandId),
             CorrelationId = CorrelationId.From(correlationId)
         };
 
-    public static RequestKnownMusicDataCommand CreateKnownAlbumRequest(
+    public static RequestKnownMusicDataMessage CreateKnownAlbumRequest(
         string artistId = "artist-123",
         string albumId = "album-123",
         int trustLevel = 100,
@@ -84,11 +84,11 @@ internal sealed class OnKnownMusicDataRequestedHandlerUnitTestEnvironment
             riskScore,
             requestedAt ?? new DateTimeOffset(2026, 7, 16, 10, 0, 0, TimeSpan.Zero))
         {
-            CommandId = CommandId.For(commandId),
+            Id = MessageId.For(commandId),
             CorrelationId = CorrelationId.From(correlationId)
         };
 
-    public static RequestKnownMusicDataCommand CreateKnownPlaylistRequest(
+    public static RequestKnownMusicDataMessage CreateKnownPlaylistRequest(
         string playlistName = "road trip",
         int trustLevel = 100,
         int riskScore = 0,
@@ -102,7 +102,7 @@ internal sealed class OnKnownMusicDataRequestedHandlerUnitTestEnvironment
             riskScore,
             requestedAt ?? new DateTimeOffset(2026, 7, 16, 10, 0, 0, TimeSpan.Zero))
         {
-            CommandId = CommandId.For(commandId),
+            Id = MessageId.For(commandId),
             CorrelationId = CorrelationId.From(correlationId)
         };
 

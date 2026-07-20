@@ -1,34 +1,39 @@
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Catalog.Tracks;
+using Soundtrail.Domain.Catalog.Playlists;
+using Soundtrail.Domain.Common;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Operations;
-using Soundtrail.Services.Enrichment.Scheduler.Features.ImportKworbChart.Ports;
 
 namespace Soundtrail.Services.Enrichment.Scheduler.Features.ImportKworbChart;
 
 public sealed class ImportKworbChartHandler(
-    IReadKworbChartPort readKworbChartPort,
-    ILoadTrackByFingerprintPort loadTrackByFingerprintPort,
     ICommandBus commandBus) : IHandler<ImportKworbChartCommand>
 {
     public async Task Handle(ImportKworbChartCommand request, CancellationToken cancellationToken = default)
     {
-        var trackReferences = await readKworbChartPort.ReadAsync(cancellationToken);
-        var tracks = new List<TrackId>();
-
-        foreach (var trackReference in trackReferences)
-        {
-            var fingerprint = TrackMatchFingerprint.FromArtistAndTitle(trackReference.ArtistName.Value, trackReference.TrackTitle);
-            var trackId = await loadTrackByFingerprintPort.LoadTrackIdAsync(fingerprint, cancellationToken);
-
-            if (trackId is not null)
-            {
-                tracks.Add(trackId.Value);
-            }
-        }
-
-        await commandBus.SendAsync(WorldwideTopTracksPlaylistUpdated(tracks), cancellationToken);
+        await commandBus.SendAsync(CreatePlaylistDiscoveryRequest(request), cancellationToken);
     }
 
-    private static PlaylistUpdated WorldwideTopTracksPlaylistUpdated(List<TrackId> tracks) => new("WorldwideSongChart", tracks.ToArray());
+    internal static RequestKnownMusicDataMessage CreatePlaylistDiscoveryRequest(ImportKworbChartCommand request)
+    {
+        var triggerWindowStartedAt = AlignToHour(request.TriggeredAt);
+        var playlistId = PlaylistId.FromPlaylistName("WorldwideSongChart");
+
+        return new RequestKnownMusicDataMessage(
+            new CatalogItemOperation.ChildTracksForPlaylist(playlistId),
+            LookupPriorityBand.High,
+            100,
+            0,
+            triggerWindowStartedAt)
+        {
+            Id = MessageId.For($"kworb:{playlistId.Value}:{triggerWindowStartedAt:yyyyMMddHH}"),
+            CorrelationId = CorrelationId.From($"kworb:{playlistId.Value}:{triggerWindowStartedAt:yyyyMMddHH}")
+        };
+    }
+
+    private static DateTimeOffset AlignToHour(DateTimeOffset value)
+    {
+        var utc = value.ToUniversalTime();
+        return new DateTimeOffset(utc.Year, utc.Month, utc.Day, utc.Hour, 0, 0, TimeSpan.Zero);
+    }
 }

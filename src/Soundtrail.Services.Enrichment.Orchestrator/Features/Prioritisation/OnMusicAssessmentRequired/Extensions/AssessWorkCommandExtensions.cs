@@ -7,17 +7,17 @@ namespace Soundtrail.Services.Enrichment.Orchestrator.Features.Prioritisation.On
 {
     public static class AssessWorkCommandExtensions
     {
-        public static DiscoveryHistory.SearchRequestContext ToAggregateContext(this ICommand request)
+        public static DiscoveryHistory.SearchRequestContext ToAggregateContext(this IMessage request)
         {
             return new DiscoveryHistory.SearchRequestContext(
-                request.CommandId,
-                request is IPrioritisedCommand prioritised ? prioritised.TrustLevel ?? 0 : 0,
-                request is IPrioritisedCommand prioritisedRequest ? prioritisedRequest.RiskScore ?? 0 : 0,
+                request.Id,
+                request is IPrioritisedMessage prioritised ? prioritised.TrustLevel ?? 0 : 0,
+                request is IPrioritisedMessage prioritisedRequest ? prioritisedRequest.RiskScore ?? 0 : 0,
                 request.RequestedAt,
                 request.CorrelationId);
         }
 
-        public static PlanningAssessment ToPlanningAssessment(this AssessWorkCommand request, DiscoveryPlanningProjection projection)
+        public static PlanningAssessment ToPlanningAssessment(this AssessWorkMessage request, DiscoveryPlanningProjection projection)
         {
             return new PlanningAssessment(
                 request.Target,

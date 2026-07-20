@@ -6,14 +6,14 @@ namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Stora
 public interface ILookupExecutionReceiptStore
 {
     Task<bool> TryBeginAsync(
-        CommandId commandId,
+        MessageId messageId,
         CancellationToken cancellationToken);
 
     Task MarkCompletedAsync(
-        CommandId commandId,
+        MessageId messageId,
         CancellationToken cancellationToken);
 
     Task ReleaseAsync(
-        CommandId commandId,
+        MessageId messageId,
         CancellationToken cancellationToken);
 }

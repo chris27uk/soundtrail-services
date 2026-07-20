@@ -6,9 +6,9 @@ namespace Soundtrail.Domain.Discovery.Messages;
 public record DispatchLookupWork(
     EnrichmentTarget Target,
     LookupPriorityBand Priority,
-    CommandId CommandId,
+    MessageId Id,
     CorrelationId CorrelationId,
-    DateTimeOffset CreatedAt) : ICommand
+    DateTimeOffset CreatedAt) : IMessage
 {
     public DateTimeOffset RequestedAt => CreatedAt;
 }

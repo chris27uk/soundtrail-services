@@ -8,5 +8,7 @@ public sealed class ServiceBusOptions
 
     public string DiscoveryBacklogSchedulingQueueName { get; init; } = "discovery-backlog-scheduling";
 
+    public string KnownMusicDataRequestsQueueName { get; init; } = "known-music-data-requests";
+
     public string PlaylistUpdatesQueueName { get; init; } = "playlist-updates";
 }

@@ -4,9 +4,9 @@ using Soundtrail.Domain.Common;
 
 namespace Soundtrail.Domain.Operations;
 
-public sealed record PlaylistUpdated(string Name, TrackId[] Tracks) : ICommand
+public sealed record PlaylistUpdated(string Name, TrackId[] Tracks) : IMessage
 {
-    public CommandId CommandId { get; init; } = CommandId.New();
+    public MessageId Id { get; init; } = MessageId.New();
 
     public CorrelationId CorrelationId { get; init; } = CorrelationId.New();
 

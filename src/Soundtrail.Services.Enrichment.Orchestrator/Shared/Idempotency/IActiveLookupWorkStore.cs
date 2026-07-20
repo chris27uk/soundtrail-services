@@ -6,11 +6,11 @@ namespace Soundtrail.Services.Enrichment.Orchestrator.Shared.Idempotency;
 public interface IActiveLookupWorkStore
 {
     Task<bool> TryAcquireAsync(
-        CommandId commandId,
+        MessageId messageId,
         DateTimeOffset expiresAt,
         CancellationToken cancellationToken);
 
     Task ReleaseAsync(
-        CommandId commandId,
+        MessageId messageId,
         CancellationToken cancellationToken);
 }

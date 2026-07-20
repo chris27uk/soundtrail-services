@@ -45,7 +45,7 @@ public sealed class ProjectorMessagingFeature : IProjectorFeature
             transport.AutoProvision();
         }
 
-        options.PublishMessage<AssessWorkCommand>()
+        options.PublishMessage<AssessWorkMessage>()
             .ToAzureServiceBusQueue(serviceBusOptions.AssessMusicCatalogItemQueueName);
 
         options.PublishMessage<DispatchLookupWork>()

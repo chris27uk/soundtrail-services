@@ -32,13 +32,16 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
         ArtistId? artistId = null,
         TrackId? trackId = null,
         DateTimeOffset? completedAt = null,
-        CommandId? originalCommandId = null)
+        MessageId? originalCommandId = null)
     {
         var resolvedTrackId = trackId ?? TestTrackIds.Create("lookup-streaming-1");
         var resolvedArtistId = artistId ?? ArtistId.From("artist-lookup-1");
         var when = completedAt ?? new DateTimeOffset(2026, 7, 19, 10, 0, 0, TimeSpan.Zero);
 
         return new CatalogLookupCompleted(
+            MessageId.New(),
+            when.AddMinutes(-15),
+            CorrelationId.From("corr-streaming-completed"),
             new LookupResult.Succeeded(
                 new LookupResultContext(
                     CatalogWorkId.From(new CatalogItemOperation.StreamingLocationForTrack(resolvedTrackId)),
@@ -61,13 +64,15 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
     public static CatalogLookupCompleted CreatePlaylistCompleted(
         string playlistName = "Road Trip",
         DateTimeOffset? completedAt = null,
-        CommandId? originalCommandId = null)
+        MessageId? originalCommandId = null)
     {
         var when = completedAt ?? new DateTimeOffset(2026, 7, 19, 10, 5, 0, TimeSpan.Zero);
         var playlistId = PlaylistId.FromPlaylistName(playlistName);
-        var track = CreateTrack("playlist-track-1");
 
         return new CatalogLookupCompleted(
+            MessageId.New(),
+            when.AddMinutes(-15),
+            CorrelationId.From("corr-playlist-completed"),
             new LookupResult.Succeeded(
                 new LookupResultContext(
                     CatalogWorkId.From(new CatalogItemOperation.ChildTracksForPlaylist(playlistId)),
@@ -75,10 +80,8 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
                         Work.DiscoverPlaylistTracks(playlistId),
                         new DateTimeOffset(2026, 7, 19, 9, 50, 30, TimeSpan.Zero),
                         "playlist:Spotify")),
-                new LookedUpData.CatalogEntries([
-                    new CatalogDiscoveryEntry(
-                        ArtistId.From("artist-playlist-1"),
-                        new CatalogItem.MusicTrack(track))
+                new LookedUpData.PlaylistTrackReferences([
+                    new TrackReference(ArtistName.From("The Travellers"), "Road Song")
                 ]),
                 when));
     }
@@ -86,12 +89,15 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
     public static CatalogLookupCompleted CreateDeferred(
         DateTimeOffset? completedAt = null,
         DateTimeOffset? deferredUntil = null,
-        CommandId? originalCommandId = null)
+        MessageId? originalCommandId = null)
     {
         var when = completedAt ?? new DateTimeOffset(2026, 7, 19, 10, 10, 0, TimeSpan.Zero);
         var trackId = TestTrackIds.Create("lookup-deferred-1");
 
         return new CatalogLookupCompleted(
+            MessageId.New(),
+            when.AddMinutes(-15),
+            CorrelationId.From("corr-deferred"),
             new LookupResult.Deferred(
                 new LookupResultContext(
                     CatalogWorkId.From(new CatalogItemOperation.StreamingLocationForTrack(trackId)),
@@ -160,11 +166,11 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
         ];
     }
 
-    public static CommandId CreateWorkerCommandIdForScheduledWork(
+    public static MessageId CreateWorkerCommandIdForScheduledWork(
         EnrichmentTarget target,
         DateTimeOffset scheduledAt,
         string suffix) =>
-        CommandId.For($"DispatchLookupWork:{target.NormalisedIdentifier}:{scheduledAt:O}:{suffix}");
+        MessageId.For($"DispatchLookupWork:{target.NormalisedIdentifier}:{scheduledAt:O}:{suffix}");
 
     public void SeedForPlaylist(string playlistName = "Road Trip")
     {
@@ -191,21 +197,6 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
     {
         set => Repository.SeedEvents = value;
     }
-
-    private static Track CreateTrack(string seed)
-    {
-        var track = new Track(TestTrackIds.Create(seed))
-        {
-            Title = "Road Song",
-            ArtistName = "The Travellers",
-            AlbumTitle = "Miles Ahead",
-            ReleaseDate = new DateOnly(2020, 1, 1),
-            ReleaseType = "studio"
-        };
-
-        return track;
-    }
-
     public sealed class EventStreamRepositoryFake : IEventStreamRepository<CatalogWorkId>
     {
         public IReadOnlyList<IDomainEvent> SeedEvents { get; set; } = [];

@@ -194,6 +194,20 @@ public sealed class DiscoveryHistory
                         result.CompletedAt);
                 }
             },
+            playlistTrackReferences =>
+            {
+                if (target is not EnrichmentTarget.KnownCatalogItemOperation(CatalogItemOperation.ChildTracksForPlaylist(var playlistId)))
+                {
+                    throw new InvalidOperationException("Playlist track references are only valid for playlist lookup results.");
+                }
+
+                DiscoverPlaylistTracks(
+                    playlistId,
+                    playlistTrackReferences.Values
+                        .Select(trackReference => TrackId.Create(trackReference.ArtistName.Value, trackReference.TrackTitle))
+                        .ToArray(),
+                    result.CompletedAt);
+            },
             link => DiscoverStreamingLocation(link.ArtistId, link.TrackId, link.Value, result.CompletedAt));
     }
 
@@ -210,7 +224,7 @@ public sealed class DiscoveryHistory
 
         var matchingRequested = stream.Events
             .OfType<WorkRequested>()
-            .LastOrDefault(x => x.SubsequentDeterministicId("AssessWork") == requestContext.CommandId);
+            .LastOrDefault(x => x.SubsequentDeterministicId("AssessWork") == requestContext.MessageId);
 
         if (matchingRequested is not null)
         {
@@ -218,13 +232,13 @@ public sealed class DiscoveryHistory
         }
 
         throw new InvalidOperationException(
-            $"No matching discovery work exists for command '{requestContext.CommandId.Value}' in stream '{stream.StreamId.StableValue}'.");
+            $"No matching discovery work exists for command '{requestContext.MessageId.Value}' in stream '{stream.StreamId.StableValue}'.");
     }
 
     private bool IsMatchForLookupCompletion(WorkScheduled scheduled)
     {
-        var dispatchCommandId = CommandId.For($"DispatchLookupWork:{scheduled.Target.NormalisedIdentifier}:{scheduled.ScheduledAt:O}");
-        return requestContext.CommandId.Value.StartsWith($"{dispatchCommandId.Value}:", StringComparison.Ordinal);
+        var dispatchCommandId = MessageId.For($"DispatchLookupWork:{scheduled.Target.NormalisedIdentifier}:{scheduled.ScheduledAt:O}");
+        return requestContext.MessageId.Value.StartsWith($"{dispatchCommandId.Value}:", StringComparison.Ordinal);
     }
 
     private void Schedule(
@@ -301,7 +315,7 @@ public sealed class DiscoveryHistory
         var append = await this.repository.AppendAsync(
             this.stream,
             uncommittedEvents.AsReadOnly(),
-            OperationId.From(this.requestContext.CommandId.Value),
+            OperationId.From(this.requestContext.MessageId.Value),
             cancellationToken);
 
         if (append.Outcome == AppendOutcome.VersionMismatch)
@@ -338,7 +352,7 @@ public sealed class DiscoveryHistory
     }
 
     public sealed record SearchRequestContext(
-        CommandId CommandId,
+        MessageId MessageId,
         int TrustLevel,
         int RiskScore,
         DateTimeOffset RequestedAt,

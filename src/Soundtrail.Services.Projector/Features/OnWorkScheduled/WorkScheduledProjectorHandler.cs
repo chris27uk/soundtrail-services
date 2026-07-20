@@ -14,7 +14,7 @@ public sealed class WorkScheduledProjectorHandler(
         var command = new DispatchLookupWork(
             @event.Target,
             @event.Priority,
-            CommandId.For($"DispatchLookupWork:{@event.Target.NormalisedIdentifier}:{@event.ScheduledAt:O}"),
+            MessageId.For($"DispatchLookupWork:{@event.Target.NormalisedIdentifier}:{@event.ScheduledAt:O}"),
             CorrelationId.From($"work-scheduled:{@event.Target.NormalisedIdentifier}:{@event.ScheduledAt:O}"),
             @event.ScheduledAt);
 

@@ -32,7 +32,7 @@ public sealed class LookupCompletedHandlerTests
     }
 
     [Fact]
-    public async Task Given_A_Playlist_Lookup_Success_When_Handling_Then_A_Track_Is_Discovered()
+    public async Task Given_A_Playlist_Lookup_Success_When_Handling_Then_Playlist_Tracks_Are_Discovered()
     {
         var environment = LookupCompletedHandlerUnitTestEnvironment.Create();
         environment.SeedForPlaylist();
@@ -40,7 +40,7 @@ public sealed class LookupCompletedHandlerTests
 
         await subject.Handle(LookupCompletedHandlerUnitTestEnvironment.CreatePlaylistCompleted());
 
-        environment.Repository.AppendedEvents.First().Should().BeOfType<TrackDiscovered>();
+        environment.Repository.AppendedEvents.First().Should().BeOfType<PlaylistTracksDiscovered>();
     }
 
     [Fact]

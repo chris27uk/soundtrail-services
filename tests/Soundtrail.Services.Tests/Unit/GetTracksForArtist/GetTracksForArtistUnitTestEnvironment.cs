@@ -57,11 +57,11 @@ internal sealed class GetTracksForArtistUnitTestEnvironment
 
     public sealed class CommandBusFake : ICommandBus
     {
-        public List<RequestKnownMusicDataCommand> Commands { get; } = [];
+        public List<RequestKnownMusicDataMessage> Commands { get; } = [];
 
-        public Task SendAsync(ICommand command, CancellationToken cancellationToken = default)
+        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
         {
-            Commands.Add((RequestKnownMusicDataCommand)command);
+            Commands.Add((RequestKnownMusicDataMessage)message);
             return Task.CompletedTask;
         }
     }

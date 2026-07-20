@@ -8,10 +8,10 @@ internal sealed class RavenLookupExecutionReceiptStore(
     IAsyncDocumentSession session) : ILookupExecutionReceiptStore
 {
     public async Task<bool> TryBeginAsync(
-        CommandId commandId,
+        MessageId messageId,
         CancellationToken cancellationToken)
     {
-        var documentId = RavenLookupExecutionReceiptDto.GetDocumentId(commandId.Value);
+        var documentId = RavenLookupExecutionReceiptDto.GetDocumentId(messageId.Value);
         var existing = await session.LoadAsync<RavenLookupExecutionReceiptDto>(documentId, cancellationToken);
         if (existing is not null)
         {
@@ -22,7 +22,7 @@ internal sealed class RavenLookupExecutionReceiptStore(
             new RavenLookupExecutionReceiptDto
             {
                 Id = documentId,
-                CommandId = commandId.Value
+                CommandId = messageId.Value
             },
             cancellationToken);
 
@@ -30,10 +30,10 @@ internal sealed class RavenLookupExecutionReceiptStore(
     }
 
     public async Task MarkCompletedAsync(
-        CommandId commandId,
+        MessageId messageId,
         CancellationToken cancellationToken)
     {
-        var documentId = RavenLookupExecutionReceiptDto.GetDocumentId(commandId.Value);
+        var documentId = RavenLookupExecutionReceiptDto.GetDocumentId(messageId.Value);
         var existing = await session.LoadAsync<RavenLookupExecutionReceiptDto>(documentId, cancellationToken)
             ?? throw new InvalidOperationException($"Lookup execution receipt '{documentId}' was not found.");
 
@@ -41,10 +41,10 @@ internal sealed class RavenLookupExecutionReceiptStore(
     }
 
     public async Task ReleaseAsync(
-        CommandId commandId,
+        MessageId messageId,
         CancellationToken cancellationToken)
     {
-        var documentId = RavenLookupExecutionReceiptDto.GetDocumentId(commandId.Value);
+        var documentId = RavenLookupExecutionReceiptDto.GetDocumentId(messageId.Value);
         var existing = await session.LoadAsync<RavenLookupExecutionReceiptDto>(documentId, cancellationToken);
         if (existing is null || existing.Completed)
         {

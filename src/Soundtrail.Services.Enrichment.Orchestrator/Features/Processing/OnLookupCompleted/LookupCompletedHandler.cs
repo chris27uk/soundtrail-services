@@ -12,7 +12,7 @@ public sealed class LookupCompletedHandler(IEventStreamRepository<CatalogWorkId>
     {
         var lookupRequest = request.Result;
         var streamId = lookupRequest.StreamId();
-        var historyContext = lookupRequest.ToAggregateContext();
+        var historyContext = request.ToAggregateContext();
         await using var scope = await DiscoveryHistoryScope.LoadFromEventStreamAsync(repository, streamId, historyContext, cancellationToken);
         
         scope.Aggregate.ApplyLookupResult(lookupRequest);

@@ -18,7 +18,7 @@ public sealed class PlaylistTracksDiscoveredProjectorHandler(
         await commandBus.SendAsync(
             new PlaylistUpdated(@event.PlaylistId.Value, @event.Tracks)
             {
-                CommandId = CommandId.For($"PlaylistUpdated:{@event.PlaylistId.Value}:{@event.ObservedAt:O}"),
+                Id = MessageId.For($"PlaylistUpdated:{@event.PlaylistId.Value}:{@event.ObservedAt:O}"),
                 CorrelationId = CorrelationId.From($"playlist-tracks-discovered:{@event.PlaylistId.Value}:{@event.ObservedAt:O}"),
                 CreatedAt = @event.ObservedAt
             },

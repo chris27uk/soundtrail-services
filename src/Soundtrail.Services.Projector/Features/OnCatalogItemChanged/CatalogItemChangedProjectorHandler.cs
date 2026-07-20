@@ -13,7 +13,7 @@ public sealed class CatalogItemChangedProjectorHandler(
     {
         var (stream, catalog) = await ArtistCatalog.LoadAsync(repository, @event.Artist.Id, cancellationToken);
         catalog.CatalogItemDiscovered(new Domain.Catalog.CatalogItem.MusicArtist(@event.Artist));
-        await catalog.SaveAsync(repository, stream, CommandId.For($"ArtistDiscovered:{@event.Artist.Id.Value}:{@event.ObservedAt:O}"), cancellationToken);
+        await catalog.SaveAsync(repository, stream, MessageId.For($"ArtistDiscovered:{@event.Artist.Id.Value}:{@event.ObservedAt:O}"), cancellationToken);
     }
 
     public async Task Handle(AlbumDiscovered @event, CancellationToken cancellationToken = default)
@@ -21,7 +21,7 @@ public sealed class CatalogItemChangedProjectorHandler(
         var artistId = ArtistId.From(@event.Album.AlbumId.ArtistId);
         var (stream, catalog) = await ArtistCatalog.LoadAsync(repository, artistId, cancellationToken);
         catalog.CatalogItemDiscovered(new Domain.Catalog.CatalogItem.MusicAlbum(@event.Album));
-        await catalog.SaveAsync(repository, stream, CommandId.For($"AlbumDiscovered:{@event.Album.AlbumId.StableValue}:{@event.ObservedAt:O}"), cancellationToken);
+        await catalog.SaveAsync(repository, stream, MessageId.For($"AlbumDiscovered:{@event.Album.AlbumId.StableValue}:{@event.ObservedAt:O}"), cancellationToken);
     }
 
     public async Task Handle(TrackDiscovered @event, CancellationToken cancellationToken = default)
@@ -33,7 +33,7 @@ public sealed class CatalogItemChangedProjectorHandler(
 
         var (stream, catalog) = await ArtistCatalog.LoadAsync(repository, artistId, cancellationToken);
         catalog.CatalogItemDiscovered(new Domain.Catalog.CatalogItem.MusicTrack(@event.Track));
-        await catalog.SaveAsync(repository, stream, CommandId.For($"TrackDiscovered:{@event.Track.TrackId.Value}:{@event.ObservedAt:O}"), cancellationToken);
+        await catalog.SaveAsync(repository, stream, MessageId.For($"TrackDiscovered:{@event.Track.TrackId.Value}:{@event.ObservedAt:O}"), cancellationToken);
     }
 
     public async Task Handle(StreamingLocationDiscovered @event, CancellationToken cancellationToken = default)
@@ -54,7 +54,7 @@ public sealed class CatalogItemChangedProjectorHandler(
         await catalog.SaveAsync(
             repository,
             stream,
-            CommandId.For($"StreamingLocationDiscovered:{artistId.Value}:{trackId.Value}:{@event.ObservedAt:O}"),
+            MessageId.For($"StreamingLocationDiscovered:{artistId.Value}:{trackId.Value}:{@event.ObservedAt:O}"),
             cancellationToken);
     }
 }

@@ -9,9 +9,9 @@ namespace Soundtrail.Services.Enrichment.Orchestrator.Features.IncomingWork.OnKn
 
 public sealed class OnKnownMusicDataRequestedHandler(
     IWorkPlanner planner,
-    IEventStreamRepository<CatalogWorkId> repository) : IHandler<RequestKnownMusicDataCommand>
+    IEventStreamRepository<CatalogWorkId> repository) : IHandler<RequestKnownMusicDataMessage>
 {
-    public async Task Handle(RequestKnownMusicDataCommand request, CancellationToken cancellationToken = default)
+    public async Task Handle(RequestKnownMusicDataMessage request, CancellationToken cancellationToken = default)
     {
         var context = request.ToAggregateContext();
         var streamId = CatalogWorkId.From(request.Operation);

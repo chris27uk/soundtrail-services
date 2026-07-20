@@ -20,7 +20,7 @@ public sealed class SearchHandler(
         var requestedAt = clock.UtcNow;
 
         await commandBus.SendAsync(
-            new RequestUnknownMusicDataCommand(
+            new RequestUnknownMusicDataMessage(
                 searchCriteria,
                 LookupPriorityBand.High,
                 100,

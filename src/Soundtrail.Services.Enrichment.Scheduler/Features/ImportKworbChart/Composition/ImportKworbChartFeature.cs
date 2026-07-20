@@ -4,11 +4,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Soundtrail.Adapters.FeatureOrchestration;
-using Soundtrail.Adapters.Persistence;
 using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Operations;
 using Soundtrail.Services.Enrichment.Scheduler.Features.ImportKworbChart.Adapters;
-using Soundtrail.Services.Enrichment.Scheduler.Features.ImportKworbChart.Ports;
 using Soundtrail.Services.Enrichment.Scheduler.Infrastructure;
 using Soundtrail.Services.Enrichment.Scheduler.Infrastructure.Messaging;
 using Wolverine;
@@ -21,18 +20,8 @@ public sealed class ImportKworbChartFeature : ISchedulerFeature
 {
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
-        services.AddRavenDocumentStore(configuration);
-        services.AddHttpClient(KworbChartPort.HttpClientName, client =>
-        {
-            client.BaseAddress = new Uri("https://kworb.net", UriKind.Absolute);
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("Soundtrail/1.0");
-        });
-
         services.TryAddScoped<IHandler<ImportKworbChartCommand>, ImportKworbChartHandler>();
         services.TryAddScoped<ImportKworbChartTickerFunctions>();
-        services.AddScoped<IReadKworbChartPort>(
-            sp => new KworbChartPort(sp.GetRequiredService<IHttpClientFactory>().CreateClient(KworbChartPort.HttpClientName)));
-        services.AddScoped<ILoadTrackByFingerprintPort, RavenLoadTrackByFingerprintPort>();
     }
 
     public void ConfigureApplication(WebApplication app)
@@ -48,8 +37,8 @@ public sealed class ImportKworbChartFeature : ISchedulerFeature
         if (ShouldUseLocalMessaging(serviceBusOptions.ConnectionString, environment))
         {
             options.StubAllExternalTransports();
-            options.PublishMessage<PlaylistUpdated>()
-                .ToLocalQueue(serviceBusOptions.PlaylistUpdatesQueueName);
+            options.PublishMessage<RequestKnownMusicDataMessage>()
+                .ToLocalQueue(serviceBusOptions.KnownMusicDataRequestsQueueName);
             return;
         }
 
@@ -58,8 +47,8 @@ public sealed class ImportKworbChartFeature : ISchedulerFeature
             options.StubAllExternalTransports();
         }
 
-        options.PublishMessage<PlaylistUpdated>()
-            .ToAzureServiceBusQueue(serviceBusOptions.PlaylistUpdatesQueueName);
+        options.PublishMessage<RequestKnownMusicDataMessage>()
+            .ToAzureServiceBusQueue(serviceBusOptions.KnownMusicDataRequestsQueueName);
     }
 
     private static bool ShouldUseLocalMessaging(string? connectionString, IHostEnvironment environment)

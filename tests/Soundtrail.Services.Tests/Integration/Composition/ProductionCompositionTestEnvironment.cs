@@ -109,7 +109,7 @@ internal static class ProductionCompositionTestEnvironment
     {
         var builder = CreateBuilder();
 
-        builder.Services.AddFeatures<Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging.ServiceBusOptions>();
+        builder.Services.AddFeatures<Soundtrail.Services.Enrichment.Worker.WorkerAssemblyMarker>();
 #pragma warning disable ASP0000
         using var bootstrapProvider = builder.Services.BuildServiceProvider();
 #pragma warning restore ASP0000
@@ -241,6 +241,7 @@ internal static class ProductionCompositionTestEnvironment
                 ["ServiceBus:ConnectionString"] = "",
                 ["ServiceBus:DiscoveryBacklogSchedulingQueueName"] = "discovery-backlog-scheduling",
                 ["ServiceBus:PlaylistUpdatesQueueName"] = "playlist-updates",
+                ["ServiceBus:KnownMusicDataRequestsQueueName"] = "known-music-data-requests",
                 ["ServiceBus:CatalogSearchAttemptsQueueName"] = "lookup-music-requests",
                 ["ServiceBus:KnownCatalogItemRequestsQueueName"] = "known-catalog-item-requests",
                 ["ServiceBus:MusicBrainzLookupQueueName"] = "lookup-musicbrainz",

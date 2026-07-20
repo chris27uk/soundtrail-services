@@ -1,20 +1,20 @@
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Aggregates;
+using Soundtrail.Domain.Discovery.Messages;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.Processing.OnLookupCompleted.Extensions;
 
 internal static class LookupResultExtensions
 {
-    public static DiscoveryHistory.SearchRequestContext ToAggregateContext(this LookupResult result)
+    public static DiscoveryHistory.SearchRequestContext ToAggregateContext(this CatalogLookupCompleted completed)
     {
-        var context = result.ToResultContext();
         return new DiscoveryHistory.SearchRequestContext(
-            context.OriginalCommandId,
+            completed.Result.ToResultContext().OriginalCommandId,
             0,
             0,
-            result.CompletedAt(),
-            CorrelationId.From(context.StreamId.StableValue));
+            completed.RequestedAt,
+            completed.CorrelationId);
     }
 
     public static CatalogWorkId StreamId(this LookupResult result) => result.ToResultContext().StreamId;

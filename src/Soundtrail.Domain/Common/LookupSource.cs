@@ -16,11 +16,13 @@ namespace Soundtrail.Domain.Common
 
         public static LookupSource From(string value) => new(value);
 
-        public static bool IsKnown(string value) => value is "MusicBrainz" or "Odesli";
+        public static bool IsKnown(string value) => value is "MusicBrainz" or "Odesli" or "Kworb";
 
         public static LookupSource MusicBrainz { get; } = new("MusicBrainz");
 
         public static LookupSource Odesli { get; } = new("Odesli");
+
+        public static LookupSource Kworb { get; } = new("Kworb");
 
         public override string ToString() => Value;
     }

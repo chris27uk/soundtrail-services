@@ -2,5 +2,5 @@ namespace Soundtrail.Domain.Abstractions;
 
 public interface ICommandBus
 {
-    Task SendAsync(ICommand command, CancellationToken cancellationToken = default);
+    Task SendAsync(IMessage message, CancellationToken cancellationToken = default);
 }
