@@ -5,9 +5,8 @@ using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Tracks;
-using Soundtrail.Services.Api.Features.GetTracksForAlbum.Adapters;
-using Soundtrail.Services.Api.Features.GetTracksForAlbum.Contract;
-using Soundtrail.Services.Api.Features.GetTracksForAlbum.Registrations;
+using Soundtrail.Services.Api.Features.Catalog.GetTracksForAlbum.Adapters;
+using Soundtrail.Services.Api.Features.Catalog.GetTracksForAlbum.Contract;
 
 namespace Soundtrail.Services.Tests.Integration.Api.GetTracksForAlbum;
 

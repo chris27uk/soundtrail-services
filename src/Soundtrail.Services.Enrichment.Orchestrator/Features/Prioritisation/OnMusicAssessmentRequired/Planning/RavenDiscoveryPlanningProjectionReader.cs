@@ -26,7 +26,7 @@ public sealed class RavenDiscoveryPlanningProjectionReader(
         CancellationToken cancellationToken)
     {
         var query = session.Query<RavenStoredEventRecord>()
-            .Where(x => x.AggregateType == "catalog-search" && RelevantEventTypes.Contains(x.EventType))
+            .Where(x => x.AggregateType == "catalog-stream" && RelevantEventTypes.Contains(x.EventType))
             .OrderBy(x => x.StreamId)
             .ThenBy(x => x.Version);
 

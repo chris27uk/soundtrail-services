@@ -10,6 +10,8 @@ namespace Soundtrail.Domain.Discovery
     {
         public partial record CatalogEntries(IReadOnlyList<CatalogDiscoveryEntry> Values);
 
+        public partial record PlaylistTrackReferences(IReadOnlyList<TrackReference> Values);
+
         public partial record TrackStreamingLink(
             ArtistId ArtistId,
             TrackId TrackId,

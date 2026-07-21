@@ -3,9 +3,8 @@ using Microsoft.AspNetCore.TestHost;
 using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog.Tracks;
-using Soundtrail.Services.Api.Features.GetTrack.Adapters;
-using Soundtrail.Services.Api.Features.GetTrack.Contract;
-using Soundtrail.Services.Api.Features.GetTrack.Registrations;
+using Soundtrail.Services.Api.Features.Catalog.GetTrack.Adapters;
+using Soundtrail.Services.Api.Features.Catalog.GetTrack.Contract;
 
 namespace Soundtrail.Services.Tests.Integration.Api.GetTrack;
 

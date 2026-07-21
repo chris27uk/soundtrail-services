@@ -40,7 +40,7 @@ internal sealed class OnMusicAssessmentRequiredHandlerUnitTestEnvironment
 
     public OnMusicAssessmentRequiredHandler CreateSubject() => new(Policy, ProjectionReader, Repository);
 
-    public static AssessWorkCommand CreateRequest(
+    public static AssessWorkMessage CreateRequest(
         EnrichmentTarget? target = null,
         LookupPriorityBand priority = LookupPriorityBand.High,
         int? trustLevel = 100,
@@ -49,7 +49,7 @@ internal sealed class OnMusicAssessmentRequiredHandlerUnitTestEnvironment
         string commandId = "assess-1",
         string correlationId = "corr-1") =>
         new(
-            CommandId.For(commandId),
+            MessageId.For(commandId),
             CorrelationId.From(correlationId),
             createdAt ?? new DateTimeOffset(2026, 7, 18, 9, 30, 0, TimeSpan.Zero),
             target ?? Work.EnrichTrackStreamingLocation(TestTrackIds.Create("track-123")),

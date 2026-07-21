@@ -55,7 +55,7 @@ internal sealed class RedisLookupExecutionAdmissionPort(
         cancellationToken.ThrowIfCancellationRequested();
 
         var db = connectionMultiplexer.GetDatabase();
-        var commandKey = GetCommandKey(request.CommandId);
+        var commandKey = GetCommandKey(request.MessageId);
         var acquired = await db.StringSetAsync(
             commandKey,
             ActiveState,
@@ -124,20 +124,20 @@ internal sealed class RedisLookupExecutionAdmissionPort(
     }
 
     public Task CommitAsync(
-        CommandId commandId,
+        MessageId messageId,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return connectionMultiplexer.GetDatabase().StringSetAsync(GetCommandKey(commandId), CompletedState);
+        return connectionMultiplexer.GetDatabase().StringSetAsync(GetCommandKey(messageId), CompletedState);
     }
 
     public async Task ReleaseAsync(
-        CommandId commandId,
+        MessageId messageId,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var db = connectionMultiplexer.GetDatabase();
-        var commandKey = GetCommandKey(commandId);
+        var commandKey = GetCommandKey(messageId);
         var current = await db.StringGetAsync(commandKey);
         if (!current.HasValue)
         {
@@ -247,6 +247,11 @@ internal sealed class RedisLookupExecutionAdmissionPort(
         {
             return sourceBudgetOptions.Odesli;
         }
+
+        if (provider == LookupSource.Kworb && this.sourceBudgetOptions.Kworb != null)
+        {
+            return sourceBudgetOptions.Kworb;
+        }
         
         throw new ArgumentOutOfRangeException(nameof(provider));
     }
@@ -258,8 +263,8 @@ internal sealed class RedisLookupExecutionAdmissionPort(
         return new DateTimeOffset(ticks, TimeSpan.Zero);
     }
 
-    private string GetCommandKey(CommandId commandId) =>
-        $"{redisOptions.KeyPrefix}:command:{commandId.Value}";
+    private string GetCommandKey(MessageId messageId) =>
+        $"{redisOptions.KeyPrefix}:command:{messageId.Value}";
 
     private sealed record WindowReservationResult(bool Reserved, RedisKey Key, DateTimeOffset RetryAt)
     {
@@ -274,6 +279,8 @@ public class SourceApiBudgetsOptions
     public ApiBudgetPolicy? MusicBrainz { get; set; }
     
     public ApiBudgetPolicy? Odesli { get; set; }
+
+    public ApiBudgetPolicy? Kworb { get; set; }
 }
 
 public class ApiBudgetPolicy

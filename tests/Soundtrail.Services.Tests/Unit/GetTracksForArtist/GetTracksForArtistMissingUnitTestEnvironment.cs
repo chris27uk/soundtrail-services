@@ -3,9 +3,9 @@ using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Services.Api.Features.GetTracksForArtist;
-using Soundtrail.Services.Api.Features.GetTracksForArtist.Adapters;
-using Soundtrail.Services.Api.Features.GetTracksForArtist.Contract;
+using Soundtrail.Services.Api.Features.Catalog.GetTracksForArtist;
+using Soundtrail.Services.Api.Features.Catalog.GetTracksForArtist.Adapters;
+using Soundtrail.Services.Api.Features.Catalog.GetTracksForArtist.Contract;
 
 namespace Soundtrail.Services.Tests.Unit.GetTracksForArtist;
 
@@ -55,11 +55,11 @@ internal sealed class GetTracksForArtistMissingUnitTestEnvironment
 
     public sealed class CommandBusFake : ICommandBus
     {
-        public List<RequestKnownMusicDataCommand> Commands { get; } = [];
+        public List<RequestKnownMusicDataMessage> Commands { get; } = [];
 
-        public Task SendAsync(ICommand command, CancellationToken cancellationToken = default)
+        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
         {
-            Commands.Add((RequestKnownMusicDataCommand)command);
+            Commands.Add((RequestKnownMusicDataMessage)message);
             return Task.CompletedTask;
         }
     }

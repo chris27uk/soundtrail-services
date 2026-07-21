@@ -5,4 +5,4 @@ namespace Soundtrail.Domain.Discovery;
 
 public sealed record LookupResultContext(
     CatalogWorkId StreamId,
-    CommandId OriginalCommandId);
+    MessageId OriginalCommandId);

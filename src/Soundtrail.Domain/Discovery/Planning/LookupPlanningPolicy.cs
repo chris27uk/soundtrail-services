@@ -6,14 +6,19 @@ namespace Soundtrail.Domain.Discovery.Planning;
 public static class LookupPlanningPolicy
 {
     public static LookupPlan Build(DispatchLookupWork request) =>
-        new(BuildLookups(request));
+        new(BuildIntents(request));
 
-    private static IReadOnlyList<PlannedLookup> BuildLookups(DispatchLookupWork request) =>
+    private static IReadOnlyList<LookupIntent> BuildIntents(DispatchLookupWork request) =>
         request.Target switch
         {
             EnrichmentTarget.SearchForUnknownCatalogItem(var criteria) =>
             [
-                new PlannedLookup.MusicbrainzSearch(criteria, request.Priority)
+                new LookupIntent.SearchCatalogItems(
+                    criteria,
+                    request.Priority,
+                    [
+                        new LookupAttempt.MusicbrainzSearchCatalogItems(criteria, request.Priority)
+                    ])
             ],
             EnrichmentTarget.KnownCatalogItemOperation(var operation) =>
                 BuildKnownOperation(operation, request.Priority),
@@ -21,36 +26,61 @@ public static class LookupPlanningPolicy
                 $"Unsupported enrichment target '{request.Target.GetType().Name}'.")
         };
 
-    private static IReadOnlyList<PlannedLookup> BuildKnownOperation(
+    private static IReadOnlyList<LookupIntent> BuildKnownOperation(
         CatalogItemOperation operation,
         LookupPriorityBand priority) =>
         operation switch
         {
             CatalogItemOperation.ChildAlbumsForArtist(var artistId) =>
             [
-                new PlannedLookup.MusicbrainzArtistAlbums(artistId, priority)
+                new LookupIntent.ArtistAlbums(
+                    artistId,
+                    priority,
+                    [
+                        new LookupAttempt.MusicbrainzArtistAlbums(artistId, priority)
+                    ])
             ],
             CatalogItemOperation.ChildTracksForArtist(var artistId) =>
             [
-                new PlannedLookup.MusicbrainzArtistTracks(artistId, priority)
+                new LookupIntent.ArtistTracks(
+                    artistId,
+                    priority,
+                    [
+                        new LookupAttempt.MusicbrainzArtistTracks(artistId, priority)
+                    ])
             ],
             CatalogItemOperation.ChildTracksForAlbum(var albumId) =>
             [
-                new PlannedLookup.MusicbrainzAlbumTracks(albumId, priority)
+                new LookupIntent.AlbumTracks(
+                    albumId,
+                    priority,
+                    [
+                        new LookupAttempt.MusicbrainzAlbumTracks(albumId, priority)
+                    ])
             ],
             CatalogItemOperation.StreamingLocationForTrack(var trackId) =>
-                ProviderName.All.SelectMany(provider => new PlannedLookup[]
-                {
-                    new PlannedLookup.StreamingLocationByIsrc(trackId, provider, priority),
-                    new PlannedLookup.StreamingLocationByTrackMetadata(trackId, provider, priority)
-                }).ToArray(),
+            [
+                new LookupIntent.StreamingLocation(
+                    trackId,
+                    priority,
+                    ProviderName.All.SelectMany(provider => new LookupAttempt[]
+                    {
+                        new LookupAttempt.StreamingLocationByIsrc(trackId, provider, priority),
+                        new LookupAttempt.StreamingLocationByTrackMetadata(trackId, provider, priority)
+                    }).ToArray())
+            ],
             CatalogItemOperation.ChildTracksForPlaylist(var playlistId) =>
-                ProviderName.All
-                    .Select(provider => (PlannedLookup)new PlannedLookup.PlaylistTracksByProvider(
+            [
+                new LookupIntent.PlaylistTracks(
+                    playlistId,
+                    priority,
+                    ProviderName.All
+                    .Select(provider => (LookupAttempt)new LookupAttempt.PlaylistTracksByProvider(
                         playlistId,
                         provider,
                         priority))
-                    .ToArray(),
+                    .ToArray())
+            ],
             _ => throw new InvalidOperationException(
                 $"Unsupported catalog item operation '{operation.GetType().Name}'.")
         };

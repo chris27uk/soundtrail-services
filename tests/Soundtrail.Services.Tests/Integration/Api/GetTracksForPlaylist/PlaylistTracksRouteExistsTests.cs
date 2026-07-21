@@ -9,7 +9,7 @@ public sealed class PlaylistTracksRouteExistsTests
     {
         using var environment = GetTracksForPlaylistRouteTestEnvironment.ForExistingPlaylistTracks();
 
-        var response = await environment.Client.GetAsync("/playlists/worldwidesongchart/tracks");
+        var response = await environment.Client.GetAsync("/catalog/playlists/worldwidesongchart/tracks");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }

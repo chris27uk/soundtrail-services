@@ -8,57 +8,57 @@ namespace Soundtrail.Services.Enrichment.Orchestrator.Features.Processing.OnLook
 
 public static class WorkerCommandFactory
 {
-    public static ICommand Create(
+    public static IMessage Create(
         DispatchLookupWork request,
-        PlannedLookup lookup) =>
-        lookup switch
+        LookupAttempt attempt) =>
+        attempt switch
         {
-            PlannedLookup.MusicbrainzSearch(var searchCriteria, var priority) =>
-                new LookupMusicbrainzSearchResultsCommand(
+            LookupAttempt.MusicbrainzSearchCatalogItems(var searchCriteria, var priority) =>
+                new LookupMusicbrainzSearchResultsMessage(
                     ChildId(request, "musicbrainz-search"),
                     request.CorrelationId,
                     request.CreatedAt,
                     priority,
                     searchCriteria),
-            PlannedLookup.MusicbrainzArtistAlbums(var artistId, var priority) =>
-                new LookupMusicbrainzArtistAlbumsCommand(
+            LookupAttempt.MusicbrainzArtistAlbums(var artistId, var priority) =>
+                new LookupMusicbrainzArtistAlbumsMessage(
                     ChildId(request, "musicbrainz-artist-albums"),
                     request.CorrelationId,
                     request.CreatedAt,
                     priority,
                     artistId),
-            PlannedLookup.MusicbrainzArtistTracks(var artistId, var priority) =>
-                new LookupMusicbrainzArtistTracksCommand(
+            LookupAttempt.MusicbrainzArtistTracks(var artistId, var priority) =>
+                new LookupMusicbrainzArtistTracksMessage(
                     ChildId(request, "musicbrainz-artist-tracks"),
                     request.CorrelationId,
                     request.CreatedAt,
                     priority,
                     artistId),
-            PlannedLookup.MusicbrainzAlbumTracks(var albumId, var priority) =>
-                new LookupMusicbrainzAlbumTracksCommand(
+            LookupAttempt.MusicbrainzAlbumTracks(var albumId, var priority) =>
+                new LookupMusicbrainzAlbumTracksMessage(
                     ChildId(request, "musicbrainz-album-tracks"),
                     request.CorrelationId,
                     request.CreatedAt,
                     priority,
                     albumId),
-            PlannedLookup.StreamingLocationByIsrc(var trackId, var provider, var priority) =>
-                new LookupStreamingLocationByIsrcCommand(
+            LookupAttempt.StreamingLocationByIsrc(var trackId, var provider, var priority) =>
+                new LookupStreamingLocationByIsrcMessage(
                     ChildId(request, $"streaming-isrc:{provider.Value}"),
                     request.CorrelationId,
                     request.CreatedAt,
                     priority,
                     trackId,
                     provider),
-            PlannedLookup.StreamingLocationByTrackMetadata(var trackId, var provider, var priority) =>
-                new LookupStreamingLocationByTrackMetadataCommand(
+            LookupAttempt.StreamingLocationByTrackMetadata(var trackId, var provider, var priority) =>
+                new LookupStreamingLocationByTrackMetadataMessage(
                     ChildId(request, $"streaming-metadata:{provider.Value}"),
                     request.CorrelationId,
                     request.CreatedAt,
                     priority,
                     trackId,
                     provider),
-            PlannedLookup.PlaylistTracksByProvider(var playlistId, var provider, var priority) =>
-                new LookupPlaylistTracksByProviderCommand(
+            LookupAttempt.PlaylistTracksByProvider(var playlistId, var provider, var priority) =>
+                new LookupPlaylistTracksByProviderMessage(
                     ChildId(request, $"playlist:{provider.Value}"),
                     request.CorrelationId,
                     request.CreatedAt,
@@ -66,9 +66,9 @@ public static class WorkerCommandFactory
                     playlistId,
                     provider),
             _ => throw new InvalidOperationException(
-                $"Unsupported planned lookup '{lookup.GetType().Name}'.")
+                $"Unsupported lookup attempt '{attempt.GetType().Name}'.")
         };
 
-    private static CommandId ChildId(DispatchLookupWork request, string suffix) =>
-        CommandId.For($"{request.CommandId.Value}:{suffix}");
+    private static MessageId ChildId(DispatchLookupWork request, string suffix) =>
+        MessageId.For($"{request.Id.Value}:{suffix}");
 }

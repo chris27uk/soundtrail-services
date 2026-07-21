@@ -10,7 +10,7 @@ public sealed class LookupWorkReadyHandler(ICommandBus commandBus) : IHandler<Di
     public async Task Handle(DispatchLookupWork request, CancellationToken cancellationToken = default)
     {
         var plan = LookupPlanningPolicy.Build(request);
-        foreach (var command in plan.Lookups.Select(lookup => WorkerCommandFactory.Create(request, lookup)))
+        foreach (var command in plan.Attempts.Select(attempt => WorkerCommandFactory.Create(request, attempt)))
         {
             await commandBus.SendAsync(command, cancellationToken);
         }

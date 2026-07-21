@@ -29,7 +29,7 @@ public sealed class OnUnknownMusicDataRequestedFeature : IOrchestratorFeature
         services.TryAddSingleton<ITypeRegistry>(_ => TypeTranslationRegistry.Default);
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
         services.TryAddSingleton<IWorkPlanner, WorkPlanner>();
-        services.TryAddScoped<IHandler<RequestUnknownMusicDataCommand>, OnUnknownMusicDataRequestedHandler>();
+        services.TryAddScoped<IHandler<RequestUnknownMusicDataMessage>, OnUnknownMusicDataRequestedHandler>();
         services.TryAddScoped<ISearchForCandidates, RavenSearchForCandidates>();
         services.AddCatalogSearchEventStreamRepository();
     }
@@ -63,7 +63,7 @@ public sealed class OnUnknownMusicDataRequestedFeature : IOrchestratorFeature
         options.ListenToAzureServiceBusQueue(serviceBusOptions.UnknownMusicDataRequestsQueueName)
             .ProcessInline();
 
-        options.PublishMessage<RequestUnknownMusicDataCommand>()
+        options.PublishMessage<RequestUnknownMusicDataMessage>()
             .ToAzureServiceBusQueue(serviceBusOptions.UnknownMusicDataRequestsQueueName);
     }
 }

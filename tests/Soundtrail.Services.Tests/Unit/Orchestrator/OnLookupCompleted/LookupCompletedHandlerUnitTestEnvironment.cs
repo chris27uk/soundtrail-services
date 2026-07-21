@@ -31,17 +31,24 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
     public static CatalogLookupCompleted CreateStreamingLocationCompleted(
         ArtistId? artistId = null,
         TrackId? trackId = null,
-        DateTimeOffset? completedAt = null)
+        DateTimeOffset? completedAt = null,
+        MessageId? originalCommandId = null)
     {
         var resolvedTrackId = trackId ?? TestTrackIds.Create("lookup-streaming-1");
         var resolvedArtistId = artistId ?? ArtistId.From("artist-lookup-1");
         var when = completedAt ?? new DateTimeOffset(2026, 7, 19, 10, 0, 0, TimeSpan.Zero);
 
         return new CatalogLookupCompleted(
+            MessageId.New(),
+            when.AddMinutes(-15),
+            CorrelationId.From("corr-streaming-completed"),
             new LookupResult.Succeeded(
                 new LookupResultContext(
                     CatalogWorkId.From(new CatalogItemOperation.StreamingLocationForTrack(resolvedTrackId)),
-                    CommandId.For("worker-streaming-completed")),
+                    originalCommandId ?? CreateWorkerCommandIdForScheduledWork(
+                        Work.EnrichTrackStreamingLocation(resolvedTrackId),
+                        new DateTimeOffset(2026, 7, 19, 9, 45, 30, TimeSpan.Zero),
+                        "streaming-isrc:Spotify")),
                 new LookedUpData.TrackStreamingLink(
                     resolvedArtistId,
                     resolvedTrackId,
@@ -56,37 +63,48 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
 
     public static CatalogLookupCompleted CreatePlaylistCompleted(
         string playlistName = "Road Trip",
-        DateTimeOffset? completedAt = null)
+        DateTimeOffset? completedAt = null,
+        MessageId? originalCommandId = null)
     {
         var when = completedAt ?? new DateTimeOffset(2026, 7, 19, 10, 5, 0, TimeSpan.Zero);
         var playlistId = PlaylistId.FromPlaylistName(playlistName);
-        var track = CreateTrack("playlist-track-1");
 
         return new CatalogLookupCompleted(
+            MessageId.New(),
+            when.AddMinutes(-15),
+            CorrelationId.From("corr-playlist-completed"),
             new LookupResult.Succeeded(
                 new LookupResultContext(
                     CatalogWorkId.From(new CatalogItemOperation.ChildTracksForPlaylist(playlistId)),
-                    CommandId.For("worker-playlist-completed")),
-                new LookedUpData.CatalogEntries([
-                    new CatalogDiscoveryEntry(
-                        ArtistId.From("artist-playlist-1"),
-                        new CatalogItem.MusicTrack(track))
+                    originalCommandId ?? CreateWorkerCommandIdForScheduledWork(
+                        Work.DiscoverPlaylistTracks(playlistId),
+                        new DateTimeOffset(2026, 7, 19, 9, 50, 30, TimeSpan.Zero),
+                        "playlist:Spotify")),
+                new LookedUpData.PlaylistTrackReferences([
+                    new TrackReference(ArtistName.From("The Travellers"), "Road Song")
                 ]),
                 when));
     }
 
     public static CatalogLookupCompleted CreateDeferred(
         DateTimeOffset? completedAt = null,
-        DateTimeOffset? deferredUntil = null)
+        DateTimeOffset? deferredUntil = null,
+        MessageId? originalCommandId = null)
     {
         var when = completedAt ?? new DateTimeOffset(2026, 7, 19, 10, 10, 0, TimeSpan.Zero);
         var trackId = TestTrackIds.Create("lookup-deferred-1");
 
         return new CatalogLookupCompleted(
+            MessageId.New(),
+            when.AddMinutes(-15),
+            CorrelationId.From("corr-deferred"),
             new LookupResult.Deferred(
                 new LookupResultContext(
                     CatalogWorkId.From(new CatalogItemOperation.StreamingLocationForTrack(trackId)),
-                    CommandId.For("worker-deferred-completed")),
+                    originalCommandId ?? CreateWorkerCommandIdForScheduledWork(
+                        Work.EnrichTrackStreamingLocation(trackId),
+                        new DateTimeOffset(2026, 7, 19, 9, 45, 30, TimeSpan.Zero),
+                        "streaming-isrc:Spotify")),
                 deferredUntil ?? when.AddMinutes(15),
                 "Rate limited.",
                 when));
@@ -113,6 +131,47 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
         ];
     }
 
+    public void SeedWithMultipleScheduledStreamingLookups(TrackId firstTrackId, TrackId secondTrackId)
+    {
+        SeedEvents =
+        [
+            new WorkRequested(
+                Work.EnrichTrackStreamingLocation(firstTrackId),
+                LookupPriorityBand.Low,
+                50,
+                5,
+                new DateTimeOffset(2026, 7, 19, 9, 40, 0, TimeSpan.Zero),
+                CorrelationId.From("corr-first")),
+            new WorkScheduled(
+                Work.EnrichTrackStreamingLocation(firstTrackId),
+                LookupPriorityBand.Low,
+                new DateTimeOffset(2026, 7, 19, 9, 41, 0, TimeSpan.Zero),
+                new DateTimeOffset(2026, 7, 19, 9, 45, 0, TimeSpan.Zero),
+                "Scheduled first.",
+                new DateTimeOffset(2026, 7, 19, 9, 40, 30, TimeSpan.Zero)),
+            new WorkRequested(
+                Work.EnrichTrackStreamingLocation(secondTrackId),
+                LookupPriorityBand.High,
+                90,
+                1,
+                new DateTimeOffset(2026, 7, 19, 9, 50, 0, TimeSpan.Zero),
+                CorrelationId.From("corr-second")),
+            new WorkScheduled(
+                Work.EnrichTrackStreamingLocation(secondTrackId),
+                LookupPriorityBand.High,
+                new DateTimeOffset(2026, 7, 19, 9, 51, 0, TimeSpan.Zero),
+                new DateTimeOffset(2026, 7, 19, 9, 55, 0, TimeSpan.Zero),
+                "Scheduled second.",
+                new DateTimeOffset(2026, 7, 19, 9, 50, 30, TimeSpan.Zero))
+        ];
+    }
+
+    public static MessageId CreateWorkerCommandIdForScheduledWork(
+        EnrichmentTarget target,
+        DateTimeOffset scheduledAt,
+        string suffix) =>
+        MessageId.For($"DispatchLookupWork:{target.NormalisedIdentifier}:{scheduledAt:O}:{suffix}");
+
     public void SeedForPlaylist(string playlistName = "Road Trip")
     {
         var playlistId = PlaylistId.FromPlaylistName(playlistName);
@@ -138,29 +197,17 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
     {
         set => Repository.SeedEvents = value;
     }
-
-    private static Track CreateTrack(string seed)
-    {
-        var track = new Track(TestTrackIds.Create(seed))
-        {
-            Title = "Road Song",
-            ArtistName = "The Travellers",
-            AlbumTitle = "Miles Ahead",
-            ReleaseDate = new DateOnly(2020, 1, 1),
-            ReleaseType = "studio"
-        };
-
-        return track;
-    }
-
     public sealed class EventStreamRepositoryFake : IEventStreamRepository<CatalogWorkId>
     {
         public IReadOnlyList<IDomainEvent> SeedEvents { get; set; } = [];
 
         public IReadOnlyList<IDomainEvent> AppendedEvents { get; private set; } = [];
 
+        public int LoadCalls { get; private set; }
+
         public Task<LoadedEventStream<CatalogWorkId>> LoadAsync(CatalogWorkId streamId, CancellationToken cancellationToken)
         {
+            LoadCalls++;
             return Task.FromResult(
                 SeedEvents.Count == 0
                     ? LoadedEventStream<CatalogWorkId>.Empty(streamId)

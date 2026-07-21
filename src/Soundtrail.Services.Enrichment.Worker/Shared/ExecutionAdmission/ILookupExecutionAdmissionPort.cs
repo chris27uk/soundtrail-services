@@ -10,10 +10,10 @@ public interface ILookupExecutionAdmissionPort
         CancellationToken cancellationToken);
 
     Task CommitAsync(
-        CommandId commandId,
+        MessageId messageId,
         CancellationToken cancellationToken);
 
     Task ReleaseAsync(
-        CommandId commandId,
+        MessageId messageId,
         CancellationToken cancellationToken);
 }

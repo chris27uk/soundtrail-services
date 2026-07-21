@@ -1,6 +1,6 @@
 using Soundtrail.Domain.Catalog.Artists;
-using Soundtrail.Services.Api.Features.GetAlbumsForArtist.Adapters;
-using Soundtrail.Services.Api.Features.GetAlbumsForArtist.Contract;
+using Soundtrail.Services.Api.Features.Catalog.GetAlbumsForArtist.Adapters;
+using Soundtrail.Services.Api.Features.Catalog.GetAlbumsForArtist.Contract;
 
 namespace Soundtrail.Services.Tests.Integration.Ports.GetAlbumsForArtist;
 

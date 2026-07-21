@@ -6,7 +6,7 @@ using Soundtrail.Services.ServiceDefaults;
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
-builder.Services.AddFeatures<Program>();
+builder.Services.AddFeatures<Soundtrail.Services.Enrichment.Worker.WorkerAssemblyMarker>();
 #pragma warning disable ASP0000
 using var serviceProvider = builder.Services.BuildServiceProvider();
 #pragma warning restore ASP0000

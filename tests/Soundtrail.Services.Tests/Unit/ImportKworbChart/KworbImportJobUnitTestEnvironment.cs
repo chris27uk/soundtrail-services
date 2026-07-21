@@ -22,9 +22,12 @@ internal sealed class KworbImportJobUnitTestEnvironment
     {
         public int Calls { get; private set; }
 
+        public ImportKworbChartCommand? Request { get; private set; }
+
         public Task Handle(ImportKworbChartCommand request, CancellationToken cancellationToken = default)
         {
             Calls++;
+            Request = request;
             return Task.CompletedTask;
         }
     }

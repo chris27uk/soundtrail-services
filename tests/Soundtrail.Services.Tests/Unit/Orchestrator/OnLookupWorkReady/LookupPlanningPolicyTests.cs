@@ -4,7 +4,6 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Domain.Discovery.Planning;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Api.Features.Search.Contract;
 
 namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnLookupWorkReady;
 
@@ -16,9 +15,10 @@ public sealed class LookupPlanningPolicyTests
         var plan = LookupPlanningPolicy.Build(
             LookupWorkReadyHandlerUnitTestEnvironment.CreateSearchRequest());
 
-        var lookup = plan.Lookups.Should().ContainSingle().Subject.Should().BeOfType<PlannedLookup.MusicbrainzSearch>().Subject;
-        lookup.SearchCriteria.Should().Be(new SearchCriteria("u2", SearchType.Artist));
-        lookup.Priority.Should().Be(LookupPriorityBand.High);
+        var intent = plan.Intents.Should().ContainSingle().Subject.Should().BeOfType<LookupIntent.SearchCatalogItems>().Subject;
+        intent.SearchCriteria.Should().Be(new SearchCriteria("u2", SearchType.Artist));
+        intent.Priority.Should().Be(LookupPriorityBand.High);
+        intent.Attempts.Should().ContainSingle().Which.Should().BeOfType<LookupAttempt.MusicbrainzSearchCatalogItems>();
     }
 
     [Fact]
@@ -27,10 +27,12 @@ public sealed class LookupPlanningPolicyTests
         var plan = LookupPlanningPolicy.Build(
             LookupWorkReadyHandlerUnitTestEnvironment.CreateStreamingLocationRequest());
 
-        plan.Lookups.Should().HaveCount(ProviderName.All.Length * 2);
-        plan.Lookups.OfType<PlannedLookup.StreamingLocationByIsrc>().Select(x => x.Provider)
+        var intent = plan.Intents.Should().ContainSingle().Subject.Should().BeOfType<LookupIntent.StreamingLocation>().Subject;
+
+        intent.Attempts.Should().HaveCount(ProviderName.All.Length * 2);
+        intent.Attempts.OfType<LookupAttempt.StreamingLocationByIsrc>().Select(x => x.Provider)
             .Should().BeEquivalentTo(ProviderName.All);
-        plan.Lookups.OfType<PlannedLookup.StreamingLocationByTrackMetadata>().Select(x => x.Provider)
+        intent.Attempts.OfType<LookupAttempt.StreamingLocationByTrackMetadata>().Select(x => x.Provider)
             .Should().BeEquivalentTo(ProviderName.All);
     }
 
@@ -40,8 +42,10 @@ public sealed class LookupPlanningPolicyTests
         var plan = LookupPlanningPolicy.Build(
             LookupWorkReadyHandlerUnitTestEnvironment.CreatePlaylistRequest());
 
-        plan.Lookups.Should().HaveCount(ProviderName.All.Length);
-        plan.Lookups.Should().AllBeOfType<PlannedLookup.PlaylistTracksByProvider>();
+        var intent = plan.Intents.Should().ContainSingle().Subject.Should().BeOfType<LookupIntent.PlaylistTracks>().Subject;
+
+        intent.Attempts.Should().HaveCount(ProviderName.All.Length);
+        intent.Attempts.Should().AllBeOfType<LookupAttempt.PlaylistTracksByProvider>();
     }
 
     [Fact]
@@ -51,13 +55,14 @@ public sealed class LookupPlanningPolicyTests
             new EnrichmentTarget.KnownCatalogItemOperation(
                 new CatalogItemOperation.ChildAlbumsForArtist(Soundtrail.Domain.Catalog.Artists.ArtistId.From("artist-42"))),
             LookupPriorityBand.High,
-            CommandId.For("cmd-artist-albums"),
+            MessageId.For("cmd-artist-albums"),
             CorrelationId.From("corr-artist-albums"),
             new DateTimeOffset(2026, 7, 18, 9, 20, 0, TimeSpan.Zero));
 
         var plan = LookupPlanningPolicy.Build(request);
 
-        var lookup = plan.Lookups.Should().ContainSingle().Subject.Should().BeOfType<PlannedLookup.MusicbrainzArtistAlbums>().Subject;
-        lookup.ArtistId.Value.Should().Be("artist-42");
+        var intent = plan.Intents.Should().ContainSingle().Subject.Should().BeOfType<LookupIntent.ArtistAlbums>().Subject;
+        intent.ArtistId.Value.Should().Be("artist-42");
+        intent.Attempts.Should().ContainSingle().Which.Should().BeOfType<LookupAttempt.MusicbrainzArtistAlbums>();
     }
 }

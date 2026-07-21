@@ -11,9 +11,9 @@ namespace Soundtrail.Services.Enrichment.Orchestrator.Features.Prioritisation.On
 public sealed class OnMusicAssessmentRequiredHandler(
     IPlanningAssessmentPolicy policy,
     IDiscoveryPlanningProjectionReader projectionReader,
-    IEventStreamRepository<CatalogWorkId> repository) : IHandler<AssessWorkCommand>
+    IEventStreamRepository<CatalogWorkId> repository) : IHandler<AssessWorkMessage>
 {
-    public async Task Handle(AssessWorkCommand request, CancellationToken cancellationToken = default)
+    public async Task Handle(AssessWorkMessage request, CancellationToken cancellationToken = default)
     {
         var context = request.ToAggregateContext();
         var streamId = CatalogWorkId.From(request.Target);

@@ -30,12 +30,26 @@ internal static class LookupCompletedEventRecorder
                             .ToArray(),
                         result.CompletedAt);
                 }
-                return 0;
+            },
+            playlistTrackReferences =>
+            {
+                if (context.Target is not EnrichmentTarget.KnownCatalogItemOperation(CatalogItemOperation.ChildTracksForPlaylist(var playlistId)))
+                {
+                    throw new InvalidOperationException("Playlist track references are only valid for playlist lookup results.");
+                }
+
+                history.DiscoverPlaylistTracks(
+                    playlistId,
+                    playlistTrackReferences.Values
+                        .Select(trackReference => Soundtrail.Domain.Catalog.Tracks.TrackId.Create(
+                            trackReference.ArtistName.Value,
+                            trackReference.TrackTitle))
+                        .ToArray(),
+                    result.CompletedAt);
             },
             link =>
             {
                 history.DiscoverStreamingLocation(link.ArtistId, link.TrackId, link.Value, result.CompletedAt);
-                return 0;
             });
     }
 }

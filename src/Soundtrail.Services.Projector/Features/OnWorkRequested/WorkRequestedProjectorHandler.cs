@@ -8,8 +8,8 @@ public sealed class WorkRequestedProjectorHandler(ICommandBus commandBus)
 {
     public Task Handle(WorkRequested @event, CancellationToken cancellationToken = default)
     {
-        var command = new AssessWorkCommand(
-            CommandId: @event.SubsequentDeterministicId("AssessWork"),
+        var command = new AssessWorkMessage(
+            Id: @event.SubsequentDeterministicId("AssessWork"),
             CorrelationId: @event.CorrelationId,
             CreatedAt: @event.RequestedAt,
             Target: @event.Target,

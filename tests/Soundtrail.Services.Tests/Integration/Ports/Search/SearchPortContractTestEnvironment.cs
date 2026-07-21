@@ -1,13 +1,12 @@
 using Raven.Client.Documents;
-using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Api.Features.Search.Adapters;
-using Soundtrail.Services.Api.Features.Search.Contract;
+using Soundtrail.Services.Api.Features.Catalog.Search.Adapters;
+using Soundtrail.Services.Api.Features.Catalog.Search.Contract;
 using Soundtrail.Services.Tests.Integration.Ports;
 
 namespace Soundtrail.Services.Tests.Integration.Ports.Search;
@@ -65,23 +64,16 @@ internal sealed class SearchPortContractTestEnvironment : IAsyncDisposable
                 searchCriteria),
             SearchPortImplementation.Raven => await CreateRavenEnvironmentAsync(
                 searchCriteria,
-                new CatalogSearchRecordDto
+                new CatalogSearchCandidateRecordDto
                 {
-                    Id = CatalogSearchRecordDto.GetDocumentId(searchCriteria.NormalisedIdentifier),
-                    QueryText = queryText,
-                    Filter = filter.ToString(),
-                    Results =
-                    [
-                        new CatalogSearchResultRecordDto
-                        {
-                            MusicCatalogId = musicCatalogId,
-                            ResultType = resultType.ToString(),
-                            Title = title,
-                            ArtistName = artistName,
-                            AlbumTitle = albumTitle,
-                            ArtworkUrl = artworkUrl
-                        }
-                    ]
+                    Id = CatalogSearchCandidateRecordDto.GetDocumentId(musicCatalogId),
+                    CatalogItemId = musicCatalogId,
+                    CandidateKind = resultType.ToString().ToLowerInvariant(),
+                    SearchText = queryText,
+                    Title = title,
+                    ArtistName = artistName,
+                    AlbumTitle = albumTitle,
+                    ArtworkUrl = artworkUrl
                 }),
             _ => throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null)
         };
@@ -110,7 +102,7 @@ internal sealed class SearchPortContractTestEnvironment : IAsyncDisposable
 
     private static async Task<SearchPortContractTestEnvironment> CreateRavenEnvironmentAsync(
         SearchCriteria searchCriteria,
-        CatalogSearchRecordDto? existingRecord = null)
+        CatalogSearchCandidateRecordDto? existingRecord = null)
     {
         var store = EmbeddedRavenTestServer.CreateDocumentStore();
 
@@ -122,44 +114,10 @@ internal sealed class SearchPortContractTestEnvironment : IAsyncDisposable
         }
 
         return new SearchPortContractTestEnvironment(
-            new RavenSearchPort(store, new TypeRegistryFake()),
+            new RavenSearchPort(store),
             searchCriteria,
             store,
             existingRecord?.Id);
-    }
-
-    private sealed class TypeRegistryFake : ITypeRegistry
-    {
-        public TDto ToDto<TDto>(object domainObject) where TDto : class => throw new NotSupportedException();
-
-        public object ToDto(object domainObject) => throw new NotSupportedException();
-
-        public TDomain ToDomainObject<TDomain>(object dto) where TDomain : class => (ToDomainObject(dto) as TDomain)!;
-
-        public object ToDomainObject(object? dto)
-        {
-            var record = (CatalogSearchRecordDto)dto!;
-            return new SearchResponse(
-                record.QueryText,
-                Enum.Parse<SearchType>(record.Filter, true),
-                record.Results.Select(
-                        result =>
-                        {
-                            var resultType = Enum.Parse<SearchType>(result.ResultType, true);
-                            return new SearchResultResponse(
-                                ParseMusicCatalogId(result.MusicCatalogId, resultType),
-                                resultType,
-                                result.Title,
-                                result.ArtistName,
-                                result.AlbumTitle,
-                                result.ArtworkUrl);
-                        })
-                    .ToArray());
-        }
-
-        public void MapOnto<TSource, TTarget>(TSource source, TTarget target)
-            where TSource : class
-            where TTarget : class => throw new NotSupportedException();
     }
 
     private static CatalogItemId ParseMusicCatalogId(string value, SearchType filter) =>

@@ -3,8 +3,8 @@ using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Artists;
-using Soundtrail.Services.Api.Features.GetArtist.Adapters;
-using Soundtrail.Services.Api.Features.GetArtist.Contract;
+using Soundtrail.Services.Api.Features.Catalog.GetArtist.Adapters;
+using Soundtrail.Services.Api.Features.Catalog.GetArtist.Contract;
 using Soundtrail.Services.Tests.Integration.Ports;
 
 namespace Soundtrail.Services.Tests.Integration.Ports.GetArtist;

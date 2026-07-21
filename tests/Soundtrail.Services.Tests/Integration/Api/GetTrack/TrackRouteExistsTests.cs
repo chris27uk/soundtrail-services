@@ -9,7 +9,7 @@ public sealed class TrackRouteExistsTests
     {
         using var environment = GetTrackRouteTestEnvironment.ForExistingTrack();
 
-        var response = await environment.Client.GetAsync("/tracks/" + global::Soundtrail.Services.Tests.TestTrackIds.Value("track-501"));
+        var response = await environment.Client.GetAsync("/catalog/tracks/" + global::Soundtrail.Services.Tests.TestTrackIds.Value("track-501"));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }

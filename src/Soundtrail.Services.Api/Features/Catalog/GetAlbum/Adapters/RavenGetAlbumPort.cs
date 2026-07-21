@@ -1,0 +1,19 @@
+using Raven.Client.Documents;
+using Soundtrail.Adapters.TypeRegistry;
+using Soundtrail.Contracts.Persistence;
+using Soundtrail.Domain.Catalog.Albums;
+using Soundtrail.Services.Api.Features.Catalog.GetAlbum.Contract;
+
+namespace Soundtrail.Services.Api.Features.Catalog.GetAlbum.Adapters
+{
+    public class RavenGetAlbumPort(IDocumentStore documentStore, ITypeRegistry typeRegistry) : IGetAlbumPort
+    {
+        public async Task<GetAlbumResponse?> GetAlbumAsync(AlbumId albumId, CancellationToken cancellationToken)
+        {
+            var activeSession = documentStore.OpenAsyncSession();
+            var documentId = CatalogAlbumRecordDto.GetDocumentId(albumId.ArtistAlbumId);
+            var existing = await activeSession.LoadAsync<CatalogAlbumRecordDto>(documentId, cancellationToken);
+           return existing is null ? null : typeRegistry.ToDomainObject<GetAlbumResponse>(existing);
+        }
+    }
+}

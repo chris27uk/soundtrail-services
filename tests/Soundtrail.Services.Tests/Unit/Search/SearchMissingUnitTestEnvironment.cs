@@ -2,9 +2,9 @@ using Soundtrail.Adapters.Timing;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Api.Features.Search;
-using Soundtrail.Services.Api.Features.Search.Adapters;
-using Soundtrail.Services.Api.Features.Search.Contract;
+using Soundtrail.Services.Api.Features.Catalog.Search;
+using Soundtrail.Services.Api.Features.Catalog.Search.Adapters;
+using Soundtrail.Services.Api.Features.Catalog.Search.Contract;
 
 namespace Soundtrail.Services.Tests.Unit.Search;
 
@@ -61,11 +61,11 @@ internal sealed class SearchMissingUnitTestEnvironment
 
     public sealed class CommandBusFake : ICommandBus
     {
-        public List<RequestUnknownMusicDataCommand> Commands { get; } = [];
+        public List<RequestUnknownMusicDataMessage> Commands { get; } = [];
 
-        public Task SendAsync(ICommand command, CancellationToken cancellationToken = default)
+        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
         {
-            Commands.Add((RequestUnknownMusicDataCommand)command);
+            Commands.Add((RequestUnknownMusicDataMessage)message);
             return Task.CompletedTask;
         }
     }

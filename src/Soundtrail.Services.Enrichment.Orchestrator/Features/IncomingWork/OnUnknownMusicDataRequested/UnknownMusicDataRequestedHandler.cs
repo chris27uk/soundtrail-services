@@ -11,9 +11,9 @@ namespace Soundtrail.Services.Enrichment.Orchestrator.Features.IncomingWork.OnUn
 public sealed class OnUnknownMusicDataRequestedHandler(
     IWorkPlanner planner,
     ISearchForCandidates searchForCandidates,
-    IEventStreamRepository<CatalogWorkId> repository) : IHandler<RequestUnknownMusicDataCommand>
+    IEventStreamRepository<CatalogWorkId> repository) : IHandler<RequestUnknownMusicDataMessage>
 {
-    public async Task Handle(RequestUnknownMusicDataCommand request, CancellationToken cancellationToken = default)
+    public async Task Handle(RequestUnknownMusicDataMessage request, CancellationToken cancellationToken = default)
     {
         var context = request.ToAggregateContext();
         var streamId = CatalogWorkId.From(request.SearchCriteria);

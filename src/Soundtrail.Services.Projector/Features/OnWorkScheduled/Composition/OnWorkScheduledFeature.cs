@@ -19,7 +19,6 @@ public sealed class OnWorkScheduledFeature : IProjectorFeature
     {
         services.AddRavenDocumentStore(configuration);
         services.AddWolverineCommandBus();
-        services.TryAddScoped<IStoreDiscoveryFeedbackPort, RavenStoreDiscoveryFeedbackPort>();
         services.TryAddScoped<WorkScheduledProjectorHandler>();
         services.AddHostedService<WorkScheduledCdcService>();
     }

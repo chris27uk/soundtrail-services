@@ -3,8 +3,8 @@ using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Tracks;
-using Soundtrail.Services.Api.Features.GetTrack.Adapters;
-using Soundtrail.Services.Api.Features.GetTrack.Contract;
+using Soundtrail.Services.Api.Features.Catalog.GetTrack.Adapters;
+using Soundtrail.Services.Api.Features.Catalog.GetTrack.Contract;
 using Soundtrail.Services.Tests.Integration.Ports;
 
 namespace Soundtrail.Services.Tests.Integration.Ports.GetTrack;

@@ -4,8 +4,8 @@ using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Tracks;
-using Soundtrail.Services.Api.Features.GetTracksForArtist.Adapters;
-using Soundtrail.Services.Api.Features.GetTracksForArtist.Contract;
+using Soundtrail.Services.Api.Features.Catalog.GetTracksForArtist.Adapters;
+using Soundtrail.Services.Api.Features.Catalog.GetTracksForArtist.Contract;
 using Soundtrail.Services.Tests.Integration.Ports;
 
 namespace Soundtrail.Services.Tests.Integration.Ports.GetTracksForArtist;

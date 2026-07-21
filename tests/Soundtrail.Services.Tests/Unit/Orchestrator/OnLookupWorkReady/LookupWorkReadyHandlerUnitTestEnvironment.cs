@@ -6,7 +6,6 @@ using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Api.Features.Search.Contract;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.Processing.OnLookupWorkReady;
 
 namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnLookupWorkReady;
@@ -28,7 +27,7 @@ internal sealed class LookupWorkReadyHandlerUnitTestEnvironment
         new(
             new EnrichmentTarget.SearchForUnknownCatalogItem(new SearchCriteria("u2", SearchType.Artist)),
             LookupPriorityBand.High,
-            CommandId.For("cmd-search"),
+            MessageId.For("cmd-search"),
             CorrelationId.From("corr-search"),
             new DateTimeOffset(2026, 7, 18, 9, 10, 0, TimeSpan.Zero));
 
@@ -36,7 +35,7 @@ internal sealed class LookupWorkReadyHandlerUnitTestEnvironment
         new(
             Work.EnrichTrackStreamingLocation(TestTrackIds.Create("track-2901")),
             LookupPriorityBand.Low,
-            CommandId.For("cmd-streaming"),
+            MessageId.For("cmd-streaming"),
             CorrelationId.From("corr-streaming"),
             new DateTimeOffset(2026, 7, 18, 9, 11, 0, TimeSpan.Zero));
 
@@ -44,17 +43,17 @@ internal sealed class LookupWorkReadyHandlerUnitTestEnvironment
         new(
             Work.DiscoverPlaylistTracks(PlaylistId.FromPlaylistName("roadtrip")),
             LookupPriorityBand.Low,
-            CommandId.For("cmd-playlist"),
+            MessageId.For("cmd-playlist"),
             CorrelationId.From("corr-playlist"),
             new DateTimeOffset(2026, 7, 18, 9, 12, 0, TimeSpan.Zero));
 
     public sealed class CommandBusFake : ICommandBus
     {
-        public List<ICommand> Commands { get; } = [];
+        public List<IMessage> Commands { get; } = [];
 
-        public Task SendAsync(ICommand command, CancellationToken cancellationToken = default)
+        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
         {
-            Commands.Add(command);
+            Commands.Add(message);
             return Task.CompletedTask;
         }
     }

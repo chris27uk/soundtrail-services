@@ -4,8 +4,8 @@ using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Catalog.Tracks;
-using Soundtrail.Services.Api.Features.GetTracksForPlaylist.Adapters;
-using Soundtrail.Services.Api.Features.GetTracksForPlaylist.Contract;
+using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Adapters;
+using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Contract;
 using Soundtrail.Services.Tests.Integration.Ports;
 
 namespace Soundtrail.Services.Tests.Integration.Ports.GetTracksForPlaylist;
@@ -73,6 +73,7 @@ internal sealed class GetTracksForPlaylistPortContractTestEnvironment : IAsyncDi
                 {
                     Id = CatalogPlaylistTracksRecordDto.GetDocumentId(resolvedPlaylistId.Value),
                     PlaylistId = resolvedPlaylistId.Value,
+                    TrackIds = [trackIdValue],
                     Tracks =
                     [
                         new CatalogPlaylistTrackRecordDto

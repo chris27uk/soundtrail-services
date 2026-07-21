@@ -1,7 +1,7 @@
 using Soundtrail.Domain.Catalog.Albums;
-using Soundtrail.Services.Api.Features.GetAlbum;
-using Soundtrail.Services.Api.Features.GetAlbum.Adapters;
-using Soundtrail.Services.Api.Features.GetAlbum.Contract;
+using Soundtrail.Services.Api.Features.Catalog.GetAlbum;
+using Soundtrail.Services.Api.Features.Catalog.GetAlbum.Adapters;
+using Soundtrail.Services.Api.Features.Catalog.GetAlbum.Contract;
 
 namespace Soundtrail.Services.Tests.Unit.GetAlbum;
 

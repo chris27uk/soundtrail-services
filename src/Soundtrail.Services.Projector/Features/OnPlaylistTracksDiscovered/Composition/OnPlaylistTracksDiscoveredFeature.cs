@@ -19,6 +19,7 @@ public sealed class OnPlaylistTracksDiscoveredFeature : IProjectorFeature
     {
         services.AddRavenDocumentStore(configuration);
         services.AddWolverineCommandBus();
+        services.TryAddScoped<IStorePlaylistTracksReadModelPort, RavenStorePlaylistTracksReadModelPort>();
         services.TryAddScoped<PlaylistTracksDiscoveredProjectorHandler>();
         services.AddHostedService<PlaylistTracksDiscoveredCdcService>();
     }

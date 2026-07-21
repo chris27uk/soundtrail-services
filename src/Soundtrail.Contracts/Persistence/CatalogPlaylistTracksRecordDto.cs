@@ -6,6 +6,8 @@ public sealed class CatalogPlaylistTracksRecordDto
 
     public string PlaylistId { get; set; } = string.Empty;
 
+    public string[] TrackIds { get; set; } = [];
+
     public CatalogPlaylistTrackRecordDto[] Tracks { get; set; } = [];
 
     public DateTimeOffset UpdatedAt { get; set; }

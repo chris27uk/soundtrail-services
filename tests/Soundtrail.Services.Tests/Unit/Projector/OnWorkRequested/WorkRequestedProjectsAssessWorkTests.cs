@@ -14,7 +14,7 @@ public sealed class WorkRequestedProjectsAssessWorkTests
 
         await subject.Handle(WorkRequestedProjectorUnitTestEnvironment.CreateSearchCriteriaWorkRequested());
 
-        environment.CommandBus.Commands.Should().ContainSingle().Which.Should().BeOfType<AssessWorkCommand>();
+        environment.CommandBus.Commands.Should().ContainSingle().Which.Should().BeOfType<AssessWorkMessage>();
     }
 
     [Fact]
@@ -32,7 +32,7 @@ public sealed class WorkRequestedProjectsAssessWorkTests
                 requestedAt: new DateTimeOffset(2026, 7, 15, 8, 11, 0, TimeSpan.Zero),
                 correlationId: "correlation-1"));
 
-        environment.CommandBus.Commands.Cast<AssessWorkCommand>().Single().CommandId.Value
+        environment.CommandBus.Commands.Cast<AssessWorkMessage>().Single().Id.Value
             .Should().Be("AssessWork:search:u2:100:0:correlation-1");
     }
 
@@ -44,7 +44,7 @@ public sealed class WorkRequestedProjectsAssessWorkTests
 
         await subject.Handle(WorkRequestedProjectorUnitTestEnvironment.CreateSearchCriteriaWorkRequested(correlationId: "corr-42"));
 
-        environment.CommandBus.Commands.Cast<AssessWorkCommand>().Single().CorrelationId.Value.Should().Be("corr-42");
+        environment.CommandBus.Commands.Cast<AssessWorkMessage>().Single().CorrelationId.Value.Should().Be("corr-42");
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public sealed class WorkRequestedProjectsAssessWorkTests
 
         await subject.Handle(WorkRequestedProjectorUnitTestEnvironment.CreateSearchCriteriaWorkRequested(trustLevel: 77));
 
-        environment.CommandBus.Commands.Cast<AssessWorkCommand>().Single().TrustLevel.Should().Be(77);
+        environment.CommandBus.Commands.Cast<AssessWorkMessage>().Single().TrustLevel.Should().Be(77);
     }
 
     [Fact]
@@ -66,7 +66,7 @@ public sealed class WorkRequestedProjectsAssessWorkTests
 
         await subject.Handle(WorkRequestedProjectorUnitTestEnvironment.CreateSearchCriteriaWorkRequested(riskScore: 12));
 
-        environment.CommandBus.Commands.Cast<AssessWorkCommand>().Single().RiskScore.Should().Be(12);
+        environment.CommandBus.Commands.Cast<AssessWorkMessage>().Single().RiskScore.Should().Be(12);
     }
 
     [Fact]
@@ -78,6 +78,6 @@ public sealed class WorkRequestedProjectsAssessWorkTests
         await subject.Handle(
             WorkRequestedProjectorUnitTestEnvironment.CreateSearchCriteriaWorkRequested(priority: LookupPriorityBand.Low));
 
-        environment.CommandBus.Commands.Cast<AssessWorkCommand>().Single().Priority.Should().Be(LookupPriorityBand.Low);
+        environment.CommandBus.Commands.Cast<AssessWorkMessage>().Single().Priority.Should().Be(LookupPriorityBand.Low);
     }
 }

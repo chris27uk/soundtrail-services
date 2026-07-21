@@ -3,28 +3,23 @@ using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Services.Internal.Projector.Features.OnWorkScheduled;
-using Soundtrail.Services.Internal.Projector.Features.OnWorkScheduled.Adapters;
 
 namespace Soundtrail.Services.Tests.Unit.Projector.OnWorkScheduled;
 
 internal sealed class WorkScheduledProjectorUnitTestEnvironment
 {
     private WorkScheduledProjectorUnitTestEnvironment(
-        CommandBusFake commandBus,
-        StoreDiscoveryFeedbackPortFake storeDiscoveryFeedbackPort)
+        CommandBusFake commandBus)
     {
         CommandBus = commandBus;
-        StoreDiscoveryFeedbackPort = storeDiscoveryFeedbackPort;
     }
 
     public CommandBusFake CommandBus { get; }
 
-    public StoreDiscoveryFeedbackPortFake StoreDiscoveryFeedbackPort { get; }
-
     public static WorkScheduledProjectorUnitTestEnvironment Create() =>
-        new(new CommandBusFake(), new StoreDiscoveryFeedbackPortFake());
+        new(new CommandBusFake());
 
-    public WorkScheduledProjectorHandler CreateSubject() => new(CommandBus, StoreDiscoveryFeedbackPort);
+    public WorkScheduledProjectorHandler CreateSubject() => new(CommandBus);
 
     public static WorkScheduled CreateEvent(
         EnrichmentTarget? target = null,
@@ -40,22 +35,11 @@ internal sealed class WorkScheduledProjectorUnitTestEnvironment
 
     public sealed class CommandBusFake : ICommandBus
     {
-        public List<ICommand> Commands { get; } = [];
+        public List<IMessage> Commands { get; } = [];
 
-        public Task SendAsync(ICommand command, CancellationToken cancellationToken = default)
+        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
         {
-            Commands.Add(command);
-            return Task.CompletedTask;
-        }
-    }
-
-    public sealed class StoreDiscoveryFeedbackPortFake : IStoreDiscoveryFeedbackPort
-    {
-        public WorkScheduled? StoredEvent { get; private set; }
-
-        public Task StoreAsync(WorkScheduled @event, CancellationToken cancellationToken)
-        {
-            StoredEvent = @event;
+            Commands.Add(message);
             return Task.CompletedTask;
         }
     }

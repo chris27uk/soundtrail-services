@@ -11,7 +11,6 @@ using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Domain.Discovery.Candidates;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Api.Features.Search.Contract;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.IncomingWork.OnUnknownMusicDataRequested;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.RequestedWork;
 
@@ -36,7 +35,7 @@ internal sealed class OnUnknownMusicDataRequestedHandlerUnitTestEnvironment
 
     public OnUnknownMusicDataRequestedHandler CreateSubject() => new(new WorkPlanner(), SearchForCandidates, Repository);
 
-    public static RequestUnknownMusicDataCommand CreateUnknownRequest(
+    public static RequestUnknownMusicDataMessage CreateUnknownRequest(
         string query = "radiohead",
         SearchType searchType = SearchType.Artist,
         LookupPriorityBand priority = LookupPriorityBand.High,
@@ -52,7 +51,7 @@ internal sealed class OnUnknownMusicDataRequestedHandlerUnitTestEnvironment
             riskScore,
             requestedAt ?? new DateTimeOffset(2026, 7, 16, 10, 0, 0, TimeSpan.Zero))
         {
-            CommandId = CommandId.For(commandId),
+            Id = MessageId.For(commandId),
             CorrelationId = CorrelationId.From(correlationId)
         };
 

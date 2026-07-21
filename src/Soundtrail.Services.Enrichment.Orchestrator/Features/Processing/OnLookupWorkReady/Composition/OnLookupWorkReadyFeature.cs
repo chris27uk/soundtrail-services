@@ -54,25 +54,25 @@ public sealed class OnLookupWorkReadyFeature : IOrchestratorFeature
         options.ListenToAzureServiceBusQueue(serviceBusOptions.DispatchLookupWorkQueueName)
             .ProcessInline();
 
-        options.PublishMessage<LookupMusicbrainzSearchResultsCommand>()
+        options.PublishMessage<LookupMusicbrainzSearchResultsMessage>()
             .ToAzureServiceBusQueue(serviceBusOptions.MusicBrainzLookupQueueName);
 
-        options.PublishMessage<LookupMusicbrainzArtistAlbumsCommand>()
+        options.PublishMessage<LookupMusicbrainzArtistAlbumsMessage>()
             .ToAzureServiceBusQueue(serviceBusOptions.MusicBrainzLookupQueueName);
 
-        options.PublishMessage<LookupMusicbrainzArtistTracksCommand>()
+        options.PublishMessage<LookupMusicbrainzArtistTracksMessage>()
             .ToAzureServiceBusQueue(serviceBusOptions.MusicBrainzLookupQueueName);
 
-        options.PublishMessage<LookupMusicbrainzAlbumTracksCommand>()
+        options.PublishMessage<LookupMusicbrainzAlbumTracksMessage>()
             .ToAzureServiceBusQueue(serviceBusOptions.MusicBrainzLookupQueueName);
 
-        options.PublishMessage<LookupStreamingLocationByIsrcCommand>()
+        options.PublishMessage<LookupStreamingLocationByIsrcMessage>()
             .ToAzureServiceBusQueue(serviceBusOptions.PlaybackReferencesLookupQueueName);
 
-        options.PublishMessage<LookupStreamingLocationByTrackMetadataCommand>()
+        options.PublishMessage<LookupStreamingLocationByTrackMetadataMessage>()
             .ToAzureServiceBusQueue(serviceBusOptions.PlaybackReferencesLookupQueueName);
 
-        options.PublishMessage<LookupPlaylistTracksByProviderCommand>()
+        options.PublishMessage<LookupPlaylistTracksByProviderMessage>()
             .ToAzureServiceBusQueue(serviceBusOptions.MusicPlaylistLookupQueueName);
     }
 }

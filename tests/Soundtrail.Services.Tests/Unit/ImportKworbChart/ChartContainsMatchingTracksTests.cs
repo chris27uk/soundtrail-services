@@ -1,14 +1,15 @@
-using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Catalog.Tracks;
+using Soundtrail.Domain.Catalog.Playlists;
+using Soundtrail.Domain.Common;
+using Soundtrail.Domain.Discovery;
 
 namespace Soundtrail.Services.Tests.Unit.ImportKworbChart;
 
 public sealed class ChartContainsMatchingTracksTests
 {
     [Fact]
-    public async Task Given_A_Chart_With_Matching_Tracks_When_Importing_The_Kworb_Chart_Then_A_Playlist_Update_Is_Sent()
+    public async Task Given_A_Kworb_Trigger_When_Handling_It_Then_A_Known_Playlist_Request_Is_Sent()
     {
-        var environment = ImportKworbChartUnitTestEnvironment.ForChart();
+        var environment = ImportKworbChartUnitTestEnvironment.Create();
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
@@ -16,61 +17,55 @@ public sealed class ChartContainsMatchingTracksTests
     }
 
     [Fact]
-    public async Task Given_A_Chart_With_Matching_Tracks_When_Importing_The_Kworb_Chart_Then_The_Playlist_Name_Is_Worldwide_Song_Chart()
+    public async Task Given_A_Kworb_Trigger_When_Handling_It_Then_The_Request_Targets_The_Worldwide_Song_Chart_Playlist()
     {
-        var environment = ImportKworbChartUnitTestEnvironment.ForChart();
+        var environment = ImportKworbChartUnitTestEnvironment.Create();
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().Name.Should().Be("WorldwideSongChart");
+        environment.CommandBus.Commands.Single().Operation.Should().Be(
+            new CatalogItemOperation.ChildTracksForPlaylist(PlaylistId.FromPlaylistName("WorldwideSongChart")));
     }
 
     [Fact]
-    public async Task Given_A_Chart_With_Matching_Tracks_When_Importing_The_Kworb_Chart_Then_The_Tracks_Are_Sent()
+    public async Task Given_A_Kworb_Trigger_When_Handling_It_Then_The_Request_Uses_High_Priority()
     {
-        var environment = ImportKworbChartUnitTestEnvironment.ForChart();
+        var environment = ImportKworbChartUnitTestEnvironment.Create();
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().Tracks.Should().HaveCount(1);
+        environment.CommandBus.Commands.Single().Priority.Should().Be(LookupPriorityBand.High);
     }
 
     [Fact]
-    public async Task Given_A_Chart_With_Matching_Tracks_When_Importing_The_Kworb_Chart_Then_The_First_Track_Is_Sent()
+    public async Task Given_A_Kworb_Trigger_When_Handling_It_Then_The_Trigger_Window_Is_Aligned_To_The_Hour()
     {
-        var environment = ImportKworbChartUnitTestEnvironment.ForChart();
+        var environment = ImportKworbChartUnitTestEnvironment.Create();
+        var triggeredAt = new DateTimeOffset(2026, 7, 19, 10, 23, 45, TimeSpan.Zero);
 
-        await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
+        await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest(triggeredAt));
 
-        environment.CommandBus.Commands.Single().Tracks.Single().Should().Be(global::Soundtrail.Services.Tests.TestTrackIds.Create("track-1701"));
+        environment.CommandBus.Commands.Single().RequestedAt.Should().Be(new DateTimeOffset(2026, 7, 19, 10, 0, 0, TimeSpan.Zero));
     }
 
     [Fact]
-    public async Task Given_A_Chart_With_Matching_Tracks_When_Importing_The_Kworb_Chart_Then_The_Artist_And_Title_Are_Converted_To_A_Fingerprint()
+    public async Task Given_A_Kworb_Trigger_When_Handling_It_Then_The_Command_Id_Is_Deterministic_Per_Hour()
     {
-        var environment = ImportKworbChartUnitTestEnvironment.ForChart();
+        var environment = ImportKworbChartUnitTestEnvironment.Create();
+        var triggeredAt = new DateTimeOffset(2026, 7, 19, 10, 59, 59, TimeSpan.Zero);
 
-        await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
+        await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest(triggeredAt));
 
-        environment.LoadTrackByFingerprintPort.RequestedFingerprints.Single().Should().Be(
-            TrackMatchFingerprint.FromArtistAndTitle("Artist 1", "Track 1"));
+        environment.CommandBus.Commands.Single().Id.Value.Should().Be("kworb:worldwidesongchart:2026071910");
     }
 
     [Fact]
-    public async Task Given_A_Chart_With_Matching_Tracks_When_Importing_The_Kworb_Chart_Then_The_Tracks_Are_Sorted_By_Position()
+    public async Task Given_A_Kworb_Trigger_When_Handling_It_Then_The_Correlation_Id_Matches_The_Command_Scope()
     {
-        var environment = ImportKworbChartUnitTestEnvironment.ForChart(
-            chartRows: ImportKworbChartTracks.CreateChartRows(
-                ("Artist 2", "Track 2"),
-                ("Artist 1", "Track 1")),
-            trackIdsByFingerprint: new Dictionary<TrackMatchFingerprint, TrackId>
-            {
-                [ImportKworbChartTracks.Fingerprint("Artist 1", "Track 1")] = global::Soundtrail.Services.Tests.TestTrackIds.Create("track-1701"),
-                [ImportKworbChartTracks.Fingerprint("Artist 2", "Track 2")] = global::Soundtrail.Services.Tests.TestTrackIds.Create("track-1702")
-            });
+        var environment = ImportKworbChartUnitTestEnvironment.Create();
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().Tracks.Should().Equal(global::Soundtrail.Services.Tests.TestTrackIds.Create("track-1702"), global::Soundtrail.Services.Tests.TestTrackIds.Create("track-1701"));
+        environment.CommandBus.Commands.Single().CorrelationId.Value.Should().Be("kworb:worldwidesongchart:2026071910");
     }
 }

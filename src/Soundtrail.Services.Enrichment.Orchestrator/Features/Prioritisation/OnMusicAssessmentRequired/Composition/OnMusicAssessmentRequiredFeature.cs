@@ -30,7 +30,7 @@ public sealed class OnMusicAssessmentRequiredFeature : IOrchestratorFeature
         services.Configure<PlanningAssessmentOptions>(configuration.GetSection(PlanningAssessmentOptions.SectionName));
         services.TryAddSingleton<IPlanningAssessmentPolicy, PlanningAssessmentPolicy>();
         services.TryAddScoped<IDiscoveryPlanningProjectionReader, RavenDiscoveryPlanningProjectionReader>();
-        services.TryAddScoped<IHandler<AssessWorkCommand>, OnMusicAssessmentRequiredHandler>();
+        services.TryAddScoped<IHandler<AssessWorkMessage>, OnMusicAssessmentRequiredHandler>();
         services.AddCatalogSearchEventStreamRepository();
     }
 
