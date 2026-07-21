@@ -1,27 +1,25 @@
 using Soundtrail.Adapters.Timing;
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Domain.Discovery.Messages;
-using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
 using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
 
-namespace Soundtrail.Services.Enrichment.Worker.Features.LookupMusicbrainzArtistAlbums;
+namespace Soundtrail.Services.Enrichment.Worker.Shared.Execution;
 
-public sealed class AdmittedLookupMusicbrainzArtistAlbumsHandlerDecorator(
-    IHandler<LookupMusicbrainzArtistAlbumsMessage> inner,
+public sealed class AdmittedLookupHandlerDecorator<TMessage>(
+    IHandler<TMessage> inner,
+    ILookupDecoratorMetadata<TMessage> metadata,
     ICommandBus commandBus,
     ILookupExecutionAdmissionPort lookupExecutionAdmissionPort,
-    IClockPort clock) : IHandler<LookupMusicbrainzArtistAlbumsMessage>
+    IClockPort clock) : IHandler<TMessage>
+    where TMessage : IMessage
 {
-    public async Task Handle(LookupMusicbrainzArtistAlbumsMessage request, CancellationToken cancellationToken = default)
+    public async Task Handle(TMessage request, CancellationToken cancellationToken = default)
     {
         var observedAt = clock.UtcNow;
         var admissionResult = await lookupExecutionAdmissionPort.TryAcquireAsync(
-            new LookupExecutionAdmissionRequest(LookupSource.MusicBrainz, request.Id, observedAt),
+            new LookupExecutionAdmissionRequest(metadata.Source, request.Id, observedAt),
             cancellationToken);
 
         if (admissionResult.Status == LookupExecutionAdmissionStatus.Duplicate)
@@ -32,8 +30,8 @@ public sealed class AdmittedLookupMusicbrainzArtistAlbumsHandlerDecorator(
                     request.RequestedAt,
                     request.CorrelationId,
                     new LookupResult.Duplicate(
-                        CreateContext(request),
-                        new CatalogItem.MusicArtist(new Artist { Id = request.ArtistId, Name = ArtistName.Empty }),
+                        metadata.CreateContext(request),
+                        metadata.CreateExistingItem(request, observedAt),
                         "Lookup already executing.",
                         observedAt)),
                 cancellationToken);
@@ -48,7 +46,7 @@ public sealed class AdmittedLookupMusicbrainzArtistAlbumsHandlerDecorator(
                     request.RequestedAt,
                     request.CorrelationId,
                     new LookupResult.Deferred(
-                        CreateContext(request),
+                        metadata.CreateContext(request),
                         admissionResult.RetryAt ?? observedAt.AddMinutes(1),
                         admissionResult.Reason,
                         observedAt)),
@@ -67,7 +65,4 @@ public sealed class AdmittedLookupMusicbrainzArtistAlbumsHandlerDecorator(
             throw;
         }
     }
-
-    private static LookupResultContext CreateContext(LookupMusicbrainzArtistAlbumsMessage request) =>
-        new(CatalogWorkId.From(new CatalogItemOperation.ChildAlbumsForArtist(request.ArtistId)), request.Id);
 }

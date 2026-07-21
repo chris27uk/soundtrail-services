@@ -13,6 +13,7 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.8" />
     <PackageReference Include="RavenDB.Client" Version="7.1.2" />
+    <PackageReference Include="Scrutor" Version="7.0.0" />
     <PackageReference Include="StackExchange.Redis" Version="2.8.58" />
     <PackageReference Include="WolverineFx" Version="6.5.1" />
     <PackageReference Include="WolverineFx.AzureServiceBus" Version="6.2.2" />

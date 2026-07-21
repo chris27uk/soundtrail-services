@@ -17,8 +17,9 @@ public sealed class LookupMusicbrainzSearchResultsDecoratorIntegrationTests
     public async Task Given_A_Duplicate_Search_Command_When_Handling_Then_The_Duplicate_Does_Not_Consume_Extra_Budget()
     {
         await using var environment = await LookupExecutionAdmissionDecoratorIntegrationTestEnvironment.CreateAsync();
-        var subject = new AdmittedLookupMusicbrainzSearchResultsHandlerDecorator(
+        var subject = new AdmittedLookupHandlerDecorator<LookupMusicbrainzSearchResultsMessage>(
             new InnerHandler(),
+            new LookupMusicbrainzSearchResultsDecoratorMetadata(),
             environment.CommandBus,
             environment.AdmissionPort,
             environment.Clock);

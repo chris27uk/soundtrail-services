@@ -9,6 +9,7 @@ using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupMusicbrainzSearchResults;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
+using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
 using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
 using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
 
@@ -43,13 +44,13 @@ internal sealed class LookupMusicbrainzSearchResultsUnitTestEnvironment
     public LookupMusicbrainzSearchResultsHandler CreateBusinessSubject() =>
         new(ReadCatalogEntriesBySearchCriteriaPort, Clock, CommandBus);
 
-    public AdmittedLookupMusicbrainzSearchResultsHandlerDecorator CreateAdmissionSubject(
+    public AdmittedLookupHandlerDecorator<LookupMusicbrainzSearchResultsMessage> CreateAdmissionSubject(
         IHandler<LookupMusicbrainzSearchResultsMessage>? inner = null) =>
-        new(inner ?? InnerHandler, CommandBus, AdmissionPort, Clock);
+        new(inner ?? InnerHandler, new LookupMusicbrainzSearchResultsDecoratorMetadata(), CommandBus, AdmissionPort, Clock);
 
-    public IdempotentLookupMusicbrainzSearchResultsHandlerDecorator CreateIdempotencySubject(
+    public IdempotentLookupHandlerDecorator<LookupMusicbrainzSearchResultsMessage> CreateIdempotencySubject(
         IHandler<LookupMusicbrainzSearchResultsMessage>? inner = null) =>
-        new(inner ?? InnerHandler, ReceiptStore, CommandBus, Clock);
+        new(inner ?? InnerHandler, new LookupMusicbrainzSearchResultsDecoratorMetadata(), ReceiptStore, CommandBus, Clock);
 
     public LookupMusicbrainzSearchResultsMessage CreateRequest(
         string commandId = "cmd-musicbrainz-search",

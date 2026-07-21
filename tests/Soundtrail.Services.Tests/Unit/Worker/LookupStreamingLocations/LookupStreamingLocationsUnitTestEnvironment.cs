@@ -7,6 +7,7 @@ using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupStreamingLocationByIsrc;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupStreamingLocationByTrackMetadata;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
+using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
 using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
 using Soundtrail.Services.Enrichment.Worker.Shared.StreamingLocations;
 
@@ -50,21 +51,21 @@ internal sealed class LookupStreamingLocationsUnitTestEnvironment
     public LookupStreamingLocationByTrackMetadataHandler CreateMetadataBusinessSubject() =>
         new(ReadTrackForLookupPort, ReadStreamingLocationByProviderPort, Clock, CommandBus);
 
-    public AdmittedLookupStreamingLocationByIsrcHandlerDecorator CreateIsrcAdmissionSubject(
+    public AdmittedLookupHandlerDecorator<LookupStreamingLocationByIsrcMessage> CreateIsrcAdmissionSubject(
         IHandler<LookupStreamingLocationByIsrcMessage>? inner = null) =>
-        new(inner ?? IsrcInnerHandler, CommandBus, AdmissionPort, Clock);
+        new(inner ?? IsrcInnerHandler, new LookupStreamingLocationByIsrcDecoratorMetadata(), CommandBus, AdmissionPort, Clock);
 
-    public AdmittedLookupStreamingLocationByTrackMetadataHandlerDecorator CreateMetadataAdmissionSubject(
+    public AdmittedLookupHandlerDecorator<LookupStreamingLocationByTrackMetadataMessage> CreateMetadataAdmissionSubject(
         IHandler<LookupStreamingLocationByTrackMetadataMessage>? inner = null) =>
-        new(inner ?? MetadataInnerHandler, CommandBus, AdmissionPort, Clock);
+        new(inner ?? MetadataInnerHandler, new LookupStreamingLocationByTrackMetadataDecoratorMetadata(), CommandBus, AdmissionPort, Clock);
 
-    public IdempotentLookupStreamingLocationByIsrcHandlerDecorator CreateIsrcIdempotencySubject(
+    public IdempotentLookupHandlerDecorator<LookupStreamingLocationByIsrcMessage> CreateIsrcIdempotencySubject(
         IHandler<LookupStreamingLocationByIsrcMessage>? inner = null) =>
-        new(inner ?? IsrcInnerHandler, ReceiptStore, CommandBus, Clock);
+        new(inner ?? IsrcInnerHandler, new LookupStreamingLocationByIsrcDecoratorMetadata(), ReceiptStore, CommandBus, Clock);
 
-    public IdempotentLookupStreamingLocationByTrackMetadataHandlerDecorator CreateMetadataIdempotencySubject(
+    public IdempotentLookupHandlerDecorator<LookupStreamingLocationByTrackMetadataMessage> CreateMetadataIdempotencySubject(
         IHandler<LookupStreamingLocationByTrackMetadataMessage>? inner = null) =>
-        new(inner ?? MetadataInnerHandler, ReceiptStore, CommandBus, Clock);
+        new(inner ?? MetadataInnerHandler, new LookupStreamingLocationByTrackMetadataDecoratorMetadata(), ReceiptStore, CommandBus, Clock);
 
     public LookupStreamingLocationByIsrcMessage CreateIsrcRequest(
         string commandId = "cmd-streaming-isrc",

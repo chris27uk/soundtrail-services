@@ -1,24 +1,22 @@
 using Soundtrail.Adapters.Timing;
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
-using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
 
-namespace Soundtrail.Services.Enrichment.Worker.Features.LookupMusicbrainzArtistAlbums;
+namespace Soundtrail.Services.Enrichment.Worker.Shared.Execution;
 
-public sealed class IdempotentLookupMusicbrainzArtistAlbumsHandlerDecorator(
-    IHandler<LookupMusicbrainzArtistAlbumsMessage> inner,
+public sealed class IdempotentLookupHandlerDecorator<TMessage>(
+    IHandler<TMessage> inner,
+    ILookupDecoratorMetadata<TMessage> metadata,
     ILookupExecutionReceiptStore lookupExecutionReceiptStore,
     ICommandBus commandBus,
-    IClockPort clock) : IHandler<LookupMusicbrainzArtistAlbumsMessage>
+    IClockPort clock) : IHandler<TMessage>
+    where TMessage : IMessage
 {
-    public async Task Handle(LookupMusicbrainzArtistAlbumsMessage request, CancellationToken cancellationToken = default)
+    public async Task Handle(TMessage request, CancellationToken cancellationToken = default)
     {
         var observedAt = clock.UtcNow;
 
@@ -35,8 +33,8 @@ public sealed class IdempotentLookupMusicbrainzArtistAlbumsHandlerDecorator(
                     request.RequestedAt,
                     request.CorrelationId,
                     new LookupResult.Duplicate(
-                        CreateContext(request),
-                        new CatalogItem.MusicArtist(new Artist { Id = request.ArtistId, Name = ArtistName.Empty }),
+                        metadata.CreateContext(request),
+                        metadata.CreateExistingItem(request, observedAt),
                         "Lookup already completed.",
                         observedAt)),
                 cancellationToken);
@@ -58,7 +56,4 @@ public sealed class IdempotentLookupMusicbrainzArtistAlbumsHandlerDecorator(
             throw;
         }
     }
-
-    private static LookupResultContext CreateContext(LookupMusicbrainzArtistAlbumsMessage request) =>
-        new(CatalogWorkId.From(new CatalogItemOperation.ChildAlbumsForArtist(request.ArtistId)), request.Id);
 }

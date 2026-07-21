@@ -12,6 +12,7 @@ using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.StreamingLocations;
+using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
 using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
 using Soundtrail.Services.Enrichment.Worker.Shared.StreamingLocations;
 using Soundtrail.Services.ServiceDefaults;
@@ -44,30 +45,12 @@ public sealed class LookupStreamingLocationByTrackMetadataFeature : IFeature
         services.TryAddSingleton<IConnectionMultiplexer>(sp =>
             ConnectionMultiplexer.Connect(configuration.GetConnectionString("Redis") ?? throw new InvalidOperationException("Redis connection string is required.")));
         services.TryAddSingleton<IClockPort, SystemClockPort>();
-
-        services.AddKeyedScoped<IHandler<LookupStreamingLocationByTrackMetadataMessage>>(
-            "business",
-            (sp, _) => new LookupStreamingLocationByTrackMetadataHandler(
+        services.AddLookupHandlerPipeline<LookupStreamingLocationByTrackMetadataMessage, LookupStreamingLocationByTrackMetadataDecoratorMetadata>(
+            sp => new LookupStreamingLocationByTrackMetadataHandler(
                 sp.GetRequiredService<IReadTrackForLookupPort>(),
                 sp.GetRequiredService<IReadStreamingLocationByProviderPort>(),
                 sp.GetRequiredService<IClockPort>(),
                 sp.GetRequiredService<DomainCommandBus>()));
-        services.AddKeyedScoped<IHandler<LookupStreamingLocationByTrackMetadataMessage>>(
-            "admitted",
-            (sp, _) => new AdmittedLookupStreamingLocationByTrackMetadataHandlerDecorator(
-                sp.GetRequiredKeyedService<IHandler<LookupStreamingLocationByTrackMetadataMessage>>("business"),
-                sp.GetRequiredService<DomainCommandBus>(),
-                sp.GetRequiredService<ILookupExecutionAdmissionPort>(),
-                sp.GetRequiredService<IClockPort>()));
-        services.AddKeyedScoped<IHandler<LookupStreamingLocationByTrackMetadataMessage>>(
-            "idempotent",
-            (sp, _) => new IdempotentLookupStreamingLocationByTrackMetadataHandlerDecorator(
-                sp.GetRequiredKeyedService<IHandler<LookupStreamingLocationByTrackMetadataMessage>>("admitted"),
-                sp.GetRequiredService<ILookupExecutionReceiptStore>(),
-                sp.GetRequiredService<DomainCommandBus>(),
-                sp.GetRequiredService<IClockPort>()));
-        services.TryAddScoped<IHandler<LookupStreamingLocationByTrackMetadataMessage>>(sp =>
-            sp.GetRequiredKeyedService<IHandler<LookupStreamingLocationByTrackMetadataMessage>>("idempotent"));
 
         services.TryAddScoped<IReadStreamingLocationByProviderPort>(
             sp => new OdesliStreamingLocationPort(
