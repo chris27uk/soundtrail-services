@@ -17,14 +17,17 @@ namespace Soundtrail.Services.Enrichment.Orchestrator.Features.Prioritisation.On
                 request.CorrelationId);
         }
 
-        public static PlanningAssessment ToPlanningAssessment(this AssessWorkMessage request, DiscoveryPlanningProjection projection)
+        public static PlanningAssessment ToPlanningAssessment(
+            this AssessWorkMessage request,
+            DiscoveryPlanningProjection projection,
+            DiscoveryHistory.WorkDemandState? demand)
         {
             return new PlanningAssessment(
                 request.Target,
-                request.Priority,
-                request.RequestedAt,
-                request.TrustLevel,
-                request.RiskScore,
+                demand?.Priority ?? request.Priority,
+                demand?.RequestedAt ?? request.RequestedAt,
+                demand?.TrustLevel ?? request.TrustLevel,
+                demand?.RiskScore ?? request.RiskScore,
                 projection);
         }
     }

@@ -17,9 +17,10 @@ public sealed class OnMusicAssessmentRequiredHandler(
     {
         var context = request.ToAggregateContext();
         var streamId = CatalogWorkId.From(request.Target);
-        var projection = await projectionReader.ReadAsync(request.Target, cancellationToken);
-        var assessment = policy.Evaluate(request.ToPlanningAssessment(projection));
         await using var scope = await DiscoveryHistoryScope.LoadFromEventStreamAsync(repository, streamId, context, cancellationToken);
+        var projection = await projectionReader.ReadAsync(request.Target, cancellationToken);
+        var demand = scope.Aggregate.GetDemandState(request.Target);
+        var assessment = policy.Evaluate(request.ToPlanningAssessment(projection, demand));
 
         scope.Aggregate
             .Assess(assessment)

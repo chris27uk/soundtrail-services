@@ -29,6 +29,13 @@ internal sealed class LookupExecutionAdmissionPortIntegrationTestEnvironment : I
 
     public static async Task<LookupExecutionAdmissionPortIntegrationTestEnvironment> CreateAsync()
     {
+        return await CreateAsync(maxRequests: 1, activeLeaseSeconds: 300);
+    }
+
+    public static async Task<LookupExecutionAdmissionPortIntegrationTestEnvironment> CreateAsync(
+        int maxRequests,
+        int activeLeaseSeconds)
+    {
         var redisServer = await LocalRedisTestServer.StartAsync();
         var connectionMultiplexer = await ConnectionMultiplexer.ConnectAsync(redisServer.ConnectionString);
         var subject = new RedisLookupExecutionAdmissionPort(
@@ -37,7 +44,7 @@ internal sealed class LookupExecutionAdmissionPortIntegrationTestEnvironment : I
             {
                 Kworb = new ApiBudgetPolicy
                 {
-                    MaxRequests = 1,
+                    MaxRequests = maxRequests,
                     MinimumSpacingSeconds = 1,
                     SafetyMarginPercent = 0,
                     WindowSeconds = 60
@@ -45,7 +52,7 @@ internal sealed class LookupExecutionAdmissionPortIntegrationTestEnvironment : I
             }),
             Options.Create(new RedisLookupExecutionAdmissionOptions
             {
-                ActiveLeaseSeconds = 300,
+                ActiveLeaseSeconds = activeLeaseSeconds,
                 KeyPrefix = $"lookup-execution-admission-port-tests:{Guid.NewGuid():N}"
             }));
 

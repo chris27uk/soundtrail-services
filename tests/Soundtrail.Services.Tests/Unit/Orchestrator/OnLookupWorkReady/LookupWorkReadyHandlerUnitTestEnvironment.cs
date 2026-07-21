@@ -31,12 +31,12 @@ internal sealed class LookupWorkReadyHandlerUnitTestEnvironment
             CorrelationId.From("corr-search"),
             new DateTimeOffset(2026, 7, 18, 9, 10, 0, TimeSpan.Zero));
 
-    public static DispatchLookupWork CreateStreamingLocationRequest() =>
+    public static DispatchLookupWork CreateStreamingLocationRequest(string commandId = "cmd-streaming") =>
         new(
             Work.EnrichTrackStreamingLocation(TestTrackIds.Create("track-2901")),
             LookupPriorityBand.Low,
-            MessageId.For("cmd-streaming"),
-            CorrelationId.From("corr-streaming"),
+            MessageId.For(commandId),
+            CorrelationId.From($"corr:{commandId}"),
             new DateTimeOffset(2026, 7, 18, 9, 11, 0, TimeSpan.Zero));
 
     public static DispatchLookupWork CreatePlaylistRequest() =>

@@ -15,35 +15,35 @@ public static class WorkerCommandFactory
         {
             LookupAttempt.MusicbrainzSearchCatalogItems(var searchCriteria, var priority) =>
                 new LookupMusicbrainzSearchResultsMessage(
-                    ChildId(request, "musicbrainz-search"),
+                    MessageId.For($"lookup:musicbrainz-search:{searchCriteria.NormalisedIdentifier}"),
                     request.CorrelationId,
                     request.CreatedAt,
                     priority,
                     searchCriteria),
             LookupAttempt.MusicbrainzArtistAlbums(var artistId, var priority) =>
                 new LookupMusicbrainzArtistAlbumsMessage(
-                    ChildId(request, "musicbrainz-artist-albums"),
+                    MessageId.For($"lookup:musicbrainz-artist-albums:{artistId.StableValue}"),
                     request.CorrelationId,
                     request.CreatedAt,
                     priority,
                     artistId),
             LookupAttempt.MusicbrainzArtistTracks(var artistId, var priority) =>
                 new LookupMusicbrainzArtistTracksMessage(
-                    ChildId(request, "musicbrainz-artist-tracks"),
+                    MessageId.For($"lookup:musicbrainz-artist-tracks:{artistId.StableValue}"),
                     request.CorrelationId,
                     request.CreatedAt,
                     priority,
                     artistId),
             LookupAttempt.MusicbrainzAlbumTracks(var albumId, var priority) =>
                 new LookupMusicbrainzAlbumTracksMessage(
-                    ChildId(request, "musicbrainz-album-tracks"),
+                    MessageId.For($"lookup:musicbrainz-album-tracks:{albumId.StableValue}"),
                     request.CorrelationId,
                     request.CreatedAt,
                     priority,
                     albumId),
             LookupAttempt.StreamingLocationByIsrc(var trackId, var provider, var priority) =>
                 new LookupStreamingLocationByIsrcMessage(
-                    ChildId(request, $"streaming-isrc:{provider.Value}"),
+                    MessageId.For($"lookup:streaming-isrc:{provider.Value}:{trackId.Value}"),
                     request.CorrelationId,
                     request.CreatedAt,
                     priority,
@@ -51,7 +51,7 @@ public static class WorkerCommandFactory
                     provider),
             LookupAttempt.StreamingLocationByTrackMetadata(var trackId, var provider, var priority) =>
                 new LookupStreamingLocationByTrackMetadataMessage(
-                    ChildId(request, $"streaming-metadata:{provider.Value}"),
+                    MessageId.For($"lookup:streaming-metadata:{provider.Value}:{trackId.Value}"),
                     request.CorrelationId,
                     request.CreatedAt,
                     priority,
@@ -59,7 +59,7 @@ public static class WorkerCommandFactory
                     provider),
             LookupAttempt.PlaylistTracksByProvider(var playlistId, var provider, var priority) =>
                 new LookupPlaylistTracksByProviderMessage(
-                    ChildId(request, $"playlist:{provider.Value}"),
+                    MessageId.For($"lookup:playlist:{provider.Value}:{playlistId.Value}"),
                     request.CorrelationId,
                     request.CreatedAt,
                     priority,
@@ -68,7 +68,4 @@ public static class WorkerCommandFactory
             _ => throw new InvalidOperationException(
                 $"Unsupported lookup attempt '{attempt.GetType().Name}'.")
         };
-
-    private static MessageId ChildId(DispatchLookupWork request, string suffix) =>
-        MessageId.For($"{request.Id.Value}:{suffix}");
 }

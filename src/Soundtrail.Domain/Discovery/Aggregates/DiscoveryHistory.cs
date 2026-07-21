@@ -19,6 +19,7 @@ public sealed class DiscoveryHistory
     private readonly HashSet<string> completedTargets = [];
     private readonly HashSet<string> rejectedTargets = [];
     private readonly HashSet<string> ignoredTargets = [];
+    private readonly Dictionary<string, WorkDemandState> demandByTarget = [];
     private readonly LoadedEventStream<CatalogWorkId> stream;
     private readonly IEventStreamRepository<CatalogWorkId> repository;
     private readonly SearchRequestContext requestContext;
@@ -32,6 +33,8 @@ public sealed class DiscoveryHistory
         this.repository = repository;
         this.requestContext = requestContext;
         this.eventHandlers.Register<WorkRequested>(@event => requestedTargets.Add(@event.Target.NormalisedIdentifier));
+        this.eventHandlers.Register<WorkRequested>(@event => demandByTarget[@event.Target.NormalisedIdentifier] = WorkDemandState.From(@event));
+        this.eventHandlers.Register<WorkPriorityRaised>(@event => demandByTarget[@event.Target.NormalisedIdentifier] = WorkDemandState.From(@event));
         this.eventHandlers.Register<WorkScheduled>(@event => scheduledTargets.Add(@event.Target.NormalisedIdentifier));
         this.eventHandlers.Register<WorkDeferred>(_ => { });
         this.eventHandlers.Register<WorkCompleted>(@event => completedTargets.Add(@event.Target.NormalisedIdentifier));
@@ -65,6 +68,9 @@ public sealed class DiscoveryHistory
             RequestWork(operation, priority);
         }
     }
+
+    public WorkDemandState? GetDemandState(EnrichmentTarget target) =>
+        demandByTarget.GetValueOrDefault(target.NormalisedIdentifier);
 
     public PlanningAssessmentFlow Assess(PlanningAssessment assessment) => new(this, assessment);
 
@@ -297,8 +303,33 @@ public sealed class DiscoveryHistory
     
     private void RequestWork(EnrichmentTarget operation, LookupPriorityBand priority)
     {
+        if (completedTargets.Contains(operation.NormalisedIdentifier) || rejectedTargets.Contains(operation.NormalisedIdentifier))
+        {
+            return;
+        }
+
+        var currentDemand = demandByTarget.GetValueOrDefault(operation.NormalisedIdentifier);
+        if (currentDemand is null)
+        {
+            Apply(
+                new WorkRequested(
+                    operation,
+                    priority,
+                    this.requestContext.TrustLevel,
+                    this.requestContext.RiskScore,
+                    this.requestContext.RequestedAt,
+                    this.requestContext.CorrelationId),
+                isNew: true);
+            return;
+        }
+
+        if (priority <= currentDemand.Priority)
+        {
+            return;
+        }
+
         Apply(
-            new WorkRequested(
+            new WorkPriorityRaised(
                 operation,
                 priority,
                 this.requestContext.TrustLevel,
@@ -359,6 +390,20 @@ public sealed class DiscoveryHistory
     private sealed record CompletionContext(
         EnrichmentTarget Target,
         LookupPriorityBand Priority);
+
+    public sealed record WorkDemandState(
+        LookupPriorityBand Priority,
+        int? TrustLevel,
+        int? RiskScore,
+        DateTimeOffset RequestedAt,
+        CorrelationId CorrelationId)
+    {
+        public static WorkDemandState From(WorkRequested @event) =>
+            new(@event.Priority, @event.TrustLevel, @event.RiskScore, @event.RequestedAt, @event.CorrelationId);
+
+        public static WorkDemandState From(WorkPriorityRaised @event) =>
+            new(@event.Priority, @event.TrustLevel, @event.RiskScore, @event.RequestedAt, @event.CorrelationId);
+    }
 
     public sealed class PlanningAssessmentFlow
     {

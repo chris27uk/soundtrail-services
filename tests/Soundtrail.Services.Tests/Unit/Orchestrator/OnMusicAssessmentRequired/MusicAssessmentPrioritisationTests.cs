@@ -101,4 +101,28 @@ public sealed class MusicAssessmentPrioritisationTests
         environment.Repository.AppendedEvents.OfType<WorkScheduled>().Should().ContainSingle();
         environment.Repository.AppendedEvents.Should().NotContain(x => x is WorkDeferred);
     }
+
+    [Fact]
+    public async Task Given_A_Target_With_Raised_Priority_When_A_Lower_Priority_Assess_Message_Is_Replayed_Then_The_Effective_Higher_Priority_Is_Used()
+    {
+        var environment = OnMusicAssessmentRequiredHandlerUnitTestEnvironment.Create(new PlanningAssessmentOptions
+        {
+            MaxConcurrentPlannedWork = 10,
+            ReservedSlotsForHighPriority = 3,
+            DefaultDeferredSeconds = 45
+        });
+        var target = Work.EnrichTrackStreamingLocation(TestTrackIds.Create("track-123"));
+        environment.Repository.SeedEvents =
+        [
+            new WorkRequested(target, LookupPriorityBand.Low, 50, 5, new DateTimeOffset(2026, 7, 18, 9, 20, 0, TimeSpan.Zero), CorrelationId.From("corr-old")),
+            new WorkPriorityRaised(target, LookupPriorityBand.High, 80, 2, new DateTimeOffset(2026, 7, 18, 9, 25, 0, TimeSpan.Zero), CorrelationId.From("corr-new"))
+        ];
+        environment.ProjectionReader.ProjectionToReturn = new(false, null, 7, 3);
+        var subject = environment.CreateSubject();
+
+        await subject.Handle(OnMusicAssessmentRequiredHandlerUnitTestEnvironment.CreateRequest(target: target, priority: LookupPriorityBand.Low, trustLevel: 50, riskScore: 5));
+
+        environment.Repository.AppendedEvents.OfType<WorkScheduled>().Should().ContainSingle();
+        environment.Repository.AppendedEvents.Should().NotContain(x => x is WorkDeferred);
+    }
 }

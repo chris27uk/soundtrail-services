@@ -56,6 +56,25 @@ public sealed class DiscoveryEventTranslationRegistration : ITypeTranslationRegi
             occurredAtUtc: @event => @event.ScheduledAt,
             correlationId: _ => null);
 
+        registry.RegisterStoredEventPair<WorkPriorityRaised, CatalogDiscoveryWorkPriorityRaisedEventDataRecordDto>(
+            eventType: "work-priority-raised",
+            toDto: @event => new CatalogDiscoveryWorkPriorityRaisedEventDataRecordDto(
+                @event.Target.NormalisedIdentifier,
+                @event.Priority.ToString(),
+                @event.TrustLevel,
+                @event.RiskScore,
+                @event.RequestedAt,
+                @event.CorrelationId.Value),
+            toDomainObject: dto => new WorkPriorityRaised(
+                ParseTargetByIdentifier(dto.MusicCatalogId),
+                ParsePriority(dto.Priority),
+                dto.TrustLevel,
+                dto.RiskScore,
+                dto.RequestedAtUtc,
+                CorrelationId.From(dto.CorrelationId)),
+            occurredAtUtc: @event => @event.RequestedAt,
+            correlationId: @event => @event.CorrelationId.Value);
+
         registry.RegisterStoredEventPair<WorkDeferred, CatalogDiscoveryWorkDeferredEventDataRecordDto>(
             eventType: "work-deferred",
             toDto: @event => new CatalogDiscoveryWorkDeferredEventDataRecordDto(

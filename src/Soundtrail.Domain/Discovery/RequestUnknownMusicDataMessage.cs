@@ -4,7 +4,7 @@ using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Domain.Discovery;
 
-public sealed record RequestUnknownMusicDataMessage : IMessage
+public sealed record RequestUnknownMusicDataMessage : IPrioritisedMessage
 {
     public RequestUnknownMusicDataMessage(SearchCriteria SearchCriteria,
         LookupPriorityBand Priority,
@@ -30,6 +30,10 @@ public sealed record RequestUnknownMusicDataMessage : IMessage
     public DateTimeOffset RequestedAt { get; init; }
     public MessageId Id { get; init; }
     public CorrelationId CorrelationId { get; init; }
+
+    int? IPrioritisedMessage.TrustLevel => TrustLevel;
+
+    int? IPrioritisedMessage.RiskScore => RiskScore;
 
     public void Deconstruct(out SearchCriteria SearchCriteria, out LookupPriorityBand Priority, out int TrustLevel, out int RiskScore, out DateTimeOffset RequestedAt, out MessageId messageId, out CorrelationId CorrelationId)
     {
