@@ -6,9 +6,7 @@ using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery.Assesment;
-using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
-using CatalogItemOperation = Soundtrail.Domain.Discovery.CatalogItemOperation;
 
 namespace Soundtrail.Domain.Discovery.Aggregates;
 
