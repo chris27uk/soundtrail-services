@@ -21,7 +21,7 @@ public sealed class WorkerCommandFactoryTests
                 LookupPriorityBand.High));
 
         command.Should().BeOfType<LookupMusicbrainzSearchResultsMessage>();
-        ((LookupMusicbrainzSearchResultsMessage)command).Id.Value.Should().Be("cmd-search:musicbrainz-search");
+        ((LookupMusicbrainzSearchResultsMessage)command).Id.Value.Should().Be("lookup:musicbrainz-search:search:u2");
     }
 
     [Fact]
@@ -37,6 +37,23 @@ public sealed class WorkerCommandFactoryTests
                 LookupPriorityBand.Low));
 
         command.Should().BeOfType<LookupStreamingLocationByIsrcMessage>();
-        ((LookupStreamingLocationByIsrcMessage)command).Id.Value.Should().Be("cmd-streaming:streaming-isrc:Spotify");
+        ((LookupStreamingLocationByIsrcMessage)command).Id.Value.Should().Be($"lookup:streaming-isrc:Spotify:{TestTrackIds.Create("track-2901").Value}");
+    }
+
+    [Fact]
+    public void Given_Two_Different_Dispatch_Commands_For_The_Same_Track_When_Creating_Worker_Commands_Then_The_Command_Id_Is_Stable()
+    {
+        var first = LookupWorkReadyHandlerUnitTestEnvironment.CreateStreamingLocationRequest(commandId: "cmd-streaming-a");
+        var second = LookupWorkReadyHandlerUnitTestEnvironment.CreateStreamingLocationRequest(commandId: "cmd-streaming-b");
+        var trackId = TestTrackIds.Create("track-2901");
+
+        var firstCommand = (LookupStreamingLocationByTrackMetadataMessage)WorkerCommandFactory.Create(
+            first,
+            new LookupAttempt.StreamingLocationByTrackMetadata(trackId, ProviderName.Spotify, LookupPriorityBand.Low));
+        var secondCommand = (LookupStreamingLocationByTrackMetadataMessage)WorkerCommandFactory.Create(
+            second,
+            new LookupAttempt.StreamingLocationByTrackMetadata(trackId, ProviderName.Spotify, LookupPriorityBand.Low));
+
+        firstCommand.Id.Should().Be(secondCommand.Id);
     }
 }

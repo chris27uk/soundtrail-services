@@ -95,13 +95,17 @@ internal sealed class OnUnknownMusicDataRequestedHandlerUnitTestEnvironment
     {
         public LoadedEventStream<CatalogWorkId>? LoadedStream { get; private set; }
 
+        public IReadOnlyList<IDomainEvent> SeedEvents { get; set; } = [];
+
         public IReadOnlyList<IDomainEvent> AppendedEvents { get; private set; } = [];
 
         public Task<LoadedEventStream<CatalogWorkId>> LoadAsync(
             CatalogWorkId streamId,
             CancellationToken cancellationToken)
         {
-            LoadedStream = LoadedEventStream<CatalogWorkId>.Empty(streamId);
+            LoadedStream = SeedEvents.Count == 0
+                ? LoadedEventStream<CatalogWorkId>.Empty(streamId)
+                : new LoadedEventStream<CatalogWorkId>(streamId, SeedEvents.Count, SeedEvents);
             return Task.FromResult(LoadedStream);
         }
 

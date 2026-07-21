@@ -65,4 +65,23 @@ public sealed class LookupExecutionAdmissionPortIntegrationTests
         acquired.Status.Should().Be(LookupExecutionAdmissionStatus.Acquired);
         reacquired.Status.Should().Be(LookupExecutionAdmissionStatus.Acquired);
     }
+
+    [Fact]
+    public async Task Given_A_Reserved_Command_When_The_Lease_Expires_Then_The_Same_Command_Can_Retry_Without_Consuming_Extra_Budget()
+    {
+        await using var environment = await LookupExecutionAdmissionPortIntegrationTestEnvironment.CreateAsync(
+            maxRequests: 2,
+            activeLeaseSeconds: 1);
+        var first = environment.CreateRequest("msg-expiring");
+        var second = environment.CreateRequest("msg-second");
+
+        var acquired = await environment.Subject.TryAcquireAsync(first, CancellationToken.None);
+        await Task.Delay(TimeSpan.FromMilliseconds(1200));
+        var retried = await environment.Subject.TryAcquireAsync(first, CancellationToken.None);
+        var distinct = await environment.Subject.TryAcquireAsync(second, CancellationToken.None);
+
+        acquired.Status.Should().Be(LookupExecutionAdmissionStatus.Acquired);
+        retried.Status.Should().Be(LookupExecutionAdmissionStatus.Acquired);
+        distinct.Status.Should().Be(LookupExecutionAdmissionStatus.Acquired);
+    }
 }

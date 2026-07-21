@@ -11,7 +11,7 @@ internal sealed class RedisLookupExecutionAdmissionPort(
     IOptions<SourceApiBudgetsOptions> sourceBudgetOptions,
     IOptions<RedisLookupExecutionAdmissionOptions> redisOptions) : ILookupExecutionAdmissionPort
 {
-    private const string ActiveState = "active";
+    private const string ReservedState = "reserved";
     private const string CompletedState = "completed";
     private const char StateSeparator = '|';
     private const char ReservationSeparator = ',';
@@ -34,17 +34,6 @@ internal sealed class RedisLookupExecutionAdmissionPort(
         return 1
         """);
 
-    private static readonly LuaScript ReleaseIfActiveScript = LuaScript.Prepare(
-        """
-        local current = redis.call('GET', @key)
-        if current == @activeState then
-            redis.call('DEL', @key)
-            return 1
-        end
-
-        return 0
-        """);
-
     private readonly SourceApiBudgetsOptions sourceBudgetOptions = sourceBudgetOptions.Value;
     private readonly RedisLookupExecutionAdmissionOptions redisOptions = redisOptions.Value;
 
@@ -56,13 +45,24 @@ internal sealed class RedisLookupExecutionAdmissionPort(
 
         var db = connectionMultiplexer.GetDatabase();
         var commandKey = GetCommandKey(request.MessageId);
-        var acquired = await db.StringSetAsync(
-            commandKey,
-            ActiveState,
-            expiry: TimeSpan.FromSeconds(redisOptions.ActiveLeaseSeconds),
-            when: When.NotExists);
+        var leaseKey = GetLeaseKey(request.MessageId);
+        var existingState = await db.StringGetAsync(commandKey);
 
-        if (!acquired)
+        if (string.Equals(existingState, CompletedState, StringComparison.Ordinal))
+        {
+            return LookupExecutionAdmissionResult.Duplicate();
+        }
+
+        if (IsReservedState(existingState))
+        {
+            var reacquiredLease = await TryAcquireLeaseAsync(db, leaseKey);
+            return reacquiredLease
+                ? LookupExecutionAdmissionResult.Acquired()
+                : LookupExecutionAdmissionResult.Duplicate();
+        }
+
+        var acquiredLease = await TryAcquireLeaseAsync(db, leaseKey);
+        if (!acquiredLease)
         {
             return LookupExecutionAdmissionResult.Duplicate();
         }
@@ -86,7 +86,7 @@ internal sealed class RedisLookupExecutionAdmissionPort(
 
                 if (!spacingReservation.Reserved)
                 {
-                    return await RejectAsync(db, commandKey, spacingReservation.RetryAt, request.Provider, cancellationToken);
+                    return await RejectAsync(db, leaseKey, spacingReservation.RetryAt, request.Provider, cancellationToken);
                 }
 
                 reservedKeys.Add(spacingReservation.Key);
@@ -104,14 +104,13 @@ internal sealed class RedisLookupExecutionAdmissionPort(
             if (!mainReservation.Reserved)
             {
                 await RollbackReservationsAsync(db, reservedKeys);
-                return await RejectAsync(db, commandKey, mainReservation.RetryAt, request.Provider, cancellationToken);
+                return await RejectAsync(db, leaseKey, mainReservation.RetryAt, request.Provider, cancellationToken);
             }
 
             reservedKeys.Add(mainReservation.Key);
             await db.StringSetAsync(
                 commandKey,
-                SerializeActiveCommand(reservedKeys),
-                expiry: TimeSpan.FromSeconds(redisOptions.ActiveLeaseSeconds));
+                SerializeReservedCommand(reservedKeys));
 
             return LookupExecutionAdmissionResult.Acquired();
         }
@@ -119,6 +118,7 @@ internal sealed class RedisLookupExecutionAdmissionPort(
         {
             await RollbackReservationsAsync(db, reservedKeys);
             await db.KeyDeleteAsync(commandKey);
+            await db.KeyDeleteAsync(leaseKey);
             throw;
         }
     }
@@ -128,7 +128,8 @@ internal sealed class RedisLookupExecutionAdmissionPort(
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return connectionMultiplexer.GetDatabase().StringSetAsync(GetCommandKey(messageId), CompletedState);
+        var db = connectionMultiplexer.GetDatabase();
+        return CommitAsync(db, messageId);
     }
 
     public async Task ReleaseAsync(
@@ -138,26 +139,46 @@ internal sealed class RedisLookupExecutionAdmissionPort(
         cancellationToken.ThrowIfCancellationRequested();
         var db = connectionMultiplexer.GetDatabase();
         var commandKey = GetCommandKey(messageId);
+        var leaseKey = GetLeaseKey(messageId);
         var current = await db.StringGetAsync(commandKey);
         if (!current.HasValue)
         {
+            await db.KeyDeleteAsync(leaseKey);
             return;
         }
 
         var payload = current.ToString();
         if (string.Equals(payload, CompletedState, StringComparison.Ordinal))
         {
+            await db.KeyDeleteAsync(leaseKey);
             return;
         }
 
-        if (!payload.StartsWith(ActiveState, StringComparison.Ordinal))
+        if (!IsReservedState(payload))
         {
             await db.KeyDeleteAsync(commandKey);
+            await db.KeyDeleteAsync(leaseKey);
             return;
         }
 
         await RollbackReservationsAsync(db, ParseReservedKeys(payload));
         await db.KeyDeleteAsync(commandKey);
+        await db.KeyDeleteAsync(leaseKey);
+    }
+
+    private async Task<bool> TryAcquireLeaseAsync(IDatabase db, RedisKey leaseKey)
+    {
+        return await db.StringSetAsync(
+            leaseKey,
+            "1",
+            expiry: TimeSpan.FromSeconds(redisOptions.ActiveLeaseSeconds),
+            when: When.NotExists);
+    }
+
+    private async Task CommitAsync(IDatabase db, MessageId messageId)
+    {
+        await db.StringSetAsync(GetCommandKey(messageId), CompletedState);
+        await db.KeyDeleteAsync(GetLeaseKey(messageId));
     }
 
     private async Task<WindowReservationResult> TryReserveWindowAsync(
@@ -199,13 +220,13 @@ internal sealed class RedisLookupExecutionAdmissionPort(
 
     private async Task<LookupExecutionAdmissionResult> RejectAsync(
         IDatabase db,
-        RedisKey commandKey,
+        RedisKey leaseKey,
         DateTimeOffset retryAt,
         LookupSource provider,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        await db.KeyDeleteAsync(commandKey);
+        await db.KeyDeleteAsync(leaseKey);
         return LookupExecutionAdmissionResult.Deferred(
             retryAt,
             $"{provider.Value} budget temporarily unavailable");
@@ -219,8 +240,11 @@ internal sealed class RedisLookupExecutionAdmissionPort(
         }
     }
 
-    private static string SerializeActiveCommand(IEnumerable<RedisKey> reservedKeys) =>
-        $"{ActiveState}{StateSeparator}{string.Join(ReservationSeparator, reservedKeys.Select(key => key.ToString()))}";
+    private static bool IsReservedState(RedisValue payload) =>
+        payload.HasValue && payload.ToString().StartsWith(ReservedState, StringComparison.Ordinal);
+
+    private static string SerializeReservedCommand(IEnumerable<RedisKey> reservedKeys) =>
+        $"{ReservedState}{StateSeparator}{string.Join(ReservationSeparator, reservedKeys.Select(key => key.ToString()))}";
 
     private static IReadOnlyList<RedisKey> ParseReservedKeys(string payload)
     {
@@ -265,6 +289,9 @@ internal sealed class RedisLookupExecutionAdmissionPort(
 
     private string GetCommandKey(MessageId messageId) =>
         $"{redisOptions.KeyPrefix}:command:{messageId.Value}";
+
+    private string GetLeaseKey(MessageId messageId) =>
+        $"{redisOptions.KeyPrefix}:lease:{messageId.Value}";
 
     private sealed record WindowReservationResult(bool Reserved, RedisKey Key, DateTimeOffset RetryAt)
     {

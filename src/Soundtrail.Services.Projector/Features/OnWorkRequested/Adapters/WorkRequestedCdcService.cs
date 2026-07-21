@@ -15,7 +15,8 @@ internal sealed class WorkRequestedCdcService(
     protected override string SubscriptionName => "projector/work-requested";
 
     protected override Expression<Func<RavenStoredEventRecord, bool>> Filter =>
-        x => x.AggregateType == "catalog-stream" && x.EventType == "work-requested";
+        x => x.AggregateType == "catalog-stream"
+             && (x.EventType == "work-requested" || x.EventType == "work-priority-raised");
 
     protected override async Task HandleAsync(
         IServiceProvider serviceProvider,
@@ -23,9 +24,15 @@ internal sealed class WorkRequestedCdcService(
         CancellationToken cancellationToken)
     {
         var handler = serviceProvider.GetRequiredService<WorkRequestedProjectorHandler>();
-        var workRequested = TypeTranslationRegistry.Default.ToDomainObject<WorkRequested>(
-            storedEvent.Body ?? throw new InvalidOperationException("WorkRequested events must include a body."));
+        var body = storedEvent.Body ?? throw new InvalidOperationException("Discovery work demand events must include a body.");
+        if (storedEvent.EventType == "work-requested")
+        {
+            var workRequested = TypeTranslationRegistry.Default.ToDomainObject<WorkRequested>(body);
+            await handler.Handle(workRequested, cancellationToken);
+            return;
+        }
 
-        await handler.Handle(workRequested, cancellationToken);
+        var priorityRaised = TypeTranslationRegistry.Default.ToDomainObject<WorkPriorityRaised>(body);
+        await handler.Handle(priorityRaised, cancellationToken);
     }
 }

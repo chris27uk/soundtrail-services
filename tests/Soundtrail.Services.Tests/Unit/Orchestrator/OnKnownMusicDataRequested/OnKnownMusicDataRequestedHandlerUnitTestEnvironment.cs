@@ -35,6 +35,7 @@ internal sealed class OnKnownMusicDataRequestedHandlerUnitTestEnvironment
 
     public static RequestKnownMusicDataMessage CreateKnownArtistRequest(
         string artistId = "artist-123",
+        LookupPriorityBand priority = LookupPriorityBand.High,
         int trustLevel = 100,
         int riskScore = 0,
         DateTimeOffset? requestedAt = null,
@@ -42,7 +43,7 @@ internal sealed class OnKnownMusicDataRequestedHandlerUnitTestEnvironment
         string correlationId = "corr-1") =>
         new(
             new CatalogItemOperation.ChildTracksForArtist(ArtistId.From(artistId)),
-            LookupPriorityBand.High,
+            priority,
             trustLevel,
             riskScore,
             requestedAt ?? new DateTimeOffset(2026, 7, 16, 10, 0, 0, TimeSpan.Zero))
@@ -123,6 +124,8 @@ internal sealed class OnKnownMusicDataRequestedHandlerUnitTestEnvironment
     {
         public LoadedEventStream<CatalogWorkId>? LoadedStream { get; private set; }
 
+        public IReadOnlyList<IDomainEvent> SeedEvents { get; set; } = [];
+
         public IReadOnlyList<IDomainEvent> AppendedEvents { get; private set; } = [];
 
         public OperationId? LastOperationId { get; private set; }
@@ -131,7 +134,9 @@ internal sealed class OnKnownMusicDataRequestedHandlerUnitTestEnvironment
             CatalogWorkId streamId,
             CancellationToken cancellationToken)
         {
-            LoadedStream = LoadedEventStream<CatalogWorkId>.Empty(streamId);
+            LoadedStream = SeedEvents.Count == 0
+                ? LoadedEventStream<CatalogWorkId>.Empty(streamId)
+                : new LoadedEventStream<CatalogWorkId>(streamId, SeedEvents.Count, SeedEvents);
             return Task.FromResult(LoadedStream);
         }
 
