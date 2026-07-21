@@ -12,6 +12,7 @@ using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.MusicMetadata;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;
+using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
 using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
 using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
 using Soundtrail.Services.ServiceDefaults;
@@ -45,28 +46,11 @@ public sealed class LookupMusicbrainzArtistTracksFeature : IFeature
         services.TryAddSingleton<IConnectionMultiplexer>(sp =>
             ConnectionMultiplexer.Connect(configuration.GetConnectionString("Redis") ?? throw new InvalidOperationException("Redis connection string is required.")));
         services.TryAddSingleton<IClockPort, SystemClockPort>();
-        services.AddKeyedScoped<IHandler<LookupMusicbrainzArtistTracksMessage>>(
-            "business",
-            (sp, _) => new LookupMusicbrainzArtistTracksHandler(
+        services.AddLookupHandlerPipeline<LookupMusicbrainzArtistTracksMessage, LookupMusicbrainzArtistTracksDecoratorMetadata>(
+            sp => new LookupMusicbrainzArtistTracksHandler(
                 sp.GetRequiredService<IReadTracksByArtistIdPort>(),
                 sp.GetRequiredService<IClockPort>(),
                 sp.GetRequiredService<DomainCommandBus>()));
-        services.AddKeyedScoped<IHandler<LookupMusicbrainzArtistTracksMessage>>(
-            "admitted",
-            (sp, _) => new AdmittedLookupMusicbrainzArtistTracksHandlerDecorator(
-                sp.GetRequiredKeyedService<IHandler<LookupMusicbrainzArtistTracksMessage>>("business"),
-                sp.GetRequiredService<DomainCommandBus>(),
-                sp.GetRequiredService<ILookupExecutionAdmissionPort>(),
-                sp.GetRequiredService<IClockPort>()));
-        services.AddKeyedScoped<IHandler<LookupMusicbrainzArtistTracksMessage>>(
-            "idempotent",
-            (sp, _) => new IdempotentLookupMusicbrainzArtistTracksHandlerDecorator(
-                sp.GetRequiredKeyedService<IHandler<LookupMusicbrainzArtistTracksMessage>>("admitted"),
-                sp.GetRequiredService<ILookupExecutionReceiptStore>(),
-                sp.GetRequiredService<DomainCommandBus>(),
-                sp.GetRequiredService<IClockPort>()));
-        services.TryAddScoped<IHandler<LookupMusicbrainzArtistTracksMessage>>(sp =>
-            sp.GetRequiredKeyedService<IHandler<LookupMusicbrainzArtistTracksMessage>>("idempotent"));
         services.TryAddScoped<IReadTracksByArtistIdPort>(
             sp => new MusicbrainzCatalogBrowsePort(
                 sp.GetRequiredService<IHttpClientFactory>().CreateClient(MusicbrainzCatalogBrowsePort.HttpClientName),

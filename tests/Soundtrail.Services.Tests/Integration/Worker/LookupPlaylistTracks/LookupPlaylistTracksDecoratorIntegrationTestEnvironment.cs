@@ -105,13 +105,18 @@ internal sealed class LookupPlaylistTracksDecoratorIntegrationTestEnvironment : 
         DateTimeOffset? createdAt = null) =>
         CreateTrackedRequest(messageId, createdAt);
 
-    public AdmittedLookupPlaylistTracksByProviderHandlerDecorator CreateAdmissionSubject() =>
-        new(InnerHandler, CommandBus, AdmissionPort!, Clock);
+    public AdmittedLookupHandlerDecorator<LookupPlaylistTracksByProviderMessage> CreateAdmissionSubject() =>
+        new(InnerHandler, new LookupPlaylistTracksByProviderDecoratorMetadata(), CommandBus, AdmissionPort!, Clock);
 
-    public async Task<IdempotentLookupPlaylistTracksByProviderHandlerDecorator> CreateIdempotencySubjectAsync()
+    public async Task<IdempotentLookupHandlerDecorator<LookupPlaylistTracksByProviderMessage>> CreateIdempotencySubjectAsync()
     {
         var store = new RavenLookupExecutionReceiptStore(receiptSession!);
-        return new IdempotentLookupPlaylistTracksByProviderHandlerDecorator(InnerHandler, store, CommandBus, Clock);
+        return new IdempotentLookupHandlerDecorator<LookupPlaylistTracksByProviderMessage>(
+            InnerHandler,
+            new LookupPlaylistTracksByProviderDecoratorMetadata(),
+            store,
+            CommandBus,
+            Clock);
     }
 
     public Task SaveReceiptChangesAsync()

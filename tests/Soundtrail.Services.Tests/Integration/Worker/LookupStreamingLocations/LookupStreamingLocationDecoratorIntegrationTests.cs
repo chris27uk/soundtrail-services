@@ -18,8 +18,9 @@ public sealed class LookupStreamingLocationDecoratorIntegrationTests
     {
         await using var environment = await LookupExecutionAdmissionDecoratorIntegrationTestEnvironment.CreateAsync();
         var trackId = TestTrackIds.Create("streaming-track-01");
-        var subject = new AdmittedLookupStreamingLocationByIsrcHandlerDecorator(
+        var subject = new AdmittedLookupHandlerDecorator<LookupStreamingLocationByIsrcMessage>(
             new IsrcInnerHandler(),
+            new LookupStreamingLocationByIsrcDecoratorMetadata(),
             environment.CommandBus,
             environment.AdmissionPort,
             environment.Clock);
@@ -47,8 +48,9 @@ public sealed class LookupStreamingLocationDecoratorIntegrationTests
     {
         await using var environment = await LookupExecutionAdmissionDecoratorIntegrationTestEnvironment.CreateAsync();
         var trackId = TestTrackIds.Create("streaming-track-03");
-        var subject = new AdmittedLookupStreamingLocationByTrackMetadataHandlerDecorator(
+        var subject = new AdmittedLookupHandlerDecorator<LookupStreamingLocationByTrackMetadataMessage>(
             new MetadataInnerHandler(),
+            new LookupStreamingLocationByTrackMetadataDecoratorMetadata(),
             environment.CommandBus,
             environment.AdmissionPort,
             environment.Clock);

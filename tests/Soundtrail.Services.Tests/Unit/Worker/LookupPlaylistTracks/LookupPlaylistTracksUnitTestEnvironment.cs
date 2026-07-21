@@ -43,13 +43,13 @@ internal sealed class LookupPlaylistTracksUnitTestEnvironment
     public LookupPlaylistTracksByProviderHandler CreateBusinessSubject() =>
         new(ReadPlaylistTracksByProviderPort, Clock, CommandBus);
 
-    public AdmittedLookupPlaylistTracksByProviderHandlerDecorator CreateAdmissionSubject(
+    public AdmittedLookupHandlerDecorator<LookupPlaylistTracksByProviderMessage> CreateAdmissionSubject(
         IHandler<LookupPlaylistTracksByProviderMessage>? inner = null) =>
-        new(inner ?? InnerHandler, CommandBus, AdmissionPort, Clock);
+        new(inner ?? InnerHandler, new LookupPlaylistTracksByProviderDecoratorMetadata(), CommandBus, AdmissionPort, Clock);
 
-    public IdempotentLookupPlaylistTracksByProviderHandlerDecorator CreateIdempotencySubject(
+    public IdempotentLookupHandlerDecorator<LookupPlaylistTracksByProviderMessage> CreateIdempotencySubject(
         IHandler<LookupPlaylistTracksByProviderMessage>? inner = null) =>
-        new(inner ?? InnerHandler, ReceiptStore, CommandBus, Clock);
+        new(inner ?? InnerHandler, new LookupPlaylistTracksByProviderDecoratorMetadata(), ReceiptStore, CommandBus, Clock);
 
     public LookupPlaylistTracksByProviderMessage CreateRequest(
         string playlistName = "WorldwideSongChart",

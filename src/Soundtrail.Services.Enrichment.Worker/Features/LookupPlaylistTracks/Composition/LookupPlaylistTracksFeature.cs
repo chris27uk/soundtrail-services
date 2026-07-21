@@ -46,28 +46,11 @@ public sealed class LookupPlaylistTracksFeature : IFeature
         services.TryAddSingleton<IConnectionMultiplexer>(sp =>
             ConnectionMultiplexer.Connect(configuration.GetConnectionString("Redis") ?? throw new InvalidOperationException("Redis connection string is required.")));
         services.TryAddSingleton<IClockPort, SystemClockPort>();
-        services.AddKeyedScoped<IHandler<LookupPlaylistTracksByProviderMessage>>(
-            "business",
-            (sp, _) => new LookupPlaylistTracksByProviderHandler(
+        services.AddLookupHandlerPipeline<LookupPlaylistTracksByProviderMessage, LookupPlaylistTracksByProviderDecoratorMetadata>(
+            sp => new LookupPlaylistTracksByProviderHandler(
                 sp.GetRequiredService<IReadPlaylistTracksByProviderPort>(),
                 sp.GetRequiredService<IClockPort>(),
                 sp.GetRequiredService<DomainCommandBus>()));
-        services.AddKeyedScoped<IHandler<LookupPlaylistTracksByProviderMessage>>(
-            "admitted",
-            (sp, _) => new AdmittedLookupPlaylistTracksByProviderHandlerDecorator(
-                sp.GetRequiredKeyedService<IHandler<LookupPlaylistTracksByProviderMessage>>("business"),
-                sp.GetRequiredService<DomainCommandBus>(),
-                sp.GetRequiredService<ILookupExecutionAdmissionPort>(),
-                sp.GetRequiredService<IClockPort>()));
-        services.AddKeyedScoped<IHandler<LookupPlaylistTracksByProviderMessage>>(
-            "idempotent",
-            (sp, _) => new IdempotentLookupPlaylistTracksByProviderHandlerDecorator(
-                sp.GetRequiredKeyedService<IHandler<LookupPlaylistTracksByProviderMessage>>("admitted"),
-                sp.GetRequiredService<ILookupExecutionReceiptStore>(),
-                sp.GetRequiredService<DomainCommandBus>(),
-                sp.GetRequiredService<IClockPort>()));
-        services.TryAddScoped<IHandler<LookupPlaylistTracksByProviderMessage>>(sp =>
-            sp.GetRequiredKeyedService<IHandler<LookupPlaylistTracksByProviderMessage>>("idempotent"));
         services.TryAddScoped<IReadPlaylistTracksByProviderPort>(
             sp => new KworbPlaylistTracksPort(sp.GetRequiredService<IHttpClientFactory>().CreateClient(KworbPlaylistTracksPort.HttpClientName)));
         services.TryAddScoped<ILookupExecutionAdmissionPort, RedisLookupExecutionAdmissionPort>();

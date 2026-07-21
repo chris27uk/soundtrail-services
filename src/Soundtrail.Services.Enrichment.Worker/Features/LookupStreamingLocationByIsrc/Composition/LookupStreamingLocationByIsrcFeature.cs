@@ -12,6 +12,7 @@ using Soundtrail.Services.Enrichment.Worker.Infrastructure.ExecutionAdmission;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;
+using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
 using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
 using Soundtrail.Services.Enrichment.Worker.Shared.StreamingLocations;
 using Soundtrail.Services.ServiceDefaults;
@@ -44,8 +45,12 @@ public sealed class LookupStreamingLocationByIsrcFeature : IFeature
         services.TryAddSingleton<IConnectionMultiplexer>(sp =>
             ConnectionMultiplexer.Connect(configuration.GetConnectionString("Redis") ?? throw new InvalidOperationException("Redis connection string is required.")));
         services.TryAddSingleton<IClockPort, SystemClockPort>();
-
-        RegisterByIsrcPipeline(services);
+        services.AddLookupHandlerPipeline<LookupStreamingLocationByIsrcMessage, LookupStreamingLocationByIsrcDecoratorMetadata>(
+            sp => new LookupStreamingLocationByIsrcHandler(
+                sp.GetRequiredService<IReadTrackForLookupPort>(),
+                sp.GetRequiredService<IReadStreamingLocationByProviderPort>(),
+                sp.GetRequiredService<IClockPort>(),
+                sp.GetRequiredService<DomainCommandBus>()));
         services.TryAddScoped<IReadStreamingLocationByProviderPort>(
             sp => new OdesliStreamingLocationPort(
                 sp.GetRequiredService<IHttpClientFactory>().CreateClient(OdesliStreamingLocationPort.HttpClientName),
@@ -87,32 +92,4 @@ public sealed class LookupStreamingLocationByIsrcFeature : IFeature
         options.PublishMessage<CatalogLookupCompleted>()
             .ToAzureServiceBusQueue(serviceBusOptions.CatalogLookupCompletedQueueName);
     }
-
-    private static void RegisterByIsrcPipeline(IServiceCollection services)
-    {
-        services.AddKeyedScoped<IHandler<LookupStreamingLocationByIsrcMessage>>(
-            "business",
-            (sp, _) => new LookupStreamingLocationByIsrcHandler(
-                sp.GetRequiredService<IReadTrackForLookupPort>(),
-                sp.GetRequiredService<IReadStreamingLocationByProviderPort>(),
-                sp.GetRequiredService<IClockPort>(),
-                sp.GetRequiredService<DomainCommandBus>()));
-        services.AddKeyedScoped<IHandler<LookupStreamingLocationByIsrcMessage>>(
-            "admitted",
-            (sp, _) => new AdmittedLookupStreamingLocationByIsrcHandlerDecorator(
-                sp.GetRequiredKeyedService<IHandler<LookupStreamingLocationByIsrcMessage>>("business"),
-                sp.GetRequiredService<DomainCommandBus>(),
-                sp.GetRequiredService<ILookupExecutionAdmissionPort>(),
-                sp.GetRequiredService<IClockPort>()));
-        services.AddKeyedScoped<IHandler<LookupStreamingLocationByIsrcMessage>>(
-            "idempotent",
-            (sp, _) => new IdempotentLookupStreamingLocationByIsrcHandlerDecorator(
-                sp.GetRequiredKeyedService<IHandler<LookupStreamingLocationByIsrcMessage>>("admitted"),
-                sp.GetRequiredService<ILookupExecutionReceiptStore>(),
-                sp.GetRequiredService<DomainCommandBus>(),
-                sp.GetRequiredService<IClockPort>()));
-        services.TryAddScoped<IHandler<LookupStreamingLocationByIsrcMessage>>(sp =>
-            sp.GetRequiredKeyedService<IHandler<LookupStreamingLocationByIsrcMessage>>("idempotent"));
-    }
-
 }

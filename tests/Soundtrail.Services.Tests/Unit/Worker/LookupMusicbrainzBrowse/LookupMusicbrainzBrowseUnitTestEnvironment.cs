@@ -11,6 +11,7 @@ using Soundtrail.Services.Enrichment.Worker.Features.LookupMusicbrainzAlbumTrack
 using Soundtrail.Services.Enrichment.Worker.Features.LookupMusicbrainzArtistAlbums;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupMusicbrainzArtistTracks;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
+using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
 using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
 using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
 
@@ -54,29 +55,29 @@ internal sealed class LookupMusicbrainzBrowseUnitTestEnvironment
     public LookupMusicbrainzAlbumTracksHandler CreateAlbumTracksBusinessSubject() =>
         new(ReadTracksByAlbumIdPort, Clock, CommandBus);
 
-    public AdmittedLookupMusicbrainzArtistAlbumsHandlerDecorator CreateArtistAlbumsAdmissionSubject(
+    public AdmittedLookupHandlerDecorator<LookupMusicbrainzArtistAlbumsMessage> CreateArtistAlbumsAdmissionSubject(
         IHandler<LookupMusicbrainzArtistAlbumsMessage>? inner = null) =>
-        new(inner ?? ArtistAlbumsInnerHandler, CommandBus, AdmissionPort, Clock);
+        new(inner ?? ArtistAlbumsInnerHandler, new LookupMusicbrainzArtistAlbumsDecoratorMetadata(), CommandBus, AdmissionPort, Clock);
 
-    public AdmittedLookupMusicbrainzArtistTracksHandlerDecorator CreateArtistTracksAdmissionSubject(
+    public AdmittedLookupHandlerDecorator<LookupMusicbrainzArtistTracksMessage> CreateArtistTracksAdmissionSubject(
         IHandler<LookupMusicbrainzArtistTracksMessage>? inner = null) =>
-        new(inner ?? ArtistTracksInnerHandler, CommandBus, AdmissionPort, Clock);
+        new(inner ?? ArtistTracksInnerHandler, new LookupMusicbrainzArtistTracksDecoratorMetadata(), CommandBus, AdmissionPort, Clock);
 
-    public AdmittedLookupMusicbrainzAlbumTracksHandlerDecorator CreateAlbumTracksAdmissionSubject(
+    public AdmittedLookupHandlerDecorator<LookupMusicbrainzAlbumTracksMessage> CreateAlbumTracksAdmissionSubject(
         IHandler<LookupMusicbrainzAlbumTracksMessage>? inner = null) =>
-        new(inner ?? AlbumTracksInnerHandler, CommandBus, AdmissionPort, Clock);
+        new(inner ?? AlbumTracksInnerHandler, new LookupMusicbrainzAlbumTracksDecoratorMetadata(), CommandBus, AdmissionPort, Clock);
 
-    public IdempotentLookupMusicbrainzArtistAlbumsHandlerDecorator CreateArtistAlbumsIdempotencySubject(
+    public IdempotentLookupHandlerDecorator<LookupMusicbrainzArtistAlbumsMessage> CreateArtistAlbumsIdempotencySubject(
         IHandler<LookupMusicbrainzArtistAlbumsMessage>? inner = null) =>
-        new(inner ?? ArtistAlbumsInnerHandler, ReceiptStore, CommandBus, Clock);
+        new(inner ?? ArtistAlbumsInnerHandler, new LookupMusicbrainzArtistAlbumsDecoratorMetadata(), ReceiptStore, CommandBus, Clock);
 
-    public IdempotentLookupMusicbrainzArtistTracksHandlerDecorator CreateArtistTracksIdempotencySubject(
+    public IdempotentLookupHandlerDecorator<LookupMusicbrainzArtistTracksMessage> CreateArtistTracksIdempotencySubject(
         IHandler<LookupMusicbrainzArtistTracksMessage>? inner = null) =>
-        new(inner ?? ArtistTracksInnerHandler, ReceiptStore, CommandBus, Clock);
+        new(inner ?? ArtistTracksInnerHandler, new LookupMusicbrainzArtistTracksDecoratorMetadata(), ReceiptStore, CommandBus, Clock);
 
-    public IdempotentLookupMusicbrainzAlbumTracksHandlerDecorator CreateAlbumTracksIdempotencySubject(
+    public IdempotentLookupHandlerDecorator<LookupMusicbrainzAlbumTracksMessage> CreateAlbumTracksIdempotencySubject(
         IHandler<LookupMusicbrainzAlbumTracksMessage>? inner = null) =>
-        new(inner ?? AlbumTracksInnerHandler, ReceiptStore, CommandBus, Clock);
+        new(inner ?? AlbumTracksInnerHandler, new LookupMusicbrainzAlbumTracksDecoratorMetadata(), ReceiptStore, CommandBus, Clock);
 
     public LookupMusicbrainzArtistAlbumsMessage CreateArtistAlbumsRequest(string artistId = "artist-mb-1") =>
         new(

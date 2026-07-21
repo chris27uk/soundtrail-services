@@ -20,8 +20,9 @@ public sealed class LookupMusicbrainzBrowseDecoratorIntegrationTests
     public async Task Given_A_Duplicate_Artist_Albums_Command_When_Handling_Then_The_Duplicate_Does_Not_Consume_Extra_Budget()
     {
         await using var environment = await LookupExecutionAdmissionDecoratorIntegrationTestEnvironment.CreateAsync();
-        var subject = new AdmittedLookupMusicbrainzArtistAlbumsHandlerDecorator(
+        var subject = new AdmittedLookupHandlerDecorator<LookupMusicbrainzArtistAlbumsMessage>(
             new ArtistAlbumsInnerHandler(),
+            new LookupMusicbrainzArtistAlbumsDecoratorMetadata(),
             environment.CommandBus,
             environment.AdmissionPort,
             environment.Clock);
@@ -49,8 +50,9 @@ public sealed class LookupMusicbrainzBrowseDecoratorIntegrationTests
     public async Task Given_A_Duplicate_Artist_Tracks_Command_When_Handling_Then_The_Duplicate_Does_Not_Consume_Extra_Budget()
     {
         await using var environment = await LookupExecutionAdmissionDecoratorIntegrationTestEnvironment.CreateAsync();
-        var subject = new AdmittedLookupMusicbrainzArtistTracksHandlerDecorator(
+        var subject = new AdmittedLookupHandlerDecorator<LookupMusicbrainzArtistTracksMessage>(
             new ArtistTracksInnerHandler(),
+            new LookupMusicbrainzArtistTracksDecoratorMetadata(),
             environment.CommandBus,
             environment.AdmissionPort,
             environment.Clock);
@@ -78,8 +80,9 @@ public sealed class LookupMusicbrainzBrowseDecoratorIntegrationTests
     public async Task Given_A_Duplicate_Album_Tracks_Command_When_Handling_Then_The_Duplicate_Does_Not_Consume_Extra_Budget()
     {
         await using var environment = await LookupExecutionAdmissionDecoratorIntegrationTestEnvironment.CreateAsync();
-        var subject = new AdmittedLookupMusicbrainzAlbumTracksHandlerDecorator(
+        var subject = new AdmittedLookupHandlerDecorator<LookupMusicbrainzAlbumTracksMessage>(
             new AlbumTracksInnerHandler(),
+            new LookupMusicbrainzAlbumTracksDecoratorMetadata(),
             environment.CommandBus,
             environment.AdmissionPort,
             environment.Clock);
