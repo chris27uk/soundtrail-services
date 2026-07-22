@@ -26,6 +26,28 @@ public sealed class KworbPlaylistTracksPortTests
     }
 
     [Theory]
+    [InlineData("WorldwideSongChart")]
+    [InlineData("WorldTop100")]
+    [InlineData("world_top_100")]
+    public async Task Given_A_Supported_World_Chart_Playlist_Id_When_Reading_Tracks_Then_The_Worldwide_Kworb_Chart_Is_Used(string playlistName)
+    {
+        var subject = CreateSubject(
+            new StubHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("<html><body><table><tbody><tr><td>1</td><td>NEW</td><td>Artist 5001 - Track 5001</td></tr></tbody></table></body></html>")
+            }));
+
+        var result = await subject.ReadAsync(
+            PlaylistId.FromPlaylistName(playlistName),
+            ProviderName.Spotify,
+            CancellationToken.None);
+
+        result.Should().ContainSingle();
+        result[0].ArtistName.Value.Should().Be("Artist 5001");
+        result[0].TrackTitle.Should().Be("Track 5001");
+    }
+
+    [Theory]
     [InlineData(HttpStatusCode.NotFound)]
     [InlineData(HttpStatusCode.InternalServerError)]
     public async Task Given_A_Non_Success_Status_Code_When_Reading_Tracks_Then_An_Http_Request_Exception_Is_Thrown(HttpStatusCode statusCode)

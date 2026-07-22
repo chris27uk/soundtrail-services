@@ -36,47 +36,89 @@ The identity model must remain provider-agnostic and domain-led.
 
 ### TrackId
 
-`TrackId` represents the most specific known identity for a track.
+`TrackId` is one exact identity value.
 
-It is built from canonical music metadata in this order:
+It is not an opaque random identifier.
 
-- `CanonicalArtistName`
-- `CanonicalTrackName`
-- optional `CanonicalAlbumName`
-- optional `CanonicalReleaseDate`
-- optional `CanonicalReleaseType`
+It must carry enough structure to support both:
+
+- exact identity equality
+- mathematical family and range selection
+
+The required logical parts of `TrackId` are:
+
+- `BaseComponent`
+- `VectorComponent`
+
+`TrackId` is therefore:
+
+```text
+TrackId = Join(BaseComponent, VectorComponent)
+```
+
+Where:
+
+- `BaseComponent` identifies the song-family space
+- `VectorComponent` identifies the exact position within that space
 
 Short justification:
 
-- artist and track name are the irreducible core identity
-- album can further distinguish tracks where the same artist/title pairing is insufficient
-- release date and release type are specific detail and must remain part of exact identity when known
+- most catalog uses need one exact identity
+- some lookup scenarios need mathematical range and nearest-selection semantics
+- one structured value is preferable to many persisted helper fields on every projection
 
-### BaseTrackIdentity
+### BaseComponent
 
-`BaseTrackIdentity` represents the non-release grouping for a track.
+`BaseComponent` represents the broad song-family space.
 
-It is built from:
+It must be derived from:
 
 - `CanonicalArtistName`
 - `CanonicalTrackName`
 - optional `CanonicalAlbumName`
 
-It explicitly excludes:
+It must exclude:
 
 - `CanonicalReleaseDate`
 - `CanonicalReleaseType`
 
+Required property:
+
+- all exact track identities that belong to the same song-family must share the same `BaseComponent`
+
 Short justification:
 
-- rereleases such as `2006` and `2009` should be queryable as part of the same base range
-- release type and release date are too specific for playlist low-quality data and should not be required for grouping
+- playlists and other low-specificity sources often know the song family before they know the exact release variant
+
+### VectorComponent
+
+`VectorComponent` represents the exact variant position within a known `BaseComponent`.
+
+It must be deterministic.
+
+It may include release-specific or version-specific information such as:
+
+- release date
+- release type
+- remake/remaster criteria
+- other future range-selection dimensions
+
+Required properties:
+
+- the same canonical inputs always produce the same vector
+- two exact variants under the same base family may differ by vector
+- the vector must support mathematical comparison within a base family
+
+Short justification:
+
+- the project needs to choose concrete siblings from low-specificity references
+- ordering and distance inside one song-family should be principled rather than ad hoc
 
 ## Required And Optional Components
 
 ### Required
 
-These are always required to construct either a `TrackId` or a `BaseTrackIdentity`.
+These are always required to construct a `TrackId` base family.
 
 - `CanonicalArtistName`
 - `CanonicalTrackName`
@@ -87,7 +129,7 @@ Short justification:
 
 ### Optional
 
-These increase specificity when present.
+These increase specificity when present and may contribute to the vector.
 
 - `CanonicalAlbumName`
 - `CanonicalReleaseDate`
@@ -174,36 +216,38 @@ Short justification:
 
 ## Release Semantics
 
-`CanonicalReleaseDate` and `CanonicalReleaseType` are specific identity detail.
+`CanonicalReleaseDate` and `CanonicalReleaseType` are exact-variant detail.
 
-They must remain part of `TrackId` when known.
+They must not change the `BaseComponent`.
 
-They must not participate in `BaseTrackIdentity`.
+They may change the `VectorComponent`.
 
 This gives the following intended behaviour:
 
-- two studio rereleases with different release dates can have different `TrackId`s and the same `BaseTrackIdentity`
-- studio and radio variants can have different `TrackId`s
-- low-quality playlist data can still group rereleases by base identity even when release detail is missing
+- two studio rereleases with different release dates can have different exact `TrackId`s and the same `BaseComponent`
+- studio and radio variants can have different exact `TrackId`s
+- low-quality playlist data can still group rereleases by base family when release detail is missing
 
 Short justification:
 
-- exact identity and grouping identity serve different purposes
-- the grouping identity should support playlist matching without flattening all release-specific detail
+- exact identity and family membership serve different purposes
+- family grouping must survive low-quality source data
 
 ## Mathematical Property
 
-The system should model `TrackId` so that all tracks under the same `BaseTrackIdentity` are queryable as one range.
+The system should model `TrackId` so that all tracks under the same `BaseComponent` are queryable as one mathematical family or range.
 
-This spec mandates the property even though final persistence encoding may still evolve:
+This specification mandates the property even though encoding details may evolve:
 
-- `TrackId` must contain or project to `BaseTrackIdentity`
-- it must be possible to query all specific `TrackId`s that share a given `BaseTrackIdentity`
+- `TrackId` must contain or deterministically project to `BaseComponent`
+- `TrackId` must contain or deterministically project to `VectorComponent`
+- it must be possible to query all exact `TrackId`s that share a given `BaseComponent`
+- it must be possible to compare vector positions inside that family
 
 Short justification:
 
-- playlist handling needs to select from existing tracks under the same non-release identity
-- rerelease selection should not require provider-specific lookup logic
+- playlist handling needs exact sibling selection under a known family
+- rerelease and variant selection should not require provider-specific logic
 
 ## Formal Construction
 
@@ -212,89 +256,101 @@ Let:
 - `A` = canonical artist name
 - `T` = canonical track name
 - `B` = canonical album name or empty
-- `D` = canonical release date or empty
-- `R` = canonical release type or empty
+- `V` = deterministic vector inputs derived from release and version detail
 
 Let `Join(x1, x2, ..., xn)` denote a deterministic ordered composition with unambiguous separators and explicit encoding for missing optional values.
 
-Then the identity functions are:
+Then the required identity functions are:
 
 ```text
-BaseTrackIdentity = G(A, T, B) = Join(A, T, B)
-TrackId = F(A, T, B, D, R) = Join(G(A, T, B), D, R)
+BaseComponent = G(A, T, B)
+VectorComponent = H(V)
+TrackId = F(A, T, B, V) = Join(G(A, T, B), H(V))
 ```
 
 Required mathematical properties:
 
 1. Determinism  
-   For the same canonical inputs, `F` and `G` must always return the same outputs.
+   For the same canonical inputs, `F`, `G`, and `H` must always return the same outputs.
 
-2. Projection  
+2. Base projection  
    There must exist a total function `ProjectBase` such that:
 
 ```text
-ProjectBase(F(A, T, B, D, R)) = G(A, T, B)
+ProjectBase(F(A, T, B, V)) = G(A, T, B)
 ```
 
-3. Range grouping  
+3. Vector projection  
+   There must exist a total function `ProjectVector` such that:
+
+```text
+ProjectVector(F(A, T, B, V)) = H(V)
+```
+
+4. Family grouping  
    For any two exact identities:
 
 ```text
-F(A, T, B, D1, R1)
-F(A, T, B, D2, R2)
+F(A, T, B, V1)
+F(A, T, B, V2)
 ```
 
-both must project to the same base identity:
+both must project to the same base family:
 
 ```text
 G(A, T, B)
 ```
 
-4. Specificity preservation  
-   If either release date or release type differs, the exact identity must be allowed to differ:
-
-```text
-if D1 != D2 or R1 != R2 then F(A, T, B, D1, R1) may differ from F(A, T, B, D2, R2)
-```
+5. Exact specificity preservation  
+   If the vector inputs differ in a way the domain treats as exact-identity-significant, the exact `TrackId` must be allowed to differ.
 
 Short justification:
 
-- rereleases need to group together without losing exact release-specific identity
-- the projection must be mechanical, not heuristic
+- exact variants need one exact identity
+- family grouping must remain mechanical, not heuristic
+- mathematical comparison must happen only inside a known family
 
 ## Ordering And Query Semantics
 
-The implementation must support querying all exact tracks under a given base identity.
-
-There are two compliant ways to achieve this:
-
-- an encoding where `BaseTrackIdentity` is a literal prefix or high-order component of `TrackId`
-- a schema where `BaseTrackIdentity` is stored separately and indexed alongside `TrackId`
+The implementation must support querying all exact tracks under a given `BaseComponent`.
 
 The mathematical requirement is:
 
-- given `BaseTrackIdentity = G(A, T, B)`, the system can enumerate every `TrackId = F(A, T, B, D, R)` for that base identity without provider lookups or fuzzy matching
+- given `BaseComponent = G(A, T, B)`, the system can enumerate every `TrackId = F(A, T, B, V)` for that family without provider lookups or fuzzy matching
+
+The implementation must also support vector comparison inside that family.
+
+Examples of compliant operations:
+
+- family membership: "does `TrackId x` share the same `BaseComponent` as `TrackId y`?"
+- family enumeration: "find all exact tracks under `BaseComponent g`"
+- nearest exact sibling: "within family `g`, which concrete exact track is nearest to vector `v`?"
+- bounded range selection: "within family `g`, which exact tracks fall inside vector bounds `r`?"
 
 Short justification:
 
-- playlist completion needs exact-track selection within a known non-release family
+- playlist and artist aggregation scenarios need exact-track selection within a known family
 
-## Selection Rule Within A Base Identity
+## Selection Rule Within A Base Family
 
-Where multiple exact `TrackId`s exist under the same `BaseTrackIdentity`, the system may select a preferred exact track.
+Where multiple exact `TrackId`s exist under the same `BaseComponent`, the system may select a preferred exact track.
 
-The intended policy direction is:
+The preferred long-term direction is:
 
-- select the most recently added exact `TrackId` within the base identity range
+- select by deterministic vector comparison within the family
 
-This spec does not yet define the final persisted ordering source, but acceptable examples include:
+Acceptable examples include:
 
-- latest authoritative catalog event timestamp
-- latest append order within the catalog event stream
+- nearest vector distance to a generic reference
+- bounded range membership followed by deterministic tie-breaking
+- vector comparison followed by latest authoritative timestamp
+
+The system must not require provider-specific ids to make this choice.
 
 Short justification:
 
-- playlists may only know the base identity and still need a concrete exact `TrackId`
+- playlists may only know the family and still need a concrete exact `TrackId`
+- selection should become principled rather than ad hoc
 
 ## Example Identity Parts
 
@@ -313,193 +369,144 @@ Short justification:
 
 - exact and base identities should be derived from the same canonical input set
 
-## Recommended Numeric Construction
+## Recommended Construction
 
 The recommended implementation approach is:
 
 - construct identity with zero external lookups
 - canonicalize raw metadata locally
-- use `BLAKE2b`
-- derive a large `BaseKey` from non-release identity
-- derive a separate `SpecificKey` from release-specific identity
-- persist both parts explicitly for RavenDB querying
+- derive a deterministic `BaseComponent`
+- derive a deterministic `VectorComponent`
+- pack both into one exact `TrackId`
 
-This means `TrackId` is logically one structured identity, but the persisted/query-friendly representation is split into:
+The project may use a strong deterministic hash for part of the construction, especially for the base family portion, but the specification does not require a specific hash algorithm.
 
-- `BaseKey`
-- `SpecificKey`
+Important:
 
-Short justification:
-
-- collision resistance matters more than forcing one compact primitive
-- RavenDB queries are simpler and safer when the grouping key is stored explicitly
-- construction must work even when names are known but not pre-normalized
-
-An implementation may use the `SauceControl.Blake2Fast` NuGet package for the unkeyed `BLAKE2b` hashing step.
-
-Source:
-
-- [SauceControl.Blake2Fast on NuGet](https://www.nuget.org/packages/SauceControl.Blake2Fast)
-
-## Key Derivation
-
-Given canonical parts:
-
-- `A` = canonical artist name
-- `T` = canonical track name
-- `B` = canonical album name or empty
-- `D` = canonical release date or empty
-- `R` = canonical release type or empty
-
-Construct two byte sequences:
-
-```text
-BaseBytes = Encode(A, T, B)
-SpecificBytes = Encode(D, R)
-```
-
-Then derive:
-
-```text
-BaseKey = First256Bits(BLAKE2b(BaseBytes))
-SpecificKey = First128Bits(BLAKE2b(SpecificBytes))
-```
-
-Required properties:
-
-- the same canonical inputs always produce the same keys
-- `BaseKey` depends only on artist, track, and album
-- `SpecificKey` depends only on release-specific inputs
-- no central registry or repository lookup is involved
+- if hashing is used, it is for deterministic identity construction
+- if vector distance is required, that distance must come from structured vector dimensions, not from numeric distance between cryptographic hash outputs
 
 Short justification:
 
-- this preserves zero-lookup construction
-- this keeps collision resistance especially high for grouping identity
+- construction must work offline and without database round-trips
+- exact identity and mathematical family behavior must coexist in one value
 
-## Representation
+## Packed Representation
 
-The recommended RavenDB-friendly persisted shape is:
+`TrackId` should be persisted as one canonical field per projection document.
 
-- `TrackIdBaseKeyHigh`
-- `TrackIdBaseKeyLow`
-- `TrackIdSpecificKey`
+This specification intentionally prefers:
 
-Where:
+- one persisted `TrackId`
 
-- `TrackIdBaseKeyHigh` is the high 128 bits of the 256-bit `BaseKey`
-- `TrackIdBaseKeyLow` is the low 128 bits of the 256-bit `BaseKey`
-- `TrackIdSpecificKey` is the 128-bit `SpecificKey`
+And intentionally does not prefer:
 
-In application code, these three values together represent one structured `TrackId`.
+- many persisted decomposition fields on every projection document
 
-Short justification:
+The packed encoding is implementation-defined, but it must support deterministic decoding of:
 
-- this keeps the exact identity structured and durable
-- this avoids relying on a native 384-bit primitive that C# and RavenDB do not provide
-
-## RavenDB Persistence Shape
-
-For RavenDB document storage and indexing, the preferred shape is:
-
-- persist exact identity as named scalar fields
-- persist the canonical source fields alongside the derived keys
-- query by base-key equality rather than by reparsing text identity
-
-The recommended document fields for a track projection are:
-
-- `TrackIdBaseKeyHigh`
-- `TrackIdBaseKeyLow`
-- `TrackIdSpecificKey`
-- `CanonicalArtistName`
-- `CanonicalTrackName`
-- `CanonicalAlbumName`
-- `CanonicalReleaseDate`
-- `CanonicalReleaseType`
-- `ObservedAt`
-
-Optional convenience fields may also be stored:
-
-- `TrackIdDisplay`
-- `BaseKeyDisplay`
-
-These convenience fields are for debugging and operational visibility only. They are not authoritative and must not be used as the source of identity logic.
+- `BaseComponent`
+- `VectorComponent`
 
 Short justification:
 
-- RavenDB queries and indexes work best with explicit scalar fields
-- the canonical fields remain available for debugging, projections, and collision investigation
-- the derived keys remain the authoritative query identity
+- new range-selection cases should not cause projection schema growth across every document type
+- identity complexity belongs in identity code and indexes, not in every projection shape
 
-## RavenDB Index Shape
+## RavenDB Persistence Rule
 
-The preferred index shape for sibling-track queries is an index keyed by the base-key parts and the observed ordering field.
+For RavenDB document storage:
 
-An illustrative static index shape is:
+- projection documents should persist `TrackId` once
+- projection documents may persist other business data they already need
+- projection documents should not be forced to persist every decoded identity component separately just to support future selection cases
 
-```csharp
-public sealed class Tracks_ByBaseKey : AbstractIndexCreationTask<TrackDocument>
-{
-    public Tracks_ByBaseKey()
-    {
-        Map = tracks => from track in tracks
-                        select new
-                        {
-                            track.TrackIdBaseKeyHigh,
-                            track.TrackIdBaseKeyLow,
-                            track.TrackIdSpecificKey,
-                            track.ObservedAt
-                        };
-    }
-}
-```
+Permitted exceptions:
+
+- a projection may store additional convenience fields for debugging or user-facing output
+- those convenience fields are not authoritative identity fields
 
 Short justification:
 
-- the base-key fields support exact sibling lookup
-- the specific key distinguishes exact tracks within the same base identity
-- the ordering field supports preferred-track selection
+- this minimizes schema sprawl
+- future identity evolution should primarily affect index code, not every document contract
+
+## RavenDB Index Rule
+
+RavenDB indexes may decode the packed `TrackId` into derived query fields.
+
+This is the preferred place to materialize:
+
+- base family selectors
+- vector coordinates
+- exact tie-break components
+
+These decoded fields are index-time concerns, not projection-schema concerns.
+
+Short justification:
+
+- one domain identity field can still support rich query semantics
+- Raven indexes are the correct place to expose query-optimized projections
+
+## RavenDB Spatial Querying
+
+If the vector semantics benefit from mathematical range selection, RavenDB indexes may project the vector subset of `TrackId` into Cartesian coordinates and index them spatially.
+
+Compliant examples include:
+
+- bounding-box membership within a known base family
+- nearest-version selection within a known base family
+- deterministic in-family ordering using vector axes plus tie-break rules
+
+Non-compliant example:
+
+- treating numeric distance between unrelated exact track ids as musically meaningful
+
+Required rule:
+
+- spatial or vector comparison is meaningful only inside a known `BaseComponent`
+
+Short justification:
+
+- distance between arbitrary songs is not meaningful
+- distance between variants of one known song-family can be meaningful
 
 ## RavenDB Query Semantics
 
-The primary sibling query should be expressed as equality on the base-key fields:
+The required Raven query pattern is:
 
-```csharp
-var siblings = await session.Query<TrackDocument, Tracks_ByBaseKey>()
-    .Where(x =>
-        x.TrackIdBaseKeyHigh == baseKey.High &&
-        x.TrackIdBaseKeyLow == baseKey.Low)
-    .OrderByDescending(x => x.ObservedAt)
-    .ToListAsync(cancellationToken);
-```
+1. derive or decode `BaseComponent` from `TrackId`
+2. constrain candidates to that family
+3. apply vector range, spatial membership, or deterministic nearest-selection rules within that family
 
-The preferred exact track for a base identity is then:
+This means:
 
-- the first result ordered by the chosen ordering rule
+- family membership is deterministic
+- in-family selection may be mathematical
+- provider-specific ids are not required
 
 Short justification:
 
-- this avoids fuzzy logic and reparsing
-- this keeps the database query aligned to the mathematical grouping model
+- the system needs exactness first and ordered selection second
 
-## RavenDB Range Note
+## Index Evolution Rule
 
-This specification does not require a single-field numeric `BETWEEN` query over a packed 384-bit scalar.
+If a new dimension later becomes part of range selection, the preferred migration path is:
 
-Instead, for RavenDB, the required operational behavior is:
+- keep persisted projection documents unchanged where possible
+- update Raven index definitions to decode the new dimension from `TrackId`
+- allow Raven to rebuild side-by-side indexes
 
-- equality query on `TrackIdBaseKeyHigh`
-- equality query on `TrackIdBaseKeyLow`
-- optional ordering or filtering within that sibling set
+This specification explicitly prefers index evolution over projection-schema explosion.
 
-This still satisfies the core range intent:
+Required condition:
 
-- all tracks that belong to the same non-release identity are queryable directly and efficiently by their shared base-key parts
+- any future range-selection dimension should be derivable from persisted `TrackId` or other already-persisted business data
 
 Short justification:
 
-- RavenDB handles indexed scalar equality queries naturally
-- this preserves collision resistance without forcing an unnatural giant primitive representation
+- the project expects new edge cases over time
+- index rebuilds are operationally cheaper than adding identity helper fields to every projection forever
 
 ## Example Document Shape
 
@@ -510,11 +517,7 @@ public sealed class TrackDocument
 {
     public string Id { get; init; } = string.Empty;
 
-    public UInt128 TrackIdBaseKeyHigh { get; init; }
-
-    public UInt128 TrackIdBaseKeyLow { get; init; }
-
-    public UInt128 TrackIdSpecificKey { get; init; }
+    public string TrackId { get; init; } = string.Empty;
 
     public string CanonicalArtistName { get; init; } = string.Empty;
 
@@ -532,25 +535,33 @@ public sealed class TrackDocument
 
 Short justification:
 
-- the document shape keeps derived identity and canonical facts side by side
+- the document shape stores one canonical identity value
 - this supports replay-safe projections, diagnostics, and future collision checks
 
 ## Query Rule
 
 The required grouping query is:
 
-- all tracks under the same base identity are all tracks whose `TrackIdBaseKeyHigh` and `TrackIdBaseKeyLow` match the target base key
+- all tracks under the same song family are all tracks whose decoded `BaseComponent` matches the target family
 
-This means the database query shape is equality on the stored base-key parts, not fuzzy matching and not provider lookup.
+This means the database query shape is:
+
+- equality or partitioning on decoded base family
+- optional range, spatial, or nearest-selection logic on the decoded vector
+
+It is not:
+
+- provider lookup
+- fuzzy matching across unrelated song families
 
 Short justification:
 
-- this satisfies the grouping requirement even when a single packed 384-bit numeric range is impractical
-- this is operationally simpler in RavenDB than forcing one giant scalar
+- this satisfies the grouping requirement while keeping one persisted identity field
+- it preserves exactness and mathematical selection in the same design
 
 ## Example Implementation
 
-The following code is illustrative. It is not a final API contract, but it demonstrates the recommended construction.
+The following code is illustrative. It is not a final API contract, but it demonstrates the recommended shape.
 
 ```csharp
 using System.Buffers.Binary;
@@ -587,31 +598,28 @@ public static class CanonicalTrackIdentity
             canonicalReleaseType);
     }
 
-    public static StructuredTrackId CreateTrackId(CanonicalTrackIdentityParts parts)
+    public static PackedTrackId CreateTrackId(CanonicalTrackIdentityParts parts)
     {
-        var baseKey = CreateBaseKey(parts);
-        var specificKey = CreateSpecificKey(parts);
-        return new StructuredTrackId(baseKey.High, baseKey.Low, specificKey);
+        var baseComponent = CreateBaseComponent(parts);
+        var vectorComponent = CreateVectorComponent(parts);
+        return PackedTrackId.From(baseComponent, vectorComponent);
     }
 
-    public static UInt256Parts CreateBaseKey(CanonicalTrackIdentityParts parts)
+    public static byte[] CreateBaseComponent(CanonicalTrackIdentityParts parts)
     {
         var bytes = Encode(
             parts.ArtistName,
             parts.TrackName,
             parts.AlbumName);
 
-        return UInt256Parts.FromBytes(Blake2b(bytes, 32));
+        return Blake2b(bytes, 32);
     }
 
-    public static UInt128 CreateSpecificKey(CanonicalTrackIdentityParts parts)
+    public static VariantVector CreateVectorComponent(CanonicalTrackIdentityParts parts)
     {
-        var bytes = Encode(
-            parts.ReleaseDate?.ToString("yyyy-MM-dd"),
-            parts.ReleaseType);
-
-        var hash = Blake2b(bytes, 16);
-        return BinaryPrimitives.ReadUInt128BigEndian(hash);
+        return new VariantVector(
+            releaseDateOrdinal: parts.ReleaseDate?.DayNumber,
+            releaseType: parts.ReleaseType);
     }
 
     private static string CanonicalizeRequired(string value, int maxLength, string paramName)
@@ -663,31 +671,21 @@ public static class CanonicalTrackIdentity
     }
 }
 
-public readonly record struct StructuredTrackId(
-    UInt128 BaseKeyHigh,
-    UInt128 BaseKeyLow,
-    UInt128 SpecificKey)
+public readonly record struct PackedTrackId(string Value)
 {
-    public (UInt128 High, UInt128 Low) GetBaseKey() => (BaseKeyHigh, BaseKeyLow);
+    public static PackedTrackId From(byte[] baseComponent, VariantVector vector) =>
+        new(Convert.ToBase64String(Pack(baseComponent, vector)));
 }
 
-public readonly record struct UInt256Parts(UInt128 High, UInt128 Low)
-{
-    public static UInt256Parts FromBytes(byte[] bytes)
-    {
-        var high = BinaryPrimitives.ReadUInt128BigEndian(bytes[..16]);
-        var low = BinaryPrimitives.ReadUInt128BigEndian(bytes[16..32]);
-        return new UInt256Parts(high, low);
-    }
-}
+public readonly record struct VariantVector(int? ReleaseDateOrdinal, string? ReleaseType);
 ```
 
 This example shows the core invariants:
 
 - identity values are validated before key derivation
 - key derivation uses only local canonicalized inputs
-- exact identity is composed from a strong grouping key plus strong specific key
-- the grouping key is directly queryable in RavenDB without reparsing provider data
+- exact identity is composed from one family component plus one vector component
+- one persisted identity value can still be decoded by Raven indexes for querying
 
 Note:
 
@@ -695,21 +693,25 @@ Note:
 
 ## Example Projection Rule
 
-Any final implementation must provide a deterministic way to get the grouping key for any exact track identity.
+Any final implementation must provide deterministic decoders for at least:
+
+- `ProjectBase(trackId)`
+- `ProjectVector(trackId)`
 
 An example API shape is:
 
 ```csharp
 public static class TrackIdentityProjection
 {
-    public static (UInt128 High, UInt128 Low) GetBaseKey(StructuredTrackId trackId) =>
-        trackId.GetBaseKey();
+    public static byte[] GetBaseComponent(PackedTrackId trackId) => DecodeBase(trackId.Value);
+
+    public static VariantVector GetVectorComponent(PackedTrackId trackId) => DecodeVector(trackId.Value);
 }
 ```
 
 Short justification:
 
-- grouping behavior must not depend on replaying provider logic or reparsing external identifiers
+- grouping and vector behavior must not depend on replaying provider logic or reparsing external identifiers
 
 ## Worked Examples
 
@@ -723,9 +725,9 @@ Example 1:
 
 Produces:
 
-- `BaseKey = BLAKE2b-256("radiohead|karma police|ok computer")`
-- `SpecificKey = BLAKE2b-128("1997-05-21|studio")`
-- `TrackId = (BaseKeyHigh, BaseKeyLow, SpecificKey)`
+- one deterministic `BaseComponent`
+- one deterministic `VectorComponent`
+- one exact packed `TrackId`
 
 Example 2:
 
@@ -737,8 +739,8 @@ Example 2:
 
 Produces:
 
-- same `BaseKey` as Example 1
-- different `SpecificKey`
+- same `BaseComponent` as Example 1
+- different `VectorComponent`
 - different exact `TrackId`
 
 Example 3:
@@ -751,8 +753,8 @@ Example 3:
 
 Produces:
 
-- the same `BaseKey` as the richer examples
-- a deterministic `SpecificKey` derived from `"~|~"`
+- the same `BaseComponent` as the richer examples
+- a deterministic generic `VectorComponent`
 - a deterministic exact `TrackId` even when release detail is missing
 
 Short justification:
@@ -764,12 +766,13 @@ Short justification:
 
 Playlist lookup success may contain low-quality track metadata.
 
-That data may be insufficient to determine exact release detail, but it should still be sufficient to derive a `BaseTrackIdentity` when artist and track title are valid.
+That data may be insufficient to determine exact variant detail, but it should still be sufficient to derive a `BaseComponent` when artist and track title are valid.
 
 The intended future behaviour is:
 
-- use playlist metadata to derive `BaseTrackIdentity`
-- query existing tracks under that base identity
+- use playlist metadata to derive the target `BaseComponent`
+- query existing tracks under that family
+- compare vector position only within that family
 - prefer an existing specific `TrackId` when one is already known
 - otherwise use the best valid identity derivable from the available canonical data
 
@@ -800,7 +803,8 @@ Short justification:
 This spec does not define:
 
 - the final storage encoding of `TrackId`
-- whether `TrackId` is numeric or string-backed
+- whether `TrackId` is bit-packed binary, base64, or another single-field encoding
+- the final vector dimensions and weighting rules
 - the final persistence schema for playlists
 - the full `OnLookupCompleted` workflow
 - provider-specific metadata adapters
@@ -817,7 +821,9 @@ Any future implementation of `TrackId` must preserve all of the following:
 - no dependence on iTunes product ids
 - no truncation during identity generation
 - explicit failure when canonical metadata exceeds accepted limits
-- separation of exact identity from broader base identity
-- the ability to query all tracks under a given base identity
+- one exact identity value per track
+- the ability to project family membership from that identity
+- the ability to project vector comparison semantics from that identity
+- the ability to query all tracks under a given family
 
 If a future implementation violates any of these rules, it is non-compliant with this specification.

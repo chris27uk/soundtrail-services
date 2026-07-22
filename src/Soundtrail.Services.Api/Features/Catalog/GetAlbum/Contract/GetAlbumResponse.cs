@@ -1,5 +1,6 @@
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
+using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
 
 namespace Soundtrail.Services.Api.Features.Catalog.GetAlbum.Contract
 {
@@ -8,5 +9,6 @@ namespace Soundtrail.Services.Api.Features.Catalog.GetAlbum.Contract
         ArtistName ArtistName,
         AlbumId AlbumId,
         string AlbumName,
-        DateOnly? ReleaseDate);
+        DateOnly? ReleaseDate,
+        DiscoveryFeedbackResponse? Discovery = null);
 }

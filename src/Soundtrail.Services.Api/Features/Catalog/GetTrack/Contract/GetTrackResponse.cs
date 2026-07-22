@@ -1,5 +1,6 @@
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Tracks;
+using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
 
 namespace Soundtrail.Services.Api.Features.Catalog.GetTrack.Contract;
 
@@ -12,4 +13,5 @@ public sealed record GetTrackResponse(
     int? DurationMs,
     string? Isrc,
     DateOnly? ReleaseDate,
-    string? ArtworkUrl);
+    string? ArtworkUrl,
+    DiscoveryFeedbackResponse? Discovery = null);

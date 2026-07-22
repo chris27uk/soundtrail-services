@@ -1,6 +1,6 @@
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Search;
+using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
 
 namespace Soundtrail.Services.Api.Features.Catalog.Search.Contract;
 
@@ -17,11 +17,3 @@ public sealed record SearchResultResponse(
     string? ArtistName,
     string? AlbumTitle,
     string? ArtworkUrl);
-
-public sealed record DiscoveryFeedbackResponse(
-    string Status,
-    LookupPriorityBand Priority,
-    DateTimeOffset? NextEligibleAt,
-    DateTimeOffset? EarliestExpectedCompletionAt,
-    string Reason,
-    DateTimeOffset UpdatedAtUtc);
