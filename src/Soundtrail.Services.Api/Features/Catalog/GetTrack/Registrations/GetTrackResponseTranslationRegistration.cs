@@ -4,6 +4,8 @@ using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Api.Features.Catalog.GetTrack.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetTrack.Contract;
+using Soundtrail.Services.Api.Features.Catalog.Shared.Adapters;
+using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
 
 namespace Soundtrail.Services.Api.Features.Catalog.GetTrack.Registrations;
 
@@ -22,7 +24,8 @@ public sealed class GetTrackResponseTranslationRegistration : ITypeTranslationRe
                     response.DurationMs,
                     response.Isrc,
                     response.ReleaseDate,
-                    response.ArtworkUrl),
+                    response.ArtworkUrl,
+                    ToDiscoveryDto(response.Discovery)),
             toDomainObject: dto =>
                 new GetTrackResponse(
                     TrackId.From(dto.TrackId),
@@ -33,26 +36,43 @@ public sealed class GetTrackResponseTranslationRegistration : ITypeTranslationRe
                     dto.DurationMs,
                     dto.Isrc,
                     dto.ReleaseDate,
-                    dto.ArtworkUrl));
+                    dto.ArtworkUrl,
+                    ToDiscovery(dto.Discovery)));
 
         registry.Register<CatalogTrackRecordDto, GetTrackResponse>(
             record =>
                 new GetTrackResponse(
-                    TrackId.FromKeyParts(
-                        record.TrackIdBaseKeyHigh ?? throw new InvalidOperationException("Track base key high is required."),
-                        record.TrackIdBaseKeyLow ?? throw new InvalidOperationException("Track base key low is required."),
-                        record.TrackIdSpecificKey ?? throw new InvalidOperationException("Track specific key is required.")),
-                    new CatalogItemId.Track(
-                        TrackId.FromKeyParts(
-                            record.TrackIdBaseKeyHigh ?? throw new InvalidOperationException("Track base key high is required."),
-                            record.TrackIdBaseKeyLow ?? throw new InvalidOperationException("Track base key low is required."),
-                            record.TrackIdSpecificKey ?? throw new InvalidOperationException("Track specific key is required."))),
+                    TrackId.From(record.TrackId),
+                    new CatalogItemId.Track(TrackId.From(record.TrackId)),
                     record.Title,
                     record.ArtistName,
                     record.AlbumTitle,
                     record.DurationMs,
                     record.Isrc,
                     record.ReleaseDate,
-                    record.ArtworkUrl));
+                    record.ArtworkUrl,
+                    null));
     }
+
+    private static DiscoveryFeedbackResponseDto? ToDiscoveryDto(DiscoveryFeedbackResponse? discovery) =>
+        discovery is null
+            ? null
+            : new DiscoveryFeedbackResponseDto(
+                discovery.Status,
+                discovery.Priority.ToString(),
+                discovery.NextEligibleAt,
+                discovery.EarliestExpectedCompletionAt,
+                discovery.Reason,
+                discovery.UpdatedAtUtc);
+
+    private static DiscoveryFeedbackResponse? ToDiscovery(DiscoveryFeedbackResponseDto? discovery) =>
+        discovery is null
+            ? null
+            : new DiscoveryFeedbackResponse(
+                discovery.Status,
+                Enum.Parse<Soundtrail.Domain.Common.LookupPriorityBand>(discovery.Priority, true),
+                discovery.NextEligibleAtUtc,
+                discovery.EarliestExpectedCompletionAtUtc,
+                discovery.Reason,
+                discovery.UpdatedAtUtc);
 }

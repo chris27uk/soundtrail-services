@@ -68,7 +68,8 @@ internal sealed class GetTrackRouteTestEnvironment : IDisposable
                 response.DurationMs,
                 response.Isrc,
                 response.ReleaseDate,
-                response.ArtworkUrl);
+                response.ArtworkUrl,
+                null);
         }
 
         public TDomain ToDomainObject<TDomain>(object dto) where TDomain : class => throw new NotSupportedException();

@@ -54,6 +54,48 @@ public sealed class MusicbrainzCatalogSearchPortTests
             .WithMessage("MusicBrainz artist search response must include artists.");
     }
 
+    [Fact]
+    public async Task Given_A_Recording_Search_Response_With_Invalid_Titles_When_Reading_Then_Invalid_Tracks_Are_Skipped()
+    {
+        var subject = CreateSubject(
+            new StubHttpMessageHandler(request =>
+            {
+                var body = request.RequestUri!.AbsolutePath switch
+                {
+                    "/ws/2/artist" => """{"artists": []}""",
+                    "/ws/2/release" => """{"releases": []}""",
+                    "/ws/2/recording" =>
+                        """
+                        {
+                          "recordings": [
+                            {
+                              "id": "recording-1",
+                              "title": "Valid Song (Radio Edit)",
+                              "artist-credit": [{ "name": "The Artist", "artist": { "id": "artist-1" } }]
+                            },
+                            {
+                              "id": "recording-2",
+                              "title": "(_",
+                              "artist-credit": [{ "name": "The Artist", "artist": { "id": "artist-1" } }]
+                            }
+                          ]
+                        }
+                        """,
+                    _ => throw new InvalidOperationException($"Unexpected request path '{request.RequestUri!.AbsolutePath}'.")
+                };
+
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(body)
+                };
+            }));
+
+        var result = await subject.ReadAsync(new SearchCriteria("valid song", SearchType.Track), CancellationToken.None);
+
+        result.Should().HaveCount(1);
+        result.Select(x => x.Item).Should().ContainSingle(item => item is Soundtrail.Domain.Catalog.CatalogItem.MusicTrack);
+    }
+
     private static MusicbrainzCatalogSearchPort CreateSubject(HttpMessageHandler handler)
     {
         var client = new HttpClient(handler)

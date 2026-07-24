@@ -77,7 +77,8 @@ internal sealed class GetTracksForPlaylistRouteTestEnvironment : IDisposable
                             track.Isrc,
                             track.ReleaseDate,
                             track.ArtworkUrl))
-                    .ToArray());
+                    .ToArray(),
+                null);
         }
 
         public TDomain ToDomainObject<TDomain>(object dto) where TDomain : class => throw new NotSupportedException();

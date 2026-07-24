@@ -89,7 +89,13 @@ public sealed class MusicbrainzCatalogBrowsePort(
             {
                 var artistName = recording.ArtistCredit?.FirstOrDefault()?.Name ?? string.Empty;
                 var releaseDate = ParseDate(recording.FirstReleaseDate);
-                var trackId = TrackId.Create(artistName, recording.Title!, releaseDate: releaseDate);
+                var trackIdResult = TrackId.TryCreate(artistName, recording.Title!, releaseDate: releaseDate);
+                if (trackIdResult is TrackIdCreateResult.Failure)
+                {
+                    return null;
+                }
+
+                var trackId = ((TrackIdCreateResult.Success)trackIdResult).Value;
                 var track = new Track(trackId)
                 {
                     Title = recording.Title!,
@@ -105,6 +111,8 @@ public sealed class MusicbrainzCatalogBrowsePort(
                     artistId,
                     new Domain.Catalog.CatalogItem.MusicTrack(track));
             })
+            .Where(static entry => entry is not null)
+            .Select(static entry => entry!)
             .ToArray();
     }
 
@@ -143,7 +151,13 @@ public sealed class MusicbrainzCatalogBrowsePort(
                 var artistName = track.ArtistCredit?.FirstOrDefault()?.Name
                     ?? payload.ArtistCredit?.FirstOrDefault()?.Name
                     ?? string.Empty;
-                var trackId = TrackId.Create(artistName, track.Title!, albumTitle, releaseDate);
+                var trackIdResult = TrackId.TryCreate(artistName, track.Title!, albumTitle, releaseDate);
+                if (trackIdResult is TrackIdCreateResult.Failure)
+                {
+                    return null;
+                }
+
+                var trackId = ((TrackIdCreateResult.Success)trackIdResult).Value;
                 var discoveredTrack = new Track(trackId)
                 {
                     Title = track.Title!,
@@ -161,6 +175,8 @@ public sealed class MusicbrainzCatalogBrowsePort(
                     artistId,
                     new Domain.Catalog.CatalogItem.MusicTrack(discoveredTrack));
             })
+            .Where(static entry => entry is not null)
+            .Select(static entry => entry!)
             .ToArray();
     }
 

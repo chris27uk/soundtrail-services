@@ -23,21 +23,18 @@ public sealed class RavenStorePlaylistTracksReadModelPort(IDocumentStore documen
     {
         using var session = documentStore.OpenAsyncSession();
         var playlistRecords = await session.Query<CatalogPlaylistTracksRecordDto>()
-            .Where(x => x.TrackBaseKeyHighs.Contains(trackId.BaseKeyHigh) && x.TrackBaseKeyLows.Contains(trackId.BaseKeyLow))
             .ToListAsync(cancellationToken);
+        var affectedRecords = playlistRecords
+            .Where(record => ContainsSameBaseTrack(record, trackId))
+            .ToArray();
 
-        if (playlistRecords.Count == 0)
+        if (affectedRecords.Length == 0)
         {
             return;
         }
 
-        foreach (var existingRecord in playlistRecords)
+        foreach (var existingRecord in affectedRecords)
         {
-            if (!ContainsBaseKey(existingRecord, trackId))
-            {
-                continue;
-            }
-
             var rebuilt = await BuildRecordAsync(
                 session,
                 existingRecord.PlaylistId,
@@ -61,41 +58,36 @@ public sealed class RavenStorePlaylistTracksReadModelPort(IDocumentStore documen
         var playlistTrackIds = trackIds
             .Select(TrackId.From)
             .ToArray();
-        var tracksByBaseKey = new Dictionary<(string High, string Low), CatalogTrackRecordDto>();
-
-        foreach (var group in playlistTrackIds.GroupBy(static x => (x.BaseKeyHigh, x.BaseKeyLow)))
-        {
-            var sample = group.First();
-            var siblingTracks = await session.Query<CatalogTrackRecordDto>()
-                .Where(x => x.TrackIdBaseKeyHigh == sample.BaseKeyHigh && x.TrackIdBaseKeyLow == sample.BaseKeyLow)
-                .ToListAsync(cancellationToken);
-
-            var preferredTrack = siblingTracks.FirstOrDefault(x => group.Any(entry => entry.Value == x.TrackId))
-                ?? siblingTracks.OrderByDescending(static x => x.UpdatedAt).FirstOrDefault();
-
-            if (preferredTrack is not null)
+        var requestedBases = playlistTrackIds
+            .Select(TrackIdIndexProjection.From)
+            .DistinctBy(static projection => (projection.BaseHigh, projection.BaseLow))
+            .ToArray();
+        var siblingTracks = await session.Query<CatalogTrackRecordDto>()
+            .ToListAsync(cancellationToken);
+        var tracksByBase = siblingTracks
+            .Select(track =>
             {
-                tracksByBaseKey[(sample.BaseKeyHigh, sample.BaseKeyLow)] = preferredTrack;
-            }
-        }
+                var trackId = TrackId.From(track.TrackId);
+                return (Track: track, Projection: TrackIdIndexProjection.From(trackId));
+            })
+            .Where(entry => requestedBases.Any(requested => requested.SharesBaseWith(entry.Projection)))
+            .GroupBy(entry => (entry.Projection.BaseHigh, entry.Projection.BaseLow))
+            .ToDictionary(
+                static group => group.Key,
+                static group => group.Select(static entry => entry.Track).ToArray());
 
         return new CatalogPlaylistTracksRecordDto
         {
             Id = CatalogPlaylistTracksRecordDto.GetDocumentId(playlistId),
             PlaylistId = playlistId,
             TrackIds = trackIds.ToArray(),
-            TrackBaseKeyHighs = playlistTrackIds.Select(static x => x.BaseKeyHigh).ToArray(),
-            TrackBaseKeyLows = playlistTrackIds.Select(static x => x.BaseKeyLow).ToArray(),
             Tracks = trackIds
                 .Select(TrackId.From)
-                .Select(trackId => tracksByBaseKey.GetValueOrDefault((trackId.BaseKeyHigh, trackId.BaseKeyLow)))
+                .Select(trackId => SelectPreferredTrack(tracksByBase, trackId))
                 .Where(static track => track is not null)
                 .Select(track => new CatalogPlaylistTrackRecordDto
                 {
                     TrackId = track!.TrackId,
-                    TrackIdBaseKeyHigh = track.TrackIdBaseKeyHigh,
-                    TrackIdBaseKeyLow = track.TrackIdBaseKeyLow,
-                    TrackIdSpecificKey = track.TrackIdSpecificKey,
                     MusicCatalogId = track.MusicCatalogId,
                     Title = track.Title,
                     ArtistName = track.ArtistName,
@@ -111,17 +103,31 @@ public sealed class RavenStorePlaylistTracksReadModelPort(IDocumentStore documen
         };
     }
 
-    private static bool ContainsBaseKey(CatalogPlaylistTracksRecordDto record, TrackId trackId)
+    private static CatalogTrackRecordDto? SelectPreferredTrack(
+        IReadOnlyDictionary<(ulong BaseHigh, ulong BaseLow), CatalogTrackRecordDto[]> tracksByBase,
+        TrackId requestedTrackId)
     {
-        for (var index = 0; index < record.TrackBaseKeyHighs.Length && index < record.TrackBaseKeyLows.Length; index++)
+        var requestedProjection = TrackIdIndexProjection.From(requestedTrackId);
+        if (!tracksByBase.TryGetValue((requestedProjection.BaseHigh, requestedProjection.BaseLow), out var candidates))
         {
-            if (record.TrackBaseKeyHighs[index] == trackId.BaseKeyHigh
-                && record.TrackBaseKeyLows[index] == trackId.BaseKeyLow)
-            {
-                return true;
-            }
+            return null;
         }
 
-        return false;
+        return candidates.FirstOrDefault(track => string.Equals(track.TrackId, requestedTrackId.Value, StringComparison.Ordinal))
+            ?? candidates
+                .Select(track => (Track: track, Projection: TrackIdIndexProjection.From(TrackId.From(track.TrackId))))
+                .OrderBy(entry => entry.Projection.GetDistanceTo(requestedProjection))
+                .ThenByDescending(static entry => entry.Track.UpdatedAt)
+                .Select(static entry => entry.Track)
+                .FirstOrDefault();
+    }
+
+    private static bool ContainsSameBaseTrack(CatalogPlaylistTracksRecordDto record, TrackId trackId)
+    {
+        var requestedProjection = TrackIdIndexProjection.From(trackId);
+        return record.TrackIds
+            .Select(TrackId.From)
+            .Select(TrackIdIndexProjection.From)
+            .Any(existingProjection => existingProjection.SharesBaseWith(requestedProjection));
     }
 }

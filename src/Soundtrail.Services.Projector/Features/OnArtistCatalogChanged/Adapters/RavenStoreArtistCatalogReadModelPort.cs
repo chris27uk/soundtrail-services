@@ -59,9 +59,6 @@ public sealed class RavenStoreArtistCatalogReadModelPort(IDocumentStore document
                     .Select(track => new CatalogArtistTrackRecordDto
                     {
                         TrackId = track.TrackId.Value,
-                        TrackIdBaseKeyHigh = track.TrackId.BaseKeyHigh,
-                        TrackIdBaseKeyLow = track.TrackId.BaseKeyLow,
-                        TrackIdSpecificKey = track.TrackId.SpecificKey,
                         MusicCatalogId = track.TrackId.Value,
                         Title = track.Title,
                         ArtistName = track.ArtistName,
@@ -111,9 +108,6 @@ public sealed class RavenStoreArtistCatalogReadModelPort(IDocumentStore document
                         .Select(track => new CatalogAlbumTrackRecordDto
                         {
                             TrackId = track.TrackId.Value,
-                            TrackIdBaseKeyHigh = track.TrackId.BaseKeyHigh,
-                            TrackIdBaseKeyLow = track.TrackId.BaseKeyLow,
-                            TrackIdSpecificKey = track.TrackId.SpecificKey,
                             MusicCatalogId = track.TrackId.Value,
                             Title = track.Title,
                             ArtistName = track.ArtistName,
@@ -136,9 +130,6 @@ public sealed class RavenStoreArtistCatalogReadModelPort(IDocumentStore document
                 {
                     Id = CatalogTrackRecordDto.GetDocumentId(track.TrackId.Value),
                     TrackId = track.TrackId.Value,
-                    TrackIdBaseKeyHigh = track.TrackId.BaseKeyHigh,
-                    TrackIdBaseKeyLow = track.TrackId.BaseKeyLow,
-                    TrackIdSpecificKey = track.TrackId.SpecificKey,
                     MusicCatalogId = track.TrackId.Value,
                     Title = track.Title,
                     ArtistName = track.ArtistName,

@@ -413,6 +413,205 @@ Short justification:
 - new range-selection cases should not cause projection schema growth across every document type
 - identity complexity belongs in identity code and indexes, not in every projection shape
 
+## Locked Target Encoding
+
+The target implementation for `Soundtrail.Services` is now locked to:
+
+- one persisted `TrackId` field per projection document
+- a fixed-width lowercase hexadecimal packed representation
+- deterministic RavenDB index-time decoding through a shared projection helper
+- database-driven family filtering and database-driven sibling ranking
+
+This target explicitly replaces the earlier segmented text representation.
+
+Short justification:
+
+- the project wants one durable identity value in storage
+- RavenDB indexing works well when a single packed value is decoded into query fields
+- fixed-width hex is deterministic, compact, and easy to decode without schema growth
+
+## Locked Structural Model
+
+The locked logical model is:
+
+```text
+TrackId = Join(BaseIdentityBits, VectorBits)
+```
+
+Where:
+
+- `BaseIdentityBits` define the broad song-family inclusion gate
+- `VectorBits` define exact-variant specificity and in-family ranking signals
+
+Required rule:
+
+- optional specificity such as album, release type, and release date must not be required for family inclusion when missing data would otherwise exclude a valid sibling
+
+Short justification:
+
+- low-specificity sources often omit album or release details
+- optional data must improve ranking without preventing recovery
+
+## Locked Base Identity Rule
+
+The locked target direction is:
+
+- `BaseIdentityBits` are derived from canonical artist name and canonical core track title
+
+The base identity must not depend on optional release-specific qualifiers whose absence should still permit sibling matching.
+
+This means the family inclusion gate should remain broad enough that:
+
+- an exact album-specific track can still be found when playlist data omits album
+- a remake or radio version can still be found when generic input omits release detail
+
+Short justification:
+
+- broad inclusion first, principled ranking second
+
+## Locked Vector Rule
+
+The locked target direction is:
+
+- `VectorBits` carry optional specificity and ranking signals
+
+This includes current expected dimensions such as:
+
+- album-derived discriminator
+- parsed release type
+- release date or release-date-derived ordering value
+
+It may later include additional dimensions such as:
+
+- remake or remaster profile
+- live-performance qualifiers
+- future release-shape dimensions
+
+Required rule:
+
+- when optional data is present on both sides, matching values should be favored
+- when the exact sibling is absent, a nearby sibling should be favored by deterministic distance or similarity rules
+
+Illustrative intent:
+
+- requested `2024 remake`
+- available `2022 remake`
+- available `1970 original`
+
+The `2022 remake` should rank ahead of the `1970 original`.
+
+Short justification:
+
+- exactness is best when available
+- nearest valid sibling is the correct fallback behavior
+
+## Locked RavenDB Query Model
+
+The locked target query model is:
+
+1. exact `TrackId` lookup when an exact packed value is known
+2. family filtering by decoded `BaseIdentityBits`
+3. database-side sibling ranking using vector or derived ranking fields decoded from `VectorBits`
+
+The API should not be required to rank large sibling sets in memory as the primary design.
+
+Short justification:
+
+- heavy resolution behavior should remain DB-driven
+- API work should stay thin and orchestration-focused
+
+## Locked RavenDB Index Projection Helper Rule
+
+RavenDB index definitions must not duplicate packed identity logic ad hoc.
+
+The target implementation must provide a shared projection helper dedicated to index-time decoding of `TrackId`.
+
+The helper is responsible for deriving Raven-safe fields such as:
+
+- family selection fields
+- vector dimensions
+- ranking vector payloads
+- deterministic tie-break fields
+
+These decoded fields belong in RavenDB indexes, not in persisted projection document schemas.
+
+Short justification:
+
+- identity logic should live in one place
+- query-specific projections should be centralized and testable
+
+## Locked Fixed-Width Hex Rule
+
+The packed storage encoding must use:
+
+- lowercase hexadecimal
+- fixed-width segments
+- deterministic decoding without delimiter heuristics
+
+The canonical stored `TrackId` may still include a stable prefix, but the encoded payload itself must remain fixed-width and parseable by position.
+
+Short justification:
+
+- positional decode is cheap and predictable
+- Raven indexes can derive numeric fields from stable segments without schema sprawl
+
+## Locked Parser Responsibility
+
+Identity construction must include a dedicated track-title parser, not only generic text normalization.
+
+The parser must separate:
+
+- canonical core title
+- detachable trailing qualifier
+- parsed release-type signal
+
+The locked grammar direction is:
+
+- release-type extraction is permitted only from a detachable trailing title segment
+
+Examples of detachable trailing segments include:
+
+- trailing parenthesized qualifier
+- trailing bracketed qualifier
+- trailing dash-separated qualifier
+
+Examples of recognized release-type vocabulary include:
+
+- `mix`
+- `edit`
+- `remix`
+- `version`
+- `instrumental`
+- `release`
+- `live`
+
+Required rule:
+
+- qualifier words appearing inside the core title body must not be reinterpreted as release type unless they occur in a detachable trailing segment
+
+Short justification:
+
+- this reduces false positives
+- parser correctness directly controls sibling-set quality and ranking accuracy
+
+## Locked Ranking Principle
+
+The ranking model must remain deterministic.
+
+When both requested and candidate metadata provide optional specificity:
+
+- exact album should be strongly favored
+- exact release type should be strongly favored
+- nearer release dates should outrank more distant release dates
+
+When optional specificity is absent:
+
+- candidates must remain eligible if they share the same broad family
+
+Short justification:
+
+- optional metadata should improve precision without blocking recovery
+
 ## RavenDB Persistence Rule
 
 For RavenDB document storage:

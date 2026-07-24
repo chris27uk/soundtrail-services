@@ -157,7 +157,7 @@ internal sealed class ReadMusicbrainzBrowsePortContractTestEnvironment : IDispos
 
         Task<IReadOnlyList<CatalogDiscoveryEntry>> IReadTracksByAlbumIdPort.ReadAsync(AlbumId albumId, CancellationToken cancellationToken)
         {
-            var track = new Track(TrackId.Create("Test Artist", "Album Track 1", "Rare Release", new DateOnly(2026, 1, 2)))
+            var track = new Track(TestTrackIds.Create("Album Track 1"))
             {
                 Title = "Album Track 1",
                 ArtistName = "Test Artist",

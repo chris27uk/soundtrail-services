@@ -6,12 +6,6 @@ public sealed class CatalogTrackRecordDto
 
     public string TrackId { get; set; } = string.Empty;
 
-    public string? TrackIdBaseKeyHigh { get; set; }
-
-    public string? TrackIdBaseKeyLow { get; set; }
-
-    public string? TrackIdSpecificKey { get; set; }
-
     public string MusicCatalogId { get; set; } = string.Empty;
 
     public string Title { get; set; } = string.Empty;

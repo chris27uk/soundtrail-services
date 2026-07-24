@@ -8,10 +8,6 @@ public sealed class CatalogPlaylistTracksRecordDto
 
     public string[] TrackIds { get; set; } = [];
 
-    public string[] TrackBaseKeyHighs { get; set; } = [];
-
-    public string[] TrackBaseKeyLows { get; set; } = [];
-
     public CatalogPlaylistTrackRecordDto[] Tracks { get; set; } = [];
 
     public DateTimeOffset UpdatedAt { get; set; }
@@ -22,12 +18,6 @@ public sealed class CatalogPlaylistTracksRecordDto
 public sealed class CatalogPlaylistTrackRecordDto
 {
     public string TrackId { get; set; } = string.Empty;
-
-    public string? TrackIdBaseKeyHigh { get; set; }
-
-    public string? TrackIdBaseKeyLow { get; set; }
-
-    public string? TrackIdSpecificKey { get; set; }
 
     public string MusicCatalogId { get; set; } = string.Empty;
 

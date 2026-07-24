@@ -2,7 +2,7 @@ using Raven.Client.Documents;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Services.Api.Features.Catalog.Search.Contract;
+using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
 
 namespace Soundtrail.Services.Api.Features.Catalog.Search.Adapters;
 

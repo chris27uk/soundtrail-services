@@ -7,6 +7,8 @@ using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.Catalog.Search.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.Search.Contract;
+using Soundtrail.Services.Api.Features.Catalog.Shared.Adapters;
+using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
 
 namespace Soundtrail.Services.Api.Features.Catalog.Search.Registrations;
 

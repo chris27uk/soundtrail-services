@@ -6,6 +6,7 @@ using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
 using Soundtrail.Services.Api.Features.Catalog.Search.Contract;
+using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
 
 namespace Soundtrail.Services.Tests.Unit.Search;
 

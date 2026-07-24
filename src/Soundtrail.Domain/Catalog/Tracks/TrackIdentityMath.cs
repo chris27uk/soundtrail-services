@@ -1,6 +1,8 @@
+using System.Buffers.Binary;
 using System.Text;
 using Blake2Fast;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Tracks.Parsing;
 
 namespace Soundtrail.Domain.Catalog.Tracks;
 
@@ -11,72 +13,131 @@ public static class TrackIdentityMath
     private const int MaxAlbumLength = 250;
     private const int MaxReleaseTypeLength = 50;
 
-    public static CanonicalTrackIdentityParts Canonicalize(
+    public static TrackIdentityCanonicalizeResult TryCanonicalize(
         string artistName,
         string trackName,
         string? albumName,
         DateOnly? releaseDate,
         string? releaseType)
     {
-        var canonicalArtist = CanonicalizeRequired(artistName, MaxArtistLength, nameof(artistName));
-        var canonicalTrack = CanonicalizeRequired(trackName, MaxTrackLength, nameof(trackName));
-        var canonicalAlbum = CanonicalizeOptional(albumName, MaxAlbumLength, nameof(albumName));
-        var canonicalReleaseType = CanonicalizeOptional(releaseType, MaxReleaseTypeLength, nameof(releaseType));
-
-        return new CanonicalTrackIdentityParts(
-            canonicalArtist,
-            canonicalTrack,
-            canonicalAlbum,
-            releaseDate,
-            canonicalReleaseType);
-    }
-
-    public static TrackIdKeyParts DeriveKeys(CanonicalTrackIdentityParts parts)
-    {
-        var baseHash = Blake2b(Encode(parts.ArtistName, parts.TrackName, parts.AlbumName), hashSizeBits: 256);
-        var specificHash = Blake2b(Encode(parts.ReleaseDate?.ToString("yyyy-MM-dd"), parts.ReleaseType), hashSizeBits: 128);
-
-        return new TrackIdKeyParts(
-            ToHex(baseHash[..16]),
-            ToHex(baseHash[16..32]),
-            ToHex(specificHash));
-    }
-
-    private static string CanonicalizeRequired(string value, int maxLength, string paramName)
-    {
-        var canonical = MusicIdentityText.NormalizeFreeText(value);
-        if (string.IsNullOrWhiteSpace(canonical))
+        var parsedTitle = SongTitleParser.Parse(trackName);
+        if (parsedTitle is SongTitleParseResult.Failure titleFailure)
         {
-            throw new ArgumentException("Identity value is required.", paramName);
+            return new TrackIdentityCanonicalizeResult.Failure(
+                $"Track title could not be parsed: {titleFailure.Reason}.");
         }
 
-        if (canonical.Length > maxLength)
+        var title = ((SongTitleParseResult.Success)parsedTitle).Value;
+
+        if (!TryCanonicalizeRequired(artistName, MaxArtistLength, out var canonicalArtist, out var artistReason))
         {
-            throw new ArgumentOutOfRangeException(paramName, $"Identity value exceeds max length {maxLength}.");
+            return new TrackIdentityCanonicalizeResult.Failure(artistReason);
         }
 
-        return canonical;
+        if (!TryCanonicalizeRequired(title.CanonicalTrackTitle.Value, MaxTrackLength, out var canonicalTrack, out var trackReason))
+        {
+            return new TrackIdentityCanonicalizeResult.Failure(trackReason);
+        }
+
+        if (!TryCanonicalizeOptional(albumName, MaxAlbumLength, out var canonicalAlbum, out var albumReason))
+        {
+            return new TrackIdentityCanonicalizeResult.Failure(albumReason);
+        }
+
+        if (!TryCanonicalizeOptional(
+                string.IsNullOrWhiteSpace(releaseType)
+                    ? title.CanonicalReleaseType?.Value
+                    : releaseType,
+                MaxReleaseTypeLength,
+                out var canonicalReleaseType,
+                out var releaseTypeReason))
+        {
+            return new TrackIdentityCanonicalizeResult.Failure(releaseTypeReason);
+        }
+
+        return new TrackIdentityCanonicalizeResult.Success(
+            new CanonicalTrackIdentityParts(
+                canonicalArtist!,
+                canonicalTrack!,
+                canonicalAlbum,
+                releaseDate,
+                canonicalReleaseType));
     }
 
-    private static string? CanonicalizeOptional(string? value, int maxLength, string paramName)
+    public static string CreateBaseComponent(CanonicalTrackIdentityParts parts) =>
+        Convert.ToHexStringLower(Blake2b(Encode(parts.ArtistName, parts.TrackName), hashSizeBits: 128));
+
+    public static TrackVector CreateVector(CanonicalTrackIdentityParts parts) =>
+        new(
+            CreateDiscriminator(parts.AlbumName),
+            parts.ReleaseDate?.DayNumber,
+            CreateDiscriminator(parts.ReleaseType));
+
+    public static uint CreateDiscriminator(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            return null;
+            return 0;
         }
 
-        var canonical = MusicIdentityText.NormalizeFreeText(value);
+        var hash = Blake2b(Encoding.UTF8.GetBytes(value), hashSizeBits: 32);
+        return BinaryPrimitives.ReadUInt32BigEndian(hash);
+    }
+
+    private static bool TryCanonicalizeRequired(
+        string value,
+        int maxLength,
+        out string? canonical,
+        out string reason)
+    {
+        canonical = MusicIdentityText.NormalizeFreeText(value);
         if (string.IsNullOrWhiteSpace(canonical))
         {
-            return null;
+            reason = "Identity value is required.";
+            return false;
         }
 
         if (canonical.Length > maxLength)
         {
-            throw new ArgumentOutOfRangeException(paramName, $"Identity value exceeds max length {maxLength}.");
+            reason = $"Identity value exceeds max length {maxLength}.";
+            canonical = null;
+            return false;
         }
 
-        return canonical;
+        reason = string.Empty;
+        return true;
+    }
+
+    private static bool TryCanonicalizeOptional(
+        string? value,
+        int maxLength,
+        out string? canonical,
+        out string reason)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            canonical = null;
+            reason = string.Empty;
+            return true;
+        }
+
+        canonical = MusicIdentityText.NormalizeFreeText(value);
+        if (string.IsNullOrWhiteSpace(canonical))
+        {
+            canonical = null;
+            reason = string.Empty;
+            return true;
+        }
+
+        if (canonical.Length > maxLength)
+        {
+            canonical = null;
+            reason = $"Identity value exceeds max length {maxLength}.";
+            return false;
+        }
+
+        reason = string.Empty;
+        return true;
     }
 
     private static byte[] Encode(params string?[] parts)
@@ -89,7 +150,4 @@ public static class TrackIdentityMath
     {
         return global::Blake2Fast.Blake2b.ComputeHash(hashSizeBits / 8, bytes).ToArray();
     }
-
-    private static string ToHex(ReadOnlySpan<byte> bytes) =>
-        Convert.ToHexString(bytes).ToLowerInvariant();
 }

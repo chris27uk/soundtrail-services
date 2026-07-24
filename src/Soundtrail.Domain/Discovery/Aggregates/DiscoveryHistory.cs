@@ -208,7 +208,9 @@ public sealed class DiscoveryHistory
                 DiscoverPlaylistTracks(
                     playlistId,
                     playlistTrackReferences.Values
-                        .Select(trackReference => TrackId.Create(trackReference.ArtistName.Value, trackReference.TrackTitle))
+                        .Select(trackReference => TrackId.TryCreate(trackReference.ArtistName.Value, trackReference.TrackTitle))
+                        .OfType<TrackIdCreateResult.Success>()
+                        .Select(static result => result.Value)
                         .ToArray(),
                     result.CompletedAt);
             },
