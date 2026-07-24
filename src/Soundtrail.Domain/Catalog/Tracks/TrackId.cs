@@ -53,24 +53,30 @@ public readonly record struct TrackId
         return new TrackId(normalized, baseComponent, vector);
     }
 
-    public static TrackId Create(
+    public static TrackIdCreateResult TryCreate(
         string artistName,
         string trackName,
         string? albumName = null,
         DateOnly? releaseDate = null,
         string? releaseType = null)
     {
-        var canonical = TrackIdentityMath.Canonicalize(
+        var canonical = TrackIdentityMath.TryCanonicalize(
             artistName,
             trackName,
             albumName,
             releaseDate,
             releaseType);
 
-        return Create(canonical);
+        if (canonical is TrackIdentityCanonicalizeResult.Failure failure)
+        {
+            return new TrackIdCreateResult.Failure(failure.Reason);
+        }
+
+        return new TrackIdCreateResult.Success(
+            CreateFromCanonical(((TrackIdentityCanonicalizeResult.Success)canonical).Value));
     }
 
-    public static TrackId Create(CanonicalTrackIdentityParts parts)
+    private static TrackId CreateFromCanonical(CanonicalTrackIdentityParts parts)
     {
         var baseComponent = TrackIdentityMath.CreateBaseComponent(parts);
         var vector = TrackIdentityMath.CreateVector(parts);

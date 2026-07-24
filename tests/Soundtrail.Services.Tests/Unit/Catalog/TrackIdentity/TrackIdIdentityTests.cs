@@ -7,13 +7,13 @@ public sealed class TrackIdIdentityTests
     [Fact]
     public void Given_The_Same_Canonical_Metadata_When_Creating_A_Track_Id_Then_The_Result_Is_Deterministic()
     {
-        var first = TrackId.Create(
+        var first = MustCreate(
             "Radiohead",
             "Karma Police",
             "OK Computer",
             new DateOnly(1997, 5, 21),
             "studio");
-        var second = TrackId.Create(
+        var second = MustCreate(
             "  radiohead  ",
             "karma police",
             "ok computer",
@@ -26,7 +26,7 @@ public sealed class TrackIdIdentityTests
     [Fact]
     public void Given_A_Derived_Track_Id_When_Creating_It_Then_The_Base_Component_Is_Present()
     {
-        var trackId = TrackId.Create(
+        var trackId = MustCreate(
             "Radiohead",
             "Karma Police",
             "OK Computer",
@@ -39,7 +39,7 @@ public sealed class TrackIdIdentityTests
     [Fact]
     public void Given_A_Derived_Track_Id_When_Creating_It_Then_The_Vector_Contains_The_Release_Date()
     {
-        var trackId = TrackId.Create(
+        var trackId = MustCreate(
             "Radiohead",
             "Karma Police",
             "OK Computer",
@@ -52,7 +52,7 @@ public sealed class TrackIdIdentityTests
     [Fact]
     public void Given_A_Derived_Track_Id_When_Creating_It_Then_The_Vector_Contains_The_Release_Type()
     {
-        var trackId = TrackId.Create(
+        var trackId = MustCreate(
             "Radiohead",
             "Karma Police",
             "OK Computer",
@@ -65,7 +65,7 @@ public sealed class TrackIdIdentityTests
     [Fact]
     public void Given_A_Derived_Track_Id_When_Creating_It_Then_It_Can_Be_Round_Tripped_From_Its_Value()
     {
-        var trackId = TrackId.Create(
+        var trackId = MustCreate(
             "Radiohead",
             "Karma Police",
             "OK Computer",
@@ -78,13 +78,13 @@ public sealed class TrackIdIdentityTests
     [Fact]
     public void Given_The_Same_Base_Metadata_With_Different_Release_Dates_When_Creating_Track_Ids_Then_The_Exact_Ids_Differ()
     {
-        var older = TrackId.Create(
+        var older = MustCreate(
             "Radiohead",
             "Karma Police",
             "OK Computer",
             new DateOnly(1997, 5, 21),
             "studio");
-        var newer = TrackId.Create(
+        var newer = MustCreate(
             "Radiohead",
             "Karma Police",
             "OK Computer",
@@ -97,13 +97,13 @@ public sealed class TrackIdIdentityTests
     [Fact]
     public void Given_The_Same_Base_Metadata_With_Different_Release_Dates_When_Creating_Track_Ids_Then_The_Base_Component_Matches()
     {
-        var older = TrackId.Create(
+        var older = MustCreate(
             "Radiohead",
             "Karma Police",
             "OK Computer",
             new DateOnly(1997, 5, 21),
             "studio");
-        var newer = TrackId.Create(
+        var newer = MustCreate(
             "Radiohead",
             "Karma Police",
             "OK Computer",
@@ -116,13 +116,13 @@ public sealed class TrackIdIdentityTests
     [Fact]
     public void Given_The_Same_Artist_And_Track_With_Different_Albums_When_Creating_Track_Ids_Then_The_Base_Component_Matches()
     {
-        var albumOne = TrackId.Create(
+        var albumOne = MustCreate(
             "Radiohead",
             "Karma Police",
             "OK Computer",
             new DateOnly(1997, 5, 21),
             "studio");
-        var albumTwo = TrackId.Create(
+        var albumTwo = MustCreate(
             "Radiohead",
             "Karma Police",
             "Greatest Hits",
@@ -135,13 +135,13 @@ public sealed class TrackIdIdentityTests
     [Fact]
     public void Given_The_Same_Base_Metadata_With_Different_Release_Dates_When_Creating_Track_Ids_Then_They_Share_The_Same_Base_Family()
     {
-        var older = TrackId.Create(
+        var older = MustCreate(
             "Radiohead",
             "Karma Police",
             "OK Computer",
             new DateOnly(1997, 5, 21),
             "studio");
-        var newer = TrackId.Create(
+        var newer = MustCreate(
             "Radiohead",
             "Karma Police",
             "OK Computer",
@@ -154,13 +154,13 @@ public sealed class TrackIdIdentityTests
     [Fact]
     public void Given_The_Same_Base_Metadata_With_Different_Release_Dates_When_Creating_Track_Ids_Then_The_Vector_Differs()
     {
-        var older = TrackId.Create(
+        var older = MustCreate(
             "Radiohead",
             "Karma Police",
             "OK Computer",
             new DateOnly(1997, 5, 21),
             "studio");
-        var newer = TrackId.Create(
+        var newer = MustCreate(
             "Radiohead",
             "Karma Police",
             "OK Computer",
@@ -209,7 +209,7 @@ public sealed class TrackIdIdentityTests
     [Fact]
     public void Given_A_Derived_Track_Id_When_Creating_It_Then_The_Value_Uses_Fixed_Width_Hex_Encoding()
     {
-        var trackId = TrackId.Create(
+        var trackId = MustCreate(
             "Radiohead",
             "Karma Police",
             "OK Computer",
@@ -222,7 +222,7 @@ public sealed class TrackIdIdentityTests
     [Fact]
     public void Given_A_Derived_Track_Id_When_Projecting_For_Indexes_Then_The_Base_Is_Exposed_As_Two_Unsigned_Parts()
     {
-        var trackId = TrackId.Create(
+        var trackId = MustCreate(
             "Radiohead",
             "Karma Police",
             "OK Computer",
@@ -238,7 +238,7 @@ public sealed class TrackIdIdentityTests
     [Fact]
     public void Given_A_Derived_Track_Id_When_Projecting_For_Indexes_Then_The_Vector_Dimensions_Are_Exposed()
     {
-        var trackId = TrackId.Create(
+        var trackId = MustCreate(
             "Radiohead",
             "Karma Police",
             "OK Computer",
@@ -251,4 +251,25 @@ public sealed class TrackIdIdentityTests
         projection.ReleaseDateOrdinal.Should().Be((uint)new DateOnly(1997, 5, 21).DayNumber);
         projection.ReleaseTypeDiscriminator.Should().NotBe(0U);
     }
+
+    [Fact]
+    public void Given_A_Malformed_Track_Title_When_Trying_To_Create_A_Track_Id_Then_A_Failure_Result_Is_Returned()
+    {
+        var result = TrackId.TryCreate("Radiohead", "(_");
+
+        result.Should().BeOfType<TrackIdCreateResult.Failure>();
+    }
+
+    private static TrackId MustCreate(
+        string artistName,
+        string trackName,
+        string? albumName = null,
+        DateOnly? releaseDate = null,
+        string? releaseType = null) =>
+        TrackId.TryCreate(artistName, trackName, albumName, releaseDate, releaseType) switch
+        {
+            TrackIdCreateResult.Success success => success.Value,
+            TrackIdCreateResult.Failure failure => throw new InvalidOperationException(failure.Reason),
+            _ => throw new InvalidOperationException("Unexpected TrackId creation result.")
+        };
 }

@@ -140,7 +140,7 @@ internal sealed class LookupMusicbrainzBrowseUnitTestEnvironment
     {
         var artistId = ArtistId.From("artist-mb-1");
         var albumId = AlbumId.From(artistId.Value, "release-mb-1");
-        var trackId = TrackId.Create("Test Artist", "Album Track 1", "Rare Release", new DateOnly(2026, 1, 2));
+        var trackId = TestTrackIds.Create("Album Track 1");
         var track = new Track(trackId)
         {
             Title = "Album Track 1",

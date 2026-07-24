@@ -41,9 +41,11 @@ internal static class LookupCompletedEventRecorder
                 history.DiscoverPlaylistTracks(
                     playlistId,
                     playlistTrackReferences.Values
-                        .Select(trackReference => Soundtrail.Domain.Catalog.Tracks.TrackId.Create(
+                        .Select(trackReference => Soundtrail.Domain.Catalog.Tracks.TrackId.TryCreate(
                             trackReference.ArtistName.Value,
                             trackReference.TrackTitle))
+                        .OfType<Soundtrail.Domain.Catalog.Tracks.TrackIdCreateResult.Success>()
+                        .Select(static result => result.Value)
                         .ToArray(),
                     result.CompletedAt);
             },

@@ -134,7 +134,13 @@ public sealed class MusicbrainzCatalogSearchPort(
                 var artistName = credit?.Name ?? string.Empty;
                 var artistId = ArtistId.From(credit?.Artist?.Id ?? FallbackArtistId(artistName));
                 var releaseDate = ParseDate(recording.FirstReleaseDate);
-                var trackId = TrackId.Create(artistName, recording.Title!, releaseDate: releaseDate);
+                var trackIdResult = TrackId.TryCreate(artistName, recording.Title!, releaseDate: releaseDate);
+                if (trackIdResult is TrackIdCreateResult.Failure)
+                {
+                    return null;
+                }
+
+                var trackId = ((TrackIdCreateResult.Success)trackIdResult).Value;
                 var track = new Track(trackId)
                 {
                     Title = recording.Title!,
@@ -150,6 +156,8 @@ public sealed class MusicbrainzCatalogSearchPort(
                     artistId,
                     new CatalogItem.MusicTrack(track));
             })
+            .Where(static entry => entry is not null)
+            .Select(static entry => entry!)
             .ToArray();
     }
 
