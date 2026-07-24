@@ -1,6 +1,8 @@
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Catalog.Tracks;
+using Soundtrail.Domain.Common;
+using Soundtrail.Domain.Discovery;
 
 namespace Soundtrail.Services.Tests.Unit.GetTracksForPlaylist;
 
@@ -158,7 +160,7 @@ public sealed class PlaylistTracksExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Should().BeEmpty();
+        environment.CommandBus.Commands.Should().ContainSingle().Which.Should().BeOfType<RequestKnownMusicDataMessage>();
     }
 
     [Fact]
@@ -169,7 +171,20 @@ public sealed class PlaylistTracksExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Should().BeEmpty();
+        environment.CommandBus.Commands
+            .Single()
+            .Should()
+            .BeEquivalentTo(
+                new RequestKnownMusicDataMessage(
+                    new CatalogItemOperation.ChildTracksForPlaylist(playlistId),
+                    LookupPriorityBand.High,
+                    100,
+                    0,
+                    environment.Clock.UtcNow)
+                {
+                    CreatedAt = environment.Clock.UtcNow
+                },
+                options => options.Excluding(x => x.Id).Excluding(x => x.CorrelationId));
     }
 
     [Fact]
@@ -179,7 +194,7 @@ public sealed class PlaylistTracksExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Should().BeEmpty();
+        ((RequestKnownMusicDataMessage)environment.CommandBus.Commands.Single()).Priority.Should().Be(LookupPriorityBand.High);
     }
 
     [Fact]
@@ -189,7 +204,7 @@ public sealed class PlaylistTracksExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Should().BeEmpty();
+        ((RequestKnownMusicDataMessage)environment.CommandBus.Commands.Single()).TrustLevel.Should().Be(100);
     }
 
     [Fact]
@@ -199,7 +214,7 @@ public sealed class PlaylistTracksExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Should().BeEmpty();
+        ((RequestKnownMusicDataMessage)environment.CommandBus.Commands.Single()).RiskScore.Should().Be(0);
     }
 
     [Fact]
@@ -209,6 +224,8 @@ public sealed class PlaylistTracksExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Should().BeEmpty();
+        var command = (RequestKnownMusicDataMessage)environment.CommandBus.Commands.Single();
+        command.RequestedAt.Should().Be(environment.Clock.UtcNow);
+        command.CreatedAt.Should().Be(environment.Clock.UtcNow);
     }
 }

@@ -1,0 +1,13 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/ww/"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "text/html; charset=UTF-8"
+    },
+    "body": "<html><body><table><tbody><tr><td>1</td><td>NEW</td><td>Aurora Lane - Midnight Signals</td></tr><tr><td>2</td><td>+3</td><td>Paper Tigers - Static Hearts</td></tr><tr><td>3</td><td>-1</td><td>Neon Harbour - Glass Cities</td></tr><tr><td>4</td><td>NEW</td><td>Saturn Kids - Golden Echo</td></tr></tbody></table></body></html>"
+  }
+}

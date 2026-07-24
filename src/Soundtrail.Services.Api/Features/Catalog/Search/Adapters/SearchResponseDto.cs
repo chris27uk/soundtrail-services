@@ -1,3 +1,5 @@
+using Soundtrail.Services.Api.Features.Catalog.Shared.Adapters;
+
 namespace Soundtrail.Services.Api.Features.Catalog.Search.Adapters;
 
 public sealed record SearchResponseDto(
@@ -13,11 +15,3 @@ public sealed record SearchResultResponseDto(
     string? ArtistName,
     string? AlbumTitle,
     string? ArtworkUrl);
-
-public sealed record DiscoveryFeedbackResponseDto(
-    string Status,
-    string Priority,
-    DateTimeOffset? NextEligibleAtUtc,
-    DateTimeOffset? EarliestExpectedCompletionAtUtc,
-    string Reason,
-    DateTimeOffset UpdatedAtUtc);

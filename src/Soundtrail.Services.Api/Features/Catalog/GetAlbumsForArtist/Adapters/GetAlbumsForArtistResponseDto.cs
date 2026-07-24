@@ -1,9 +1,12 @@
+using Soundtrail.Services.Api.Features.Catalog.Shared.Adapters;
+
 namespace Soundtrail.Services.Api.Features.Catalog.GetAlbumsForArtist.Adapters;
 
 public sealed record GetAlbumsForArtistResponseDto(
     string ArtistId,
     string ArtistName,
-    GetAlbumsForArtistAlbumResponseDto[] Albums);
+    GetAlbumsForArtistAlbumResponseDto[] Albums,
+    DiscoveryFeedbackResponseDto? Discovery);
 
 public sealed record GetAlbumsForArtistAlbumResponseDto(
     string AlbumId,

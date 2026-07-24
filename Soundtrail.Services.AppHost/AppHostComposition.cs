@@ -148,6 +148,7 @@ public static class AppHostComposition
         if (providerStubs is not null)
         {
             worker = worker
+                .WithEnvironment("Kworb__BaseUrl", providerStubs.GetEndpoint("http"))
                 .WithEnvironment("MusicBrainz__BaseUrl", providerStubs.GetEndpoint("http"))
                 .WithEnvironment("Odesli__BaseUrl", providerStubs.GetEndpoint("http"));
         }

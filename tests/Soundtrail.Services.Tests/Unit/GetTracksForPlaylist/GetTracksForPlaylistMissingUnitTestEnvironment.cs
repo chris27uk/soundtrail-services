@@ -37,7 +37,7 @@ internal sealed class GetTracksForPlaylistMissingUnitTestEnvironment
             new CommandBusFake(),
             new ClockPortFake(new DateTimeOffset(2024, 6, 7, 8, 9, 10, TimeSpan.Zero)));
 
-    public GetTracksForPlaylistHandler CreateSubjectUnderTest() => new(Port);
+    public GetTracksForPlaylistHandler CreateSubjectUnderTest() => new(Port, CommandBus, Clock);
 
     public GetTracksForPlaylistRequest CreateRequest() => new(PlaylistId);
 

@@ -1,3 +1,5 @@
+using Soundtrail.Services.Api.Features.Catalog.Shared.Adapters;
+
 namespace Soundtrail.Services.Api.Features.Catalog.GetTrack.Adapters;
 
 public sealed record GetTrackResponseDto(
@@ -9,4 +11,5 @@ public sealed record GetTrackResponseDto(
     int? DurationMs,
     string? Isrc,
     DateOnly? ReleaseDate,
-    string? ArtworkUrl);
+    string? ArtworkUrl,
+    DiscoveryFeedbackResponseDto? Discovery);

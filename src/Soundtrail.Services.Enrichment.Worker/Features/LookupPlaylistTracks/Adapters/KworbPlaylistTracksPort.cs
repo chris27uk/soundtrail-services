@@ -11,6 +11,12 @@ namespace Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks.Ad
 public sealed partial class KworbPlaylistTracksPort(HttpClient httpClient) : IReadPlaylistTracksByProviderPort
 {
     public const string HttpClientName = "KworbPlaylistTracks";
+    private static readonly string[] SupportedPlaylistIds =
+    [
+        PlaylistId.FromPlaylistName("WorldwideSongChart").Value,
+        PlaylistId.FromPlaylistName("WorldTop100").Value,
+        PlaylistId.FromPlaylistName("world_top_100").Value
+    ];
 
     [GeneratedRegex(@"<tr\b[^>]*>(.*?)</tr>", RegexOptions.IgnoreCase | RegexOptions.Singleline)]
     private static partial Regex TableRowPattern();
@@ -26,7 +32,7 @@ public sealed partial class KworbPlaylistTracksPort(HttpClient httpClient) : IRe
         ProviderName provider,
         CancellationToken cancellationToken)
     {
-        if (playlistId.Value != PlaylistId.FromPlaylistName("WorldwideSongChart").Value || provider != ProviderName.Spotify)
+        if (!SupportedPlaylistIds.Contains(playlistId.Value, StringComparer.Ordinal) || provider != ProviderName.Spotify)
         {
             return [];
         }
