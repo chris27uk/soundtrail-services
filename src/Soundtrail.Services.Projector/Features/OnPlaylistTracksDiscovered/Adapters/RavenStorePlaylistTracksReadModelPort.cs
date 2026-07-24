@@ -59,19 +59,22 @@ public sealed class RavenStorePlaylistTracksReadModelPort(IDocumentStore documen
             .Select(TrackId.From)
             .ToArray();
         var requestedBases = playlistTrackIds
-            .Select(static trackId => trackId.BaseComponent)
-            .Distinct(StringComparer.Ordinal)
-            .ToHashSet(StringComparer.Ordinal);
+            .Select(TrackIdIndexProjection.From)
+            .DistinctBy(static projection => (projection.BaseHigh, projection.BaseLow))
+            .ToArray();
         var siblingTracks = await session.Query<CatalogTrackRecordDto>()
             .ToListAsync(cancellationToken);
         var tracksByBase = siblingTracks
-            .Select(track => (Track: track, TrackId: TrackId.From(track.TrackId)))
-            .Where(entry => requestedBases.Contains(entry.TrackId.BaseComponent))
-            .GroupBy(entry => entry.TrackId.BaseComponent, StringComparer.Ordinal)
+            .Select(track =>
+            {
+                var trackId = TrackId.From(track.TrackId);
+                return (Track: track, Projection: TrackIdIndexProjection.From(trackId));
+            })
+            .Where(entry => requestedBases.Any(requested => requested.SharesBaseWith(entry.Projection)))
+            .GroupBy(entry => (entry.Projection.BaseHigh, entry.Projection.BaseLow))
             .ToDictionary(
                 static group => group.Key,
-                static group => group.Select(static entry => entry.Track).ToArray(),
-                StringComparer.Ordinal);
+                static group => group.Select(static entry => entry.Track).ToArray());
 
         return new CatalogPlaylistTracksRecordDto
         {
@@ -101,20 +104,30 @@ public sealed class RavenStorePlaylistTracksReadModelPort(IDocumentStore documen
     }
 
     private static CatalogTrackRecordDto? SelectPreferredTrack(
-        IReadOnlyDictionary<string, CatalogTrackRecordDto[]> tracksByBase,
+        IReadOnlyDictionary<(ulong BaseHigh, ulong BaseLow), CatalogTrackRecordDto[]> tracksByBase,
         TrackId requestedTrackId)
     {
-        if (!tracksByBase.TryGetValue(requestedTrackId.BaseComponent, out var candidates))
+        var requestedProjection = TrackIdIndexProjection.From(requestedTrackId);
+        if (!tracksByBase.TryGetValue((requestedProjection.BaseHigh, requestedProjection.BaseLow), out var candidates))
         {
             return null;
         }
 
         return candidates.FirstOrDefault(track => string.Equals(track.TrackId, requestedTrackId.Value, StringComparison.Ordinal))
-            ?? candidates.OrderByDescending(static track => track.UpdatedAt).FirstOrDefault();
+            ?? candidates
+                .Select(track => (Track: track, Projection: TrackIdIndexProjection.From(TrackId.From(track.TrackId))))
+                .OrderBy(entry => entry.Projection.GetDistanceTo(requestedProjection))
+                .ThenByDescending(static entry => entry.Track.UpdatedAt)
+                .Select(static entry => entry.Track)
+                .FirstOrDefault();
     }
 
-    private static bool ContainsSameBaseTrack(CatalogPlaylistTracksRecordDto record, TrackId trackId) =>
-        record.TrackIds
+    private static bool ContainsSameBaseTrack(CatalogPlaylistTracksRecordDto record, TrackId trackId)
+    {
+        var requestedProjection = TrackIdIndexProjection.From(trackId);
+        return record.TrackIds
             .Select(TrackId.From)
-            .Any(existingTrackId => existingTrackId.SharesBaseWith(trackId));
+            .Select(TrackIdIndexProjection.From)
+            .Any(existingProjection => existingProjection.SharesBaseWith(requestedProjection));
+    }
 }

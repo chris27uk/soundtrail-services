@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Text;
 using Blake2Fast;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Tracks.Parsing;
 
 namespace Soundtrail.Domain.Catalog.Tracks;
 
@@ -19,10 +20,22 @@ public static class TrackIdentityMath
         DateOnly? releaseDate,
         string? releaseType)
     {
+        var parsedTitle = SongTitleParser.Parse(trackName);
+        if (parsedTitle is SongTitleParseResult.Failure failure)
+        {
+            throw new ArgumentException($"Track title could not be parsed: {failure.Reason}.", nameof(trackName));
+        }
+
+        var title = ((SongTitleParseResult.Success)parsedTitle).Value;
         var canonicalArtist = CanonicalizeRequired(artistName, MaxArtistLength, nameof(artistName));
-        var canonicalTrack = CanonicalizeRequired(trackName, MaxTrackLength, nameof(trackName));
+        var canonicalTrack = CanonicalizeRequired(title.CanonicalTrackTitle.Value, MaxTrackLength, nameof(trackName));
         var canonicalAlbum = CanonicalizeOptional(albumName, MaxAlbumLength, nameof(albumName));
-        var canonicalReleaseType = CanonicalizeOptional(releaseType, MaxReleaseTypeLength, nameof(releaseType));
+        var canonicalReleaseType = CanonicalizeOptional(
+            string.IsNullOrWhiteSpace(releaseType)
+                ? title.CanonicalReleaseType?.Value
+                : releaseType,
+            MaxReleaseTypeLength,
+            nameof(releaseType));
 
         return new CanonicalTrackIdentityParts(
             canonicalArtist,
