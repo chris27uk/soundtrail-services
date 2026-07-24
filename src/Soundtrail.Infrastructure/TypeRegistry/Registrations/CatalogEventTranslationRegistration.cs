@@ -58,9 +58,7 @@ public sealed class CatalogEventTranslationRegistration : ITypeTranslationRegist
                 @event.Track.TrackId.Value,
                 @event.Hierarchy.ArtistId?.Value,
                 @event.Hierarchy.AlbumId?.StableValue,
-                @event.Track.TrackId.BaseKeyHigh,
-                @event.Track.TrackId.BaseKeyLow,
-                @event.Track.TrackId.SpecificKey,
+                @event.Track.TrackId.Value,
                 @event.Track.Title,
                 @event.Track.ArtistName,
                 @event.Track.AlbumTitle,
@@ -73,11 +71,7 @@ public sealed class CatalogEventTranslationRegistration : ITypeTranslationRegist
                 @event.ObservedAt),
             toDomainObject: dto =>
             {
-                var track = new Track(
-                    TrackId.FromKeyParts(
-                        dto.TrackIdBaseKeyHigh ?? throw new InvalidOperationException("Track base key high is required."),
-                        dto.TrackIdBaseKeyLow ?? throw new InvalidOperationException("Track base key low is required."),
-                        dto.TrackIdSpecificKey ?? throw new InvalidOperationException("Track specific key is required.")))
+                var track = new Track(TrackId.From(dto.TrackId))
                 {
                     Title = dto.Title,
                     ArtistName = dto.Artist,
@@ -111,7 +105,9 @@ public sealed class CatalogEventTranslationRegistration : ITypeTranslationRegist
                 @event.SourceProvider.Value,
                 @event.ObservedAt),
             toDomainObject: dto => new StreamingLocationDiscovered(
-                string.IsNullOrWhiteSpace(dto.MusicCatalogId) ? null : new CatalogItemId.Track(TrackId.From(dto.MusicCatalogId)),
+                string.IsNullOrWhiteSpace(dto.MusicCatalogId)
+                    ? throw new InvalidOperationException("Music catalog id is required.")
+                    : new CatalogItemId.Track(TrackId.From(dto.MusicCatalogId)),
                 new CatalogTrackHierarchy(
                     string.IsNullOrWhiteSpace(dto.ArtistId) ? null : ArtistId.From(dto.ArtistId),
                     null),

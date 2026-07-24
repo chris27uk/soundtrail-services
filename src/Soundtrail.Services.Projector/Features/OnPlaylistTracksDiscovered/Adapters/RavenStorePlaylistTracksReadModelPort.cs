@@ -23,21 +23,18 @@ public sealed class RavenStorePlaylistTracksReadModelPort(IDocumentStore documen
     {
         using var session = documentStore.OpenAsyncSession();
         var playlistRecords = await session.Query<CatalogPlaylistTracksRecordDto>()
-            .Where(x => x.TrackBaseKeyHighs.Contains(trackId.BaseKeyHigh) && x.TrackBaseKeyLows.Contains(trackId.BaseKeyLow))
             .ToListAsync(cancellationToken);
+        var affectedRecords = playlistRecords
+            .Where(record => ContainsSameBaseTrack(record, trackId))
+            .ToArray();
 
-        if (playlistRecords.Count == 0)
+        if (affectedRecords.Length == 0)
         {
             return;
         }
 
-        foreach (var existingRecord in playlistRecords)
+        foreach (var existingRecord in affectedRecords)
         {
-            if (!ContainsBaseKey(existingRecord, trackId))
-            {
-                continue;
-            }
-
             var rebuilt = await BuildRecordAsync(
                 session,
                 existingRecord.PlaylistId,
@@ -61,41 +58,33 @@ public sealed class RavenStorePlaylistTracksReadModelPort(IDocumentStore documen
         var playlistTrackIds = trackIds
             .Select(TrackId.From)
             .ToArray();
-        var tracksByBaseKey = new Dictionary<(string High, string Low), CatalogTrackRecordDto>();
-
-        foreach (var group in playlistTrackIds.GroupBy(static x => (x.BaseKeyHigh, x.BaseKeyLow)))
-        {
-            var sample = group.First();
-            var siblingTracks = await session.Query<CatalogTrackRecordDto>()
-                .Where(x => x.TrackIdBaseKeyHigh == sample.BaseKeyHigh && x.TrackIdBaseKeyLow == sample.BaseKeyLow)
-                .ToListAsync(cancellationToken);
-
-            var preferredTrack = siblingTracks.FirstOrDefault(x => group.Any(entry => entry.Value == x.TrackId))
-                ?? siblingTracks.OrderByDescending(static x => x.UpdatedAt).FirstOrDefault();
-
-            if (preferredTrack is not null)
-            {
-                tracksByBaseKey[(sample.BaseKeyHigh, sample.BaseKeyLow)] = preferredTrack;
-            }
-        }
+        var requestedBases = playlistTrackIds
+            .Select(static trackId => trackId.BaseComponent)
+            .Distinct(StringComparer.Ordinal)
+            .ToHashSet(StringComparer.Ordinal);
+        var siblingTracks = await session.Query<CatalogTrackRecordDto>()
+            .ToListAsync(cancellationToken);
+        var tracksByBase = siblingTracks
+            .Select(track => (Track: track, TrackId: TrackId.From(track.TrackId)))
+            .Where(entry => requestedBases.Contains(entry.TrackId.BaseComponent))
+            .GroupBy(entry => entry.TrackId.BaseComponent, StringComparer.Ordinal)
+            .ToDictionary(
+                static group => group.Key,
+                static group => group.Select(static entry => entry.Track).ToArray(),
+                StringComparer.Ordinal);
 
         return new CatalogPlaylistTracksRecordDto
         {
             Id = CatalogPlaylistTracksRecordDto.GetDocumentId(playlistId),
             PlaylistId = playlistId,
             TrackIds = trackIds.ToArray(),
-            TrackBaseKeyHighs = playlistTrackIds.Select(static x => x.BaseKeyHigh).ToArray(),
-            TrackBaseKeyLows = playlistTrackIds.Select(static x => x.BaseKeyLow).ToArray(),
             Tracks = trackIds
                 .Select(TrackId.From)
-                .Select(trackId => tracksByBaseKey.GetValueOrDefault((trackId.BaseKeyHigh, trackId.BaseKeyLow)))
+                .Select(trackId => SelectPreferredTrack(tracksByBase, trackId))
                 .Where(static track => track is not null)
                 .Select(track => new CatalogPlaylistTrackRecordDto
                 {
                     TrackId = track!.TrackId,
-                    TrackIdBaseKeyHigh = track.TrackIdBaseKeyHigh,
-                    TrackIdBaseKeyLow = track.TrackIdBaseKeyLow,
-                    TrackIdSpecificKey = track.TrackIdSpecificKey,
                     MusicCatalogId = track.MusicCatalogId,
                     Title = track.Title,
                     ArtistName = track.ArtistName,
@@ -111,17 +100,21 @@ public sealed class RavenStorePlaylistTracksReadModelPort(IDocumentStore documen
         };
     }
 
-    private static bool ContainsBaseKey(CatalogPlaylistTracksRecordDto record, TrackId trackId)
+    private static CatalogTrackRecordDto? SelectPreferredTrack(
+        IReadOnlyDictionary<string, CatalogTrackRecordDto[]> tracksByBase,
+        TrackId requestedTrackId)
     {
-        for (var index = 0; index < record.TrackBaseKeyHighs.Length && index < record.TrackBaseKeyLows.Length; index++)
+        if (!tracksByBase.TryGetValue(requestedTrackId.BaseComponent, out var candidates))
         {
-            if (record.TrackBaseKeyHighs[index] == trackId.BaseKeyHigh
-                && record.TrackBaseKeyLows[index] == trackId.BaseKeyLow)
-            {
-                return true;
-            }
+            return null;
         }
 
-        return false;
+        return candidates.FirstOrDefault(track => string.Equals(track.TrackId, requestedTrackId.Value, StringComparison.Ordinal))
+            ?? candidates.OrderByDescending(static track => track.UpdatedAt).FirstOrDefault();
     }
+
+    private static bool ContainsSameBaseTrack(CatalogPlaylistTracksRecordDto record, TrackId trackId) =>
+        record.TrackIds
+            .Select(TrackId.From)
+            .Any(existingTrackId => existingTrackId.SharesBaseWith(trackId));
 }

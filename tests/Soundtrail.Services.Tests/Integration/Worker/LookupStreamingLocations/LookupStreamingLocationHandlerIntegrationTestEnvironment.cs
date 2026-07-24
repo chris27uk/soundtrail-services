@@ -146,9 +146,6 @@ internal sealed class LookupStreamingLocationHandlerIntegrationTestEnvironment :
             {
                 Id = trackDocumentId,
                 TrackId = trackId.Value,
-                TrackIdBaseKeyHigh = trackId.BaseKeyHigh,
-                TrackIdBaseKeyLow = trackId.BaseKeyLow,
-                TrackIdSpecificKey = trackId.SpecificKey,
                 MusicCatalogId = trackId.Value,
                 Title = title,
                 ArtistName = artistName,
@@ -166,9 +163,6 @@ internal sealed class LookupStreamingLocationHandlerIntegrationTestEnvironment :
                     new CatalogArtistTrackRecordDto
                     {
                         TrackId = trackId.Value,
-                        TrackIdBaseKeyHigh = trackId.BaseKeyHigh,
-                        TrackIdBaseKeyLow = trackId.BaseKeyLow,
-                        TrackIdSpecificKey = trackId.SpecificKey,
                         MusicCatalogId = trackId.Value,
                         Title = title,
                         ArtistName = artistName,

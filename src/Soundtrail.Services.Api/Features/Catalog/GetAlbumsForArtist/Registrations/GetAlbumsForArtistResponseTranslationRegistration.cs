@@ -5,6 +5,8 @@ using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Services.Api.Features.Catalog.GetAlbumsForArtist.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetAlbumsForArtist.Contract;
+using Soundtrail.Services.Api.Features.Catalog.Shared.Adapters;
+using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
 
 namespace Soundtrail.Services.Api.Features.Catalog.GetAlbumsForArtist.Registrations;
 
@@ -24,7 +26,8 @@ public sealed class GetAlbumsForArtistResponseTranslationRegistration : ITypeTra
                                 album.AlbumTitle,
                                 album.ReleaseDate,
                                 album.ArtworkUrl))
-                        .ToArray()),
+                        .ToArray(),
+                    ToDiscoveryDto(response.Discovery)),
             toDomainObject: dto =>
                 new GetAlbumsForArtistResponse(
                     ArtistId.From(dto.ArtistId),
@@ -36,7 +39,8 @@ public sealed class GetAlbumsForArtistResponseTranslationRegistration : ITypeTra
                                 album.AlbumTitle,
                                 album.ReleaseDate,
                                 album.ArtworkUrl))
-                        .ToArray()));
+                        .ToArray(),
+                    ToDiscovery(dto.Discovery)));
 
         registry.Register<CatalogArtistAlbumsRecordDto, GetAlbumsForArtistResponse>(
             translate: record =>
@@ -47,9 +51,32 @@ public sealed class GetAlbumsForArtistResponseTranslationRegistration : ITypeTra
                             album => new GetAlbumsForArtistAlbumResponse(
                                 AlbumId.From(record.ArtistId, album.AlbumId),
                                 new CatalogItemId.Album(AlbumId.From(record.ArtistId, album.AlbumId)),
-                                album.AlbumTitle,
-                                album.ReleaseDate,
-                                album.ArtworkUrl))
-                        .ToArray()));
+                            album.AlbumTitle,
+                            album.ReleaseDate,
+                            album.ArtworkUrl))
+                        .ToArray(),
+                    null));
     }
+
+    private static DiscoveryFeedbackResponseDto? ToDiscoveryDto(DiscoveryFeedbackResponse? discovery) =>
+        discovery is null
+            ? null
+            : new DiscoveryFeedbackResponseDto(
+                discovery.Status,
+                discovery.Priority.ToString(),
+                discovery.NextEligibleAt,
+                discovery.EarliestExpectedCompletionAt,
+                discovery.Reason,
+                discovery.UpdatedAtUtc);
+
+    private static DiscoveryFeedbackResponse? ToDiscovery(DiscoveryFeedbackResponseDto? discovery) =>
+        discovery is null
+            ? null
+            : new DiscoveryFeedbackResponse(
+                discovery.Status,
+                Enum.Parse<Soundtrail.Domain.Common.LookupPriorityBand>(discovery.Priority, true),
+                discovery.NextEligibleAtUtc,
+                discovery.EarliestExpectedCompletionAtUtc,
+                discovery.Reason,
+                discovery.UpdatedAtUtc);
 }

@@ -58,7 +58,8 @@ internal sealed class GetArtistRouteTestEnvironment : IDisposable
                 response.ArtistId.Value,
                 response.ArtistName.Value,
                 response.Description,
-                response.ImageUrl);
+                response.ImageUrl,
+                null);
         }
 
         public TDomain ToDomainObject<TDomain>(object dto) where TDomain : class => throw new NotSupportedException();

@@ -59,7 +59,8 @@ internal sealed class GetAlbumRouteTestEnvironment : IDisposable
                 response.ArtistId.Value,
                 response.ArtistName.Value,
                 response.AlbumId.ArtistAlbumId,
-                response.ReleaseDate);
+                response.ReleaseDate,
+                null);
         }
 
         public TDomain ToDomainObject<TDomain>(object dto) where TDomain : class => throw new NotSupportedException();

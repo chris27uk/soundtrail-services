@@ -71,7 +71,8 @@ internal sealed class GetAlbumsForArtistRouteTestEnvironment : IDisposable
                             album.AlbumTitle,
                             album.ReleaseDate,
                             album.ArtworkUrl))
-                    .ToArray());
+                    .ToArray(),
+                null);
         }
 
         public TDomain ToDomainObject<TDomain>(object dto) where TDomain : class => throw new NotSupportedException();
