@@ -1,6 +1,8 @@
+using System.Buffers.Binary;
 using System.Text;
 using Blake2Fast;
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Tracks.Parsing;
 
 namespace Soundtrail.Domain.Catalog.Tracks;
 
@@ -18,10 +20,22 @@ public static class TrackIdentityMath
         DateOnly? releaseDate,
         string? releaseType)
     {
+        var parsedTitle = SongTitleParser.Parse(trackName);
+        if (parsedTitle is SongTitleParseResult.Failure failure)
+        {
+            throw new ArgumentException($"Track title could not be parsed: {failure.Reason}.", nameof(trackName));
+        }
+
+        var title = ((SongTitleParseResult.Success)parsedTitle).Value;
         var canonicalArtist = CanonicalizeRequired(artistName, MaxArtistLength, nameof(artistName));
-        var canonicalTrack = CanonicalizeRequired(trackName, MaxTrackLength, nameof(trackName));
+        var canonicalTrack = CanonicalizeRequired(title.CanonicalTrackTitle.Value, MaxTrackLength, nameof(trackName));
         var canonicalAlbum = CanonicalizeOptional(albumName, MaxAlbumLength, nameof(albumName));
-        var canonicalReleaseType = CanonicalizeOptional(releaseType, MaxReleaseTypeLength, nameof(releaseType));
+        var canonicalReleaseType = CanonicalizeOptional(
+            string.IsNullOrWhiteSpace(releaseType)
+                ? title.CanonicalReleaseType?.Value
+                : releaseType,
+            MaxReleaseTypeLength,
+            nameof(releaseType));
 
         return new CanonicalTrackIdentityParts(
             canonicalArtist,
@@ -31,15 +45,24 @@ public static class TrackIdentityMath
             canonicalReleaseType);
     }
 
-    public static TrackIdKeyParts DeriveKeys(CanonicalTrackIdentityParts parts)
-    {
-        var baseHash = Blake2b(Encode(parts.ArtistName, parts.TrackName, parts.AlbumName), hashSizeBits: 256);
-        var specificHash = Blake2b(Encode(parts.ReleaseDate?.ToString("yyyy-MM-dd"), parts.ReleaseType), hashSizeBits: 128);
+    public static string CreateBaseComponent(CanonicalTrackIdentityParts parts) =>
+        Convert.ToHexStringLower(Blake2b(Encode(parts.ArtistName, parts.TrackName), hashSizeBits: 128));
 
-        return new TrackIdKeyParts(
-            ToHex(baseHash[..16]),
-            ToHex(baseHash[16..32]),
-            ToHex(specificHash));
+    public static TrackVector CreateVector(CanonicalTrackIdentityParts parts) =>
+        new(
+            CreateDiscriminator(parts.AlbumName),
+            parts.ReleaseDate?.DayNumber,
+            CreateDiscriminator(parts.ReleaseType));
+
+    public static uint CreateDiscriminator(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return 0;
+        }
+
+        var hash = Blake2b(Encoding.UTF8.GetBytes(value), hashSizeBits: 32);
+        return BinaryPrimitives.ReadUInt32BigEndian(hash);
     }
 
     private static string CanonicalizeRequired(string value, int maxLength, string paramName)
@@ -90,6 +113,4 @@ public static class TrackIdentityMath
         return global::Blake2Fast.Blake2b.ComputeHash(hashSizeBits / 8, bytes).ToArray();
     }
 
-    private static string ToHex(ReadOnlySpan<byte> bytes) =>
-        Convert.ToHexString(bytes).ToLowerInvariant();
 }

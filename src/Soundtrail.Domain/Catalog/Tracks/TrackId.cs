@@ -1,28 +1,29 @@
+using System.Globalization;
+
 namespace Soundtrail.Domain.Catalog.Tracks;
 
 public readonly record struct TrackId
 {
-    private const string Prefix = "trk_";
-    private const int HexPartLength = 32;
-    private const int ExpectedValueLength = 100;
+    private const string Prefix = "trk2_";
+    private const int BaseComponentLength = 32;
+    private const int VectorSegmentLength = 8;
+    private const int PayloadLength = BaseComponentLength + (VectorSegmentLength * 3);
 
     private TrackId(
-        string baseKeyHigh,
-        string baseKeyLow,
-        string specificKey)
+        string value,
+        string baseComponent,
+        TrackVector vector)
     {
-        BaseKeyHigh = NormalizeRequiredKey(baseKeyHigh, nameof(baseKeyHigh));
-        BaseKeyLow = NormalizeRequiredKey(baseKeyLow, nameof(baseKeyLow));
-        SpecificKey = NormalizeRequiredKey(specificKey, nameof(specificKey));
+        Value = value;
+        BaseComponent = baseComponent;
+        Vector = vector;
     }
 
-    public string Value => $"{Prefix}{BaseKeyHigh}{BaseKeyLow}{SpecificKey}";
+    public string Value { get; }
 
-    public string BaseKeyHigh { get; }
+    public string BaseComponent { get; }
 
-    public string BaseKeyLow { get; }
-
-    public string SpecificKey { get; }
+    public TrackVector Vector { get; }
 
     public static TrackId From(string value)
     {
@@ -32,23 +33,25 @@ public readonly record struct TrackId
         }
 
         var normalized = value.Trim().ToLowerInvariant();
-        if (!normalized.StartsWith(Prefix, StringComparison.Ordinal) || normalized.Length != ExpectedValueLength)
+        if (!normalized.StartsWith(Prefix, StringComparison.Ordinal))
         {
-            throw new ArgumentException("Track id must be a structured track id.", nameof(value));
+            throw new ArgumentException("Track id must be a packed track id.", nameof(value));
         }
 
         var body = normalized[Prefix.Length..];
-        return new TrackId(
-            body[..HexPartLength],
-            body[HexPartLength..(HexPartLength * 2)],
-            body[(HexPartLength * 2)..]);
-    }
+        if (body.Length != PayloadLength)
+        {
+            throw new ArgumentException("Track id must contain fixed-width base and vector segments.", nameof(value));
+        }
 
-    public static TrackId FromKeyParts(
-        string baseKeyHigh,
-        string baseKeyLow,
-        string specificKey) =>
-        new(baseKeyHigh, baseKeyLow, specificKey);
+        var baseComponent = NormalizeBaseComponent(body[..BaseComponentLength], nameof(value));
+        var vector = new TrackVector(
+            ParseUInt32Hex(body.AsSpan(BaseComponentLength, VectorSegmentLength), nameof(value)),
+            ParseNullableDayNumber(body.AsSpan(BaseComponentLength + VectorSegmentLength, VectorSegmentLength), nameof(value)),
+            ParseUInt32Hex(body.AsSpan(BaseComponentLength + (VectorSegmentLength * 2), VectorSegmentLength), nameof(value)));
+
+        return new TrackId(normalized, baseComponent, vector);
+    }
 
     public static TrackId Create(
         string artistName,
@@ -69,37 +72,89 @@ public readonly record struct TrackId
 
     public static TrackId Create(CanonicalTrackIdentityParts parts)
     {
-        var keyParts = TrackIdentityMath.DeriveKeys(parts);
-        return new(keyParts.BaseKeyHigh, keyParts.BaseKeyLow, keyParts.SpecificKey);
+        var baseComponent = TrackIdentityMath.CreateBaseComponent(parts);
+        var vector = TrackIdentityMath.CreateVector(parts);
+        return new TrackId(
+            BuildValue(baseComponent, vector),
+            baseComponent,
+            vector);
     }
 
-    public TrackIdKeyParts GetKeyParts() =>
-        new(
-            BaseKeyHigh,
-            BaseKeyLow,
-            SpecificKey);
+    public static string ProjectBase(TrackId trackId) => trackId.BaseComponent;
+
+    public static TrackVector ProjectVector(TrackId trackId) => trackId.Vector;
+
+    public bool SharesBaseWith(TrackId other) =>
+        string.Equals(BaseComponent, other.BaseComponent, StringComparison.Ordinal);
 
     public override string ToString() => Value;
 
     public static implicit operator string(TrackId trackId) => trackId.Value;
 
-    private static string NormalizeRequiredKey(string value, string paramName)
+    private static string BuildValue(string baseComponent, TrackVector vector)
     {
-        if (string.IsNullOrWhiteSpace(value))
+        var albumSegment = vector.AlbumDiscriminator.ToString("x8", CultureInfo.InvariantCulture);
+        var releaseDateSegment = (uint)(vector.ReleaseDateOrdinal ?? 0);
+        var releaseTypeSegment = vector.ReleaseTypeDiscriminator.ToString("x8", CultureInfo.InvariantCulture);
+        return string.Create(
+            Prefix.Length + PayloadLength,
+            (baseComponent, albumSegment, releaseDateSegment, releaseTypeSegment),
+            static (span, state) =>
+            {
+                Prefix.AsSpan().CopyTo(span);
+                var offset = Prefix.Length;
+                state.baseComponent.AsSpan().CopyTo(span[offset..]);
+                offset += BaseComponentLength;
+                state.albumSegment.AsSpan().CopyTo(span[offset..]);
+                offset += VectorSegmentLength;
+                state.releaseDateSegment.TryFormat(span[offset..], out _, "x8", CultureInfo.InvariantCulture);
+                offset += VectorSegmentLength;
+                state.releaseTypeSegment.AsSpan().CopyTo(span[offset..]);
+            });
+    }
+
+    private static string NormalizeBaseComponent(string value, string paramName)
+    {
+        var normalized = value.Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(normalized) || normalized.Length != BaseComponentLength)
         {
-            throw new ArgumentException("Track id key is required.", paramName);
+            throw new ArgumentException("Track id base component is required.", paramName);
         }
 
-        var normalized = value.Trim().ToLowerInvariant();
-        if (normalized.Length != HexPartLength || !normalized.All(IsLowerHex))
+        foreach (var character in normalized)
         {
-            throw new ArgumentException("Track id key must be a 128-bit lowercase hexadecimal value.", paramName);
+            if (!Uri.IsHexDigit(character))
+            {
+                throw new ArgumentException("Track id base component must be hexadecimal.", paramName);
+            }
         }
 
         return normalized;
     }
 
-    private static bool IsLowerHex(char value) =>
-        (value >= '0' && value <= '9')
-        || (value >= 'a' && value <= 'f');
+    private static uint ParseUInt32Hex(ReadOnlySpan<char> value, string paramName)
+    {
+        if (!uint.TryParse(value, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var result))
+        {
+            throw new ArgumentException("Track id vector segment is invalid.", paramName);
+        }
+
+        return result;
+    }
+
+    private static int? ParseNullableDayNumber(ReadOnlySpan<char> value, string paramName)
+    {
+        var result = ParseUInt32Hex(value, paramName);
+        if (result == 0)
+        {
+            return null;
+        }
+
+        if (result > int.MaxValue)
+        {
+            throw new ArgumentException("Track id release date segment is out of range.", paramName);
+        }
+
+        return (int)result;
+    }
 }
