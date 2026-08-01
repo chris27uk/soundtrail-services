@@ -1,0 +1,27 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/ws/2/release",
+    "queryParameters": {
+      "artist": {
+        "equalTo": "musicbrainz-artist:neon-harbour"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "releases": [
+        {
+          "id": "release-glass-cities-radio",
+          "title": "Glass Cities Remixes",
+          "date": "2024-06-23"
+        }
+      ]
+    }
+  }
+}

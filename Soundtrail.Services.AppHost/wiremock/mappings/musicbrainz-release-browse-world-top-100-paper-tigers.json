@@ -1,0 +1,27 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/ws/2/release",
+    "queryParameters": {
+      "artist": {
+        "equalTo": "musicbrainz-artist:paper-tigers"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "releases": [
+        {
+          "id": "release-static-hearts",
+          "title": "Static Hearts",
+          "date": "2022-09-16"
+        }
+      ]
+    }
+  }
+}

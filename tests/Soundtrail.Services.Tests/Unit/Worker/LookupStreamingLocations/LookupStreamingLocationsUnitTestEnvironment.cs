@@ -239,7 +239,7 @@ internal sealed class LookupStreamingLocationsUnitTestEnvironment
 
         public Exception? ExceptionToThrow { get; set; }
 
-        public Task Handle(LookupStreamingLocationByIsrcMessage request, CancellationToken cancellationToken = default)
+        public Task Handle(IncomingMessage<LookupStreamingLocationByIsrcMessage> context, CancellationToken cancellationToken = default)
         {
             Calls++;
             if (ExceptionToThrow is not null)
@@ -257,7 +257,7 @@ internal sealed class LookupStreamingLocationsUnitTestEnvironment
 
         public Exception? ExceptionToThrow { get; set; }
 
-        public Task Handle(LookupStreamingLocationByTrackMetadataMessage request, CancellationToken cancellationToken = default)
+        public Task Handle(IncomingMessage<LookupStreamingLocationByTrackMetadataMessage> context, CancellationToken cancellationToken = default)
         {
             Calls++;
             if (ExceptionToThrow is not null)

@@ -12,23 +12,49 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddCatalogSearchEventStreamRepository(this IServiceCollection services)
     {
-        services.TryAddScoped<IEventStreamRepository<CatalogWorkId>>(
-            sp => new RavenEventStreamRepository<CatalogWorkId>(
-                sp.GetRequiredService<IAsyncDocumentSession>(),
-                sp.GetRequiredService<ITypeRegistry>(),
-                "catalog-stream"));
+        services.TryAddScoped<IEventStreamRepository<CatalogWorkId>, CatalogSearchEventStreamRepository>();
 
         return services;
     }
 
     public static IServiceCollection AddArtistCatalogEventStreamRepository(this IServiceCollection services)
     {
-        services.TryAddScoped<IEventStreamRepository<ArtistId>>(
-            sp => new RavenEventStreamRepository<ArtistId>(
-                sp.GetRequiredService<IAsyncDocumentSession>(),
-                sp.GetRequiredService<ITypeRegistry>(),
-                "artist-catalog-stream"));
+        services.TryAddScoped<IEventStreamRepository<ArtistId>, ArtistCatalogEventStreamRepository>();
 
         return services;
     }
+}
+
+internal sealed class CatalogSearchEventStreamRepository(
+    IAsyncDocumentSession session,
+    ITypeRegistry typeRegistry) : IEventStreamRepository<CatalogWorkId>
+{
+    private readonly RavenEventStreamRepository<CatalogWorkId> inner = new(session, typeRegistry, "catalog-stream");
+
+    public Task<LoadedEventStream<CatalogWorkId>> LoadAsync(CatalogWorkId streamId, CancellationToken cancellationToken) =>
+        this.inner.LoadAsync(streamId, cancellationToken);
+
+    public Task<AppendResult> AppendAsync(
+        LoadedEventStream<CatalogWorkId> stream,
+        IReadOnlyList<IDomainEvent> events,
+        OperationId? operationId,
+        CancellationToken cancellationToken) =>
+        this.inner.AppendAsync(stream, events, operationId, cancellationToken);
+}
+
+internal sealed class ArtistCatalogEventStreamRepository(
+    IAsyncDocumentSession session,
+    ITypeRegistry typeRegistry) : IEventStreamRepository<ArtistId>
+{
+    private readonly RavenEventStreamRepository<ArtistId> inner = new(session, typeRegistry, "artist-catalog-stream");
+
+    public Task<LoadedEventStream<ArtistId>> LoadAsync(ArtistId streamId, CancellationToken cancellationToken) =>
+        this.inner.LoadAsync(streamId, cancellationToken);
+
+    public Task<AppendResult> AppendAsync(
+        LoadedEventStream<ArtistId> stream,
+        IReadOnlyList<IDomainEvent> events,
+        OperationId? operationId,
+        CancellationToken cancellationToken) =>
+        this.inner.AppendAsync(stream, events, operationId, cancellationToken);
 }

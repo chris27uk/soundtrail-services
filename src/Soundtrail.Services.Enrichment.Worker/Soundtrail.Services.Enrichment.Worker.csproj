@@ -15,10 +15,6 @@
     <PackageReference Include="RavenDB.Client" Version="7.1.2" />
     <PackageReference Include="Scrutor" Version="7.0.0" />
     <PackageReference Include="StackExchange.Redis" Version="2.8.58" />
-    <PackageReference Include="WolverineFx" Version="6.5.1" />
-    <PackageReference Include="WolverineFx.AzureServiceBus" Version="6.2.2" />
-    <PackageReference Include="WolverineFx.RavenDb" Version="6.2.2" />
-    <PackageReference Include="WolverineFx.RuntimeCompilation" Version="6.5.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -30,6 +26,15 @@
 
   <ItemGroup>
     <Folder Include="Features\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="appsettings.Development.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http;
+using Soundtrail.Domain.Catalog;
 using Microsoft.Extensions.Options;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.MusicMetadata;
@@ -71,6 +72,8 @@ public sealed class MusicbrainzCatalogSearchPortTests
                             {
                               "id": "recording-1",
                               "title": "Valid Song (Radio Edit)",
+                              "first-release-date": "2024-06-23",
+                              "releases": [{ "id": "release-1", "title": "Radio Singles", "date": "2024-06-23" }],
                               "artist-credit": [{ "name": "The Artist", "artist": { "id": "artist-1" } }]
                             },
                             {
@@ -94,6 +97,11 @@ public sealed class MusicbrainzCatalogSearchPortTests
 
         result.Should().HaveCount(1);
         result.Select(x => x.Item).Should().ContainSingle(item => item is Soundtrail.Domain.Catalog.CatalogItem.MusicTrack);
+        var track = ((CatalogItem.MusicTrack)result.Single().Item).Track;
+        track.AlbumId.Should().Be("artist-1:release-1");
+        track.AlbumTitle.Should().Be("Radio Singles");
+        track.ReleaseDate.Should().Be(new DateOnly(2024, 6, 23));
+        track.ReleaseType.Should().Be("radio edit");
     }
 
     private static MusicbrainzCatalogSearchPort CreateSubject(HttpMessageHandler handler)

@@ -16,8 +16,9 @@ public sealed class IdempotentLookupHandlerDecorator<TMessage>(
     IClockPort clock) : IHandler<TMessage>
     where TMessage : IMessage
 {
-    public async Task Handle(TMessage request, CancellationToken cancellationToken = default)
+    public async Task Handle(IncomingMessage<TMessage> context, CancellationToken cancellationToken = default)
     {
+        var request = context.Message;
         var observedAt = clock.UtcNow;
 
         await using var session = await IdempotencySession.StartAsync(
@@ -43,7 +44,7 @@ public sealed class IdempotentLookupHandlerDecorator<TMessage>(
 
         try
         {
-            await inner.Handle(request, cancellationToken);
+            await inner.Handle(context, cancellationToken);
             await session.CompleteAsync(cancellationToken);
         }
         catch (LookupExecutionShortCircuitException)

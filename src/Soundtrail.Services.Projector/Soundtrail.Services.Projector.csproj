@@ -14,9 +14,6 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.8" />
     <PackageReference Include="RavenDB.Client" Version="7.1.2" />
-    <PackageReference Include="WolverineFx" Version="6.5.1" />
-    <PackageReference Include="WolverineFx.AzureServiceBus" Version="6.2.2" />
-    <PackageReference Include="WolverineFx.RuntimeCompilation" Version="6.5.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,6 +26,15 @@
   <ItemGroup>
     <Folder Include="Features\" />
     <Folder Include="Infrastructure\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="appsettings.Development.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

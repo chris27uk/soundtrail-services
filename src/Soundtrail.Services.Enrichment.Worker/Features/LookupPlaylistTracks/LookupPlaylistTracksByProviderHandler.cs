@@ -5,7 +5,6 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks.Ports;
-using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks;
 
@@ -14,8 +13,9 @@ public sealed class LookupPlaylistTracksByProviderHandler(
     IClockPort clock,
     ICommandBus commandBus) : IHandler<LookupPlaylistTracksByProviderMessage>
 {
-    public async Task Handle(LookupPlaylistTracksByProviderMessage request, CancellationToken cancellationToken = default)
+    public async Task Handle(IncomingMessage<LookupPlaylistTracksByProviderMessage> context, CancellationToken cancellationToken = default)
     {
+        var request = context.Message;
         var trackReferences = await readPlaylistTracksByProviderPort.ReadAsync(
             request.PlaylistId,
             request.Provider,

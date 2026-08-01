@@ -8,4 +8,5 @@ public sealed record CatalogDiscoveryWorkRequestedEventDataRecordDto(
     int? TrustLevel,
     int? RiskScore,
     DateTimeOffset RequestedAtUtc,
-    string CorrelationId) : RavenEventBodyDto;
+    string CorrelationId,
+    int? SearchTypes = null) : RavenEventBodyDto;

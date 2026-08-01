@@ -261,7 +261,7 @@ internal sealed class LookupMusicbrainzBrowseUnitTestEnvironment
         public int Calls { get; private set; }
         public Exception? ExceptionToThrow { get; set; }
 
-        public Task Handle(LookupMusicbrainzArtistAlbumsMessage request, CancellationToken cancellationToken = default)
+        public Task Handle(IncomingMessage<LookupMusicbrainzArtistAlbumsMessage> context, CancellationToken cancellationToken = default)
         {
             Calls++;
             if (ExceptionToThrow is not null)
@@ -278,7 +278,7 @@ internal sealed class LookupMusicbrainzBrowseUnitTestEnvironment
         public int Calls { get; private set; }
         public Exception? ExceptionToThrow { get; set; }
 
-        public Task Handle(LookupMusicbrainzArtistTracksMessage request, CancellationToken cancellationToken = default)
+        public Task Handle(IncomingMessage<LookupMusicbrainzArtistTracksMessage> context, CancellationToken cancellationToken = default)
         {
             Calls++;
             if (ExceptionToThrow is not null)
@@ -295,7 +295,7 @@ internal sealed class LookupMusicbrainzBrowseUnitTestEnvironment
         public int Calls { get; private set; }
         public Exception? ExceptionToThrow { get; set; }
 
-        public Task Handle(LookupMusicbrainzAlbumTracksMessage request, CancellationToken cancellationToken = default)
+        public Task Handle(IncomingMessage<LookupMusicbrainzAlbumTracksMessage> context, CancellationToken cancellationToken = default)
         {
             Calls++;
             if (ExceptionToThrow is not null)

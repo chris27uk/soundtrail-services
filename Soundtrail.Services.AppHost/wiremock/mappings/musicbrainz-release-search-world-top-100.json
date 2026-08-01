@@ -1,0 +1,41 @@
+{
+  "priority": 5,
+  "request": {
+    "method": "GET",
+    "urlPath": "/ws/2/release"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "releases": [
+        {
+          "id": "release-midnight-signals",
+          "title": "Midnight Signals",
+          "date": "2023-11-10",
+          "artist-credit": [{ "name": "Aurora Lane", "artist": { "id": "musicbrainz-artist:aurora-lane" } }]
+        },
+        {
+          "id": "release-static-hearts",
+          "title": "Static Hearts",
+          "date": "2022-09-16",
+          "artist-credit": [{ "name": "Paper Tigers", "artist": { "id": "musicbrainz-artist:paper-tigers" } }]
+        },
+        {
+          "id": "release-glass-cities-radio",
+          "title": "Glass Cities Remixes",
+          "date": "2024-06-23",
+          "artist-credit": [{ "name": "Neon Harbour", "artist": { "id": "musicbrainz-artist:neon-harbour" } }]
+        },
+        {
+          "id": "release-golden-echo-radio",
+          "title": "Golden Echo Radio Release",
+          "date": "2024-02-14",
+          "artist-credit": [{ "name": "Saturn Kids", "artist": { "id": "musicbrainz-artist:saturn-kids" } }]
+        }
+      ]
+    }
+  }
+}

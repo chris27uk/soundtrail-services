@@ -1,0 +1,19 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/ws/2/release/release-static-hearts"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "title": "Static Hearts",
+      "date": "2022-09-16",
+      "artist-credit": [{ "name": "Paper Tigers", "artist": { "id": "musicbrainz-artist:paper-tigers" } }],
+      "media": [{ "tracks": [{ "title": "Static Hearts", "length": 198000, "artist-credit": [{ "name": "Paper Tigers" }], "recording": { "id": "mbid-static-hearts-2022", "isrcs": [] } }] }]
+    }
+  }
+}

@@ -16,8 +16,9 @@ public sealed class LookupStreamingLocationByIsrcHandler(
     IClockPort clock,
     ICommandBus commandBus) : IHandler<LookupStreamingLocationByIsrcMessage>
 {
-    public async Task Handle(LookupStreamingLocationByIsrcMessage request, CancellationToken cancellationToken = default)
+    public async Task Handle(IncomingMessage<LookupStreamingLocationByIsrcMessage> context, CancellationToken cancellationToken = default)
     {
+        var request = context.Message;
         var observedAt = clock.UtcNow;
         var track = await readTrackForLookupPort.ReadAsync(request.TrackId, cancellationToken);
 

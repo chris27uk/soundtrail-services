@@ -5,6 +5,7 @@ using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
 
 namespace Soundtrail.Services.Tests.Unit.GetTracksForArtist;
 
@@ -18,7 +19,24 @@ public sealed class ArtistTracksExistTests
 
         var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        result.Should().BeSameAs(response);
+        result.Should().BeEquivalentTo(response);
+    }
+
+    [Fact]
+    public async Task Given_Existing_Artist_Tracks_When_Requesting_The_Artist_Tracks_Then_Discovery_Feedback_Is_Attached()
+    {
+        var environment = GetTracksForArtistUnitTestEnvironment.ForExistingArtistTracks();
+        environment.DiscoveryFeedbackPort.Response = new DiscoveryFeedbackResponse(
+            "pending",
+            LookupPriorityBand.High,
+            environment.Clock.UtcNow.AddSeconds(15),
+            environment.Clock.UtcNow.AddSeconds(75),
+            "Artist track lookup queued.",
+            environment.Clock.UtcNow);
+
+        var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
+
+        result!.Discovery.Should().Be(environment.DiscoveryFeedbackPort.Response);
     }
 
     [Fact]

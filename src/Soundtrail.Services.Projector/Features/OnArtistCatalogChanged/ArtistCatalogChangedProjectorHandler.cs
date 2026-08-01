@@ -81,6 +81,7 @@ public sealed class ArtistCatalogChangedProjectorHandler(
                         break;
 
                     case TrackDiscovered trackDiscovered:
+                        snapshot.ArtistName ??= trackDiscovered.Track.ArtistName;
                         snapshot.Tracks[trackDiscovered.Track.TrackId.Value] = trackDiscovered.Track;
                         snapshot.UpdatedAt = trackDiscovered.ObservedAt;
                         break;

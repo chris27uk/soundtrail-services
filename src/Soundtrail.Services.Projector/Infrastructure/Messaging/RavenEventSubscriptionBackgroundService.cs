@@ -12,11 +12,15 @@ internal abstract class RavenEventSubscriptionBackgroundService(
     IServiceScopeFactory scopeFactory,
     IDocumentStore documentStore) : BackgroundService
 {
+    private const string BeginningOfTimeChangeVector = "BeginningOfTime";
+
     protected abstract string SubscriptionName { get; }
 
     protected abstract Expression<Func<RavenStoredEventRecord, bool>> Filter { get; }
 
     protected virtual int MaxDocsPerBatch => 128;
+
+    protected virtual bool IsSubscriptionDefinitionStale(SubscriptionState state) => false;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -48,18 +52,29 @@ internal abstract class RavenEventSubscriptionBackgroundService(
     {
         try
         {
-            await documentStore.Subscriptions.GetSubscriptionStateAsync(SubscriptionName, null, cancellationToken);
+            var state = await documentStore.Subscriptions.GetSubscriptionStateAsync(SubscriptionName, null, cancellationToken);
+            if (IsSubscriptionDefinitionStale(state))
+            {
+                await documentStore.Subscriptions.DeleteAsync(SubscriptionName, null, cancellationToken);
+                await CreateSubscriptionAsync(cancellationToken);
+            }
         }
         catch (SubscriptionDoesNotExistException)
         {
-            await documentStore.Subscriptions.CreateAsync<RavenStoredEventRecord>(
-                Filter,
-                new PredicateSubscriptionCreationOptions
-                {
-                    Name = SubscriptionName
-                },
-                null,
-                cancellationToken);
+            await CreateSubscriptionAsync(cancellationToken);
         }
+    }
+
+    private async Task CreateSubscriptionAsync(CancellationToken cancellationToken)
+    {
+        await documentStore.Subscriptions.CreateAsync<RavenStoredEventRecord>(
+            Filter,
+            new PredicateSubscriptionCreationOptions
+            {
+                Name = SubscriptionName,
+                ChangeVector = BeginningOfTimeChangeVector
+            },
+            null,
+            cancellationToken);
     }
 }

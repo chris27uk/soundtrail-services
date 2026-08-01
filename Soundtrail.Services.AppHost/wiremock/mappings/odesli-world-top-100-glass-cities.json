@@ -1,0 +1,25 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/v1-user/links",
+    "queryParameters": {
+      "songName": {
+        "equalTo": "Glass Cities (Radio Edit)"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "linksByPlatform": {
+        "youtubeMusic": {
+          "url": "https://music.youtube.com/watch?v=glass-cities-radio"
+        }
+      }
+    }
+  }
+}

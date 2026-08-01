@@ -15,35 +15,35 @@ public static class WorkerCommandFactory
         {
             LookupAttempt.MusicbrainzSearchCatalogItems(var searchCriteria, var priority) =>
                 new LookupMusicbrainzSearchResultsMessage(
-                    MessageId.For($"lookup:musicbrainz-search:{searchCriteria.NormalisedIdentifier}"),
+                    CreateCommandId(request, $"lookup:musicbrainz-search:{searchCriteria.NormalisedIdentifier}"),
                     request.CorrelationId,
                     request.CreatedAt,
                     priority,
                     searchCriteria),
             LookupAttempt.MusicbrainzArtistAlbums(var artistId, var priority) =>
                 new LookupMusicbrainzArtistAlbumsMessage(
-                    MessageId.For($"lookup:musicbrainz-artist-albums:{artistId.StableValue}"),
+                    CreateCommandId(request, $"lookup:musicbrainz-artist-albums:{artistId.StableValue}"),
                     request.CorrelationId,
                     request.CreatedAt,
                     priority,
                     artistId),
             LookupAttempt.MusicbrainzArtistTracks(var artistId, var priority) =>
                 new LookupMusicbrainzArtistTracksMessage(
-                    MessageId.For($"lookup:musicbrainz-artist-tracks:{artistId.StableValue}"),
+                    CreateCommandId(request, $"lookup:musicbrainz-artist-tracks:{artistId.StableValue}"),
                     request.CorrelationId,
                     request.CreatedAt,
                     priority,
                     artistId),
             LookupAttempt.MusicbrainzAlbumTracks(var albumId, var priority) =>
                 new LookupMusicbrainzAlbumTracksMessage(
-                    MessageId.For($"lookup:musicbrainz-album-tracks:{albumId.StableValue}"),
+                    CreateCommandId(request, $"lookup:musicbrainz-album-tracks:{albumId.StableValue}"),
                     request.CorrelationId,
                     request.CreatedAt,
                     priority,
                     albumId),
             LookupAttempt.StreamingLocationByIsrc(var trackId, var provider, var priority) =>
                 new LookupStreamingLocationByIsrcMessage(
-                    MessageId.For($"lookup:streaming-isrc:{provider.Value}:{trackId.Value}"),
+                    CreateCommandId(request, $"lookup:streaming-isrc:{provider.Value}:{trackId.Value}"),
                     request.CorrelationId,
                     request.CreatedAt,
                     priority,
@@ -51,7 +51,7 @@ public static class WorkerCommandFactory
                     provider),
             LookupAttempt.StreamingLocationByTrackMetadata(var trackId, var provider, var priority) =>
                 new LookupStreamingLocationByTrackMetadataMessage(
-                    MessageId.For($"lookup:streaming-metadata:{provider.Value}:{trackId.Value}"),
+                    CreateCommandId(request, $"lookup:streaming-metadata:{provider.Value}:{trackId.Value}"),
                     request.CorrelationId,
                     request.CreatedAt,
                     priority,
@@ -59,7 +59,7 @@ public static class WorkerCommandFactory
                     provider),
             LookupAttempt.PlaylistTracksByProvider(var playlistId, var provider, var priority) =>
                 new LookupPlaylistTracksByProviderMessage(
-                    MessageId.For($"lookup:playlist:{provider.Value}:{playlistId.Value}"),
+                    CreateCommandId(request, $"lookup:playlist:{provider.Value}:{playlistId.Value}"),
                     request.CorrelationId,
                     request.CreatedAt,
                     priority,
@@ -68,4 +68,7 @@ public static class WorkerCommandFactory
             _ => throw new InvalidOperationException(
                 $"Unsupported lookup attempt '{attempt.GetType().Name}'.")
         };
+
+    private static MessageId CreateCommandId(DispatchLookupWork request, string suffix) =>
+        MessageId.DeterministicWithPrefix(request.Id.Value, suffix);
 }

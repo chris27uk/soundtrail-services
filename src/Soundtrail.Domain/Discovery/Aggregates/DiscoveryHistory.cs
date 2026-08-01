@@ -243,7 +243,10 @@ public sealed class DiscoveryHistory
 
     private bool IsMatchForLookupCompletion(WorkScheduled scheduled)
     {
-        var dispatchCommandId = MessageId.For($"DispatchLookupWork:{scheduled.Target.NormalisedIdentifier}:{scheduled.ScheduledAt:O}");
+        var dispatchCommandId = MessageId.Deterministic(
+            "DispatchLookupWork",
+            scheduled.Target.NormalisedIdentifier,
+            scheduled.ScheduledAt.ToString("O"));
         return requestContext.MessageId.Value.StartsWith($"{dispatchCommandId.Value}:", StringComparison.Ordinal);
     }
 

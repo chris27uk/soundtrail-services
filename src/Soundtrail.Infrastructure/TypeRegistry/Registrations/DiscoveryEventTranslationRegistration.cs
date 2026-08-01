@@ -26,9 +26,10 @@ public sealed class DiscoveryEventTranslationRegistration : ITypeTranslationRegi
                 @event.TrustLevel,
                 @event.RiskScore,
                 @event.RequestedAt,
-                @event.CorrelationId.Value),
+                @event.CorrelationId.Value,
+                GetSearchTypes(@event.Target)),
             toDomainObject: dto => new WorkRequested(
-                ParseFilter(dto.ResourceKind, dto.ResourceValue, dto.ResourceItemKind),
+                ParseFilter(dto.ResourceKind, dto.ResourceValue, dto.ResourceItemKind, dto.SearchTypes),
                 ParsePriority(dto.Priority),
                 dto.TrustLevel,
                 dto.RiskScore,
@@ -45,9 +46,10 @@ public sealed class DiscoveryEventTranslationRegistration : ITypeTranslationRegi
                 @event.NextEligibleAt,
                 @event.EarliestExpectedCompletionAt,
                 @event.Reason,
-                @event.ScheduledAt),
+                @event.ScheduledAt,
+                GetSearchTypes(@event.Target)),
             toDomainObject: dto => new WorkScheduled(
-                ParseTargetByIdentifier(dto.MusicCatalogId),
+                ParseTargetByIdentifier(dto.MusicCatalogId, dto.SearchTypes),
                 ParsePriority(dto.Priority),
                 dto.NextEligibleAtUtc,
                 dto.EarliestExpectedCompletionAt,
@@ -64,9 +66,10 @@ public sealed class DiscoveryEventTranslationRegistration : ITypeTranslationRegi
                 @event.TrustLevel,
                 @event.RiskScore,
                 @event.RequestedAt,
-                @event.CorrelationId.Value),
+                @event.CorrelationId.Value,
+                GetSearchTypes(@event.Target)),
             toDomainObject: dto => new WorkPriorityRaised(
-                ParseTargetByIdentifier(dto.MusicCatalogId),
+                ParseTargetByIdentifier(dto.MusicCatalogId, dto.SearchTypes),
                 ParsePriority(dto.Priority),
                 dto.TrustLevel,
                 dto.RiskScore,
@@ -83,9 +86,10 @@ public sealed class DiscoveryEventTranslationRegistration : ITypeTranslationRegi
                 @event.NextEligibleAt,
                 @event.EstimatedRetryAfterSeconds,
                 @event.Reason,
-                @event.DeferredAt),
+                @event.DeferredAt,
+                GetSearchTypes(@event.Target)),
             toDomainObject: dto => new WorkDeferred(
-                ParseTargetByIdentifier(dto.MusicCatalogId),
+                ParseTargetByIdentifier(dto.MusicCatalogId, dto.SearchTypes),
                 ParsePriority(dto.Priority),
                 dto.NextEligibleAtUtc,
                 dto.EstimatedRetryAfterSeconds,
@@ -103,9 +107,10 @@ public sealed class DiscoveryEventTranslationRegistration : ITypeTranslationRegi
                 @event.EstimatedRetryAfterSeconds,
                 @event.EarliestExpectedCompletionAt,
                 @event.Reason,
-                @event.IgnoredAt),
+                @event.IgnoredAt,
+                GetSearchTypes(@event.Target)),
             toDomainObject: dto => new WorkIgnored(
-                ParseTargetByIdentifier(dto.MusicCatalogId),
+                ParseTargetByIdentifier(dto.MusicCatalogId, dto.SearchTypes),
                 ParsePriority(dto.Priority),
                 dto.NextEligibleAtUtc,
                 dto.EstimatedRetryAfterSeconds,
@@ -121,9 +126,10 @@ public sealed class DiscoveryEventTranslationRegistration : ITypeTranslationRegi
                 @event.Target.NormalisedIdentifier,
                 @event.Priority.ToString(),
                 @event.Reason,
-                @event.CompletedAt),
+                @event.CompletedAt,
+                GetSearchTypes(@event.Target)),
             toDomainObject: dto => new WorkCompleted(
-                ParseTargetByIdentifier(dto.MusicCatalogId),
+                ParseTargetByIdentifier(dto.MusicCatalogId, dto.SearchTypes),
                 ParsePriority(dto.Priority),
                 dto.Reason,
                 dto.CompletedAtUtc),
@@ -136,9 +142,10 @@ public sealed class DiscoveryEventTranslationRegistration : ITypeTranslationRegi
                 @event.Target.NormalisedIdentifier,
                 @event.Priority.ToString(),
                 @event.Reason,
-                @event.RejectedAt),
+                @event.RejectedAt,
+                GetSearchTypes(@event.Target)),
             toDomainObject: dto => new WorkRejected(
-                ParseTargetByIdentifier(dto.MusicCatalogId),
+                ParseTargetByIdentifier(dto.MusicCatalogId, dto.SearchTypes),
                 ParsePriority(dto.Priority),
                 dto.Reason,
                 dto.RejectedAtUtc),
@@ -150,9 +157,10 @@ public sealed class DiscoveryEventTranslationRegistration : ITypeTranslationRegi
             toDto: @event => new CatalogDiscoveryWorkAttemptFailedEventDataRecordDto(
                 @event.Target.NormalisedIdentifier,
                 @event.Reason,
-                @event.FailedAt),
+                @event.FailedAt,
+                GetSearchTypes(@event.Target)),
             toDomainObject: dto => new WorkAttemptFailed(
-                ParseTargetByIdentifier(dto.MusicCatalogId),
+                ParseTargetByIdentifier(dto.MusicCatalogId, dto.SearchTypes),
                 dto.Reason,
                 dto.FailedAtUtc),
             occurredAtUtc: @event => @event.FailedAt,
@@ -183,10 +191,15 @@ public sealed class DiscoveryEventTranslationRegistration : ITypeTranslationRegi
             _ => null
         };
 
-    private static EnrichmentTarget ParseFilter(string resourceKind, string resourceValue, string? resourceItemKind) =>
+    private static int? GetSearchTypes(EnrichmentTarget target) =>
+        target is EnrichmentTarget.SearchForUnknownCatalogItem(var searchCriteria)
+            ? (int)searchCriteria.SearchTypes
+            : null;
+
+    private static EnrichmentTarget ParseFilter(string resourceKind, string resourceValue, string? resourceItemKind, int? searchTypes) =>
         resourceKind switch
         {
-            "search-criteria" => new EnrichmentTarget.SearchForUnknownCatalogItem(new SearchCriteria(resourceValue)),
+            "search-criteria" => new EnrichmentTarget.SearchForUnknownCatalogItem(new SearchCriteria(resourceValue, ParseSearchTypes(searchTypes))),
             "streaming_location_for_track" => new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.StreamingLocationForTrack(ParseTrackId(resourceValue, resourceItemKind))),
             "child_albums_for_artist" => new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.ChildAlbumsForArtist(ParseArtistId(resourceValue, resourceItemKind))),
             "child_tracks_for_artist" => new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.ChildTracksForArtist(ParseArtistId(resourceValue, resourceItemKind))),
@@ -271,11 +284,14 @@ public sealed class DiscoveryEventTranslationRegistration : ITypeTranslationRegi
     private static LookupPriorityBand ParsePriority(string priority) =>
         Enum.Parse<LookupPriorityBand>(priority, ignoreCase: true);
 
-    private static EnrichmentTarget ParseTargetByIdentifier(string identifier)
+    private static SearchType ParseSearchTypes(int? searchTypes) =>
+        searchTypes.HasValue ? (SearchType)searchTypes.Value : SearchType.All;
+
+    private static EnrichmentTarget ParseTargetByIdentifier(string identifier, int? searchTypes = null)
     {
         if (identifier.StartsWith("search:", StringComparison.Ordinal))
         {
-            return new EnrichmentTarget.SearchForUnknownCatalogItem(new SearchCriteria(identifier["search:".Length..]));
+            return new EnrichmentTarget.SearchForUnknownCatalogItem(new SearchCriteria(identifier["search:".Length..], ParseSearchTypes(searchTypes)));
         }
 
         var separatorIndex = identifier.IndexOf(':');

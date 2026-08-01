@@ -1,0 +1,30 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/ws/2/recording",
+    "queryParameters": {
+      "artist": {
+        "equalTo": "musicbrainz-artist:neon-harbour"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "recordings": [
+        {
+          "id": "mbid-glass-cities-radio-2024",
+          "title": "Glass Cities (Radio Edit)",
+          "length": 231000,
+          "first-release-date": "2024-06-23",
+          "releases": [{ "id": "release-glass-cities-radio", "title": "Glass Cities Remixes", "date": "2024-06-23" }],
+          "artist-credit": [{ "name": "Neon Harbour", "artist": { "id": "musicbrainz-artist:neon-harbour" } }]
+        }
+      ]
+    }
+  }
+}

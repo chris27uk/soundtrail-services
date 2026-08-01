@@ -15,8 +15,9 @@ public sealed class AdmittedLookupHandlerDecorator<TMessage>(
     IClockPort clock) : IHandler<TMessage>
     where TMessage : IMessage
 {
-    public async Task Handle(TMessage request, CancellationToken cancellationToken = default)
+    public async Task Handle(IncomingMessage<TMessage> context, CancellationToken cancellationToken = default)
     {
+        var request = context.Message;
         var observedAt = clock.UtcNow;
         var admissionResult = await lookupExecutionAdmissionPort.TryAcquireAsync(
             new LookupExecutionAdmissionRequest(metadata.Source, request.Id, observedAt),
@@ -56,7 +57,7 @@ public sealed class AdmittedLookupHandlerDecorator<TMessage>(
 
         try
         {
-            await inner.Handle(request, cancellationToken);
+            await inner.Handle(context, cancellationToken);
             await lookupExecutionAdmissionPort.CommitAsync(request.Id, cancellationToken);
         }
         catch

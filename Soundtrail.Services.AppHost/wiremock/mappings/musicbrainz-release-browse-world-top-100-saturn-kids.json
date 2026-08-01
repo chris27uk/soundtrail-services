@@ -1,0 +1,27 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/ws/2/release",
+    "queryParameters": {
+      "artist": {
+        "equalTo": "musicbrainz-artist:saturn-kids"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "releases": [
+        {
+          "id": "release-golden-echo-radio",
+          "title": "Golden Echo Radio Release",
+          "date": "2024-02-14"
+        }
+      ]
+    }
+  }
+}

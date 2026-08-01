@@ -12,10 +12,24 @@ public sealed class RavenStorePlaylistTracksReadModelPort(IDocumentStore documen
     public async Task StoreAsync(PlaylistTracksDiscovered @event, CancellationToken cancellationToken)
     {
         using var session = documentStore.OpenAsyncSession();
-        var trackIdValues = @event.Tracks.Select(static trackId => trackId.Value).ToArray();
+        var documentId = CatalogPlaylistTracksRecordDto.GetDocumentId(@event.PlaylistId.Value);
+        var existingRecord = await session.LoadAsync<CatalogPlaylistTracksRecordDto>(documentId, cancellationToken);
+        var trackIdValues = MergeTrackIds(
+            existingRecord?.TrackIds,
+            @event.Tracks.Select(static trackId => trackId.Value));
         var record = await BuildRecordAsync(session, @event.PlaylistId.Value, trackIdValues, @event.ObservedAt, cancellationToken);
 
-        await session.StoreAsync(record, cancellationToken);
+        if (existingRecord is null)
+        {
+            await session.StoreAsync(record, cancellationToken);
+        }
+        else
+        {
+            existingRecord.TrackIds = record.TrackIds;
+            existingRecord.Tracks = record.Tracks;
+            existingRecord.UpdatedAt = record.UpdatedAt;
+        }
+
         await session.SaveChangesAsync(cancellationToken);
     }
 
@@ -101,6 +115,39 @@ public sealed class RavenStorePlaylistTracksReadModelPort(IDocumentStore documen
                 .ToArray(),
             UpdatedAt = updatedAt
         };
+    }
+
+    private static string[] MergeTrackIds(
+        IReadOnlyCollection<string>? existingTrackIds,
+        IEnumerable<string> discoveredTrackIds)
+    {
+        if (existingTrackIds is null || existingTrackIds.Count == 0)
+        {
+            return discoveredTrackIds
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+        }
+
+        var mergedTrackIds = new List<string>(existingTrackIds.Count);
+        var seenTrackIds = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var trackId in existingTrackIds)
+        {
+            if (seenTrackIds.Add(trackId))
+            {
+                mergedTrackIds.Add(trackId);
+            }
+        }
+
+        foreach (var trackId in discoveredTrackIds)
+        {
+            if (seenTrackIds.Add(trackId))
+            {
+                mergedTrackIds.Add(trackId);
+            }
+        }
+
+        return mergedTrackIds.ToArray();
     }
 
     private static CatalogTrackRecordDto? SelectPreferredTrack(

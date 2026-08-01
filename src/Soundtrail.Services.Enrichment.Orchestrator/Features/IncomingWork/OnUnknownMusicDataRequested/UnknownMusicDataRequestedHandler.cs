@@ -13,13 +13,14 @@ public sealed class OnUnknownMusicDataRequestedHandler(
     ISearchForCandidates searchForCandidates,
     IEventStreamRepository<CatalogWorkId> repository) : IHandler<RequestUnknownMusicDataMessage>
 {
-    public async Task Handle(RequestUnknownMusicDataMessage request, CancellationToken cancellationToken = default)
+    public async Task Handle(IncomingMessage<RequestUnknownMusicDataMessage> context, CancellationToken cancellationToken = default)
     {
-        var context = request.ToAggregateContext();
+        var request = context.Message;
+        var aggregateContext = request.ToAggregateContext();
         var streamId = CatalogWorkId.From(request.SearchCriteria);
         var search = new EnrichmentTarget.SearchForUnknownCatalogItem(request.SearchCriteria);
         var result = searchForCandidates.Search(search);
-        await using var scope = await DiscoveryHistoryScope.LoadFromEventStreamAsync(repository, streamId, context, cancellationToken);
+        await using var scope = await DiscoveryHistoryScope.LoadFromEventStreamAsync(repository, streamId, aggregateContext, cancellationToken);
 
         if (result is CandidatesResult.None)
         {

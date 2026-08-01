@@ -2,6 +2,7 @@ using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnLookupCompleted;
 
@@ -41,6 +42,24 @@ public sealed class LookupCompletedHandlerTests
         await subject.Handle(LookupCompletedHandlerUnitTestEnvironment.CreatePlaylistCompleted());
 
         environment.Repository.AppendedEvents.First().Should().BeOfType<PlaylistTracksDiscovered>();
+    }
+
+    [Fact]
+    public async Task Given_A_Playlist_Lookup_Success_When_Handling_Then_Unknown_Track_Discovery_Is_Requested_For_Each_Reference()
+    {
+        var environment = LookupCompletedHandlerUnitTestEnvironment.Create();
+        environment.SeedForPlaylist();
+        var subject = environment.CreateSubject();
+
+        await subject.Handle(LookupCompletedHandlerUnitTestEnvironment.CreatePlaylistCompleted());
+
+        environment.CommandBus.Commands.Should().ContainSingle().Which.Should().BeOfType<RequestUnknownMusicDataMessage>();
+        var command = (RequestUnknownMusicDataMessage)environment.CommandBus.Commands.Single();
+        command.SearchCriteria.Query.Should().Be("Road Song The Travellers");
+        command.SearchCriteria.SearchTypes.Should().Be(SearchType.Track);
+        command.Priority.Should().Be(LookupPriorityBand.High);
+        command.TrustLevel.Should().Be(100);
+        command.RiskScore.Should().Be(0);
     }
 
     [Fact]

@@ -6,4 +6,5 @@ public sealed record CatalogDiscoveryWorkDeferredEventDataRecordDto(
     DateTimeOffset NextEligibleAtUtc,
     int? EstimatedRetryAfterSeconds,
     string Reason,
-    DateTimeOffset DeferredAtUtc) : RavenEventBodyDto;
+    DateTimeOffset DeferredAtUtc,
+    int? SearchTypes = null) : RavenEventBodyDto;

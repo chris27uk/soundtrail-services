@@ -6,7 +6,7 @@ using Soundtrail.Domain.Common;
 
 namespace Soundtrail.Adapters.EventSourcing;
 
-internal sealed class RavenEventStreamRepository<TStreamId>(
+public sealed class RavenEventStreamRepository<TStreamId>(
     IAsyncDocumentSession session,
     ITypeRegistry typeRegistry,
     string streamName) : IEventStreamRepository<TStreamId>

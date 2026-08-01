@@ -1,4 +1,5 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Artists;
@@ -16,17 +17,21 @@ namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnLookupCompleted;
 internal sealed class LookupCompletedHandlerUnitTestEnvironment
 {
     private LookupCompletedHandlerUnitTestEnvironment(
-        EventStreamRepositoryFake repository)
+        EventStreamRepositoryFake repository,
+        CommandBusFake commandBus)
     {
         Repository = repository;
+        CommandBus = commandBus;
     }
 
     public EventStreamRepositoryFake Repository { get; }
 
-    public static LookupCompletedHandlerUnitTestEnvironment Create() =>
-        new(new EventStreamRepositoryFake());
+    public CommandBusFake CommandBus { get; }
 
-    public LookupCompletedHandler CreateSubject() => new(Repository);
+    public static LookupCompletedHandlerUnitTestEnvironment Create() =>
+        new(new EventStreamRepositoryFake(), new CommandBusFake());
+
+    public LookupCompletedHandler CreateSubject() => new(Repository, CommandBus);
 
     public static CatalogLookupCompleted CreateStreamingLocationCompleted(
         ArtistId? artistId = null,
@@ -170,7 +175,8 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
         EnrichmentTarget target,
         DateTimeOffset scheduledAt,
         string suffix) =>
-        MessageId.For($"DispatchLookupWork:{target.NormalisedIdentifier}:{scheduledAt:O}:{suffix}");
+        MessageId.For(
+            $"{MessageId.Deterministic("DispatchLookupWork", target.NormalisedIdentifier, scheduledAt.ToString("O")).Value}:{suffix}");
 
     public void SeedForPlaylist(string playlistName = "Road Trip")
     {
@@ -222,6 +228,17 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
         {
             AppendedEvents = events.ToArray();
             return Task.FromResult(new AppendResult(true, stream.Version + events.Count, events.ToArray(), AppendOutcome.Appended));
+        }
+    }
+
+    public sealed class CommandBusFake : ICommandBus
+    {
+        public List<IMessage> Commands { get; } = [];
+
+        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
+        {
+            Commands.Add(message);
+            return Task.CompletedTask;
         }
     }
 }

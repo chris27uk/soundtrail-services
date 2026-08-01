@@ -11,6 +11,12 @@ namespace Soundtrail.Domain.Discovery.Events
         DateTimeOffset RequestedAt,
         CorrelationId CorrelationId) : IDomainEvent
     {
-        public MessageId SubsequentDeterministicId(string command) => MessageId.For($"{command}:{this.Target.NormalisedIdentifier}:{this.TrustLevel}:{this.RiskScore}:{this.CorrelationId.Value}");
+        public MessageId SubsequentDeterministicId(string command) =>
+            MessageId.Deterministic(
+                command,
+                Target.NormalisedIdentifier,
+                TrustLevel?.ToString(),
+                RiskScore?.ToString(),
+                CorrelationId.Value);
     }
 }

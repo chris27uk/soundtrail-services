@@ -11,63 +11,63 @@ public static class SongTitleParser
 
         var trimmed = value.Trim();
         var parser = new ParseCursor(trimmed.AsSpan());
-
-        var rawSongTitle = ParseSongTitle(ref parser).Trim();
-        parser.SkipWhitespace();
-
-        if (parser.End)
-        {
-            return BuildSuccessOrFailure(
-                SongTitle.From(rawSongTitle),
-                null);
-        }
-
-        var separator = ParseOpenReleaseTypeSeparator(ref parser);
-        if (separator == ReleaseTypeSeparator.None)
-        {
-            return BuildSuccessOrFailure(
-                SongTitle.From(trimmed),
-                null);
-        }
-
-        var rawReleaseType = ParseReleaseType(ref parser).Trim();
-        if (!ParseCloseReleaseTypeSeparator(ref parser, separator))
-        {
-            var fallbackSongTitle = SongTitle.From(rawSongTitle);
-            return string.IsNullOrWhiteSpace(fallbackSongTitle.Value)
-                ? new SongTitleParseResult.Failure(SongTitleParseFailure.MissingCanonicalMeaning)
-                : new SongTitleParseResult.Failure(SongTitleParseFailure.UnclosedReleaseTypeQualifier);
-        }
-
-        parser.SkipWhitespace();
-
-        if (!parser.End || !ReleaseTypeVocabulary.IsRecognised(rawReleaseType))
-        {
-            return BuildSuccessOrFailure(
-                SongTitle.From(trimmed),
-                null);
-        }
-
-        return BuildSuccessOrFailure(
-            SongTitle.From(rawSongTitle),
-            ReleaseTypeVocabulary.Normalize(rawReleaseType));
-    }
-
-    private static string ParseSongTitle(ref ParseCursor parser)
-    {
-        var start = parser.Position;
-
         while (!parser.End)
         {
-            if (IsReleaseTypeStart(ref parser))
+            if (!IsReleaseTypeStart(ref parser))
             {
-                break;
+                parser.Advance();
+                continue;
+            }
+
+            var separatorStart = parser.Position;
+            var candidate = TryParseTrailingReleaseType(trimmed.AsSpan(), separatorStart);
+            if (candidate is ParsedSongTitleCandidate.Success success)
+            {
+                return BuildSuccessOrFailure(
+                    SongTitle.From(success.Value.RawSongTitle),
+                    ReleaseTypeVocabulary.Normalize(success.Value.RawReleaseType));
+            }
+
+            if (candidate is ParsedSongTitleCandidate.Failure failure)
+            {
+                var fallbackSongTitle = SongTitle.From(trimmed[..separatorStart]);
+                return string.IsNullOrWhiteSpace(fallbackSongTitle.Value)
+                    ? new SongTitleParseResult.Failure(SongTitleParseFailure.MissingCanonicalMeaning)
+                    : new SongTitleParseResult.Failure(failure.Reason);
             }
 
             parser.Advance();
         }
 
-        return parser.Slice(start, parser.Position).ToString();
+        return BuildSuccessOrFailure(SongTitle.From(trimmed), null);
+    }
+
+    private static ParsedSongTitleCandidate TryParseTrailingReleaseType(
+        ReadOnlySpan<char> source,
+        int separatorStart)
+    {
+        var parser = new ParseCursor(source[separatorStart..]);
+        var separator = ParseOpenReleaseTypeSeparator(ref parser);
+        if (separator == ReleaseTypeSeparator.None)
+        {
+            return new ParsedSongTitleCandidate.None();
+        }
+
+        var rawReleaseType = ParseReleaseType(ref parser).Trim();
+        if (!ParseCloseReleaseTypeSeparator(ref parser, separator))
+        {
+            return new ParsedSongTitleCandidate.Failure(SongTitleParseFailure.UnclosedReleaseTypeQualifier);
+        }
+
+        parser.SkipWhitespace();
+        if (!parser.End || !ReleaseTypeVocabulary.IsRecognised(rawReleaseType))
+        {
+            return new ParsedSongTitleCandidate.None();
+        }
+
+        var rawSongTitle = source[..separatorStart].ToString().Trim();
+        return new ParsedSongTitleCandidate.Success(
+            new ParsedSongTitle(rawSongTitle, rawReleaseType));
     }
 
     private static ReleaseTypeSeparator ParseOpenReleaseTypeSeparator(ref ParseCursor parser)
@@ -152,6 +152,19 @@ public static class SongTitleParser
         Parenthesis = 1,
         Bracket = 2,
         Hyphen = 3
+    }
+
+    private sealed record ParsedSongTitle(
+        string RawSongTitle,
+        string RawReleaseType);
+
+    private abstract record ParsedSongTitleCandidate
+    {
+        public sealed record None : ParsedSongTitleCandidate;
+
+        public sealed record Success(ParsedSongTitle Value) : ParsedSongTitleCandidate;
+
+        public sealed record Failure(SongTitleParseFailure Reason) : ParsedSongTitleCandidate;
     }
 
     private static SongTitleParseResult BuildSuccessOrFailure(

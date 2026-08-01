@@ -7,4 +7,5 @@ public sealed record CatalogDiscoveryWorkIgnoredEventDataRecordDto(
     int? EstimatedRetryAfterSeconds,
     DateTimeOffset? EarliestExpectedCompletionAt,
     string Reason,
-    DateTimeOffset IgnoredAtUtc) : RavenEventBodyDto;
+    DateTimeOffset IgnoredAtUtc,
+    int? SearchTypes = null) : RavenEventBodyDto;

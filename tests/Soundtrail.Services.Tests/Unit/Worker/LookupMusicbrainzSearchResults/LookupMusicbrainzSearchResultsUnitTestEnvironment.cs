@@ -210,7 +210,7 @@ internal sealed class LookupMusicbrainzSearchResultsUnitTestEnvironment
 
         public Exception? ExceptionToThrow { get; set; }
 
-        public Task Handle(LookupMusicbrainzSearchResultsMessage request, CancellationToken cancellationToken = default)
+        public Task Handle(IncomingMessage<LookupMusicbrainzSearchResultsMessage> context, CancellationToken cancellationToken = default)
         {
             Calls++;
             if (ExceptionToThrow is not null)

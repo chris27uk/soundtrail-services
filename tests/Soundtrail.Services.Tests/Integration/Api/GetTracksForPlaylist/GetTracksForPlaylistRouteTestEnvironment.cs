@@ -31,6 +31,17 @@ internal sealed class GetTracksForPlaylistRouteTestEnvironment : IDisposable
         return new GetTracksForPlaylistRouteTestEnvironment(app);
     }
 
+    public static GetTracksForPlaylistRouteTestEnvironment ForMissingPlaylistTracks()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Services.AddSingleton<IApiHandler<GetTracksForPlaylistRequest, GetTracksForPlaylistResponse?>>(new MissingGetTracksForPlaylistHandlerFake());
+        var app = builder.Build();
+        app.MapGetTracksForPlaylistEndpoints(new TypeRegistryFake());
+        app.StartAsync().GetAwaiter().GetResult();
+        return new GetTracksForPlaylistRouteTestEnvironment(app);
+    }
+
     public void Dispose()
     {
         app.StopAsync().GetAwaiter().GetResult();
@@ -55,6 +66,12 @@ internal sealed class GetTracksForPlaylistRouteTestEnvironment : IDisposable
                             new DateOnly(2024, 6, 7),
                             "https://cdn.soundtrail.test/tracks/track-3401.jpg")
                     ]));
+    }
+
+    private sealed class MissingGetTracksForPlaylistHandlerFake : IApiHandler<GetTracksForPlaylistRequest, GetTracksForPlaylistResponse?>
+    {
+        public Task<GetTracksForPlaylistResponse?> Handle(GetTracksForPlaylistRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult<GetTracksForPlaylistResponse?>(null);
     }
 
     private sealed class TypeRegistryFake : ITypeRegistry

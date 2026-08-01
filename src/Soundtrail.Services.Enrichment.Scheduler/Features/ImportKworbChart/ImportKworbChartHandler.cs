@@ -9,8 +9,9 @@ namespace Soundtrail.Services.Enrichment.Scheduler.Features.ImportKworbChart;
 public sealed class ImportKworbChartHandler(
     ICommandBus commandBus) : IHandler<ImportKworbChartCommand>
 {
-    public async Task Handle(ImportKworbChartCommand request, CancellationToken cancellationToken = default)
+    public async Task Handle(IncomingMessage<ImportKworbChartCommand> context, CancellationToken cancellationToken = default)
     {
+        var request = context.Message;
         await commandBus.SendAsync(CreatePlaylistDiscoveryRequest(request), cancellationToken);
     }
 

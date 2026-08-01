@@ -196,7 +196,7 @@ internal sealed class LookupPlaylistTracksDecoratorIntegrationTestEnvironment : 
 
         public Exception? ExceptionToThrow { get; set; }
 
-        public Task Handle(LookupPlaylistTracksByProviderMessage request, CancellationToken cancellationToken = default)
+        public Task Handle(IncomingMessage<LookupPlaylistTracksByProviderMessage> context, CancellationToken cancellationToken = default)
         {
             Calls++;
             if (ExceptionToThrow is not null)

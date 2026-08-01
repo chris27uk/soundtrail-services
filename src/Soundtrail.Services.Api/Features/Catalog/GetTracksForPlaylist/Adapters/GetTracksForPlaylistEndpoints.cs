@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http.HttpResults;
 using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog.Playlists;
@@ -11,14 +12,19 @@ public static class GetTracksForPlaylistEndpoints
     {
         endpoints.MapGet(
             "/catalog/playlists/{playlistId}/tracks",
-            async (
+            async Task<Microsoft.AspNetCore.Http.HttpResults.Results<NotFound<GetTracksForPlaylistResponseDto>, Ok<GetTracksForPlaylistResponseDto>>> (
                 string playlistId,
                 IApiHandler<GetTracksForPlaylistRequest, GetTracksForPlaylistResponse?> handler,
                 CancellationToken cancellationToken) =>
             {
                 var request = new GetTracksForPlaylistRequest(PlaylistId.FromPlaylistName(playlistId));
                 var response = await handler.Handle(request, cancellationToken);
-                return response is null ? Results.NotFound() : Results.Ok(typeRegistry.ToDto(response));
+                return response is null
+                    ? TypedResults.NotFound(new GetTracksForPlaylistResponseDto(
+                        request.PlaylistId.Value,
+                        [],
+                        null))
+                    : TypedResults.Ok(typeRegistry.ToDto<GetTracksForPlaylistResponseDto>(response));
             });
 
         return endpoints;

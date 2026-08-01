@@ -6,6 +6,7 @@ using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Tracks;
+using Soundtrail.Domain.Catalog.Tracks.Parsing;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
@@ -115,7 +116,7 @@ public sealed class MusicbrainzCatalogSearchPort(
 
     private async Task<IReadOnlyList<CatalogDiscoveryEntry>> ReadTracksAsync(string query, CancellationToken cancellationToken)
     {
-        using var response = await httpClient.GetAsync(BuildSearchUri("/ws/2/recording", query), cancellationToken);
+        using var response = await httpClient.GetAsync(BuildSearchUri("/ws/2/recording", query, "releases+artist-credits+isrcs"), cancellationToken);
         response.EnsureSuccessStatusCode();
 
         var payload = await response.Content.ReadFromJsonAsync<RecordingSearchResponse>(cancellationToken: cancellationToken)
@@ -133,22 +134,31 @@ public sealed class MusicbrainzCatalogSearchPort(
                 var credit = recording.ArtistCredit?.FirstOrDefault();
                 var artistName = credit?.Name ?? string.Empty;
                 var artistId = ArtistId.From(credit?.Artist?.Id ?? FallbackArtistId(artistName));
-                var releaseDate = ParseDate(recording.FirstReleaseDate);
-                var trackIdResult = TrackId.TryCreate(artistName, recording.Title!, releaseDate: releaseDate);
+                var release = recording.Releases?.FirstOrDefault(static release => !string.IsNullOrWhiteSpace(release.Title));
+                var albumTitle = release?.Title;
+                var albumId = release is { Id: not null }
+                    ? AlbumId.From(artistId.Value, release.Id).StableValue
+                    : null;
+                var releaseDate = ParseDate(recording.FirstReleaseDate) ?? ParseDate(release?.Date);
+                var trackIdResult = TrackId.TryCreate(artistName, recording.Title!, albumTitle, releaseDate);
                 if (trackIdResult is TrackIdCreateResult.Failure)
                 {
                     return null;
                 }
 
                 var trackId = ((TrackIdCreateResult.Success)trackIdResult).Value;
+                var releaseType = ParsedReleaseTypeFrom(recording.Title!);
                 var track = new Track(trackId)
                 {
                     Title = recording.Title!,
                     ArtistName = artistName,
+                    AlbumId = albumId,
+                    AlbumTitle = albumTitle,
                     DurationMs = recording.Length,
                     Isrc = recording.Isrcs?.FirstOrDefault(),
                     Mbid = recording.Id,
                     ReleaseDate = releaseDate,
+                    ReleaseType = releaseType,
                     UpdatedAt = DateTimeOffset.UtcNow
                 };
 
@@ -161,14 +171,15 @@ public sealed class MusicbrainzCatalogSearchPort(
             .ToArray();
     }
 
-    private string BuildSearchUri(string path, string query) =>
+    private string BuildSearchUri(string path, string query, string? include = null) =>
         QueryHelpers.AddQueryString(
             path,
             new Dictionary<string, string?>
             {
                 ["query"] = query,
                 ["fmt"] = "json",
-                ["limit"] = DefaultLimit.ToString()
+                ["limit"] = DefaultLimit.ToString(),
+                ["inc"] = include
             });
 
     private static bool Includes(SearchType value, SearchType flag) => (value & flag) == flag;
@@ -185,6 +196,14 @@ public sealed class MusicbrainzCatalogSearchPort(
 
     private static string FallbackArtistId(string artistName) =>
         "musicbrainz-artist:" + MusicIdentityText.NormalizeCompact(artistName);
+
+    private static string? ParsedReleaseTypeFrom(string title)
+    {
+        var parsed = SongTitleParser.Parse(title);
+        return parsed is SongTitleParseResult.Success success
+            ? success.Value.CanonicalReleaseType?.Value
+            : null;
+    }
 
     private static DateOnly? ParseDate(string? value)
     {
@@ -239,7 +258,16 @@ public sealed class MusicbrainzCatalogSearchPort(
         [JsonPropertyName("artist-credit")]
         public List<ArtistCreditResult>? ArtistCredit { get; init; }
 
+        public List<RecordingReleaseResult>? Releases { get; init; }
+
         public List<string>? Isrcs { get; init; }
+    }
+
+    private sealed class RecordingReleaseResult
+    {
+        public string? Id { get; init; }
+        public string? Title { get; init; }
+        public string? Date { get; init; }
     }
 
     private sealed class ArtistCreditResult

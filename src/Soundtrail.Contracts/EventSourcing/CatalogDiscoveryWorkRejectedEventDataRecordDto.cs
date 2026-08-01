@@ -4,4 +4,5 @@ public sealed record CatalogDiscoveryWorkRejectedEventDataRecordDto(
     string MusicCatalogId,
     string Priority,
     string Reason,
-    DateTimeOffset RejectedAtUtc) : RavenEventBodyDto;
+    DateTimeOffset RejectedAtUtc,
+    int? SearchTypes = null) : RavenEventBodyDto;

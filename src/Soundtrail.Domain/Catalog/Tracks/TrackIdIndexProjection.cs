@@ -30,8 +30,12 @@ public sealed record TrackIdIndexProjection(
     {
         const long albumMismatchPenalty = 1_000_000_000_000L;
         const long albumMissingPenalty = 250_000_000_000L;
+        const long albumSpecificityPenalty = 10_000_000L;
         const long releaseTypeMismatchPenalty = 100_000_000_000L;
         const long releaseTypeMissingPenalty = 25_000_000_000L;
+        const long releaseTypeSpecificityPenalty = 1_000_000L;
+        const long releaseDateMissingPenalty = 5_000_000_000L;
+        const long releaseDateSpecificityPenalty = 100_000L;
 
         long distance = 0;
 
@@ -39,19 +43,25 @@ public sealed record TrackIdIndexProjection(
             candidate: AlbumDiscriminator,
             target: target.AlbumDiscriminator,
             mismatchPenalty: albumMismatchPenalty,
-            missingPenalty: albumMissingPenalty);
+            missingPenalty: albumMissingPenalty,
+            specificityPenalty: albumSpecificityPenalty);
 
         distance += CompareOptionalDiscriminator(
             candidate: ReleaseTypeDiscriminator,
             target: target.ReleaseTypeDiscriminator,
             mismatchPenalty: releaseTypeMismatchPenalty,
-            missingPenalty: releaseTypeMissingPenalty);
+            missingPenalty: releaseTypeMissingPenalty,
+            specificityPenalty: releaseTypeSpecificityPenalty);
 
         if (target.ReleaseDateOrdinal != 0)
         {
             distance += ReleaseDateOrdinal == 0
-                ? 5_000_000_000L
+                ? releaseDateMissingPenalty
                 : Math.Abs((long)ReleaseDateOrdinal - target.ReleaseDateOrdinal);
+        }
+        else if (ReleaseDateOrdinal != 0)
+        {
+            distance += releaseDateSpecificityPenalty;
         }
 
         return distance;
@@ -61,11 +71,12 @@ public sealed record TrackIdIndexProjection(
         uint candidate,
         uint target,
         long mismatchPenalty,
-        long missingPenalty)
+        long missingPenalty,
+        long specificityPenalty)
     {
         if (target == 0)
         {
-            return 0;
+            return candidate == 0 ? 0 : specificityPenalty;
         }
 
         if (candidate == 0)

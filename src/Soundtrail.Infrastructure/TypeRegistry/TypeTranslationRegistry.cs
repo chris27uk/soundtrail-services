@@ -213,14 +213,8 @@ public sealed class TypeTranslationRegistry : ITypeRegistry
                 $"Domain type '{domainType.FullName}' is already registered to DTO type '{existingDtoType.FullName}'.");
         }
 
-        if (this.domainTypesByDtoType.TryGetValue(dtoType, out var existingDomainType) && existingDomainType != domainType)
-        {
-            throw new InvalidOperationException(
-                $"DTO type '{dtoType.FullName}' is already registered to domain type '{existingDomainType.FullName}'.");
-        }
-
         this.dtoTypesByDomainType[domainType] = dtoType;
-        this.domainTypesByDtoType[dtoType] = domainType;
+        this.domainTypesByDtoType.TryAdd(dtoType, domainType);
     }
 
     private static TypeTranslationRegistry CreateDefault() =>

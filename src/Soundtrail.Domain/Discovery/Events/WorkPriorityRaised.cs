@@ -12,5 +12,10 @@ public sealed record WorkPriorityRaised(
     CorrelationId CorrelationId) : IDomainEvent
 {
     public MessageId SubsequentDeterministicId(string command) =>
-        MessageId.For($"{command}:{Target.NormalisedIdentifier}:{TrustLevel}:{RiskScore}:{CorrelationId.Value}");
+        MessageId.Deterministic(
+            command,
+            Target.NormalisedIdentifier,
+            TrustLevel?.ToString(),
+            RiskScore?.ToString(),
+            CorrelationId.Value);
 }

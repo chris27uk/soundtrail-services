@@ -1,14 +1,13 @@
+using Scalar.AspNetCore;
 using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Services.Api;
 using Soundtrail.Services.Api.Infrastructure;
 using Soundtrail.Services.Api.Infrastructure.Messaging;
 using Soundtrail.Services.ServiceDefaults;
-using Wolverine;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 builder.Services.AddCatalogSearchAttemptQueue(builder.Configuration);
-builder.Host.UseWolverine(opts => opts.UseApiServiceBusMessaging(builder.Configuration, builder.Environment));
 
 builder.Services.AddFeatures<ApiAssemblyMarker>();
 #pragma warning disable ASP0000
@@ -21,11 +20,18 @@ foreach (var initializer in features)
     initializer.ConfigureServices(builder.Services, builder.Configuration);
 }
 
+builder.Services.AddOpenApi();
 var app = builder.Build();
 
 foreach (var initializer in features.OfType<IApiFeature>())
 {
     initializer.ConfigureApplication(app);
+}
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 app.MapDefaultEndpoints();

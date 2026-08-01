@@ -12,5 +12,6 @@ public sealed record AssessMusicCatalogItemCommandDto(
     CatalogItemResourceKindDto ResourceKindDto,
     string ResourceValue,
     CatalogItemKindDto? ResourceItemKind,
+    int? SearchTypes,
     int? TrustLevel,
     int? RiskScore);

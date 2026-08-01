@@ -8,6 +8,8 @@ public sealed class SongTitleParserTests
     [InlineData("Song (Radio Edit)", "song", "radio edit")]
     [InlineData("Song [Live Mix]", "song", "live mix")]
     [InlineData("Song - Radio Edit", "song", "radio edit")]
+    [InlineData("Song (Part II) - Radio Edit", "song part ii", "radio edit")]
+    [InlineData("Song (Original Version)", "song", "original version")]
     public void Given_A_Title_With_A_Recognised_Trailing_Qualifier_When_Parsing_Then_The_Song_And_Release_Type_Are_Separated(
         string input,
         string expectedSongTitle,
@@ -25,6 +27,8 @@ public sealed class SongTitleParserTests
     [InlineData("Release Me", "release me")]
     [InlineData("Song - Part II", "song part ii")]
     [InlineData("Instrumental Love", "instrumental love")]
+    [InlineData("Song (Radio Edit) Live", "song radio edit live")]
+    [InlineData("Song (Part II)", "song part ii")]
     public void Given_A_Title_Without_A_Recognised_Trailing_Qualifier_When_Parsing_Then_The_Full_Title_Remains_The_Song_Title(
         string input,
         string expectedSongTitle)

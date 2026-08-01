@@ -10,7 +10,6 @@ using TickerQ.Dashboard.DependencyInjection;
 using TickerQ.EntityFrameworkCore.DbContextFactory;
 using TickerQ.EntityFrameworkCore.DependencyInjection;
 using TickerQ.Utilities.Enums;
-using Wolverine;
 
 namespace Soundtrail.Services.Enrichment.Scheduler.Infrastructure.TickerQ;
 
@@ -61,9 +60,5 @@ public sealed class TickerQFeature : ISchedulerFeature
         dbContext.Database.EnsureCreated();
 
         app.UseTickerQ(TickerQStartMode.Immediate);
-    }
-
-    public void ConfigureMessaging(WolverineOptions options, IConfiguration configuration, IHostEnvironment environment)
-    {
     }
 }

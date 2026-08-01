@@ -13,11 +13,12 @@ public sealed class LookupMusicbrainzAlbumTracksHandler(
     IClockPort clock,
     ICommandBus commandBus) : IHandler<LookupMusicbrainzAlbumTracksMessage>
 {
-    public async Task Handle(LookupMusicbrainzAlbumTracksMessage request, CancellationToken cancellationToken = default)
+    public async Task Handle(IncomingMessage<LookupMusicbrainzAlbumTracksMessage> context, CancellationToken cancellationToken = default)
     {
+        var request = context.Message;
         var entries = await readTracksByAlbumIdPort.ReadAsync(request.AlbumId, cancellationToken);
         var observedAt = clock.UtcNow;
-
+        
         await commandBus.SendAsync(
             new CatalogLookupCompleted(
                 MessageId.New(),

@@ -5,6 +5,8 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Contract;
+using Soundtrail.Services.Api.Features.Catalog.Search.Adapters;
+using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
 
 namespace Soundtrail.Services.Tests.Unit.GetTracksForPlaylist;
 
@@ -14,11 +16,13 @@ internal sealed class GetTracksForPlaylistUnitTestEnvironment
         PlaylistId playlistId,
         GetTracksForPlaylistPortFake port,
         CommandBusFake commandBus,
+        DiscoveryFeedbackPortFake discoveryFeedbackPort,
         ClockPortFake clock)
     {
         PlaylistId = playlistId;
         Port = port;
         CommandBus = commandBus;
+        DiscoveryFeedbackPort = discoveryFeedbackPort;
         Clock = clock;
     }
 
@@ -27,6 +31,8 @@ internal sealed class GetTracksForPlaylistUnitTestEnvironment
     public GetTracksForPlaylistPortFake Port { get; }
 
     public CommandBusFake CommandBus { get; }
+
+    public DiscoveryFeedbackPortFake DiscoveryFeedbackPort { get; }
 
     public ClockPortFake Clock { get; }
 
@@ -37,9 +43,10 @@ internal sealed class GetTracksForPlaylistUnitTestEnvironment
             playlistId ?? PlaylistTracks.DefaultPlaylistId,
             new GetTracksForPlaylistPortFake(response ?? PlaylistTracks.CreateResponse(playlistId: playlistId ?? PlaylistTracks.DefaultPlaylistId)),
             new CommandBusFake(),
+            new DiscoveryFeedbackPortFake(),
             new ClockPortFake(new DateTimeOffset(2024, 6, 7, 8, 9, 10, TimeSpan.Zero)));
 
-    public GetTracksForPlaylistHandler CreateSubjectUnderTest() => new(Port, CommandBus, Clock);
+    public GetTracksForPlaylistHandler CreateSubjectUnderTest() => new(Port, CommandBus, DiscoveryFeedbackPort, Clock);
 
     public GetTracksForPlaylistRequest CreateRequest() => new(PlaylistId);
 
@@ -62,6 +69,19 @@ internal sealed class GetTracksForPlaylistUnitTestEnvironment
         {
             Commands.Add(message);
             return Task.CompletedTask;
+        }
+    }
+
+    public sealed class DiscoveryFeedbackPortFake : IDiscoveryFeedbackPort
+    {
+        public EnrichmentTarget? RequestedTarget { get; private set; }
+
+        public DiscoveryFeedbackResponse? Response { get; set; }
+
+        public Task<DiscoveryFeedbackResponse?> GetAsync(EnrichmentTarget target, CancellationToken cancellationToken)
+        {
+            RequestedTarget = target;
+            return Task.FromResult(Response);
         }
     }
 

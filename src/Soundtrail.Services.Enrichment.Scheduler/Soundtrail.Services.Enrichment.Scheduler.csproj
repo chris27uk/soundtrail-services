@@ -18,9 +18,6 @@
     <PackageReference Include="TickerQ" Version="10.4.0" />
     <PackageReference Include="TickerQ.Dashboard" Version="10.4.0" />
     <PackageReference Include="TickerQ.EntityFrameworkCore" Version="10.4.0" />
-    <PackageReference Include="WolverineFx" Version="6.5.1" />
-    <PackageReference Include="WolverineFx.AzureServiceBus" Version="6.2.2" />
-    <PackageReference Include="WolverineFx.RuntimeCompilation" Version="6.5.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -32,6 +29,15 @@
 
   <ItemGroup>
     <Folder Include="Features\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="appsettings.Development.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,19 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/ws/2/release/release-glass-cities-radio"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "title": "Glass Cities Remixes",
+      "date": "2024-06-23",
+      "artist-credit": [{ "name": "Neon Harbour", "artist": { "id": "musicbrainz-artist:neon-harbour" } }],
+      "media": [{ "tracks": [{ "title": "Glass Cities (Radio Edit)", "length": 231000, "artist-credit": [{ "name": "Neon Harbour" }], "recording": { "id": "mbid-glass-cities-radio-2024", "isrcs": [] } }] }]
+    }
+  }
+}

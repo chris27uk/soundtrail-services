@@ -13,8 +13,9 @@ public sealed class LookupMusicbrainzArtistTracksHandler(
     IClockPort clock,
     ICommandBus commandBus) : IHandler<LookupMusicbrainzArtistTracksMessage>
 {
-    public async Task Handle(LookupMusicbrainzArtistTracksMessage request, CancellationToken cancellationToken = default)
+    public async Task Handle(IncomingMessage<LookupMusicbrainzArtistTracksMessage> context, CancellationToken cancellationToken = default)
     {
+        var request = context.Message;
         var entries = await readTracksByArtistIdPort.ReadAsync(request.ArtistId, cancellationToken);
         var observedAt = clock.UtcNow;
 

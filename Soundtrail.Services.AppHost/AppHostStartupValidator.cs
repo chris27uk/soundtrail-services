@@ -7,12 +7,34 @@ public static class AppHostStartupValidator
     public static void Validate(IConfiguration configuration, string contentRootPath)
     {
         ValidateServiceBusConnectionString(configuration);
+        ValidateRavenDbLicense(configuration);
         ValidateServiceBusEmulator(configuration, contentRootPath);
         ValidateWireMockMappings(configuration, contentRootPath);
     }
 
+    private static void ValidateRavenDbLicense(IConfiguration configuration)
+    {
+        var licensePath = configuration["RavenDb:LicensePath"];
+        if (string.IsNullOrWhiteSpace(licensePath))
+        {
+            return;
+        }
+
+        if (!File.Exists(licensePath))
+        {
+            throw new InvalidOperationException(
+                $"RavenDb:LicensePath was set, but no file was found at '{licensePath}'.");
+        }
+    }
+
     private static void ValidateServiceBusConnectionString(IConfiguration configuration)
     {
+        var useServiceBusEmulator = configuration.GetValue("LocalDevelopment:UseServiceBusEmulator", false);
+        if (useServiceBusEmulator)
+        {
+            return;
+        }
+
         var connectionString = configuration.GetConnectionString("servicebus");
         if (string.IsNullOrWhiteSpace(connectionString))
         {

@@ -1,3 +1,6 @@
+using Aspire.AsbEmulatorUi.Integration;
+using Aspire.Hosting.ApplicationModel;
+using Aspire.Hosting.Azure;
 using Microsoft.Extensions.Configuration;
 using Projects;
 
@@ -7,47 +10,66 @@ public static class AppHostComposition
 {
     public static void Configure(IDistributedApplicationBuilder builder, string? contentRootPath = null)
     {
+        const string ravenDbDashboardUrl = "http://ravendb.localhost/studio/index.html";
+        const string ravenDbInternalUrl = "http://localhost:8080";
+        const string ravenDbListenUrl = "http://0.0.0.0:8080";
+        const string ravenDbListenTcpUrl = "tcp://0.0.0.0:38888";
+        const string ravenDbPublicTcpUrl = "tcp://localhost:38888";
+        const string apiPublicUrl = "http://api.localhost";
+
         var resolvedContentRootPath = contentRootPath ?? builder.Environment.ContentRootPath;
         AppHostStartupValidator.Validate(builder.Configuration, resolvedContentRootPath);
 
-        var serviceBus = builder.AddConnectionString("servicebus");
         var useProviderStubs = builder.Configuration.GetValue("LocalDevelopment:UseProviderStubs", false);
         var useServiceBusEmulator = builder.Configuration.GetValue("LocalDevelopment:UseServiceBusEmulator", false);
+        var ravenDbLicensePath = builder.Configuration["RavenDb:LicensePath"];
+        var serviceBusEmulatorConfigPath = Path.Combine(
+            resolvedContentRootPath,
+            "servicebus-emulator",
+            "Config.json");
 
         var redis = builder.AddContainer("redis", "redis", "7-alpine")
             .WithEndpoint(port: 6379, targetPort: 6379, name: "tcp");
 
         var ravenDb = builder.AddContainer("ravendb", "ravendb/ravendb", "7.1-ubuntu-latest")
             .WithHttpEndpoint(port: 8080, targetPort: 8080, name: "http")
+            .WithUrlForEndpoint("http", url => url.Url = ravenDbDashboardUrl)
+            .WithEndpoint(port: 38888, targetPort: 38888, name: "tcp")
             .WithEnvironment("RAVEN_Setup_Mode", "None")
+            .WithEnvironment("RAVEN_ServerUrl", ravenDbListenUrl)
+            .WithEnvironment("RAVEN_ServerUrl_Tcp", ravenDbListenTcpUrl)
+            .WithEnvironment("RAVEN_PublicServerUrl", ravenDbInternalUrl)
+            .WithEnvironment("RAVEN_PublicServerUrl_Tcp", ravenDbPublicTcpUrl)
             .WithEnvironment("RAVEN_Security_UnsecuredAccessAllowed", "PublicNetwork")
             .WithEnvironment("RAVEN_License_Eula_Accepted", "true");
 
-        var serviceBusSqlPassword = builder.Configuration["ServiceBusEmulator:SqlPassword"];
-        var serviceBusEmulatorSql = useServiceBusEmulator
-            ? builder.AddContainer("mssql", "mcr.microsoft.com/mssql/server", "2022-latest")
-                .WithEnvironment("ACCEPT_EULA", "Y")
-                .WithEnvironment("MSSQL_PID", "Developer")
-                .WithEnvironment("MSSQL_SA_PASSWORD", serviceBusSqlPassword!)
-                .WithEndpoint(port: 1433, targetPort: 1433, name: "sql")
-            : null;
-
-        var serviceBusEmulator = useServiceBusEmulator
-            ? builder.AddContainer("servicebus-emulator", "mcr.microsoft.com/azure-messaging/servicebus-emulator", "latest")
+        if (!string.IsNullOrWhiteSpace(ravenDbLicensePath))
+        {
+            ravenDb = ravenDb
                 .WithBindMount(
-                    Path.Combine(resolvedContentRootPath, "servicebus-emulator", "Config.json"),
-                    "/ServiceBus_Emulator/ConfigFiles/Config.json",
+                    ravenDbLicensePath,
+                    "/run/secrets/ravendb-license.json",
                     isReadOnly: true)
-                .WithEnvironment("ACCEPT_EULA", "Y")
-                .WithEnvironment("SQL_SERVER", "mssql")
-                .WithEnvironment("MSSQL_SA_PASSWORD", serviceBusSqlPassword!)
-                .WithEnvironment("EMULATOR_HTTP_PORT", "5300")
-                .WithEnvironment("SQL_WAIT_INTERVAL", "15")
-                .WithEndpoint(port: 5672, targetPort: 5672, name: "amqp")
-                .WithHttpEndpoint(port: 5300, targetPort: 5300, name: "http")
-                .WithHttpHealthCheck("/health")
-                .WaitFor(serviceBusEmulatorSql!)
-            : null;
+                .WithEnvironment("RAVEN_License_Path", "/run/secrets/ravendb-license.json");
+        }
+        
+        IResourceBuilder<IResourceWithConnectionString> serviceBus;
+        if (useServiceBusEmulator)
+        {
+            var serviceBusResource = builder.AddAzureServiceBus("servicebus");
+            serviceBusResource.RunAsEmulator(c => c
+                .WithLifetime(ContainerLifetime.Persistent)
+                .WithConfigurationFile(serviceBusEmulatorConfigPath)
+                .WithHostPort(5672));
+
+            builder.AddAsbEmulatorUi("servicebus-ui", serviceBusResource);
+
+            serviceBus = serviceBusResource;
+        }
+        else
+        {
+            serviceBus = builder.AddConnectionString("servicebus");
+        }
 
         var providerStubs = useProviderStubs
             ? builder.AddContainer("provider-stubs", "wiremock/wiremock", "3.9.1")
@@ -59,12 +81,15 @@ public static class AppHostComposition
             : null;
 
         var api = builder.AddProject<Soundtrail_Services_Api>("soundtrail-api")
-            .WithHttpEndpoint(name: "http")
+            .WithHttpEndpoint(port: 8081, name: "http")
+            .WithUrlForEndpoint("http", url => url.Url = apiPublicUrl)
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
             .WithEnvironment("ServiceBus__CatalogSearchAttemptsQueueName", "lookup-music-requests")
-            .WithEnvironment("RavenDb__Urls__0", ravenDb.GetEndpoint("http"))
+            .WithEnvironment("ServiceBus__KnownCatalogItemRequestsQueueName", "known-music-data-requests")
+            .WithEnvironment("ServiceBus__UnknownCatalogItemRequestsQueueName", "unknown-music-data-requests")
+            .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail");
 
         if (useProviderStubs)
@@ -72,9 +97,9 @@ public static class AppHostComposition
             api = api.WithEnvironment("LocalDevelopment__SeedAsyncLookupTrack", "true");
         }
 
-        if (serviceBusEmulator is not null)
+        if (useServiceBusEmulator)
         {
-            api = api.WaitFor(serviceBusEmulator);
+            api = api.WaitFor(serviceBus);
         }
 
         var projector = builder.AddProject<Soundtrail_Services_Projector>("soundtrail-projector")
@@ -82,13 +107,16 @@ public static class AppHostComposition
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
+            .WithEnvironment("ServiceBus__AssessMusicCatalogItemQueueName", "assess-music-catalog-item")
+            .WithEnvironment("ServiceBus__DispatchLookupWorkQueueName", "dispatch-lookup-work")
+            .WithEnvironment("ServiceBus__PlaylistUpdatesQueueName", "playlist-updates")
             .WithEnvironment("ServiceBus__MusicTrackEventsQueueName", "music-track-events")
-            .WithEnvironment("RavenDb__Urls__0", ravenDb.GetEndpoint("http"))
+            .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail");
 
-        if (serviceBusEmulator is not null)
+        if (useServiceBusEmulator)
         {
-            projector = projector.WaitFor(serviceBusEmulator);
+            projector = projector.WaitFor(serviceBus);
         }
 
         var scheduler = builder.AddProject<Soundtrail_Services_Enrichment_Scheduler>("soundtrail-scheduler")
@@ -98,12 +126,12 @@ public static class AppHostComposition
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
             .WithEnvironment("ServiceBus__DiscoveryBacklogSchedulingQueueName", "discovery-backlog-scheduling")
             .WithEnvironment("ServiceBus__PlaylistUpdatesQueueName", "playlist-updates")
-            .WithEnvironment("RavenDb__Urls__0", ravenDb.GetEndpoint("http"))
+            .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail");
 
-        if (serviceBusEmulator is not null)
+        if (useServiceBusEmulator)
         {
-            scheduler = scheduler.WaitFor(serviceBusEmulator);
+            scheduler = scheduler.WaitFor(serviceBus);
         }
 
         var orchestrator = builder.AddProject<Soundtrail_Services_Enrichment_Orchestrator>("soundtrail-orchestrator")
@@ -113,18 +141,24 @@ public static class AppHostComposition
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
             .WithEnvironment("ServiceBus__CatalogSearchAttemptsQueueName", "lookup-music-requests")
             .WithEnvironment("ServiceBus__DiscoveryBacklogSchedulingQueueName", "discovery-backlog-scheduling")
+            .WithEnvironment("ServiceBus__KnownMusicDataRequestsQueueName", "known-music-data-requests")
+            .WithEnvironment("ServiceBus__UnknownMusicDataRequestsQueueName", "unknown-music-data-requests")
+            .WithEnvironment("ServiceBus__AssessMusicCatalogItemQueueName", "assess-music-catalog-item")
+            .WithEnvironment("ServiceBus__DispatchLookupWorkQueueName", "dispatch-lookup-work")
+            .WithEnvironment("ServiceBus__CatalogLookupCompletedQueueName", "catalog-lookup-completed")
             .WithEnvironment("ServiceBus__MusicBrainzLookupQueueName", "lookup-musicbrainz")
             .WithEnvironment("ServiceBus__PlaybackReferencesLookupQueueName", "lookup-playback-references")
+            .WithEnvironment("ServiceBus__MusicPlaylistLookupQueueName", "lookup-music-playlists")
             .WithEnvironment("ServiceBus__EnrichmentResponsesQueueName", "enrichment-responses")
             .WithEnvironment("ServiceBus__ApplyMusicCatalogLookupAttemptedToCatalogQueueName", "apply-lookup-attempted-to-catalog")
             .WithEnvironment("ServiceBus__ApplyMusicCatalogLookupAttemptedToDiscoveryQueueName", "apply-lookup-attempted-to-discovery")
             .WithEnvironment("ServiceBus__MusicTrackEventsQueueName", "music-track-events")
-            .WithEnvironment("RavenDb__Urls__0", ravenDb.GetEndpoint("http"))
+            .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail");
 
-        if (serviceBusEmulator is not null)
+        if (useServiceBusEmulator)
         {
-            orchestrator = orchestrator.WaitFor(serviceBusEmulator);
+            orchestrator = orchestrator.WaitFor(serviceBus);
         }
 
         var worker = builder.AddProject<Soundtrail_Services_Enrichment_Worker>("soundtrail-worker")
@@ -135,14 +169,16 @@ public static class AppHostComposition
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
             .WithEnvironment("ServiceBus__MusicBrainzLookupQueueName", "lookup-musicbrainz")
             .WithEnvironment("ServiceBus__PlaybackReferencesLookupQueueName", "lookup-playback-references")
+            .WithEnvironment("ServiceBus__MusicPlaylistLookupQueueName", "lookup-music-playlists")
+            .WithEnvironment("ServiceBus__CatalogLookupCompletedQueueName", "catalog-lookup-completed")
             .WithEnvironment("ServiceBus__EnrichmentResponsesQueueName", "enrichment-responses")
             .WithEnvironment("ConnectionStrings__Redis", $"{redis.GetEndpoint("tcp").Property(EndpointProperty.Host)}:{redis.GetEndpoint("tcp").Property(EndpointProperty.Port)},abortConnect=false")
-            .WithEnvironment("RavenDb__Urls__0", ravenDb.GetEndpoint("http"))
+            .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail");
 
-        if (serviceBusEmulator is not null)
+        if (useServiceBusEmulator)
         {
-            worker = worker.WaitFor(serviceBusEmulator);
+            worker = worker.WaitFor(serviceBus);
         }
 
         if (providerStubs is not null)
@@ -150,7 +186,28 @@ public static class AppHostComposition
             worker = worker
                 .WithEnvironment("Kworb__BaseUrl", providerStubs.GetEndpoint("http"))
                 .WithEnvironment("MusicBrainz__BaseUrl", providerStubs.GetEndpoint("http"))
-                .WithEnvironment("Odesli__BaseUrl", providerStubs.GetEndpoint("http"));
+                .WithEnvironment("Odesli__BaseUrl", providerStubs.GetEndpoint("http"))
+                .WithEnvironment("SourceBudgets__Kworb__MaxRequests", "100000")
+                .WithEnvironment("SourceBudgets__Kworb__WindowSeconds", "60")
+                .WithEnvironment("SourceBudgets__Kworb__SafetyMarginPercent", "0")
+                .WithEnvironment("SourceBudgets__Kworb__MinimumSpacingSeconds", "0")
+                .WithEnvironment("SourceBudgets__MusicBrainz__MaxRequests", "100000")
+                .WithEnvironment("SourceBudgets__MusicBrainz__WindowSeconds", "60")
+                .WithEnvironment("SourceBudgets__MusicBrainz__SafetyMarginPercent", "0")
+                .WithEnvironment("SourceBudgets__MusicBrainz__MinimumSpacingSeconds", "0")
+                .WithEnvironment("SourceBudgets__Odesli__MaxRequests", "100000")
+                .WithEnvironment("SourceBudgets__Odesli__WindowSeconds", "60")
+                .WithEnvironment("SourceBudgets__Odesli__SafetyMarginPercent", "0");
         }
+
+        builder.AddContainer("local-proxy", "caddy", "2.9-alpine")
+            .WithEndpointProxySupport(false)
+            .WithHttpEndpoint(targetPort: 80, name: "http", isProxied: false)
+            .WithBindMount(
+                Path.Combine(resolvedContentRootPath, "caddy", "Caddyfile"),
+                "/etc/caddy/Caddyfile",
+                isReadOnly: true)
+            .WaitFor(api)
+            .WaitFor(ravenDb);
     }
 }

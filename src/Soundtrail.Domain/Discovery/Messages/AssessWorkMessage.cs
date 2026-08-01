@@ -10,9 +10,10 @@ public sealed record AssessWorkMessage(
     EnrichmentTarget Target,
     LookupPriorityBand Priority,
     int? TrustLevel = null,
-    int? RiskScore = null) : IPrioritisedMessage
+    int? RiskScore = null) : IPrioritisedMessage, ITargetedMessage
 {
     public DateTimeOffset RequestedAt => CreatedAt;
 
-    public static MessageId NewId(EnrichmentTarget target, DateTimeOffset createdAt) => MessageId.For($"AssessWork:{target.NormalisedIdentifier}:{createdAt}");
+    public static MessageId NewId(EnrichmentTarget target, DateTimeOffset createdAt) =>
+        MessageId.Deterministic("AssessWork", target.NormalisedIdentifier, createdAt.ToString("O"));
 }

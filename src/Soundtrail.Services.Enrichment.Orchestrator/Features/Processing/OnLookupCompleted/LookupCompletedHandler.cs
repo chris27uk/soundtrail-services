@@ -1,15 +1,21 @@
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
+using Soundtrail.Domain.Common;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.Processing.OnLookupCompleted.Extensions;
+using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.Processing.OnLookupCompleted;
 
-public sealed class LookupCompletedHandler(IEventStreamRepository<CatalogWorkId> repository) : IHandler<CatalogLookupCompleted>
+public sealed class LookupCompletedHandler(
+    IEventStreamRepository<CatalogWorkId> repository,
+    ICommandBus commandBus) : IHandler<CatalogLookupCompleted>
 {
-    public async Task Handle(CatalogLookupCompleted request, CancellationToken cancellationToken = default)
+    public async Task Handle(IncomingMessage<CatalogLookupCompleted> context, CancellationToken cancellationToken = default)
     {
+        var request = context.Message;
         var lookupRequest = request.Result;
         var streamId = lookupRequest.StreamId();
         var historyContext = request.ToAggregateContext();
@@ -18,5 +24,46 @@ public sealed class LookupCompletedHandler(IEventStreamRepository<CatalogWorkId>
         scope.Aggregate.ApplyLookupResult(lookupRequest);
         
         await scope.Aggregate.SaveAsync(cancellationToken);
+        await PublishPlaylistTrackDiscoveryRequestsAsync(request, lookupRequest, cancellationToken);
+    }
+
+    private async Task PublishPlaylistTrackDiscoveryRequestsAsync(
+        CatalogLookupCompleted request,
+        LookupResult lookupRequest,
+        CancellationToken cancellationToken)
+    {
+        if (lookupRequest is not LookupResult.Succeeded succeeded)
+        {
+            return;
+        }
+
+        if (succeeded.Context.StreamId.StableValue.StartsWith("child_tracks_for_playlist:", StringComparison.Ordinal) is false)
+        {
+            return;
+        }
+
+        if (succeeded.Value is not LookedUpData.PlaylistTrackReferences playlistTrackReferences)
+        {
+            return;
+        }
+
+        foreach (var trackReference in playlistTrackReferences.Values)
+        {
+            var searchCriteria = new SearchCriteria(
+                $"{trackReference.TrackTitle} {trackReference.ArtistName.Value}".Trim(),
+                SearchType.Track);
+
+            await commandBus.SendAsync(
+                new RequestUnknownMusicDataMessage(
+                    searchCriteria,
+                    LookupPriorityBand.High,
+                    100,
+                    0,
+                    request.RequestedAt,
+                    CommandId: MessageId.For(
+                        $"RequestUnknownMusicData:{succeeded.Context.StreamId.StableValue}:{searchCriteria.NormalisedIdentifier}"),
+                    CorrelationId: request.CorrelationId),
+                cancellationToken);
+        }
     }
 }
