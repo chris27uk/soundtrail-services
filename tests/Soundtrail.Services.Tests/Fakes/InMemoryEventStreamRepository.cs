@@ -10,6 +10,8 @@ namespace Soundtrail.Services.Tests.Unit.Sociable.GetTracksForPlaylist
         private readonly Dictionary<string, List<IDomainEvent>> eventsByStream = new(StringComparer.Ordinal);
         private readonly HashSet<string> operationIds = new(StringComparer.Ordinal);
 
+        public IReadOnlyList<IDomainEvent> SavedEvents => eventsByStream.Values.SelectMany(static events => events).ToArray();
+
         public Task<LoadedEventStream<TStreamId>> LoadAsync(TStreamId streamId, CancellationToken cancellationToken)
         {
             var streamKey = streamId.StableValue;

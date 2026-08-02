@@ -4,6 +4,7 @@ using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Contract;
+using Soundtrail.Services.Tests.Fakes;
 
 namespace Soundtrail.Services.Tests.Unit.GetTracksForPlaylist;
 
@@ -34,7 +35,15 @@ internal sealed class GetTracksForPlaylistUnitTestEnvironment
         GetTracksForPlaylistResponse? response = null) =>
         new(
             playlistId ?? PlaylistTracks.DefaultPlaylistId,
-            new GetTracksForPlaylistPortFake(response ?? PlaylistTracks.CreateResponse(playlistId: playlistId ?? PlaylistTracks.DefaultPlaylistId)),
+            GetTracksForPlaylistPortFake.Create().WithPlaylistTracks(
+                response ?? PlaylistTracks.CreateResponse(playlistId: playlistId ?? PlaylistTracks.DefaultPlaylistId)),
+            new CommandBusFake(),
+            new ClockPortFake(new DateTimeOffset(2024, 6, 7, 8, 9, 10, TimeSpan.Zero)));
+
+    public static GetTracksForPlaylistUnitTestEnvironment ForMissingPlaylistTracks(PlaylistId? playlistId = null) =>
+        new(
+            playlistId ?? PlaylistId.FromPlaylistName("WorldwideSongChart"),
+            GetTracksForPlaylistPortFake.Create(),
             new CommandBusFake(),
             new ClockPortFake(new DateTimeOffset(2024, 6, 7, 8, 9, 10, TimeSpan.Zero)));
 
@@ -42,16 +51,8 @@ internal sealed class GetTracksForPlaylistUnitTestEnvironment
 
     public GetTracksForPlaylistRequest CreateRequest() => new(PlaylistId);
 
-    public sealed class GetTracksForPlaylistPortFake(GetTracksForPlaylistResponse? response) : IGetTracksForPlaylistPort
-    {
-        public List<PlaylistId> RequestedPlaylistIds { get; } = [];
-
-        public Task<GetTracksForPlaylistResponse?> GetTracksForPlaylistAsync(PlaylistId playlistId, CancellationToken cancellationToken)
-        {
-            RequestedPlaylistIds.Add(playlistId);
-            return Task.FromResult(response);
-        }
-    }
+    public TMessage SentMessage<TMessage>() where TMessage : IMessage =>
+        CommandBus.Commands.OfType<TMessage>().Single();
 
     public sealed class CommandBusFake : ICommandBus
     {

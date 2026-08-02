@@ -7,6 +7,7 @@ using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Contract;
 using Soundtrail.Services.Tests.Integration.Ports;
+using Soundtrail.Services.Tests.Fakes;
 
 namespace Soundtrail.Services.Tests.Integration.Ports.GetTracksForPlaylist;
 
@@ -73,7 +74,7 @@ internal sealed class GetTracksForPlaylistPortContractTestEnvironment : IAsyncDi
         return implementation switch
         {
             GetTracksForPlaylistPortImplementation.Fake => new GetTracksForPlaylistPortContractTestEnvironment(
-                new GetTracksForPlaylistPortFake(response),
+                GetTracksForPlaylistPortFake.Create().WithPlaylistTracks(response),
                 resolvedPlaylistId),
             GetTracksForPlaylistPortImplementation.Raven => await CreateRavenEnvironmentAsync(
                 resolvedPlaylistId,
@@ -112,7 +113,7 @@ internal sealed class GetTracksForPlaylistPortContractTestEnvironment : IAsyncDi
         return implementation switch
         {
             GetTracksForPlaylistPortImplementation.Fake => new GetTracksForPlaylistPortContractTestEnvironment(
-                new GetTracksForPlaylistPortFake(),
+                GetTracksForPlaylistPortFake.Create(),
                 resolvedPlaylistId),
             GetTracksForPlaylistPortImplementation.Raven => await CreateRavenEnvironmentAsync(resolvedPlaylistId),
             _ => throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null)

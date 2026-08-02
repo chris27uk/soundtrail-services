@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using Soundtrail.Domain.Common;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.StreamingLocations;
 using Soundtrail.Services.Enrichment.Worker.Shared.StreamingLocations;
+using Soundtrail.Services.Tests.Fakes;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;
@@ -38,10 +39,9 @@ internal sealed class ReadStreamingLocationByProviderPortContractTestEnvironment
         return implementation switch
         {
             ReadStreamingLocationByProviderPortImplementation.Fake => new ReadStreamingLocationByProviderPortContractTestEnvironment(
-                new ReadStreamingLocationByProviderPortFake(
-                    resolvedProvider == ProviderName.Spotify
-                        ? spotifyUrl
-                        : appleMusicUrl)),
+                CreateFake(
+                    resolvedProvider,
+                    resolvedProvider == ProviderName.Spotify ? spotifyUrl : appleMusicUrl)),
             ReadStreamingLocationByProviderPortImplementation.WireMock => CreateWireMockEnvironment(responseJson),
             _ => throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null)
         };
@@ -138,15 +138,19 @@ internal sealed class ReadStreamingLocationByProviderPortContractTestEnvironment
         return "{\"linksByPlatform\":{" + string.Join(",", platforms) + "}}";
     }
 
-    private sealed class ReadStreamingLocationByProviderPortFake(string? url = null) : IReadStreamingLocationByProviderPort
+    private static ReadStreamingLocationByProviderPortFake CreateFake(ProviderName provider, string? url)
     {
-        private readonly Uri? uri = string.IsNullOrWhiteSpace(url) ? null : new Uri(url, UriKind.Absolute);
+        var fake = new ReadStreamingLocationByProviderPortFake();
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return fake;
+        }
 
-        public Task<Uri?> ReadByIsrcAsync(string isrc, ProviderName provider, CancellationToken cancellationToken) =>
-            Task.FromResult(uri);
+        var uri = new Uri(url, UriKind.Absolute);
+        fake.WithIsrcLocation("GBAYE2409901", provider, uri);
+        fake.WithMetadataLocation("Northbound", "Summer Lights", provider, uri);
 
-        public Task<Uri?> ReadByTrackMetadataAsync(string artistName, string trackTitle, ProviderName provider, CancellationToken cancellationToken) =>
-            Task.FromResult(uri);
+        return fake;
     }
 }
 

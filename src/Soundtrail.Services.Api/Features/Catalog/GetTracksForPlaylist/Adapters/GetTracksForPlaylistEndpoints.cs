@@ -13,7 +13,7 @@ public static class GetTracksForPlaylistEndpoints
     {
         endpoints.MapGet(
             "/catalog/playlists/{playlistId}/tracks",
-            async Task<Microsoft.AspNetCore.Http.HttpResults.Results<NotFound<GetTracksForPlaylistResponseDto>, Ok<GetTracksForPlaylistResponseDto>>> (
+            async Task<Results<NotFound<GetTracksForPlaylistResponseDto>, Ok<GetTracksForPlaylistResponseDto>>> (
                 string playlistId,
                 IApiHandler<GetTracksForPlaylistRequest, GetTracksForPlaylistResponse?> handler,
                 HttpContext httpContext,

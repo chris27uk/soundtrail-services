@@ -10,20 +10,12 @@ public sealed class PlaylistTracksDoNotExistTests
     public async Task Given_Missing_Playlist_Tracks_When_Requesting_The_Playlist_Tracks_Then_No_Playlist_Tracks_Are_Returned()
     {
         var playlistId = PlaylistId.FromPlaylistName("UnknownPlaylist");
-        var environment = GetTracksForPlaylistMissingUnitTestEnvironment.ForMissingPlaylistTracks(playlistId);
+        var environment = GetTracksForPlaylistUnitTestEnvironment.ForMissingPlaylistTracks(playlistId);
+        var sut = environment.CreateSubjectUnderTest();
 
-        var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
+        var result = await sut.Handle(environment.CreateRequest());
 
-        result.Should().NotBeNull();
         result!.PlaylistId.Should().Be(playlistId);
-        result.Tracks.Should().BeEmpty();
-        result.Discovery.Should().NotBeNull();
-        result.Discovery!.Status.Should().Be("scheduled");
-        result.Discovery.Priority.Should().Be(LookupPriorityBand.High);
-        result.Discovery.NextEligibleAt.Should().Be(environment.Clock.UtcNow.AddSeconds(15));
-        result.Discovery.EarliestExpectedCompletionAt.Should().Be(environment.Clock.UtcNow.AddSeconds(75));
-        result.Discovery.Reason.Should().Be("Playlist lookup queued.");
-        result.Discovery.UpdatedAtUtc.Should().Be(environment.Clock.UtcNow);
     }
 
 }

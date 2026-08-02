@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.MusicMetadata;
 using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
+using Soundtrail.Services.Tests.Fakes;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;
@@ -37,8 +38,10 @@ internal sealed class ReadCatalogEntriesBySearchCriteriaPortContractTestEnvironm
         {
             ReadCatalogEntriesBySearchCriteriaPortImplementation.Fake =>
                 new ReadCatalogEntriesBySearchCriteriaPortContractTestEnvironment(
-                    new ReadCatalogEntriesBySearchCriteriaPortFake(
-                        CreateEntries())),
+                    new ReadCatalogEntriesBySearchCriteriaPortFake()
+                        .WithEntries(
+                            new SearchCriteria("rare song", SearchType.All),
+                            CreateEntries().ToArray())),
             ReadCatalogEntriesBySearchCriteriaPortImplementation.WireMock => CreateWireMockEnvironment(
                 artistJson: """{"artists":[{"id":"artist-mb-1","name":"Test Artist"}]}""",
                 releaseJson: """{"releases":[{"id":"release-mb-1","title":"Rare Release","date":"2026-01-02","artist-credit":[{"name":"Test Artist","artist":{"id":"artist-mb-1"}}]}]}""",
@@ -110,13 +113,6 @@ internal sealed class ReadCatalogEntriesBySearchCriteriaPortContractTestEnvironm
                 })),
             server,
             client);
-    }
-
-    private sealed class ReadCatalogEntriesBySearchCriteriaPortFake(IReadOnlyList<CatalogDiscoveryEntry> entries)
-        : IReadCatalogEntriesBySearchCriteriaPort
-    {
-        public Task<IReadOnlyList<CatalogDiscoveryEntry>> ReadAsync(SearchCriteria searchCriteria, CancellationToken cancellationToken) =>
-            Task.FromResult(entries);
     }
 
     private static IReadOnlyList<CatalogDiscoveryEntry> CreateEntries()
