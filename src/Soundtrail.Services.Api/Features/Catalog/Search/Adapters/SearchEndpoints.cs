@@ -1,6 +1,7 @@
 using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Search;
+using Soundtrail.Services.Api.Features.Catalog.Shared.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.Search.Contract;
 
 namespace Soundtrail.Services.Api.Features.Catalog.Search.Adapters;
@@ -15,20 +16,25 @@ public static class SearchEndpoints
                 string? query,
                 string? filter,
                 IApiHandler<SearchRequest, SearchResponse?> handler,
+                HttpContext httpContext,
                 CancellationToken cancellationToken) =>
             {
                 if (string.IsNullOrWhiteSpace(query))
                 {
+                    DiscoveryResponseHeaders.Apply(httpContext, null);
                     return Results.BadRequest();
                 }
 
                 if (!Enum.TryParse<SearchType>(filter, true, out var resolvedFilter))
                 {
+                    DiscoveryResponseHeaders.Apply(httpContext, null);
                     return Results.BadRequest();
                 }
 
                 var response = await handler.Handle(new SearchRequest(query, resolvedFilter), cancellationToken);
-                return response is null ? Results.NotFound() : Results.Ok(typeRegistry.ToDto(response));
+                var dto = response is null ? null : typeRegistry.ToDto<SearchResponseDto>(response);
+                DiscoveryResponseHeaders.Apply(httpContext, dto?.Discovery);
+                return response is null ? Results.NotFound() : Results.Ok(dto);
             });
 
         return endpoints;

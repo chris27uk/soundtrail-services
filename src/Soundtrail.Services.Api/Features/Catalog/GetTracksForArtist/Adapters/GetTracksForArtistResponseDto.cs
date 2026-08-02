@@ -10,7 +10,6 @@ public sealed record GetTracksForArtistResponseDto(
 
 public sealed record GetTracksForArtistTrackResponseDto(
     string TrackId,
-    string MusicCatalogId,
     string Title,
     string ArtistName,
     string? AlbumTitle,

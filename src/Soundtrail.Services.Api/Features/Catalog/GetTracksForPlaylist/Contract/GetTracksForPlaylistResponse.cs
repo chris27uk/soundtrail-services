@@ -1,4 +1,3 @@
-using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
@@ -12,7 +11,6 @@ public sealed record GetTracksForPlaylistResponse(
 
 public sealed record GetTracksForPlaylistTrackResponse(
     TrackId TrackId,
-    CatalogItemId MusicCatalogId,
     string Title,
     string ArtistName,
     string? AlbumTitle,

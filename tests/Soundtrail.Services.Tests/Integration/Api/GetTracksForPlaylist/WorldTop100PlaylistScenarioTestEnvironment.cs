@@ -553,10 +553,9 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
             var response = (GetTracksForPlaylistResponse)domainObject;
             return new GetTracksForPlaylistResponseDto(
                 response.PlaylistId.Value,
-                response.Tracks.Select(
+                    response.Tracks.Select(
                         track => new GetTracksForPlaylistTrackResponseDto(
                             track.TrackId.Value,
-                            track.MusicCatalogId.NormalisedIdentifier,
                             track.Title,
                             track.ArtistName,
                             track.AlbumTitle,
@@ -590,10 +589,9 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
             var record = (CatalogPlaylistTracksRecordDto)dto!;
             return new GetTracksForPlaylistResponse(
                 PlaylistId.FromPlaylistName(record.PlaylistId),
-                record.Tracks.Select(
+                    record.Tracks.Select(
                         track => new GetTracksForPlaylistTrackResponse(
                             TrackId.From(track.TrackId),
-                            new CatalogItemId.Track(TrackId.From(track.TrackId)),
                             track.Title,
                             track.ArtistName,
                             track.AlbumTitle,

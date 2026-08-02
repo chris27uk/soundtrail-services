@@ -6,8 +6,7 @@ using Soundtrail.Domain.Common;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogItemChanged;
 
-public sealed class CatalogItemChangedProjectorHandler(
-    IEventStreamRepository<ArtistId> repository)
+public sealed class CatalogItemChangedProjectorHandler(IEventStreamRepository<ArtistId> repository)
 {
     public async Task Handle(ArtistDiscovered @event, CancellationToken cancellationToken = default)
     {

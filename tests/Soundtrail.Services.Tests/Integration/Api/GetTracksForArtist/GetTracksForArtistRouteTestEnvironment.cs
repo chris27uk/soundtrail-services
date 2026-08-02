@@ -47,7 +47,6 @@ internal sealed class GetTracksForArtistRouteTestEnvironment : IDisposable
                     [
                         new GetTracksForArtistTrackResponse(
                             global::Soundtrail.Services.Tests.TestTrackIds.Create("track-2601"),
-                            new CatalogItemId.Track(global::Soundtrail.Services.Tests.TestTrackIds.Create("track-2601")),
                             "The Track",
                             "The Artist",
                             "The Album",
@@ -73,7 +72,6 @@ internal sealed class GetTracksForArtistRouteTestEnvironment : IDisposable
                 response.Tracks.Select(
                         track => new GetTracksForArtistTrackResponseDto(
                             track.TrackId.Value,
-                            track.MusicCatalogId.NormalisedIdentifier,
                             track.Title,
                             track.ArtistName,
                             track.AlbumTitle,

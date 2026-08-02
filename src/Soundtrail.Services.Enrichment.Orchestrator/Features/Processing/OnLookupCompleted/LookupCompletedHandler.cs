@@ -96,8 +96,11 @@ public sealed class LookupCompletedHandler(
                     0,
                     request.RequestedAt)
                 {
-                    Id = MessageId.For(
-                        $"RequestKnownMusicData:{succeeded.Context.StreamId.StableValue}:streaming:{track.Track.TrackId.Value}"),
+                    Id = MessageId.Deterministic(
+                        "RequestKnownMusicData",
+                        succeeded.Context.StreamId.StableValue,
+                        "streaming",
+                        track.Track.TrackId.Value),
                     CorrelationId = request.CorrelationId,
                     CreatedAt = request.RequestedAt
                 },

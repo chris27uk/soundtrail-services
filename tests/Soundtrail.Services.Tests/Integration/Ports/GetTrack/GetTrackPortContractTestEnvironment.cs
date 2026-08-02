@@ -46,7 +46,6 @@ internal sealed class GetTrackPortContractTestEnvironment : IAsyncDisposable
         var resolvedTrackId = TrackId.From(trackIdValue);
         var response = new GetTrackResponse(
             resolvedTrackId,
-            new CatalogItemId.Track(resolvedTrackId),
             title,
             artistName,
             albumTitle,
@@ -135,7 +134,6 @@ internal sealed class GetTrackPortContractTestEnvironment : IAsyncDisposable
             var record = (CatalogTrackRecordDto)dto!;
             return new GetTrackResponse(
                 TrackId.From(record.TrackId),
-                new CatalogItemId.Track(TrackId.From(record.TrackId)),
                 record.Title,
                 record.ArtistName,
                 record.AlbumTitle,

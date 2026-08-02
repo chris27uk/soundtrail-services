@@ -42,7 +42,6 @@ internal sealed class GetTrackRouteTestEnvironment : IDisposable
             Task.FromResult<GetTrackResponse?>(
                 new GetTrackResponse(
                     global::Soundtrail.Services.Tests.TestTrackIds.Create("track-501"),
-                    new CatalogItemId.Track(global::Soundtrail.Services.Tests.TestTrackIds.Create("track-501")),
                     "The Track",
                     "The Artist",
                     "The Album",
@@ -63,7 +62,6 @@ internal sealed class GetTrackRouteTestEnvironment : IDisposable
             var response = (GetTrackResponse)domainObject;
             return new GetTrackResponseDto(
                 response.TrackId.Value,
-                response.MusicCatalogId.NormalisedIdentifier,
                 response.Title,
                 response.ArtistName,
                 response.AlbumTitle,

@@ -3,11 +3,10 @@ using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.Adap
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged;
 
-public sealed class WorkFeedbackChangedProjectorHandler(
-    IStoreDiscoveryFeedbackPort storeDiscoveryFeedbackPort)
+public sealed class WorkFeedbackChangedProjectorHandler(IStoreDiscoveryFeedbackPort storeDiscoveryFeedbackPort)
 {
     public Task Handle(WorkRequested @event, CancellationToken cancellationToken = default) =>
-        storeDiscoveryFeedbackPort.StoreAsync(@event, cancellationToken);
+        Task.CompletedTask;
 
     public Task Handle(WorkScheduled @event, CancellationToken cancellationToken = default) =>
         storeDiscoveryFeedbackPort.StoreAsync(@event, cancellationToken);

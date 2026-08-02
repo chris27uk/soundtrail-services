@@ -56,7 +56,6 @@ internal sealed class GetTracksForAlbumPortContractTestEnvironment : IAsyncDispo
             [
                 new GetTracksForAlbumTrackResponse(
                     resolvedTrackId,
-                    new CatalogItemId.Track(resolvedTrackId),
                     title,
                     artistName,
                     durationMs,
@@ -158,7 +157,6 @@ internal sealed class GetTracksForAlbumPortContractTestEnvironment : IAsyncDispo
                 record.Tracks.Select(
                         track => new GetTracksForAlbumTrackResponse(
                             TrackId.From(track.TrackId),
-                            new CatalogItemId.Track(TrackId.From(track.TrackId)),
                             track.Title,
                             track.ArtistName,
                             track.DurationMs,

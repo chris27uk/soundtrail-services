@@ -66,7 +66,7 @@ public sealed class GetTracksForPlaylistHandler(
     {
         if (playlistDiscovery is null)
         {
-            return null;
+            return BuildPendingDiscovery(clock.UtcNow);
         }
 
         if (response.Tracks.Length == 0 && playlistDiscovery.Status == "completed")

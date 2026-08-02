@@ -1,4 +1,3 @@
-using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
@@ -18,7 +17,8 @@ public sealed class PlaylistTracksExistTests
 
         var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        result.Should().BeEquivalentTo(response);
+        result!.PlaylistId.Should().Be(response.PlaylistId);
+        result.Tracks.Should().BeEquivalentTo(response.Tracks);
     }
 
     [Fact]
@@ -36,6 +36,20 @@ public sealed class PlaylistTracksExistTests
         var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
         result!.Discovery.Should().Be(environment.DiscoveryFeedbackPort.Response);
+    }
+
+    [Fact]
+    public async Task Given_Existing_Playlist_Tracks_Before_Assessment_Feedback_When_Requesting_Then_Retry_Timing_Is_Returned()
+    {
+        var environment = GetTracksForPlaylistUnitTestEnvironment.ForExistingPlaylistTracks();
+
+        var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
+
+        result!.Discovery.Should().NotBeNull();
+        result.Discovery!.Status.Should().Be("scheduled");
+        result.Discovery.NextEligibleAt.Should().Be(environment.Clock.UtcNow.AddSeconds(15));
+        result.Discovery.EarliestExpectedCompletionAt.Should().Be(environment.Clock.UtcNow.AddSeconds(75));
+        result.Discovery.Reason.Should().Be("Playlist lookup queued.");
     }
 
     [Fact]
@@ -161,18 +175,6 @@ public sealed class PlaylistTracksExistTests
         var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
         result!.Tracks[0].TrackId.Should().Be(trackId);
-    }
-
-    [Fact]
-    public async Task Given_Existing_Playlist_Tracks_When_Requesting_The_Playlist_Tracks_Then_The_Music_Catalog_Id_Is_Returned()
-    {
-        var trackId = TestTrackIds.Create("track-3304");
-        var environment = GetTracksForPlaylistUnitTestEnvironment.ForExistingPlaylistTracks(
-            response: PlaylistTracks.CreateResponse(trackId: trackId));
-
-        var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
-
-        result!.Tracks[0].MusicCatalogId.Should().Be(new CatalogItemId.Track(trackId));
     }
 
     [Fact]

@@ -9,7 +9,6 @@ public sealed record GetTracksForPlaylistResponseDto(
 
 public sealed record GetTracksForPlaylistTrackResponseDto(
     string TrackId,
-    string MusicCatalogId,
     string Title,
     string ArtistName,
     string? AlbumTitle,

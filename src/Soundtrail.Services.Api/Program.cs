@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Scalar.AspNetCore;
 using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Services.Api;
@@ -8,6 +9,10 @@ using Soundtrail.Services.ServiceDefaults;
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 builder.Services.AddCatalogSearchAttemptQueue(builder.Configuration);
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+});
 
 builder.Services.AddFeatures<ApiAssemblyMarker>();
 #pragma warning disable ASP0000

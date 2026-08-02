@@ -54,7 +54,6 @@ internal sealed class GetTracksForPlaylistPortContractTestEnvironment : IAsyncDi
             [
                 new GetTracksForPlaylistTrackResponse(
                     resolvedTrackId,
-                    new CatalogItemId.Track(resolvedTrackId),
                     title,
                     artistName,
                     albumTitle,
@@ -161,7 +160,6 @@ internal sealed class GetTracksForPlaylistPortContractTestEnvironment : IAsyncDi
                 record.Tracks.Select(
                         track => new GetTracksForPlaylistTrackResponse(
                             TrackId.From(track.TrackId),
-                            new CatalogItemId.Track(TrackId.From(track.TrackId)),
                             track.Title,
                             track.ArtistName,
                             track.AlbumTitle,

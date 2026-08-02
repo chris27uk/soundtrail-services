@@ -311,7 +311,6 @@ internal sealed class SociableCatalogState(
             record.Tracks
                 .Select(static track => new GetTracksForPlaylistTrackResponse(
                     TrackId.From(track.TrackId),
-                    new CatalogItemId.Track(TrackId.From(track.MusicCatalogId)),
                     track.Title,
                     track.ArtistName,
                     track.AlbumTitle,

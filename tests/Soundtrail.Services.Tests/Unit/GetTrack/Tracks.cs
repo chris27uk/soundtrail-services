@@ -1,4 +1,3 @@
-using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Api.Features.Catalog.GetTrack.Contract;
 
@@ -20,7 +19,6 @@ namespace Soundtrail.Services.Tests.Unit.GetTrack
         {
             return new GetTrackResponse(
                 trackId ?? DefaultTrackId,
-                new CatalogItemId.Track(trackId ?? DefaultTrackId),
                 title,
                 artistName,
                 albumTitle,

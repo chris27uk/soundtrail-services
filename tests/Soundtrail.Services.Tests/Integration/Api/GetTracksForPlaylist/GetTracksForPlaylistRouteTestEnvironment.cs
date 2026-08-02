@@ -1,11 +1,14 @@
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.TestHost;
 using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Catalog.Tracks;
+using Soundtrail.Domain.Common;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Contract;
+using Soundtrail.Services.Api.Features.Catalog.Shared.Adapters;
+using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
 
 namespace Soundtrail.Services.Tests.Integration.Api.GetTracksForPlaylist;
 
@@ -24,6 +27,10 @@ internal sealed class GetTracksForPlaylistRouteTestEnvironment : IDisposable
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
+        builder.Services.ConfigureHttpJsonOptions(options =>
+        {
+            options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        });
         builder.Services.AddSingleton<IApiHandler<GetTracksForPlaylistRequest, GetTracksForPlaylistResponse?>>(new GetTracksForPlaylistHandlerFake());
         var app = builder.Build();
         app.MapGetTracksForPlaylistEndpoints(new TypeRegistryFake());
@@ -35,6 +42,10 @@ internal sealed class GetTracksForPlaylistRouteTestEnvironment : IDisposable
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
+        builder.Services.ConfigureHttpJsonOptions(options =>
+        {
+            options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        });
         builder.Services.AddSingleton<IApiHandler<GetTracksForPlaylistRequest, GetTracksForPlaylistResponse?>>(new MissingGetTracksForPlaylistHandlerFake());
         var app = builder.Build();
         app.MapGetTracksForPlaylistEndpoints(new TypeRegistryFake());
@@ -57,17 +68,23 @@ internal sealed class GetTracksForPlaylistRouteTestEnvironment : IDisposable
                     [
                         new GetTracksForPlaylistTrackResponse(
                             global::Soundtrail.Services.Tests.TestTrackIds.Create("track-3401"),
-                            new CatalogItemId.Track(global::Soundtrail.Services.Tests.TestTrackIds.Create("track-3401")),
                             "The Track",
                             "The Artist",
                             "The Album",
                             201000,
-                            "GBAYE2403401",
+                            null,
                             new DateOnly(2024, 6, 7),
                             "https://cdn.soundtrail.test/tracks/track-3401.jpg",
                             false,
                             [])
-                    ]));
+                    ],
+                    new DiscoveryFeedbackResponse(
+                        "scheduled",
+                        LookupPriorityBand.High,
+                        DateTimeOffset.UtcNow.AddSeconds(60),
+                        DateTimeOffset.UtcNow.AddSeconds(120),
+                        "Playlist lookup queued.",
+                        DateTimeOffset.UtcNow)));
     }
 
     private sealed class MissingGetTracksForPlaylistHandlerFake : IApiHandler<GetTracksForPlaylistRequest, GetTracksForPlaylistResponse?>
@@ -85,10 +102,9 @@ internal sealed class GetTracksForPlaylistRouteTestEnvironment : IDisposable
             var response = (GetTracksForPlaylistResponse)domainObject;
             return new GetTracksForPlaylistResponseDto(
                 response.PlaylistId.Value,
-                response.Tracks.Select(
+                    response.Tracks.Select(
                         track => new GetTracksForPlaylistTrackResponseDto(
                             track.TrackId.Value,
-                            track.MusicCatalogId.NormalisedIdentifier,
                             track.Title,
                             track.ArtistName,
                             track.AlbumTitle,
@@ -99,7 +115,15 @@ internal sealed class GetTracksForPlaylistRouteTestEnvironment : IDisposable
                             track.Playable,
                             []))
                     .ToArray(),
-                null);
+                response.Discovery is null
+                    ? null
+                    : new DiscoveryFeedbackResponseDto(
+                        response.Discovery.Status,
+                        response.Discovery.Priority.ToString(),
+                        response.Discovery.NextEligibleAt,
+                        response.Discovery.EarliestExpectedCompletionAt,
+                        response.Discovery.Reason,
+                        response.Discovery.UpdatedAtUtc));
         }
 
         public TDomain ToDomainObject<TDomain>(object dto) where TDomain : class => throw new NotSupportedException();
