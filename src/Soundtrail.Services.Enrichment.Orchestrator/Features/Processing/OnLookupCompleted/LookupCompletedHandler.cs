@@ -101,8 +101,7 @@ public sealed class LookupCompletedHandler(
                         succeeded.Context.StreamId.StableValue,
                         "streaming",
                         track.Track.TrackId.Value),
-                    CorrelationId = request.CorrelationId,
-                    CreatedAt = request.RequestedAt
+                    CorrelationId = request.CorrelationId
                 },
                 cancellationToken);
         }

@@ -14,7 +14,6 @@ public sealed class DiscoveryRequestTranslationRegistration : ITypeTranslationRe
             toDto: message => new KnownMusicDataRequestedCommandDto(
                 message.Id.Value,
                 message.CorrelationId.Value,
-                message.CreatedAt,
                 ToDto(message.Priority),
                 GetOperationKind(message.Operation),
                 GetOperationValue(message.Operation),
@@ -30,8 +29,7 @@ public sealed class DiscoveryRequestTranslationRegistration : ITypeTranslationRe
                 dto.RequestedAt)
             {
                 Id = MessageId.From(dto.CommandId),
-                CorrelationId = CorrelationId.From(dto.CorrelationId),
-                CreatedAt = dto.CreatedAt
+                CorrelationId = CorrelationId.From(dto.CorrelationId)
             });
 
         registry.RegisterPair<RequestUnknownMusicDataMessage, UnknownMusicDataRequestedCommandDto>(

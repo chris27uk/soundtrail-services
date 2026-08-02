@@ -81,7 +81,7 @@ public static class AppHostComposition
             : null;
 
         var api = builder.AddProject<Soundtrail_Services_Api>("soundtrail-api")
-            .WithHttpEndpoint(port: 8081, name: "http")
+            .WithHttpEndpoint(port: 8081, targetPort: 8081, name: "http", isProxied: false)
             .WithUrlForEndpoint("http", url => url.Url = apiPublicUrl)
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
@@ -204,8 +204,6 @@ public static class AppHostComposition
             .WithBindMount(
                 Path.Combine(resolvedContentRootPath, "caddy", "Caddyfile"),
                 "/etc/caddy/Caddyfile",
-                isReadOnly: true)
-            .WaitFor(api)
-            .WaitFor(ravenDb);
+                isReadOnly: true);
     }
 }

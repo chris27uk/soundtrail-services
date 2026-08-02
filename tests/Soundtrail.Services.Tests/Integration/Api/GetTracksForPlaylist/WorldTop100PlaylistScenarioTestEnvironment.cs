@@ -18,12 +18,14 @@ using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Contract;
 using Soundtrail.Services.Api.Features.Catalog.Search.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.Shared.Adapters;
+using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks.Adapters;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.MusicMetadata;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.StreamingLocations;
 using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
 using Soundtrail.Services.Enrichment.Worker.Shared.StreamingLocations;
 using Soundtrail.Services.Internal.Projector.Features.OnPlaylistTracksDiscovered.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.Adapters;
 using Soundtrail.Services.Tests.Integration.Ports;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
@@ -87,13 +89,10 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
             new RavenGetTracksForPlaylistPort(
                 sp.GetRequiredService<IDocumentStore>(),
                 sp.GetRequiredService<ITypeRegistry>()));
-        builder.Services.AddSingleton<IDiscoveryFeedbackPort>(sp =>
-            new RavenDiscoveryFeedbackPort(sp.GetRequiredService<IDocumentStore>()));
         builder.Services.AddSingleton<IApiHandler<GetTracksForPlaylistRequest, GetTracksForPlaylistResponse?>>(sp =>
             new GetTracksForPlaylistHandler(
                 sp.GetRequiredService<IGetTracksForPlaylistPort>(),
                 sp.GetRequiredService<ICommandBus>(),
-                sp.GetRequiredService<IDiscoveryFeedbackPort>(),
                 sp.GetRequiredService<IClockPort>()));
 
         var app = builder.Build();
@@ -228,46 +227,41 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
         var targetId = new CatalogItemOperation.ChildTracksForPlaylist(PlaylistId).StableIdentifier();
         var discoveryDocumentId = CatalogDiscoveryFeedbackRecordDto.GetDocumentId(targetId);
         TrackForCleanup(discoveryDocumentId);
+        var discoveryFeedbackPort = new RavenStoreDiscoveryFeedbackPort(documentStore);
 
-        using (var session = documentStore.OpenAsyncSession())
+        await discoveryFeedbackPort.StoreAsync(
+            new WorkCompleted(
+                new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.ChildTracksForPlaylist(PlaylistId)),
+                LookupPriorityBand.High,
+                "Playlist metadata has been materialized from local WireMock services.",
+                Clock.UtcNow.AddMinutes(1)),
+            CancellationToken.None);
+
+        foreach (var (trackIdValue, hasStreamingLocation) in streamingCoverage)
         {
-            await session.StoreAsync(
-                new CatalogDiscoveryFeedbackRecordDto
-                {
-                    Id = discoveryDocumentId,
-                    TargetId = targetId,
-                    Status = "completed",
-                    Priority = LookupPriorityBand.High.ToString(),
-                    NextEligibleAtUtc = null,
-                    EarliestExpectedCompletionAtUtc = null,
-                    Reason = "Playlist metadata has been materialized from local WireMock services.",
-                    UpdatedAtUtc = Clock.UtcNow.AddMinutes(1)
-                });
+            var trackId = TrackId.From(trackIdValue);
+            var streamingTargetId = new CatalogItemOperation.StreamingLocationForTrack(trackId).StableIdentifier();
+            var streamingDiscoveryDocumentId = CatalogDiscoveryFeedbackRecordDto.GetDocumentId(streamingTargetId);
+            TrackForCleanup(streamingDiscoveryDocumentId);
 
-            foreach (var (trackIdValue, hasStreamingLocation) in streamingCoverage)
+            if (hasStreamingLocation)
             {
-                var streamingTargetId = new CatalogItemOperation.StreamingLocationForTrack(TrackId.From(trackIdValue))
-                    .StableIdentifier();
-                var streamingDiscoveryDocumentId = CatalogDiscoveryFeedbackRecordDto.GetDocumentId(streamingTargetId);
-                TrackForCleanup(streamingDiscoveryDocumentId);
-
-                await session.StoreAsync(
-                    new CatalogDiscoveryFeedbackRecordDto
-                    {
-                        Id = streamingDiscoveryDocumentId,
-                        TargetId = streamingTargetId,
-                        Status = hasStreamingLocation ? "completed" : "attempt-failed",
-                        Priority = LookupPriorityBand.High.ToString(),
-                        NextEligibleAtUtc = null,
-                        EarliestExpectedCompletionAtUtc = null,
-                        Reason = hasStreamingLocation
-                            ? "Streaming locations have been materialized from local WireMock services."
-                            : "Streaming locations were not found in local WireMock services.",
-                        UpdatedAtUtc = Clock.UtcNow.AddMinutes(1)
-                    });
+                await discoveryFeedbackPort.StoreAsync(
+                    new WorkCompleted(
+                        new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.StreamingLocationForTrack(trackId)),
+                        LookupPriorityBand.High,
+                        "Streaming locations have been materialized from local WireMock services.",
+                        Clock.UtcNow.AddMinutes(1)),
+                    CancellationToken.None);
+                continue;
             }
 
-            await session.SaveChangesAsync();
+            await discoveryFeedbackPort.StoreAsync(
+                new WorkAttemptFailed(
+                    new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.StreamingLocationForTrack(trackId)),
+                    "Streaming locations were not found in local WireMock services.",
+                    Clock.UtcNow.AddMinutes(1)),
+                CancellationToken.None);
         }
 
         return new StreamingCoverageSummary(streamingCoverage);
@@ -606,7 +600,16 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
                                     location.ExternalId,
                                     location.Url))
                                 .ToArray()))
-                    .ToArray());
+                    .ToArray(),
+                record.Discovery is null
+                    ? null
+                    : new DiscoveryFeedbackResponse(
+                        record.Discovery.Status,
+                        Enum.Parse<LookupPriorityBand>(record.Discovery.Priority, true),
+                        record.Discovery.NextEligibleAtUtc,
+                        record.Discovery.EarliestExpectedCompletionAtUtc,
+                        record.Discovery.Reason,
+                        record.Discovery.UpdatedAtUtc));
         }
 
         public void MapOnto<TSource, TTarget>(TSource source, TTarget target)

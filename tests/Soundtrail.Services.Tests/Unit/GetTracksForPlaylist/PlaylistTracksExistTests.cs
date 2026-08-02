@@ -24,18 +24,19 @@ public sealed class PlaylistTracksExistTests
     [Fact]
     public async Task Given_Existing_Playlist_Tracks_When_Requesting_The_Playlist_Tracks_Then_Discovery_Feedback_Is_Attached()
     {
-        var environment = GetTracksForPlaylistUnitTestEnvironment.ForExistingPlaylistTracks();
-        environment.DiscoveryFeedbackPort.Response = new DiscoveryFeedbackResponse(
+        var discovery = new DiscoveryFeedbackResponse(
             "pending",
             LookupPriorityBand.High,
-            environment.Clock.UtcNow.AddSeconds(15),
-            environment.Clock.UtcNow.AddSeconds(75),
+            new DateTimeOffset(2024, 6, 7, 8, 9, 25, TimeSpan.Zero),
+            new DateTimeOffset(2024, 6, 7, 8, 10, 25, TimeSpan.Zero),
             "Playlist lookup queued.",
-            environment.Clock.UtcNow);
+            new DateTimeOffset(2024, 6, 7, 8, 9, 10, TimeSpan.Zero));
+        var environment = GetTracksForPlaylistUnitTestEnvironment.ForExistingPlaylistTracks(
+            response: PlaylistTracks.CreateResponse(discovery: discovery));
 
         var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        result!.Discovery.Should().Be(environment.DiscoveryFeedbackPort.Response);
+        result!.Discovery.Should().Be(discovery);
     }
 
     [Fact]
@@ -56,56 +57,41 @@ public sealed class PlaylistTracksExistTests
     public async Task Given_Streaming_Discovery_Completed_But_Playlist_Track_Is_Not_Playable_When_Requesting_Then_Projection_Catch_Up_Timing_Is_Returned()
     {
         var trackId = TestTrackIds.Create("playlist-track-projection-lag");
-        var response = PlaylistTracks.CreateResponse(trackId: trackId);
+        var discovery = new DiscoveryFeedbackResponse(
+            "scheduled",
+            LookupPriorityBand.High,
+            new DateTimeOffset(2024, 6, 7, 8, 9, 25, TimeSpan.Zero),
+            new DateTimeOffset(2024, 6, 7, 8, 10, 25, TimeSpan.Zero),
+            "Track streaming projection is still catching up.",
+            new DateTimeOffset(2024, 6, 7, 8, 9, 10, TimeSpan.Zero));
+        var response = PlaylistTracks.CreateResponse(trackId: trackId, discovery: discovery);
         var environment = GetTracksForPlaylistUnitTestEnvironment.ForExistingPlaylistTracks(response: response);
-        environment.DiscoveryFeedbackPort.SetResponse(
-            new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.ChildTracksForPlaylist(response.PlaylistId)),
-            new DiscoveryFeedbackResponse(
-                "completed",
-                LookupPriorityBand.High,
-                null,
-                null,
-                "Lookup completed.",
-                environment.Clock.UtcNow.AddSeconds(-2)));
-        environment.DiscoveryFeedbackPort.SetResponse(
-            new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.StreamingLocationForTrack(trackId)),
-            new DiscoveryFeedbackResponse(
-                "completed",
-                LookupPriorityBand.High,
-                null,
-                null,
-                "Lookup completed.",
-                environment.Clock.UtcNow.AddSeconds(-1)));
 
         var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        result!.Discovery.Should().NotBeNull();
-        result.Discovery!.Status.Should().Be("scheduled");
-        result.Discovery.NextEligibleAt.Should().Be(environment.Clock.UtcNow.AddSeconds(15));
-        result.Discovery.EarliestExpectedCompletionAt.Should().Be(environment.Clock.UtcNow.AddSeconds(75));
-        result.Discovery.Reason.Should().Be("Track streaming projection is still catching up.");
+        result!.Discovery.Should().Be(discovery);
     }
 
     [Fact]
     public async Task Given_Playlist_Discovery_Completed_But_Projected_Playlist_Has_No_Tracks_When_Requesting_Then_Projection_Catch_Up_Timing_Is_Returned()
     {
         var playlistId = PlaylistTracks.DefaultPlaylistId;
-        var response = new GetTracksForPlaylistResponse(playlistId, []);
-        var environment = GetTracksForPlaylistUnitTestEnvironment.ForExistingPlaylistTracks(response: response);
-        environment.DiscoveryFeedbackPort.SetResponse(
-            new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.ChildTracksForPlaylist(playlistId)),
+        var response = new GetTracksForPlaylistResponse(
+            playlistId,
+            [],
             new DiscoveryFeedbackResponse(
                 "completed",
                 LookupPriorityBand.High,
                 null,
                 null,
                 "Lookup completed.",
-                environment.Clock.UtcNow.AddSeconds(-1)));
+                new DateTimeOffset(2024, 6, 7, 8, 9, 9, TimeSpan.Zero)));
+        var environment = GetTracksForPlaylistUnitTestEnvironment.ForExistingPlaylistTracks(response: response);
 
         var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
         result!.Tracks.Should().BeEmpty();
-        result.Discovery.Should().NotBeNull();
+        result!.Discovery.Should().NotBeNull();
         result.Discovery!.Status.Should().Be("scheduled");
         result.Discovery.NextEligibleAt.Should().Be(environment.Clock.UtcNow.AddSeconds(15));
         result.Discovery.EarliestExpectedCompletionAt.Should().Be(environment.Clock.UtcNow.AddSeconds(75));
@@ -125,18 +111,8 @@ public sealed class PlaylistTracksExistTests
             null,
             "Lookup completed.",
             environment.Clock.UtcNow.AddSeconds(-2));
-        environment.DiscoveryFeedbackPort.SetResponse(
-            new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.ChildTracksForPlaylist(response.PlaylistId)),
-            playlistDiscovery);
-        environment.DiscoveryFeedbackPort.SetResponse(
-            new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.StreamingLocationForTrack(trackId)),
-            new DiscoveryFeedbackResponse(
-                "attempt-failed",
-                LookupPriorityBand.High,
-                null,
-                null,
-                "No streaming location found.",
-                environment.Clock.UtcNow.AddSeconds(-1)));
+        response = response with { Discovery = playlistDiscovery };
+        environment = GetTracksForPlaylistUnitTestEnvironment.ForExistingPlaylistTracks(response: response);
 
         var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
@@ -294,9 +270,7 @@ public sealed class PlaylistTracksExistTests
                     100,
                     0,
                     environment.Clock.UtcNow)
-                {
-                    CreatedAt = environment.Clock.UtcNow
-                },
+                { },
                 options => options.Excluding(x => x.Id).Excluding(x => x.CorrelationId));
     }
 
@@ -339,6 +313,5 @@ public sealed class PlaylistTracksExistTests
 
         var command = (RequestKnownMusicDataMessage)environment.CommandBus.Commands.Single();
         command.RequestedAt.Should().Be(environment.Clock.UtcNow);
-        command.CreatedAt.Should().Be(environment.Clock.UtcNow);
     }
 }

@@ -1,8 +1,6 @@
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
 using Soundtrail.Adapters.Messaging;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.ExecutionAdmission;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Startup;

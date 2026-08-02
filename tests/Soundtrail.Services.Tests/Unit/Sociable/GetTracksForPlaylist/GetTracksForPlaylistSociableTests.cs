@@ -139,7 +139,7 @@ internal sealed class GetTracksForPlaylistSociableTestEnvironment
         var planner = new WorkPlanner();
         var assessmentPolicy = new PlanningAssessmentPolicy(Options.Create(new PlanningAssessmentOptions()));
 
-        getTracksForPlaylistHandler = new GetTracksForPlaylistHandler(state, CommandBus, state, Clock);
+        getTracksForPlaylistHandler = new GetTracksForPlaylistHandler(state, CommandBus, Clock);
         knownMusicDataRequestedHandler = new OnKnownMusicDataRequestedHandler(planner, discoveryRepository);
         unknownMusicDataRequestedHandler = new OnUnknownMusicDataRequestedHandler(planner, state, discoveryRepository);
         musicAssessmentRequiredHandler = new OnMusicAssessmentRequiredHandler(assessmentPolicy, state, discoveryRepository);
@@ -325,7 +325,8 @@ internal sealed class SociableCatalogState(
                             location.ExternalId,
                             location.Url))
                         .ToArray()))
-                .ToArray()));
+                .ToArray(),
+            ToDiscovery(record.Discovery)));
     }
 
     public Task<DiscoveryFeedbackResponse?> GetAsync(EnrichmentTarget target, CancellationToken cancellationToken)
@@ -547,7 +548,7 @@ internal sealed class SociableCatalogState(
         string reason,
         DateTimeOffset updatedAt)
     {
-        feedback[target.NormalisedIdentifier] = new CatalogDiscoveryFeedbackRecordDto
+        var record = new CatalogDiscoveryFeedbackRecordDto
         {
             Id = CatalogDiscoveryFeedbackRecordDto.GetDocumentId(target.NormalisedIdentifier),
             TargetId = target.NormalisedIdentifier,
@@ -558,6 +559,9 @@ internal sealed class SociableCatalogState(
             Reason = reason,
             UpdatedAtUtc = updatedAt
         };
+
+        feedback[target.NormalisedIdentifier] = record;
+        UpdateEndpointDiscovery(target.NormalisedIdentifier, record);
     }
 
     private CatalogPlaylistTracksRecordDto BuildPlaylistRecord(
@@ -599,9 +603,124 @@ internal sealed class SociableCatalogState(
                     StreamingLocations = track.StreamingLocations
                 })
                 .ToArray(),
+            Discovery = LoadPlaylistDiscovery(playlistId),
             UpdatedAt = updatedAt
         };
     }
+
+    private void UpdateEndpointDiscovery(string targetId, CatalogDiscoveryFeedbackRecordDto discovery)
+    {
+        if (TryGetPlaylistId(targetId, out var playlistId))
+        {
+            if (playlists.TryGetValue(playlistId, out var playlist))
+            {
+                playlist.Discovery = BuildPlaylistEndpointDiscovery(playlist);
+            }
+
+            return;
+        }
+
+        if (TryGetStreamingTrackId(targetId, out var trackId) is false)
+        {
+            return;
+        }
+
+        foreach (var playlist in playlists.Values.Where(playlist => ContainsSameBaseTrack(playlist, trackId)))
+        {
+            playlist.Discovery = BuildPlaylistEndpointDiscovery(playlist);
+        }
+    }
+
+    private CatalogDiscoveryFeedbackRecordDto? BuildPlaylistEndpointDiscovery(CatalogPlaylistTracksRecordDto playlist)
+    {
+        var playlistDiscovery = LoadPlaylistDiscovery(playlist.PlaylistId);
+        if (playlistDiscovery is null)
+        {
+            return null;
+        }
+
+        foreach (var track in playlist.Tracks.Where(static track => track.StreamingLocations.Length == 0))
+        {
+            var targetId = $"streaming_location_for_track:{track.TrackId}";
+            if (!feedback.TryGetValue(targetId, out var trackDiscovery) || IsIncomplete(trackDiscovery))
+            {
+                if (trackDiscovery is not null)
+                {
+                    return CloneDiscovery(trackDiscovery);
+                }
+
+                var pending = CloneDiscovery(playlistDiscovery);
+                pending.Status = "scheduled";
+                pending.NextEligibleAtUtc = clock.UtcNow.AddSeconds(15);
+                pending.EarliestExpectedCompletionAtUtc = clock.UtcNow.AddSeconds(75);
+                pending.Reason = "Track streaming projection is still catching up.";
+                pending.UpdatedAtUtc = clock.UtcNow;
+                return pending;
+            }
+        }
+
+        return CloneDiscovery(playlistDiscovery);
+    }
+
+    private CatalogDiscoveryFeedbackRecordDto? LoadPlaylistDiscovery(string playlistId)
+    {
+        var targetId = $"child_tracks_for_playlist:{playlistId}";
+        return feedback.TryGetValue(targetId, out var discovery)
+            ? CloneDiscovery(discovery)
+            : null;
+    }
+
+    private static bool TryGetPlaylistId(string targetId, out string playlistId)
+    {
+        const string prefix = "child_tracks_for_playlist:";
+        if (targetId.StartsWith(prefix, StringComparison.Ordinal) is false)
+        {
+            playlistId = string.Empty;
+            return false;
+        }
+
+        playlistId = targetId[prefix.Length..];
+        return playlistId.Length > 0;
+    }
+
+    private static bool TryGetStreamingTrackId(string targetId, out TrackId trackId)
+    {
+        const string prefix = "streaming_location_for_track:";
+        if (targetId.StartsWith(prefix, StringComparison.Ordinal) is false)
+        {
+            trackId = default;
+            return false;
+        }
+
+        trackId = TrackId.From(targetId[prefix.Length..]);
+        return true;
+    }
+
+    private static bool IsIncomplete(CatalogDiscoveryFeedbackRecordDto discovery) =>
+        discovery.Status is "requested" or "scheduled" or "deferred";
+
+    private static CatalogDiscoveryFeedbackRecordDto CloneDiscovery(CatalogDiscoveryFeedbackRecordDto discovery) =>
+        new()
+        {
+            TargetId = discovery.TargetId,
+            Status = discovery.Status,
+            Priority = discovery.Priority,
+            NextEligibleAtUtc = discovery.NextEligibleAtUtc,
+            EarliestExpectedCompletionAtUtc = discovery.EarliestExpectedCompletionAtUtc,
+            Reason = discovery.Reason,
+            UpdatedAtUtc = discovery.UpdatedAtUtc
+        };
+
+    private static DiscoveryFeedbackResponse? ToDiscovery(CatalogDiscoveryFeedbackRecordDto? discovery) =>
+        discovery is null
+            ? null
+            : new DiscoveryFeedbackResponse(
+                discovery.Status,
+                Enum.Parse<LookupPriorityBand>(discovery.Priority, true),
+                discovery.NextEligibleAtUtc,
+                discovery.EarliestExpectedCompletionAtUtc,
+                discovery.Reason,
+                discovery.UpdatedAtUtc);
 
     private static string[] MergeTrackIds(
         IReadOnlyCollection<string>? existingTrackIds,
@@ -673,7 +792,7 @@ internal sealed class SociableCatalogState(
     private static bool ContainsSameBaseTrack(CatalogPlaylistTracksRecordDto record, TrackId trackId)
     {
         var requestedProjection = TrackIdIndexProjection.From(trackId);
-        return record.TrackIds
+        return record.TrackIds.Concat(record.Tracks.Select(static track => track.TrackId))
             .Select(TrackId.From)
             .Select(TrackIdIndexProjection.From)
             .Any(existingProjection => existingProjection.SharesBaseWith(requestedProjection));
@@ -706,71 +825,6 @@ internal sealed class SociableCatalogState(
 
         return new CatalogDiscoveryEntry(ArtistId.From($"musicbrainz-artist:{StringNormalizationExtensions.Normalize(artistName)}"), new CatalogItem.MusicTrack(track));
     }
-}
-
-internal sealed class InMemoryEventStreamRepository<TStreamId>(
-    Func<IReadOnlyList<IDomainEvent>, CancellationToken, Task>? onAppend = null) : IEventStreamRepository<TStreamId>
-    where TStreamId : IValueType
-{
-    private readonly Dictionary<string, List<IDomainEvent>> eventsByStream = new(StringComparer.Ordinal);
-    private readonly HashSet<string> operationIds = new(StringComparer.Ordinal);
-
-    public Task<LoadedEventStream<TStreamId>> LoadAsync(TStreamId streamId, CancellationToken cancellationToken)
-    {
-        var streamKey = streamId.StableValue;
-        var events = eventsByStream.TryGetValue(streamKey, out var existing)
-            ? existing.ToArray()
-            : [];
-        return Task.FromResult(new LoadedEventStream<TStreamId>(streamId, events.Length, events));
-    }
-
-    public async Task<AppendResult> AppendAsync(
-        LoadedEventStream<TStreamId> stream,
-        IReadOnlyList<IDomainEvent> events,
-        OperationId? operationId,
-        CancellationToken cancellationToken)
-    {
-        if (operationId is not null && !operationIds.Add(operationId.Value.StableValue))
-        {
-            return new AppendResult(false, stream.Version, [], AppendOutcome.DuplicateOperation);
-        }
-
-        var streamKey = stream.StreamId.StableValue;
-        var existing = eventsByStream.GetValueOrDefault(streamKey);
-        if (existing is null)
-        {
-            existing = [];
-            eventsByStream[streamKey] = existing;
-        }
-
-        if (existing.Count != stream.Version)
-        {
-            return new AppendResult(false, existing.Count, [], AppendOutcome.VersionMismatch);
-        }
-
-        existing.AddRange(events);
-        if (onAppend is not null && events.Count > 0)
-        {
-            await onAppend(events, cancellationToken);
-        }
-
-        return new AppendResult(true, existing.Count, events, AppendOutcome.Appended);
-    }
-}
-
-internal sealed class CommandBusFake : ICommandBus
-{
-    private readonly Queue<IMessage> queue = [];
-
-    public IReadOnlyCollection<IMessage> Messages => queue.ToArray();
-
-    public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
-    {
-        queue.Enqueue(message);
-        return Task.CompletedTask;
-    }
-
-    public bool TryDequeue(out IMessage message) => queue.TryDequeue(out message!);
 }
 
 internal sealed class ClockFake : IClockPort

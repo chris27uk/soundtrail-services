@@ -25,9 +25,7 @@ public sealed class GetTracksForArtistHandler(
                 100,
                 0,
                 requestedAt)
-            {
-                CreatedAt = requestedAt
-            },
+            { },
             cancellationToken);
 
         var response = await getTracksForArtistPort.GetTracksForArtistAsync(request.ArtistId, cancellationToken);

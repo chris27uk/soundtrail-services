@@ -98,13 +98,7 @@ internal static class ProductionCompositionTestEnvironment
             feature.ConfigureServices(builder.Services, builder.Configuration);
         }
 
-        foreach (var descriptor in builder.Services
-                     .Where(descriptor => descriptor.ServiceType == typeof(IHostedService)
-                         && descriptor.ImplementationType?.FullName is "Soundtrail.Adapters.Persistence.RavenDatabaseHostedService")
-                     .ToArray())
-        {
-            builder.Services.Remove(descriptor);
-        }
+        RemoveRavenDatabaseHostedService(builder.Services);
 
         builder.Services.BuildServiceProvider(
             new ServiceProviderOptions
@@ -166,13 +160,7 @@ internal static class ProductionCompositionTestEnvironment
             feature.ConfigureServices(builder.Services, builder.Configuration);
         }
 
-        foreach (var descriptor in builder.Services
-                     .Where(descriptor => descriptor.ServiceType == typeof(IHostedService)
-                         && descriptor.ImplementationType?.FullName is "Soundtrail.Adapters.Persistence.RavenDatabaseHostedService")
-                     .ToArray())
-        {
-            builder.Services.Remove(descriptor);
-        }
+        RemoveRavenDatabaseHostedService(builder.Services);
 
         builder.Services.BuildServiceProvider(
             new ServiceProviderOptions
@@ -257,13 +245,7 @@ internal static class ProductionCompositionTestEnvironment
             feature.ConfigureServices(builder.Services, builder.Configuration);
         }
 
-        foreach (var descriptor in builder.Services
-                     .Where(descriptor => descriptor.ServiceType == typeof(IHostedService)
-                         && descriptor.ImplementationType?.FullName is "Soundtrail.Adapters.Persistence.RavenDatabaseHostedService")
-                     .ToArray())
-        {
-            builder.Services.Remove(descriptor);
-        }
+        RemoveRavenDatabaseHostedService(builder.Services);
 
         builder.Services
             .Where(descriptor => descriptor.ServiceType == typeof(IHostedService))
@@ -307,6 +289,8 @@ internal static class ProductionCompositionTestEnvironment
             feature.ConfigureServices(builder.Services, builder.Configuration);
         }
 
+        RemoveRavenDatabaseHostedService(builder.Services);
+
         var app = builder.Build();
 
         foreach (var feature in features.OfType<IApiFeature>())
@@ -334,13 +318,7 @@ internal static class ProductionCompositionTestEnvironment
             feature.ConfigureServices(builder.Services, builder.Configuration);
         }
 
-        foreach (var descriptor in builder.Services
-                     .Where(descriptor => descriptor.ServiceType == typeof(IHostedService)
-                         && descriptor.ImplementationType?.FullName is "Soundtrail.Adapters.Persistence.RavenDatabaseHostedService")
-                     .ToArray())
-        {
-            builder.Services.Remove(descriptor);
-        }
+        RemoveRavenDatabaseHostedService(builder.Services);
 
         var app = builder.Build();
 
@@ -393,5 +371,16 @@ internal static class ProductionCompositionTestEnvironment
             && serviceType.GenericTypeArguments.Length == 2
             && serviceType.GenericTypeArguments[0] == typeof(TDto)
             && serviceType.GenericTypeArguments[1] == typeof(TDomain);
+    }
+
+    private static void RemoveRavenDatabaseHostedService(IServiceCollection services)
+    {
+        foreach (var descriptor in services
+                     .Where(descriptor => descriptor.ServiceType == typeof(IHostedService)
+                         && descriptor.ImplementationType?.FullName is "Soundtrail.Adapters.Persistence.RavenDatabaseHostedService")
+                     .ToArray())
+        {
+            services.Remove(descriptor);
+        }
     }
 }

@@ -59,14 +59,14 @@ public sealed class GetTracksForPlaylistResponseTranslationRegistration : ITypeT
                                 track.Title,
                                 track.ArtistName,
                                 track.AlbumTitle,
-                            track.DurationMs,
-                            track.Isrc,
-                            track.ReleaseDate,
-                            track.ArtworkUrl,
-                            track.StreamingLocations.Length > 0,
-                            ToStreamingLocations(track.StreamingLocations)))
+                                track.DurationMs,
+                                track.Isrc,
+                                track.ReleaseDate,
+                                track.ArtworkUrl,
+                                track.StreamingLocations.Length > 0,
+                                ToStreamingLocations(track.StreamingLocations)))
                         .ToArray(),
-                    null));
+                    ToDiscovery(record.Discovery)));
     }
 
     private static StreamingLocationResponseDto[] ToStreamingLocationDtos(
@@ -99,6 +99,17 @@ public sealed class GetTracksForPlaylistResponseTranslationRegistration : ITypeT
                 discovery.UpdatedAtUtc);
 
     private static DiscoveryFeedbackResponse? ToDiscovery(DiscoveryFeedbackResponseDto? discovery) =>
+        discovery is null
+            ? null
+            : new DiscoveryFeedbackResponse(
+                discovery.Status,
+                Enum.Parse<Soundtrail.Domain.Common.LookupPriorityBand>(discovery.Priority, true),
+                discovery.NextEligibleAtUtc,
+                discovery.EarliestExpectedCompletionAtUtc,
+                discovery.Reason,
+                discovery.UpdatedAtUtc);
+
+    private static DiscoveryFeedbackResponse? ToDiscovery(CatalogDiscoveryFeedbackRecordDto? discovery) =>
         discovery is null
             ? null
             : new DiscoveryFeedbackResponse(

@@ -25,9 +25,7 @@ public sealed class GetAlbumsForArtistHandler(
                 100,
                 0,
                 requestedAt)
-            {
-                CreatedAt = requestedAt
-            },
+            { },
             cancellationToken);
 
         var response = await getAlbumsForArtistPort.GetAlbumsForArtistAsync(request.ArtistId, cancellationToken);

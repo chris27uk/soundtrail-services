@@ -10,6 +10,8 @@ public sealed class CatalogPlaylistTracksRecordDto
 
     public CatalogPlaylistTrackRecordDto[] Tracks { get; set; } = [];
 
+    public CatalogDiscoveryFeedbackRecordDto? Discovery { get; set; }
+
     public DateTimeOffset UpdatedAt { get; set; }
 
     public static string GetDocumentId(string playlistId) => $"catalog/playlist-tracks/{playlistId}";
