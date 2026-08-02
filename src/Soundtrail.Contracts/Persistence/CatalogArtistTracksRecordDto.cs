@@ -36,4 +36,6 @@ public sealed class CatalogArtistTrackRecordDto
     public string? ReleaseType { get; set; }
 
     public string? ArtworkUrl { get; set; }
+
+    public CatalogStreamingLocationRecordDto[] StreamingLocations { get; set; } = [];
 }

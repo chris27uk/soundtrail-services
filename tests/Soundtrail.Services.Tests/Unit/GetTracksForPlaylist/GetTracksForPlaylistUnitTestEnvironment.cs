@@ -74,14 +74,25 @@ internal sealed class GetTracksForPlaylistUnitTestEnvironment
 
     public sealed class DiscoveryFeedbackPortFake : IDiscoveryFeedbackPort
     {
-        public EnrichmentTarget? RequestedTarget { get; private set; }
+        private readonly Dictionary<string, DiscoveryFeedbackResponse> responsesByTarget = new(StringComparer.Ordinal);
+
+        public List<EnrichmentTarget> RequestedTargets { get; } = [];
+
+        public EnrichmentTarget? RequestedTarget => RequestedTargets.LastOrDefault();
 
         public DiscoveryFeedbackResponse? Response { get; set; }
 
+        public void SetResponse(EnrichmentTarget target, DiscoveryFeedbackResponse response)
+        {
+            responsesByTarget[target.NormalisedIdentifier] = response;
+        }
+
         public Task<DiscoveryFeedbackResponse?> GetAsync(EnrichmentTarget target, CancellationToken cancellationToken)
         {
-            RequestedTarget = target;
-            return Task.FromResult(Response);
+            RequestedTargets.Add(target);
+            return Task.FromResult(
+                responsesByTarget.GetValueOrDefault(target.NormalisedIdentifier)
+                ?? Response);
         }
     }
 

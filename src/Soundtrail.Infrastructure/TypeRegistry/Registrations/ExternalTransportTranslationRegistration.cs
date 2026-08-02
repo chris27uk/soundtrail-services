@@ -10,7 +10,6 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Domain.Search;
-using Soundtrail.Domain.Operations;
 
 namespace Soundtrail.Adapters.TypeRegistry.Registrations;
 
@@ -190,21 +189,6 @@ public sealed class ExternalTransportTranslationRegistration : ITypeTranslationR
             toDto: message => ToDto(message),
             toDomainObject: dto => ToDomain(dto));
 
-        registry.RegisterPair<PlaylistUpdated, PlaylistUpdatedCommandDto>(
-            toDto: message => new PlaylistUpdatedCommandDto(
-                message.Id.Value,
-                message.CorrelationId.Value,
-                message.CreatedAt,
-                message.Name,
-                message.Tracks.Select(track => track.Value).ToArray()),
-            toDomainObject: dto => new PlaylistUpdated(
-                dto.Name,
-                dto.TrackIds.Select(TrackId.From).ToArray())
-            {
-                Id = MessageId.From(dto.CommandId),
-                CorrelationId = CorrelationId.From(dto.CorrelationId),
-                CreatedAt = dto.CreatedAt
-            });
     }
 
     private static CatalogLookupCompletedCommandDto ToDto(CatalogLookupCompleted message)

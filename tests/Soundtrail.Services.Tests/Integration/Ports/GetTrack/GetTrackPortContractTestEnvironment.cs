@@ -53,7 +53,9 @@ internal sealed class GetTrackPortContractTestEnvironment : IAsyncDisposable
             durationMs,
             isrc,
             releaseDate ?? new DateOnly(2024, 1, 2),
-            artworkUrl);
+            artworkUrl,
+            false,
+            []);
 
         return implementation switch
         {
@@ -140,7 +142,14 @@ internal sealed class GetTrackPortContractTestEnvironment : IAsyncDisposable
                 record.DurationMs,
                 record.Isrc,
                 record.ReleaseDate,
-                record.ArtworkUrl);
+                record.ArtworkUrl,
+                record.StreamingLocations.Length > 0,
+                record.StreamingLocations
+                    .Select(static location => new Soundtrail.Services.Api.Features.Catalog.Shared.Contract.StreamingLocationResponse(
+                        location.Provider,
+                        location.ExternalId,
+                        location.Url))
+                    .ToArray());
         }
 
         public void MapOnto<TSource, TTarget>(TSource source, TTarget target)

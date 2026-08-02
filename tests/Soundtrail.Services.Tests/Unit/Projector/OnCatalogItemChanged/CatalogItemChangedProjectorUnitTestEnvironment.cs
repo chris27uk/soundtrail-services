@@ -8,7 +8,6 @@ using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogTrackChanged;
 using Soundtrail.Domain.Discovery.Events;
-using Soundtrail.Domain.Operations;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogItemChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnPlaylistTracksDiscovered.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnPlaylistTracksDiscovered;
@@ -38,7 +37,7 @@ internal sealed class CatalogItemChangedProjectorUnitTestEnvironment
 
     public CatalogItemChangedProjectorHandler CreateCatalogItemSubject() => new(Repository);
 
-    public PlaylistTracksDiscoveredProjectorHandler CreatePlaylistSubject() => new(CommandBus, StorePlaylistTracksReadModelPort);
+    public PlaylistTracksDiscoveredProjectorHandler CreatePlaylistSubject() => new(StorePlaylistTracksReadModelPort);
 
     public CatalogTrackChangedProjectorHandler CreateCatalogTrackChangedSubject() => new(StorePlaylistTracksReadModelPort);
 

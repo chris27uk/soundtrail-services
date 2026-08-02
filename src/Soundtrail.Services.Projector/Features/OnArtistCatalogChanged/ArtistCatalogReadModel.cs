@@ -1,6 +1,7 @@
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Tracks;
+using Soundtrail.Domain.Common;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnArtistCatalogChanged;
 
@@ -29,4 +30,10 @@ public sealed record ArtistCatalogTrackReadModel(
     string? Isrc,
     DateOnly? ReleaseDate,
     string? ReleaseType,
-    string? ArtworkUrl);
+    string? ArtworkUrl,
+    ArtistCatalogStreamingLocationReadModel[] StreamingLocations);
+
+public sealed record ArtistCatalogStreamingLocationReadModel(
+    ProviderName Provider,
+    string? ExternalId,
+    string Url);

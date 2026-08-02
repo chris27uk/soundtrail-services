@@ -55,7 +55,9 @@ internal sealed class GetTracksForAlbumRouteTestEnvironment : IDisposable
                             201000,
                             "GBAYE2401001",
                             new DateOnly(2024, 6, 7),
-                            "https://cdn.soundtrail.test/tracks/track-1001.jpg")
+                            "https://cdn.soundtrail.test/tracks/track-1001.jpg",
+                            false,
+                            [])
                     ]));
     }
 
@@ -79,7 +81,9 @@ internal sealed class GetTracksForAlbumRouteTestEnvironment : IDisposable
                             track.DurationMs,
                             track.Isrc,
                             track.ReleaseDate,
-                            track.ArtworkUrl))
+                            track.ArtworkUrl,
+                            track.Playable,
+                            []))
                     .ToArray(),
                 null);
         }

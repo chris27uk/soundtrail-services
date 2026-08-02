@@ -30,6 +30,22 @@ public sealed class WorldTop100PlaylistScenarioTests
         resolved.Tracks.Select(track => track.ArtistName)
             .Should()
             .BeEquivalentTo(["Aurora Lane", "Paper Tigers", "Neon Harbour", "Saturn Kids"]);
+        resolved.Tracks.Where(track => track.Playable)
+            .Select(track => track.Title)
+            .Should()
+            .BeEquivalentTo(["Midnight Signals", "Glass Cities (Radio Edit)"]);
+        resolved.Tracks.Where(track => !track.Playable)
+            .Select(track => track.Title)
+            .Should()
+            .BeEquivalentTo(["Static Hearts", "Golden Echo - Radio Edit"]);
+        resolved.Tracks
+            .SelectMany(track => track.StreamingLocations)
+            .Select(location => location.Url)
+            .Should()
+            .BeEquivalentTo([
+                "https://open.spotify.com/track/midnight-signals",
+                "https://music.youtube.com/watch?v=glass-cities-radio"
+            ]);
         resolved.Discovery.Should().NotBeNull();
         resolved.Discovery!.Status.Should().Be("completed");
         streamingCoverage.ByTrackId.Values.Should().Contain(true);

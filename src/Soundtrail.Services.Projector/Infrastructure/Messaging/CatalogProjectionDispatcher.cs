@@ -75,6 +75,8 @@ internal sealed class CatalogProjectionDispatcher(
             artistCatalogChangedProjectorHandler.Handle(
                 @event.Hierarchy.ArtistId ?? throw new InvalidOperationException("StreamingLocationDiscovered must include artist ownership hierarchy."),
                 cancellationToken));
+        handlers.RegisterAsync<StreamingLocationDiscovered>((@event, cancellationToken) =>
+            catalogTrackChangedProjectorHandler.Handle(@event.MusicCatalogId.AsTrack(), cancellationToken));
 
         handlers.RegisterAsync<PlaylistTracksDiscovered>(playlistTracksDiscoveredProjectorHandler.Handle);
 

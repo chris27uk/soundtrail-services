@@ -49,7 +49,9 @@ internal sealed class GetTrackRouteTestEnvironment : IDisposable
                     201000,
                     "GBAYE2400301",
                     new DateOnly(2024, 6, 7),
-                    "https://cdn.soundtrail.test/tracks/mc_track_501.jpg"));
+                    "https://cdn.soundtrail.test/tracks/mc_track_501.jpg",
+                    false,
+                    []));
     }
 
     private sealed class TypeRegistryFake : ITypeRegistry
@@ -69,6 +71,8 @@ internal sealed class GetTrackRouteTestEnvironment : IDisposable
                 response.Isrc,
                 response.ReleaseDate,
                 response.ArtworkUrl,
+                response.Playable,
+                [],
                 null);
         }
 

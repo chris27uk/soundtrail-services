@@ -144,4 +144,30 @@ public sealed class PlaylistTracksExistTests
 
         result!.Tracks[0].ArtworkUrl.Should().Be("https://cdn.soundtrail.test/tracks/track-3611.jpg");
     }
+
+    [Theory]
+    [MemberData(nameof(Implementations))]
+    public async Task Given_A_Playable_Playlist_Track_When_Requesting_The_Playlist_Tracks_Then_Playability_Is_Returned(GetTracksForPlaylistPortImplementation implementation)
+    {
+        await using var environment = await GetTracksForPlaylistPortContractTestEnvironment.ForExistingPlaylistTracks(
+            implementation,
+            streamingLocations:
+            [
+                new Soundtrail.Contracts.Persistence.CatalogStreamingLocationRecordDto
+                {
+                    Provider = "spotify",
+                    ExternalId = "spotify-track-3612",
+                    Url = "https://open.spotify.com/track/3612"
+                }
+            ]);
+
+        var result = await environment.Subject.GetTracksForPlaylistAsync(environment.PlaylistId, CancellationToken.None);
+
+        result!.Tracks[0].Playable.Should().BeTrue();
+        result.Tracks[0].StreamingLocations.Should().ContainSingle().Which.Should().Be(
+            new Soundtrail.Services.Api.Features.Catalog.Shared.Contract.StreamingLocationResponse(
+                "spotify",
+                "spotify-track-3612",
+                "https://open.spotify.com/track/3612"));
+    }
 }

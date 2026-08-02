@@ -30,7 +30,9 @@ public sealed class GetTracksForAlbumResponseTranslationRegistration : ITypeTran
                                 track.DurationMs,
                                 track.Isrc,
                                 track.ReleaseDate,
-                                track.ArtworkUrl))
+                                track.ArtworkUrl,
+                                track.Playable,
+                                ToStreamingLocationDtos(track.StreamingLocations)))
                         .ToArray(),
                     ToDiscoveryDto(response.Discovery)),
             toDomainObject: dto =>
@@ -47,7 +49,9 @@ public sealed class GetTracksForAlbumResponseTranslationRegistration : ITypeTran
                                 track.DurationMs,
                                 track.Isrc,
                                 track.ReleaseDate,
-                                track.ArtworkUrl))
+                                track.ArtworkUrl,
+                                track.Playable,
+                                ToStreamingLocations(track.StreamingLocations)))
                         .ToArray(),
                     ToDiscovery(dto.Discovery)));
 
@@ -66,10 +70,30 @@ public sealed class GetTracksForAlbumResponseTranslationRegistration : ITypeTran
                             track.DurationMs,
                             track.Isrc,
                             track.ReleaseDate,
-                            track.ArtworkUrl))
+                            track.ArtworkUrl,
+                            track.StreamingLocations.Length > 0,
+                            ToStreamingLocations(track.StreamingLocations)))
                         .ToArray(),
                     null));
     }
+
+    private static StreamingLocationResponseDto[] ToStreamingLocationDtos(
+        IEnumerable<StreamingLocationResponse> streamingLocations) =>
+        streamingLocations
+            .Select(static location => new StreamingLocationResponseDto(location.Provider, location.ExternalId, location.Url))
+            .ToArray();
+
+    private static StreamingLocationResponse[] ToStreamingLocations(
+        IEnumerable<StreamingLocationResponseDto> streamingLocations) =>
+        streamingLocations
+            .Select(static location => new StreamingLocationResponse(location.Provider, location.ExternalId, location.Url))
+            .ToArray();
+
+    private static StreamingLocationResponse[] ToStreamingLocations(
+        IEnumerable<CatalogStreamingLocationRecordDto> streamingLocations) =>
+        streamingLocations
+            .Select(static location => new StreamingLocationResponse(location.Provider, location.ExternalId, location.Url))
+            .ToArray();
 
     private static DiscoveryFeedbackResponseDto? ToDiscoveryDto(DiscoveryFeedbackResponse? discovery) =>
         discovery is null

@@ -24,6 +24,8 @@ public sealed class CatalogTrackRecordDto
 
     public string? ArtworkUrl { get; set; }
 
+    public CatalogStreamingLocationRecordDto[] StreamingLocations { get; set; } = [];
+
     public DateTimeOffset UpdatedAt { get; set; }
 
     public static string GetDocumentId(string trackId) => $"catalog/tracks/{trackId}";

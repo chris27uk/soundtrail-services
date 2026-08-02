@@ -17,4 +17,6 @@ public sealed record GetTracksForAlbumTrackResponseDto(
     int? DurationMs,
     string? Isrc,
     DateOnly? ReleaseDate,
-    string? ArtworkUrl);
+    string? ArtworkUrl,
+    bool Playable,
+    StreamingLocationResponseDto[] StreamingLocations);

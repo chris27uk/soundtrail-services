@@ -67,7 +67,8 @@ public sealed class RavenStoreArtistCatalogReadModelPort(IDocumentStore document
                         Isrc = track.Isrc,
                         ReleaseDate = track.ReleaseDate,
                         ReleaseType = track.ReleaseType,
-                        ArtworkUrl = track.ArtworkUrl
+                        ArtworkUrl = track.ArtworkUrl,
+                        StreamingLocations = ToStreamingLocationRecords(track.StreamingLocations)
                     })
                     .ToArray(),
                 UpdatedAt = readModel.UpdatedAt
@@ -115,7 +116,8 @@ public sealed class RavenStoreArtistCatalogReadModelPort(IDocumentStore document
                             Isrc = track.Isrc,
                             ReleaseDate = track.ReleaseDate,
                             ReleaseType = track.ReleaseType,
-                            ArtworkUrl = track.ArtworkUrl
+                            ArtworkUrl = track.ArtworkUrl,
+                            StreamingLocations = ToStreamingLocationRecords(track.StreamingLocations)
                         })
                         .ToArray(),
                     UpdatedAt = readModel.UpdatedAt
@@ -139,6 +141,7 @@ public sealed class RavenStoreArtistCatalogReadModelPort(IDocumentStore document
                     ReleaseDate = track.ReleaseDate,
                     ReleaseType = track.ReleaseType,
                     ArtworkUrl = track.ArtworkUrl,
+                    StreamingLocations = ToStreamingLocationRecords(track.StreamingLocations),
                     UpdatedAt = readModel.UpdatedAt
                 },
                 cancellationToken);
@@ -146,4 +149,15 @@ public sealed class RavenStoreArtistCatalogReadModelPort(IDocumentStore document
 
         await session.SaveChangesAsync(cancellationToken);
     }
+
+    private static CatalogStreamingLocationRecordDto[] ToStreamingLocationRecords(
+        IEnumerable<ArtistCatalogStreamingLocationReadModel> streamingLocations) =>
+        streamingLocations
+            .Select(static location => new CatalogStreamingLocationRecordDto
+            {
+                Provider = location.Provider.StableValue,
+                ExternalId = location.ExternalId,
+                Url = location.Url
+            })
+            .ToArray();
 }

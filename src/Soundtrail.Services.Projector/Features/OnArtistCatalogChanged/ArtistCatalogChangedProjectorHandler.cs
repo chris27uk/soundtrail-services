@@ -1,4 +1,5 @@
 using Soundtrail.Domain.Abstractions.EventSourcing;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Events;
@@ -43,7 +44,14 @@ public sealed class ArtistCatalogChangedProjectorHandler(
                     track.Isrc,
                     track.ReleaseDate,
                     track.ReleaseType,
-                    track.ArtworkUrl))
+                    track.ArtworkUrl,
+                    track.ProviderReferences.Values
+                        .OrderBy(static location => location.Provider.Value, StringComparer.Ordinal)
+                        .Select(static location => new ArtistCatalogStreamingLocationReadModel(
+                            location.Provider,
+                            location.ExternalId,
+                            location.Url.ToString()))
+                        .ToArray()))
                 .ToArray());
 
     private sealed class ArtistCatalogSnapshot
@@ -87,6 +95,7 @@ public sealed class ArtistCatalogChangedProjectorHandler(
                         break;
 
                     case StreamingLocationDiscovered streamingLocationDiscovered:
+                        ApplyStreamingLocation(snapshot, streamingLocationDiscovered);
                         snapshot.UpdatedAt = streamingLocationDiscovered.ObservedAt;
                         break;
 
@@ -105,6 +114,26 @@ public sealed class ArtistCatalogChangedProjectorHandler(
             }
 
             return snapshot;
+        }
+
+        private static void ApplyStreamingLocation(
+            ArtistCatalogSnapshot snapshot,
+            StreamingLocationDiscovered streamingLocationDiscovered)
+        {
+            var trackId = streamingLocationDiscovered.MusicCatalogId.AsTrack();
+            if (!snapshot.Tracks.TryGetValue(trackId.Value, out var track))
+            {
+                return;
+            }
+
+            track.ProviderReferences[streamingLocationDiscovered.Provider.Value] = new StreamingLocation(
+                streamingLocationDiscovered.Provider,
+                streamingLocationDiscovered.ExternalId,
+                streamingLocationDiscovered.Url,
+                streamingLocationDiscovered.SourceProvider,
+                streamingLocationDiscovered.ObservedAt);
+            track.FailedProviders.Remove(streamingLocationDiscovered.Provider.Value);
+            track.UpdatedAt = streamingLocationDiscovered.ObservedAt;
         }
 
         private static void UpdateTrackArtwork(ArtistCatalogSnapshot snapshot, TrackId trackId, ArtworkDiscovered artworkDiscovered)

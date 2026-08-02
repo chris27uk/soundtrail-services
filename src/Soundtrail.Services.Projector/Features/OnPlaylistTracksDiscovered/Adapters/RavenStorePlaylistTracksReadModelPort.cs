@@ -110,7 +110,8 @@ public sealed class RavenStorePlaylistTracksReadModelPort(IDocumentStore documen
                     Isrc = track.Isrc,
                     ReleaseDate = track.ReleaseDate,
                     ReleaseType = track.ReleaseType,
-                    ArtworkUrl = track.ArtworkUrl
+                    ArtworkUrl = track.ArtworkUrl,
+                    StreamingLocations = track.StreamingLocations
                 })
                 .ToArray(),
             UpdatedAt = updatedAt

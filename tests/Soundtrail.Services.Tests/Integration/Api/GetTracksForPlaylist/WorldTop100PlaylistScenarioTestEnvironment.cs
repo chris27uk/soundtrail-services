@@ -191,12 +191,8 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
                         continue;
                     }
 
-                    var link = await odesliPort.ReadByTrackMetadataAsync(
-                        track.ArtistName,
-                        track.Title,
-                        ProviderName.Spotify,
-                        CancellationToken.None);
-                    streamingCoverage[track.TrackId.Value] = link is not null;
+                    var streamingLocations = await ReadStreamingLocationsAsync(odesliPort, track);
+                    streamingCoverage[track.TrackId.Value] = streamingLocations.Length > 0;
 
                     await session.StoreAsync(
                         new CatalogTrackRecordDto
@@ -212,6 +208,7 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
                             ReleaseDate = track.ReleaseDate,
                             ReleaseType = track.ReleaseType,
                             ArtworkUrl = track.ArtworkUrl,
+                            StreamingLocations = streamingLocations,
                             UpdatedAt = track.UpdatedAt
                         });
                 }
@@ -246,10 +243,64 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
                     Reason = "Playlist metadata has been materialized from local WireMock services.",
                     UpdatedAtUtc = Clock.UtcNow.AddMinutes(1)
                 });
+
+            foreach (var (trackIdValue, hasStreamingLocation) in streamingCoverage)
+            {
+                var streamingTargetId = new CatalogItemOperation.StreamingLocationForTrack(TrackId.From(trackIdValue))
+                    .StableIdentifier();
+                var streamingDiscoveryDocumentId = CatalogDiscoveryFeedbackRecordDto.GetDocumentId(streamingTargetId);
+                TrackForCleanup(streamingDiscoveryDocumentId);
+
+                await session.StoreAsync(
+                    new CatalogDiscoveryFeedbackRecordDto
+                    {
+                        Id = streamingDiscoveryDocumentId,
+                        TargetId = streamingTargetId,
+                        Status = hasStreamingLocation ? "completed" : "attempt-failed",
+                        Priority = LookupPriorityBand.High.ToString(),
+                        NextEligibleAtUtc = null,
+                        EarliestExpectedCompletionAtUtc = null,
+                        Reason = hasStreamingLocation
+                            ? "Streaming locations have been materialized from local WireMock services."
+                            : "Streaming locations were not found in local WireMock services.",
+                        UpdatedAtUtc = Clock.UtcNow.AddMinutes(1)
+                    });
+            }
+
             await session.SaveChangesAsync();
         }
 
         return new StreamingCoverageSummary(streamingCoverage);
+    }
+
+    private static async Task<CatalogStreamingLocationRecordDto[]> ReadStreamingLocationsAsync(
+        OdesliStreamingLocationPort odesliPort,
+        Track track)
+    {
+        var locations = new List<CatalogStreamingLocationRecordDto>();
+
+        foreach (var provider in ProviderName.All)
+        {
+            var link = await odesliPort.ReadByTrackMetadataAsync(
+                track.ArtistName,
+                track.Title,
+                provider,
+                CancellationToken.None);
+
+            if (link is null)
+            {
+                continue;
+            }
+
+            locations.Add(new CatalogStreamingLocationRecordDto
+            {
+                Provider = provider.StableValue,
+                ExternalId = null,
+                Url = link.ToString()
+            });
+        }
+
+        return locations.ToArray();
     }
 
     public async Task<GetTracksForPlaylistResponseDto?> GetPlaylistAsync()
@@ -512,7 +563,14 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
                             track.DurationMs,
                             track.Isrc,
                             track.ReleaseDate,
-                            track.ArtworkUrl))
+                            track.ArtworkUrl,
+                            track.Playable,
+                            track.StreamingLocations
+                                .Select(static location => new StreamingLocationResponseDto(
+                                    location.Provider,
+                                    location.ExternalId,
+                                    location.Url))
+                                .ToArray()))
                     .ToArray(),
                 response.Discovery is null
                     ? null
@@ -542,7 +600,14 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
                             track.DurationMs,
                             track.Isrc,
                             track.ReleaseDate,
-                            track.ArtworkUrl))
+                            track.ArtworkUrl,
+                            track.StreamingLocations.Length > 0,
+                            track.StreamingLocations
+                                .Select(static location => new Soundtrail.Services.Api.Features.Catalog.Shared.Contract.StreamingLocationResponse(
+                                    location.Provider,
+                                    location.ExternalId,
+                                    location.Url))
+                                .ToArray()))
                     .ToArray());
         }
 

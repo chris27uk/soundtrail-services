@@ -18,6 +18,7 @@ public sealed class ProjectionSubscriptionsFeature : IProjectorFeature
         services.TryAddScoped<StoredEventDomainEventResolver>();
         services.TryAddScoped<CatalogProjectionDispatcher>();
         services.TryAddScoped<DiscoveryProjectionDispatcher>();
+        services.AddHealthChecks().AddCheck<ProjectorSubscriptionsHealthCheck>("projector_subscriptions");
         services.AddHostedService<CatalogProjectionSubscriptionService>();
         services.AddHostedService<DiscoveryProjectionSubscriptionService>();
     }

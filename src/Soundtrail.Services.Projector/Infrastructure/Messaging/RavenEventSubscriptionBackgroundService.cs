@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Subscriptions;
 using Raven.Client.Exceptions.Documents.Subscriptions;
@@ -10,9 +11,11 @@ namespace Soundtrail.Services.Internal.Projector.Infrastructure.Messaging;
 
 internal abstract class RavenEventSubscriptionBackgroundService(
     IServiceScopeFactory scopeFactory,
-    IDocumentStore documentStore) : BackgroundService
+    IDocumentStore documentStore,
+    ILogger<RavenEventSubscriptionBackgroundService>? logger = null) : BackgroundService
 {
     private const string BeginningOfTimeChangeVector = "BeginningOfTime";
+    private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(5);
 
     protected abstract string SubscriptionName { get; }
 
@@ -24,23 +27,52 @@ internal abstract class RavenEventSubscriptionBackgroundService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await EnsureSubscriptionExistsAsync(stoppingToken);
-
-        var worker = documentStore.Subscriptions.GetSubscriptionWorker<RavenStoredEventRecord>(
-            new SubscriptionWorkerOptions(SubscriptionName)
-            {
-                Strategy = SubscriptionOpeningStrategy.WaitForFree,
-                MaxDocsPerBatch = MaxDocsPerBatch
-            });
-
-        await worker.Run(async batch =>
+        while (!stoppingToken.IsCancellationRequested)
         {
-            using var scope = scopeFactory.CreateScope();
-            foreach (var item in batch.Items)
+            try
             {
-                await HandleAsync(scope.ServiceProvider, item.Result, stoppingToken);
+                await EnsureSubscriptionExistsAsync(stoppingToken);
+
+                using var worker = documentStore.Subscriptions.GetSubscriptionWorker<RavenStoredEventRecord>(
+                    new SubscriptionWorkerOptions(SubscriptionName)
+                    {
+                        Strategy = SubscriptionOpeningStrategy.WaitForFree,
+                        MaxDocsPerBatch = MaxDocsPerBatch
+                    });
+
+                logger?.LogInformation("Raven subscription '{SubscriptionName}' is starting.", SubscriptionName);
+
+                await worker.Run(async batch =>
+                {
+                    using var scope = scopeFactory.CreateScope();
+                    foreach (var item in batch.Items)
+                    {
+                        await HandleAsync(scope.ServiceProvider, item.Result, stoppingToken);
+                    }
+                }, stoppingToken);
             }
-        }, stoppingToken);
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                return;
+            }
+            catch (Exception exception)
+            {
+                logger?.LogError(
+                    exception,
+                    "Raven subscription '{SubscriptionName}' failed. It will retry in {RetryDelay}.",
+                    SubscriptionName,
+                    RetryDelay);
+
+                try
+                {
+                    await Task.Delay(RetryDelay, stoppingToken);
+                }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    return;
+                }
+            }
+        }
     }
 
     protected abstract Task HandleAsync(

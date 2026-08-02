@@ -62,7 +62,9 @@ internal sealed class GetTracksForAlbumPortContractTestEnvironment : IAsyncDispo
                     durationMs,
                     isrc,
                     releaseDate ?? new DateOnly(2024, 1, 2),
-                    artworkUrl)
+                    artworkUrl,
+                    false,
+                    [])
             ]);
 
         return implementation switch
@@ -162,7 +164,14 @@ internal sealed class GetTracksForAlbumPortContractTestEnvironment : IAsyncDispo
                             track.DurationMs,
                             track.Isrc,
                             track.ReleaseDate,
-                            track.ArtworkUrl))
+                            track.ArtworkUrl,
+                            track.StreamingLocations.Length > 0,
+                            track.StreamingLocations
+                                .Select(static location => new Soundtrail.Services.Api.Features.Catalog.Shared.Contract.StreamingLocationResponse(
+                                    location.Provider,
+                                    location.ExternalId,
+                                    location.Url))
+                                .ToArray()))
                     .ToArray());
         }
 

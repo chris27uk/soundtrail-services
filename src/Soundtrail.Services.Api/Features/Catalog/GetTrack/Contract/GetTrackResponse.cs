@@ -14,4 +14,6 @@ public sealed record GetTrackResponse(
     string? Isrc,
     DateOnly? ReleaseDate,
     string? ArtworkUrl,
+    bool Playable,
+    StreamingLocationResponse[] StreamingLocations,
     DiscoveryFeedbackResponse? Discovery = null);

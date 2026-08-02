@@ -265,6 +265,15 @@ internal static class ProductionCompositionTestEnvironment
             builder.Services.Remove(descriptor);
         }
 
+        builder.Services
+            .Where(descriptor => descriptor.ServiceType == typeof(IHostedService))
+            .Select(descriptor => descriptor.ImplementationType?.FullName)
+            .Should()
+            .Contain([
+                "Soundtrail.Services.Internal.Projector.Infrastructure.Messaging.CatalogProjectionSubscriptionService",
+                "Soundtrail.Services.Internal.Projector.Infrastructure.Messaging.DiscoveryProjectionSubscriptionService"
+            ]);
+
         builder.Services.BuildServiceProvider(
             new ServiceProviderOptions
             {

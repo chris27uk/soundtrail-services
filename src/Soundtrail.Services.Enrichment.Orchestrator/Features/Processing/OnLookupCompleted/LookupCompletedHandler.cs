@@ -1,5 +1,6 @@
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Aggregates;
@@ -25,6 +26,7 @@ public sealed class LookupCompletedHandler(
         
         await scope.Aggregate.SaveAsync(cancellationToken);
         await PublishPlaylistTrackDiscoveryRequestsAsync(request, lookupRequest, cancellationToken);
+        await PublishStreamingLocationDiscoveryRequestsAsync(request, lookupRequest, cancellationToken);
     }
 
     private async Task PublishPlaylistTrackDiscoveryRequestsAsync(
@@ -63,6 +65,42 @@ public sealed class LookupCompletedHandler(
                     CommandId: MessageId.For(
                         $"RequestUnknownMusicData:{succeeded.Context.StreamId.StableValue}:{searchCriteria.NormalisedIdentifier}"),
                     CorrelationId: request.CorrelationId),
+                cancellationToken);
+        }
+    }
+
+    private async Task PublishStreamingLocationDiscoveryRequestsAsync(
+        CatalogLookupCompleted request,
+        LookupResult lookupRequest,
+        CancellationToken cancellationToken)
+    {
+        if (lookupRequest is not LookupResult.Succeeded succeeded)
+        {
+            return;
+        }
+
+        if (succeeded.Value is not LookedUpData.CatalogEntries catalogEntries)
+        {
+            return;
+        }
+
+        foreach (var track in catalogEntries.Values
+                     .Select(static entry => entry.Item)
+                     .OfType<CatalogItem.MusicTrack>())
+        {
+            await commandBus.SendAsync(
+                new RequestKnownMusicDataMessage(
+                    new CatalogItemOperation.StreamingLocationForTrack(track.Track.TrackId),
+                    LookupPriorityBand.High,
+                    100,
+                    0,
+                    request.RequestedAt)
+                {
+                    Id = MessageId.For(
+                        $"RequestKnownMusicData:{succeeded.Context.StreamId.StableValue}:streaming:{track.Track.TrackId.Value}"),
+                    CorrelationId = request.CorrelationId,
+                    CreatedAt = request.RequestedAt
+                },
                 cancellationToken);
         }
     }

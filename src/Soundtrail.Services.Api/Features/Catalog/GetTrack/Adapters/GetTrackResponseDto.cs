@@ -12,4 +12,6 @@ public sealed record GetTrackResponseDto(
     string? Isrc,
     DateOnly? ReleaseDate,
     string? ArtworkUrl,
+    bool Playable,
+    StreamingLocationResponseDto[] StreamingLocations,
     DiscoveryFeedbackResponseDto? Discovery);

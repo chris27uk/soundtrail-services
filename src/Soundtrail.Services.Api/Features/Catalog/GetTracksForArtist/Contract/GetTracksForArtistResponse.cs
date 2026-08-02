@@ -20,4 +20,6 @@ public sealed record GetTracksForArtistTrackResponse(
     int? DurationMs,
     string? Isrc,
     DateOnly? ReleaseDate,
-    string? ArtworkUrl);
+    string? ArtworkUrl,
+    bool Playable,
+    StreamingLocationResponse[] StreamingLocations);

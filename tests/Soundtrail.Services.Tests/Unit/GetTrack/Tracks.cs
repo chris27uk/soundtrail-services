@@ -27,7 +27,9 @@ namespace Soundtrail.Services.Tests.Unit.GetTrack
                 durationMs,
                 isrc,
                 releaseDate ?? new DateOnly(2024, 1, 2),
-                artworkUrl);
+                artworkUrl,
+                false,
+                []);
         }
     }
 }

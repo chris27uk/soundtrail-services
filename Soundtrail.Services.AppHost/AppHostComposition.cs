@@ -109,7 +109,6 @@ public static class AppHostComposition
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
             .WithEnvironment("ServiceBus__AssessMusicCatalogItemQueueName", "assess-music-catalog-item")
             .WithEnvironment("ServiceBus__DispatchLookupWorkQueueName", "dispatch-lookup-work")
-            .WithEnvironment("ServiceBus__PlaylistUpdatesQueueName", "playlist-updates")
             .WithEnvironment("ServiceBus__MusicTrackEventsQueueName", "music-track-events")
             .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail");
@@ -125,7 +124,6 @@ public static class AppHostComposition
             .WaitFor(ravenDb)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
             .WithEnvironment("ServiceBus__DiscoveryBacklogSchedulingQueueName", "discovery-backlog-scheduling")
-            .WithEnvironment("ServiceBus__PlaylistUpdatesQueueName", "playlist-updates")
             .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail");
 

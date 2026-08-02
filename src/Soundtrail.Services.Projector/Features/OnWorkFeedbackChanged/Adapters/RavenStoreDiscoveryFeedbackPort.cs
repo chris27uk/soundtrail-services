@@ -81,6 +81,11 @@ public sealed class RavenStoreDiscoveryFeedbackPort(
         var record = await session.LoadAsync<CatalogDiscoveryFeedbackRecordDto>(id, cancellationToken)
             ?? CreateRecord(@event.Target.NormalisedIdentifier);
 
+        if (record.Status == "completed")
+        {
+            return;
+        }
+
         record.Status = "attempt-failed";
         record.Reason = @event.Reason;
         record.UpdatedAtUtc = @event.FailedAt;

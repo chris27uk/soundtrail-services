@@ -40,6 +40,7 @@ public sealed class DiscoveryHistory
         this.eventHandlers.Register<WorkCompleted>(@event => completedTargets.Add(@event.Target.NormalisedIdentifier));
         this.eventHandlers.Register<WorkRejected>(@event => rejectedTargets.Add(@event.Target.NormalisedIdentifier));
         this.eventHandlers.Register<WorkIgnored>(@event => ignoredTargets.Add(@event.Target.NormalisedIdentifier));
+        this.eventHandlers.Register<WorkAttemptFailed>(_ => { });
         this.eventHandlers.Register<ArtistDiscovered>(_ => { });
         this.eventHandlers.Register<AlbumDiscovered>(_ => { });
         this.eventHandlers.Register<TrackDiscovered>(_ => { });

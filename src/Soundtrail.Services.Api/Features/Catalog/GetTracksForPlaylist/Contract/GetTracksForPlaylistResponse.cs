@@ -19,4 +19,6 @@ public sealed record GetTracksForPlaylistTrackResponse(
     int? DurationMs,
     string? Isrc,
     DateOnly? ReleaseDate,
-    string? ArtworkUrl);
+    string? ArtworkUrl,
+    bool Playable,
+    StreamingLocationResponse[] StreamingLocations);

@@ -38,7 +38,6 @@ internal sealed class AzureServiceBusCommandBus(
             StreamingLocationLookupCommandDto => "lookup-playback-references",
             PlaylistTracksLookupCommandDto => "lookup-music-playlists",
             CatalogLookupCompletedCommandDto => "catalog-lookup-completed",
-            PlaylistUpdatedCommandDto => "playlist-updates",
             _ => throw new InvalidOperationException(
                 $"No Azure Service Bus queue mapping exists for DTO type '{dto.GetType().FullName}'.")
         };

@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Raven.Client.Documents;
 using Soundtrail.Contracts.EventSourcing;
 
@@ -7,7 +8,8 @@ namespace Soundtrail.Services.Internal.Projector.Infrastructure.Messaging;
 
 internal sealed class DiscoveryProjectionSubscriptionService(
     IServiceScopeFactory scopeFactory,
-    IDocumentStore documentStore) : RavenEventSubscriptionBackgroundService(scopeFactory, documentStore)
+    IDocumentStore documentStore,
+    ILogger<RavenEventSubscriptionBackgroundService> logger) : RavenEventSubscriptionBackgroundService(scopeFactory, documentStore, logger)
 {
     protected override string SubscriptionName => "projector/discovery";
 

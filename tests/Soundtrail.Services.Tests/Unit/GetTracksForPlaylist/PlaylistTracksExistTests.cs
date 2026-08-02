@@ -3,6 +3,7 @@ using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Contract;
 using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
 
 namespace Soundtrail.Services.Tests.Unit.GetTracksForPlaylist;
@@ -35,6 +36,98 @@ public sealed class PlaylistTracksExistTests
         var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
         result!.Discovery.Should().Be(environment.DiscoveryFeedbackPort.Response);
+    }
+
+    [Fact]
+    public async Task Given_Streaming_Discovery_Completed_But_Playlist_Track_Is_Not_Playable_When_Requesting_Then_Projection_Catch_Up_Timing_Is_Returned()
+    {
+        var trackId = TestTrackIds.Create("playlist-track-projection-lag");
+        var response = PlaylistTracks.CreateResponse(trackId: trackId);
+        var environment = GetTracksForPlaylistUnitTestEnvironment.ForExistingPlaylistTracks(response: response);
+        environment.DiscoveryFeedbackPort.SetResponse(
+            new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.ChildTracksForPlaylist(response.PlaylistId)),
+            new DiscoveryFeedbackResponse(
+                "completed",
+                LookupPriorityBand.High,
+                null,
+                null,
+                "Lookup completed.",
+                environment.Clock.UtcNow.AddSeconds(-2)));
+        environment.DiscoveryFeedbackPort.SetResponse(
+            new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.StreamingLocationForTrack(trackId)),
+            new DiscoveryFeedbackResponse(
+                "completed",
+                LookupPriorityBand.High,
+                null,
+                null,
+                "Lookup completed.",
+                environment.Clock.UtcNow.AddSeconds(-1)));
+
+        var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
+
+        result!.Discovery.Should().NotBeNull();
+        result.Discovery!.Status.Should().Be("scheduled");
+        result.Discovery.NextEligibleAt.Should().Be(environment.Clock.UtcNow.AddSeconds(15));
+        result.Discovery.EarliestExpectedCompletionAt.Should().Be(environment.Clock.UtcNow.AddSeconds(75));
+        result.Discovery.Reason.Should().Be("Track streaming projection is still catching up.");
+    }
+
+    [Fact]
+    public async Task Given_Playlist_Discovery_Completed_But_Projected_Playlist_Has_No_Tracks_When_Requesting_Then_Projection_Catch_Up_Timing_Is_Returned()
+    {
+        var playlistId = PlaylistTracks.DefaultPlaylistId;
+        var response = new GetTracksForPlaylistResponse(playlistId, []);
+        var environment = GetTracksForPlaylistUnitTestEnvironment.ForExistingPlaylistTracks(response: response);
+        environment.DiscoveryFeedbackPort.SetResponse(
+            new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.ChildTracksForPlaylist(playlistId)),
+            new DiscoveryFeedbackResponse(
+                "completed",
+                LookupPriorityBand.High,
+                null,
+                null,
+                "Lookup completed.",
+                environment.Clock.UtcNow.AddSeconds(-1)));
+
+        var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
+
+        result!.Tracks.Should().BeEmpty();
+        result.Discovery.Should().NotBeNull();
+        result.Discovery!.Status.Should().Be("scheduled");
+        result.Discovery.NextEligibleAt.Should().Be(environment.Clock.UtcNow.AddSeconds(15));
+        result.Discovery.EarliestExpectedCompletionAt.Should().Be(environment.Clock.UtcNow.AddSeconds(75));
+        result.Discovery.Reason.Should().Be("Playlist projection is still catching up.");
+    }
+
+    [Fact]
+    public async Task Given_Streaming_Discovery_Attempt_Failed_For_Unplayable_Track_When_Requesting_Then_Playlist_Discovery_Can_Be_Completed()
+    {
+        var trackId = TestTrackIds.Create("playlist-track-no-streaming-match");
+        var response = PlaylistTracks.CreateResponse(trackId: trackId);
+        var environment = GetTracksForPlaylistUnitTestEnvironment.ForExistingPlaylistTracks(response: response);
+        var playlistDiscovery = new DiscoveryFeedbackResponse(
+            "completed",
+            LookupPriorityBand.High,
+            null,
+            null,
+            "Lookup completed.",
+            environment.Clock.UtcNow.AddSeconds(-2));
+        environment.DiscoveryFeedbackPort.SetResponse(
+            new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.ChildTracksForPlaylist(response.PlaylistId)),
+            playlistDiscovery);
+        environment.DiscoveryFeedbackPort.SetResponse(
+            new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.StreamingLocationForTrack(trackId)),
+            new DiscoveryFeedbackResponse(
+                "attempt-failed",
+                LookupPriorityBand.High,
+                null,
+                null,
+                "No streaming location found.",
+                environment.Clock.UtcNow.AddSeconds(-1)));
+
+        var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
+
+        result!.Tracks.Single().Playable.Should().BeFalse();
+        result.Discovery.Should().Be(playlistDiscovery);
     }
 
     [Fact]

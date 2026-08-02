@@ -39,7 +39,9 @@ internal static class AlbumTracks
                     durationMs,
                     isrc,
                     releaseDate ?? new DateOnly(2024, 1, 2),
-                    artworkUrl)
+                    artworkUrl,
+                    false,
+                    [])
             ]);
     }
 }
