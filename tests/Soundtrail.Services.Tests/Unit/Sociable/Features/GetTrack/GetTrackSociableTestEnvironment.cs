@@ -3,11 +3,12 @@ using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Api.Features.Catalog.GetTrack;
 using Soundtrail.Services.Api.Features.Catalog.GetTrack.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetTrack.Contract;
-using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
-using Soundtrail.Services.Tests.Integration.GetTrack.Api.Ports;
+using Soundtrail.Services.Tests.Integration.Features.GetTrack.Support;
+using Soundtrail.Services.Tests.Integration.Features.GetTrack;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure;
+using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
-namespace Soundtrail.Services.Tests.Unit.Sociable.GetTrack;
+namespace Soundtrail.Services.Tests.Unit.Sociable.Features.GetTrack;
 
 internal sealed class GetTrackSociableTestEnvironment : IDisposable
 {
@@ -34,7 +35,7 @@ internal sealed class GetTrackSociableTestEnvironment : IDisposable
     public GetTrackPortFake Port { get; }
 
     public IReadOnlyList<IMessage> SentMessages =>
-        engine.Resolve<CommandBusFake>().SentMessages;
+        this.engine.Resolve<CommandBusFake>().SentMessages;
 
     public static GetTrackSociableTestEnvironment ForNoDataAvailable(TrackId? trackId = null) =>
         Compose(trackId ?? TestTrackIds.Create("track-402"), response: null);
@@ -51,14 +52,14 @@ internal sealed class GetTrackSociableTestEnvironment : IDisposable
 
     public async Task<TResult> ProjectOnChange<TResult>(Func<GetTrackHandler, Task<TResult>> change)
     {
-        var result = await change(sut);
-        await pump.PumpAsync();
+        var result = await change(this.sut);
+        await this.pump.PumpAsync();
         return result;
     }
 
     public GetTrackRequest CreateRequest() => new(TrackId);
 
-    public void Dispose() => engine.Dispose();
+    public void Dispose() => this.engine.Dispose();
 
     private static GetTrackSociableTestEnvironment Compose(TrackId trackId, GetTrackResponse? response)
     {

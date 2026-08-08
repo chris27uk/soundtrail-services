@@ -5,7 +5,7 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Search;
 
-namespace Soundtrail.Services.Tests.Unit.Messaging;
+namespace Soundtrail.Services.Tests.Unit.Solitary.Infrastructure.Messaging;
 
 public sealed class DiscoveryEventTranslationRegistrationTests
 {

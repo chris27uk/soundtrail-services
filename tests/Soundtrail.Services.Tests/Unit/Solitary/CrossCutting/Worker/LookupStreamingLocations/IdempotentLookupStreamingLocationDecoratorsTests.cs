@@ -1,6 +1,6 @@
 using Soundtrail.Domain.Discovery;
 
-namespace Soundtrail.Services.Tests.Unit.Worker.LookupStreamingLocations;
+namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Worker.LookupStreamingLocations;
 
 public sealed class IdempotentLookupStreamingLocationDecoratorsTests
 {

@@ -1,6 +1,6 @@
 using Soundtrail.Domain.Abstractions.EventSourcing;
 
-namespace Soundtrail.Services.Tests.Unit.EventSourcing;
+namespace Soundtrail.Services.Tests.Unit.Solitary.Infrastructure.EventSourcing;
 
 public sealed class EventHandlersTests
 {

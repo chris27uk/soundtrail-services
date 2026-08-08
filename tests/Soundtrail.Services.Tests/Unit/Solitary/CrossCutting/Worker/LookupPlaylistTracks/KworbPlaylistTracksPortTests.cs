@@ -1,10 +1,9 @@
-using System.Net;
-using System.Net.Http;
 using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Common;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks.Adapters;
+using System.Net;
 
-namespace Soundtrail.Services.Tests.Unit.Worker.LookupPlaylistTracks;
+namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Worker.LookupPlaylistTracks;
 
 public sealed class KworbPlaylistTracksPortTests
 {

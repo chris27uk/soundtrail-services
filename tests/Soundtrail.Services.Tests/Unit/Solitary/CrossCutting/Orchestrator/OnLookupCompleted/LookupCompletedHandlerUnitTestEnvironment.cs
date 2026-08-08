@@ -1,5 +1,3 @@
-using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Artists;
@@ -14,7 +12,7 @@ using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.Processing.OnLookupCompleted;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
-namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnLookupCompleted;
+namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Orchestrator.OnLookupCompleted;
 
 internal sealed class LookupCompletedHandlerUnitTestEnvironment
 {

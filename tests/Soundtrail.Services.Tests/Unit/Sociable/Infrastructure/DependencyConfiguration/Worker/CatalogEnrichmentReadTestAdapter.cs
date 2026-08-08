@@ -2,12 +2,16 @@ using Microsoft.Extensions.Configuration;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Services.Enrichment.Worker.Shared.Composition;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
-using Soundtrail.Services.Tests.Unit.Sociable.GetTracksForPlaylist.Composition;
 using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForPlaylist;
 using Soundtrail.Services.Tests.Unit.Sociable.Features.Search;
 using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForArtist;
 using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForAlbum;
 using Soundtrail.Services.Tests.Unit.Sociable.Features.GetAlbumsForArtist;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.GetAlbumsForArtist.Support;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForAlbum.Support;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForArtist.Support;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForPlaylist.Support;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.Search.Support;
 
 namespace Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.DependencyConfiguration.Worker;
 

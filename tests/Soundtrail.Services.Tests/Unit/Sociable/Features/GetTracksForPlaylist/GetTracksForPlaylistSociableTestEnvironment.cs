@@ -8,20 +8,20 @@ using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Contract;
-using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
+using Soundtrail.Services.Api.Shared.Contract;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks.Ports;
 using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
 using Soundtrail.Services.Enrichment.Worker.Shared.StreamingLocations;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnPlaylistTracksDiscovered.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.Adapters;
-using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
-using Soundtrail.Services.Tests.Unit.Sociable.GetTracksForPlaylist.Composition;
-using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure;
-using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForPlaylist;
 using Soundtrail.Services.Tests.Unit.Sociable.Features.Search;
+using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure;
+using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForPlaylist.Support;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.Search.Support;
 
-namespace Soundtrail.Services.Tests.Unit.Sociable.GetTracksForPlaylist;
+namespace Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForPlaylist;
 
 internal sealed class GetTracksForPlaylistSociableTestEnvironment : IDisposable
 {
@@ -61,13 +61,13 @@ internal sealed class GetTracksForPlaylistSociableTestEnvironment : IDisposable
 
     public StoreCatalogSearchCandidatePortFake SearchCandidate { get; }
 
-    public TMessage SentMessage<TMessage>() where TMessage : IMessage => pump.SentMessage<TMessage>();
+    public TMessage SentMessage<TMessage>() where TMessage : IMessage => this.pump.SentMessage<TMessage>();
 
-    public IReadOnlyList<TMessage> SentMessages<TMessage>() where TMessage : IMessage => pump.SentMessages<TMessage>();
+    public IReadOnlyList<TMessage> SentMessages<TMessage>() where TMessage : IMessage => this.pump.SentMessages<TMessage>();
 
-    public TEvent SavedEvent<TEvent>() where TEvent : IDomainEvent => discoveryRepository.SavedEvents.Concat(artistRepository.SavedEvents).OfType<TEvent>().First();
+    public TEvent SavedEvent<TEvent>() where TEvent : IDomainEvent => this.discoveryRepository.SavedEvents.Concat(this.artistRepository.SavedEvents).OfType<TEvent>().First();
 
-    public IReadOnlyList<TEvent> SavedEvents<TEvent>() where TEvent : IDomainEvent => discoveryRepository.SavedEvents.Concat(artistRepository.SavedEvents).OfType<TEvent>().ToArray();
+    public IReadOnlyList<TEvent> SavedEvents<TEvent>() where TEvent : IDomainEvent => this.discoveryRepository.SavedEvents.Concat(this.artistRepository.SavedEvents).OfType<TEvent>().ToArray();
 
     public static GetTracksForPlaylistSociableTestEnvironment ForNoExistingDataOrRequests() =>
         Compose(default, []);
@@ -143,9 +143,9 @@ internal sealed class GetTracksForPlaylistSociableTestEnvironment : IDisposable
     }
 
     public Task<TResult> ProjectOnChange<TResult>(Func<GetTracksForPlaylistHandler, Task<TResult>> change) =>
-        pump.ProjectOnChange(change, sut);
+        this.pump.ProjectOnChange(change, this.sut);
 
-    public void Dispose() => engine.Dispose();
+    public void Dispose() => this.engine.Dispose();
 
     private static GetTracksForPlaylistSociableTestEnvironment Compose(
         DateTimeOffset utcNow,

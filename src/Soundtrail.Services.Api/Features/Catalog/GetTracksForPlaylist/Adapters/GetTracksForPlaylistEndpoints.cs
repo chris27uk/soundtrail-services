@@ -2,8 +2,8 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog.Playlists;
-using Soundtrail.Services.Api.Features.Catalog.Shared.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Contract;
+using Soundtrail.Services.Api.Shared.Adapters;
 
 namespace Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Adapters;
 

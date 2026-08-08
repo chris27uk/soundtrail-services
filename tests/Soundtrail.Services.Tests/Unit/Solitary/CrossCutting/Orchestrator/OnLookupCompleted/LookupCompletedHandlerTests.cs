@@ -3,7 +3,7 @@ using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
 
-namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnLookupCompleted;
+namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Orchestrator.OnLookupCompleted;
 
 public sealed class LookupCompletedHandlerTests
 {

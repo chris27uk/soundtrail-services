@@ -4,7 +4,6 @@ using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Catalog.Tracks;
-using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.Catalog.Search;
@@ -12,11 +11,11 @@ using Soundtrail.Services.Api.Features.Catalog.Search.Contract;
 using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateChanged.Adapters;
-using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure;
-using Soundtrail.Services.Tests.Unit.Sociable.Features.Search;
+using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.Search.Support;
 
-namespace Soundtrail.Services.Tests.Unit.Sociable.Search;
+namespace Soundtrail.Services.Tests.Unit.Sociable.Features.Search;
 
 internal sealed class SearchSociableTestEnvironment : IDisposable
 {
@@ -44,15 +43,15 @@ internal sealed class SearchSociableTestEnvironment : IDisposable
 
     public SearchCriteria SearchCriteria { get; }
 
-    public TMessage SentMessage<TMessage>() where TMessage : IMessage => pump.SentMessage<TMessage>();
+    public TMessage SentMessage<TMessage>() where TMessage : IMessage => this.pump.SentMessage<TMessage>();
 
-    public IReadOnlyList<TMessage> SentMessages<TMessage>() where TMessage : IMessage => pump.SentMessages<TMessage>();
+    public IReadOnlyList<TMessage> SentMessages<TMessage>() where TMessage : IMessage => this.pump.SentMessages<TMessage>();
 
     public TEvent SavedEvent<TEvent>() where TEvent : IDomainEvent =>
-        discoveryRepository.SavedEvents.Concat(artistRepository.SavedEvents).OfType<TEvent>().First();
+        this.discoveryRepository.SavedEvents.Concat(this.artistRepository.SavedEvents).OfType<TEvent>().First();
 
     public IReadOnlyList<TEvent> SavedEvents<TEvent>() where TEvent : IDomainEvent =>
-        discoveryRepository.SavedEvents.Concat(artistRepository.SavedEvents).OfType<TEvent>().ToArray();
+        this.discoveryRepository.SavedEvents.Concat(this.artistRepository.SavedEvents).OfType<TEvent>().ToArray();
 
     public static SearchSociableTestEnvironment ForNoExistingDataOrRequests() =>
         Compose(default, LookupDataCompleteSearchScenarios.DefaultCriteria, []);
@@ -169,11 +168,11 @@ internal sealed class SearchSociableTestEnvironment : IDisposable
     }
 
     public Task<TResult> ProjectOnChange<TResult>(Func<SearchHandler, Task<TResult>> change) =>
-        pump.ProjectOnChange(change, sut);
+        this.pump.ProjectOnChange(change, this.sut);
 
     public SearchRequest CreateRequest() => new(SearchCriteria.Query, SearchCriteria.SearchTypes);
 
-    public void Dispose() => engine.Dispose();
+    public void Dispose() => this.engine.Dispose();
 
     private static SearchSociableTestEnvironment ComposeWithLocalCandidate(
         SearchCriteria searchCriteria,

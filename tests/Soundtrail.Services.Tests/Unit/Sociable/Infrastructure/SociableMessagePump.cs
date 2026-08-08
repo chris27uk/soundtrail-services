@@ -8,17 +8,8 @@ namespace Soundtrail.Services.Tests.Unit.Sociable.Infrastructure;
 /// <summary>
 /// Sociable message pump only — app dependencies live in DI via feature Ports/Configure.
 /// </summary>
-internal sealed class SociableMessagePump
+internal sealed class SociableMessagePump(CommandBusFake commandBus, HandlerCollection messageHandlers)
 {
-    private readonly CommandBusFake commandBus;
-    private readonly HandlerCollection messageHandlers;
-
-    public SociableMessagePump(CommandBusFake commandBus, HandlerCollection messageHandlers)
-    {
-        this.commandBus = commandBus;
-        this.messageHandlers = messageHandlers;
-    }
-
     public TMessage SentMessage<TMessage>() where TMessage : IMessage =>
         commandBus.SentMessages.OfType<TMessage>().Single();
 

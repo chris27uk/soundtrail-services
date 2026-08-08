@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Options;
-using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Messages;
@@ -7,7 +6,7 @@ using Soundtrail.Services.Enrichment.Orchestrator.Features.Prioritisation.OnMusi
 using Soundtrail.Services.Enrichment.Orchestrator.Features.Prioritisation.OnMusicAssessmentRequired.Planning;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
-namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnMusicAssessmentRequired;
+namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Orchestrator.OnMusicAssessmentRequired;
 
 internal sealed class OnMusicAssessmentRequiredHandlerUnitTestEnvironment
 {

@@ -1,4 +1,3 @@
-using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Search;
@@ -6,8 +5,9 @@ using Soundtrail.Services.Enrichment.Orchestrator.Features.IncomingWork.OnUnknow
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.RequestedWork;
 using Soundtrail.Services.Tests.Unit.Sociable.Features.Search;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.Search.Support;
 
-namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnUnknownMusicDataRequested;
+namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Orchestrator.OnUnknownMusicDataRequested;
 
 internal sealed class OnUnknownMusicDataRequestedHandlerUnitTestEnvironment
 {

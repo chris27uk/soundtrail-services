@@ -1,14 +1,14 @@
-using System.Diagnostics;
-using Microsoft.Extensions.DependencyInjection;
 using Soundtrail.Adapters.Messaging;
+using Soundtrail.Adapters.Messaging.Contracts;
 using Soundtrail.Adapters.Projection;
 using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Search;
+using System.Diagnostics;
 
-namespace Soundtrail.Services.Tests.Unit.Messaging;
+namespace Soundtrail.Services.Tests.Unit.Solitary.Infrastructure.Messaging;
 
 public sealed class IncomingMessageSessionTests
 {
@@ -349,7 +349,7 @@ public sealed class IncomingMessageSessionTests
 
         public void Dispose()
         {
-            listener.Dispose();
+            this.listener.Dispose();
         }
     }
 

@@ -1,8 +1,8 @@
 using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Api.Features.Catalog.Shared.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.Search.Contract;
+using Soundtrail.Services.Api.Shared.Adapters;
 
 namespace Soundtrail.Services.Api.Features.Catalog.Search.Adapters;
 

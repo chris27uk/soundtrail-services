@@ -4,11 +4,12 @@ using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Services.Api.Features.Catalog.GetAlbum;
 using Soundtrail.Services.Api.Features.Catalog.GetAlbum.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetAlbum.Contract;
-using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
-using Soundtrail.Services.Tests.Integration.GetAlbum.Api.Ports;
+using Soundtrail.Services.Tests.Integration.Features.GetAlbum.Support;
+using Soundtrail.Services.Tests.Integration.Features.GetAlbum;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure;
+using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
-namespace Soundtrail.Services.Tests.Unit.Sociable.GetAlbum;
+namespace Soundtrail.Services.Tests.Unit.Sociable.Features.GetAlbum;
 
 internal sealed class GetAlbumSociableTestEnvironment : IDisposable
 {
@@ -35,12 +36,12 @@ internal sealed class GetAlbumSociableTestEnvironment : IDisposable
     public GetAlbumPortFake Port { get; }
 
     public IReadOnlyList<IMessage> SentMessages =>
-        engine.Resolve<CommandBusFake>().SentMessages;
+        this.engine.Resolve<CommandBusFake>().SentMessages;
 
-    public TMessage SentMessage<TMessage>() where TMessage : IMessage => pump.SentMessage<TMessage>();
+    public TMessage SentMessage<TMessage>() where TMessage : IMessage => this.pump.SentMessage<TMessage>();
 
     public IReadOnlyList<TMessage> SentMessagesOfType<TMessage>() where TMessage : IMessage =>
-        pump.SentMessages<TMessage>();
+        this.pump.SentMessages<TMessage>();
 
     public static GetAlbumSociableTestEnvironment ForNoDataAvailable(AlbumId? albumId = null) =>
         Compose(albumId ?? AlbumId.From("artist-201", "album-401"), response: null);
@@ -61,14 +62,14 @@ internal sealed class GetAlbumSociableTestEnvironment : IDisposable
 
     public async Task<TResult> ProjectOnChange<TResult>(Func<GetAlbumHandler, Task<TResult>> change)
     {
-        var result = await change(sut);
-        await pump.PumpAsync();
+        var result = await change(this.sut);
+        await this.pump.PumpAsync();
         return result;
     }
 
     public GetAlbumRequest CreateRequest() => new(AlbumId);
 
-    public void Dispose() => engine.Dispose();
+    public void Dispose() => this.engine.Dispose();
 
     private static GetAlbumSociableTestEnvironment Compose(AlbumId albumId, GetAlbumResponse? response)
     {

@@ -1,7 +1,8 @@
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogTrackChanged;
 using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForPlaylist;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForPlaylist.Support;
 
-namespace Soundtrail.Services.Tests.Unit.Projector.OnCatalogItemChanged;
+namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Projector.OnCatalogItemChanged;
 
 internal sealed class CatalogItemChangedProjectorUnitTestEnvironment
 {

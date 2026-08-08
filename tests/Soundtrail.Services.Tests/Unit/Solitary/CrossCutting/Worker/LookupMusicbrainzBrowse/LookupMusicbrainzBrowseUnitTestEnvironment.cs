@@ -1,4 +1,3 @@
-using Soundtrail.Adapters.Timing;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
@@ -10,16 +9,16 @@ using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupMusicbrainzAlbumTracks;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupMusicbrainzArtistAlbums;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupMusicbrainzArtistTracks;
-using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
 using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
-using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
-using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
 using Soundtrail.Services.Tests.Unit.Sociable.Features.GetAlbumsForArtist;
 using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForAlbum;
 using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForArtist;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.GetAlbumsForArtist.Support;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForAlbum.Support;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForArtist.Support;
 
-namespace Soundtrail.Services.Tests.Unit.Worker.LookupMusicbrainzBrowse;
+namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Worker.LookupMusicbrainzBrowse;
 
 internal sealed class LookupMusicbrainzBrowseUnitTestEnvironment
 {

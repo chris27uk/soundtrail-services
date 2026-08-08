@@ -1,16 +1,15 @@
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog.Artists;
-using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Services.Api.Features.Catalog.GetAlbumsForArtist;
 using Soundtrail.Services.Api.Features.Catalog.GetAlbumsForArtist.Contract;
 using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
-using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure;
-using Soundtrail.Services.Tests.Unit.Sociable.Features.GetAlbumsForArtist;
+using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.GetAlbumsForArtist.Support;
 
-namespace Soundtrail.Services.Tests.Unit.Sociable.GetAlbumsForArtist;
+namespace Soundtrail.Services.Tests.Unit.Sociable.Features.GetAlbumsForArtist;
 
 internal sealed class GetAlbumsForArtistSociableTestEnvironment : IDisposable
 {
@@ -38,15 +37,15 @@ internal sealed class GetAlbumsForArtistSociableTestEnvironment : IDisposable
 
     public ArtistId ArtistId { get; }
 
-    public TMessage SentMessage<TMessage>() where TMessage : IMessage => pump.SentMessage<TMessage>();
+    public TMessage SentMessage<TMessage>() where TMessage : IMessage => this.pump.SentMessage<TMessage>();
 
-    public IReadOnlyList<TMessage> SentMessages<TMessage>() where TMessage : IMessage => pump.SentMessages<TMessage>();
+    public IReadOnlyList<TMessage> SentMessages<TMessage>() where TMessage : IMessage => this.pump.SentMessages<TMessage>();
 
     public TEvent SavedEvent<TEvent>() where TEvent : IDomainEvent =>
-        discoveryRepository.SavedEvents.Concat(artistRepository.SavedEvents).OfType<TEvent>().First();
+        this.discoveryRepository.SavedEvents.Concat(this.artistRepository.SavedEvents).OfType<TEvent>().First();
 
     public IReadOnlyList<TEvent> SavedEvents<TEvent>() where TEvent : IDomainEvent =>
-        discoveryRepository.SavedEvents.Concat(artistRepository.SavedEvents).OfType<TEvent>().ToArray();
+        this.discoveryRepository.SavedEvents.Concat(this.artistRepository.SavedEvents).OfType<TEvent>().ToArray();
 
     public static GetAlbumsForArtistSociableTestEnvironment ForNoExistingDataOrRequests() =>
         Compose(default, []);
@@ -111,11 +110,11 @@ internal sealed class GetAlbumsForArtistSociableTestEnvironment : IDisposable
     }
 
     public Task<TResult> ProjectOnChange<TResult>(Func<GetAlbumsForArtistHandler, Task<TResult>> change) =>
-        pump.ProjectOnChange(change, sut);
+        this.pump.ProjectOnChange(change, this.sut);
 
     public GetAlbumsForArtistRequest CreateRequest() => new(ArtistId);
 
-    public void Dispose() => engine.Dispose();
+    public void Dispose() => this.engine.Dispose();
 
     private static GetAlbumsForArtistSociableTestEnvironment Compose(
         DateTimeOffset utcNow,

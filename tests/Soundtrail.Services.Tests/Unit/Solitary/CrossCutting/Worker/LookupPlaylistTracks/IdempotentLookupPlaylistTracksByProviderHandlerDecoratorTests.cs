@@ -2,7 +2,7 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
 
-namespace Soundtrail.Services.Tests.Unit.Worker.LookupPlaylistTracks;
+namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Worker.LookupPlaylistTracks;
 
 public sealed class IdempotentLookupPlaylistTracksByProviderHandlerDecoratorTests
 {

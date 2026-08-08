@@ -1,13 +1,12 @@
-using System.Net;
-using System.Net.Http;
 using Microsoft.Extensions.Options;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.MusicMetadata;
 using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
+using System.Net;
 
-namespace Soundtrail.Services.Tests.Unit.Worker.LookupMusicbrainzBrowse;
+namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Worker.LookupMusicbrainzBrowse;
 
 public sealed class MusicbrainzCatalogBrowsePortTests
 {

@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Tests.Unit.Projector.OnCatalogItemChanged;
+namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Projector.OnCatalogItemChanged;
 
 public sealed class CatalogItemChangedProjectsCatalogTests
 {

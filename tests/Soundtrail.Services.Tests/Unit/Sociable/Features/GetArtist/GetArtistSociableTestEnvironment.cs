@@ -3,11 +3,12 @@ using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Services.Api.Features.Catalog.GetArtist;
 using Soundtrail.Services.Api.Features.Catalog.GetArtist.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetArtist.Contract;
-using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
-using Soundtrail.Services.Tests.Integration.GetArtist.Api.Ports;
+using Soundtrail.Services.Tests.Integration.Features.GetArtist.Support;
+using Soundtrail.Services.Tests.Integration.Features.GetArtist;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure;
+using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
-namespace Soundtrail.Services.Tests.Unit.Sociable.GetArtist;
+namespace Soundtrail.Services.Tests.Unit.Sociable.Features.GetArtist;
 
 internal sealed class GetArtistSociableTestEnvironment : IDisposable
 {
@@ -34,7 +35,7 @@ internal sealed class GetArtistSociableTestEnvironment : IDisposable
     public GetArtistPortFake Port { get; }
 
     public IReadOnlyList<IMessage> SentMessages =>
-        engine.Resolve<CommandBusFake>().SentMessages;
+        this.engine.Resolve<CommandBusFake>().SentMessages;
 
     public static GetArtistSociableTestEnvironment ForNoDataAvailable(ArtistId? artistId = null) =>
         Compose(artistId ?? ArtistId.From("artist-602"), response: null);
@@ -51,14 +52,14 @@ internal sealed class GetArtistSociableTestEnvironment : IDisposable
 
     public async Task<TResult> ProjectOnChange<TResult>(Func<GetArtistHandler, Task<TResult>> change)
     {
-        var result = await change(sut);
-        await pump.PumpAsync();
+        var result = await change(this.sut);
+        await this.pump.PumpAsync();
         return result;
     }
 
     public GetArtistRequest CreateRequest() => new(ArtistId);
 
-    public void Dispose() => engine.Dispose();
+    public void Dispose() => this.engine.Dispose();
 
     private static GetArtistSociableTestEnvironment Compose(ArtistId artistId, GetArtistResponse? response)
     {

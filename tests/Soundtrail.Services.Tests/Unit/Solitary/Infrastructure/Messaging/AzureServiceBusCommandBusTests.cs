@@ -1,8 +1,8 @@
-using Soundtrail.Adapters.Messaging;
+using Soundtrail.Adapters.Messaging.Asb;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 
-namespace Soundtrail.Services.Tests.Unit.Messaging;
+namespace Soundtrail.Services.Tests.Unit.Solitary.Infrastructure.Messaging;
 
 public sealed class AzureServiceBusCommandBusTests
 {

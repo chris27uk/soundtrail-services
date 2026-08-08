@@ -1,7 +1,7 @@
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Domain.Search;
 
-namespace Soundtrail.Services.Tests.Unit.Projector.OnWorkRequested;
+namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Projector.OnWorkRequested;
 
 public sealed class WorkRequestedProjectsAssessWorkTests
 {

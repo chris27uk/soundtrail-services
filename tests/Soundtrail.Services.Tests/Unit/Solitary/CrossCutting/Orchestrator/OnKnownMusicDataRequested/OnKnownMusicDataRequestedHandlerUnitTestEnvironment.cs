@@ -1,4 +1,3 @@
-using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Playlists;
@@ -9,7 +8,7 @@ using Soundtrail.Services.Enrichment.Orchestrator.Features.IncomingWork.OnKnownM
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.RequestedWork;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
-namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnKnownMusicDataRequested;
+namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Orchestrator.OnKnownMusicDataRequested;
 
 internal sealed class OnKnownMusicDataRequestedHandlerUnitTestEnvironment
 {

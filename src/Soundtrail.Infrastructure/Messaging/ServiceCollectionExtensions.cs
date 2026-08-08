@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Soundtrail.Adapters.Messaging.Asb;
 using Soundtrail.Services.ServiceDefaults;
 
 namespace Soundtrail.Adapters.Messaging;

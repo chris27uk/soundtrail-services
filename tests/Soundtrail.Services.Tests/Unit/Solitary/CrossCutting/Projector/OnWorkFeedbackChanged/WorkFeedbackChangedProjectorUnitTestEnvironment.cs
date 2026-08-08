@@ -1,16 +1,14 @@
 using Soundtrail.Adapters.Projection;
+using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
-using Soundtrail.Domain.Common;
-using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.Adapters;
-using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.OnWorkCompleted;
 using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.OnWorkDeferred;
 using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.OnWorkFailed;
 using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.OnWorkIgnored;
 using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.OnWorkRejected;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
-namespace Soundtrail.Services.Tests.Unit.Projector.OnWorkFeedbackChanged;
+namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Projector.OnWorkFeedbackChanged;
 
 internal sealed class WorkFeedbackChangedProjectorUnitTestEnvironment
 {

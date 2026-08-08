@@ -1,6 +1,7 @@
+using Soundtrail.Adapters.Messaging.Contracts;
 using System.Text.Json;
 
-namespace Soundtrail.Adapters.Messaging;
+namespace Soundtrail.Adapters.Messaging.Json;
 
 internal sealed class SystemTextJsonMessageBodyDeserializer(
     JsonSerializerOptions serializerOptions) : IMessageBodyDeserializer

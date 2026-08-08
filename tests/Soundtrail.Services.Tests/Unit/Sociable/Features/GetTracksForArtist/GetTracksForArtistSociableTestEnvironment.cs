@@ -2,17 +2,16 @@ using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Artists;
-using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForArtist;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForArtist.Contract;
 using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
 using Soundtrail.Services.Enrichment.Worker.Shared.StreamingLocations;
-using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure;
-using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForArtist;
+using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForArtist.Support;
 
-namespace Soundtrail.Services.Tests.Unit.Sociable.GetTracksForArtist;
+namespace Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForArtist;
 
 internal sealed class GetTracksForArtistSociableTestEnvironment : IDisposable
 {
@@ -40,15 +39,15 @@ internal sealed class GetTracksForArtistSociableTestEnvironment : IDisposable
 
     public ArtistId ArtistId { get; }
 
-    public TMessage SentMessage<TMessage>() where TMessage : IMessage => pump.SentMessage<TMessage>();
+    public TMessage SentMessage<TMessage>() where TMessage : IMessage => this.pump.SentMessage<TMessage>();
 
-    public IReadOnlyList<TMessage> SentMessages<TMessage>() where TMessage : IMessage => pump.SentMessages<TMessage>();
+    public IReadOnlyList<TMessage> SentMessages<TMessage>() where TMessage : IMessage => this.pump.SentMessages<TMessage>();
 
     public TEvent SavedEvent<TEvent>() where TEvent : IDomainEvent =>
-        discoveryRepository.SavedEvents.Concat(artistRepository.SavedEvents).OfType<TEvent>().First();
+        this.discoveryRepository.SavedEvents.Concat(this.artistRepository.SavedEvents).OfType<TEvent>().First();
 
     public IReadOnlyList<TEvent> SavedEvents<TEvent>() where TEvent : IDomainEvent =>
-        discoveryRepository.SavedEvents.Concat(artistRepository.SavedEvents).OfType<TEvent>().ToArray();
+        this.discoveryRepository.SavedEvents.Concat(this.artistRepository.SavedEvents).OfType<TEvent>().ToArray();
 
     public static GetTracksForArtistSociableTestEnvironment ForNoExistingDataOrRequests() =>
         Compose(default, []);
@@ -146,11 +145,11 @@ internal sealed class GetTracksForArtistSociableTestEnvironment : IDisposable
     }
 
     public Task<TResult> ProjectOnChange<TResult>(Func<GetTracksForArtistHandler, Task<TResult>> change) =>
-        pump.ProjectOnChange(change, sut);
+        this.pump.ProjectOnChange(change, this.sut);
 
     public GetTracksForArtistRequest CreateRequest() => new(ArtistId);
 
-    public void Dispose() => engine.Dispose();
+    public void Dispose() => this.engine.Dispose();
 
     private enum StreamingLookupSeedMode
     {

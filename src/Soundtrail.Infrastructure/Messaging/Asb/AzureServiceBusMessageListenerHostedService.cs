@@ -1,10 +1,9 @@
-using System.Diagnostics;
 using Azure.Messaging.ServiceBus;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Soundtrail.Domain.Abstractions;
 
-namespace Soundtrail.Adapters.Messaging;
+namespace Soundtrail.Adapters.Messaging.Asb;
 
 internal sealed class AzureServiceBusMessageListenerHostedService<TDto, TDomain>(
     string queueName,
@@ -28,11 +27,11 @@ internal sealed class AzureServiceBusMessageListenerHostedService<TDto, TDomain>
             return;
         }
 
-        processor = transport.CreateProcessor(queueName);
-        processor.ProcessMessageAsync += ProcessMessageAsync;
-        processor.ProcessErrorAsync += ProcessErrorAsync;
+        this.processor = transport.CreateProcessor(queueName);
+        this.processor.ProcessMessageAsync += ProcessMessageAsync;
+        this.processor.ProcessErrorAsync += ProcessErrorAsync;
 
-        await processor.StartProcessingAsync(cancellationToken);
+        await this.processor.StartProcessingAsync(cancellationToken);
 
         logger.LogInformation(
             "Started Azure Service Bus listener for {DtoType} on {QueueName}.",
@@ -42,19 +41,19 @@ internal sealed class AzureServiceBusMessageListenerHostedService<TDto, TDomain>
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        if (processor is null)
+        if (this.processor is null)
         {
             return;
         }
 
-        await processor.StopProcessingAsync(cancellationToken);
+        await this.processor.StopProcessingAsync(cancellationToken);
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (processor is not null)
+        if (this.processor is not null)
         {
-            await processor.DisposeAsync();
+            await this.processor.DisposeAsync();
         }
     }
 

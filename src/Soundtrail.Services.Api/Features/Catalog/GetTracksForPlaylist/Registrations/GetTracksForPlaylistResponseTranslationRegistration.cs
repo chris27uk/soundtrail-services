@@ -4,8 +4,8 @@ using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Contract;
-using Soundtrail.Services.Api.Features.Catalog.Shared.Adapters;
-using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
+using Soundtrail.Services.Api.Shared.Adapters;
+using Soundtrail.Services.Api.Shared.Contract;
 
 namespace Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Registrations;
 
