@@ -294,4 +294,15 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
             return Task.FromResult(new AppendResult(true, stream.Version + events.Count, events.ToArray(), AppendOutcome.Appended));
         }
     }
+
+    public sealed class CommandBusFake : ICommandBus
+    {
+        public List<IMessage> Commands { get; } = [];
+
+        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
+        {
+            Commands.Add(message);
+            return Task.CompletedTask;
+        }
+    }
 }

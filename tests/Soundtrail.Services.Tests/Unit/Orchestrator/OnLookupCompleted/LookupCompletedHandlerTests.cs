@@ -59,6 +59,49 @@ public sealed class LookupCompletedHandlerTests
     }
 
     [Fact]
+    public async Task Given_A_Playlist_Lookup_Success_When_Handling_Then_Unknown_Track_Discovery_Is_Requested_For_Each_Reference()
+    {
+        var environment = LookupCompletedHandlerUnitTestEnvironment.Create();
+        environment.SeedForPlaylist();
+        var subject = environment.CreateSubject();
+
+        await subject.Handle(LookupCompletedHandlerUnitTestEnvironment.CreatePlaylistCompleted());
+
+        environment.CommandBus.Commands.Should().ContainSingle().Which.Should().BeOfType<RequestUnknownMusicDataMessage>();
+        var command = (RequestUnknownMusicDataMessage)environment.CommandBus.Commands.Single();
+        command.SearchCriteria.Query.Should().Be("Road Song The Travellers");
+        command.SearchCriteria.SearchTypes.Should().Be(SearchType.Track);
+        command.Priority.Should().Be(LookupPriorityBand.High);
+        command.TrustLevel.Should().Be(100);
+        command.RiskScore.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Given_A_Search_Lookup_Success_With_A_Long_Track_Id_When_Handling_Then_Streaming_Discovery_Command_Id_Is_ServiceBus_Safe()
+    {
+        var environment = LookupCompletedHandlerUnitTestEnvironment.Create();
+        environment.SeedForSearchResult(
+            "Midnight Signals Aurora Lane",
+            TrackId.From(TestTrackIds.Value("23e97290be26a0d4877206df841e194ede54a324000b461100000000")));
+        var subject = environment.CreateSubject();
+
+        await subject.Handle(
+            LookupCompletedHandlerUnitTestEnvironment.CreateSearchCompleted(
+                "Midnight Signals Aurora Lane",
+                TrackId.From(TestTrackIds.Value("23e97290be26a0d4877206df841e194ede54a324000b461100000000"))));
+
+        var command = environment.CommandBus.Commands
+            .Should()
+            .ContainSingle()
+            .Which
+            .Should()
+            .BeOfType<RequestKnownMusicDataMessage>()
+            .Subject;
+        command.Id.Value.Should().StartWith("RequestKnownMusicData:");
+        command.Id.Value.Length.Should().BeLessThanOrEqualTo(128);
+    }
+
+    [Fact]
     public async Task Given_A_Deferred_Lookup_Result_When_Handling_Then_Work_Is_Marked_Deferred()
     {
         var environment = LookupCompletedHandlerUnitTestEnvironment.Create();
