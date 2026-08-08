@@ -2,7 +2,6 @@ using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Domain.Discovery.Messages;
-using Soundtrail.Adapters.Messaging;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.Prioritisation.OnMusicAssessmentRequired.Extensions;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.Prioritisation.OnMusicAssessmentRequired.Planning;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared;
@@ -27,7 +26,6 @@ public sealed class OnMusicAssessmentRequiredHandler(
         var projection = await projectionReader.ReadAsync(request.Target, cancellationToken);
         var demand = scope.Aggregate.GetDemandState(request.Target);
         var assessment = policy.Evaluate(request.ToPlanningAssessment(projection, demand));
-        MessageTelemetry.AddCurrentEvent("assess-work.evaluated");
 
         scope.Aggregate
             .Assess(assessment)
@@ -39,6 +37,5 @@ public sealed class OnMusicAssessmentRequiredHandler(
             .ScheduleOtherwise();
 
         scope.Save();
-        MessageTelemetry.AddCurrentEvent("assess-work.saved");
     }
 }
