@@ -25,8 +25,7 @@ public sealed class OnKnownMusicDataRequestedFeature : IOrchestratorFeature
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddRavenDocumentStore(configuration);
-        services.AddAzureServiceBusListener<KnownMusicDataRequestedCommandDto, RequestKnownMusicDataMessage>(
-            "known-music-data-requests");
+        services.AddAzureServiceBusListener<KnownMusicDataRequestedCommandDto, RequestKnownMusicDataMessage>();
         services.TryAddSingleton<ITypeRegistry>(_ => TypeTranslationRegistry.Default);
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
 

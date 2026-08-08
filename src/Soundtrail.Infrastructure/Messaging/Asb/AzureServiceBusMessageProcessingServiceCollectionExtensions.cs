@@ -23,11 +23,11 @@ public static class AzureServiceBusMessageProcessingServiceCollectionExtensions
     }
 
     public static IServiceCollection AddAzureServiceBusListener<TDto, TDomain>(
-        this IServiceCollection services,
-        string queueName)
+        this IServiceCollection services)
         where TDto : class
         where TDomain : class
     {
+        var queueName = ServiceBusQueues.For<TDto>();
         services.AddSingleton<IHostedService>(
             sp => new AzureServiceBusMessageListenerHostedService<TDto, TDomain>(
                 queueName,

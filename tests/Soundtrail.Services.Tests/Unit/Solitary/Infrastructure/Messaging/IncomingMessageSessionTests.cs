@@ -1,4 +1,6 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using Soundtrail.Adapters.Messaging;
+using Soundtrail.Adapters.Messaging.Asb;
 using Soundtrail.Adapters.Messaging.Contracts;
 using Soundtrail.Adapters.Projection;
 using Soundtrail.Adapters.TypeRegistry;
@@ -26,7 +28,7 @@ public sealed class IncomingMessageSessionTests
         invocation.Message.Should().BeSameAs(environment.DomainMessage);
         invocation.Metadata.MessageId.Should().Be("message-123");
         invocation.Metadata.CorrelationId.Should().Be("corr-123");
-        invocation.Metadata.QueueName.Should().Be("known-music-data-requests");
+        invocation.Metadata.QueueName.Should().Be(ServiceBusQueues.KnownMusicDataRequests);
         invocation.Metadata.RetryCount.Should().Be(2);
         environment.Lifecycle.Completed.Should().BeTrue();
         environment.Lifecycle.RetryDelay.Should().BeNull();
@@ -95,7 +97,7 @@ public sealed class IncomingMessageSessionTests
         activity.Should().NotBeNull();
         activity!.GetTagItem("messaging.system").Should().Be("azure_service_bus");
         activity.GetTagItem("messaging.operation").Should().Be("process");
-        activity.GetTagItem("messaging.destination.name").Should().Be("known-music-data-requests");
+        activity.GetTagItem("messaging.destination.name").Should().Be(ServiceBusQueues.KnownMusicDataRequests);
         activity.GetTagItem("messaging.message.id").Should().Be("message-123");
         activity.GetTagItem("messaging.conversation_id").Should().Be("corr-123");
         activity.GetTagItem("soundtrail.transport_message_type").Should().Be(typeof(DtoMessage).FullName);
@@ -186,7 +188,8 @@ public sealed class IncomingMessageSessionTests
             return new IncomingMessageSession<DtoMessage, DomainMessage>(
                 new DeserializerStub(DtoMessage),
                 ServiceProvider.GetRequiredService<IServiceScopeFactory>(),
-                new ExponentialRetryPolicy());
+                new ExponentialRetryPolicy(),
+                NullLogger<IncomingMessageSession<DtoMessage, DomainMessage>>.Instance);
         }
 
         public TransportEnvelope CreateEnvelope(int retryCount = 0)
@@ -197,7 +200,7 @@ public sealed class IncomingMessageSessionTests
                     "message-123",
                     "corr-123",
                     "reply-queue",
-                    "known-music-data-requests",
+                    ServiceBusQueues.KnownMusicDataRequests,
                     retryCount,
                     new Dictionary<string, object?> { ["x-test"] = "true" }),
                 "azure_service_bus",

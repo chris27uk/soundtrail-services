@@ -124,6 +124,11 @@ if ([string]::IsNullOrWhiteSpace($TestFilter)) {
         -StageName "Run Integration Tests" `
         -Filter "FullyQualifiedName~Soundtrail.Services.Tests.Integration" `
         -ResultFileName "integration-tests.trx"
+
+    Invoke-TestStage `
+        -StageName "Run End-To-End Tests" `
+        -Filter "FullyQualifiedName~Soundtrail.Services.Tests.EndToEnd" `
+        -ResultFileName "end-to-end-tests.trx"
 }
 else {
     Invoke-TestStage `

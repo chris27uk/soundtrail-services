@@ -593,6 +593,7 @@ Examples:
 - `Unit/Sociable/{Feature}/{Scenario}/{Api,Orchestrator,Worker,Projector}/...`
 - `Integration/{Feature}/{Api,Orchestrator,Worker,Projector}/...`
 - `Integration/Ports/{PortOrCapability}/...`
+- `EndToEnd/{Feature}/{Scenario}/...`
 
 Prefer scenario-focused test classes over giant omnibus fixtures.
 
@@ -648,6 +649,27 @@ Rules:
 - place the test environment in a separate file rather than inside the test class file
 - keep the test environment constructor private
 - expose scenario-based static factory methods so there is one standard way to create each business setup
+
+### End-to-end Tests
+
+End-to-end tests prove a vertical path across real hosts and messaging.
+
+Rules:
+
+- place them under `EndToEnd/{Feature}/{Scenario}/...` with namespace `Soundtrail.Services.Tests.EndToEnd...`
+- boot Api, Orchestrator, Worker, and Projector in-process with host environment name **`EndToEnd`** (never `Testing` — that disables Azure Service Bus send/listen)
+- use RavenDB Embedded for persistence, WireMock.Net in-process for HTTP providers, and Testcontainers for Azure Service Bus emulator and Redis
+- share one `IDocumentStore` across hosts; reuse AppHost `servicebus-emulator/Config.json` for queue definitions (must stay in sync with `ServiceBusQueues` — enforced by unit test)
+- Azure Service Bus **queue names are code conventions** in `ServiceBusQueues` (not configuration); only `ServiceBus:ConnectionString` is configured
+- prefer an xUnit collection fixture for expensive infrastructure so scenarios share one boot
+- poll for eventual outcomes with an explicit timeout; do not sleep once and assert
+- keep sociable/integration shortcut scenarios that fake the bus; end-to-end does not replace them
+
+Run only end-to-end tests with:
+
+```bash
+dotnet test tests/Soundtrail.Services.Tests/Soundtrail.Services.Tests.csproj --filter FullyQualifiedName~EndToEnd
+```
 
 ### What New Feature Work Must Test
 

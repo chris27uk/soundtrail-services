@@ -1,6 +1,5 @@
 using Azure.Messaging.ServiceBus;
 using Soundtrail.Adapters.TypeRegistry;
-using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Abstractions;
 
 namespace Soundtrail.Adapters.Messaging.Asb;
@@ -13,7 +12,7 @@ internal sealed class AzureServiceBusCommandBus(
         ArgumentNullException.ThrowIfNull(message);
 
         var dto = TypeTranslationRegistry.Default.ToDto(message);
-        var queueName = GetQueueName(dto);
+        var queueName = ServiceBusQueues.For(dto.GetType());
 
         using var activity = MessageTelemetry.StartPublishActivity(message, dto);
         await transport.SendAsync(
@@ -26,19 +25,4 @@ internal sealed class AzureServiceBusCommandBus(
             },
             cancellationToken);
     }
-
-    internal static string GetQueueName(object dto) =>
-        dto switch
-        {
-            KnownMusicDataRequestedCommandDto => "known-music-data-requests",
-            UnknownMusicDataRequestedCommandDto => "unknown-music-data-requests",
-            AssessMusicCatalogItemCommandDto => "assess-music-catalog-item",
-            DispatchLookupWorkCommandDto => "dispatch-lookup-work",
-            MusicBrainzLookupCommandDto => "lookup-musicbrainz",
-            StreamingLocationLookupCommandDto => "lookup-playback-references",
-            PlaylistTracksLookupCommandDto => "lookup-music-playlists",
-            CatalogLookupCompletedCommandDto => "catalog-lookup-completed",
-            _ => throw new InvalidOperationException(
-                $"No Azure Service Bus queue mapping exists for DTO type '{dto.GetType().FullName}'.")
-        };
 }

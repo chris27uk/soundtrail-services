@@ -86,9 +86,6 @@ public static class AppHostComposition
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
-            .WithEnvironment("ServiceBus__CatalogSearchAttemptsQueueName", "lookup-music-requests")
-            .WithEnvironment("ServiceBus__KnownCatalogItemRequestsQueueName", "known-music-data-requests")
-            .WithEnvironment("ServiceBus__UnknownCatalogItemRequestsQueueName", "unknown-music-data-requests")
             .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail");
 
@@ -107,9 +104,6 @@ public static class AppHostComposition
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
-            .WithEnvironment("ServiceBus__AssessMusicCatalogItemQueueName", "assess-music-catalog-item")
-            .WithEnvironment("ServiceBus__DispatchLookupWorkQueueName", "dispatch-lookup-work")
-            .WithEnvironment("ServiceBus__MusicTrackEventsQueueName", "music-track-events")
             .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail");
 
@@ -123,7 +117,6 @@ public static class AppHostComposition
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
-            .WithEnvironment("ServiceBus__DiscoveryBacklogSchedulingQueueName", "discovery-backlog-scheduling")
             .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail");
 
@@ -137,20 +130,6 @@ public static class AppHostComposition
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
-            .WithEnvironment("ServiceBus__CatalogSearchAttemptsQueueName", "lookup-music-requests")
-            .WithEnvironment("ServiceBus__DiscoveryBacklogSchedulingQueueName", "discovery-backlog-scheduling")
-            .WithEnvironment("ServiceBus__KnownMusicDataRequestsQueueName", "known-music-data-requests")
-            .WithEnvironment("ServiceBus__UnknownMusicDataRequestsQueueName", "unknown-music-data-requests")
-            .WithEnvironment("ServiceBus__AssessMusicCatalogItemQueueName", "assess-music-catalog-item")
-            .WithEnvironment("ServiceBus__DispatchLookupWorkQueueName", "dispatch-lookup-work")
-            .WithEnvironment("ServiceBus__CatalogLookupCompletedQueueName", "catalog-lookup-completed")
-            .WithEnvironment("ServiceBus__MusicBrainzLookupQueueName", "lookup-musicbrainz")
-            .WithEnvironment("ServiceBus__PlaybackReferencesLookupQueueName", "lookup-playback-references")
-            .WithEnvironment("ServiceBus__MusicPlaylistLookupQueueName", "lookup-music-playlists")
-            .WithEnvironment("ServiceBus__EnrichmentResponsesQueueName", "enrichment-responses")
-            .WithEnvironment("ServiceBus__ApplyMusicCatalogLookupAttemptedToCatalogQueueName", "apply-lookup-attempted-to-catalog")
-            .WithEnvironment("ServiceBus__ApplyMusicCatalogLookupAttemptedToDiscoveryQueueName", "apply-lookup-attempted-to-discovery")
-            .WithEnvironment("ServiceBus__MusicTrackEventsQueueName", "music-track-events")
             .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail");
 
@@ -165,11 +144,6 @@ public static class AppHostComposition
             .WaitFor(ravenDb)
             .WaitFor(redis)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
-            .WithEnvironment("ServiceBus__MusicBrainzLookupQueueName", "lookup-musicbrainz")
-            .WithEnvironment("ServiceBus__PlaybackReferencesLookupQueueName", "lookup-playback-references")
-            .WithEnvironment("ServiceBus__MusicPlaylistLookupQueueName", "lookup-music-playlists")
-            .WithEnvironment("ServiceBus__CatalogLookupCompletedQueueName", "catalog-lookup-completed")
-            .WithEnvironment("ServiceBus__EnrichmentResponsesQueueName", "enrichment-responses")
             .WithEnvironment("ConnectionStrings__Redis", $"{redis.GetEndpoint("tcp").Property(EndpointProperty.Host)}:{redis.GetEndpoint("tcp").Property(EndpointProperty.Port)},abortConnect=false")
             .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail");

@@ -31,8 +31,7 @@ public sealed class LookupMusicbrainzSearchResultsFeature : IFeature
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddAzureServiceBusCommandBus();
-        services.AddAzureServiceBusListener<MusicBrainzLookupCommandDto, MusicBrainzLookupCommandDto>(
-            "lookup-musicbrainz");
+        services.AddAzureServiceBusListener<MusicBrainzLookupCommandDto, MusicBrainzLookupCommandDto>();
         services.AddWorkerRavenDocumentStore(configuration);
         services.TryAddSingleton<ITypeRegistry>(_ => TypeTranslationRegistry.Default);
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));

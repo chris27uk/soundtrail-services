@@ -32,8 +32,7 @@ public sealed class LookupPlaylistTracksFeature : IFeature
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddAzureServiceBusCommandBus();
-        services.AddAzureServiceBusListener<PlaylistTracksLookupCommandDto, PlaylistTracksLookupCommandDto>(
-            "lookup-music-playlists");
+        services.AddAzureServiceBusListener<PlaylistTracksLookupCommandDto, PlaylistTracksLookupCommandDto>();
         services.AddWorkerRavenDocumentStore(configuration);
         services.TryAddSingleton<ITypeRegistry>(_ => TypeTranslationRegistry.Default);
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));

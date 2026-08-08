@@ -26,9 +26,9 @@ public sealed class AzureServiceBusCommandBusTests
             "playlist",
             0);
 
-        var queueName = AzureServiceBusCommandBus.GetQueueName(dto);
+        var queueName = ServiceBusQueues.For(dto.GetType());
 
-        queueName.Should().Be("dispatch-lookup-work");
+        queueName.Should().Be(ServiceBusQueues.DispatchLookupWork);
     }
 
     [Fact]
@@ -42,8 +42,8 @@ public sealed class AzureServiceBusCommandBusTests
             "worldtop100",
             "Spotify");
 
-        var queueName = AzureServiceBusCommandBus.GetQueueName(dto);
+        var queueName = ServiceBusQueues.For(dto.GetType());
 
-        queueName.Should().Be("lookup-music-playlists");
+        queueName.Should().Be(ServiceBusQueues.LookupMusicPlaylists);
     }
 }
