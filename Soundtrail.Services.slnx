@@ -1,0 +1,33 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/ 0-build/">
+    <File Path=".github/workflows/ci.yml" />
+    <File Path="build.ps1" />
+  </Folder>
+  <Folder Name="/ 0-build/Scripts/">
+    <File Path="scripts/Functions.psm1" />
+  </Folder>
+  <Folder Name="/1-src/">
+    <Project Path="src/Soundtrail.Contracts/Soundtrail.Contracts.csproj" />
+    <Project Path="src/Soundtrail.Domain/Soundtrail.Domain.csproj" />
+    <Project Path="src/Soundtrail.Infrastructure/Soundtrail.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/1-src/apps/">
+    <Project Path="src/Soundtrail.Services.Api/Soundtrail.Services.Api.csproj" />
+    <Project Path="src/Soundtrail.Services.Enrichment.Orchestrator/Soundtrail.Services.Enrichment.Orchestrator.csproj" />
+    <Project Path="src/Soundtrail.Services.Enrichment.Scheduler/Soundtrail.Services.Enrichment.Scheduler.csproj" />
+    <Project Path="src/Soundtrail.Services.Enrichment.Worker/Soundtrail.Services.Enrichment.Worker.csproj" />
+    <Project Path="src/Soundtrail.Services.Projector/Soundtrail.Services.Projector.csproj" />
+  </Folder>
+  <Folder Name="/2-deploy/">
+    <Project Path="Soundtrail.Services.AppHost/Soundtrail.Services.AppHost.csproj" />
+    <Project Path="Soundtrail.Services.ServiceDefaults/Soundtrail.Services.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/3-tests/">
+    <Project Path="tests/Soundtrail.Services.Tests/Soundtrail.Services.Tests.csproj" />
+  </Folder>
+</Solution>

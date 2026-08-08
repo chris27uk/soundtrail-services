@@ -28,7 +28,7 @@ $env:NUGET_PACKAGES = $nugetPath
 Write-Host "NuGet packages path: $nugetPath"
 
 # Project paths
-$SolutionPath = Join-Path $PSScriptRoot "Soundtrail.Services.sln"
+$SolutionPath = Join-Path $PSScriptRoot "Soundtrail.Services.slnx"
 $TestsPath = Join-Path $PSScriptRoot "tests/Soundtrail.Services.Tests/Soundtrail.Services.Tests.csproj"
 
 # Output directories
