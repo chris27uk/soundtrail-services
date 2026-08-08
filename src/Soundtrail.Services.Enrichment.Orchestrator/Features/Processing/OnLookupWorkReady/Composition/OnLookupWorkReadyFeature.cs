@@ -21,8 +21,7 @@ public sealed class OnLookupWorkReadyFeature : IOrchestratorFeature
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddAzureServiceBusCommandBus();
-        services.AddAzureServiceBusListener<DispatchLookupWorkCommandDto, DispatchLookupWork>(
-            "dispatch-lookup-work");
+        services.AddAzureServiceBusListener<DispatchLookupWorkCommandDto, DispatchLookupWork>();
         services.TryAddSingleton<ITypeRegistry>(_ => TypeTranslationRegistry.Default);
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
 

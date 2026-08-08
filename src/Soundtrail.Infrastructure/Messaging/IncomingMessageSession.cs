@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Soundtrail.Adapters.Messaging.Contracts;
 using Soundtrail.Adapters.Projection;
 using Soundtrail.Adapters.TypeRegistry;
@@ -10,7 +11,8 @@ namespace Soundtrail.Adapters.Messaging;
 internal sealed class IncomingMessageSession<TDto, TDomain>(
     IMessageBodyDeserializer deserializer,
     IServiceScopeFactory scopeFactory,
-    ExponentialRetryPolicy retryPolicy)
+    ExponentialRetryPolicy retryPolicy,
+    ILogger<IncomingMessageSession<TDto, TDomain>> logger)
     where TDto : class
     where TDomain : class
 {
@@ -55,6 +57,14 @@ internal sealed class IncomingMessageSession<TDto, TDomain>(
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
+            logger.LogError(
+                ex,
+                "Failed processing Azure Service Bus message for {DtoType} on {QueueName} (delivery {DeliveryCount}, retry {RetryCount}).",
+                typeof(TDto).FullName,
+                envelope.Metadata.QueueName,
+                envelope.DeliveryCount,
+                envelope.Metadata.RetryCount);
+
             Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
             Activity.Current?.AddEvent(
                 new ActivityEvent(

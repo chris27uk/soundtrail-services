@@ -22,8 +22,7 @@ public sealed class OnLookupCompletedFeature : IOrchestratorFeature
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddRavenDocumentStore(configuration);
-        services.AddAzureServiceBusListener<CatalogLookupCompletedCommandDto, CatalogLookupCompleted>(
-            "catalog-lookup-completed");
+        services.AddAzureServiceBusListener<CatalogLookupCompletedCommandDto, CatalogLookupCompleted>();
         services.TryAddSingleton<ITypeRegistry>(_ => TypeTranslationRegistry.Default);
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
 

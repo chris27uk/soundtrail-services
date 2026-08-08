@@ -4,10 +4,13 @@ using Soundtrail.Domain.Catalog.Aggregates;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Common;
+using Soundtrail.Services.Internal.Projector.Features.OnArtistCatalogChanged;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogItemChanged;
 
-public sealed class CatalogItemChangedProjectorHandler(IEventStreamRepository<ArtistId> repository) :
+public sealed class CatalogItemChangedProjectorHandler(
+    IEventStreamRepository<ArtistId> repository,
+    ArtistCatalogChangedProjectorHandler artistCatalogChanged) :
     IProjectionEventHandler<ArtistDiscovered>,
     IProjectionEventHandler<AlbumDiscovered>,
     IProjectionEventHandler<TrackDiscovered>,
@@ -32,6 +35,7 @@ public sealed class CatalogItemChangedProjectorHandler(IEventStreamRepository<Ar
         var (stream, catalog) = await ArtistCatalog.LoadAsync(repository, @event.Artist.Id, cancellationToken);
         catalog.CatalogItemDiscovered(new Domain.Catalog.CatalogItem.MusicArtist(@event.Artist));
         await catalog.SaveAsync(repository, stream, MessageId.For($"ArtistDiscovered:{@event.Artist.Id.Value}:{@event.ObservedAt:O}"), cancellationToken);
+        await artistCatalogChanged.Handle(@event.Artist.Id, cancellationToken);
     }
 
     public async Task Handle(AlbumDiscovered @event, CancellationToken cancellationToken = default)
@@ -40,6 +44,7 @@ public sealed class CatalogItemChangedProjectorHandler(IEventStreamRepository<Ar
         var (stream, catalog) = await ArtistCatalog.LoadAsync(repository, artistId, cancellationToken);
         catalog.CatalogItemDiscovered(new Domain.Catalog.CatalogItem.MusicAlbum(@event.Album));
         await catalog.SaveAsync(repository, stream, MessageId.For($"AlbumDiscovered:{@event.Album.AlbumId.StableValue}:{@event.ObservedAt:O}"), cancellationToken);
+        await artistCatalogChanged.Handle(artistId, cancellationToken);
     }
 
     public async Task Handle(TrackDiscovered @event, CancellationToken cancellationToken = default)
@@ -52,6 +57,7 @@ public sealed class CatalogItemChangedProjectorHandler(IEventStreamRepository<Ar
         var (stream, catalog) = await ArtistCatalog.LoadAsync(repository, artistId, cancellationToken);
         catalog.CatalogItemDiscovered(new Domain.Catalog.CatalogItem.MusicTrack(@event.Track));
         await catalog.SaveAsync(repository, stream, MessageId.For($"TrackDiscovered:{@event.Track.TrackId.Value}:{@event.ObservedAt:O}"), cancellationToken);
+        await artistCatalogChanged.Handle(artistId, cancellationToken);
     }
 
     public async Task Handle(StreamingLocationDiscovered @event, CancellationToken cancellationToken = default)
@@ -59,7 +65,7 @@ public sealed class CatalogItemChangedProjectorHandler(IEventStreamRepository<Ar
         var artistId = @event.Hierarchy.ArtistId ?? throw new InvalidOperationException("StreamingLocationDiscovered must include artist ownership hierarchy.");
         var trackId = @event.MusicCatalogId.AsTrack();
         var (stream, catalog) = await ArtistCatalog.LoadAsync(repository, artistId, cancellationToken);
-        
+
         catalog.StreamingLocationDiscovered(
             trackId,
             new Domain.Catalog.StreamingLocation(
@@ -68,11 +74,12 @@ public sealed class CatalogItemChangedProjectorHandler(IEventStreamRepository<Ar
                 @event.Url,
                 @event.SourceProvider,
                 @event.ObservedAt));
-        
+
         await catalog.SaveAsync(
             repository,
             stream,
             MessageId.For($"StreamingLocationDiscovered:{artistId.Value}:{trackId.Value}:{@event.ObservedAt:O}"),
             cancellationToken);
+        await artistCatalogChanged.Handle(artistId, cancellationToken);
     }
 }

@@ -3,6 +3,7 @@ using Raven.Client.Documents;
 using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Services.Internal.Projector.Features.OnCatalogTrackChanged;
 using Soundtrail.Services.Internal.Projector.Infrastructure.Messaging;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogTrackChanged.Adapters;
@@ -14,7 +15,11 @@ internal sealed class CatalogTrackChangedCdcService(
     protected override string SubscriptionName => "projector/catalog-track-changed";
 
     protected override System.Linq.Expressions.Expression<Func<RavenStoredEventRecord, bool>> Filter =>
-        x => x.AggregateType == "artist-catalog-stream" && x.EventType == "track-discovered";
+        x => x.AggregateType == "artist-catalog-stream"
+             && (x.EventType == "track-discovered" || x.EventType == "streaming-location-discovered");
+
+    protected override bool IsSubscriptionDefinitionStale(Raven.Client.Documents.Subscriptions.SubscriptionState state) =>
+        !state.Query.Contains("streaming-location-discovered", StringComparison.Ordinal);
 
     protected override async Task HandleAsync(
         IServiceProvider serviceProvider,
@@ -22,9 +27,17 @@ internal sealed class CatalogTrackChangedCdcService(
         CancellationToken cancellationToken)
     {
         var handler = serviceProvider.GetRequiredService<CatalogTrackChangedProjectorHandler>();
-        var trackDiscovered = TypeTranslationRegistry.Default.ToDomainObject<TrackDiscovered>(
-            storedEvent.Body ?? throw new InvalidOperationException("TrackDiscovered events must include a body."));
+        var body = storedEvent.Body
+            ?? throw new InvalidOperationException($"{storedEvent.EventType} events must include a body.");
 
-        await handler.Handle(trackDiscovered.Track.TrackId, cancellationToken);
+        if (string.Equals(storedEvent.EventType, "track-discovered", StringComparison.Ordinal))
+        {
+            var trackDiscovered = TypeTranslationRegistry.Default.ToDomainObject<TrackDiscovered>(body);
+            await handler.Handle(trackDiscovered.Track.TrackId, cancellationToken);
+            return;
+        }
+
+        var streamingLocationDiscovered = TypeTranslationRegistry.Default.ToDomainObject<StreamingLocationDiscovered>(body);
+        await handler.Handle(streamingLocationDiscovered.MusicCatalogId.AsTrack(), cancellationToken);
     }
 }

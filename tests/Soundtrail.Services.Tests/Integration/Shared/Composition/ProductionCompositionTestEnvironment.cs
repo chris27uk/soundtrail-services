@@ -356,7 +356,6 @@ internal static class ProductionCompositionTestEnvironment
             new Dictionary<string, string?>
             {
                 ["ServiceBus:ConnectionString"] = "Endpoint=sb://localhost;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;",
-                ["ServiceBus:EnrichmentResponsesQueueName"] = "enrichment-responses",
                 ["RavenDb:Urls:0"] = "http://localhost:8080",
                 ["RavenDb:Database"] = "soundtrail",
                 ["TickerQ:ConnectionString"] = $"Data Source={Path.Combine(Path.GetTempPath(), $"soundtrail-scheduler-{Guid.NewGuid():N}.db")}",

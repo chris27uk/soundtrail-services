@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Soundtrail.Adapters.FeatureOrchestration;
-using Soundtrail.Adapters.Messaging;
 using Soundtrail.Adapters.Messaging.Asb;
 using Soundtrail.Adapters.Projection;
 using Soundtrail.Services.ServiceDefaults;

@@ -24,8 +24,7 @@ public sealed class OnMusicAssessmentRequiredFeature : IOrchestratorFeature
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddRavenDocumentStore(configuration);
-        services.AddAzureServiceBusListener<AssessMusicCatalogItemCommandDto, AssessWorkMessage>(
-            "assess-music-catalog-item");
+        services.AddAzureServiceBusListener<AssessMusicCatalogItemCommandDto, AssessWorkMessage>();
         services.TryAddSingleton<ITypeRegistry>(_ => TypeTranslationRegistry.Default);
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
         services.Configure<PlanningAssessmentOptions>(configuration.GetSection(PlanningAssessmentOptions.SectionName));

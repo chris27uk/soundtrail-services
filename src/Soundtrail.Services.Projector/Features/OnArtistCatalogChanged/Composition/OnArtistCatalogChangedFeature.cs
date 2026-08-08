@@ -5,7 +5,6 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Adapters.Persistence;
 using Soundtrail.Adapters.TypeRegistry;
-using Soundtrail.Domain.Abstractions;
 using Soundtrail.Services.Internal.Projector.Features.OnArtistCatalogChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Infrastructure;
 using WebApplication = Microsoft.AspNetCore.Builder.WebApplication;

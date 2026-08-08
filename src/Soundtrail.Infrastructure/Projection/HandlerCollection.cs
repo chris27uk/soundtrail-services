@@ -1,6 +1,5 @@
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Domain.Abstractions;
 
 namespace Soundtrail.Adapters.Projection;
@@ -77,12 +76,7 @@ public sealed class HandlerCollection
         var eventTypes = DiscoverPayloadTypes(
             assemblyMarkers,
             typeof(IProjectionEventHandler<>));
-        foreach (var eventType in eventTypes)
-        {
-            services.AddSingleton<IHandlerCollectionContributor>(
-                new ProjectionHandlerContributor(eventType));
-        }
-
+        GetOrAddRegistrationState(services).AddProjectionEventTypes(eventTypes);
         EnsureHandlerCollectionRegistered(services);
     }
 
@@ -94,12 +88,16 @@ public sealed class HandlerCollection
         ArgumentNullException.ThrowIfNull(assemblyMarkers);
 
         var messageTypes = DiscoverPayloadTypes(assemblyMarkers, typeof(IHandler<>));
-        foreach (var messageType in messageTypes)
+        if (messageTypes.Count == 0)
         {
-            services.AddSingleton<IHandlerCollectionContributor>(
-                new MessageHandlerContributor(messageType));
+            var assemblies = string.Join(
+                ", ",
+                assemblyMarkers.Select(static marker => marker.Assembly.GetName().Name));
+            throw new InvalidOperationException(
+                $"No IHandler<> implementations were discovered in assemblies: {assemblies}.");
         }
 
+        GetOrAddRegistrationState(services).AddMessageTypes(messageTypes);
         EnsureHandlerCollectionRegistered(services);
     }
 
@@ -115,18 +113,68 @@ public sealed class HandlerCollection
         return registered;
     }
 
+    private static HandlerCollectionRegistrationState GetOrAddRegistrationState(IServiceCollection services)
+    {
+        foreach (var descriptor in services)
+        {
+            if (descriptor.ServiceType == typeof(HandlerCollectionRegistrationState)
+                && descriptor.ImplementationInstance is HandlerCollectionRegistrationState existing)
+            {
+                return existing;
+            }
+        }
+
+        var state = new HandlerCollectionRegistrationState();
+        services.AddSingleton(state);
+        return state;
+    }
+
     private static void EnsureHandlerCollectionRegistered(IServiceCollection services)
     {
-        services.TryAddScoped(sp =>
-        {
-            var collection = new HandlerCollection();
-            foreach (var contributor in sp.GetServices<IHandlerCollectionContributor>())
-            {
-                contributor.Contribute(collection, sp);
-            }
+        // Always bind the factory to the same state instance so later Add* calls
+        // that mutate the state remain visible when HandlerCollection is resolved.
+        // Replace any prior HandlerCollection registration so we never keep a stale factory.
+        var state = GetOrAddRegistrationState(services);
 
-            return collection;
-        });
+        foreach (var descriptor in services
+                     .Where(static descriptor => descriptor.ServiceType == typeof(HandlerCollection))
+                     .ToArray())
+        {
+            services.Remove(descriptor);
+        }
+
+        services.AddScoped(sp => BuildHandlerCollection(sp, state));
+    }
+
+    private static HandlerCollection BuildHandlerCollection(
+        IServiceProvider serviceProvider,
+        HandlerCollectionRegistrationState state)
+    {
+        var collection = new HandlerCollection();
+
+        foreach (var messageType in state.MessageTypes)
+        {
+            var registerMethod = typeof(HandlerCollectionRegistrar)
+                .GetMethod(nameof(HandlerCollectionRegistrar.RegisterMessageHandler), BindingFlags.Public | BindingFlags.Static)
+                ?? throw new InvalidOperationException("Message handler registrar could not be found.");
+            registerMethod.MakeGenericMethod(messageType).Invoke(null, [collection, serviceProvider]);
+        }
+
+        foreach (var eventType in state.ProjectionEventTypes)
+        {
+            var registerMethod = typeof(HandlerCollectionRegistrar)
+                .GetMethod(nameof(HandlerCollectionRegistrar.RegisterProjectionHandlers), BindingFlags.Public | BindingFlags.Static)
+                ?? throw new InvalidOperationException("Projection handler registrar could not be found.");
+            registerMethod.MakeGenericMethod(eventType).Invoke(null, [collection, serviceProvider]);
+        }
+
+        if (collection.handlers.Count == 0)
+        {
+            throw new InvalidOperationException(
+                "HandlerCollection was resolved with zero registered handlers.");
+        }
+
+        return collection;
     }
 
     private static IReadOnlyList<Type> DiscoverPayloadTypes(
@@ -159,32 +207,29 @@ public sealed class HandlerCollection
     }
 }
 
-internal interface IHandlerCollectionContributor
+internal sealed class HandlerCollectionRegistrationState
 {
-    void Contribute(HandlerCollection collection, IServiceProvider serviceProvider);
-}
+    private readonly HashSet<Type> messageTypes = [];
+    private readonly HashSet<Type> projectionEventTypes = [];
 
-internal sealed class ProjectionHandlerContributor(Type eventType) : IHandlerCollectionContributor
-{
-    public void Contribute(HandlerCollection collection, IServiceProvider serviceProvider)
+    public IReadOnlyCollection<Type> MessageTypes => this.messageTypes;
+
+    public IReadOnlyCollection<Type> ProjectionEventTypes => this.projectionEventTypes;
+
+    public void AddMessageTypes(IEnumerable<Type> types)
     {
-        var registerMethod = typeof(HandlerCollectionRegistrar)
-            .GetMethod(nameof(HandlerCollectionRegistrar.RegisterProjectionHandlers), BindingFlags.Public | BindingFlags.Static)
-            ?? throw new InvalidOperationException("Projection handler registrar could not be found.");
-
-        registerMethod.MakeGenericMethod(eventType).Invoke(null, [collection, serviceProvider]);
+        foreach (var type in types)
+        {
+            this.messageTypes.Add(type);
+        }
     }
-}
 
-internal sealed class MessageHandlerContributor(Type messageType) : IHandlerCollectionContributor
-{
-    public void Contribute(HandlerCollection collection, IServiceProvider serviceProvider)
+    public void AddProjectionEventTypes(IEnumerable<Type> types)
     {
-        var registerMethod = typeof(HandlerCollectionRegistrar)
-            .GetMethod(nameof(HandlerCollectionRegistrar.RegisterMessageHandler), BindingFlags.Public | BindingFlags.Static)
-            ?? throw new InvalidOperationException("Message handler registrar could not be found.");
-
-        registerMethod.MakeGenericMethod(messageType).Invoke(null, [collection, serviceProvider]);
+        foreach (var type in types)
+        {
+            this.projectionEventTypes.Add(type);
+        }
     }
 }
 
@@ -204,6 +249,8 @@ internal static class HandlerCollectionRegistrar
         HandlerCollection collection,
         IServiceProvider serviceProvider)
     {
+        // Discovery scans assemblies for IHandler<> implementors (including transport DTO
+        // adapters). Sociable/partial compositions may not register every discovered type.
         var handler = serviceProvider.GetService<IHandler<TMessage>>();
         if (handler is not null)
         {

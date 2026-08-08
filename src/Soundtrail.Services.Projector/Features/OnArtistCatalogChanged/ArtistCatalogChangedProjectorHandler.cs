@@ -1,4 +1,3 @@
-using Soundtrail.Adapters.Projection;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
@@ -6,50 +5,32 @@ using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Internal.Projector.Features.OnArtistCatalogChanged.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnPlaylistTracksDiscovered.Adapters;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnArtistCatalogChanged;
 
+/// <summary>
+/// Rebuilds artist-catalog read models from the artist event stream.
+/// Invoked by <c>CatalogItemChangedProjectorHandler</c> only after the triggering
+/// catalog-stream event has been appended, so Scrutor handler order cannot project
+/// a stale stream (which left Midnight Signals without Spotify in CI).
+/// </summary>
 public sealed class ArtistCatalogChangedProjectorHandler(
     IEventStreamRepository<ArtistId> repository,
-    IStoreArtistCatalogReadModelPort storeArtistCatalogReadModelPort) :
-    IProjectionEventHandler<ArtistDiscovered>,
-    IProjectionEventHandler<AlbumDiscovered>,
-    IProjectionEventHandler<TrackDiscovered>,
-    IProjectionEventHandler<StreamingLocationDiscovered>
+    IStoreArtistCatalogReadModelPort storeArtistCatalogReadModelPort,
+    IStorePlaylistTracksReadModelPort storePlaylistTracksReadModelPort)
 {
-    Task IProjectionEventHandler<ArtistDiscovered>.HandleAsync(
-        ArtistDiscovered @event,
-        CancellationToken cancellationToken) =>
-        Handle(@event.Artist.Id, cancellationToken);
-
-    Task IProjectionEventHandler<AlbumDiscovered>.HandleAsync(
-        AlbumDiscovered @event,
-        CancellationToken cancellationToken) =>
-        Handle(ArtistId.From(@event.Album.AlbumId.ArtistId), cancellationToken);
-
-    Task IProjectionEventHandler<TrackDiscovered>.HandleAsync(
-        TrackDiscovered @event,
-        CancellationToken cancellationToken) =>
-        Handle(
-            @event.Hierarchy.ArtistId
-            ?? (@event.Hierarchy.AlbumId is { } albumId
-                ? ArtistId.From(albumId.ArtistId)
-                : throw new InvalidOperationException("TrackDiscovered must include artist ownership hierarchy.")),
-            cancellationToken);
-
-    Task IProjectionEventHandler<StreamingLocationDiscovered>.HandleAsync(
-        StreamingLocationDiscovered @event,
-        CancellationToken cancellationToken) =>
-        Handle(
-            @event.Hierarchy.ArtistId
-            ?? throw new InvalidOperationException("StreamingLocationDiscovered must include artist ownership hierarchy."),
-            cancellationToken);
-
     public async Task Handle(ArtistId artistId, CancellationToken cancellationToken = default)
     {
         var stream = await repository.LoadAsync(artistId, cancellationToken);
         var snapshot = ArtistCatalogReadModelBuilder.Build(stream.Events);
-        await storeArtistCatalogReadModelPort.StoreAsync(ToReadModel(artistId, snapshot), cancellationToken);
+        var readModel = ToReadModel(artistId, snapshot);
+        await storeArtistCatalogReadModelPort.StoreAsync(readModel, cancellationToken);
+
+        foreach (var track in readModel.Tracks)
+        {
+            await storePlaylistTracksReadModelPort.RepairTrackAsync(track.TrackId, cancellationToken);
+        }
     }
 
     private static ArtistCatalogReadModel ToReadModel(ArtistId artistId, ArtistCatalogSnapshot snapshot) =>
@@ -123,7 +104,7 @@ public sealed class ArtistCatalogChangedProjectorHandler(
 
                     case TrackDiscovered trackDiscovered:
                         snapshot.ArtistName ??= trackDiscovered.Track.ArtistName;
-                        snapshot.Tracks[trackDiscovered.Track.TrackId.Value] = trackDiscovered.Track;
+                        ApplyTrackDiscovered(snapshot, trackDiscovered);
                         snapshot.UpdatedAt = trackDiscovered.ObservedAt;
                         break;
 
@@ -149,6 +130,32 @@ public sealed class ArtistCatalogChangedProjectorHandler(
             return snapshot;
         }
 
+        private static void ApplyTrackDiscovered(
+            ArtistCatalogSnapshot snapshot,
+            TrackDiscovered trackDiscovered)
+        {
+            var incoming = trackDiscovered.Track;
+            if (!snapshot.Tracks.TryGetValue(incoming.TrackId.Value, out var track))
+            {
+                snapshot.Tracks[incoming.TrackId.Value] = incoming;
+                return;
+            }
+
+            // Preserve provider references if StreamingLocationDiscovered arrived first.
+            track.Title = incoming.Title;
+            track.ArtistName = incoming.ArtistName;
+            track.AlbumId = incoming.AlbumId;
+            track.AlbumTitle = incoming.AlbumTitle;
+            track.DurationMs = incoming.DurationMs;
+            track.Isrc = incoming.Isrc;
+            track.Mbid = incoming.Mbid;
+            track.ReleaseDate = incoming.ReleaseDate;
+            track.ReleaseType = incoming.ReleaseType;
+            track.ArtworkUrl = incoming.ArtworkUrl ?? track.ArtworkUrl;
+            track.StreamingLocationsRequired = incoming.StreamingLocationsRequired;
+            track.UpdatedAt = trackDiscovered.ObservedAt;
+        }
+
         private static void ApplyStreamingLocation(
             ArtistCatalogSnapshot snapshot,
             StreamingLocationDiscovered streamingLocationDiscovered)
@@ -156,7 +163,8 @@ public sealed class ArtistCatalogChangedProjectorHandler(
             var trackId = streamingLocationDiscovered.MusicCatalogId.AsTrack();
             if (!snapshot.Tracks.TryGetValue(trackId.Value, out var track))
             {
-                return;
+                track = new Track(trackId);
+                snapshot.Tracks[trackId.Value] = track;
             }
 
             track.ProviderReferences[streamingLocationDiscovered.Provider.Value] = new StreamingLocation(
@@ -185,7 +193,6 @@ public sealed class ArtistCatalogChangedProjectorHandler(
             if (snapshot.Albums.TryGetValue(albumId.StableValue, out var album))
             {
                 album.ArtworkUrl = artworkDiscovered.Url.ToString();
-                album.UpdatedAt = artworkDiscovered.ObservedAt;
             }
 
             snapshot.UpdatedAt = artworkDiscovered.ObservedAt;

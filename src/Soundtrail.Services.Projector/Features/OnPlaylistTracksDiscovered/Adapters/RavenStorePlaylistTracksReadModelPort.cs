@@ -37,7 +37,11 @@ public sealed class RavenStorePlaylistTracksReadModelPort(IDocumentStore documen
     public async Task RepairTrackAsync(TrackId trackId, CancellationToken cancellationToken)
     {
         using var session = documentStore.OpenAsyncSession();
+        // Playlist and track read models are written by concurrent projector handlers.
+        // Queries must wait for indexes or repair can no-op / rebuild from stale track docs
+        // (leaving discovery "completed" with missing streaming locations).
         var playlistRecords = await session.Query<CatalogPlaylistTracksRecordDto>()
+            .Customize(static query => query.WaitForNonStaleResults(TimeSpan.FromSeconds(30)))
             .ToListAsync(cancellationToken);
         var affectedRecords = playlistRecords
             .Where(record => ContainsSameBaseTrack(record, trackId))
@@ -55,7 +59,8 @@ public sealed class RavenStorePlaylistTracksReadModelPort(IDocumentStore documen
                 existingRecord.PlaylistId,
                 existingRecord.TrackIds,
                 existingRecord.UpdatedAt,
-                cancellationToken);
+                cancellationToken,
+                ensureLoadedTrackIds: [trackId.Value]);
 
             existingRecord.Tracks = rebuilt.Tracks;
             existingRecord.Discovery = rebuilt.Discovery ?? existingRecord.Discovery;
@@ -69,7 +74,8 @@ public sealed class RavenStorePlaylistTracksReadModelPort(IDocumentStore documen
         string playlistId,
         IReadOnlyList<string> trackIds,
         DateTimeOffset updatedAt,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IReadOnlyList<string>? ensureLoadedTrackIds = null)
     {
         var playlistTrackIds = trackIds
             .Select(TrackId.From)
@@ -79,7 +85,33 @@ public sealed class RavenStorePlaylistTracksReadModelPort(IDocumentStore documen
             .DistinctBy(static projection => (projection.BaseHigh, projection.BaseLow))
             .ToArray();
         var siblingTracks = await session.Query<CatalogTrackRecordDto>()
+            .Customize(static query => query.WaitForNonStaleResults(TimeSpan.FromSeconds(30)))
             .ToListAsync(cancellationToken);
+
+        // Prefer freshly loaded docs (exact Load bypasses indexes) for playlist ids and the
+        // track that triggered repair (often a fuzzy-matched sibling with streaming locations).
+        foreach (var trackIdValue in trackIds.Concat(ensureLoadedTrackIds ?? []))
+        {
+            var loaded = await session.LoadAsync<CatalogTrackRecordDto>(
+                CatalogTrackRecordDto.GetDocumentId(trackIdValue),
+                cancellationToken);
+            if (loaded is null)
+            {
+                continue;
+            }
+
+            var index = siblingTracks.FindIndex(track =>
+                string.Equals(track.TrackId, loaded.TrackId, StringComparison.Ordinal));
+            if (index >= 0)
+            {
+                siblingTracks[index] = loaded;
+            }
+            else
+            {
+                siblingTracks.Add(loaded);
+            }
+        }
+
         var tracksByBase = siblingTracks
             .Select(track =>
             {
@@ -225,13 +257,15 @@ public sealed class RavenStorePlaylistTracksReadModelPort(IDocumentStore documen
             return null;
         }
 
-        return candidates.FirstOrDefault(track => string.Equals(track.TrackId, requestedTrackId.Value, StringComparison.Ordinal))
-            ?? candidates
-                .Select(track => (Track: track, Projection: TrackIdIndexProjection.From(TrackId.From(track.TrackId))))
-                .OrderBy(entry => entry.Projection.GetDistanceTo(requestedProjection))
-                .ThenByDescending(static entry => entry.Track.UpdatedAt)
-                .Select(static entry => entry.Track)
-                .FirstOrDefault();
+        // Prefer tracks that already have streaming locations so playlist repair after a
+        // fuzzy MusicBrainz match does not stick on the empty Kworb identity sibling.
+        return candidates
+            .Select(track => (Track: track, Projection: TrackIdIndexProjection.From(TrackId.From(track.TrackId))))
+            .OrderByDescending(static entry => entry.Track.StreamingLocations.Length)
+            .ThenBy(entry => entry.Projection.GetDistanceTo(requestedProjection))
+            .ThenByDescending(static entry => entry.Track.UpdatedAt)
+            .Select(static entry => entry.Track)
+            .FirstOrDefault();
     }
 
     private static bool ContainsSameBaseTrack(CatalogPlaylistTracksRecordDto record, TrackId trackId)

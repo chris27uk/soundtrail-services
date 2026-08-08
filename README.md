@@ -129,7 +129,7 @@ docker run --rm \
   pwsh ./build.ps1
 ```
 
-The Docker socket mount is required so integration tests can start Testcontainers (Redis).
+The Docker socket mount is required so integration and end-to-end tests can start Testcontainers (Redis, Azure Service Bus emulator).
 
 ### Host build
 
@@ -143,14 +143,24 @@ Useful switches:
 ```powershell
 ./build.ps1 -Clean
 ./build.ps1 -TestFilter "FullyQualifiedName~Soundtrail.Services.Tests.Unit"
+./build.ps1 -TestFilter "FullyQualifiedName~Soundtrail.Services.Tests.EndToEnd"
 ./build.ps1 -Configuration Debug
 ```
 
-Default CI path runs unit tests then integration tests and writes TRX reports under `reports/`.
+Default CI path runs unit tests, integration tests, then end-to-end tests and writes TRX reports under `reports/`.
+
+End-to-end tests start RavenDB Embedded in-process, WireMock in-process, and Azure Service Bus emulator + Redis via Testcontainers. Docker must be running; you do not need to start compose yourself. Queue names are fixed in code (`ServiceBusQueues`); configure only `ServiceBus:ConnectionString`.
+
+```bash
+dotnet test tests/Soundtrail.Services.Tests/Soundtrail.Services.Tests.csproj \
+  --filter "FullyQualifiedName~Soundtrail.Services.Tests.EndToEnd"
+```
 
 ### CI
 
-GitHub Actions builds [`.github/docker/Dockerfile.ci`](.github/docker/Dockerfile.ci) (pinned .NET SDK + PowerShell) and runs [`build.ps1`](build.ps1) inside that image. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+GitHub Actions builds [`.github/docker/Dockerfile.ci`](.github/docker/Dockerfile.ci) (pinned .NET SDK + PowerShell) and runs [`build.ps1`](build.ps1) inside that image on every push and pull request to `main`. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+The PR check is the workflow job **Build and Test** (plus a **Test Results** annotation on pull requests). To block merges until it passes, in GitHub go to **Settings → Rules → Rulesets** (or **Branches → Branch protection**) for `main` and require status check `Build and Test`.
 
 ## Further reading
 

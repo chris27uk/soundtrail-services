@@ -31,8 +31,7 @@ public sealed class LookupStreamingLocationByTrackMetadataFeature : IFeature
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddAzureServiceBusCommandBus();
-        services.AddAzureServiceBusListener<StreamingLocationLookupCommandDto, StreamingLocationLookupCommandDto>(
-            "lookup-playback-references");
+        services.AddAzureServiceBusListener<StreamingLocationLookupCommandDto, StreamingLocationLookupCommandDto>();
         services.AddWorkerRavenDocumentStore(configuration);
         services.TryAddSingleton<ITypeRegistry>(_ => TypeTranslationRegistry.Default);
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));

@@ -24,11 +24,10 @@ using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
 using Soundtrail.Services.Enrichment.Worker.Shared.StreamingLocations;
 using Soundtrail.Services.Internal.Projector.Features.OnPlaylistTracksDiscovered.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.Adapters;
+using Soundtrail.Services.Tests.EndToEnd.Shared;
 using Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 using System.Net.Http.Json;
-using WireMock.RequestBuilders;
-using WireMock.ResponseBuilders;
 using WireMock.Server;
 
 namespace Soundtrail.Services.Tests.Integration.Features.GetTracksForPlaylist;
@@ -69,10 +68,7 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
     {
         var documentStore = EmbeddedRavenTestServer.CreateDocumentStore();
         var wireMockServer = WireMockServer.Start();
-
-        ConfigureKworbStub(wireMockServer);
-        ConfigureMusicbrainzStub(wireMockServer);
-        ConfigureOdesliStub(wireMockServer);
+        WorldTop100ProviderStubs.Configure(wireMockServer);
 
         var commandBus = new CommandBusFake();
         var clock = new ClockFake();
@@ -315,195 +311,6 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
         {
             await EmbeddedRavenTestServer.DisposeAsync(this.documentStore, documentId);
         }
-    }
-
-    private static void ConfigureKworbStub(WireMockServer server)
-    {
-        server.Given(Request.Create().WithPath("/ww/").UsingGet())
-            .RespondWith(
-                Response.Create()
-                    .WithStatusCode(200)
-                    .WithBody(
-                        """
-                        <html>
-                        <body>
-                            <table>
-                                <tbody>
-                                    <tr><td>1</td><td>NEW</td><td>Aurora Lane - Midnight Signals</td></tr>
-                                    <tr><td>2</td><td>+3</td><td>Paper Tigers - Static Hearts</td></tr>
-                                    <tr><td>3</td><td>-1</td><td>Neon Harbour - Glass Cities</td></tr>
-                                    <tr><td>4</td><td>NEW</td><td>Saturn Kids - Golden Echo</td></tr>
-                                </tbody>
-                            </table>
-                        </body>
-                        </html>
-                        """));
-    }
-
-    private static void ConfigureMusicbrainzStub(WireMockServer server)
-    {
-        server.Given(Request.Create().WithPath("/ws/2/artist").UsingGet())
-            .RespondWith(
-                Response.Create()
-                    .WithStatusCode(200)
-                    .WithHeader("Content-Type", "application/json")
-                    .WithBody("""{"artists":[]}"""));
-
-        server.Given(Request.Create().WithPath("/ws/2/release").UsingGet())
-            .RespondWith(
-                Response.Create()
-                    .WithStatusCode(200)
-                    .WithHeader("Content-Type", "application/json")
-                    .WithBody("""{"releases":[]}"""));
-
-        server.Given(
-                Request.Create()
-                    .WithPath("/ws/2/recording")
-                    .WithParam("query", "Midnight Signals Aurora Lane")
-                    .UsingGet())
-            .RespondWith(
-                Response.Create()
-                    .WithStatusCode(200)
-                    .WithHeader("Content-Type", "application/json")
-                    .WithBody(
-                        """
-                        {
-                          "recordings": [
-                            {
-                              "id": "mbid-midnight-signals-original",
-                              "title": "Midnight Signals",
-                              "length": 214000,
-                              "releases": [{ "id": "release-midnight-signals", "title": "Midnight Signals", "date": "2023-11-10" }],
-                              "artist-credit": [{ "name": "Aurora Lane", "artist": { "id": "musicbrainz-artist:aurora-lane" } }]
-                            }
-                          ]
-                        }
-                        """));
-
-        server.Given(
-                Request.Create()
-                    .WithPath("/ws/2/recording")
-                    .WithParam("query", "Static Hearts Paper Tigers")
-                    .UsingGet())
-            .RespondWith(
-                Response.Create()
-                    .WithStatusCode(200)
-                    .WithHeader("Content-Type", "application/json")
-                    .WithBody(
-                        """
-                        {
-                          "recordings": [
-                            {
-                              "id": "mbid-static-hearts-2022",
-                              "title": "Static Hearts",
-                              "length": 198000,
-                              "first-release-date": "2022-09-16",
-                              "releases": [{ "id": "release-static-hearts", "title": "Static Hearts", "date": "2022-09-16" }],
-                              "artist-credit": [{ "name": "Paper Tigers", "artist": { "id": "musicbrainz-artist:paper-tigers" } }]
-                            }
-                          ]
-                        }
-                        """));
-
-        server.Given(
-                Request.Create()
-                    .WithPath("/ws/2/recording")
-                    .WithParam("query", "Glass Cities Neon Harbour")
-                    .UsingGet())
-            .RespondWith(
-                Response.Create()
-                    .WithStatusCode(200)
-                    .WithHeader("Content-Type", "application/json")
-                    .WithBody(
-                        """
-                        {
-                          "recordings": [
-                            {
-                              "id": "mbid-glass-cities-radio-2024",
-                              "title": "Glass Cities (Radio Edit)",
-                              "length": 231000,
-                              "first-release-date": "2024-06-23",
-                              "releases": [{ "id": "release-glass-cities-radio", "title": "Glass Cities Remixes", "date": "2024-06-23" }],
-                              "artist-credit": [{ "name": "Neon Harbour", "artist": { "id": "musicbrainz-artist:neon-harbour" } }]
-                            }
-                          ]
-                        }
-                        """));
-
-        server.Given(
-                Request.Create()
-                    .WithPath("/ws/2/recording")
-                    .WithParam("query", "Golden Echo Saturn Kids")
-                    .UsingGet())
-            .RespondWith(
-                Response.Create()
-                    .WithStatusCode(200)
-                    .WithHeader("Content-Type", "application/json")
-                    .WithBody(
-                        """
-                        {
-                          "recordings": [
-                            {
-                              "id": "mbid-golden-echo-radio",
-                              "title": "Golden Echo - Radio Edit",
-                              "length": 244000,
-                              "releases": [{ "id": "release-golden-echo-radio", "title": "Golden Echo Radio Release", "date": "2024-02-14" }],
-                              "artist-credit": [{ "name": "Saturn Kids", "artist": { "id": "musicbrainz-artist:saturn-kids" } }]
-                            }
-                          ]
-                        }
-                        """));
-    }
-
-    private static void ConfigureOdesliStub(WireMockServer server)
-    {
-        server.Given(
-                Request.Create()
-                    .WithPath("/v1-user/links")
-                    .WithParam("artistName", "Aurora Lane")
-                    .WithParam("songName", "Midnight Signals")
-                    .UsingGet())
-            .RespondWith(
-                Response.Create()
-                    .WithStatusCode(200)
-                    .WithHeader("Content-Type", "application/json")
-                    .WithBody("""{"linksByPlatform":{"spotify":{"url":"https://open.spotify.com/track/midnight-signals"}}}"""));
-
-        server.Given(
-                Request.Create()
-                    .WithPath("/v1-user/links")
-                    .WithParam("artistName", "Paper Tigers")
-                    .WithParam("songName", "Static Hearts")
-                    .UsingGet())
-            .RespondWith(
-                Response.Create()
-                    .WithStatusCode(200)
-                    .WithHeader("Content-Type", "application/json")
-                    .WithBody("""{"linksByPlatform":{}}"""));
-
-        server.Given(
-                Request.Create()
-                    .WithPath("/v1-user/links")
-                    .WithParam("artistName", "Neon Harbour")
-                    .WithParam("songName", "Glass Cities (Radio Edit)")
-                    .UsingGet())
-            .RespondWith(
-                Response.Create()
-                    .WithStatusCode(200)
-                    .WithHeader("Content-Type", "application/json")
-                    .WithBody("""{"linksByPlatform":{"youtubeMusic":{"url":"https://music.youtube.com/watch?v=glass-cities-radio"}}}"""));
-
-        server.Given(
-                Request.Create()
-                    .WithPath("/v1-user/links")
-                    .WithParam("artistName", "Saturn Kids")
-                    .WithParam("songName", "Golden Echo - Radio Edit")
-                    .UsingGet())
-            .RespondWith(
-                Response.Create()
-                    .WithStatusCode(200)
-                    .WithHeader("Content-Type", "application/json")
-                    .WithBody("""{"linksByPlatform":{}}"""));
     }
 
     private HttpClient CreateExternalClient() =>
