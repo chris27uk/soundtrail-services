@@ -15,17 +15,13 @@ public sealed class OnKnownMusicDataRequestedHandler(
     public async Task Handle(IncomingMessage<RequestKnownMusicDataMessage> context, CancellationToken cancellationToken = default)
     {
         var request = context.Message;
-        using var handlerActivity = MessageTelemetry.StartHandlerActivity(request, "known-music-data-requested");
-        MessageTelemetry.EnrichCurrentActivity(request, "known-music-data-requested");
-        MessageTelemetry.AddCurrentEvent("known-music-data-requested.received");
-
         var aggregateContext = request.ToAggregateContext();
         var streamId = CatalogWorkId.From(request.Operation);
         await using var scope = await DiscoveryHistoryScope.LoadFromEventStreamAsync(repository, streamId, aggregateContext, cancellationToken);
-        
+
         scope.Aggregate.Request(planner.Execute(request.Operation, WorkPlan()), request.Priority);
         MessageTelemetry.AddCurrentEvent("known-music-data-requested.work-requested-appended");
-        
+
         scope.Save();
         MessageTelemetry.AddCurrentEvent("known-music-data-requested.saved");
     }

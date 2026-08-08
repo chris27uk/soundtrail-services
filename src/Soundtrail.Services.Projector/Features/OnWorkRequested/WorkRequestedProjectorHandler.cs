@@ -58,14 +58,6 @@ public sealed class WorkRequestedProjectorHandler(ICommandBus commandBus) :
         int? riskScore,
         CancellationToken cancellationToken)
     {
-        MessageTelemetry.EnrichCurrentActivity(
-            stage: "project-work-requested",
-            messageId: id,
-            correlationId: correlationId,
-            requestedAt: createdAt,
-            target: target,
-            trustLevel: trustLevel,
-            riskScore: riskScore);
         MessageTelemetry.AddCurrentEvent("project-work-requested.assess-command-created");
 
         var command = new AssessWorkMessage(

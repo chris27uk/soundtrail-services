@@ -1,3 +1,4 @@
+using Soundtrail.Adapters.Messaging;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Operations;
 using TickerQ.Utilities.Base;
@@ -11,12 +12,10 @@ public sealed class ImportKworbChartTickerFunctions(IHandler<ImportKworbChartCom
     public const string DefaultCronExpression = "0 * * * *";
 
     [TickerFunction(FunctionName, DefaultCronExpression, TickerTaskPriority.Normal, 1)]
-    public async Task ImportKworbChart(TickerFunctionContext _, CancellationToken cancellationToken)
-    {
-        await handler.Handle(
-            new IncomingMessage<ImportKworbChartCommand>(
-                new ImportKworbChartCommand(DateTimeOffset.UtcNow),
-                MessageMetadata.Empty),
+    public Task ImportKworbChart(TickerFunctionContext _, CancellationToken cancellationToken) =>
+        ScheduledMessageTelemetry.HandleAsync(
+            handler,
+            new ImportKworbChartCommand(DateTimeOffset.UtcNow),
+            sourceName: FunctionName,
             cancellationToken);
-    }
 }

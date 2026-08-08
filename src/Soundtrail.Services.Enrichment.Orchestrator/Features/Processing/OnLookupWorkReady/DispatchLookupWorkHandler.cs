@@ -12,10 +12,6 @@ public sealed class LookupWorkReadyHandler(ICommandBus commandBus) : IHandler<Di
     public async Task Handle(IncomingMessage<DispatchLookupWork> context, CancellationToken cancellationToken = default)
     {
         var request = context.Message;
-        using var handlerActivity = MessageTelemetry.StartHandlerActivity(request, "dispatch-lookup-work");
-        MessageTelemetry.EnrichCurrentActivity(request, "dispatch-lookup-work");
-        MessageTelemetry.AddCurrentEvent("dispatch-lookup-work.received");
-
         var plan = LookupPlanningPolicy.Build(request);
         Activity.Current?.SetTag("soundtrail.lookup_attempt_count", plan.Attempts.Count);
 

@@ -1,5 +1,6 @@
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
+using Soundtrail.Adapters.Messaging;
 using Soundtrail.Domain.Abstractions;
 
 namespace Soundtrail.Adapters.Projection;
@@ -78,6 +79,7 @@ public sealed class HandlerCollection
             typeof(IProjectionEventHandler<>));
         GetOrAddRegistrationState(services).AddProjectionEventTypes(eventTypes);
         EnsureHandlerCollectionRegistered(services);
+        services.TryDecorate(typeof(IProjectionEventHandler<>), typeof(TelemetryProjectionEventHandlerDecorator<>));
     }
 
     public static void AddMessageHandlersFromAssemblies(
@@ -99,6 +101,7 @@ public sealed class HandlerCollection
 
         GetOrAddRegistrationState(services).AddMessageTypes(messageTypes);
         EnsureHandlerCollectionRegistered(services);
+        services.TryDecorate(typeof(IHandler<>), typeof(TelemetryHandlerDecorator<>));
     }
 
     private List<Func<object, CancellationToken, Task>> GetOrCreate(Type payloadType)
