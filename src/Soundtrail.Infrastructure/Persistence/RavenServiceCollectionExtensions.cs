@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
 using Raven.Client.Documents.Session;
+using Soundtrail.Services.ServiceDefaults;
 
 namespace Soundtrail.Adapters.Persistence;
 
@@ -34,6 +35,27 @@ public static class RavenServiceCollectionExtensions
 
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<IHostedService, RavenDatabaseHostedService>());
+        services.AddStartupValidation(
+            "raven-document-store",
+            (serviceProvider, cancellationToken) =>
+            {
+                var options = serviceProvider.GetRequiredService<IOptions<RavenDbOptions>>().Value;
+                if (options.Urls.Length == 0 || options.Urls.Any(string.IsNullOrWhiteSpace))
+                {
+                    throw new InvalidOperationException("RavenDb:Urls must contain at least one URL.");
+                }
+
+                if (string.IsNullOrWhiteSpace(options.Database))
+                {
+                    throw new InvalidOperationException("RavenDb:Database is not configured.");
+                }
+
+                _ = serviceProvider.GetRequiredService<IDocumentStore>();
+
+                using var scope = serviceProvider.CreateScope();
+                _ = scope.ServiceProvider.GetRequiredService<IAsyncDocumentSession>();
+                return Task.CompletedTask;
+            });
         return services;
     }
 }

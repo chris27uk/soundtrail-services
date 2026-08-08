@@ -58,17 +58,6 @@ public sealed class PlaylistTracksExistTests
 
     [Theory]
     [MemberData(nameof(Implementations))]
-    public async Task Given_Existing_Playlist_Tracks_When_Requesting_The_Playlist_Tracks_Then_The_Music_Catalog_Id_Is_Returned(GetTracksForPlaylistPortImplementation implementation)
-    {
-        await using var environment = await GetTracksForPlaylistPortContractTestEnvironment.ForExistingPlaylistTracks(implementation, trackId: global::Soundtrail.Services.Tests.TestTrackIds.Value("track-3604"));
-
-        var result = await environment.Subject.GetTracksForPlaylistAsync(environment.PlaylistId, CancellationToken.None);
-
-        result!.Tracks[0].MusicCatalogId.Should().Be(new CatalogItemId.Track(global::Soundtrail.Services.Tests.TestTrackIds.Create("track-3604")));
-    }
-
-    [Theory]
-    [MemberData(nameof(Implementations))]
     public async Task Given_Existing_Playlist_Tracks_When_Requesting_The_Playlist_Tracks_Then_The_Track_Title_Is_Returned(GetTracksForPlaylistPortImplementation implementation)
     {
         await using var environment = await GetTracksForPlaylistPortContractTestEnvironment.ForExistingPlaylistTracks(implementation, title: "Track 3605");
@@ -143,5 +132,47 @@ public sealed class PlaylistTracksExistTests
         var result = await environment.Subject.GetTracksForPlaylistAsync(environment.PlaylistId, CancellationToken.None);
 
         result!.Tracks[0].ArtworkUrl.Should().Be("https://cdn.soundtrail.test/tracks/track-3611.jpg");
+    }
+
+    [Theory]
+    [MemberData(nameof(Implementations))]
+    public async Task Given_A_Playable_Playlist_Track_When_Requesting_The_Playlist_Tracks_Then_Playability_Is_Returned(GetTracksForPlaylistPortImplementation implementation)
+    {
+        await using var environment = await GetTracksForPlaylistPortContractTestEnvironment.ForExistingPlaylistTracks(
+            implementation,
+            streamingLocations:
+            [
+                new Soundtrail.Contracts.Persistence.CatalogStreamingLocationRecordDto
+                {
+                    Provider = "spotify",
+                    ExternalId = "spotify-track-3612",
+                    Url = "https://open.spotify.com/track/3612"
+                }
+            ]);
+
+        var result = await environment.Subject.GetTracksForPlaylistAsync(environment.PlaylistId, CancellationToken.None);
+
+        result!.Tracks[0].Playable.Should().BeTrue();
+    }
+
+    [Theory]
+    [MemberData(nameof(Implementations))]
+    public async Task Given_A_Playable_Playlist_Track_When_Requesting_Then_The_Streaming_Location_Url_Is_Returned(GetTracksForPlaylistPortImplementation implementation)
+    {
+        await using var environment = await GetTracksForPlaylistPortContractTestEnvironment.ForExistingPlaylistTracks(
+            implementation,
+            streamingLocations:
+            [
+                new Soundtrail.Contracts.Persistence.CatalogStreamingLocationRecordDto
+                {
+                    Provider = "spotify",
+                    ExternalId = "spotify-track-3612",
+                    Url = "https://open.spotify.com/track/3612"
+                }
+            ]);
+
+        var result = await environment.Subject.GetTracksForPlaylistAsync(environment.PlaylistId, CancellationToken.None);
+
+        result!.Tracks[0].StreamingLocations[0].Url.Should().Be("https://open.spotify.com/track/3612");
     }
 }

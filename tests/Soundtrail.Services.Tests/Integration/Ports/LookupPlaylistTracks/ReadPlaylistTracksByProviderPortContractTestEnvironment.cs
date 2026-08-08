@@ -5,6 +5,7 @@ using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Common;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks.Adapters;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks.Ports;
+using Soundtrail.Services.Tests.Fakes;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;
@@ -38,10 +39,11 @@ internal sealed class ReadPlaylistTracksByProviderPortContractTestEnvironment : 
         return implementation switch
         {
             ReadPlaylistTracksByProviderPortImplementation.Fake => new ReadPlaylistTracksByProviderPortContractTestEnvironment(
-                new ReadPlaylistTracksByProviderPortFake(
-                    [
-                        new TrackReference(ArtistName.From("Artist 1901"), "Track 1901")
-                    ])),
+                new ReadPlaylistTracksByProviderPortFake()
+                    .WithTracks(
+                        PlaylistId.FromPlaylistName("WorldwideSongChart"),
+                        ProviderName.Spotify,
+                        new TrackReference(ArtistName.From("Artist 1901"), "Track 1901"))),
             ReadPlaylistTracksByProviderPortImplementation.WireMock => CreateWireMockEnvironment(
                 """
                 <html>

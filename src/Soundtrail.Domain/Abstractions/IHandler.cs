@@ -1,6 +1,6 @@
 namespace Soundtrail.Domain.Abstractions;
 
-public interface IHandler<in TRequest>
+public interface IHandler<TRequest>
 {
-    Task Handle(TRequest request, CancellationToken cancellationToken = default);
+    Task Handle(IncomingMessage<TRequest> context, CancellationToken cancellationToken = default);
 }

@@ -6,6 +6,8 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForAlbum;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForAlbum.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForAlbum.Contract;
+using Soundtrail.Services.Api.Features.Catalog.Search.Adapters;
+using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
 
 namespace Soundtrail.Services.Tests.Unit.GetTracksForAlbum;
 
@@ -15,11 +17,13 @@ internal sealed class GetTracksForAlbumMissingUnitTestEnvironment
         AlbumId albumId,
         GetTracksForAlbumPortFake getTracksForAlbumPortFake,
         CommandBusFake commandBus,
+        DiscoveryFeedbackPortFake discoveryFeedbackPort,
         ClockPortFake clock)
     {
         AlbumId = albumId;
         Port = getTracksForAlbumPortFake;
         CommandBus = commandBus;
+        DiscoveryFeedbackPort = discoveryFeedbackPort;
         Clock = clock;
     }
 
@@ -29,6 +33,8 @@ internal sealed class GetTracksForAlbumMissingUnitTestEnvironment
 
     public CommandBusFake CommandBus { get; }
 
+    public DiscoveryFeedbackPortFake DiscoveryFeedbackPort { get; }
+
     public ClockPortFake Clock { get; }
 
     public static GetTracksForAlbumMissingUnitTestEnvironment ForMissingAlbumTracks(AlbumId? albumId = null) =>
@@ -36,9 +42,10 @@ internal sealed class GetTracksForAlbumMissingUnitTestEnvironment
             albumId ?? AlbumId.From("artist-1402", "album-1502"),
             new GetTracksForAlbumPortFake(),
             new CommandBusFake(),
+            new DiscoveryFeedbackPortFake(),
             new ClockPortFake(new DateTimeOffset(2024, 6, 7, 8, 9, 10, TimeSpan.Zero)));
 
-    public GetTracksForAlbumHandler CreateSubjectUnderTest() => new(Port, CommandBus, Clock);
+    public GetTracksForAlbumHandler CreateSubjectUnderTest() => new(Port, CommandBus, DiscoveryFeedbackPort, Clock);
 
     public GetTracksForAlbumRequest CreateRequest() => new(AlbumId);
 
@@ -61,6 +68,19 @@ internal sealed class GetTracksForAlbumMissingUnitTestEnvironment
         {
             Commands.Add((RequestKnownMusicDataMessage)message);
             return Task.CompletedTask;
+        }
+    }
+
+    public sealed class DiscoveryFeedbackPortFake : IDiscoveryFeedbackPort
+    {
+        public EnrichmentTarget? RequestedTarget { get; private set; }
+
+        public DiscoveryFeedbackResponse? Response { get; set; }
+
+        public Task<DiscoveryFeedbackResponse?> GetAsync(EnrichmentTarget target, CancellationToken cancellationToken)
+        {
+            RequestedTarget = target;
+            return Task.FromResult(Response);
         }
     }
 

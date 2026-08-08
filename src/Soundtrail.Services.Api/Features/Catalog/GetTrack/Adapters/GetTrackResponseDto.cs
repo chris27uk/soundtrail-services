@@ -4,7 +4,6 @@ namespace Soundtrail.Services.Api.Features.Catalog.GetTrack.Adapters;
 
 public sealed record GetTrackResponseDto(
     string TrackId,
-    string MusicCatalogId,
     string Title,
     string ArtistName,
     string? AlbumTitle,
@@ -12,4 +11,6 @@ public sealed record GetTrackResponseDto(
     string? Isrc,
     DateOnly? ReleaseDate,
     string? ArtworkUrl,
+    bool Playable,
+    StreamingLocationResponseDto[] StreamingLocations,
     DiscoveryFeedbackResponseDto? Discovery);

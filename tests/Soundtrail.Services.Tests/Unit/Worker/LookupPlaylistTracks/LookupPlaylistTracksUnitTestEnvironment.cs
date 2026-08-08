@@ -183,10 +183,10 @@ internal sealed class LookupPlaylistTracksUnitTestEnvironment
 
         public LookupPlaylistTracksByProviderMessage? Request { get; private set; }
 
-        public Task Handle(LookupPlaylistTracksByProviderMessage request, CancellationToken cancellationToken = default)
+        public Task Handle(IncomingMessage<LookupPlaylistTracksByProviderMessage> context, CancellationToken cancellationToken = default)
         {
             Calls++;
-            Request = request;
+            Request = context.Message;
 
             if (ExceptionToThrow is not null)
             {

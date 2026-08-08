@@ -7,6 +7,7 @@ using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Contract;
 using Soundtrail.Services.Tests.Integration.Ports;
+using Soundtrail.Services.Tests.Fakes;
 
 namespace Soundtrail.Services.Tests.Integration.Ports.GetTracksForPlaylist;
 
@@ -42,30 +43,38 @@ internal sealed class GetTracksForPlaylistPortContractTestEnvironment : IAsyncDi
         int? durationMs = 201000,
         string? isrc = "GBAYE2403501",
         DateOnly? releaseDate = null,
-        string? artworkUrl = "https://cdn.soundtrail.test/tracks/track-3501.jpg")
+        string? artworkUrl = "https://cdn.soundtrail.test/tracks/track-3501.jpg",
+        CatalogStreamingLocationRecordDto[]? streamingLocations = null)
     {
         var resolvedPlaylistId = PlaylistId.FromPlaylistName(playlistName);
         var trackIdValue = trackId ?? global::Soundtrail.Services.Tests.TestTrackIds.Value("track-3501");
         var resolvedTrackId = TrackId.From(trackIdValue);
+        var resolvedStreamingLocations = streamingLocations ?? [];
         var response = new GetTracksForPlaylistResponse(
             resolvedPlaylistId,
             [
                 new GetTracksForPlaylistTrackResponse(
                     resolvedTrackId,
-                    new CatalogItemId.Track(resolvedTrackId),
                     title,
                     artistName,
                     albumTitle,
                     durationMs,
                     isrc,
                     releaseDate ?? new DateOnly(2024, 1, 2),
-                    artworkUrl)
+                    artworkUrl,
+                    resolvedStreamingLocations.Length > 0,
+                    resolvedStreamingLocations
+                        .Select(static location => new Soundtrail.Services.Api.Features.Catalog.Shared.Contract.StreamingLocationResponse(
+                            location.Provider,
+                            location.ExternalId,
+                            location.Url))
+                        .ToArray())
             ]);
 
         return implementation switch
         {
             GetTracksForPlaylistPortImplementation.Fake => new GetTracksForPlaylistPortContractTestEnvironment(
-                new GetTracksForPlaylistPortFake(response),
+                GetTracksForPlaylistPortFake.Create().WithPlaylistTracks(response),
                 resolvedPlaylistId),
             GetTracksForPlaylistPortImplementation.Raven => await CreateRavenEnvironmentAsync(
                 resolvedPlaylistId,
@@ -86,7 +95,8 @@ internal sealed class GetTracksForPlaylistPortContractTestEnvironment : IAsyncDi
                             DurationMs = durationMs,
                             Isrc = isrc,
                             ReleaseDate = response.Tracks[0].ReleaseDate,
-                            ArtworkUrl = artworkUrl
+                            ArtworkUrl = artworkUrl,
+                            StreamingLocations = resolvedStreamingLocations
                         }
                     ]
                 }),
@@ -103,7 +113,7 @@ internal sealed class GetTracksForPlaylistPortContractTestEnvironment : IAsyncDi
         return implementation switch
         {
             GetTracksForPlaylistPortImplementation.Fake => new GetTracksForPlaylistPortContractTestEnvironment(
-                new GetTracksForPlaylistPortFake(),
+                GetTracksForPlaylistPortFake.Create(),
                 resolvedPlaylistId),
             GetTracksForPlaylistPortImplementation.Raven => await CreateRavenEnvironmentAsync(resolvedPlaylistId),
             _ => throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null)
@@ -151,14 +161,20 @@ internal sealed class GetTracksForPlaylistPortContractTestEnvironment : IAsyncDi
                 record.Tracks.Select(
                         track => new GetTracksForPlaylistTrackResponse(
                             TrackId.From(track.TrackId),
-                            new CatalogItemId.Track(TrackId.From(track.TrackId)),
                             track.Title,
                             track.ArtistName,
                             track.AlbumTitle,
                             track.DurationMs,
                             track.Isrc,
                             track.ReleaseDate,
-                            track.ArtworkUrl))
+                            track.ArtworkUrl,
+                            track.StreamingLocations.Length > 0,
+                            track.StreamingLocations
+                                .Select(static location => new Soundtrail.Services.Api.Features.Catalog.Shared.Contract.StreamingLocationResponse(
+                                    location.Provider,
+                                    location.ExternalId,
+                                    location.Url))
+                                .ToArray()))
                     .ToArray());
         }
 

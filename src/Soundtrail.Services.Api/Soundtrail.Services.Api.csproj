@@ -7,11 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
     <PackageReference Include="RavenDB.Client" Version="7.1.2" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.16.16" />
     <PackageReference Include="Scrutor" Version="7.0.0" />
-    <PackageReference Include="WolverineFx" Version="6.5.1" />
-    <PackageReference Include="WolverineFx.AzureServiceBus" Version="6.2.2" />
-    <PackageReference Include="WolverineFx.RuntimeCompilation" Version="6.5.1" />
     <ProjectReference Include="..\..\Soundtrail.Services.ServiceDefaults\Soundtrail.Services.ServiceDefaults.csproj" />
     <ProjectReference Include="..\Soundtrail.Contracts\Soundtrail.Contracts.csproj" />
     <ProjectReference Include="..\Soundtrail.Domain\Soundtrail.Domain.csproj" />

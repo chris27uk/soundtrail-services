@@ -1,0 +1,39 @@
+http://api.localhost {
+    reverse_proxy host.docker.internal:8081
+}
+
+http://ravendb.localhost {
+    @studio_root path /
+    redir @studio_root /studio/index.html 308
+
+    @studio_head {
+        method HEAD
+        path /studio /studio/ /studio/index.html
+    }
+
+    respond @studio_head 200
+
+    @studio_config path /configuration/studio
+    header @studio_config Content-Type application/json
+    respond @studio_config "{}" 200
+
+    @database_studio_config path_regexp database_studio_config ^/databases/[^/]+/configuration/studio$
+    header @database_studio_config Content-Type application/json
+    respond @database_studio_config "{}" 200
+
+    @version_updates path /build/version/updates
+    header @version_updates Content-Type application/json
+    respond @version_updates "{\"latestVersion\":null}" 200
+
+    @studio_ws path /server/* /cluster-dashboard/*
+
+    reverse_proxy @studio_ws ravendb:8080 {
+        header_up Host localhost:8080
+        header_up Origin http://localhost:8080
+    }
+
+    reverse_proxy ravendb:8080 {
+        header_up Host localhost:8080
+        header_up -Origin
+    }
+}

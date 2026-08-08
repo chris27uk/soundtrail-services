@@ -8,7 +8,7 @@ public record DispatchLookupWork(
     LookupPriorityBand Priority,
     MessageId Id,
     CorrelationId CorrelationId,
-    DateTimeOffset CreatedAt) : IMessage
+    DateTimeOffset CreatedAt) : ITargetedMessage
 {
     public DateTimeOffset RequestedAt => CreatedAt;
 }

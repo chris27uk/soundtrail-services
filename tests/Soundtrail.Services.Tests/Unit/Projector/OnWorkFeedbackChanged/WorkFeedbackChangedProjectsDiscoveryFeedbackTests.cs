@@ -5,7 +5,7 @@ namespace Soundtrail.Services.Tests.Unit.Projector.OnWorkFeedbackChanged;
 public sealed class WorkFeedbackChangedProjectsDiscoveryFeedbackTests
 {
     [Fact]
-    public async Task Given_A_Work_Requested_Event_When_Projecting_Then_Feedback_Is_Updated()
+    public async Task Given_A_Work_Requested_Event_When_Projecting_Then_Public_Feedback_Is_Not_Updated()
     {
         var environment = WorkFeedbackChangedProjectorUnitTestEnvironment.Create();
         var subject = environment.CreateSubject();
@@ -13,7 +13,7 @@ public sealed class WorkFeedbackChangedProjectsDiscoveryFeedbackTests
 
         await subject.Handle(@event);
 
-        environment.StoreDiscoveryFeedbackPort.StoredEvent.Should().BeSameAs(@event);
+        environment.StoreDiscoveryFeedbackPort.StoredEvent.Should().BeNull();
     }
 
     [Fact]

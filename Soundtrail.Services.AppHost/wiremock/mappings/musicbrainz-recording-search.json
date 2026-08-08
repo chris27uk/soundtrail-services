@@ -1,4 +1,5 @@
 {
+  "priority": 10,
   "request": {
     "method": "GET",
     "urlPath": "/ws/2/recording"

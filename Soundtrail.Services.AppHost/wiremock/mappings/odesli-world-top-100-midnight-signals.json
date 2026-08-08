@@ -1,0 +1,28 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/v1-user/links",
+    "queryParameters": {
+      "songName": {
+        "equalTo": "Midnight Signals"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "linksByPlatform": {
+        "spotify": {
+          "url": "https://open.spotify.com/track/midnight-signals"
+        },
+        "appleMusic": {
+          "url": "https://music.apple.com/track/midnight-signals"
+        }
+      }
+    }
+  }
+}

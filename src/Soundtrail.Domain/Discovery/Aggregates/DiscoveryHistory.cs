@@ -40,6 +40,7 @@ public sealed class DiscoveryHistory
         this.eventHandlers.Register<WorkCompleted>(@event => completedTargets.Add(@event.Target.NormalisedIdentifier));
         this.eventHandlers.Register<WorkRejected>(@event => rejectedTargets.Add(@event.Target.NormalisedIdentifier));
         this.eventHandlers.Register<WorkIgnored>(@event => ignoredTargets.Add(@event.Target.NormalisedIdentifier));
+        this.eventHandlers.Register<WorkAttemptFailed>(_ => { });
         this.eventHandlers.Register<ArtistDiscovered>(_ => { });
         this.eventHandlers.Register<AlbumDiscovered>(_ => { });
         this.eventHandlers.Register<TrackDiscovered>(_ => { });
@@ -243,7 +244,10 @@ public sealed class DiscoveryHistory
 
     private bool IsMatchForLookupCompletion(WorkScheduled scheduled)
     {
-        var dispatchCommandId = MessageId.For($"DispatchLookupWork:{scheduled.Target.NormalisedIdentifier}:{scheduled.ScheduledAt:O}");
+        var dispatchCommandId = MessageId.Deterministic(
+            "DispatchLookupWork",
+            scheduled.Target.NormalisedIdentifier,
+            scheduled.ScheduledAt.ToString("O"));
         return requestContext.MessageId.Value.StartsWith($"{dispatchCommandId.Value}:", StringComparison.Ordinal);
     }
 

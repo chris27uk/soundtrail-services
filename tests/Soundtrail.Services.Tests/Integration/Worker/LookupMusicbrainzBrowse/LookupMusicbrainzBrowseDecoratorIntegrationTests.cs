@@ -111,13 +111,13 @@ public sealed class LookupMusicbrainzBrowseDecoratorIntegrationTests
         TMessage request,
         TMessage other,
         IHandler<TMessage> subject)
-        where TMessage : IMessage
+        where TMessage : class, IMessage
     {
         await environment.AdmissionPort.TryAcquireAsync(
             new LookupExecutionAdmissionRequest(LookupSource.MusicBrainz, request.Id, environment.Clock.UtcNow),
             CancellationToken.None);
 
-        var action = () => subject.Handle(request);
+        var action = () => HandlerTestExtensions.Handle(subject, request);
 
         await action.Should().ThrowAsync<LookupExecutionShortCircuitException>();
         environment.CommandBus.Messages.Single().Should().BeOfType<CatalogLookupCompleted>()
@@ -132,19 +132,19 @@ public sealed class LookupMusicbrainzBrowseDecoratorIntegrationTests
 
     private sealed class ArtistAlbumsInnerHandler : IHandler<LookupMusicbrainzArtistAlbumsMessage>
     {
-        public Task Handle(LookupMusicbrainzArtistAlbumsMessage request, CancellationToken cancellationToken = default) =>
+        public Task Handle(IncomingMessage<LookupMusicbrainzArtistAlbumsMessage> context, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
     }
 
     private sealed class ArtistTracksInnerHandler : IHandler<LookupMusicbrainzArtistTracksMessage>
     {
-        public Task Handle(LookupMusicbrainzArtistTracksMessage request, CancellationToken cancellationToken = default) =>
+        public Task Handle(IncomingMessage<LookupMusicbrainzArtistTracksMessage> context, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
     }
 
     private sealed class AlbumTracksInnerHandler : IHandler<LookupMusicbrainzAlbumTracksMessage>
     {
-        public Task Handle(LookupMusicbrainzAlbumTracksMessage request, CancellationToken cancellationToken = default) =>
+        public Task Handle(IncomingMessage<LookupMusicbrainzAlbumTracksMessage> context, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
     }
 }

@@ -1,4 +1,3 @@
-using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Api.Features.Catalog.GetTrack.Contract;
 
@@ -20,14 +19,15 @@ namespace Soundtrail.Services.Tests.Unit.GetTrack
         {
             return new GetTrackResponse(
                 trackId ?? DefaultTrackId,
-                new CatalogItemId.Track(trackId ?? DefaultTrackId),
                 title,
                 artistName,
                 albumTitle,
                 durationMs,
                 isrc,
                 releaseDate ?? new DateOnly(2024, 1, 2),
-                artworkUrl);
+                artworkUrl,
+                false,
+                []);
         }
     }
 }

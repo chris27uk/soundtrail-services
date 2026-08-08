@@ -32,8 +32,36 @@ public sealed class WorkRequestedProjectsAssessWorkTests
                 requestedAt: new DateTimeOffset(2026, 7, 15, 8, 11, 0, TimeSpan.Zero),
                 correlationId: "correlation-1"));
 
-        environment.CommandBus.Commands.Cast<AssessWorkMessage>().Single().Id.Value
-            .Should().Be("AssessWork:search:u2:100:0:correlation-1");
+        var firstId = environment.CommandBus.Commands.Cast<AssessWorkMessage>().Single().Id.Value;
+
+        await subject.Handle(
+            WorkRequestedProjectorUnitTestEnvironment.CreateSearchCriteriaWorkRequested(
+                query: "u2",
+                searchType: SearchType.Artist,
+                trustLevel: 100,
+                riskScore: 0,
+                requestedAt: new DateTimeOffset(2026, 7, 15, 8, 11, 0, TimeSpan.Zero),
+                correlationId: "correlation-1"));
+
+        var secondId = environment.CommandBus.Commands.Cast<AssessWorkMessage>().Last().Id.Value;
+
+        firstId.Should().Be(secondId);
+        firstId.Should().StartWith("AssessWork:");
+    }
+
+    [Fact]
+    public async Task Given_A_Long_Search_Target_When_Projecting_Then_The_Command_Id_Fits_Service_Bus_Limits()
+    {
+        var environment = WorkRequestedProjectorUnitTestEnvironment.Create();
+        var subject = environment.CreateSubject();
+
+        await subject.Handle(
+            WorkRequestedProjectorUnitTestEnvironment.CreateSearchCriteriaWorkRequested(
+                query: "Midnight Signals Aurora Lane (2024 Remake Radio Edit Extended Version Featuring Someone Else)",
+                searchType: SearchType.Track,
+                correlationId: "child_tracks_for_playlist:worldtop100:search:midnight-signals-aurora-lane-2024-remake-radio-edit-extended-version-featuring-someone-else"));
+
+        environment.CommandBus.Commands.Cast<AssessWorkMessage>().Single().Id.Value.Length.Should().BeLessThanOrEqualTo(128);
     }
 
     [Fact]

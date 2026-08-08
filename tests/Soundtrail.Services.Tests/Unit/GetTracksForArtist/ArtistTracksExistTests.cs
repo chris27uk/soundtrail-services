@@ -5,6 +5,7 @@ using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
 
 namespace Soundtrail.Services.Tests.Unit.GetTracksForArtist;
 
@@ -18,7 +19,24 @@ public sealed class ArtistTracksExistTests
 
         var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        result.Should().BeSameAs(response);
+        result.Should().BeEquivalentTo(response);
+    }
+
+    [Fact]
+    public async Task Given_Existing_Artist_Tracks_When_Requesting_The_Artist_Tracks_Then_Discovery_Feedback_Is_Attached()
+    {
+        var environment = GetTracksForArtistUnitTestEnvironment.ForExistingArtistTracks();
+        environment.DiscoveryFeedbackPort.Response = new DiscoveryFeedbackResponse(
+            "pending",
+            LookupPriorityBand.High,
+            environment.Clock.UtcNow.AddSeconds(15),
+            environment.Clock.UtcNow.AddSeconds(75),
+            "Artist track lookup queued.",
+            environment.Clock.UtcNow);
+
+        var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
+
+        result!.Discovery.Should().Be(environment.DiscoveryFeedbackPort.Response);
     }
 
     [Fact]
@@ -63,18 +81,6 @@ public sealed class ArtistTracksExistTests
         var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
         result!.Tracks[0].TrackId.Should().Be(trackId);
-    }
-
-    [Fact]
-    public async Task Given_Existing_Artist_Tracks_When_Requesting_The_Artist_Tracks_Then_The_Music_Catalog_Id_Is_Returned()
-    {
-        var trackId = global::Soundtrail.Services.Tests.TestTrackIds.Create("track-2404");
-        var environment = GetTracksForArtistUnitTestEnvironment.ForExistingArtistTracks(
-            response: ArtistTracks.CreateResponse(trackId: trackId));
-
-        var result = await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
-
-        result!.Tracks[0].MusicCatalogId.Should().Be(new CatalogItemId.Track(trackId));
     }
 
     [Fact]

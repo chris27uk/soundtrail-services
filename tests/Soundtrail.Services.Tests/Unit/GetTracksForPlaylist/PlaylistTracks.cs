@@ -1,7 +1,7 @@
-using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Contract;
+using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
 
 namespace Soundtrail.Services.Tests.Unit.GetTracksForPlaylist;
 
@@ -20,7 +20,8 @@ internal static class PlaylistTracks
         int? durationMs = 201000,
         string? isrc = "GBAYE2403201",
         DateOnly? releaseDate = null,
-        string? artworkUrl = "https://cdn.soundtrail.test/tracks/track-3201.jpg")
+        string? artworkUrl = "https://cdn.soundtrail.test/tracks/track-3201.jpg",
+        DiscoveryFeedbackResponse? discovery = null)
     {
         var resolvedPlaylistId = playlistId ?? DefaultPlaylistId;
         var resolvedTrackId = trackId ?? DefaultTrackId;
@@ -30,14 +31,16 @@ internal static class PlaylistTracks
             [
                 new GetTracksForPlaylistTrackResponse(
                     resolvedTrackId,
-                    new CatalogItemId.Track(resolvedTrackId),
                     title,
                     artistName,
                     albumTitle,
                     durationMs,
                     isrc,
                     releaseDate ?? new DateOnly(2024, 1, 2),
-                    artworkUrl)
-            ]);
+                    artworkUrl,
+                    false,
+                    [])
+            ],
+            discovery);
     }
 }

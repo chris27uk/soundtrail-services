@@ -73,14 +73,14 @@ internal sealed class RedisLookupExecutionAdmissionPort(
         {
             var policy = GetPolicy(request.Provider);
 
-            if (policy.MinimumSpacingSeconds is { } minimumSpacingSeconds)
+            if (policy.MinimumSpacingSeconds > 0)
             {
                 var spacingReservation = await TryReserveWindowAsync(
                     db,
                     request,
                     maxRequests: 1,
                     safetyMarginPercent: 0,
-                    windowSeconds: minimumSpacingSeconds,
+                    windowSeconds: policy.MinimumSpacingSeconds,
                     keyPrefix: "source-budget-spacing",
                     cancellationToken);
 

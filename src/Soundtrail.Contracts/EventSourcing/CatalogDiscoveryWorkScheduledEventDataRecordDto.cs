@@ -6,4 +6,5 @@ public sealed record CatalogDiscoveryWorkScheduledEventDataRecordDto(
     DateTimeOffset NextEligibleAtUtc,
     DateTimeOffset? EarliestExpectedCompletionAt,
     string Reason,
-    DateTimeOffset ScheduledAtUtc) : RavenEventBodyDto;
+    DateTimeOffset ScheduledAtUtc,
+    int? SearchTypes = null) : RavenEventBodyDto;

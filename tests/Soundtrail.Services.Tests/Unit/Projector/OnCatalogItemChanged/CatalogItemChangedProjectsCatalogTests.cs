@@ -1,6 +1,4 @@
 using Soundtrail.Domain.Catalog.Events;
-using Soundtrail.Domain.Operations;
-
 namespace Soundtrail.Services.Tests.Unit.Projector.OnCatalogItemChanged;
 
 public sealed class CatalogItemChangedProjectsCatalogTests
@@ -17,14 +15,16 @@ public sealed class CatalogItemChangedProjectsCatalogTests
     }
 
     [Fact]
-    public async Task Given_Playlist_Tracks_Are_Discovered_When_Projecting_Then_A_Playlist_Update_Is_Sent()
+    public async Task Given_Playlist_Tracks_Are_Discovered_When_Projecting_Then_The_Playlist_Read_Model_Is_Stored()
     {
         var environment = CatalogItemChangedProjectorUnitTestEnvironment.Create();
         var subject = environment.CreatePlaylistSubject();
+        var discovered = CatalogItemChangedProjectorUnitTestEnvironment.CreatePlaylistTracksDiscovered();
 
-        await subject.Handle(CatalogItemChangedProjectorUnitTestEnvironment.CreatePlaylistTracksDiscovered());
+        await subject.Handle(discovered);
 
-        environment.CommandBus.Commands.Single().Should().BeOfType<PlaylistUpdated>();
+        environment.StorePlaylistTracksReadModelPort.StoredEvent.Should().Be(discovered);
+        environment.CommandBus.Commands.Should().BeEmpty();
     }
 
     [Fact]

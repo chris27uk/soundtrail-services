@@ -21,7 +21,7 @@ public sealed class WorkerCommandFactoryTests
                 LookupPriorityBand.High));
 
         command.Should().BeOfType<LookupMusicbrainzSearchResultsMessage>();
-        ((LookupMusicbrainzSearchResultsMessage)command).Id.Value.Should().Be("lookup:musicbrainz-search:search:u2");
+        ((LookupMusicbrainzSearchResultsMessage)command).Id.Value.Should().StartWith($"{request.Id.Value}:");
     }
 
     [Fact]
@@ -37,11 +37,11 @@ public sealed class WorkerCommandFactoryTests
                 LookupPriorityBand.Low));
 
         command.Should().BeOfType<LookupStreamingLocationByIsrcMessage>();
-        ((LookupStreamingLocationByIsrcMessage)command).Id.Value.Should().Be($"lookup:streaming-isrc:Spotify:{TestTrackIds.Create("track-2901").Value}");
+        ((LookupStreamingLocationByIsrcMessage)command).Id.Value.Should().StartWith($"{request.Id.Value}:");
     }
 
     [Fact]
-    public void Given_Two_Different_Dispatch_Commands_For_The_Same_Track_When_Creating_Worker_Commands_Then_The_Command_Id_Is_Stable()
+    public void Given_Two_Different_Dispatch_Commands_For_The_Same_Track_When_Creating_Worker_Commands_Then_The_Command_Id_Preserves_The_Dispatch_Command_Id()
     {
         var first = LookupWorkReadyHandlerUnitTestEnvironment.CreateStreamingLocationRequest(commandId: "cmd-streaming-a");
         var second = LookupWorkReadyHandlerUnitTestEnvironment.CreateStreamingLocationRequest(commandId: "cmd-streaming-b");
@@ -54,6 +54,27 @@ public sealed class WorkerCommandFactoryTests
             second,
             new LookupAttempt.StreamingLocationByTrackMetadata(trackId, ProviderName.Spotify, LookupPriorityBand.Low));
 
-        firstCommand.Id.Should().Be(secondCommand.Id);
+        firstCommand.Id.Value.Should().StartWith("cmd-streaming-a:");
+        secondCommand.Id.Value.Should().StartWith("cmd-streaming-b:");
+        firstCommand.Id.Should().NotBe(secondCommand.Id);
+    }
+
+    [Fact]
+    public void Given_A_Long_Search_Lookup_When_Creating_A_Command_Then_The_Command_Id_Fits_Service_Bus_Limits()
+    {
+        var request = LookupWorkReadyHandlerUnitTestEnvironment.CreateSearchRequest(
+            commandId: MessageId.Deterministic(
+                "DispatchLookupWork",
+                "search:Midnight Signals Aurora Lane",
+                "2026-07-30T06:53:57.7546680+00:00").Value);
+
+        var command = (LookupMusicbrainzSearchResultsMessage)WorkerCommandFactory.Create(
+            request,
+            new LookupAttempt.MusicbrainzSearchCatalogItems(
+                new SearchCriteria("Midnight Signals Aurora Lane", SearchType.Track),
+                LookupPriorityBand.High));
+
+        command.Id.Value.Length.Should().BeLessThanOrEqualTo(128);
+        command.Id.Value.Should().StartWith($"{request.Id.Value}:");
     }
 }

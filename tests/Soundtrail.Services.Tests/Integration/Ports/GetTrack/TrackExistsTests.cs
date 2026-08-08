@@ -35,17 +35,6 @@ public sealed class TrackExistsTests
 
     [Theory]
     [MemberData(nameof(Implementations))]
-    public async Task Given_An_Existing_Track_When_Requesting_The_Track_Then_The_Music_Catalog_Id_Is_Returned(GetTrackPortImplementation implementation)
-    {
-        await using var environment = await GetTrackPortContractTestEnvironment.ForExistingTrack(implementation, trackId: global::Soundtrail.Services.Tests.TestTrackIds.Value("track-603"));
-
-        var result = await environment.Subject.GetTrackAsync(environment.TrackId, CancellationToken.None);
-
-        result!.MusicCatalogId.Should().Be(new CatalogItemId.Track(global::Soundtrail.Services.Tests.TestTrackIds.Create("track-603")));
-    }
-
-    [Theory]
-    [MemberData(nameof(Implementations))]
     public async Task Given_An_Existing_Track_When_Requesting_The_Track_Then_The_Title_Is_Returned(GetTrackPortImplementation implementation)
     {
         await using var environment = await GetTrackPortContractTestEnvironment.ForExistingTrack(implementation, title: "Track 604");

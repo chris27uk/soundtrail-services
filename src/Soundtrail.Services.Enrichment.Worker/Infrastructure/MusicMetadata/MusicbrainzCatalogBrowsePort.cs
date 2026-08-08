@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Tracks;
+using Soundtrail.Domain.Catalog.Tracks.Parsing;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
 
@@ -31,7 +32,8 @@ public sealed class MusicbrainzCatalogBrowsePort(
                 {
                     ["artist"] = artistId.Value,
                     ["fmt"] = "json",
-                    ["limit"] = DefaultLimit.ToString()
+                    ["limit"] = DefaultLimit.ToString(),
+                    ["inc"] = "releases+artist-credits+isrcs"
                 }),
             cancellationToken);
         response.EnsureSuccessStatusCode();
@@ -88,22 +90,31 @@ public sealed class MusicbrainzCatalogBrowsePort(
             .Select(recording =>
             {
                 var artistName = recording.ArtistCredit?.FirstOrDefault()?.Name ?? string.Empty;
-                var releaseDate = ParseDate(recording.FirstReleaseDate);
-                var trackIdResult = TrackId.TryCreate(artistName, recording.Title!, releaseDate: releaseDate);
+                var release = recording.Releases?.FirstOrDefault(static release => !string.IsNullOrWhiteSpace(release.Title));
+                var albumTitle = release?.Title;
+                var albumId = release is { Id: not null }
+                    ? AlbumId.From(artistId.Value, release.Id).StableValue
+                    : null;
+                var releaseDate = ParseDate(recording.FirstReleaseDate) ?? ParseDate(release?.Date);
+                var trackIdResult = TrackId.TryCreate(artistName, recording.Title!, albumTitle, releaseDate);
                 if (trackIdResult is TrackIdCreateResult.Failure)
                 {
                     return null;
                 }
 
                 var trackId = ((TrackIdCreateResult.Success)trackIdResult).Value;
+                var releaseType = ParsedReleaseTypeFrom(recording.Title!);
                 var track = new Track(trackId)
                 {
                     Title = recording.Title!,
                     ArtistName = artistName,
+                    AlbumId = albumId,
+                    AlbumTitle = albumTitle,
                     DurationMs = recording.Length,
                     Isrc = recording.Isrcs?.FirstOrDefault(),
                     Mbid = recording.Id,
                     ReleaseDate = releaseDate,
+                    ReleaseType = releaseType,
                     UpdatedAt = DateTimeOffset.UtcNow
                 };
 
@@ -158,6 +169,7 @@ public sealed class MusicbrainzCatalogBrowsePort(
                 }
 
                 var trackId = ((TrackIdCreateResult.Success)trackIdResult).Value;
+                var releaseType = ParsedReleaseTypeFrom(track.Title!);
                 var discoveredTrack = new Track(trackId)
                 {
                     Title = track.Title!,
@@ -168,6 +180,7 @@ public sealed class MusicbrainzCatalogBrowsePort(
                     Isrc = track.Recording?.Isrcs?.FirstOrDefault(),
                     Mbid = track.Recording?.Id,
                     ReleaseDate = releaseDate,
+                    ReleaseType = releaseType,
                     UpdatedAt = DateTimeOffset.UtcNow
                 };
 
@@ -183,6 +196,14 @@ public sealed class MusicbrainzCatalogBrowsePort(
     private static DateOnly? ParseDate(string? value)
     {
         return DateOnly.TryParse(value, out var date) ? date : null;
+    }
+
+    private static string? ParsedReleaseTypeFrom(string title)
+    {
+        var parsed = SongTitleParser.Parse(title);
+        return parsed is SongTitleParseResult.Success success
+            ? success.Value.CanonicalReleaseType?.Value
+            : null;
     }
 
     private sealed class ReleaseBrowseResponse
@@ -225,7 +246,16 @@ public sealed class MusicbrainzCatalogBrowsePort(
         [JsonPropertyName("artist-credit")]
         public List<ArtistCreditResult>? ArtistCredit { get; init; }
 
+        public List<RecordingReleaseResult>? Releases { get; init; }
+
         public List<string>? Isrcs { get; init; }
+    }
+
+    private sealed class RecordingReleaseResult
+    {
+        public string? Id { get; init; }
+        public string? Title { get; init; }
+        public string? Date { get; init; }
     }
 
     private sealed class MediaResult

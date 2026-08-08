@@ -1,0 +1,44 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/ws/2/recording",
+    "queryParameters": {
+      "query": {
+        "equalTo": "Static Hearts Paper Tigers"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "recordings": [
+        {
+          "id": "mbid-static-hearts-2022",
+          "title": "Static Hearts",
+          "length": 198000,
+          "score": "99",
+          "first-release-date": "2022-09-16",
+          "releases": [
+            {
+              "id": "release-static-hearts",
+              "title": "Static Hearts",
+              "date": "2022-09-16"
+            }
+          ],
+          "artist-credit": [
+            {
+              "name": "Paper Tigers",
+              "artist": {
+                "id": "musicbrainz-artist:paper-tigers"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

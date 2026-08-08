@@ -23,12 +23,12 @@ internal sealed class LookupWorkReadyHandlerUnitTestEnvironment
 
     public LookupWorkReadyHandler CreateSubject() => new(CommandBus);
 
-    public static DispatchLookupWork CreateSearchRequest() =>
+    public static DispatchLookupWork CreateSearchRequest(string commandId = "cmd-search") =>
         new(
             new EnrichmentTarget.SearchForUnknownCatalogItem(new SearchCriteria("u2", SearchType.Artist)),
             LookupPriorityBand.High,
-            MessageId.For("cmd-search"),
-            CorrelationId.From("corr-search"),
+            MessageId.For(commandId),
+            CorrelationId.From($"corr:{commandId}"),
             new DateTimeOffset(2026, 7, 18, 9, 10, 0, TimeSpan.Zero));
 
     public static DispatchLookupWork CreateStreamingLocationRequest(string commandId = "cmd-streaming") =>

@@ -1,0 +1,43 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/ws/2/recording",
+    "queryParameters": {
+      "query": {
+        "equalTo": "Golden Echo Saturn Kids"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "recordings": [
+        {
+          "id": "mbid-golden-echo-radio",
+          "title": "Golden Echo - Radio Edit",
+          "length": 244000,
+          "score": "97",
+          "releases": [
+            {
+              "id": "release-golden-echo-radio",
+              "title": "Golden Echo Radio Release",
+              "date": "2024-02-14"
+            }
+          ],
+          "artist-credit": [
+            {
+              "name": "Saturn Kids",
+              "artist": {
+                "id": "musicbrainz-artist:saturn-kids"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

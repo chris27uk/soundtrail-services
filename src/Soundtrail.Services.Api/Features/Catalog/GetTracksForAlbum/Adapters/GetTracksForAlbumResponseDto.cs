@@ -11,10 +11,11 @@ public sealed record GetTracksForAlbumResponseDto(
 
 public sealed record GetTracksForAlbumTrackResponseDto(
     string TrackId,
-    string MusicCatalogId,
     string Title,
     string ArtistName,
     int? DurationMs,
     string? Isrc,
     DateOnly? ReleaseDate,
-    string? ArtworkUrl);
+    string? ArtworkUrl,
+    bool Playable,
+    StreamingLocationResponseDto[] StreamingLocations);

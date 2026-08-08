@@ -1,6 +1,5 @@
 using Raven.Client.Documents;
 using Raven.Client.Documents.Linq;
-using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
@@ -10,23 +9,20 @@ using Soundtrail.Domain.Discovery.Assesment;
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.Prioritisation.OnMusicAssessmentRequired.Planning;
 
 public sealed class RavenDiscoveryPlanningProjectionReader(
-    IAsyncDocumentSession session) : IDiscoveryPlanningProjectionReader
+    IDocumentStore documentStore) : IDiscoveryPlanningProjectionReader
 {
-    private static readonly string[] RelevantEventTypes =
-    [
-        "work-scheduled",
-        "work-deferred",
-        "work-completed",
-        "work-rejected",
-        "work-ignored"
-    ];
-
     public async Task<DiscoveryPlanningProjection> ReadAsync(
         EnrichmentTarget target,
         CancellationToken cancellationToken)
     {
+        using var session = documentStore.OpenAsyncSession();
         var query = session.Query<RavenStoredEventRecord>()
-            .Where(x => x.AggregateType == "catalog-stream" && RelevantEventTypes.Contains(x.EventType))
+            .Where(x => x.AggregateType == "catalog-stream"
+                && (x.EventType == "work-scheduled"
+                    || x.EventType == "work-deferred"
+                    || x.EventType == "work-completed"
+                    || x.EventType == "work-rejected"
+                    || x.EventType == "work-ignored"))
             .OrderBy(x => x.StreamId)
             .ThenBy(x => x.Version);
 

@@ -34,7 +34,8 @@ internal sealed class LookupExecutionAdmissionPortIntegrationTestEnvironment : I
 
     public static async Task<LookupExecutionAdmissionPortIntegrationTestEnvironment> CreateAsync(
         int maxRequests,
-        int activeLeaseSeconds)
+        int activeLeaseSeconds,
+        int minimumSpacingSeconds = 1)
     {
         var redisServer = await LocalRedisTestServer.StartAsync();
         var connectionMultiplexer = await ConnectionMultiplexer.ConnectAsync(redisServer.ConnectionString);
@@ -45,7 +46,7 @@ internal sealed class LookupExecutionAdmissionPortIntegrationTestEnvironment : I
                 Kworb = new ApiBudgetPolicy
                 {
                     MaxRequests = maxRequests,
-                    MinimumSpacingSeconds = 1,
+                    MinimumSpacingSeconds = minimumSpacingSeconds,
                     SafetyMarginPercent = 0,
                     WindowSeconds = 60
                 }

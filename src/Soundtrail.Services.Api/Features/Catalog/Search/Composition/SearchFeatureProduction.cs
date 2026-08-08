@@ -1,7 +1,5 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
-using Raven.Client.Documents.Conventions;
 using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Adapters.Persistence;
 using Soundtrail.Adapters.Timing;
@@ -15,25 +13,8 @@ namespace Soundtrail.Services.Api.Features.Catalog.Search.Composition;
 [Autodiscover]
 public sealed class SearchFeatureProduction() : SearchFeature(
     _ => new SystemClockPort(),
-    sp => new RavenSearchPort(CreateDocumentStore(sp)),
-    sp => new RavenDiscoveryFeedbackPort(CreateDocumentStore(sp)))
-{
-    private static IDocumentStore CreateDocumentStore(IServiceProvider sp)
-    {
-        var options = sp.GetRequiredService<IOptions<RavenDbOptions>>().Value;
-        var store = new DocumentStore
-        {
-            Urls = options.Urls,
-            Database = options.Database,
-            Conventions = new DocumentConventions
-            {
-                FindCollectionName = type => type.Name
-            }
-        };
-
-        return store.Initialize();
-    }
-}
+    sp => new RavenSearchPort(sp.GetRequiredService<IDocumentStore>()),
+    sp => new RavenDiscoveryFeedbackPort(sp.GetRequiredService<IDocumentStore>()));
 
 public class SearchFeature(
     Func<IServiceProvider, IClockPort> createClockPort,
@@ -42,7 +23,7 @@ public class SearchFeature(
 {
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
-        services.Configure<RavenDbOptions>(configuration.GetSection(RavenDbOptions.SectionName));
+        services.AddRavenDocumentStore(configuration);
         services.Add(ServiceDescriptor.Singleton(AppTypeRegistry.ServiceLocation));
         services.TryAddScoped<IApiHandler<SearchRequest, SearchResponse?>, SearchHandler>();
         services.Add(ServiceDescriptor.Singleton(createSearchPort));

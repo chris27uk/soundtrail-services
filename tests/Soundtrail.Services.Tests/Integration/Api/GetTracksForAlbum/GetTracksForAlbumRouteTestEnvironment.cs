@@ -49,13 +49,14 @@ internal sealed class GetTracksForAlbumRouteTestEnvironment : IDisposable
                     [
                         new GetTracksForAlbumTrackResponse(
                             global::Soundtrail.Services.Tests.TestTrackIds.Create("track-1001"),
-                            new CatalogItemId.Track(global::Soundtrail.Services.Tests.TestTrackIds.Create("track-1001")),
                             "The Track",
                             "The Artist",
                             201000,
                             "GBAYE2401001",
                             new DateOnly(2024, 6, 7),
-                            "https://cdn.soundtrail.test/tracks/track-1001.jpg")
+                            "https://cdn.soundtrail.test/tracks/track-1001.jpg",
+                            false,
+                            [])
                     ]));
     }
 
@@ -73,13 +74,14 @@ internal sealed class GetTracksForAlbumRouteTestEnvironment : IDisposable
                 response.Tracks.Select(
                         track => new GetTracksForAlbumTrackResponseDto(
                             track.TrackId.Value,
-                            track.MusicCatalogId.NormalisedIdentifier,
                             track.Title,
                             track.ArtistName,
                             track.DurationMs,
                             track.Isrc,
                             track.ReleaseDate,
-                            track.ArtworkUrl))
+                            track.ArtworkUrl,
+                            track.Playable,
+                            []))
                     .ToArray(),
                 null);
         }

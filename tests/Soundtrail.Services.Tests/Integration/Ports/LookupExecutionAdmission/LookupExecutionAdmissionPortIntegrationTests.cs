@@ -84,4 +84,18 @@ public sealed class LookupExecutionAdmissionPortIntegrationTests
         retried.Status.Should().Be(LookupExecutionAdmissionStatus.Acquired);
         distinct.Status.Should().Be(LookupExecutionAdmissionStatus.Acquired);
     }
+
+    [Fact]
+    public async Task Given_Zero_Minimum_Spacing_When_Acquiring_Then_Request_Is_Still_Admitted()
+    {
+        await using var environment = await LookupExecutionAdmissionPortIntegrationTestEnvironment.CreateAsync(
+            maxRequests: 1,
+            activeLeaseSeconds: 300,
+            minimumSpacingSeconds: 0);
+        var request = environment.CreateRequest("msg-zero-spacing");
+
+        var result = await environment.Subject.TryAcquireAsync(request, CancellationToken.None);
+
+        result.Status.Should().Be(LookupExecutionAdmissionStatus.Acquired);
+    }
 }

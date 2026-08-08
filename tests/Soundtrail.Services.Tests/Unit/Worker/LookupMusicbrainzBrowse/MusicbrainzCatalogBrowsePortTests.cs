@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http;
 using Microsoft.Extensions.Options;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.MusicMetadata;
@@ -23,6 +24,8 @@ public sealed class MusicbrainzCatalogBrowsePortTests
                         {
                           "id": "recording-1",
                           "title": "Valid Song [Live Mix]",
+                          "first-release-date": "2024-03-04",
+                          "releases": [{ "id": "release-artist-track-1", "title": "Live Sessions", "date": "2024-03-04" }],
                           "artist-credit": [{ "name": "The Artist" }]
                         },
                         {
@@ -39,6 +42,11 @@ public sealed class MusicbrainzCatalogBrowsePortTests
 
         result.Should().HaveCount(1);
         result.Select(x => x.Item).Should().ContainSingle(item => item is Soundtrail.Domain.Catalog.CatalogItem.MusicTrack);
+        var track = ((CatalogItem.MusicTrack)result.Single().Item).Track;
+        track.AlbumId.Should().Be("artist-1:release-artist-track-1");
+        track.AlbumTitle.Should().Be("Live Sessions");
+        track.ReleaseDate.Should().Be(new DateOnly(2024, 3, 4));
+        track.ReleaseType.Should().Be("live mix");
     }
 
     [Fact]
@@ -69,6 +77,10 @@ public sealed class MusicbrainzCatalogBrowsePortTests
 
         result.Should().HaveCount(1);
         result.Select(x => x.Item).Should().ContainSingle(item => item is Soundtrail.Domain.Catalog.CatalogItem.MusicTrack);
+        var track = ((CatalogItem.MusicTrack)result.Single().Item).Track;
+        track.AlbumTitle.Should().Be("The Album");
+        track.ReleaseDate.Should().Be(new DateOnly(2024, 1, 2));
+        track.ReleaseType.Should().Be("radio edit");
     }
 
     private static MusicbrainzCatalogBrowsePort CreateSubject(HttpMessageHandler handler)

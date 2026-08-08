@@ -13,8 +13,9 @@ public sealed class LookupMusicbrainzSearchResultsHandler(
     IClockPort clock,
     ICommandBus commandBus) : IHandler<LookupMusicbrainzSearchResultsMessage>
 {
-    public async Task Handle(LookupMusicbrainzSearchResultsMessage request, CancellationToken cancellationToken = default)
+    public async Task Handle(IncomingMessage<LookupMusicbrainzSearchResultsMessage> context, CancellationToken cancellationToken = default)
     {
+        var request = context.Message;
         var entries = await readCatalogEntriesBySearchCriteriaPort.ReadAsync(request.SearchCriteria, cancellationToken);
         var observedAt = clock.UtcNow;
 

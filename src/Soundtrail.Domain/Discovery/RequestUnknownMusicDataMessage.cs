@@ -34,15 +34,4 @@ public sealed record RequestUnknownMusicDataMessage : IPrioritisedMessage
     int? IPrioritisedMessage.TrustLevel => TrustLevel;
 
     int? IPrioritisedMessage.RiskScore => RiskScore;
-
-    public void Deconstruct(out SearchCriteria SearchCriteria, out LookupPriorityBand Priority, out int TrustLevel, out int RiskScore, out DateTimeOffset RequestedAt, out MessageId messageId, out CorrelationId CorrelationId)
-    {
-        SearchCriteria = this.SearchCriteria;
-        Priority = this.Priority;
-        TrustLevel = this.TrustLevel;
-        RiskScore = this.RiskScore;
-        RequestedAt = this.RequestedAt;
-        messageId = this.Id;
-        CorrelationId = this.CorrelationId;
-    }
 }

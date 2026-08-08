@@ -1,0 +1,29 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/ws/2/recording",
+    "queryParameters": {
+      "artist": {
+        "equalTo": "musicbrainz-artist:aurora-lane"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "recordings": [
+        {
+          "id": "mbid-midnight-signals-original",
+          "title": "Midnight Signals",
+          "length": 214000,
+          "releases": [{ "id": "release-midnight-signals", "title": "Midnight Signals", "date": "2023-11-10" }],
+          "artist-credit": [{ "name": "Aurora Lane", "artist": { "id": "musicbrainz-artist:aurora-lane" } }]
+        }
+      ]
+    }
+  }
+}

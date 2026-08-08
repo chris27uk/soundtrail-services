@@ -253,6 +253,42 @@ public sealed class TrackIdIdentityTests
     }
 
     [Fact]
+    public void Given_A_Generic_Request_When_Comparing_Candidates_Then_A_Generic_Candidate_Is_Closer_Than_A_Specific_Version()
+    {
+        var requested = TrackIdIndexProjection.From(MustCreate("Radiohead", "Karma Police"));
+        var genericCandidate = TrackIdIndexProjection.From(MustCreate("Radiohead", "Karma Police"));
+        var specificCandidate = TrackIdIndexProjection.From(MustCreate("Radiohead", "Karma Police (Radio Edit)"));
+
+        genericCandidate.GetDistanceTo(requested)
+            .Should()
+            .BeLessThan(specificCandidate.GetDistanceTo(requested));
+    }
+
+    [Fact]
+    public void Given_A_Specific_Release_Type_Request_When_Comparing_Candidates_Then_The_Matching_Release_Type_Is_Closer_Than_The_Generic_Candidate()
+    {
+        var requested = TrackIdIndexProjection.From(MustCreate("Radiohead", "Karma Police (Radio Edit)"));
+        var matchingCandidate = TrackIdIndexProjection.From(MustCreate("Radiohead", "Karma Police (Radio Edit)"));
+        var genericCandidate = TrackIdIndexProjection.From(MustCreate("Radiohead", "Karma Police"));
+
+        matchingCandidate.GetDistanceTo(requested)
+            .Should()
+            .BeLessThan(genericCandidate.GetDistanceTo(requested));
+    }
+
+    [Fact]
+    public void Given_A_Specific_Release_Date_Request_When_Comparing_Candidates_Then_A_Nearer_Date_Is_Closer_Than_A_Distant_Date()
+    {
+        var requested = TrackIdIndexProjection.From(MustCreate("Radiohead", "Karma Police", releaseDate: new DateOnly(2024, 1, 1)));
+        var nearerCandidate = TrackIdIndexProjection.From(MustCreate("Radiohead", "Karma Police", releaseDate: new DateOnly(2022, 1, 1)));
+        var distantCandidate = TrackIdIndexProjection.From(MustCreate("Radiohead", "Karma Police", releaseDate: new DateOnly(1970, 1, 1)));
+
+        nearerCandidate.GetDistanceTo(requested)
+            .Should()
+            .BeLessThan(distantCandidate.GetDistanceTo(requested));
+    }
+
+    [Fact]
     public void Given_A_Malformed_Track_Title_When_Trying_To_Create_A_Track_Id_Then_A_Failure_Result_Is_Returned()
     {
         var result = TrackId.TryCreate("Radiohead", "(_");

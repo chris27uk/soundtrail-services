@@ -12,10 +12,25 @@ public sealed class RavenStorePlaylistTracksReadModelPort(IDocumentStore documen
     public async Task StoreAsync(PlaylistTracksDiscovered @event, CancellationToken cancellationToken)
     {
         using var session = documentStore.OpenAsyncSession();
-        var trackIdValues = @event.Tracks.Select(static trackId => trackId.Value).ToArray();
+        var documentId = CatalogPlaylistTracksRecordDto.GetDocumentId(@event.PlaylistId.Value);
+        var existingRecord = await session.LoadAsync<CatalogPlaylistTracksRecordDto>(documentId, cancellationToken);
+        var trackIdValues = MergeTrackIds(
+            existingRecord?.TrackIds,
+            @event.Tracks.Select(static trackId => trackId.Value));
         var record = await BuildRecordAsync(session, @event.PlaylistId.Value, trackIdValues, @event.ObservedAt, cancellationToken);
 
-        await session.StoreAsync(record, cancellationToken);
+        if (existingRecord is null)
+        {
+            await session.StoreAsync(record, cancellationToken);
+        }
+        else
+        {
+            existingRecord.TrackIds = record.TrackIds;
+            existingRecord.Tracks = record.Tracks;
+            existingRecord.Discovery = record.Discovery ?? existingRecord.Discovery;
+            existingRecord.UpdatedAt = record.UpdatedAt;
+        }
+
         await session.SaveChangesAsync(cancellationToken);
     }
 
@@ -43,6 +58,7 @@ public sealed class RavenStorePlaylistTracksReadModelPort(IDocumentStore documen
                 cancellationToken);
 
             existingRecord.Tracks = rebuilt.Tracks;
+            existingRecord.Discovery = rebuilt.Discovery ?? existingRecord.Discovery;
         }
 
         await session.SaveChangesAsync(cancellationToken);
@@ -76,7 +92,7 @@ public sealed class RavenStorePlaylistTracksReadModelPort(IDocumentStore documen
                 static group => group.Key,
                 static group => group.Select(static entry => entry.Track).ToArray());
 
-        return new CatalogPlaylistTracksRecordDto
+        var record = new CatalogPlaylistTracksRecordDto
         {
             Id = CatalogPlaylistTracksRecordDto.GetDocumentId(playlistId),
             PlaylistId = playlistId,
@@ -96,11 +112,107 @@ public sealed class RavenStorePlaylistTracksReadModelPort(IDocumentStore documen
                     Isrc = track.Isrc,
                     ReleaseDate = track.ReleaseDate,
                     ReleaseType = track.ReleaseType,
-                    ArtworkUrl = track.ArtworkUrl
+                    ArtworkUrl = track.ArtworkUrl,
+                    StreamingLocations = track.StreamingLocations
                 })
                 .ToArray(),
             UpdatedAt = updatedAt
         };
+
+        record.Discovery = await LoadDiscoveryAsync(session, record, cancellationToken);
+        return record;
+    }
+
+    private static async Task<CatalogDiscoveryFeedbackRecordDto?> LoadDiscoveryAsync(
+        IAsyncDocumentSession session,
+        CatalogPlaylistTracksRecordDto playlist,
+        CancellationToken cancellationToken)
+    {
+        var targetId = $"child_tracks_for_playlist:{playlist.PlaylistId}";
+        var playlistDiscovery = await session.LoadAsync<CatalogDiscoveryFeedbackRecordDto>(
+            CatalogDiscoveryFeedbackRecordDto.GetDocumentId(targetId),
+            cancellationToken);
+
+        if (playlistDiscovery is null)
+        {
+            return null;
+        }
+
+        foreach (var track in playlist.Tracks.Where(static track => track.StreamingLocations.Length == 0))
+        {
+            var streamingTargetId = $"streaming_location_for_track:{track.TrackId}";
+            var streamingDiscovery = await session.LoadAsync<CatalogDiscoveryFeedbackRecordDto>(
+                CatalogDiscoveryFeedbackRecordDto.GetDocumentId(streamingTargetId),
+                cancellationToken);
+
+            if (streamingDiscovery is null || IsIncomplete(streamingDiscovery))
+            {
+                return streamingDiscovery is null
+                    ? BuildStreamingProjectionPendingDiscovery(playlistDiscovery)
+                    : EmbedDiscovery(streamingDiscovery);
+            }
+        }
+
+        return EmbedDiscovery(playlistDiscovery);
+    }
+
+    private static bool IsIncomplete(CatalogDiscoveryFeedbackRecordDto discovery) =>
+        discovery.Status is "requested" or "scheduled" or "deferred";
+
+    private static CatalogDiscoveryFeedbackRecordDto BuildStreamingProjectionPendingDiscovery(
+        CatalogDiscoveryFeedbackRecordDto playlistDiscovery)
+    {
+        var pending = EmbedDiscovery(playlistDiscovery);
+        pending.Status = "scheduled";
+        pending.NextEligibleAtUtc = playlistDiscovery.UpdatedAtUtc.AddSeconds(15);
+        pending.EarliestExpectedCompletionAtUtc = playlistDiscovery.UpdatedAtUtc.AddSeconds(75);
+        pending.Reason = "Track streaming projection is still catching up.";
+        return pending;
+    }
+
+    private static CatalogDiscoveryFeedbackRecordDto EmbedDiscovery(CatalogDiscoveryFeedbackRecordDto discovery) =>
+        new()
+        {
+            TargetId = discovery.TargetId,
+            Status = discovery.Status,
+            Priority = discovery.Priority,
+            NextEligibleAtUtc = discovery.NextEligibleAtUtc,
+            EarliestExpectedCompletionAtUtc = discovery.EarliestExpectedCompletionAtUtc,
+            Reason = discovery.Reason,
+            UpdatedAtUtc = discovery.UpdatedAtUtc
+        };
+
+    private static string[] MergeTrackIds(
+        IReadOnlyCollection<string>? existingTrackIds,
+        IEnumerable<string> discoveredTrackIds)
+    {
+        if (existingTrackIds is null || existingTrackIds.Count == 0)
+        {
+            return discoveredTrackIds
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+        }
+
+        var mergedTrackIds = new List<string>(existingTrackIds.Count);
+        var seenTrackIds = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var trackId in existingTrackIds)
+        {
+            if (seenTrackIds.Add(trackId))
+            {
+                mergedTrackIds.Add(trackId);
+            }
+        }
+
+        foreach (var trackId in discoveredTrackIds)
+        {
+            if (seenTrackIds.Add(trackId))
+            {
+                mergedTrackIds.Add(trackId);
+            }
+        }
+
+        return mergedTrackIds.ToArray();
     }
 
     private static CatalogTrackRecordDto? SelectPreferredTrack(

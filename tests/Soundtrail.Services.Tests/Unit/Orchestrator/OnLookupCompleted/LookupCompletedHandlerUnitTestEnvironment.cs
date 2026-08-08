@@ -1,4 +1,5 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Artists;
@@ -9,6 +10,7 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Discovery.Messages;
+using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.Processing.OnLookupCompleted;
 
 namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnLookupCompleted;
@@ -16,17 +18,21 @@ namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnLookupCompleted;
 internal sealed class LookupCompletedHandlerUnitTestEnvironment
 {
     private LookupCompletedHandlerUnitTestEnvironment(
-        EventStreamRepositoryFake repository)
+        EventStreamRepositoryFake repository,
+        CommandBusFake commandBus)
     {
         Repository = repository;
+        CommandBus = commandBus;
     }
 
     public EventStreamRepositoryFake Repository { get; }
 
-    public static LookupCompletedHandlerUnitTestEnvironment Create() =>
-        new(new EventStreamRepositoryFake());
+    public CommandBusFake CommandBus { get; }
 
-    public LookupCompletedHandler CreateSubject() => new(Repository);
+    public static LookupCompletedHandlerUnitTestEnvironment Create() =>
+        new(new EventStreamRepositoryFake(), new CommandBusFake());
+
+    public LookupCompletedHandler CreateSubject() => new(Repository, CommandBus);
 
     public static CatalogLookupCompleted CreateStreamingLocationCompleted(
         ArtistId? artistId = null,
@@ -82,6 +88,46 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
                         "playlist:Spotify")),
                 new LookedUpData.PlaylistTrackReferences([
                     new TrackReference(ArtistName.From("The Travellers"), "Road Song")
+                ]),
+                when));
+    }
+
+    public static CatalogLookupCompleted CreateSearchCompleted(
+        string query,
+        TrackId trackId,
+        DateTimeOffset? completedAt = null,
+        MessageId? originalCommandId = null)
+    {
+        var when = completedAt ?? new DateTimeOffset(2026, 7, 19, 10, 5, 0, TimeSpan.Zero);
+        var searchCriteria = new SearchCriteria(query, SearchType.Track);
+        var target = Work.SearchExternally(searchCriteria);
+        var track = new Track(trackId)
+        {
+            Title = "Midnight Signals",
+            ArtistName = "Aurora Lane",
+            AlbumTitle = "Midnight Signals",
+            AlbumId = "musicbrainz-artist:aurora-lane:release-midnight-signals",
+            DurationMs = 214000,
+            ReleaseDate = new DateOnly(2023, 11, 10),
+            Mbid = "mbid-midnight-signals-original",
+            UpdatedAt = when
+        };
+
+        return new CatalogLookupCompleted(
+            MessageId.New(),
+            when.AddMinutes(-15),
+            CorrelationId.From("corr-search-completed"),
+            new LookupResult.Succeeded(
+                new LookupResultContext(
+                    CatalogWorkId.From(searchCriteria),
+                    originalCommandId ?? CreateWorkerCommandIdForScheduledWork(
+                        target,
+                        new DateTimeOffset(2026, 7, 19, 9, 50, 30, TimeSpan.Zero),
+                        "musicbrainz-search")),
+                new LookedUpData.CatalogEntries([
+                    new CatalogDiscoveryEntry(
+                        ArtistId.From("musicbrainz-artist:aurora-lane"),
+                        new CatalogItem.MusicTrack(track))
                 ]),
                 when));
     }
@@ -170,7 +216,8 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
         EnrichmentTarget target,
         DateTimeOffset scheduledAt,
         string suffix) =>
-        MessageId.For($"DispatchLookupWork:{target.NormalisedIdentifier}:{scheduledAt:O}:{suffix}");
+        MessageId.For(
+            $"{MessageId.Deterministic("DispatchLookupWork", target.NormalisedIdentifier, scheduledAt.ToString("O")).Value}:{suffix}");
 
     public void SeedForPlaylist(string playlistName = "Road Trip")
     {
@@ -185,6 +232,28 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
                 CorrelationId.From("corr-playlist-completed")),
             new WorkScheduled(
                 Work.DiscoverPlaylistTracks(playlistId),
+                LookupPriorityBand.High,
+                new DateTimeOffset(2026, 7, 19, 9, 51, 0, TimeSpan.Zero),
+                new DateTimeOffset(2026, 7, 19, 9, 55, 0, TimeSpan.Zero),
+                "Scheduled.",
+                new DateTimeOffset(2026, 7, 19, 9, 50, 30, TimeSpan.Zero))
+        ];
+    }
+
+    public void SeedForSearchResult(string query, TrackId trackId)
+    {
+        var searchCriteria = new SearchCriteria(query, SearchType.Track);
+        var target = Work.SearchExternally(searchCriteria);
+        SeedEvents = [
+            new WorkRequested(
+                target,
+                LookupPriorityBand.High,
+                100,
+                0,
+                new DateTimeOffset(2026, 7, 19, 9, 50, 0, TimeSpan.Zero),
+                CorrelationId.From("corr-search-completed")),
+            new WorkScheduled(
+                target,
                 LookupPriorityBand.High,
                 new DateTimeOffset(2026, 7, 19, 9, 51, 0, TimeSpan.Zero),
                 new DateTimeOffset(2026, 7, 19, 9, 55, 0, TimeSpan.Zero),
@@ -222,6 +291,17 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
         {
             AppendedEvents = events.ToArray();
             return Task.FromResult(new AppendResult(true, stream.Version + events.Count, events.ToArray(), AppendOutcome.Appended));
+        }
+    }
+
+    public sealed class CommandBusFake : ICommandBus
+    {
+        public List<IMessage> Commands { get; } = [];
+
+        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
+        {
+            Commands.Add(message);
+            return Task.CompletedTask;
         }
     }
 }

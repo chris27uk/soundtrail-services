@@ -1,6 +1,7 @@
 using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog.Artists;
+using Soundtrail.Services.Api.Features.Catalog.Shared.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetArtist.Contract;
 
 namespace Soundtrail.Services.Api.Features.Catalog.GetArtist.Adapters;
@@ -11,11 +12,13 @@ public static class GetArtistEndpoints
     {
         endpoints.MapGet(
             "/catalog/artists/{artistId}",
-            async (string artistId, IApiHandler<GetArtistRequest, GetArtistResponse?> handler, CancellationToken cancellationToken) =>
+            async (string artistId, IApiHandler<GetArtistRequest, GetArtistResponse?> handler, HttpContext httpContext, CancellationToken cancellationToken) =>
             {
                 var objArtistId = ArtistId.From(artistId);
                 var response = await handler.Handle(new GetArtistRequest(objArtistId), cancellationToken);
-                return response is null ? Results.NotFound() : Results.Ok(typeRegistry.ToDto(response));
+                var dto = response is null ? null : typeRegistry.ToDto<GetArtistResponseDto>(response);
+                DiscoveryResponseHeaders.Apply(httpContext, dto?.Discovery);
+                return response is null ? Results.NotFound() : Results.Ok(dto);
             });
 
         return endpoints;

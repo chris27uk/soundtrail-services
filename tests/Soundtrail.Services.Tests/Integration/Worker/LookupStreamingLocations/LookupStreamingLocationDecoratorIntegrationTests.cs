@@ -78,13 +78,13 @@ public sealed class LookupStreamingLocationDecoratorIntegrationTests
         TMessage request,
         TMessage other,
         IHandler<TMessage> subject)
-        where TMessage : IMessage
+        where TMessage : class, IMessage
     {
         await environment.AdmissionPort.TryAcquireAsync(
             new LookupExecutionAdmissionRequest(LookupSource.Odesli, request.Id, environment.Clock.UtcNow),
             CancellationToken.None);
 
-        var action = () => subject.Handle(request);
+        var action = () => HandlerTestExtensions.Handle(subject, request);
 
         await action.Should().ThrowAsync<LookupExecutionShortCircuitException>();
         environment.CommandBus.Messages.Single().Should().BeOfType<CatalogLookupCompleted>()
@@ -99,13 +99,13 @@ public sealed class LookupStreamingLocationDecoratorIntegrationTests
 
     private sealed class IsrcInnerHandler : IHandler<LookupStreamingLocationByIsrcMessage>
     {
-        public Task Handle(LookupStreamingLocationByIsrcMessage request, CancellationToken cancellationToken = default) =>
+        public Task Handle(IncomingMessage<LookupStreamingLocationByIsrcMessage> context, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
     }
 
     private sealed class MetadataInnerHandler : IHandler<LookupStreamingLocationByTrackMetadataMessage>
     {
-        public Task Handle(LookupStreamingLocationByTrackMetadataMessage request, CancellationToken cancellationToken = default) =>
+        public Task Handle(IncomingMessage<LookupStreamingLocationByTrackMetadataMessage> context, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
     }
 }

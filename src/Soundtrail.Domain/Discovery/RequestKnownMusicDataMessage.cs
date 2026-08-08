@@ -13,6 +13,4 @@ public sealed record RequestKnownMusicDataMessage(
     public MessageId Id { get; init; } = MessageId.New();
 
     public CorrelationId CorrelationId { get; init; } = CorrelationId.New();
-
-    public DateTimeOffset CreatedAt { get; init; } = RequestedAt;
 }

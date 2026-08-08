@@ -24,10 +24,10 @@ internal sealed class KworbImportJobUnitTestEnvironment
 
         public ImportKworbChartCommand? Request { get; private set; }
 
-        public Task Handle(ImportKworbChartCommand request, CancellationToken cancellationToken = default)
+        public Task Handle(IncomingMessage<ImportKworbChartCommand> context, CancellationToken cancellationToken = default)
         {
             Calls++;
-            Request = request;
+            Request = context.Message;
             return Task.CompletedTask;
         }
     }

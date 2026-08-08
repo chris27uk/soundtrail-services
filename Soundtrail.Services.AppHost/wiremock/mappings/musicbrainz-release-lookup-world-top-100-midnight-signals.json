@@ -1,0 +1,19 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/ws/2/release/release-midnight-signals"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "title": "Midnight Signals",
+      "date": "2023-11-10",
+      "artist-credit": [{ "name": "Aurora Lane", "artist": { "id": "musicbrainz-artist:aurora-lane" } }],
+      "media": [{ "tracks": [{ "title": "Midnight Signals", "length": 214000, "artist-credit": [{ "name": "Aurora Lane" }], "recording": { "id": "mbid-midnight-signals-original", "isrcs": [] } }] }]
+    }
+  }
+}

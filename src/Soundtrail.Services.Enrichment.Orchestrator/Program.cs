@@ -1,13 +1,14 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Soundtrail.Adapters.FeatureOrchestration;
+using Soundtrail.Adapters.Messaging;
 using Soundtrail.Services.Enrichment.Orchestrator;
 using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure;
 using Soundtrail.Services.ServiceDefaults;
-using Wolverine;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
+builder.Services.AddAzureServiceBusMessageProcessing(builder.Configuration, builder.Environment);
 
 builder.Services.AddFeatures<OrchestratorAssemblyMarker>();
 #pragma warning disable ASP0000
@@ -19,15 +20,6 @@ foreach (var feature in features)
 {
     feature.ConfigureServices(builder.Services, builder.Configuration);
 }
-
-builder.Host.UseWolverine(
-    options =>
-    {
-        foreach (var feature in features.OfType<IOrchestratorFeature>())
-        {
-            feature.ConfigureMessaging(options, builder.Configuration, builder.Environment);
-        }
-    });
 
 var app = builder.Build();
 

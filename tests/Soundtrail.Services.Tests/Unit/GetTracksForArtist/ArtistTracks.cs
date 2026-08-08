@@ -1,4 +1,3 @@
-using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForArtist.Contract;
@@ -32,14 +31,15 @@ internal static class ArtistTracks
             [
                 new GetTracksForArtistTrackResponse(
                     resolvedTrackId,
-                    new CatalogItemId.Track(resolvedTrackId),
                     title,
                     trackArtistName,
                     albumTitle,
                     durationMs,
                     isrc,
                     releaseDate ?? new DateOnly(2024, 1, 2),
-                    artworkUrl)
+                    artworkUrl,
+                    false,
+                    [])
             ]);
     }
 }

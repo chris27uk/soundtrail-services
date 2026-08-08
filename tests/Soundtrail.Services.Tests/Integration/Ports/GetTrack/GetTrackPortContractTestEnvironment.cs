@@ -46,14 +46,15 @@ internal sealed class GetTrackPortContractTestEnvironment : IAsyncDisposable
         var resolvedTrackId = TrackId.From(trackIdValue);
         var response = new GetTrackResponse(
             resolvedTrackId,
-            new CatalogItemId.Track(resolvedTrackId),
             title,
             artistName,
             albumTitle,
             durationMs,
             isrc,
             releaseDate ?? new DateOnly(2024, 1, 2),
-            artworkUrl);
+            artworkUrl,
+            false,
+            []);
 
         return implementation switch
         {
@@ -133,14 +134,20 @@ internal sealed class GetTrackPortContractTestEnvironment : IAsyncDisposable
             var record = (CatalogTrackRecordDto)dto!;
             return new GetTrackResponse(
                 TrackId.From(record.TrackId),
-                new CatalogItemId.Track(TrackId.From(record.TrackId)),
                 record.Title,
                 record.ArtistName,
                 record.AlbumTitle,
                 record.DurationMs,
                 record.Isrc,
                 record.ReleaseDate,
-                record.ArtworkUrl);
+                record.ArtworkUrl,
+                record.StreamingLocations.Length > 0,
+                record.StreamingLocations
+                    .Select(static location => new Soundtrail.Services.Api.Features.Catalog.Shared.Contract.StreamingLocationResponse(
+                        location.Provider,
+                        location.ExternalId,
+                        location.Url))
+                    .ToArray());
         }
 
         public void MapOnto<TSource, TTarget>(TSource source, TTarget target)

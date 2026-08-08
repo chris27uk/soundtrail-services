@@ -55,7 +55,7 @@ public sealed class LookupMusicbrainzSearchResultsDecoratorIntegrationTests
 
     private sealed class InnerHandler : IHandler<LookupMusicbrainzSearchResultsMessage>
     {
-        public Task Handle(LookupMusicbrainzSearchResultsMessage request, CancellationToken cancellationToken = default) =>
+        public Task Handle(IncomingMessage<LookupMusicbrainzSearchResultsMessage> context, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
     }
 }

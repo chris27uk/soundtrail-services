@@ -7,6 +7,7 @@ using Raven.Client.Documents;
 using Raven.Client.Documents.Conventions;
 using Raven.Client.Documents.Session;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
+using Soundtrail.Services.ServiceDefaults;
 
 namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;
 
@@ -35,6 +36,27 @@ public static class RavenServiceCollectionExtensions
             });
         services.TryAddScoped<IAsyncDocumentSession>(sp => sp.GetRequiredService<IDocumentStore>().OpenAsyncSession());
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, RavenDatabaseHostedService>());
+        services.AddStartupValidation(
+            "worker-raven-document-store",
+            (serviceProvider, cancellationToken) =>
+            {
+                var options = serviceProvider.GetRequiredService<IOptions<RavenDbOptions>>().Value;
+                if (options.Urls.Length == 0 || options.Urls.Any(string.IsNullOrWhiteSpace))
+                {
+                    throw new InvalidOperationException("RavenDb:Urls must contain at least one URL.");
+                }
+
+                if (string.IsNullOrWhiteSpace(options.Database))
+                {
+                    throw new InvalidOperationException("RavenDb:Database is not configured.");
+                }
+
+                _ = serviceProvider.GetRequiredService<IDocumentStore>();
+
+                using var scope = serviceProvider.CreateScope();
+                _ = scope.ServiceProvider.GetRequiredService<IAsyncDocumentSession>();
+                return Task.CompletedTask;
+            });
 
         services.TryAddScoped<ILookupExecutionReceiptStore, RavenLookupExecutionReceiptStore>();
         return services;

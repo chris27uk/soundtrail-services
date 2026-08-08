@@ -1,6 +1,5 @@
 using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Contracts.Persistence;
-using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Adapters;
@@ -21,14 +20,15 @@ public sealed class GetTracksForPlaylistResponseTranslationRegistration : ITypeT
                     response.Tracks.Select(
                             track => new GetTracksForPlaylistTrackResponseDto(
                                 track.TrackId.Value,
-                                track.MusicCatalogId.NormalisedIdentifier,
                                 track.Title,
                                 track.ArtistName,
                                 track.AlbumTitle,
                                 track.DurationMs,
                                 track.Isrc,
                                 track.ReleaseDate,
-                                track.ArtworkUrl))
+                                track.ArtworkUrl,
+                                track.Playable,
+                                ToStreamingLocationDtos(track.StreamingLocations)))
                         .ToArray(),
                     ToDiscoveryDto(response.Discovery)),
             toDomainObject: dto =>
@@ -37,14 +37,15 @@ public sealed class GetTracksForPlaylistResponseTranslationRegistration : ITypeT
                     dto.Tracks.Select(
                             track => new GetTracksForPlaylistTrackResponse(
                                 TrackId.From(track.TrackId),
-                                new CatalogItemId.Track(TrackId.From(track.TrackId)),
                                 track.Title,
                                 track.ArtistName,
                                 track.AlbumTitle,
                                 track.DurationMs,
                                 track.Isrc,
                                 track.ReleaseDate,
-                                track.ArtworkUrl))
+                                track.ArtworkUrl,
+                                track.Playable,
+                                ToStreamingLocations(track.StreamingLocations)))
                         .ToArray(),
                     ToDiscovery(dto.Discovery)));
 
@@ -55,17 +56,36 @@ public sealed class GetTracksForPlaylistResponseTranslationRegistration : ITypeT
                     record.Tracks.Select(
                             track => new GetTracksForPlaylistTrackResponse(
                                 TrackId.From(track.TrackId),
-                                new CatalogItemId.Track(TrackId.From(track.TrackId)),
                                 track.Title,
                                 track.ArtistName,
                                 track.AlbumTitle,
-                            track.DurationMs,
-                            track.Isrc,
-                            track.ReleaseDate,
-                            track.ArtworkUrl))
+                                track.DurationMs,
+                                track.Isrc,
+                                track.ReleaseDate,
+                                track.ArtworkUrl,
+                                track.StreamingLocations.Length > 0,
+                                ToStreamingLocations(track.StreamingLocations)))
                         .ToArray(),
-                    null));
+                    ToDiscovery(record.Discovery)));
     }
+
+    private static StreamingLocationResponseDto[] ToStreamingLocationDtos(
+        IEnumerable<StreamingLocationResponse> streamingLocations) =>
+        streamingLocations
+            .Select(static location => new StreamingLocationResponseDto(location.Provider, location.ExternalId, location.Url))
+            .ToArray();
+
+    private static StreamingLocationResponse[] ToStreamingLocations(
+        IEnumerable<StreamingLocationResponseDto> streamingLocations) =>
+        streamingLocations
+            .Select(static location => new StreamingLocationResponse(location.Provider, location.ExternalId, location.Url))
+            .ToArray();
+
+    private static StreamingLocationResponse[] ToStreamingLocations(
+        IEnumerable<CatalogStreamingLocationRecordDto> streamingLocations) =>
+        streamingLocations
+            .Select(static location => new StreamingLocationResponse(location.Provider, location.ExternalId, location.Url))
+            .ToArray();
 
     private static DiscoveryFeedbackResponseDto? ToDiscoveryDto(DiscoveryFeedbackResponse? discovery) =>
         discovery is null
@@ -79,6 +99,17 @@ public sealed class GetTracksForPlaylistResponseTranslationRegistration : ITypeT
                 discovery.UpdatedAtUtc);
 
     private static DiscoveryFeedbackResponse? ToDiscovery(DiscoveryFeedbackResponseDto? discovery) =>
+        discovery is null
+            ? null
+            : new DiscoveryFeedbackResponse(
+                discovery.Status,
+                Enum.Parse<Soundtrail.Domain.Common.LookupPriorityBand>(discovery.Priority, true),
+                discovery.NextEligibleAtUtc,
+                discovery.EarliestExpectedCompletionAtUtc,
+                discovery.Reason,
+                discovery.UpdatedAtUtc);
+
+    private static DiscoveryFeedbackResponse? ToDiscovery(CatalogDiscoveryFeedbackRecordDto? discovery) =>
         discovery is null
             ? null
             : new DiscoveryFeedbackResponse(
