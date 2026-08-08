@@ -1,7 +1,6 @@
 using Soundtrail.Adapters.Projection;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
-using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist;
 using Soundtrail.Services.Tests.Fakes;
 
 namespace Soundtrail.Services.Tests.Unit.Sociable.Infrastructure;
@@ -26,9 +25,9 @@ internal sealed class SociableMessagePump
     public IReadOnlyList<TMessage> SentMessages<TMessage>() where TMessage : IMessage =>
         commandBus.SentMessages.OfType<TMessage>().ToArray();
 
-    public async Task<TResult> ProjectOnChange<TResult>(
-        Func<GetTracksForPlaylistHandler, Task<TResult>> change,
-        GetTracksForPlaylistHandler sut)
+    public async Task<TResult> ProjectOnChange<TSut, TResult>(
+        Func<TSut, Task<TResult>> change,
+        TSut sut)
     {
         var result = await change(sut);
         await PumpAsync();

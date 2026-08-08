@@ -8,7 +8,7 @@ using Soundtrail.Services.Api.Features.Catalog.GetTracksForArtist.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForArtist.Contract;
 using Soundtrail.Services.Tests.Integration.Ports;
 
-namespace Soundtrail.Services.Tests.Integration.Ports.GetTracksForArtist;
+namespace Soundtrail.Services.Tests.Integration.GetTracksForArtist.Api.Ports;
 
 internal sealed class GetTracksForArtistPortContractTestEnvironment : IAsyncDisposable
 {

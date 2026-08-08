@@ -120,8 +120,16 @@ internal sealed class ReadAlbumsByArtistIdPortFake : IReadAlbumsByArtistIdPort
 
 internal sealed class ReadTracksByArtistIdPortFake : IReadTracksByArtistIdPort
 {
+    private readonly Dictionary<ArtistId, IReadOnlyList<CatalogDiscoveryEntry>> entries = [];
+
+    public ReadTracksByArtistIdPortFake WithTracks(ArtistId artistId, params CatalogDiscoveryEntry[] tracks)
+    {
+        entries[artistId] = tracks;
+        return this;
+    }
+
     public Task<IReadOnlyList<CatalogDiscoveryEntry>> ReadAsync(ArtistId artistId, CancellationToken cancellationToken) =>
-        Task.FromResult<IReadOnlyList<CatalogDiscoveryEntry>>([]);
+        Task.FromResult(entries.GetValueOrDefault(artistId) ?? (IReadOnlyList<CatalogDiscoveryEntry>)[]);
 }
 
 internal sealed class ReadTracksByAlbumIdPortFake : IReadTracksByAlbumIdPort

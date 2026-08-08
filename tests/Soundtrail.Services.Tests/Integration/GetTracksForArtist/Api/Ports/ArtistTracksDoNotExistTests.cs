@@ -1,7 +1,6 @@
-using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Artists;
 
-namespace Soundtrail.Services.Tests.Integration.Ports.GetTracksForArtist;
+namespace Soundtrail.Services.Tests.Integration.GetTracksForArtist.Api.Ports;
 
 public sealed class ArtistTracksDoNotExistTests
 {
@@ -13,9 +12,13 @@ public sealed class ArtistTracksDoNotExistTests
 
     [Theory]
     [MemberData(nameof(Implementations))]
-    public async Task Given_Missing_Artist_Tracks_When_Requesting_The_Artist_Tracks_Then_No_Artist_Tracks_Are_Returned(GetTracksForArtistPortImplementation implementation)
+    public async Task Given_Missing_Artist_Tracks_When_Requesting_The_Artist_Tracks_Then_No_Artist_Tracks_Are_Returned(
+        GetTracksForArtistPortImplementation implementation)
     {
-        await using var environment = await GetTracksForArtistPortContractTestEnvironment.ForMissingArtistTracks(implementation, ArtistId.From("artist-2702"));
+        var artistId = ArtistId.From("artist-2702");
+        await using var environment = await GetTracksForArtistPortContractTestEnvironment.ForMissingArtistTracks(
+            implementation,
+            artistId);
 
         var result = await environment.Subject.GetTracksForArtistAsync(environment.ArtistId, CancellationToken.None);
 
