@@ -131,6 +131,7 @@ internal sealed class ReadPlaylistTracksByProviderPortContractTestEnvironment : 
             "..",
             "..",
             "Integration",
+            "Features",
             "GetTracksForPlaylist",
             "Worker",
             "Ports",

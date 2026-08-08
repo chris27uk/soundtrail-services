@@ -68,7 +68,7 @@ internal static class ProductionCompositionTestEnvironment
 
         await using var scope = app.Services.CreateAsyncScope();
         var commandBus = scope.ServiceProvider.GetRequiredService<Soundtrail.Domain.Abstractions.ICommandBus>();
-        commandBus.GetType().FullName.Should().Be("Soundtrail.Adapters.Messaging.AzureServiceBusCommandBus");
+        commandBus.GetType().FullName.Should().Be(typeof(AzureServiceBusCommandBus).FullName);
 
         await app.StopAsync();
     }
@@ -80,7 +80,7 @@ internal static class ProductionCompositionTestEnvironment
 
         await using var scope = app.Services.CreateAsyncScope();
         var commandBus = scope.ServiceProvider.GetRequiredService<Soundtrail.Domain.Abstractions.ICommandBus>();
-        commandBus.GetType().FullName.Should().Be("Soundtrail.Adapters.Messaging.AzureServiceBusCommandBus");
+        commandBus.GetType().FullName.Should().Be(typeof(AzureServiceBusCommandBus).FullName);
 
         await app.StopAsync();
     }

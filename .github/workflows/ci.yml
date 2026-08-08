@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      CI_IMAGE: soundtrail-services-ci:local
+      NUGET_PACKAGES_HOST: ${{ github.workspace }}/.nuget/packages
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build CI image
+        run: docker build -t "$CI_IMAGE" -f .github/docker/Dockerfile.ci .
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.NUGET_PACKAGES_HOST }}
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj', '.github/docker/Dockerfile.ci') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore
+        run: |
+          docker run --rm \
+            --volume "${{ github.workspace }}:/src" \
+            --volume "${{ env.NUGET_PACKAGES_HOST }}:/root/.nuget/packages" \
+            --env NUGET_PACKAGES=/root/.nuget/packages \
+            --workdir /src \
+            "$CI_IMAGE" \
+            pwsh ./build.ps1 -Restore -Configuration Release
+
+      - name: Build and Test
+        run: |
+          docker run --rm \
+            --volume "${{ github.workspace }}:/src" \
+            --volume "${{ env.NUGET_PACKAGES_HOST }}:/root/.nuget/packages" \
+            --volume /var/run/docker.sock:/var/run/docker.sock \
+            --add-host=host.docker.internal:host-gateway \
+            --env NUGET_PACKAGES=/root/.nuget/packages \
+            --env TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal \
+            --env TESTCONTAINERS_RYUK_DISABLED=true \
+            --workdir /src \
+            "$CI_IMAGE" \
+            pwsh ./build.ps1 -Configuration Release
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: reports/
+          if-no-files-found: ignore
