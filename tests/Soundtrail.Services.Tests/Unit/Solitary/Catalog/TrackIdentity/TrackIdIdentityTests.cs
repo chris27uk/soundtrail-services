@@ -1,6 +1,6 @@
 using Soundtrail.Domain.Catalog.Tracks;
 
-namespace Soundtrail.Services.Tests.Unit.Catalog.TrackIdentity;
+namespace Soundtrail.Services.Tests.Unit.Solitary.Catalog.TrackIdentity;
 
 public sealed class TrackIdIdentityTests
 {

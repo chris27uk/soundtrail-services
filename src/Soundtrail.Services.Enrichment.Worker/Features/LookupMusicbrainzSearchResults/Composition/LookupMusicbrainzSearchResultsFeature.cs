@@ -5,6 +5,7 @@ using Microsoft.Extensions.Hosting;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Adapters.Messaging;
+using Soundtrail.Adapters.Messaging.Asb;
 using Soundtrail.Adapters.Timing;
 using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;

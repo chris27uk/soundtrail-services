@@ -1,7 +1,4 @@
-using Soundtrail.Domain.Abstractions;
-using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Catalog.Playlists;
-using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Messages;
@@ -9,7 +6,7 @@ using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.Processing.OnLookupWorkReady;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
-namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnLookupWorkReady;
+namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Orchestrator.OnLookupWorkReady;
 
 internal sealed class LookupWorkReadyHandlerUnitTestEnvironment
 {

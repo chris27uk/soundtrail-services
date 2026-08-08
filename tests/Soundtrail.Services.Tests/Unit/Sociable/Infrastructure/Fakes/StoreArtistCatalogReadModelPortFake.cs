@@ -6,7 +6,7 @@ using Soundtrail.Domain.Common;
 using Soundtrail.Services.Api.Features.Catalog.GetAlbumsForArtist.Contract;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForAlbum.Contract;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForArtist.Contract;
-using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
+using Soundtrail.Services.Api.Shared.Contract;
 using Soundtrail.Services.Enrichment.Worker.Shared.StreamingLocations;
 using Soundtrail.Services.Internal.Projector.Features.OnArtistCatalogChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnArtistCatalogChanged.Adapters;

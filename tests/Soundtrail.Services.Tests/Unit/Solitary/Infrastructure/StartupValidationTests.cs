@@ -6,7 +6,7 @@ using Soundtrail.Services.Enrichment.Worker.Infrastructure.ExecutionAdmission;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Startup;
 using Soundtrail.Services.ServiceDefaults;
 
-namespace Soundtrail.Services.Tests.Unit.StartupValidation;
+namespace Soundtrail.Services.Tests.Unit.Solitary.Infrastructure;
 
 public class StartupValidationTests
 {

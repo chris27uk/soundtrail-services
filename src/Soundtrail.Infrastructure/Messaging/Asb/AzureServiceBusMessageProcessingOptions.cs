@@ -1,4 +1,4 @@
-namespace Soundtrail.Adapters.Messaging;
+namespace Soundtrail.Adapters.Messaging.Asb;
 
 internal sealed class AzureServiceBusMessageProcessingOptions
 {

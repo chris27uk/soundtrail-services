@@ -1,4 +1,3 @@
-using Soundtrail.Adapters.Timing;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Artists;
@@ -8,14 +7,12 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupMusicbrainzSearchResults;
-using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
 using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
-using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
-using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
 using Soundtrail.Services.Tests.Unit.Sociable.Features.Search;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.Search.Support;
 
-namespace Soundtrail.Services.Tests.Unit.Worker.LookupMusicbrainzSearchResults;
+namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Worker.LookupMusicbrainzSearchResults;
 
 internal sealed class LookupMusicbrainzSearchResultsUnitTestEnvironment
 {

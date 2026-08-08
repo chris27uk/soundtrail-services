@@ -1,6 +1,7 @@
 using Azure.Messaging.ServiceBus;
+using Soundtrail.Adapters.Messaging.Contracts;
 
-namespace Soundtrail.Adapters.Messaging;
+namespace Soundtrail.Adapters.Messaging.Asb;
 
 internal sealed class AzureServiceBusMessageLifecycle(
     string queueName,

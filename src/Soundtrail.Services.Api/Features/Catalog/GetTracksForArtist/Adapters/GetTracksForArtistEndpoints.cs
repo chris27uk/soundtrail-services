@@ -1,8 +1,8 @@
 using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog.Artists;
-using Soundtrail.Services.Api.Features.Catalog.Shared.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForArtist.Contract;
+using Soundtrail.Services.Api.Shared.Adapters;
 
 namespace Soundtrail.Services.Api.Features.Catalog.GetTracksForArtist.Adapters;
 

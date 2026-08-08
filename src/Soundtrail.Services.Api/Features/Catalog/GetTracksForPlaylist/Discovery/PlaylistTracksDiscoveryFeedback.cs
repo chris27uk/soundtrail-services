@@ -1,6 +1,6 @@
 using Soundtrail.Domain.Common;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Contract;
-using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
+using Soundtrail.Services.Api.Shared.Contract;
 
 namespace Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Discovery;
 

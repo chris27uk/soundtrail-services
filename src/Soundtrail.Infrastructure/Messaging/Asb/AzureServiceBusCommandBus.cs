@@ -3,7 +3,7 @@ using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Abstractions;
 
-namespace Soundtrail.Adapters.Messaging;
+namespace Soundtrail.Adapters.Messaging.Asb;
 
 internal sealed class AzureServiceBusCommandBus(
     AzureServiceBusMessageTransport transport) : ICommandBus

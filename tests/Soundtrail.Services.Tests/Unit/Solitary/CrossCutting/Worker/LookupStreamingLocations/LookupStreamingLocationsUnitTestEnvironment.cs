@@ -1,18 +1,14 @@
-using Soundtrail.Adapters.Timing;
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupStreamingLocationByIsrc;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupStreamingLocationByTrackMetadata;
-using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
 using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
-using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
 using Soundtrail.Services.Enrichment.Worker.Shared.StreamingLocations;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
-namespace Soundtrail.Services.Tests.Unit.Worker.LookupStreamingLocations;
+namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Worker.LookupStreamingLocations;
 
 internal sealed class LookupStreamingLocationsUnitTestEnvironment
 {

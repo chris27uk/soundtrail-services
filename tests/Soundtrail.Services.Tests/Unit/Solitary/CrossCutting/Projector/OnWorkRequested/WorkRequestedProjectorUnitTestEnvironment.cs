@@ -1,14 +1,11 @@
-using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Discovery.Assesment;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Internal.Projector.Features.OnWorkRequested;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
-namespace Soundtrail.Services.Tests.Unit.Projector.OnWorkRequested;
+namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Projector.OnWorkRequested;
 
 internal sealed class WorkRequestedProjectorUnitTestEnvironment
 {

@@ -1,6 +1,6 @@
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
+using Soundtrail.Services.Api.Shared.Contract;
 
 namespace Soundtrail.Services.Api.Features.Catalog.Search.Contract;
 

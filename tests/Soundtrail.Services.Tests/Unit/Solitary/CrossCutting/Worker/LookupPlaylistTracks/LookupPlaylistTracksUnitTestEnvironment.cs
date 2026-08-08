@@ -1,20 +1,16 @@
-using Soundtrail.Adapters.Timing;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Common;
-using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks;
-using Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks.Ports;
-using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
 using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
-using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
 using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForPlaylist;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForPlaylist.Support;
 
-namespace Soundtrail.Services.Tests.Unit.Worker.LookupPlaylistTracks;
+namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Worker.LookupPlaylistTracks;
 
 internal sealed class LookupPlaylistTracksUnitTestEnvironment
 {

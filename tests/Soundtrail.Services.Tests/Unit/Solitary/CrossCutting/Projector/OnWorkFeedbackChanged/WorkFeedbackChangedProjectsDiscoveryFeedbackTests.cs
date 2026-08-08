@@ -2,7 +2,7 @@ using Soundtrail.Adapters.Projection;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.OnWorkCompleted;
 
-namespace Soundtrail.Services.Tests.Unit.Projector.OnWorkFeedbackChanged;
+namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Projector.OnWorkFeedbackChanged;
 
 public sealed class WorkFeedbackChangedProjectsDiscoveryFeedbackTests
 {

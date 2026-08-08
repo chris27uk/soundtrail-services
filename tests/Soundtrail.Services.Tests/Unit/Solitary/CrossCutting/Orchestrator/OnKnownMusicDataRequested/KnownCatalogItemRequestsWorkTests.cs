@@ -3,7 +3,7 @@ using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
 
-namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnKnownMusicDataRequested;
+namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Orchestrator.OnKnownMusicDataRequested;
 
 public sealed class KnownCatalogItemRequestsWorkTests
 {

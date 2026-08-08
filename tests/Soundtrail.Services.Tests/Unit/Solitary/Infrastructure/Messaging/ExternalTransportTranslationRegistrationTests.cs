@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Contracts.Common;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
@@ -7,7 +6,7 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Domain.Search;
 
-namespace Soundtrail.Services.Tests.Unit.Messaging;
+namespace Soundtrail.Services.Tests.Unit.Solitary.Infrastructure.Messaging;
 
 public sealed class ExternalTransportTranslationRegistrationTests
 {

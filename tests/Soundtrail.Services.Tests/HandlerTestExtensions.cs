@@ -1,5 +1,7 @@
 using Soundtrail.Domain.Abstractions;
 
+namespace Soundtrail.Services.Tests;
+
 public static class HandlerTestExtensions
 {
     public static Task Handle<TMessage>(

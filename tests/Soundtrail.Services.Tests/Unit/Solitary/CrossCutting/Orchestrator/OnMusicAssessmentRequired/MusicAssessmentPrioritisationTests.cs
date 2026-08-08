@@ -1,9 +1,9 @@
 using Soundtrail.Domain.Common;
-using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.Prioritisation.OnMusicAssessmentRequired.Planning;
 
-namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnMusicAssessmentRequired;
+namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Orchestrator.OnMusicAssessmentRequired;
 
 public sealed class MusicAssessmentPrioritisationTests
 {

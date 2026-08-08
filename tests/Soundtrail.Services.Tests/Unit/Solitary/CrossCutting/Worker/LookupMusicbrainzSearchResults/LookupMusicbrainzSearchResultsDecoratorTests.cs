@@ -3,7 +3,7 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
 using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
 
-namespace Soundtrail.Services.Tests.Unit.Worker.LookupMusicbrainzSearchResults;
+namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Worker.LookupMusicbrainzSearchResults;
 
 public sealed class LookupMusicbrainzSearchResultsDecoratorTests
 {

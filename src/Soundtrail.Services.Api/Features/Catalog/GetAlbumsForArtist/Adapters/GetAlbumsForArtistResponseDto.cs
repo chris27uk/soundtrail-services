@@ -1,4 +1,4 @@
-using Soundtrail.Services.Api.Features.Catalog.Shared.Adapters;
+using Soundtrail.Services.Api.Shared.Adapters;
 
 namespace Soundtrail.Services.Api.Features.Catalog.GetAlbumsForArtist.Adapters;
 

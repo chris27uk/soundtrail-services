@@ -1,14 +1,14 @@
 using System.Reflection;
+using Microsoft.Extensions.Configuration;
 using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Adapters.Projection;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Services.Enrichment.Orchestrator;
 using Soundtrail.Services.Enrichment.Worker;
 using Soundtrail.Services.Internal.Projector;
-using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
-using Soundtrail.Services.Tests.Unit.Sociable.GetTracksForPlaylist.Composition;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForPlaylist.Support;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.DependencyConfiguration;
-using Microsoft.Extensions.Configuration;
+using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
 namespace Soundtrail.Services.Tests.Unit.Sociable.Infrastructure;
 
@@ -64,8 +64,11 @@ internal sealed class SociableDiscoveryEngine : IDisposable
         return new SociableDiscoveryEngine(provider, scope, pump);
     }
 
-    public TFake RequireFake<TService, TFake>() where TService : class where TFake : class, TService => this.Resolve<TService>() as TFake ?? throw new InvalidOperationException($"Expected '{typeof(TService).Name}' to be '{typeof(TFake).Name}'.");
-    
+    public TFake RequireFake<TService, TFake>() where TService : class where TFake : class, TService =>
+        this.Resolve<TService>() as TFake
+        ?? throw new InvalidOperationException(
+            $"Expected '{typeof(TService).Name}' to be '{typeof(TFake).Name}'.");
+
     public T Resolve<T>() where T : class =>
         scope.ServiceProvider.GetRequiredService<T>();
 
@@ -97,8 +100,19 @@ internal sealed class SociableDiscoveryEngine : IDisposable
         }
 
         return adapters.Values
-            .OrderBy(static adapter => adapter.GetType().FullName, StringComparer.Ordinal)
+            .OrderBy(static adapter => AdapterSortKey(adapter.GetType()), StringComparer.Ordinal)
+            .ThenBy(static adapter => adapter.GetType().FullName, StringComparer.Ordinal)
             .ToArray();
+    }
+
+    private static string AdapterSortKey(Type adapterType)
+    {
+        var fullName = adapterType.FullName ?? adapterType.Name;
+        // Shared cross-cutting adapters must configure before feature adapters so
+        // handler graphs resolve against the intended shared registrations.
+        return fullName.Contains(".Infrastructure.DependencyConfiguration.", StringComparison.Ordinal)
+            ? "0:" + fullName
+            : "1:" + fullName;
     }
 
     private static Dictionary<Type, IFeature> DiscoverDefaultAdapters()

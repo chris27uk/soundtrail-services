@@ -1,9 +1,9 @@
-using System.Collections.Concurrent;
-using System.Text.Json;
 using Azure.Messaging.ServiceBus;
 using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
+using System.Text.Json;
 
-namespace Soundtrail.Adapters.Messaging;
+namespace Soundtrail.Adapters.Messaging.Asb;
 
 internal sealed class AzureServiceBusMessageTransport(
     AzureServiceBusMessageProcessingOptions options,
@@ -19,7 +19,7 @@ internal sealed class AzureServiceBusMessageTransport(
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(queueName);
 
-        return client.Value.CreateProcessor(
+        return this.client.Value.CreateProcessor(
             queueName,
             new ServiceBusProcessorOptions
             {
@@ -80,25 +80,25 @@ internal sealed class AzureServiceBusMessageTransport(
 
     public async ValueTask DisposeAsync()
     {
-        foreach (var sender in senders.Values)
+        foreach (var sender in this.senders.Values)
         {
             await sender.DisposeAsync();
         }
 
-        if (client.IsValueCreated)
+        if (this.client.IsValueCreated)
         {
-            await client.Value.DisposeAsync();
+            await this.client.Value.DisposeAsync();
         }
     }
 
     private ServiceBusSender GetSender(string queueName)
     {
-        return senders.GetOrAdd(
+        return this.senders.GetOrAdd(
             queueName,
             name =>
             {
                 logger.LogDebug("Creating Azure Service Bus sender for queue {QueueName}", name);
-                return client.Value.CreateSender(name);
+                return this.client.Value.CreateSender(name);
             });
     }
 

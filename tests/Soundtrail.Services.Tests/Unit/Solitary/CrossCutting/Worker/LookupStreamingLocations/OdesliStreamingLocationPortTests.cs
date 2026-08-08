@@ -1,11 +1,10 @@
-using System.Net;
-using System.Net.Http;
 using Microsoft.Extensions.Options;
 using Soundtrail.Domain.Common;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.StreamingLocations;
 using Soundtrail.Services.Enrichment.Worker.Shared.StreamingLocations;
+using System.Net;
 
-namespace Soundtrail.Services.Tests.Unit.Worker.LookupStreamingLocations;
+namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Worker.LookupStreamingLocations;
 
 public sealed class OdesliStreamingLocationPortTests
 {

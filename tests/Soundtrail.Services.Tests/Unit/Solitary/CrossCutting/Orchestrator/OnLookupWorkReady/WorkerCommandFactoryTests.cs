@@ -1,11 +1,10 @@
-using Soundtrail.Contracts.Common;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Domain.Discovery.Planning;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.Processing.OnLookupWorkReady.Collaborators;
 
-namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnLookupWorkReady;
+namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Orchestrator.OnLookupWorkReady;
 
 public sealed class WorkerCommandFactoryTests
 {
