@@ -52,6 +52,12 @@ internal sealed class IncomingMessageSession<TDto, TDomain>(
             {
                 MessageTelemetry.EnrichCurrentActivity(domainMessage, "handle");
             }
+            else
+            {
+                MessageTelemetry.SetDomainEventName(message.GetType());
+            }
+
+            MessageTelemetry.RecordHandleMessageEvent(activity);
 
             await handlers.HandleAsync(incomingMessage, cancellationToken);
 

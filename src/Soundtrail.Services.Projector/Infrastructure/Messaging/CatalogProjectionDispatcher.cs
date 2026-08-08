@@ -22,7 +22,7 @@ internal sealed class CatalogProjectionDispatcher(
         var domainEvent = resolver.Resolve(storedEvent);
         using var activity = MessageTelemetry.StartHandleActivity(
             dtoTypeName: storedEvent.BodyType,
-            domainEventName: domainEvent.GetType().FullName,
+            domainEventName: MessageTelemetry.DomainEventNameFor(domainEvent.GetType()),
             correlationId: storedEvent.CorrelationId,
             sourceName: SubscriptionName,
             messageId: storedEvent.EventId);

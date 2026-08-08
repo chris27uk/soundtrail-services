@@ -28,8 +28,9 @@ public static class MessageTelemetry
         }
 
         var timestamp = DateTimeOffset.UtcNow;
+        var domainEventName = DomainEventNameFor(message.GetType());
         activity.SetTag("soundtrail.dto_type_name", transportMessage.GetType().FullName);
-        activity.SetTag("soundtrail.domain_event_name", message.GetType().FullName);
+        activity.SetTag("soundtrail.domain_event_name", domainEventName);
         activity.SetTag("soundtrail.correlation_id", message.CorrelationId.Value);
         activity.SetTag("messaging.conversation_id", message.CorrelationId.Value);
         activity.SetTag("soundtrail.timestamp", timestamp.UtcDateTime);
@@ -55,7 +56,7 @@ public static class MessageTelemetry
                 PublishMessageActivityName,
                 tags: CreatePublishEventTags(
                     transportMessage.GetType().FullName,
-                    message.GetType().FullName,
+                    domainEventName,
                     message.CorrelationId.Value,
                     timestamp,
                     queueName)));
@@ -89,7 +90,7 @@ public static class MessageTelemetry
         }
 
         activity.SetTag("soundtrail.workflow_stage", stage);
-        activity.SetTag("soundtrail.domain_event_name", payloadType.FullName);
+        activity.SetTag("soundtrail.domain_event_name", DomainEventNameFor(payloadType));
         activity.AddEvent(new ActivityEvent($"{stage}.started"));
         return activity;
     }
@@ -100,13 +101,14 @@ public static class MessageTelemetry
         Type domainType) =>
         StartHandleActivity(
             dtoTypeName: dtoType.FullName,
-            domainEventName: domainType.FullName,
+            domainEventName: DomainEventNameFor(domainType),
             correlationId: envelope.Metadata.CorrelationId,
             sourceName: envelope.Metadata.QueueName,
             isRetry: envelope.Metadata.RetryCount > 0,
             retryCount: envelope.Metadata.RetryCount,
             messageId: envelope.Metadata.MessageId,
-            deliveryCount: envelope.DeliveryCount);
+            deliveryCount: envelope.DeliveryCount,
+            recordEvent: false);
 
     public static Activity? StartHandleActivity(
         string? dtoTypeName,
@@ -116,7 +118,8 @@ public static class MessageTelemetry
         bool isRetry = false,
         int retryCount = 0,
         string? messageId = null,
-        int? deliveryCount = null)
+        int? deliveryCount = null,
+        bool recordEvent = true)
     {
         var activity = ActivitySource.StartActivity(
             HandleMessageActivityName,
@@ -128,9 +131,10 @@ public static class MessageTelemetry
         }
 
         var timestamp = DateTimeOffset.UtcNow;
+        var resolvedDomainEventName = SanitizeDomainEventName(domainEventName);
 
         activity.SetTag("soundtrail.dto_type_name", dtoTypeName);
-        activity.SetTag("soundtrail.domain_event_name", domainEventName);
+        activity.SetTag("soundtrail.domain_event_name", resolvedDomainEventName);
         activity.SetTag("soundtrail.correlation_id", correlationId);
         activity.SetTag("messaging.conversation_id", correlationId);
         activity.SetTag("soundtrail.timestamp", timestamp.UtcDateTime);
@@ -148,19 +152,47 @@ public static class MessageTelemetry
             activity.SetTag("soundtrail.delivery_count", deliveryCount.Value);
         }
 
+        if (recordEvent)
+        {
+            RecordHandleMessageEvent(activity);
+        }
+
+        return activity;
+    }
+
+    public static void SetDomainEventName(Type domainType)
+    {
+        ArgumentNullException.ThrowIfNull(domainType);
+
+        var domainEventName = DomainEventNameFor(domainType);
+        if (domainEventName is null)
+        {
+            return;
+        }
+
+        Activity.Current?.SetTag("soundtrail.domain_event_name", domainEventName);
+    }
+
+    public static void RecordHandleMessageEvent(Activity? activity = null)
+    {
+        activity ??= Activity.Current;
+        if (activity is null)
+        {
+            return;
+        }
+
+        var timestamp = DateTimeOffset.UtcNow;
         activity.AddEvent(
             new ActivityEvent(
                 HandleMessageActivityName,
                 tags: CreateHandleEventTags(
-                    dtoTypeName,
-                    domainEventName,
-                    correlationId,
+                    activity.GetTagItem("soundtrail.dto_type_name")?.ToString(),
+                    activity.GetTagItem("soundtrail.domain_event_name")?.ToString(),
+                    activity.GetTagItem("soundtrail.correlation_id")?.ToString(),
                     timestamp,
-                    sourceName,
-                    isRetry,
-                    retryCount)));
-
-        return activity;
+                    activity.GetTagItem("soundtrail.queue_name")?.ToString(),
+                    activity.GetTagItem("soundtrail.is_retry") as bool? ?? false,
+                    activity.GetTagItem("soundtrail.retry_count") as int? ?? 0)));
     }
 
     public static void EnrichCurrentActivity(IMessage message, string stage)
@@ -203,6 +235,19 @@ public static class MessageTelemetry
     public static void AddCurrentEvent(string eventName) =>
         Activity.Current?.AddEvent(new ActivityEvent(eventName));
 
+    public static string? DomainEventNameFor(Type type)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        return IsTransportDtoType(type) ? null : type.FullName;
+    }
+
+    public static bool IsTransportDtoType(Type type)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        return type.Name.EndsWith("Dto", StringComparison.Ordinal)
+               || type.Namespace?.Contains(".Contracts", StringComparison.Ordinal) == true;
+    }
+
     public static string StageNameFor(Type messageType)
     {
         ArgumentNullException.ThrowIfNull(messageType);
@@ -216,8 +261,28 @@ public static class MessageTelemetry
         {
             name = name[..^"Command".Length];
         }
+        else if (name.EndsWith("Dto", StringComparison.Ordinal))
+        {
+            name = name[..^"Dto".Length];
+        }
 
         return ToKebabCase(name);
+    }
+
+    private static string? SanitizeDomainEventName(string? domainEventName)
+    {
+        if (string.IsNullOrWhiteSpace(domainEventName))
+        {
+            return null;
+        }
+
+        if (domainEventName.EndsWith("Dto", StringComparison.Ordinal)
+            || domainEventName.Contains(".Contracts.", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        return domainEventName;
     }
 
     private static void EnrichActivity(Activity activity, IMessage message, string stage)
@@ -226,7 +291,7 @@ public static class MessageTelemetry
         activity.SetTag("message.id", message.Id.Value);
         activity.SetTag("messaging.conversation_id", message.CorrelationId.Value);
         activity.SetTag("soundtrail.correlation_id", message.CorrelationId.Value);
-        activity.SetTag("soundtrail.domain_event_name", message.GetType().FullName);
+        activity.SetTag("soundtrail.domain_event_name", DomainEventNameFor(message.GetType()));
         activity.SetTag("soundtrail.message_type", message.GetType().FullName);
         activity.SetTag("soundtrail.requested_at_utc", message.RequestedAt.UtcDateTime);
 

@@ -1,4 +1,5 @@
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Adapters.Messaging;
 using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Discovery.Messages;
@@ -16,19 +17,38 @@ public sealed class MusicBrainzLookupCommandHandler(
     {
         return context.Message.LookupKind switch
         {
-            "search" => searchResultsHandler.Handle(
-                context.WithMessage(typeRegistry.ToDomainObject<LookupMusicbrainzSearchResultsMessage>(context.Message)),
+            "search" => HandleDomain(
+                context,
+                typeRegistry.ToDomainObject<LookupMusicbrainzSearchResultsMessage>(context.Message),
+                searchResultsHandler,
                 cancellationToken),
-            "artist-albums" => artistAlbumsHandler.Handle(
-                context.WithMessage(typeRegistry.ToDomainObject<LookupMusicbrainzArtistAlbumsMessage>(context.Message)),
+            "artist-albums" => HandleDomain(
+                context,
+                typeRegistry.ToDomainObject<LookupMusicbrainzArtistAlbumsMessage>(context.Message),
+                artistAlbumsHandler,
                 cancellationToken),
-            "artist-tracks" => artistTracksHandler.Handle(
-                context.WithMessage(typeRegistry.ToDomainObject<LookupMusicbrainzArtistTracksMessage>(context.Message)),
+            "artist-tracks" => HandleDomain(
+                context,
+                typeRegistry.ToDomainObject<LookupMusicbrainzArtistTracksMessage>(context.Message),
+                artistTracksHandler,
                 cancellationToken),
-            "album-tracks" => albumTracksHandler.Handle(
-                context.WithMessage(typeRegistry.ToDomainObject<LookupMusicbrainzAlbumTracksMessage>(context.Message)),
+            "album-tracks" => HandleDomain(
+                context,
+                typeRegistry.ToDomainObject<LookupMusicbrainzAlbumTracksMessage>(context.Message),
+                albumTracksHandler,
                 cancellationToken),
             _ => throw new InvalidOperationException($"Unsupported MusicBrainz lookup kind '{context.Message.LookupKind}'.")
         };
+    }
+
+    private static Task HandleDomain<TDomain>(
+        IncomingMessage<MusicBrainzLookupCommandDto> context,
+        TDomain domainMessage,
+        IHandler<TDomain> handler,
+        CancellationToken cancellationToken)
+        where TDomain : class
+    {
+        MessageTelemetry.SetDomainEventName(typeof(TDomain));
+        return handler.Handle(context.WithMessage(domainMessage), cancellationToken);
     }
 }

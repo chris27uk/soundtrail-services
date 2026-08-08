@@ -20,8 +20,8 @@ public static class ScheduledMessageTelemetry
             : null;
 
         using var activity = MessageTelemetry.StartHandleActivity(
-            dtoTypeName: typeof(TMessage).FullName,
-            domainEventName: typeof(TMessage).FullName,
+            dtoTypeName: null,
+            domainEventName: MessageTelemetry.DomainEventNameFor(typeof(TMessage)),
             correlationId: correlationId,
             sourceName: sourceName);
 

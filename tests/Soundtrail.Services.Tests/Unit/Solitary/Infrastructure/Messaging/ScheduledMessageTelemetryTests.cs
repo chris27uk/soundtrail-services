@@ -22,7 +22,7 @@ public sealed class ScheduledMessageTelemetryTests
         handler.Calls.Should().Be(1);
         probe.LastStoppedActivity.Should().NotBeNull();
         probe.LastStoppedActivity!.OperationName.Should().Be(MessageTelemetry.HandleMessageActivityName);
-        probe.LastStoppedActivity.GetTagItem("soundtrail.dto_type_name").Should().Be(typeof(ImportKworbChartCommand).FullName);
+        probe.LastStoppedActivity.GetTagItem("soundtrail.dto_type_name").Should().BeNull();
         probe.LastStoppedActivity.GetTagItem("soundtrail.domain_event_name").Should().Be(typeof(ImportKworbChartCommand).FullName);
         probe.LastStoppedActivity.GetTagItem("soundtrail.queue_name").Should().Be(ImportKworbChartTickerFunctions.FunctionName);
         probe.LastStoppedActivity.Events.Select(x => x.Name).Should().Contain(MessageTelemetry.HandleMessageActivityName);

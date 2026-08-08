@@ -96,6 +96,7 @@ public sealed class IncomingMessageSessionTests
             envelope,
             typeof(DtoMessage),
             typeof(DomainMessage));
+        MessageTelemetry.RecordHandleMessageEvent(activity);
 
         activity.Should().NotBeNull();
         activity!.OperationName.Should().Be(MessageTelemetry.HandleMessageActivityName);
@@ -108,6 +109,14 @@ public sealed class IncomingMessageSessionTests
         activity.GetTagItem("soundtrail.retry_count").Should().Be(3);
         activity.GetTagItem("messaging.message.id").Should().Be("message-123");
         activity.Events.Select(x => x.Name).Should().Contain(MessageTelemetry.HandleMessageActivityName);
+    }
+
+    [Fact]
+    public void Given_A_Dto_Type_When_Resolving_Domain_Event_Name_Then_It_Is_Rejected()
+    {
+        MessageTelemetry.IsTransportDtoType(typeof(SampleCommandDto)).Should().BeTrue();
+        MessageTelemetry.DomainEventNameFor(typeof(SampleCommandDto)).Should().BeNull();
+        MessageTelemetry.DomainEventNameFor(typeof(DomainMessage)).Should().Be(typeof(DomainMessage).FullName);
     }
 
     [Fact]
@@ -364,6 +373,8 @@ public sealed class IncomingMessageSessionTests
     }
 
     private sealed record DtoMessage(string Id);
+
+    private sealed record SampleCommandDto(string Id);
 
     private sealed record DomainMessage : IMessage
     {
