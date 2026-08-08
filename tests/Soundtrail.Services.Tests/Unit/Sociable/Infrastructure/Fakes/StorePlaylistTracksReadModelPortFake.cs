@@ -17,6 +17,9 @@ namespace Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes
     {
         private readonly Dictionary<PlaylistId, (TrackId[] TrackIds, DateTimeOffset UpdatedAt)> playlists = [];
 
+        public void Seed(PlaylistId playlistId, TrackId[] trackIds, DateTimeOffset updatedAt) =>
+            this.playlists[playlistId] = (trackIds, updatedAt);
+
         public Task StoreAsync(PlaylistTracksDiscovered @event, CancellationToken cancellationToken)
         {
             var existing = this.playlists.GetValueOrDefault(@event.PlaylistId).TrackIds ?? [];

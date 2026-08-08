@@ -8,6 +8,7 @@ using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Contract;
+using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks.Ports;
 using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
 using Soundtrail.Services.Enrichment.Worker.Shared.StreamingLocations;
@@ -118,6 +119,28 @@ internal sealed class GetTracksForPlaylistSociableTestEnvironment : IDisposable
         return environment;
     }
 
+    public static GetTracksForPlaylistSociableTestEnvironment ForCompletedEmptyProjection(
+        DateTimeOffset requestTime = default)
+    {
+        var environment = Compose(requestTime, []);
+        var completedAt = requestTime == default
+            ? new DateTimeOffset(2024, 6, 7, 8, 9, 9, TimeSpan.Zero)
+            : requestTime;
+
+        environment.PlaylistTracks.Seed(environment.PlaylistId, [], completedAt);
+        environment.DiscoveryFeedback.Seed(
+            $"child_tracks_for_playlist:{environment.PlaylistId.Value}",
+            new DiscoveryFeedbackResponse(
+                "completed",
+                LookupPriorityBand.High,
+                null,
+                null,
+                "Lookup completed.",
+                completedAt));
+
+        return environment;
+    }
+
     public Task<TResult> ProjectOnChange<TResult>(Func<GetTracksForPlaylistHandler, Task<TResult>> change) =>
         pump.ProjectOnChange(change, sut);
 
@@ -133,9 +156,9 @@ internal sealed class GetTracksForPlaylistSociableTestEnvironment : IDisposable
         SeedLookupData(
             options.PlaylistId,
             completedTracks,
-            RequireFake<IReadPlaylistTracksByProviderPort, ReadPlaylistTracksByProviderPortFake>(engine),
-            RequireFake<IReadCatalogEntriesBySearchCriteriaPort, ReadCatalogEntriesBySearchCriteriaPortFake>(engine),
-            RequireFake<IReadStreamingLocationByProviderPort, ReadStreamingLocationByProviderPortFake>(engine));
+            engine.RequireFake<IReadPlaylistTracksByProviderPort, ReadPlaylistTracksByProviderPortFake>(),
+            engine.RequireFake<IReadCatalogEntriesBySearchCriteriaPort, ReadCatalogEntriesBySearchCriteriaPortFake>(),
+            engine.RequireFake<IReadStreamingLocationByProviderPort, ReadStreamingLocationByProviderPortFake>());
 
         var sut = engine.Resolve<IApiHandler<GetTracksForPlaylistRequest, GetTracksForPlaylistResponse?>>()
             as GetTracksForPlaylistHandler
@@ -146,19 +169,12 @@ internal sealed class GetTracksForPlaylistSociableTestEnvironment : IDisposable
             engine.MessagePump,
             sut,
             options.PlaylistId,
-            RequireFake<IStoreDiscoveryFeedbackPort, StoreDiscoveryFeedbackPortFake>(engine),
-            RequireFake<IStorePlaylistTracksReadModelPort, StorePlaylistTracksReadModelPortFake>(engine),
-            RequireFake<IStoreCatalogSearchCandidatePort, StoreCatalogSearchCandidatePortFake>(engine),
-            RequireFake<IEventStreamRepository<CatalogWorkId>, InMemoryEventStreamRepository<CatalogWorkId>>(engine),
-            RequireFake<IEventStreamRepository<ArtistId>, InMemoryEventStreamRepository<ArtistId>>(engine));
+            engine.RequireFake<IStoreDiscoveryFeedbackPort, StoreDiscoveryFeedbackPortFake>(),
+            engine.RequireFake<IStorePlaylistTracksReadModelPort, StorePlaylistTracksReadModelPortFake>(),
+            engine.RequireFake<IStoreCatalogSearchCandidatePort, StoreCatalogSearchCandidatePortFake>(),
+            engine.RequireFake<IEventStreamRepository<CatalogWorkId>, InMemoryEventStreamRepository<CatalogWorkId>>(),
+            engine.RequireFake<IEventStreamRepository<ArtistId>, InMemoryEventStreamRepository<ArtistId>>());
     }
-
-    private static TFake RequireFake<TService, TFake>(SociableDiscoveryEngine engine)
-        where TService : class
-        where TFake : class, TService =>
-        engine.Resolve<TService>() as TFake
-        ?? throw new InvalidOperationException(
-            $"Expected '{typeof(TService).Name}' to be '{typeof(TFake).Name}'.");
 
     private static void SeedLookupData(
         PlaylistId playlistId,

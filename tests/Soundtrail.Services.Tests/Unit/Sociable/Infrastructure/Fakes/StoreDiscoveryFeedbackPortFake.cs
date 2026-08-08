@@ -12,6 +12,9 @@ internal sealed class StoreDiscoveryFeedbackPortFake : IStoreDiscoveryFeedbackPo
 
     public DiscoveryFeedbackResponse? Read(string targetId) => this.feedback.GetValueOrDefault(targetId);
 
+    public void Seed(string targetId, DiscoveryFeedbackResponse response) =>
+        this.feedback[targetId] = response;
+
     public Task StoreAsync(WorkRequested @event, CancellationToken cancellationToken) =>
         Store(@event.Target, "requested", @event.Priority, null, null, string.Empty, @event.RequestedAt);
 

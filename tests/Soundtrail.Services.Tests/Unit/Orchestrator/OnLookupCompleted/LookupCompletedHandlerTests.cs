@@ -34,36 +34,6 @@ public sealed class LookupCompletedHandlerTests
     }
 
     [Fact]
-    public async Task Given_A_Playlist_Lookup_Success_When_Handling_Then_Playlist_Tracks_Are_Discovered()
-    {
-        var environment = LookupCompletedHandlerUnitTestEnvironment.Create();
-        environment.SeedForPlaylist();
-        var subject = environment.CreateSubject();
-
-        await subject.Handle(LookupCompletedHandlerUnitTestEnvironment.CreatePlaylistCompleted());
-
-        environment.Repository.AppendedEvents.First().Should().BeOfType<PlaylistTracksDiscovered>();
-    }
-
-    [Fact]
-    public async Task Given_A_Playlist_Lookup_Success_When_Handling_Then_Unknown_Track_Discovery_Is_Requested_For_Each_Reference()
-    {
-        var environment = LookupCompletedHandlerUnitTestEnvironment.Create();
-        environment.SeedForPlaylist();
-        var subject = environment.CreateSubject();
-
-        await subject.Handle(LookupCompletedHandlerUnitTestEnvironment.CreatePlaylistCompleted());
-
-        environment.CommandBus.SentMessages.Should().ContainSingle().Which.Should().BeOfType<RequestUnknownMusicDataMessage>();
-        var command = (RequestUnknownMusicDataMessage)environment.CommandBus.SentMessages.Single();
-        command.SearchCriteria.Query.Should().Be("Road Song The Travellers");
-        command.SearchCriteria.SearchTypes.Should().Be(SearchType.Track);
-        command.Priority.Should().Be(LookupPriorityBand.High);
-        command.TrustLevel.Should().Be(100);
-        command.RiskScore.Should().Be(0);
-    }
-
-    [Fact]
     public async Task Given_A_Search_Lookup_Success_With_A_Long_Track_Id_When_Handling_Then_Streaming_Discovery_Command_Id_Is_ServiceBus_Safe()
     {
         var environment = LookupCompletedHandlerUnitTestEnvironment.Create();

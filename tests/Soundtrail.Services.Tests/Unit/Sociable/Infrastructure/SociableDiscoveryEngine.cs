@@ -64,6 +64,8 @@ internal sealed class SociableDiscoveryEngine : IDisposable
         return new SociableDiscoveryEngine(provider, scope, pump);
     }
 
+    public TFake RequireFake<TService, TFake>() where TService : class where TFake : class, TService => this.Resolve<TService>() as TFake ?? throw new InvalidOperationException($"Expected '{typeof(TService).Name}' to be '{typeof(TFake).Name}'.");
+    
     public T Resolve<T>() where T : class =>
         scope.ServiceProvider.GetRequiredService<T>();
 

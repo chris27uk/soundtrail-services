@@ -17,6 +17,17 @@ public sealed class NoExistingDataOrRequestsTests
     }
 
     [Fact]
+    public async Task When_Requesting_Then_The_Playlist_Id_Is_Returned()
+    {
+        var environment = GetTracksForPlaylistSociableTestEnvironment.ForNoExistingDataOrRequests();
+
+        var response = await environment.ProjectOnChange(
+            sut => sut.Handle(new GetTracksForPlaylistRequest(environment.PlaylistId)));
+
+        response!.PlaylistId.Should().Be(environment.PlaylistId);
+    }
+
+    [Fact]
     public async Task When_Requesting_Then_Discovery_Is_Scheduled()
     {
         var environment = GetTracksForPlaylistSociableTestEnvironment.ForNoExistingDataOrRequests();
