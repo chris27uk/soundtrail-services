@@ -1,29 +1,35 @@
+using Soundtrail.Adapters.Projection;
 using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.OnWorkCompleted;
 
 namespace Soundtrail.Services.Tests.Unit.Projector.OnWorkFeedbackChanged;
 
 public sealed class WorkFeedbackChangedProjectsDiscoveryFeedbackTests
 {
     [Fact]
-    public async Task Given_A_Work_Requested_Event_When_Projecting_Then_Public_Feedback_Is_Not_Updated()
+    public void Given_A_Work_Requested_Event_When_Projecting_Then_Public_Feedback_Is_Not_Updated()
     {
-        var environment = WorkFeedbackChangedProjectorUnitTestEnvironment.Create();
-        var subject = environment.CreateSubject();
-        var @event = WorkFeedbackChangedProjectorUnitTestEnvironment.CreateRequested();
-
-        await subject.Handle(@event);
-
-        environment.StoreDiscoveryFeedbackPort.StoredEvent.Should().BeNull();
+        typeof(WorkCompletedEventHandler).Assembly
+            .GetTypes()
+            .Where(static type => type.Namespace?.Contains("OnWorkFeedbackChanged", StringComparison.Ordinal) == true)
+            .Where(static type => type
+                .GetInterfaces()
+                .Any(static contract =>
+                    contract.IsGenericType
+                    && contract.GetGenericTypeDefinition() == typeof(IProjectionEventHandler<>)
+                    && contract.GenericTypeArguments[0] == typeof(WorkRequested)))
+            .Should()
+            .BeEmpty();
     }
 
     [Fact]
     public async Task Given_A_Work_Scheduled_Event_When_Projecting_Then_Feedback_Is_Updated()
     {
         var environment = WorkFeedbackChangedProjectorUnitTestEnvironment.Create();
-        var subject = environment.CreateSubject();
+        var subject = environment.CreateScheduledHandler();
         var @event = WorkFeedbackChangedProjectorUnitTestEnvironment.CreateScheduled();
 
-        await subject.Handle(@event);
+        await subject.HandleAsync(@event);
 
         environment.StoreDiscoveryFeedbackPort.StoredEvent.Should().BeSameAs(@event);
     }
@@ -32,10 +38,10 @@ public sealed class WorkFeedbackChangedProjectsDiscoveryFeedbackTests
     public async Task Given_A_Work_Deferred_Event_When_Projecting_Then_Feedback_Is_Updated()
     {
         var environment = WorkFeedbackChangedProjectorUnitTestEnvironment.Create();
-        var subject = environment.CreateSubject();
+        var subject = environment.CreateDeferredHandler();
         var @event = WorkFeedbackChangedProjectorUnitTestEnvironment.CreateDeferred();
 
-        await subject.Handle(@event);
+        await subject.HandleAsync(@event);
 
         environment.StoreDiscoveryFeedbackPort.StoredEvent.Should().BeSameAs(@event);
     }
@@ -44,10 +50,10 @@ public sealed class WorkFeedbackChangedProjectsDiscoveryFeedbackTests
     public async Task Given_A_Work_Completed_Event_When_Projecting_Then_Feedback_Is_Updated()
     {
         var environment = WorkFeedbackChangedProjectorUnitTestEnvironment.Create();
-        var subject = environment.CreateSubject();
+        var subject = environment.CreateCompletedHandler();
         var @event = WorkFeedbackChangedProjectorUnitTestEnvironment.CreateCompleted();
 
-        await subject.Handle(@event);
+        await subject.HandleAsync(@event);
 
         environment.StoreDiscoveryFeedbackPort.StoredEvent.Should().BeSameAs(@event);
     }
@@ -56,10 +62,10 @@ public sealed class WorkFeedbackChangedProjectsDiscoveryFeedbackTests
     public async Task Given_A_Work_Rejected_Event_When_Projecting_Then_Feedback_Is_Updated()
     {
         var environment = WorkFeedbackChangedProjectorUnitTestEnvironment.Create();
-        var subject = environment.CreateSubject();
+        var subject = environment.CreateRejectedHandler();
         var @event = WorkFeedbackChangedProjectorUnitTestEnvironment.CreateRejected();
 
-        await subject.Handle(@event);
+        await subject.HandleAsync(@event);
 
         environment.StoreDiscoveryFeedbackPort.StoredEvent.Should().BeSameAs(@event);
     }
@@ -68,10 +74,10 @@ public sealed class WorkFeedbackChangedProjectsDiscoveryFeedbackTests
     public async Task Given_A_Work_Ignored_Event_When_Projecting_Then_Feedback_Is_Updated()
     {
         var environment = WorkFeedbackChangedProjectorUnitTestEnvironment.Create();
-        var subject = environment.CreateSubject();
+        var subject = environment.CreateIgnoredHandler();
         var @event = WorkFeedbackChangedProjectorUnitTestEnvironment.CreateIgnored();
 
-        await subject.Handle(@event);
+        await subject.HandleAsync(@event);
 
         environment.StoreDiscoveryFeedbackPort.StoredEvent.Should().BeSameAs(@event);
     }
@@ -80,10 +86,10 @@ public sealed class WorkFeedbackChangedProjectsDiscoveryFeedbackTests
     public async Task Given_A_Work_Attempt_Failed_Event_When_Projecting_Then_Feedback_Is_Updated()
     {
         var environment = WorkFeedbackChangedProjectorUnitTestEnvironment.Create();
-        var subject = environment.CreateSubject();
+        var subject = environment.CreateAttemptFailedHandler();
         var @event = WorkFeedbackChangedProjectorUnitTestEnvironment.CreateAttemptFailed();
 
-        await subject.Handle(@event);
+        await subject.HandleAsync(@event);
 
         environment.StoreDiscoveryFeedbackPort.StoredEvent.Should().BeSameAs(@event);
     }

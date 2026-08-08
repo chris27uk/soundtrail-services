@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
+using Soundtrail.Adapters.Projection;
 using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
 
@@ -24,7 +25,7 @@ internal sealed class IncomingMessageSession<TDto, TDomain>(
         {
             using var scope = scopeFactory.CreateScope();
             var typeRegistry = scope.ServiceProvider.GetRequiredService<ITypeRegistry>();
-            var handler = scope.ServiceProvider.GetRequiredService<IHandler<TDomain>>();
+            var handlers = scope.ServiceProvider.GetRequiredService<HandlerCollection>();
             commandBus = scope.ServiceProvider.GetService<ICommandBus>();
             var dto = deserializer.Deserialize<TDto>(envelope.Body);
             var message = typeof(TDto) == typeof(TDomain)
@@ -46,7 +47,7 @@ internal sealed class IncomingMessageSession<TDto, TDomain>(
                 MessageTelemetry.EnrichCurrentActivity(domainMessage, "consume");
             }
 
-            await handler.Handle(incomingMessage, cancellationToken);
+            await handlers.HandleAsync(incomingMessage, cancellationToken);
 
             MessageTelemetry.AddCurrentEvent("message.processed");
             await lifecycle.CompleteAsync(cancellationToken);

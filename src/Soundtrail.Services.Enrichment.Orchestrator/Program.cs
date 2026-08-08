@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Adapters.Messaging;
+using Soundtrail.Adapters.Projection;
 using Soundtrail.Services.Enrichment.Orchestrator;
 using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure;
 using Soundtrail.Services.ServiceDefaults;
@@ -20,6 +21,8 @@ foreach (var feature in features)
 {
     feature.ConfigureServices(builder.Services, builder.Configuration);
 }
+
+HandlerCollection.AddMessageHandlersFromAssemblies(builder.Services, typeof(OrchestratorAssemblyMarker));
 
 var app = builder.Build();
 

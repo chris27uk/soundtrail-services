@@ -1,15 +1,13 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Raven.Client.Documents;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Adapters.Messaging;
 using Soundtrail.Adapters.Persistence;
 using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Abstractions.EventSourcing;
-using Soundtrail.Domain.Discovery.Aggregates;
-using Soundtrail.Domain.Discovery.Assesment;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.Prioritisation.OnMusicAssessmentRequired.Planning;
 using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure;
@@ -30,11 +28,14 @@ public sealed class OnMusicAssessmentRequiredFeature : IOrchestratorFeature
         services.TryAddSingleton<ITypeRegistry>(_ => TypeTranslationRegistry.Default);
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
         services.Configure<PlanningAssessmentOptions>(configuration.GetSection(PlanningAssessmentOptions.SectionName));
-        services.TryAddSingleton<IPlanningAssessmentPolicy, PlanningAssessmentPolicy>();
-        services.TryAddScoped<IDiscoveryPlanningProjectionReader, RavenDiscoveryPlanningProjectionReader>();
-        services.TryAddScoped<IEventStreamRepository<CatalogWorkId>, CatalogSearchEventStreamRepository>();
-        services.TryAddScoped<OnMusicAssessmentRequiredHandler>();
-        services.TryAddScoped<IHandler<AssessWorkMessage>, OnMusicAssessmentRequiredHandler>();
+
+        OnMusicAssessmentRequiredComposition.Configure(services, new(
+            sp => sp.GetRequiredService<PlanningAssessmentPolicy>(),
+            sp => new RavenDiscoveryPlanningProjectionReader(sp.GetRequiredService<IDocumentStore>()),
+            sp => sp.GetRequiredService<CatalogSearchEventStreamRepository>()));
+
+        services.TryAddSingleton<PlanningAssessmentPolicy>();
+        services.TryAddScoped<CatalogSearchEventStreamRepository>();
     }
 
     public void ConfigureApplication(WebApplication app)

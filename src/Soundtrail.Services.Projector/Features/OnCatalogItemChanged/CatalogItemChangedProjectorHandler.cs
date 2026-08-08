@@ -1,3 +1,4 @@
+using Soundtrail.Adapters.Projection;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog.Aggregates;
 using Soundtrail.Domain.Catalog.Artists;
@@ -6,8 +7,26 @@ using Soundtrail.Domain.Common;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogItemChanged;
 
-public sealed class CatalogItemChangedProjectorHandler(IEventStreamRepository<ArtistId> repository)
+public sealed class CatalogItemChangedProjectorHandler(IEventStreamRepository<ArtistId> repository) :
+    IProjectionEventHandler<ArtistDiscovered>,
+    IProjectionEventHandler<AlbumDiscovered>,
+    IProjectionEventHandler<TrackDiscovered>,
+    IProjectionEventHandler<StreamingLocationDiscovered>
 {
+    Task IProjectionEventHandler<ArtistDiscovered>.HandleAsync(ArtistDiscovered @event, CancellationToken cancellationToken) =>
+        Handle(@event, cancellationToken);
+
+    Task IProjectionEventHandler<AlbumDiscovered>.HandleAsync(AlbumDiscovered @event, CancellationToken cancellationToken) =>
+        Handle(@event, cancellationToken);
+
+    Task IProjectionEventHandler<TrackDiscovered>.HandleAsync(TrackDiscovered @event, CancellationToken cancellationToken) =>
+        Handle(@event, cancellationToken);
+
+    Task IProjectionEventHandler<StreamingLocationDiscovered>.HandleAsync(
+        StreamingLocationDiscovered @event,
+        CancellationToken cancellationToken) =>
+        Handle(@event, cancellationToken);
+
     public async Task Handle(ArtistDiscovered @event, CancellationToken cancellationToken = default)
     {
         var (stream, catalog) = await ArtistCatalog.LoadAsync(repository, @event.Artist.Id, cancellationToken);

@@ -1,4 +1,5 @@
 using Soundtrail.Contracts.Common;
+using Soundtrail.Adapters.Projection;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery.Events;
@@ -7,8 +8,13 @@ using Soundtrail.Domain.Discovery.Messages;
 namespace Soundtrail.Services.Internal.Projector.Features.OnWorkScheduled;
 
 public sealed class WorkScheduledProjectorHandler(
-    ICommandBus commandBus)
+    ICommandBus commandBus) : IProjectionEventHandler<WorkScheduled>
 {
+    Task IProjectionEventHandler<WorkScheduled>.HandleAsync(
+        WorkScheduled @event,
+        CancellationToken cancellationToken) =>
+        Handle(@event, cancellationToken);
+
     public async Task Handle(WorkScheduled @event, CancellationToken cancellationToken = default)
     {
         var command = new DispatchLookupWork(

@@ -1,8 +1,14 @@
+using Soundtrail.Adapters.Projection;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Common;
-using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.Adapters;
+using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.OnWorkCompleted;
+using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.OnWorkDeferred;
+using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.OnWorkFailed;
+using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.OnWorkIgnored;
+using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.OnWorkRejected;
+using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.OnWorkScheduled;
 
 namespace Soundtrail.Services.Tests.Unit.Projector.OnWorkFeedbackChanged;
 
@@ -19,7 +25,23 @@ internal sealed class WorkFeedbackChangedProjectorUnitTestEnvironment
     public static WorkFeedbackChangedProjectorUnitTestEnvironment Create() =>
         new(new StoreDiscoveryFeedbackPortFake());
 
-    public WorkFeedbackChangedProjectorHandler CreateSubject() => new(StoreDiscoveryFeedbackPort);
+    public IProjectionEventHandler<WorkScheduled> CreateScheduledHandler() =>
+        new WorkScheduledEventHandler(StoreDiscoveryFeedbackPort);
+
+    public IProjectionEventHandler<WorkDeferred> CreateDeferredHandler() =>
+        new WorkDeferredEventHandler(StoreDiscoveryFeedbackPort);
+
+    public IProjectionEventHandler<WorkCompleted> CreateCompletedHandler() =>
+        new WorkCompletedEventHandler(StoreDiscoveryFeedbackPort);
+
+    public IProjectionEventHandler<WorkRejected> CreateRejectedHandler() =>
+        new WorkRejectedEventHandler(StoreDiscoveryFeedbackPort);
+
+    public IProjectionEventHandler<WorkIgnored> CreateIgnoredHandler() =>
+        new WorkIgnoredEventHandler(StoreDiscoveryFeedbackPort);
+
+    public IProjectionEventHandler<WorkAttemptFailed> CreateAttemptFailedHandler() =>
+        new WorkAttemptFailedEventHandler(StoreDiscoveryFeedbackPort);
 
     public static WorkRequested CreateRequested() =>
         new(

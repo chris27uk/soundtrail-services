@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Soundtrail.Adapters.FeatureOrchestration;
+using Soundtrail.Adapters.Projection;
 using Soundtrail.Services.Internal.Projector;
 using Soundtrail.Services.Internal.Projector.Infrastructure;
 using Soundtrail.Services.ServiceDefaults;
@@ -18,6 +19,8 @@ foreach (var feature in features)
 {
     feature.ConfigureServices(builder.Services, builder.Configuration);
 }
+
+HandlerCollection.AddFromAssemblies(builder.Services, typeof(ProjectorAssemblyMarker));
 
 var app = builder.Build();
 

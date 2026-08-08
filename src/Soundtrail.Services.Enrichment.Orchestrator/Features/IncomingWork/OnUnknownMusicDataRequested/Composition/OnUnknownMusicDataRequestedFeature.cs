@@ -1,16 +1,14 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Raven.Client.Documents;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Adapters.Messaging;
 using Soundtrail.Adapters.Persistence;
 using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Domain.Discovery.Aggregates;
-using Soundtrail.Domain.Discovery.Candidates;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.IncomingWork.OnUnknownMusicDataRequested.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure;
 using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Messaging;
@@ -30,10 +28,13 @@ public sealed class OnUnknownMusicDataRequestedFeature : IOrchestratorFeature
             "unknown-music-data-requests");
         services.TryAddSingleton<ITypeRegistry>(_ => TypeTranslationRegistry.Default);
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
-        services.TryAddSingleton<IWorkPlanner, WorkPlanner>();
-        services.TryAddScoped<IEventStreamRepository<CatalogWorkId>, CatalogSearchEventStreamRepository>();
-        services.TryAddScoped<IHandler<RequestUnknownMusicDataMessage>, OnUnknownMusicDataRequestedHandler>();
-        services.TryAddScoped<ISearchForCandidates, RavenSearchForCandidates>();
+
+        OnUnknownMusicDataRequestedComposition.Configure(services, new(
+            _ => new WorkPlanner(),
+            sp => new RavenSearchForCandidates(sp.GetRequiredService<IDocumentStore>()),
+            sp => sp.GetRequiredService<CatalogSearchEventStreamRepository>()));
+
+        services.TryAddScoped<CatalogSearchEventStreamRepository>();
     }
 
     public void ConfigureApplication(WebApplication app)

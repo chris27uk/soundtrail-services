@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Adapters.Messaging;
 using Soundtrail.Adapters.Persistence;
@@ -16,7 +15,6 @@ public sealed class OnWorkRequestedFeature : IProjectorFeature
     {
         services.AddRavenDocumentStore(configuration);
         services.AddAzureServiceBusCommandBus();
-        services.TryAddScoped<WorkRequestedProjectorHandler>();
     }
 
     public void ConfigureApplication(WebApplication app)

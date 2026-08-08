@@ -20,7 +20,6 @@ public sealed class OnCatalogItemChangedFeature : IProjectorFeature
         services.AddRavenDocumentStore(configuration);
         services.TryAddSingleton<ITypeRegistry>(_ => TypeTranslationRegistry.Default);
         services.TryAddScoped<IEventStreamRepository<ArtistId>, ArtistCatalogEventStreamRepository>();
-        services.TryAddScoped<CatalogItemChangedProjectorHandler>();
     }
 
     public void ConfigureApplication(WebApplication app)

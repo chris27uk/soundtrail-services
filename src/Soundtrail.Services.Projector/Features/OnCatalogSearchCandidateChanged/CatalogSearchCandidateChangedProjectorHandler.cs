@@ -1,10 +1,23 @@
+using Soundtrail.Adapters.Projection;
 using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateChanged.Adapters;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateChanged;
 
-public sealed class CatalogSearchCandidateChangedProjectorHandler(IStoreCatalogSearchCandidatePort storeCatalogSearchCandidatePort)
+public sealed class CatalogSearchCandidateChangedProjectorHandler(IStoreCatalogSearchCandidatePort storeCatalogSearchCandidatePort) :
+    IProjectionEventHandler<ArtistDiscovered>,
+    IProjectionEventHandler<AlbumDiscovered>,
+    IProjectionEventHandler<TrackDiscovered>
 {
+    Task IProjectionEventHandler<ArtistDiscovered>.HandleAsync(ArtistDiscovered @event, CancellationToken cancellationToken) =>
+        Handle(@event, cancellationToken);
+
+    Task IProjectionEventHandler<AlbumDiscovered>.HandleAsync(AlbumDiscovered @event, CancellationToken cancellationToken) =>
+        Handle(@event, cancellationToken);
+
+    Task IProjectionEventHandler<TrackDiscovered>.HandleAsync(TrackDiscovered @event, CancellationToken cancellationToken) =>
+        Handle(@event, cancellationToken);
+
     public Task Handle(ArtistDiscovered @event, CancellationToken cancellationToken = default) =>
         StoreAsync(
             new CatalogSearchCandidateProjection(
