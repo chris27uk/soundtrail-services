@@ -47,6 +47,14 @@ x64/
 [Dd]ist/
 [Aa]rtifacts/
 
+# Test / local runtime artifacts (Raven embedded, coverage, etc.)
+[Tt]est[Rr]esults/
+*.voron
+**/RavenDB/
+**/RavenDBServer/
+*.cobertura.xml
+coverage/
+
 # Local settings files
 *.user
 
