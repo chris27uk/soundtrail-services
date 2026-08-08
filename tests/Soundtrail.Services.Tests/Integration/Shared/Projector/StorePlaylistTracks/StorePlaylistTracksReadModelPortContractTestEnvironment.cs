@@ -193,13 +193,13 @@ internal sealed class StorePlaylistTracksReadModelPortFake : IStorePlaylistTrack
             return null;
         }
 
-        return candidates.FirstOrDefault(track => string.Equals(track.TrackId, requestedTrackId.Value, StringComparison.Ordinal))
-            ?? candidates
-                .Select(track => (Track: track, Projection: TrackIdIndexProjection.From(TrackId.From(track.TrackId))))
-                .OrderBy(entry => entry.Projection.GetDistanceTo(requestedProjection))
-                .ThenByDescending(static entry => entry.Track.UpdatedAt)
-                .Select(static entry => entry.Track)
-                .FirstOrDefault();
+        return candidates
+            .Select(track => (Track: track, Projection: TrackIdIndexProjection.From(TrackId.From(track.TrackId))))
+            .OrderByDescending(static entry => entry.Track.StreamingLocations.Length)
+            .ThenBy(entry => entry.Projection.GetDistanceTo(requestedProjection))
+            .ThenByDescending(static entry => entry.Track.UpdatedAt)
+            .Select(static entry => entry.Track)
+            .FirstOrDefault();
     }
 
     private static string[] MergeTrackIds(

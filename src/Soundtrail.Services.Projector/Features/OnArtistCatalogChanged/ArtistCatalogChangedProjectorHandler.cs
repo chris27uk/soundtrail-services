@@ -1,4 +1,3 @@
-using Soundtrail.Adapters.Projection;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
@@ -10,43 +9,17 @@ using Soundtrail.Services.Internal.Projector.Features.OnPlaylistTracksDiscovered
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnArtistCatalogChanged;
 
+/// <summary>
+/// Rebuilds artist-catalog read models from the artist event stream.
+/// Invoked by <c>CatalogItemChangedProjectorHandler</c> only after the triggering
+/// catalog-stream event has been appended, so Scrutor handler order cannot project
+/// a stale stream (which left Midnight Signals without Spotify in CI).
+/// </summary>
 public sealed class ArtistCatalogChangedProjectorHandler(
     IEventStreamRepository<ArtistId> repository,
     IStoreArtistCatalogReadModelPort storeArtistCatalogReadModelPort,
-    IStorePlaylistTracksReadModelPort storePlaylistTracksReadModelPort) :
-    IProjectionEventHandler<ArtistDiscovered>,
-    IProjectionEventHandler<AlbumDiscovered>,
-    IProjectionEventHandler<TrackDiscovered>,
-    IProjectionEventHandler<StreamingLocationDiscovered>
+    IStorePlaylistTracksReadModelPort storePlaylistTracksReadModelPort)
 {
-    Task IProjectionEventHandler<ArtistDiscovered>.HandleAsync(
-        ArtistDiscovered @event,
-        CancellationToken cancellationToken) =>
-        Handle(@event.Artist.Id, cancellationToken);
-
-    Task IProjectionEventHandler<AlbumDiscovered>.HandleAsync(
-        AlbumDiscovered @event,
-        CancellationToken cancellationToken) =>
-        Handle(ArtistId.From(@event.Album.AlbumId.ArtistId), cancellationToken);
-
-    Task IProjectionEventHandler<TrackDiscovered>.HandleAsync(
-        TrackDiscovered @event,
-        CancellationToken cancellationToken) =>
-        Handle(
-            @event.Hierarchy.ArtistId
-            ?? (@event.Hierarchy.AlbumId is { } albumId
-                ? ArtistId.From(albumId.ArtistId)
-                : throw new InvalidOperationException("TrackDiscovered must include artist ownership hierarchy.")),
-            cancellationToken);
-
-    Task IProjectionEventHandler<StreamingLocationDiscovered>.HandleAsync(
-        StreamingLocationDiscovered @event,
-        CancellationToken cancellationToken) =>
-        Handle(
-            @event.Hierarchy.ArtistId
-            ?? throw new InvalidOperationException("StreamingLocationDiscovered must include artist ownership hierarchy."),
-            cancellationToken);
-
     public async Task Handle(ArtistId artistId, CancellationToken cancellationToken = default)
     {
         var stream = await repository.LoadAsync(artistId, cancellationToken);
@@ -54,9 +27,6 @@ public sealed class ArtistCatalogChangedProjectorHandler(
         var readModel = ToReadModel(artistId, snapshot);
         await storeArtistCatalogReadModelPort.StoreAsync(readModel, cancellationToken);
 
-        // Playlist read models are rebuilt from CatalogTrackRecordDto. Repair after the
-        // artist catalog projection has committed streaming locations so we do not race
-        // the catalog-track-changed subscription (which only listens for track-discovered).
         foreach (var track in readModel.Tracks)
         {
             await storePlaylistTracksReadModelPort.RepairTrackAsync(track.TrackId, cancellationToken);
@@ -223,7 +193,6 @@ public sealed class ArtistCatalogChangedProjectorHandler(
             if (snapshot.Albums.TryGetValue(albumId.StableValue, out var album))
             {
                 album.ArtworkUrl = artworkDiscovered.Url.ToString();
-                album.UpdatedAt = artworkDiscovered.ObservedAt;
             }
 
             snapshot.UpdatedAt = artworkDiscovered.ObservedAt;

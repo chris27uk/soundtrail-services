@@ -127,13 +127,124 @@ public sealed class StorePlaylistTracksReadModelPortContractTests
         record.Tracks[0].Title.Should().Be("Glass Cities (Radio Edit)");
     }
 
+    [Theory]
+    [MemberData(nameof(Implementations))]
+    public async Task Given_Parent_Without_Streaming_And_Child_With_Streaming_When_Storing_Then_Child_Streaming_Locations_Are_Preferred(
+        StorePlaylistTracksReadModelPortImplementation implementation)
+    {
+        await using var environment = StorePlaylistTracksReadModelPortContractTestEnvironment.Create(
+            implementation,
+            playlistName: "streaming_preference_store");
+
+        var parentTrackId = MustCreate("Neon Harbour", "Glass Cities");
+        var childTrackId = MustCreate(
+            "Neon Harbour",
+            "Glass Cities (Radio Edit)",
+            "Glass Cities Remixes",
+            new DateOnly(2024, 6, 23),
+            "Radio Edit");
+
+        await environment.SeedCatalogTrackAsync(
+            CreateCatalogTrack(
+                parentTrackId,
+                title: "Glass Cities",
+                artistName: "Neon Harbour"));
+        await environment.SeedCatalogTrackAsync(
+            CreateCatalogTrack(
+                childTrackId,
+                title: "Glass Cities (Radio Edit)",
+                artistName: "Neon Harbour",
+                albumTitle: "Glass Cities Remixes",
+                releaseDate: new DateOnly(2024, 6, 23),
+                releaseType: "Radio Edit",
+                streamingUrl: "https://music.youtube.com/watch?v=glass-cities-radio"));
+
+        await environment.Subject.StoreAsync(
+            new PlaylistTracksDiscovered(
+                environment.PlaylistId,
+                [parentTrackId],
+                DateTimeOffset.UtcNow),
+            CancellationToken.None);
+
+        var record = await environment.LoadPlaylistTracksAsync();
+
+        record.Should().NotBeNull();
+        record!.Tracks.Should().ContainSingle();
+        record.Tracks[0].TrackId.Should().Be(childTrackId.Value);
+        record.Tracks[0].StreamingLocations.Should().ContainSingle()
+            .Which.Url.Should().Be("https://music.youtube.com/watch?v=glass-cities-radio");
+    }
+
+    [Theory]
+    [MemberData(nameof(Implementations))]
+    public async Task Given_Playlist_Stuck_On_Parent_Without_Streaming_When_Child_Streaming_Arrives_Then_Repair_Promotes_Playable_Child(
+        StorePlaylistTracksReadModelPortImplementation implementation)
+    {
+        await using var environment = StorePlaylistTracksReadModelPortContractTestEnvironment.Create(
+            implementation,
+            playlistName: "streaming_preference_repair");
+
+        var parentTrackId = MustCreate("Neon Harbour", "Glass Cities");
+        var childTrackId = MustCreate(
+            "Neon Harbour",
+            "Glass Cities (Radio Edit)",
+            "Glass Cities Remixes",
+            new DateOnly(2024, 6, 23),
+            "Radio Edit");
+
+        await environment.SeedCatalogTrackAsync(
+            CreateCatalogTrack(
+                parentTrackId,
+                title: "Glass Cities",
+                artistName: "Neon Harbour"));
+        await environment.SeedCatalogTrackAsync(
+            CreateCatalogTrack(
+                childTrackId,
+                title: "Glass Cities (Radio Edit)",
+                artistName: "Neon Harbour",
+                albumTitle: "Glass Cities Remixes",
+                releaseDate: new DateOnly(2024, 6, 23),
+                releaseType: "Radio Edit"));
+
+        await environment.Subject.StoreAsync(
+            new PlaylistTracksDiscovered(
+                environment.PlaylistId,
+                [parentTrackId],
+                DateTimeOffset.UtcNow.AddMinutes(-1)),
+            CancellationToken.None);
+
+        var before = await environment.LoadPlaylistTracksAsync();
+        before.Should().NotBeNull();
+        before!.Tracks[0].StreamingLocations.Should().BeEmpty();
+
+        await environment.SeedCatalogTrackAsync(
+            CreateCatalogTrack(
+                childTrackId,
+                title: "Glass Cities (Radio Edit)",
+                artistName: "Neon Harbour",
+                albumTitle: "Glass Cities Remixes",
+                releaseDate: new DateOnly(2024, 6, 23),
+                releaseType: "Radio Edit",
+                streamingUrl: "https://music.youtube.com/watch?v=glass-cities-radio"));
+
+        await environment.Subject.RepairTrackAsync(childTrackId, CancellationToken.None);
+
+        var after = await environment.LoadPlaylistTracksAsync();
+        after.Should().NotBeNull();
+        after!.Tracks.Should().ContainSingle();
+        after.Tracks[0].TrackId.Should().Be(childTrackId.Value);
+        after.Tracks[0].StreamingLocations.Should().ContainSingle()
+            .Which.Url.Should().Be("https://music.youtube.com/watch?v=glass-cities-radio");
+    }
+
     private static CatalogTrackRecordDto CreateCatalogTrack(
         TrackId trackId,
         string title,
         string artistName,
         string? albumTitle = "Album",
         DateOnly? releaseDate = null,
-        string? releaseType = "studio") =>
+        string? releaseType = "studio",
+        string? streamingUrl = null) =>
         new()
         {
             Id = CatalogTrackRecordDto.GetDocumentId(trackId.Value),
@@ -145,6 +256,16 @@ public sealed class StorePlaylistTracksReadModelPortContractTests
             DurationMs = 180000,
             ReleaseDate = releaseDate ?? new DateOnly(2024, 1, 1),
             ReleaseType = releaseType,
+            StreamingLocations = streamingUrl is null
+                ? []
+                :
+                [
+                    new CatalogStreamingLocationRecordDto
+                    {
+                        Provider = "youtubeMusic",
+                        Url = streamingUrl
+                    }
+                ],
             UpdatedAt = DateTimeOffset.UtcNow
         };
 
