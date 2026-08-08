@@ -2,7 +2,7 @@ using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Operations;
 using Soundtrail.Services.Enrichment.Scheduler.Features.ImportKworbChart;
-using Soundtrail.Services.Tests.Fakes;
+using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
 namespace Soundtrail.Services.Tests.Unit.ImportKworbChart;
 

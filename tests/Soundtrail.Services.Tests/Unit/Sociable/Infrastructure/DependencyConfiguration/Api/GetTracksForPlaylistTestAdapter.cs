@@ -3,9 +3,10 @@ using Soundtrail.Domain.Abstractions;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Composition;
 using Soundtrail.Services.Api.Infrastructure;
 using Soundtrail.Services.Internal.Projector.Features.OnPlaylistTracksDiscovered.Adapters;
-using Soundtrail.Services.Tests.Fakes;
-using Soundtrail.Services.Tests.Unit.Sociable.GetTracksForPlaylist.Composition;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
+using Soundtrail.Services.Tests.Integration.GetTracksForPlaylist.Api.Ports;
+using Soundtrail.Services.Tests.Unit.Sociable.GetTracksForPlaylist.Composition;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForPlaylist;
 
 namespace Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.DependencyConfiguration.Api;
 

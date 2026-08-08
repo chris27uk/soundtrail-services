@@ -5,10 +5,11 @@ using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Common;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks.Adapters;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks.Ports;
-using Soundtrail.Services.Tests.Fakes;
+using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForPlaylist;
 
 namespace Soundtrail.Services.Tests.Integration.GetTracksForPlaylist.Worker.Ports.LookupPlaylistTracks;
 
@@ -129,6 +130,11 @@ internal sealed class ReadPlaylistTracksByProviderPortContractTestEnvironment : 
             "..",
             "..",
             "..",
+            "Integration",
+            "GetTracksForPlaylist",
+            "Worker",
+            "Ports",
+            "LookupPlaylistTracks",
             "Fixtures",
             "kworb-worldwide-song-chart.html");
 
