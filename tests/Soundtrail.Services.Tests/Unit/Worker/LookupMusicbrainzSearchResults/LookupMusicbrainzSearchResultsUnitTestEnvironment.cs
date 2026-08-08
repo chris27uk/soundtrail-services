@@ -12,6 +12,7 @@ using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
 using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
 using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
 using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
+using Soundtrail.Services.Tests.Fakes;
 
 namespace Soundtrail.Services.Tests.Unit.Worker.LookupMusicbrainzSearchResults;
 
@@ -19,7 +20,7 @@ internal sealed class LookupMusicbrainzSearchResultsUnitTestEnvironment
 {
     private LookupMusicbrainzSearchResultsUnitTestEnvironment()
     {
-        Clock = new ClockFake();
+        Clock = new ClockFake(new DateTimeOffset(2026, 7, 20, 11, 45, 0, TimeSpan.Zero));
         CommandBus = new CommandBusFake();
         ReadCatalogEntriesBySearchCriteriaPort = new ReadCatalogEntriesBySearchCriteriaPortFake();
         AdmissionPort = new LookupExecutionAdmissionPortFake();
@@ -101,28 +102,6 @@ internal sealed class LookupMusicbrainzSearchResultsUnitTestEnvironment
                 artistId,
                 new CatalogItem.MusicTrack(track))
         ];
-    }
-
-    public sealed class ClockFake : IClockPort
-    {
-        public DateTimeOffset UtcNow { get; set; } = new(2026, 7, 20, 11, 45, 0, TimeSpan.Zero);
-    }
-
-    public sealed class CommandBusFake : ICommandBus
-    {
-        public List<object> Messages { get; } = [];
-
-        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
-        {
-            Messages.Add(message);
-            return Task.CompletedTask;
-        }
-
-        public Task SendAsync(object message, CancellationToken cancellationToken = default)
-        {
-            Messages.Add(message);
-            return Task.CompletedTask;
-        }
     }
 
     public sealed class ReadCatalogEntriesBySearchCriteriaPortFake : IReadCatalogEntriesBySearchCriteriaPort

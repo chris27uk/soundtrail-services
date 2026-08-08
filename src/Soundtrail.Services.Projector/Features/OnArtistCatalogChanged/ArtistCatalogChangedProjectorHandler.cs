@@ -1,3 +1,4 @@
+using Soundtrail.Adapters.Projection;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
@@ -10,8 +11,40 @@ namespace Soundtrail.Services.Internal.Projector.Features.OnArtistCatalogChanged
 
 public sealed class ArtistCatalogChangedProjectorHandler(
     IEventStreamRepository<ArtistId> repository,
-    IStoreArtistCatalogReadModelPort storeArtistCatalogReadModelPort)
+    IStoreArtistCatalogReadModelPort storeArtistCatalogReadModelPort) :
+    IProjectionEventHandler<ArtistDiscovered>,
+    IProjectionEventHandler<AlbumDiscovered>,
+    IProjectionEventHandler<TrackDiscovered>,
+    IProjectionEventHandler<StreamingLocationDiscovered>
 {
+    Task IProjectionEventHandler<ArtistDiscovered>.HandleAsync(
+        ArtistDiscovered @event,
+        CancellationToken cancellationToken) =>
+        Handle(@event.Artist.Id, cancellationToken);
+
+    Task IProjectionEventHandler<AlbumDiscovered>.HandleAsync(
+        AlbumDiscovered @event,
+        CancellationToken cancellationToken) =>
+        Handle(ArtistId.From(@event.Album.AlbumId.ArtistId), cancellationToken);
+
+    Task IProjectionEventHandler<TrackDiscovered>.HandleAsync(
+        TrackDiscovered @event,
+        CancellationToken cancellationToken) =>
+        Handle(
+            @event.Hierarchy.ArtistId
+            ?? (@event.Hierarchy.AlbumId is { } albumId
+                ? ArtistId.From(albumId.ArtistId)
+                : throw new InvalidOperationException("TrackDiscovered must include artist ownership hierarchy.")),
+            cancellationToken);
+
+    Task IProjectionEventHandler<StreamingLocationDiscovered>.HandleAsync(
+        StreamingLocationDiscovered @event,
+        CancellationToken cancellationToken) =>
+        Handle(
+            @event.Hierarchy.ArtistId
+            ?? throw new InvalidOperationException("StreamingLocationDiscovered must include artist ownership hierarchy."),
+            cancellationToken);
+
     public async Task Handle(ArtistId artistId, CancellationToken cancellationToken = default)
     {
         var stream = await repository.LoadAsync(artistId, cancellationToken);

@@ -8,6 +8,7 @@ using Soundtrail.Services.Api.Features.Catalog.GetTracksForArtist.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForArtist.Contract;
 using Soundtrail.Services.Api.Features.Catalog.Search.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
+using Soundtrail.Services.Tests.Fakes;
 
 namespace Soundtrail.Services.Tests.Unit.GetTracksForArtist;
 
@@ -18,7 +19,7 @@ internal sealed class GetTracksForArtistUnitTestEnvironment
         GetTracksForArtistPortFake port,
         CommandBusFake commandBus,
         DiscoveryFeedbackPortFake discoveryFeedbackPort,
-        ClockPortFake clock)
+        ClockFake clock)
     {
         ArtistId = artistId;
         Port = port;
@@ -35,7 +36,7 @@ internal sealed class GetTracksForArtistUnitTestEnvironment
 
     public DiscoveryFeedbackPortFake DiscoveryFeedbackPort { get; }
 
-    public ClockPortFake Clock { get; }
+    public ClockFake Clock { get; }
 
     public static GetTracksForArtistUnitTestEnvironment ForExistingArtistTracks(
         ArtistId? artistId = null,
@@ -45,7 +46,7 @@ internal sealed class GetTracksForArtistUnitTestEnvironment
             new GetTracksForArtistPortFake(response ?? ArtistTracks.CreateResponse(artistId: artistId ?? ArtistTracks.DefaultArtistId)),
             new CommandBusFake(),
             new DiscoveryFeedbackPortFake(),
-            new ClockPortFake(new DateTimeOffset(2024, 6, 7, 8, 9, 10, TimeSpan.Zero)));
+            new ClockFake(new DateTimeOffset(2024, 6, 7, 8, 9, 10, TimeSpan.Zero)));
 
     public GetTracksForArtistHandler CreateSubjectUnderTest() => new(Port, CommandBus, DiscoveryFeedbackPort, Clock);
 
@@ -62,17 +63,6 @@ internal sealed class GetTracksForArtistUnitTestEnvironment
         }
     }
 
-    public sealed class CommandBusFake : ICommandBus
-    {
-        public List<RequestKnownMusicDataMessage> Commands { get; } = [];
-
-        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
-        {
-            Commands.Add((RequestKnownMusicDataMessage)message);
-            return Task.CompletedTask;
-        }
-    }
-
     public sealed class DiscoveryFeedbackPortFake : IDiscoveryFeedbackPort
     {
         public EnrichmentTarget? RequestedTarget { get; private set; }
@@ -84,10 +74,5 @@ internal sealed class GetTracksForArtistUnitTestEnvironment
             RequestedTarget = target;
             return Task.FromResult(Response);
         }
-    }
-
-    public sealed class ClockPortFake(DateTimeOffset utcNow) : IClockPort
-    {
-        public DateTimeOffset UtcNow { get; } = utcNow;
     }
 }

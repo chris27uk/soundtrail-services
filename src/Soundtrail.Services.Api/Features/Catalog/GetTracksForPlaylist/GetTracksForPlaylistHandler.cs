@@ -10,14 +10,14 @@ namespace Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist;
 
 public sealed class GetTracksForPlaylistHandler(
     IGetTracksForPlaylistPort getTracksForPlaylistPort,
-    ICommandBus commandBus,
+    ICommandBus bus,
     IClockPort clock) : IApiHandler<GetTracksForPlaylistRequest, GetTracksForPlaylistResponse?>
 {
     public async Task<GetTracksForPlaylistResponse?> Handle(GetTracksForPlaylistRequest request, CancellationToken cancellationToken = default)
     {
         var requestedAt = clock.UtcNow;
         var dataRequest = NewDataRequestForPlaylist(request, requestedAt);
-        await commandBus.SendAsync(dataRequest, cancellationToken);
+        await bus.SendAsync(dataRequest, cancellationToken);
 
         var response = await getTracksForPlaylistPort.GetTracksForPlaylistAsync(request.PlaylistId, cancellationToken);
         if (response is not null)

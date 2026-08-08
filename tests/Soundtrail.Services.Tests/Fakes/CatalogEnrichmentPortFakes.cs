@@ -1,4 +1,6 @@
 using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Albums;
+using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
@@ -15,6 +17,18 @@ namespace Soundtrail.Services.Tests.Fakes;
 internal sealed class ReadPlaylistTracksByProviderPortFake : IReadPlaylistTracksByProviderPort
 {
     private readonly Dictionary<(PlaylistId PlaylistId, ProviderName Provider), IReadOnlyList<TrackReference>> tracks = [];
+    private readonly Exception? failure;
+
+    private ReadPlaylistTracksByProviderPortFake(Exception? failure) => this.failure = failure;
+
+    public ReadPlaylistTracksByProviderPortFake() : this(failure: null)
+    {
+    }
+
+    public static ReadPlaylistTracksByProviderPortFake Empty() => new();
+
+    public static ReadPlaylistTracksByProviderPortFake ThatThrows(Exception error) =>
+        new(failure: error);
 
     public ReadPlaylistTracksByProviderPortFake WithTracks(
         PlaylistId playlistId,
@@ -29,7 +43,9 @@ internal sealed class ReadPlaylistTracksByProviderPortFake : IReadPlaylistTracks
         PlaylistId playlistId,
         ProviderName provider,
         CancellationToken cancellationToken) =>
-        Task.FromResult(tracks.GetValueOrDefault((playlistId, provider), []));
+        failure is not null
+            ? Task.FromException<IReadOnlyList<TrackReference>>(failure)
+            : Task.FromResult(tracks.GetValueOrDefault((playlistId, provider), []));
 }
 
 internal sealed class ReadCatalogEntriesBySearchCriteriaPortFake : IReadCatalogEntriesBySearchCriteriaPort
@@ -94,6 +110,24 @@ internal sealed class ReadStreamingLocationByProviderPortFake : IReadStreamingLo
         ProviderName provider,
         CancellationToken cancellationToken) =>
         Task.FromResult(metadataLocations.GetValueOrDefault((artistName, trackTitle, provider)));
+}
+
+internal sealed class ReadAlbumsByArtistIdPortFake : IReadAlbumsByArtistIdPort
+{
+    public Task<IReadOnlyList<CatalogDiscoveryEntry>> ReadAsync(ArtistId artistId, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<CatalogDiscoveryEntry>>([]);
+}
+
+internal sealed class ReadTracksByArtistIdPortFake : IReadTracksByArtistIdPort
+{
+    public Task<IReadOnlyList<CatalogDiscoveryEntry>> ReadAsync(ArtistId artistId, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<CatalogDiscoveryEntry>>([]);
+}
+
+internal sealed class ReadTracksByAlbumIdPortFake : IReadTracksByAlbumIdPort
+{
+    public Task<IReadOnlyList<CatalogDiscoveryEntry>> ReadAsync(AlbumId albumId, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<CatalogDiscoveryEntry>>([]);
 }
 
 internal sealed class DiscoveryPlanningProjectionReaderFake : IDiscoveryPlanningProjectionReader

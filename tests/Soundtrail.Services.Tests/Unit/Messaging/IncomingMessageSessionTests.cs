@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Soundtrail.Adapters.Messaging;
+using Soundtrail.Adapters.Projection;
 using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Common;
@@ -164,6 +165,12 @@ public sealed class IncomingMessageSessionTests
             services.AddScoped<ITypeRegistry>(_ => new TypeRegistryStub(dtoMessage, domainMessage));
             services.AddScoped<IHandler<DomainMessage>>(_ => handler);
             services.AddScoped<ICommandBus>(_ => commandBus);
+            services.AddScoped(sp =>
+            {
+                var collection = new HandlerCollection();
+                collection.RegisterHandler(sp.GetRequiredService<IHandler<DomainMessage>>());
+                return collection;
+            });
 
             return new TestEnvironment(
                 services.BuildServiceProvider(),

@@ -4,11 +4,24 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Adapters.Messaging;
+using Soundtrail.Adapters.Projection;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnWorkRequested;
 
-public sealed class WorkRequestedProjectorHandler(ICommandBus commandBus)
+public sealed class WorkRequestedProjectorHandler(ICommandBus commandBus) :
+    IProjectionEventHandler<WorkRequested>,
+    IProjectionEventHandler<WorkPriorityRaised>
 {
+    Task IProjectionEventHandler<WorkRequested>.HandleAsync(
+        WorkRequested @event,
+        CancellationToken cancellationToken) =>
+        Handle(@event, cancellationToken);
+
+    Task IProjectionEventHandler<WorkPriorityRaised>.HandleAsync(
+        WorkPriorityRaised @event,
+        CancellationToken cancellationToken) =>
+        Handle(@event, cancellationToken);
+
     public Task Handle(WorkRequested @event, CancellationToken cancellationToken = default)
     {
         return SendAssessCommand(

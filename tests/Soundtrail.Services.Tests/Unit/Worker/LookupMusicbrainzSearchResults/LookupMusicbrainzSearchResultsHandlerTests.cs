@@ -16,7 +16,7 @@ public sealed class LookupMusicbrainzSearchResultsHandlerTests
         await subject.Handle(request, CancellationToken.None);
 
         environment.ReadCatalogEntriesBySearchCriteriaPort.RequestedSearchCriteria.Should().Be(request.SearchCriteria);
-        var completed = environment.CommandBus.Messages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
+        var completed = environment.CommandBus.SentMessages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
         var result = completed.Result.Should().BeOfType<LookupResult.Succeeded>().Subject;
         var entries = result.Value.Should().BeOfType<LookedUpData.CatalogEntries>().Subject;
         entries.Values.Should().HaveCount(3);

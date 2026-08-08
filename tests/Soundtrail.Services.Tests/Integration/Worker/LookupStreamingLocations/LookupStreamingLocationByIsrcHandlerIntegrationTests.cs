@@ -14,7 +14,7 @@ public sealed class LookupStreamingLocationByIsrcHandlerIntegrationTests
 
         await subject.Handle(environment.CreateIsrcRequest(), CancellationToken.None);
 
-        var completed = environment.CommandBus.Messages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
+        var completed = environment.CommandBus.SentMessages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
         completed.Result.Should().BeOfType<LookupResult.Succeeded>();
     }
 
@@ -27,7 +27,7 @@ public sealed class LookupStreamingLocationByIsrcHandlerIntegrationTests
 
         await subject.Handle(environment.CreateIsrcRequest(), CancellationToken.None);
 
-        var result = environment.CommandBus.Messages.Single()
+        var result = environment.CommandBus.SentMessages.Single()
             .Should().BeOfType<CatalogLookupCompleted>().Subject.Result
             .Should().BeOfType<LookupResult.NotFound>().Subject;
         result.Reason.Should().Be("Streaming location was not found for the requested provider.");

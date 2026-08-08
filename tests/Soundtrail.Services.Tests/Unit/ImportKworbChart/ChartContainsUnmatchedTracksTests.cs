@@ -13,7 +13,7 @@ public sealed class ChartContainsUnmatchedTracksTests
         await environment.CreateSubjectUnderTest().Handle(first);
         await environment.CreateSubjectUnderTest().Handle(second);
 
-        environment.CommandBus.Commands.Select(x => x.Id.Value).Should().OnlyContain(x => x == "kworb:worldwidesongchart:2026071910");
+        environment.CommandBus.SentMessages.Select(x => x.Id.Value).Should().OnlyContain(x => x == "kworb:worldwidesongchart:2026071910");
     }
 
     [Fact]
@@ -24,7 +24,7 @@ public sealed class ChartContainsUnmatchedTracksTests
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest(new DateTimeOffset(2026, 7, 19, 10, 59, 0, TimeSpan.Zero)));
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest(new DateTimeOffset(2026, 7, 19, 11, 0, 0, TimeSpan.Zero)));
 
-        environment.CommandBus.Commands.Select(x => x.Id.Value)
+        environment.CommandBus.SentMessages.Select(x => x.Id.Value)
             .Should()
             .Equal("kworb:worldwidesongchart:2026071910", "kworb:worldwidesongchart:2026071911");
     }

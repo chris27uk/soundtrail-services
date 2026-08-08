@@ -31,7 +31,7 @@ public sealed class LookupMusicbrainzBrowseDecoratorTests
 
         await Assert.ThrowsAsync<LookupExecutionShortCircuitException>(() => subject.Handle(request, CancellationToken.None));
 
-        environment.CommandBus.Messages.Single()
+        environment.CommandBus.SentMessages.Single()
             .Should().BeOfType<Soundtrail.Domain.Discovery.Messages.CatalogLookupCompleted>().Subject.Result
             .Should().BeOfType<LookupResult.Duplicate>();
     }
@@ -46,7 +46,7 @@ public sealed class LookupMusicbrainzBrowseDecoratorTests
 
         await subject.Handle(request, CancellationToken.None);
 
-        environment.CommandBus.Messages.Single()
+        environment.CommandBus.SentMessages.Single()
             .Should().BeOfType<Soundtrail.Domain.Discovery.Messages.CatalogLookupCompleted>().Subject.Result
             .Should().BeOfType<LookupResult.Duplicate>();
     }

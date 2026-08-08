@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
+using Raven.Client.Documents;
 using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Adapters.Messaging;
 using Soundtrail.Adapters.Persistence;
@@ -17,8 +17,9 @@ public sealed class OnPlaylistTracksDiscoveredFeature : IProjectorFeature
     {
         services.AddRavenDocumentStore(configuration);
         services.AddAzureServiceBusCommandBus();
-        services.TryAddScoped<IStorePlaylistTracksReadModelPort, RavenStorePlaylistTracksReadModelPort>();
-        services.TryAddScoped<PlaylistTracksDiscoveredProjectorHandler>();
+
+        OnPlaylistTracksDiscoveredComposition.Configure(services, new(
+            sp => new RavenStorePlaylistTracksReadModelPort(sp.GetRequiredService<IDocumentStore>())));
     }
 
     public void ConfigureApplication(WebApplication app)

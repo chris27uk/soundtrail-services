@@ -8,6 +8,7 @@ using Soundtrail.Services.Api.Features.Catalog.GetTracksForAlbum.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForAlbum.Contract;
 using Soundtrail.Services.Api.Features.Catalog.Search.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
+using Soundtrail.Services.Tests.Fakes;
 
 namespace Soundtrail.Services.Tests.Unit.GetTracksForAlbum;
 
@@ -18,7 +19,7 @@ internal sealed class GetTracksForAlbumMissingUnitTestEnvironment
         GetTracksForAlbumPortFake getTracksForAlbumPortFake,
         CommandBusFake commandBus,
         DiscoveryFeedbackPortFake discoveryFeedbackPort,
-        ClockPortFake clock)
+        ClockFake clock)
     {
         AlbumId = albumId;
         Port = getTracksForAlbumPortFake;
@@ -35,7 +36,7 @@ internal sealed class GetTracksForAlbumMissingUnitTestEnvironment
 
     public DiscoveryFeedbackPortFake DiscoveryFeedbackPort { get; }
 
-    public ClockPortFake Clock { get; }
+    public ClockFake Clock { get; }
 
     public static GetTracksForAlbumMissingUnitTestEnvironment ForMissingAlbumTracks(AlbumId? albumId = null) =>
         new(
@@ -43,7 +44,7 @@ internal sealed class GetTracksForAlbumMissingUnitTestEnvironment
             new GetTracksForAlbumPortFake(),
             new CommandBusFake(),
             new DiscoveryFeedbackPortFake(),
-            new ClockPortFake(new DateTimeOffset(2024, 6, 7, 8, 9, 10, TimeSpan.Zero)));
+            new ClockFake(new DateTimeOffset(2024, 6, 7, 8, 9, 10, TimeSpan.Zero)));
 
     public GetTracksForAlbumHandler CreateSubjectUnderTest() => new(Port, CommandBus, DiscoveryFeedbackPort, Clock);
 
@@ -60,17 +61,6 @@ internal sealed class GetTracksForAlbumMissingUnitTestEnvironment
         }
     }
 
-    public sealed class CommandBusFake : ICommandBus
-    {
-        public List<RequestKnownMusicDataMessage> Commands { get; } = [];
-
-        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
-        {
-            Commands.Add((RequestKnownMusicDataMessage)message);
-            return Task.CompletedTask;
-        }
-    }
-
     public sealed class DiscoveryFeedbackPortFake : IDiscoveryFeedbackPort
     {
         public EnrichmentTarget? RequestedTarget { get; private set; }
@@ -82,10 +72,5 @@ internal sealed class GetTracksForAlbumMissingUnitTestEnvironment
             RequestedTarget = target;
             return Task.FromResult(Response);
         }
-    }
-
-    public sealed class ClockPortFake(DateTimeOffset utcNow) : IClockPort
-    {
-        public DateTimeOffset UtcNow { get; } = utcNow;
     }
 }

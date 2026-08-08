@@ -24,8 +24,9 @@ public sealed class OnLookupWorkReadyFeature : IOrchestratorFeature
             "dispatch-lookup-work");
         services.TryAddSingleton<ITypeRegistry>(_ => TypeTranslationRegistry.Default);
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
-        services.TryAddScoped<LookupWorkReadyHandler>();
-        services.TryAddScoped<IHandler<DispatchLookupWork>, LookupWorkReadyHandler>();
+
+        OnLookupWorkReadyComposition.Configure(services, new(
+            sp => sp.GetRequiredService<ICommandBus>()));
     }
 
     public void ConfigureApplication(WebApplication app)

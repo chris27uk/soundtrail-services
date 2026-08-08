@@ -11,6 +11,7 @@ using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogItemChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnPlaylistTracksDiscovered.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnPlaylistTracksDiscovered;
+using Soundtrail.Services.Tests.Fakes;
 
 namespace Soundtrail.Services.Tests.Unit.Projector.OnCatalogItemChanged;
 
@@ -73,17 +74,6 @@ internal sealed class CatalogItemChangedProjectorUnitTestEnvironment
             new Uri("https://open.spotify.com/track/456"),
             LookupSource.Odesli,
             when);
-    }
-
-    public sealed class CommandBusFake : ICommandBus
-    {
-        public List<IMessage> Commands { get; } = [];
-
-        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
-        {
-            Commands.Add(message);
-            return Task.CompletedTask;
-        }
     }
 
     public sealed class ArtistCatalogRepositoryFake : IEventStreamRepository<ArtistId>

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Adapters.Messaging;
+using Soundtrail.Adapters.Projection;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog.Playlists;
@@ -136,6 +137,10 @@ internal static class ProductionCompositionTestEnvironment
             feature.ConfigureServices(builder.Services, builder.Configuration);
         }
 
+        HandlerCollection.AddMessageHandlersFromAssemblies(
+            builder.Services,
+            typeof(Soundtrail.Services.Enrichment.Worker.WorkerAssemblyMarker));
+
         builder.Services.BuildServiceProvider(
             new ServiceProviderOptions
             {
@@ -159,6 +164,8 @@ internal static class ProductionCompositionTestEnvironment
         {
             feature.ConfigureServices(builder.Services, builder.Configuration);
         }
+
+        HandlerCollection.AddMessageHandlersFromAssemblies(builder.Services, typeof(OrchestratorAssemblyMarker));
 
         RemoveRavenDatabaseHostedService(builder.Services);
 
@@ -245,6 +252,8 @@ internal static class ProductionCompositionTestEnvironment
             feature.ConfigureServices(builder.Services, builder.Configuration);
         }
 
+        HandlerCollection.AddFromAssemblies(builder.Services, typeof(ProjectorAssemblyMarker));
+
         RemoveRavenDatabaseHostedService(builder.Services);
 
         builder.Services
@@ -317,6 +326,8 @@ internal static class ProductionCompositionTestEnvironment
         {
             feature.ConfigureServices(builder.Services, builder.Configuration);
         }
+
+        HandlerCollection.AddMessageHandlersFromAssemblies(builder.Services, typeof(OrchestratorAssemblyMarker));
 
         RemoveRavenDatabaseHostedService(builder.Services);
 

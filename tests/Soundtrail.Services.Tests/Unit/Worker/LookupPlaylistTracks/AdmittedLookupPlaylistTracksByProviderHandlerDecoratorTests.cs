@@ -22,7 +22,7 @@ public sealed class AdmittedLookupPlaylistTracksByProviderHandlerDecoratorTests
             new LookupExecutionAdmissionRequest(LookupSource.Kworb, request.Id, environment.Clock.UtcNow));
         environment.AdmissionPort.CommittedCommandIds.Should().Equal(request.Id);
         environment.AdmissionPort.ReleasedCommandIds.Should().BeEmpty();
-        environment.CommandBus.Messages.Should().BeEmpty();
+        environment.CommandBus.SentMessages.Should().BeEmpty();
     }
 
     [Fact]
@@ -37,7 +37,7 @@ public sealed class AdmittedLookupPlaylistTracksByProviderHandlerDecoratorTests
 
         await action.Should().ThrowAsync<LookupExecutionShortCircuitException>();
         environment.InnerHandler.Calls.Should().Be(0);
-        var message = environment.CommandBus.Messages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
+        var message = environment.CommandBus.SentMessages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
         message.RequestedAt.Should().Be(request.RequestedAt);
         message.CorrelationId.Should().Be(request.CorrelationId);
         var duplicate = message.Result.Should().BeOfType<LookupResult.Duplicate>().Subject;
@@ -58,7 +58,7 @@ public sealed class AdmittedLookupPlaylistTracksByProviderHandlerDecoratorTests
 
         await action.Should().ThrowAsync<LookupExecutionShortCircuitException>();
         environment.InnerHandler.Calls.Should().Be(0);
-        var message = environment.CommandBus.Messages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
+        var message = environment.CommandBus.SentMessages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
         message.RequestedAt.Should().Be(request.RequestedAt);
         message.CorrelationId.Should().Be(request.CorrelationId);
         var deferred = message.Result.Should().BeOfType<LookupResult.Deferred>().Subject;

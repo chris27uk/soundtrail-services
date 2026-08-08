@@ -12,6 +12,7 @@ using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.Processing.OnLookupCompleted;
+using Soundtrail.Services.Tests.Fakes;
 
 namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnLookupCompleted;
 

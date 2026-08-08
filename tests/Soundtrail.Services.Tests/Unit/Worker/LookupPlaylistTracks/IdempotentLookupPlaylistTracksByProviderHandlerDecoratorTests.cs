@@ -19,7 +19,7 @@ public sealed class IdempotentLookupPlaylistTracksByProviderHandlerDecoratorTest
         environment.ReceiptStore.TryBeginCommandIds.Should().Equal(request.Id);
         environment.ReceiptStore.CompletedCommandIds.Should().Equal(request.Id);
         environment.ReceiptStore.ReleasedCommandIds.Should().BeEmpty();
-        environment.CommandBus.Messages.Should().BeEmpty();
+        environment.CommandBus.SentMessages.Should().BeEmpty();
     }
 
     [Fact]
@@ -34,7 +34,7 @@ public sealed class IdempotentLookupPlaylistTracksByProviderHandlerDecoratorTest
 
         environment.InnerHandler.Calls.Should().Be(0);
         environment.ReceiptStore.CompletedCommandIds.Should().BeEmpty();
-        var message = environment.CommandBus.Messages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
+        var message = environment.CommandBus.SentMessages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
         message.RequestedAt.Should().Be(request.RequestedAt);
         message.CorrelationId.Should().Be(request.CorrelationId);
         var duplicate = message.Result.Should().BeOfType<LookupResult.Duplicate>().Subject;

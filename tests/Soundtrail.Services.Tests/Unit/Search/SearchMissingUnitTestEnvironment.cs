@@ -6,6 +6,7 @@ using Soundtrail.Services.Api.Features.Catalog.Search;
 using Soundtrail.Services.Api.Features.Catalog.Search.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.Search.Contract;
 using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
+using Soundtrail.Services.Tests.Fakes;
 
 namespace Soundtrail.Services.Tests.Unit.Search;
 
@@ -16,7 +17,7 @@ internal sealed class SearchMissingUnitTestEnvironment
         SearchPortFake port,
         DiscoveryFeedbackPortFake discoveryFeedbackPort,
         CommandBusFake commandBus,
-        ClockPortFake clock)
+        ClockFake clock)
     {
         Request = request;
         Port = port;
@@ -33,7 +34,7 @@ internal sealed class SearchMissingUnitTestEnvironment
 
     public CommandBusFake CommandBus { get; }
 
-    public ClockPortFake Clock { get; }
+    public ClockFake Clock { get; }
 
     public static SearchMissingUnitTestEnvironment ForMissingSearch(
         string queryText = "u2",
@@ -43,7 +44,7 @@ internal sealed class SearchMissingUnitTestEnvironment
             new SearchPortFake(),
             new DiscoveryFeedbackPortFake(),
             new CommandBusFake(),
-            new ClockPortFake(new DateTimeOffset(2024, 6, 7, 8, 9, 10, TimeSpan.Zero)));
+            new ClockFake(new DateTimeOffset(2024, 6, 7, 8, 9, 10, TimeSpan.Zero)));
 
     public SearchHandler CreateSubjectUnderTest() => new(Port, CommandBus, DiscoveryFeedbackPort, Clock);
 
@@ -60,25 +61,9 @@ internal sealed class SearchMissingUnitTestEnvironment
         }
     }
 
-    public sealed class CommandBusFake : ICommandBus
-    {
-        public List<RequestUnknownMusicDataMessage> Commands { get; } = [];
-
-        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
-        {
-            Commands.Add((RequestUnknownMusicDataMessage)message);
-            return Task.CompletedTask;
-        }
-    }
-
     public sealed class DiscoveryFeedbackPortFake : IDiscoveryFeedbackPort
     {
         public Task<DiscoveryFeedbackResponse?> GetAsync(EnrichmentTarget target, CancellationToken cancellationToken) =>
             Task.FromResult<DiscoveryFeedbackResponse?>(null);
-    }
-
-    public sealed class ClockPortFake(DateTimeOffset utcNow) : IClockPort
-    {
-        public DateTimeOffset UtcNow { get; } = utcNow;
     }
 }

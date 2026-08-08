@@ -6,6 +6,7 @@ using Soundtrail.Domain.Discovery.Assesment;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Internal.Projector.Features.OnWorkRequested;
+using Soundtrail.Services.Tests.Fakes;
 
 namespace Soundtrail.Services.Tests.Unit.Projector.OnWorkRequested;
 
@@ -37,15 +38,4 @@ internal sealed class WorkRequestedProjectorUnitTestEnvironment
             riskScore,
             requestedAt ?? new DateTimeOffset(2026, 7, 15, 8, 11, 0, TimeSpan.Zero),
             CorrelationId.From(correlationId));
-
-    public sealed class CommandBusFake : ICommandBus
-    {
-        public List<IMessage> Commands { get; } = [];
-
-        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
-        {
-            Commands.Add(message);
-            return Task.CompletedTask;
-        }
-    }
 }

@@ -136,7 +136,7 @@ public sealed class SearchResultsExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Should().ContainSingle();
+        environment.CommandBus.SentMessages.Should().ContainSingle();
     }
 
     [Fact]
@@ -146,7 +146,7 @@ public sealed class SearchResultsExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().SearchCriteria.Should().Be(new SearchCriteria("u2", SearchType.Artist));
+        environment.CommandBus.SentMessages.OfType<RequestUnknownMusicDataMessage>().Single().SearchCriteria.Should().Be(new SearchCriteria("u2", SearchType.Artist));
     }
 
     [Fact]
@@ -156,7 +156,7 @@ public sealed class SearchResultsExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().Priority.Should().Be(LookupPriorityBand.High);
+        environment.CommandBus.SentMessages.OfType<RequestUnknownMusicDataMessage>().Single().Priority.Should().Be(LookupPriorityBand.High);
     }
 
     [Fact]
@@ -166,7 +166,7 @@ public sealed class SearchResultsExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().TrustLevel.Should().Be(100);
+        environment.CommandBus.SentMessages.OfType<RequestUnknownMusicDataMessage>().Single().TrustLevel.Should().Be(100);
     }
 
     [Fact]
@@ -176,7 +176,7 @@ public sealed class SearchResultsExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().RiskScore.Should().Be(0);
+        environment.CommandBus.SentMessages.OfType<RequestUnknownMusicDataMessage>().Single().RiskScore.Should().Be(0);
     }
 
     [Fact]
@@ -186,7 +186,7 @@ public sealed class SearchResultsExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().RequestedAt.Should().Be(environment.Clock.UtcNow);
+        environment.CommandBus.SentMessages.OfType<RequestUnknownMusicDataMessage>().Single().RequestedAt.Should().Be(environment.Clock.UtcNow);
     }
 
     [Fact]

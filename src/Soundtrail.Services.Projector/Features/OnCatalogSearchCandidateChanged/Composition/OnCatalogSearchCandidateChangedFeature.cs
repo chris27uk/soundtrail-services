@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
+using Raven.Client.Documents;
 using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Adapters.Persistence;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateChanged.Adapters;
@@ -15,8 +15,9 @@ public sealed class OnCatalogSearchCandidateChangedFeature : IProjectorFeature
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddRavenDocumentStore(configuration);
-        services.TryAddScoped<IStoreCatalogSearchCandidatePort, RavenStoreCatalogSearchCandidatePort>();
-        services.TryAddScoped<CatalogSearchCandidateChangedProjectorHandler>();
+
+        OnCatalogSearchCandidateChangedComposition.Configure(services, new(
+            sp => new RavenStoreCatalogSearchCandidatePort(sp.GetRequiredService<IDocumentStore>())));
     }
 
     public void ConfigureApplication(WebApplication app)

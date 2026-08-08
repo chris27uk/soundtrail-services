@@ -1,4 +1,3 @@
-using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Contract;
 
@@ -26,17 +25,5 @@ public sealed class LookupDataNotCompleteTests
             sut => sut.Handle(new GetTracksForPlaylistRequest(environment.PlaylistId)));
 
         response!.Discovery!.Status.Should().Be("scheduled");
-    }
-
-    [Fact]
-    public async Task Given_A_Request_Is_Being_Orchestrated_Then_Assessment_Is_Requested()
-    {
-        var environment = GetTracksForPlaylistSociableTestEnvironment.ForLookupDataNotComplete();
-
-        await environment.ProjectOnChange(
-            sut => sut.Handle(new GetTracksForPlaylistRequest(environment.PlaylistId)));
-
-        environment.SentMessage<AssessWorkMessage>().Target.NormalisedIdentifier.Should()
-            .Be($"child_tracks_for_playlist:{environment.PlaylistId.Value}");
     }
 }

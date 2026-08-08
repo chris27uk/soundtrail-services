@@ -494,20 +494,20 @@ Examples:
 
 - `Unit/GetAlbum/...`
 - `Unit/SearchCatalog/...`
-- `Integration/GetAlbum/...`
-- `Integration/Ports/CatalogSearch/...`
+- `Integration/GetTracksForPlaylist/{Api,Orchestrator,Worker,Projector}/...`
 
 Prefer scenario-focused test classes over giant omnibus fixtures.
 
-Integration tests should be grouped by the technology being exercised.
+For a vertical feature that spans apps, group integration coverage under the feature, then by layer:
 
-Examples:
+- `Integration/{Feature}/Api/` — route tests (status, error shapes, light DTO concerns) and Fake+Real contracts for ports used by that route
+- `Integration/{Feature}/Orchestrator/` — Fake+Real contracts for orchestrator adapters on that feature path
+- `Integration/{Feature}/Worker/` — Fake+Real contracts for worker adapters on that feature path (e.g. WireMock HTTP)
+- `Integration/{Feature}/Projector/` — Fake+Real contracts for projector adapters on that feature path (e.g. Raven)
 
-- `Integration/Api/WebApi/...`
-- `Integration/Api/Ports/Raven/...`
-- `Integration/Enrichment/Ports/Http/...`
+Skip cross-cutting ports such as `ICommandBus` and `IClockPort` unless they have feature-specific adapter behaviour worth contracting.
 
-Do not use feature-level integration suites to prove broad business behavior when the real subject under test is a technology boundary such as Web API routing, RavenDB persistence, HTTP clients, or queue wiring.
+Shared adapters used by many features may still live under a shared `Integration/Ports/...` tree. Do not use feature integration folders to re-prove broad business behaviour that belongs in sociable unit tests.
 
 ### Web API Integration Tests
 

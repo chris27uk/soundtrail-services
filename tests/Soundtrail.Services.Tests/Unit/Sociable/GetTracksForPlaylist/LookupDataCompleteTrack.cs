@@ -3,7 +3,6 @@ using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
 
 namespace Soundtrail.Services.Tests.Unit.Sociable.GetTracksForPlaylist;
 

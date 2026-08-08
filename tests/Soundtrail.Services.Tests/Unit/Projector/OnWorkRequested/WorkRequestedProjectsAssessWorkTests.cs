@@ -14,7 +14,7 @@ public sealed class WorkRequestedProjectsAssessWorkTests
 
         await subject.Handle(WorkRequestedProjectorUnitTestEnvironment.CreateSearchCriteriaWorkRequested());
 
-        environment.CommandBus.Commands.Should().ContainSingle().Which.Should().BeOfType<AssessWorkMessage>();
+        environment.CommandBus.SentMessages.Should().ContainSingle().Which.Should().BeOfType<AssessWorkMessage>();
     }
 
     [Fact]
@@ -32,7 +32,7 @@ public sealed class WorkRequestedProjectsAssessWorkTests
                 requestedAt: new DateTimeOffset(2026, 7, 15, 8, 11, 0, TimeSpan.Zero),
                 correlationId: "correlation-1"));
 
-        var firstId = environment.CommandBus.Commands.Cast<AssessWorkMessage>().Single().Id.Value;
+        var firstId = environment.CommandBus.SentMessages.Cast<AssessWorkMessage>().Single().Id.Value;
 
         await subject.Handle(
             WorkRequestedProjectorUnitTestEnvironment.CreateSearchCriteriaWorkRequested(
@@ -43,7 +43,7 @@ public sealed class WorkRequestedProjectsAssessWorkTests
                 requestedAt: new DateTimeOffset(2026, 7, 15, 8, 11, 0, TimeSpan.Zero),
                 correlationId: "correlation-1"));
 
-        var secondId = environment.CommandBus.Commands.Cast<AssessWorkMessage>().Last().Id.Value;
+        var secondId = environment.CommandBus.SentMessages.Cast<AssessWorkMessage>().Last().Id.Value;
 
         firstId.Should().Be(secondId);
         firstId.Should().StartWith("AssessWork:");
@@ -61,7 +61,7 @@ public sealed class WorkRequestedProjectsAssessWorkTests
                 searchType: SearchType.Track,
                 correlationId: "child_tracks_for_playlist:worldtop100:search:midnight-signals-aurora-lane-2024-remake-radio-edit-extended-version-featuring-someone-else"));
 
-        environment.CommandBus.Commands.Cast<AssessWorkMessage>().Single().Id.Value.Length.Should().BeLessThanOrEqualTo(128);
+        environment.CommandBus.SentMessages.Cast<AssessWorkMessage>().Single().Id.Value.Length.Should().BeLessThanOrEqualTo(128);
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public sealed class WorkRequestedProjectsAssessWorkTests
 
         await subject.Handle(WorkRequestedProjectorUnitTestEnvironment.CreateSearchCriteriaWorkRequested(correlationId: "corr-42"));
 
-        environment.CommandBus.Commands.Cast<AssessWorkMessage>().Single().CorrelationId.Value.Should().Be("corr-42");
+        environment.CommandBus.SentMessages.Cast<AssessWorkMessage>().Single().CorrelationId.Value.Should().Be("corr-42");
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public sealed class WorkRequestedProjectsAssessWorkTests
 
         await subject.Handle(WorkRequestedProjectorUnitTestEnvironment.CreateSearchCriteriaWorkRequested(trustLevel: 77));
 
-        environment.CommandBus.Commands.Cast<AssessWorkMessage>().Single().TrustLevel.Should().Be(77);
+        environment.CommandBus.SentMessages.Cast<AssessWorkMessage>().Single().TrustLevel.Should().Be(77);
     }
 
     [Fact]
@@ -94,7 +94,7 @@ public sealed class WorkRequestedProjectsAssessWorkTests
 
         await subject.Handle(WorkRequestedProjectorUnitTestEnvironment.CreateSearchCriteriaWorkRequested(riskScore: 12));
 
-        environment.CommandBus.Commands.Cast<AssessWorkMessage>().Single().RiskScore.Should().Be(12);
+        environment.CommandBus.SentMessages.Cast<AssessWorkMessage>().Single().RiskScore.Should().Be(12);
     }
 
     [Fact]
@@ -106,6 +106,6 @@ public sealed class WorkRequestedProjectsAssessWorkTests
         await subject.Handle(
             WorkRequestedProjectorUnitTestEnvironment.CreateSearchCriteriaWorkRequested(priority: LookupPriorityBand.Low));
 
-        environment.CommandBus.Commands.Cast<AssessWorkMessage>().Single().Priority.Should().Be(LookupPriorityBand.Low);
+        environment.CommandBus.SentMessages.Cast<AssessWorkMessage>().Single().Priority.Should().Be(LookupPriorityBand.Low);
     }
 }

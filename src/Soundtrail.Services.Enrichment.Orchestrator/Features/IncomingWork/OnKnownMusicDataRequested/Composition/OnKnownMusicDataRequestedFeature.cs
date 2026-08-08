@@ -28,9 +28,12 @@ public sealed class OnKnownMusicDataRequestedFeature : IOrchestratorFeature
             "known-music-data-requests");
         services.TryAddSingleton<ITypeRegistry>(_ => TypeTranslationRegistry.Default);
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
-        services.TryAddSingleton<IWorkPlanner, WorkPlanner>();
-        services.TryAddScoped<IEventStreamRepository<CatalogWorkId>, CatalogSearchEventStreamRepository>();
-        services.TryAddScoped<IHandler<RequestKnownMusicDataMessage>, OnKnownMusicDataRequestedHandler>();
+
+        OnKnownMusicDataRequestedComposition.Configure(services, new(
+            _ => new WorkPlanner(),
+            sp => sp.GetRequiredService<CatalogSearchEventStreamRepository>()));
+
+        services.TryAddScoped<CatalogSearchEventStreamRepository>();
     }
 
     public void ConfigureApplication(WebApplication app)

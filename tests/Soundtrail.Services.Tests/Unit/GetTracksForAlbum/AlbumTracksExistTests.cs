@@ -179,7 +179,7 @@ public sealed class AlbumTracksExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Should().ContainSingle();
+        environment.CommandBus.SentMessages.Should().ContainSingle();
     }
 
     [Fact]
@@ -190,7 +190,7 @@ public sealed class AlbumTracksExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().Operation.Should().Be(new CatalogItemOperation.ChildTracksForAlbum(albumId));
+        environment.CommandBus.SentMessages.OfType<RequestKnownMusicDataMessage>().Single().Operation.Should().Be(new CatalogItemOperation.ChildTracksForAlbum(albumId));
     }
 
     [Fact]
@@ -200,7 +200,7 @@ public sealed class AlbumTracksExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().Priority.Should().Be(LookupPriorityBand.High);
+        environment.CommandBus.SentMessages.OfType<RequestKnownMusicDataMessage>().Single().Priority.Should().Be(LookupPriorityBand.High);
     }
 
     [Fact]
@@ -210,7 +210,7 @@ public sealed class AlbumTracksExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().TrustLevel.Should().Be(100);
+        environment.CommandBus.SentMessages.OfType<RequestKnownMusicDataMessage>().Single().TrustLevel.Should().Be(100);
     }
 
     [Fact]
@@ -220,7 +220,7 @@ public sealed class AlbumTracksExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().RiskScore.Should().Be(0);
+        environment.CommandBus.SentMessages.OfType<RequestKnownMusicDataMessage>().Single().RiskScore.Should().Be(0);
     }
 
     [Fact]
@@ -230,6 +230,6 @@ public sealed class AlbumTracksExistTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().RequestedAt.Should().Be(environment.Clock.UtcNow);
+        environment.CommandBus.SentMessages.OfType<RequestKnownMusicDataMessage>().Single().RequestedAt.Should().Be(environment.Clock.UtcNow);
     }
 }

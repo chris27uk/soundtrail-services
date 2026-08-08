@@ -7,9 +7,7 @@ using Soundtrail.Adapters.Messaging;
 using Soundtrail.Adapters.Persistence;
 using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery.Messages;
-using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure;
 using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Messaging;
 using Soundtrail.Services.ServiceDefaults;
@@ -27,9 +25,12 @@ public sealed class OnLookupCompletedFeature : IOrchestratorFeature
             "catalog-lookup-completed");
         services.TryAddSingleton<ITypeRegistry>(_ => TypeTranslationRegistry.Default);
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
-        services.TryAddScoped<LookupCompletedHandler>();
-        services.TryAddScoped<IEventStreamRepository<CatalogWorkId>, CatalogSearchEventStreamRepository>();
-        services.TryAddScoped<IHandler<CatalogLookupCompleted>, LookupCompletedHandler>();
+
+        OnLookupCompletedComposition.Configure(services, new(
+            sp => sp.GetRequiredService<CatalogSearchEventStreamRepository>(),
+            sp => sp.GetRequiredService<ICommandBus>()));
+
+        services.TryAddScoped<CatalogSearchEventStreamRepository>();
     }
 
     public void ConfigureApplication(WebApplication app)

@@ -6,6 +6,7 @@ using Soundtrail.Domain.Common;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.ExecutionAdmission;
 using Soundtrail.Services.Tests.Integration.Ports;
 using StackExchange.Redis;
+using Soundtrail.Services.Tests.Fakes;
 
 namespace Soundtrail.Services.Tests.Integration.Worker.Shared;
 
@@ -23,7 +24,7 @@ internal sealed class LookupExecutionAdmissionDecoratorIntegrationTestEnvironmen
         this.connectionMultiplexer = connectionMultiplexer;
         AdmissionPort = admissionPort;
         CommandBus = new CommandBusFake();
-        Clock = new ClockFake();
+        Clock = new ClockFake(new DateTimeOffset(2026, 7, 21, 10, 0, 0, TimeSpan.Zero));
     }
 
     public RedisLookupExecutionAdmissionPort AdmissionPort { get; }
@@ -74,20 +75,4 @@ internal sealed class LookupExecutionAdmissionDecoratorIntegrationTestEnvironmen
             SafetyMarginPercent = 0,
             WindowSeconds = 60
         };
-
-    public sealed class ClockFake : IClockPort
-    {
-        public DateTimeOffset UtcNow { get; set; } = new(2026, 7, 21, 10, 0, 0, TimeSpan.Zero);
-    }
-
-    public sealed class CommandBusFake : ICommandBus
-    {
-        public List<IMessage> Messages { get; } = [];
-
-        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
-        {
-            Messages.Add(message);
-            return Task.CompletedTask;
-        }
-    }
 }

@@ -14,6 +14,7 @@ using Soundtrail.Services.Tests.Integration.Ports;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;
+using Soundtrail.Services.Tests.Fakes;
 
 namespace Soundtrail.Services.Tests.Integration.Worker.LookupStreamingLocations;
 
@@ -69,7 +70,7 @@ internal sealed class LookupStreamingLocationHandlerIntegrationTestEnvironment :
             server,
             client,
             new CommandBusFake(),
-            new ClockFake());
+            new ClockFake(new DateTimeOffset(2026, 7, 20, 11, 45, 0, TimeSpan.Zero)));
 
         await environment.SeedTrackAsync(seed, title, artistName, isrc);
         return environment;
@@ -172,21 +173,5 @@ internal sealed class LookupStreamingLocationHandlerIntegrationTestEnvironment :
                 UpdatedAt = new DateTimeOffset(2026, 7, 20, 11, 0, 0, TimeSpan.Zero)
             });
         await session.SaveChangesAsync();
-    }
-
-    public sealed class CommandBusFake : ICommandBus
-    {
-        public List<IMessage> Messages { get; } = [];
-
-        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
-        {
-            Messages.Add(message);
-            return Task.CompletedTask;
-        }
-    }
-
-    public sealed class ClockFake : Soundtrail.Adapters.Timing.IClockPort
-    {
-        public DateTimeOffset UtcNow { get; set; } = new(2026, 7, 20, 11, 45, 0, TimeSpan.Zero);
     }
 }
