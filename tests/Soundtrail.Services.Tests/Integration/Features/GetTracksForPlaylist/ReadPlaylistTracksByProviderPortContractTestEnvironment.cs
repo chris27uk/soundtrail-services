@@ -4,12 +4,11 @@ using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Common;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks.Adapters;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks.Ports;
-using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForPlaylist;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForPlaylist.Support;
 using System.Net;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;
-using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForPlaylist.Support;
 
 namespace Soundtrail.Services.Tests.Integration.Features.GetTracksForPlaylist;
 

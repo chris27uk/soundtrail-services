@@ -7,6 +7,7 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupMusicbrainzSearchResults;
+using Soundtrail.Services.Enrichment.Worker.Features.LookupMusicbrainzSearchResults.Composition;
 using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
 using Soundtrail.Services.Tests.Unit.Sociable.Features.Search;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;

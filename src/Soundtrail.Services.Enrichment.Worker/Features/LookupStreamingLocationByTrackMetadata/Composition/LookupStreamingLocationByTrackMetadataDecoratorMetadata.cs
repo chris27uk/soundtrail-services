@@ -7,17 +7,17 @@ using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
 
-namespace Soundtrail.Services.Enrichment.Worker.Features.LookupStreamingLocationByIsrc;
+namespace Soundtrail.Services.Enrichment.Worker.Features.LookupStreamingLocationByTrackMetadata.Composition;
 
-public sealed class LookupStreamingLocationByIsrcDecoratorMetadata : ILookupDecoratorMetadata<LookupStreamingLocationByIsrcMessage>
+public sealed class LookupStreamingLocationByTrackMetadataDecoratorMetadata : ILookupDecoratorMetadata<LookupStreamingLocationByTrackMetadataMessage>
 {
     public LookupSource Source => LookupSource.Odesli;
 
-    public LookupResultContext CreateContext(LookupStreamingLocationByIsrcMessage message) =>
+    public LookupResultContext CreateContext(LookupStreamingLocationByTrackMetadataMessage message) =>
         new(
             CatalogWorkId.From(new CatalogItemOperation.StreamingLocationForTrack(message.TrackId)),
             message.Id);
 
-    public CatalogItem CreateExistingItem(LookupStreamingLocationByIsrcMessage message, DateTimeOffset observedAt) =>
+    public CatalogItem CreateExistingItem(LookupStreamingLocationByTrackMetadataMessage message, DateTimeOffset observedAt) =>
         new CatalogItem.MusicTrack(new Track(message.TrackId));
 }

@@ -17,8 +17,8 @@ using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Contract;
 using Soundtrail.Services.Api.Features.Catalog.Search.Adapters;
-using Soundtrail.Services.Api.Features.Catalog.Shared.Adapters;
-using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
+using Soundtrail.Services.Api.Shared.Adapters;
+using Soundtrail.Services.Api.Shared.Contract;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks.Adapters;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.MusicMetadata;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.StreamingLocations;
@@ -580,7 +580,7 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
                             track.ArtworkUrl,
                             track.StreamingLocations.Length > 0,
                             track.StreamingLocations
-                                .Select(static location => new Soundtrail.Services.Api.Features.Catalog.Shared.Contract.StreamingLocationResponse(
+                                .Select(static location => new Soundtrail.Services.Api.Shared.Contract.StreamingLocationResponse(
                                     location.Provider,
                                     location.ExternalId,
                                     location.Url))

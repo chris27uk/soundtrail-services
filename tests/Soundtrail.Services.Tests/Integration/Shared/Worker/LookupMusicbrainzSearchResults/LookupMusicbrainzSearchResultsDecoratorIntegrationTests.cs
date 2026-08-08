@@ -4,7 +4,7 @@ using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Domain.Search;
-using Soundtrail.Services.Enrichment.Worker.Features.LookupMusicbrainzSearchResults;
+using Soundtrail.Services.Enrichment.Worker.Features.LookupMusicbrainzSearchResults.Composition;
 using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
 using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
 using Soundtrail.Services.Tests.Integration.Shared.Worker;

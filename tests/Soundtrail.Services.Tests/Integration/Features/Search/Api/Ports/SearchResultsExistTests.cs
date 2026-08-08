@@ -1,6 +1,7 @@
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Search;
+using Soundtrail.Services.Tests.Integration.Features.Search.Support;
 
 namespace Soundtrail.Services.Tests.Integration.Search.Api.Ports;
 

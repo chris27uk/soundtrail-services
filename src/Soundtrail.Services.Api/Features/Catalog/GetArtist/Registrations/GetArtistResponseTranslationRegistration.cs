@@ -1,43 +1,40 @@
 using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Contracts.Persistence;
-using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
-using Soundtrail.Services.Api.Features.Catalog.GetAlbum.Adapters;
-using Soundtrail.Services.Api.Features.Catalog.GetAlbum.Contract;
+using Soundtrail.Services.Api.Features.Catalog.GetArtist.Adapters;
+using Soundtrail.Services.Api.Features.Catalog.GetArtist.Contract;
 using Soundtrail.Services.Api.Shared.Adapters;
 using Soundtrail.Services.Api.Shared.Contract;
 
-namespace Soundtrail.Services.Api.Features.Catalog.GetAlbum.Registrations;
+namespace Soundtrail.Services.Api.Features.Catalog.GetArtist.Registrations;
 
-public sealed class AlbumDetailsResponseTranslationRegistration : ITypeTranslationRegistration
+public sealed class GetArtistResponseTranslationRegistration : ITypeTranslationRegistration
 {
     public void Register(TypeTranslationRegistry registry)
     {
-        registry.RegisterPair<GetAlbumResponse, GetAlbumResponseDto>(
+        registry.RegisterPair<GetArtistResponse, GetArtistResponseDto>(
             toDto: response =>
-                new GetAlbumResponseDto(
+                new GetArtistResponseDto(
                     response.ArtistId.Value,
                     response.ArtistName.Value,
-                    response.AlbumId.ArtistAlbumId,
-                    response.ReleaseDate,
+                    response.Description,
+                    response.ImageUrl,
                     ToDiscoveryDto(response.Discovery)),
             toDomainObject: dto =>
-                new GetAlbumResponse(
+                new GetArtistResponse(
                     ArtistId.From(dto.ArtistId),
                     ArtistName.From(dto.ArtistName),
-                    AlbumId.From(dto.ArtistId, dto.AlbumId),
-                    AlbumName: string.Empty,
-                    dto.ReleaseDate,
+                    dto.Description,
+                    dto.ImageUrl,
                     ToDiscovery(dto.Discovery)));
 
-        registry.Register<CatalogAlbumRecordDto, GetAlbumResponse>(
+        registry.Register<CatalogArtistRecordDto, GetArtistResponse>(
             record =>
-                new GetAlbumResponse(
+                new GetArtistResponse(
                     ArtistId.From(record.ArtistId),
-                    ArtistName.From(record.ArtistName),
-                    AlbumId.From(record.ArtistId, record.AlbumId),
-                    record.Name,
-                    record.ReleaseDate,
+                    ArtistName.From(record.Name),
+                    Description: null,
+                    record.ArtworkUrl,
                     Discovery: null));
     }
 

@@ -6,7 +6,7 @@ using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
 
-namespace Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks;
+namespace Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks.Composition;
 
 public sealed class LookupPlaylistTracksByProviderDecoratorMetadata : ILookupDecoratorMetadata<LookupPlaylistTracksByProviderMessage>
 {

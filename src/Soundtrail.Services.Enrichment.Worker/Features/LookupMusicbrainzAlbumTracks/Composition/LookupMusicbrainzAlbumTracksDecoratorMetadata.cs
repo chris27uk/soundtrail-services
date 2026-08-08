@@ -6,7 +6,7 @@ using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
 
-namespace Soundtrail.Services.Enrichment.Worker.Features.LookupMusicbrainzAlbumTracks;
+namespace Soundtrail.Services.Enrichment.Worker.Features.LookupMusicbrainzAlbumTracks.Composition;
 
 public sealed class LookupMusicbrainzAlbumTracksDecoratorMetadata : ILookupDecoratorMetadata<LookupMusicbrainzAlbumTracksMessage>
 {

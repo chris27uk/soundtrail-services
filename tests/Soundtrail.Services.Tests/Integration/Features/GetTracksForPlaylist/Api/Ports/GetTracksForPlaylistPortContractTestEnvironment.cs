@@ -65,7 +65,7 @@ internal sealed class GetTracksForPlaylistPortContractTestEnvironment : IAsyncDi
                     artworkUrl,
                     resolvedStreamingLocations.Length > 0,
                     resolvedStreamingLocations
-                        .Select(static location => new Soundtrail.Services.Api.Features.Catalog.Shared.Contract.StreamingLocationResponse(
+                        .Select(static location => new Soundtrail.Services.Api.Shared.Contract.StreamingLocationResponse(
                             location.Provider,
                             location.ExternalId,
                             location.Url))

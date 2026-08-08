@@ -164,7 +164,7 @@ internal sealed class GetTracksForArtistPortContractTestEnvironment : IAsyncDisp
                             track.ArtworkUrl,
                             track.StreamingLocations.Length > 0,
                             track.StreamingLocations
-                                .Select(static location => new Soundtrail.Services.Api.Features.Catalog.Shared.Contract.StreamingLocationResponse(
+                                .Select(static location => new Soundtrail.Services.Api.Shared.Contract.StreamingLocationResponse(
                                     location.Provider,
                                     location.ExternalId,
                                     location.Url))
