@@ -10,31 +10,52 @@ internal sealed class StoreDiscoveryFeedbackPortFake : IStoreDiscoveryFeedbackPo
 {
     private readonly Dictionary<string, DiscoveryFeedbackResponse> feedback = new(StringComparer.Ordinal);
 
+    public object? StoredEvent { get; private set; }
+
     public DiscoveryFeedbackResponse? Read(string targetId) => this.feedback.GetValueOrDefault(targetId);
 
     public void Seed(string targetId, DiscoveryFeedbackResponse response) =>
         this.feedback[targetId] = response;
 
-    public Task StoreAsync(WorkRequested @event, CancellationToken cancellationToken) =>
-        Store(@event.Target, "requested", @event.Priority, null, null, string.Empty, @event.RequestedAt);
+    public Task StoreAsync(WorkRequested @event, CancellationToken cancellationToken)
+    {
+        StoredEvent = @event;
+        return Store(@event.Target, "requested", @event.Priority, null, null, string.Empty, @event.RequestedAt);
+    }
 
-    public Task StoreAsync(WorkScheduled @event, CancellationToken cancellationToken) =>
-        Store(@event.Target, "scheduled", @event.Priority, @event.NextEligibleAt, @event.EarliestExpectedCompletionAt, @event.Reason, @event.ScheduledAt);
+    public Task StoreAsync(WorkScheduled @event, CancellationToken cancellationToken)
+    {
+        StoredEvent = @event;
+        return Store(@event.Target, "scheduled", @event.Priority, @event.NextEligibleAt, @event.EarliestExpectedCompletionAt, @event.Reason, @event.ScheduledAt);
+    }
 
-    public Task StoreAsync(WorkDeferred @event, CancellationToken cancellationToken) =>
-        Store(@event.Target, "deferred", @event.Priority, @event.NextEligibleAt, null, @event.Reason, @event.DeferredAt);
+    public Task StoreAsync(WorkDeferred @event, CancellationToken cancellationToken)
+    {
+        StoredEvent = @event;
+        return Store(@event.Target, "deferred", @event.Priority, @event.NextEligibleAt, null, @event.Reason, @event.DeferredAt);
+    }
 
-    public Task StoreAsync(WorkCompleted @event, CancellationToken cancellationToken) =>
-        Store(@event.Target, "completed", @event.Priority, null, null, @event.Reason, @event.CompletedAt);
+    public Task StoreAsync(WorkCompleted @event, CancellationToken cancellationToken)
+    {
+        StoredEvent = @event;
+        return Store(@event.Target, "completed", @event.Priority, null, null, @event.Reason, @event.CompletedAt);
+    }
 
-    public Task StoreAsync(WorkRejected @event, CancellationToken cancellationToken) =>
-        Store(@event.Target, "rejected", @event.Priority, null, null, @event.Reason, @event.RejectedAt);
+    public Task StoreAsync(WorkRejected @event, CancellationToken cancellationToken)
+    {
+        StoredEvent = @event;
+        return Store(@event.Target, "rejected", @event.Priority, null, null, @event.Reason, @event.RejectedAt);
+    }
 
-    public Task StoreAsync(WorkIgnored @event, CancellationToken cancellationToken) =>
-        Store(@event.Target, "ignored", @event.Priority, @event.NextEligibleAt, @event.EarliestExpectedCompletionAt, @event.Reason, @event.IgnoredAt);
+    public Task StoreAsync(WorkIgnored @event, CancellationToken cancellationToken)
+    {
+        StoredEvent = @event;
+        return Store(@event.Target, "ignored", @event.Priority, @event.NextEligibleAt, @event.EarliestExpectedCompletionAt, @event.Reason, @event.IgnoredAt);
+    }
 
     public Task StoreAsync(WorkAttemptFailed @event, CancellationToken cancellationToken)
     {
+        StoredEvent = @event;
         var existing = Read(@event.Target.NormalisedIdentifier);
         if (existing?.Status == "completed")
         {

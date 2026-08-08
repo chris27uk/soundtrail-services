@@ -27,6 +27,7 @@ using Soundtrail.Services.Enrichment.Worker.Shared.StreamingLocations;
 using Soundtrail.Services.Internal.Projector.Features.OnPlaylistTracksDiscovered.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.Adapters;
 using Soundtrail.Services.Tests.Integration.Ports;
+using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;
@@ -521,22 +522,6 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
     }
 
     internal sealed record StreamingCoverageSummary(IReadOnlyDictionary<string, bool> ByTrackId);
-
-    internal sealed class CommandBusFake : ICommandBus
-    {
-        public List<IMessage> Messages { get; } = [];
-
-        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
-        {
-            Messages.Add(message);
-            return Task.CompletedTask;
-        }
-    }
-
-    internal sealed class ClockFake : IClockPort
-    {
-        public DateTimeOffset UtcNow { get; set; } = new(2026, 7, 24, 12, 0, 0, TimeSpan.Zero);
-    }
 
     private sealed class TypeRegistryFake : ITypeRegistry
     {

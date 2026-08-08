@@ -6,7 +6,7 @@ using Soundtrail.Domain.Common;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.ExecutionAdmission;
 using Soundtrail.Services.Tests.Integration.Ports;
 using StackExchange.Redis;
-using Soundtrail.Services.Tests.Fakes;
+using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
 namespace Soundtrail.Services.Tests.Integration.Worker.Shared;
 

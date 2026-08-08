@@ -6,6 +6,7 @@ using Soundtrail.Services.Internal.Projector.Features.OnPlaylistTracksDiscovered
 using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Infrastructure;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForPlaylist;
 
 namespace Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.DependencyConfiguration.Projector;
 

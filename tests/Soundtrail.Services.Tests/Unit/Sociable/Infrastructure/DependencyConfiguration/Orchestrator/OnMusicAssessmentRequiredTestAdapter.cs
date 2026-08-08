@@ -4,7 +4,7 @@ using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.Prioritisation.OnMusicAssessmentRequired.Composition;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.Prioritisation.OnMusicAssessmentRequired.Planning;
-using Soundtrail.Services.Tests.Fakes;
+using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
 namespace Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.DependencyConfiguration.Orchestrator;
 

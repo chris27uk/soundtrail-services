@@ -7,10 +7,11 @@ using Microsoft.Extensions.Options;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.MusicMetadata;
 using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
-using Soundtrail.Services.Tests.Fakes;
+using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.Search;
 
 namespace Soundtrail.Services.Tests.Integration.Ports.LookupMusicbrainzSearchResults;
 

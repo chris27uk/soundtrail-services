@@ -10,7 +10,7 @@ using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
 using Soundtrail.Services.Enrichment.Worker.Shared.StreamingLocations;
 using Soundtrail.Services.Internal.Projector.Features.OnArtistCatalogChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnArtistCatalogChanged.Adapters;
-using Soundtrail.Services.Tests.Fakes;
+using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
 namespace Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes
 {

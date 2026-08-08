@@ -4,8 +4,8 @@ using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.IncomingWork.OnUnknownMusicDataRequested.Composition;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.RequestedWork;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateChanged.Adapters;
-using Soundtrail.Services.Tests.Fakes;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.Search;
 
 namespace Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.DependencyConfiguration.Orchestrator;
 

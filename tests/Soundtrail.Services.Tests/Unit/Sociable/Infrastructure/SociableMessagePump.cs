@@ -1,7 +1,7 @@
 using Soundtrail.Adapters.Projection;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
-using Soundtrail.Services.Tests.Fakes;
+using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
 namespace Soundtrail.Services.Tests.Unit.Sociable.Infrastructure;
 

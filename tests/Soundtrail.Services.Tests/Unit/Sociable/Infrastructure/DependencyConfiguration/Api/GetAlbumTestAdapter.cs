@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Soundtrail.Services.Api.Features.Catalog.GetAlbum.Composition;
 using Soundtrail.Services.Api.Infrastructure;
-using Soundtrail.Services.Tests.Fakes;
+using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 using Soundtrail.Services.Tests.Integration.GetAlbum.Api.Ports;
 using Soundtrail.Services.Tests.Unit.Sociable.GetTracksForPlaylist.Composition;
 

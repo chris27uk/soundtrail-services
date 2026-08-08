@@ -14,7 +14,7 @@ using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;
-using Soundtrail.Services.Tests.Fakes;
+using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
 namespace Soundtrail.Services.Tests.Integration.Worker.LookupMusicbrainzBrowse;
 

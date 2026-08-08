@@ -1,5 +1,5 @@
 using Soundtrail.Adapters.FeatureOrchestration;
-using Soundtrail.Services.Tests.Fakes;
+using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
 namespace Soundtrail.Services.Tests.Unit.Sociable.Infrastructure;
 

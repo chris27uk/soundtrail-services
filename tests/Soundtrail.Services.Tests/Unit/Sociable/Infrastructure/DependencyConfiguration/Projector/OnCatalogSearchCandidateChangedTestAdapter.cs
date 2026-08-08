@@ -3,6 +3,7 @@ using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateCh
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateChanged.Composition;
 using Soundtrail.Services.Internal.Projector.Infrastructure;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.Search;
 
 namespace Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.DependencyConfiguration.Projector;
 

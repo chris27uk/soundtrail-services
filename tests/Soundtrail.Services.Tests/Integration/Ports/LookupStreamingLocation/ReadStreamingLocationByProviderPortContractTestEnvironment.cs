@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 using Soundtrail.Domain.Common;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.StreamingLocations;
 using Soundtrail.Services.Enrichment.Worker.Shared.StreamingLocations;
-using Soundtrail.Services.Tests.Fakes;
+using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;

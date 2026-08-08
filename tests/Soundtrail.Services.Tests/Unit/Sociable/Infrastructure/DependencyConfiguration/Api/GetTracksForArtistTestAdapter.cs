@@ -4,10 +4,9 @@ using Soundtrail.Services.Api.Features.Catalog.GetTracksForArtist.Composition;
 using Soundtrail.Services.Api.Infrastructure;
 using Soundtrail.Services.Internal.Projector.Features.OnArtistCatalogChanged.Adapters;
 using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.Adapters;
-using Soundtrail.Services.Tests.Fakes;
+using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 using Soundtrail.Services.Tests.Integration.GetTracksForArtist.Api.Ports;
 using Soundtrail.Services.Tests.Unit.Sociable.GetTracksForPlaylist.Composition;
-using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
 namespace Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.DependencyConfiguration.Api;
 
