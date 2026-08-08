@@ -249,8 +249,13 @@ internal static class HandlerCollectionRegistrar
         HandlerCollection collection,
         IServiceProvider serviceProvider)
     {
-        var handler = serviceProvider.GetRequiredService<IHandler<TMessage>>();
-        collection.RegisterHandler(handler);
+        // Discovery scans assemblies for IHandler<> implementors (including transport DTO
+        // adapters). Sociable/partial compositions may not register every discovered type.
+        var handler = serviceProvider.GetService<IHandler<TMessage>>();
+        if (handler is not null)
+        {
+            collection.RegisterHandler(handler);
+        }
     }
 }
 
