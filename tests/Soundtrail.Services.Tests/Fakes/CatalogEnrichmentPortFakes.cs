@@ -114,8 +114,16 @@ internal sealed class ReadStreamingLocationByProviderPortFake : IReadStreamingLo
 
 internal sealed class ReadAlbumsByArtistIdPortFake : IReadAlbumsByArtistIdPort
 {
+    private readonly Dictionary<ArtistId, IReadOnlyList<CatalogDiscoveryEntry>> entries = [];
+
+    public ReadAlbumsByArtistIdPortFake WithAlbums(ArtistId artistId, params CatalogDiscoveryEntry[] albums)
+    {
+        entries[artistId] = albums;
+        return this;
+    }
+
     public Task<IReadOnlyList<CatalogDiscoveryEntry>> ReadAsync(ArtistId artistId, CancellationToken cancellationToken) =>
-        Task.FromResult<IReadOnlyList<CatalogDiscoveryEntry>>([]);
+        Task.FromResult(entries.GetValueOrDefault(artistId) ?? (IReadOnlyList<CatalogDiscoveryEntry>)[]);
 }
 
 internal sealed class ReadTracksByArtistIdPortFake : IReadTracksByArtistIdPort
@@ -134,8 +142,16 @@ internal sealed class ReadTracksByArtistIdPortFake : IReadTracksByArtistIdPort
 
 internal sealed class ReadTracksByAlbumIdPortFake : IReadTracksByAlbumIdPort
 {
+    private readonly Dictionary<AlbumId, IReadOnlyList<CatalogDiscoveryEntry>> entries = [];
+
+    public ReadTracksByAlbumIdPortFake WithTracks(AlbumId albumId, params CatalogDiscoveryEntry[] tracks)
+    {
+        entries[albumId] = tracks;
+        return this;
+    }
+
     public Task<IReadOnlyList<CatalogDiscoveryEntry>> ReadAsync(AlbumId albumId, CancellationToken cancellationToken) =>
-        Task.FromResult<IReadOnlyList<CatalogDiscoveryEntry>>([]);
+        Task.FromResult(entries.GetValueOrDefault(albumId) ?? (IReadOnlyList<CatalogDiscoveryEntry>)[]);
 }
 
 internal sealed class DiscoveryPlanningProjectionReaderFake : IDiscoveryPlanningProjectionReader

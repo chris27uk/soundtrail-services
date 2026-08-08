@@ -1,0 +1,56 @@
+using Microsoft.AspNetCore.TestHost;
+using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Catalog;
+using Soundtrail.Domain.Catalog.Albums;
+using Soundtrail.Domain.Catalog.Artists;
+using Soundtrail.Services.Api.Features.Catalog.GetAlbumsForArtist.Adapters;
+using Soundtrail.Services.Api.Features.Catalog.GetAlbumsForArtist.Contract;
+using Soundtrail.Services.Api.Infrastructure;
+
+namespace Soundtrail.Services.Tests.Integration.GetAlbumsForArtist.Api;
+
+internal sealed class GetAlbumsForArtistRouteTestEnvironment : IDisposable
+{
+    private readonly WebApplication app;
+
+    private GetAlbumsForArtistRouteTestEnvironment(WebApplication app)
+    {
+        this.app = app;
+    }
+
+    public HttpClient Client => app.GetTestClient();
+
+    public static GetAlbumsForArtistRouteTestEnvironment ForExistingArtistAlbums()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Services.AddSingleton<IApiHandler<GetAlbumsForArtistRequest, GetAlbumsForArtistResponse?>>(new GetAlbumsForArtistHandlerFake());
+        var app = builder.Build();
+        app.MapGetAlbumsForArtistEndpoints(AppTypeRegistry.ServiceLocation);
+        app.StartAsync().GetAwaiter().GetResult();
+        return new GetAlbumsForArtistRouteTestEnvironment(app);
+    }
+
+    public void Dispose()
+    {
+        app.StopAsync().GetAwaiter().GetResult();
+        app.DisposeAsync().AsTask().GetAwaiter().GetResult();
+    }
+
+    private sealed class GetAlbumsForArtistHandlerFake : IApiHandler<GetAlbumsForArtistRequest, GetAlbumsForArtistResponse?>
+    {
+        public Task<GetAlbumsForArtistResponse?> Handle(GetAlbumsForArtistRequest request, CancellationToken cancellationToken = default) =>
+            Task.FromResult<GetAlbumsForArtistResponse?>(
+                new GetAlbumsForArtistResponse(
+                    ArtistId.From("artist-1901"),
+                    ArtistName.From("The Artist"),
+                    [
+                        new GetAlbumsForArtistAlbumResponse(
+                            AlbumId.From("artist-1901", "album-2001"),
+                            new CatalogItemId.Album(AlbumId.From("artist-1901", "album-2001")),
+                            "The Album",
+                            new DateOnly(2024, 6, 7),
+                            "https://cdn.soundtrail.test/albums/album-2001.jpg")
+                    ]));
+    }
+}

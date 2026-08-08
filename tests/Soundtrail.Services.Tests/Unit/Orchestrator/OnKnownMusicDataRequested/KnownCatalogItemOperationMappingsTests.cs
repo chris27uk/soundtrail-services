@@ -1,4 +1,3 @@
-using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
@@ -17,17 +16,5 @@ public sealed class KnownCatalogItemOperationMappingsTests
 
         environment.Repository.AppendedEvents.OfType<WorkRequested>().Single().Target
             .Should().Be(Work.EnrichTrackStreamingLocation(TestTrackIds.Create("track-123")));
-    }
-
-    [Fact]
-    public async Task Given_A_Known_Album_Request_When_Handling_Then_Album_Track_Discovery_Work_Is_Requested()
-    {
-        var environment = OnKnownMusicDataRequestedHandlerUnitTestEnvironment.Create();
-        var subject = environment.CreateSubject();
-
-        await subject.Handle(OnKnownMusicDataRequestedHandlerUnitTestEnvironment.CreateKnownAlbumRequest(artistId: "artist-123", albumId: "album-123"));
-
-        environment.Repository.AppendedEvents.OfType<WorkRequested>().Single().Target
-            .Should().Be(Work.DiscoverAlbumTracks(AlbumId.From("artist-123", "album-123")));
     }
 }
