@@ -4,7 +4,7 @@ using Soundtrail.Domain.Common;
 using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
 using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
 
-namespace Soundtrail.Services.Tests.Integration.Worker.LookupPlaylistTracks;
+namespace Soundtrail.Services.Tests.Integration.GetTracksForPlaylist.Worker;
 
 public sealed class AdmittedLookupPlaylistTracksByProviderHandlerDecoratorIntegrationTests
 {
@@ -18,7 +18,7 @@ public sealed class AdmittedLookupPlaylistTracksByProviderHandlerDecoratorIntegr
         await subject.Handle(request);
 
         environment.InnerHandler.Calls.Should().Be(1);
-        environment.CommandBus.Messages.Should().BeEmpty();
+        environment.CommandBus.SentMessages.Should().BeEmpty();
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public sealed class AdmittedLookupPlaylistTracksByProviderHandlerDecoratorIntegr
         var action = () => subject.Handle(request);
 
         await action.Should().ThrowAsync<LookupExecutionShortCircuitException>();
-        var message = environment.CommandBus.Messages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
+        var message = environment.CommandBus.SentMessages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
         message.RequestedAt.Should().Be(request.RequestedAt);
         message.CorrelationId.Should().Be(request.CorrelationId);
         message.Result.Should().BeOfType<LookupResult.Duplicate>();
@@ -56,7 +56,7 @@ public sealed class AdmittedLookupPlaylistTracksByProviderHandlerDecoratorIntegr
         var action = () => subject.Handle(request);
 
         await action.Should().ThrowAsync<LookupExecutionShortCircuitException>();
-        var message = environment.CommandBus.Messages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
+        var message = environment.CommandBus.SentMessages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
         var deferred = message.Result.Should().BeOfType<LookupResult.Deferred>().Subject;
         deferred.Reason.Should().Contain("budget temporarily unavailable");
     }

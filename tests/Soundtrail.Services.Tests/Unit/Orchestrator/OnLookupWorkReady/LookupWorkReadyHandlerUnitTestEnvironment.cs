@@ -7,6 +7,7 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.Processing.OnLookupWorkReady;
+using Soundtrail.Services.Tests.Fakes;
 
 namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnLookupWorkReady;
 
@@ -46,15 +47,4 @@ internal sealed class LookupWorkReadyHandlerUnitTestEnvironment
             MessageId.For("cmd-playlist"),
             CorrelationId.From("corr-playlist"),
             new DateTimeOffset(2026, 7, 18, 9, 12, 0, TimeSpan.Zero));
-
-    public sealed class CommandBusFake : ICommandBus
-    {
-        public List<IMessage> Commands { get; } = [];
-
-        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
-        {
-            Commands.Add(message);
-            return Task.CompletedTask;
-        }
-    }
 }

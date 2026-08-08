@@ -54,8 +54,8 @@ public sealed class LookupCompletedHandlerTests
 
         await subject.Handle(LookupCompletedHandlerUnitTestEnvironment.CreatePlaylistCompleted());
 
-        environment.CommandBus.Commands.Should().ContainSingle().Which.Should().BeOfType<RequestUnknownMusicDataMessage>();
-        var command = (RequestUnknownMusicDataMessage)environment.CommandBus.Commands.Single();
+        environment.CommandBus.SentMessages.Should().ContainSingle().Which.Should().BeOfType<RequestUnknownMusicDataMessage>();
+        var command = (RequestUnknownMusicDataMessage)environment.CommandBus.SentMessages.Single();
         command.SearchCriteria.Query.Should().Be("Road Song The Travellers");
         command.SearchCriteria.SearchTypes.Should().Be(SearchType.Track);
         command.Priority.Should().Be(LookupPriorityBand.High);
@@ -77,7 +77,7 @@ public sealed class LookupCompletedHandlerTests
                 "Midnight Signals Aurora Lane",
                 TrackId.From(TestTrackIds.Value("23e97290be26a0d4877206df841e194ede54a324000b461100000000"))));
 
-        var command = environment.CommandBus.Commands
+        var command = environment.CommandBus.SentMessages
             .Should()
             .ContainSingle()
             .Which

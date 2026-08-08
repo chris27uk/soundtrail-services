@@ -1,6 +1,6 @@
 using Soundtrail.Domain.Catalog.Playlists;
 
-namespace Soundtrail.Services.Tests.Integration.Ports.GetTracksForPlaylist;
+namespace Soundtrail.Services.Tests.Integration.GetTracksForPlaylist.Api.Ports;
 
 public sealed class PlaylistTracksDoNotExistTests
 {

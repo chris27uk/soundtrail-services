@@ -12,6 +12,7 @@ using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.Processing.OnLookupCompleted;
+using Soundtrail.Services.Tests.Fakes;
 
 namespace Soundtrail.Services.Tests.Unit.Orchestrator.OnLookupCompleted;
 
@@ -291,17 +292,6 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
         {
             AppendedEvents = events.ToArray();
             return Task.FromResult(new AppendResult(true, stream.Version + events.Count, events.ToArray(), AppendOutcome.Appended));
-        }
-    }
-
-    public sealed class CommandBusFake : ICommandBus
-    {
-        public List<IMessage> Commands { get; } = [];
-
-        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
-        {
-            Commands.Add(message);
-            return Task.CompletedTask;
         }
     }
 }

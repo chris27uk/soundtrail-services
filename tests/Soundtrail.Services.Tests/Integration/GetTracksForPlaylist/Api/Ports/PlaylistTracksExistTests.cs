@@ -2,7 +2,7 @@ using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Catalog.Tracks;
 
-namespace Soundtrail.Services.Tests.Integration.Ports.GetTracksForPlaylist;
+namespace Soundtrail.Services.Tests.Integration.GetTracksForPlaylist.Api.Ports;
 
 public sealed class PlaylistTracksExistTests
 {

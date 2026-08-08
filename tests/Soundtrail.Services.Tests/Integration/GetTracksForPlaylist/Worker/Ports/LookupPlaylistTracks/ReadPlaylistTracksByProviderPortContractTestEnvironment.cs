@@ -10,7 +10,7 @@ using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;
 
-namespace Soundtrail.Services.Tests.Integration.Ports.LookupPlaylistTracks;
+namespace Soundtrail.Services.Tests.Integration.GetTracksForPlaylist.Worker.Ports.LookupPlaylistTracks;
 
 internal sealed class ReadPlaylistTracksByProviderPortContractTestEnvironment : IDisposable
 {

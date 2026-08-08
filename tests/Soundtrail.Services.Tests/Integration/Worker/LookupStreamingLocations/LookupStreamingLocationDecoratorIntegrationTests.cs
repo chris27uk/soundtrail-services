@@ -87,7 +87,7 @@ public sealed class LookupStreamingLocationDecoratorIntegrationTests
         var action = () => HandlerTestExtensions.Handle(subject, request);
 
         await action.Should().ThrowAsync<LookupExecutionShortCircuitException>();
-        environment.CommandBus.Messages.Single().Should().BeOfType<CatalogLookupCompleted>()
+        environment.CommandBus.SentMessages.Single().Should().BeOfType<CatalogLookupCompleted>()
             .Which.Result.Should().BeOfType<LookupResult.Duplicate>();
 
         environment.Clock.UtcNow = environment.Clock.UtcNow.AddSeconds(1);

@@ -3,6 +3,7 @@ using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Services.Internal.Projector.Features.OnWorkScheduled;
+using Soundtrail.Services.Tests.Fakes;
 
 namespace Soundtrail.Services.Tests.Unit.Projector.OnWorkScheduled;
 
@@ -32,15 +33,4 @@ internal sealed class WorkScheduledProjectorUnitTestEnvironment
             new DateTimeOffset(2026, 7, 18, 9, 2, 0, TimeSpan.Zero),
             "Planner selected the work.",
             scheduledAt ?? new DateTimeOffset(2026, 7, 18, 8, 59, 0, TimeSpan.Zero));
-
-    public sealed class CommandBusFake : ICommandBus
-    {
-        public List<IMessage> Commands { get; } = [];
-
-        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
-        {
-            Commands.Add(message);
-            return Task.CompletedTask;
-        }
-    }
 }

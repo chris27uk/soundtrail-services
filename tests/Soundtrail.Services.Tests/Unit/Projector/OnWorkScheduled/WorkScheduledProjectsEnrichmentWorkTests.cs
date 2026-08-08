@@ -13,7 +13,7 @@ public sealed class WorkScheduledProjectsEnrichmentWorkTests
 
         await subject.Handle(WorkScheduledProjectorUnitTestEnvironment.CreateEvent());
 
-        environment.CommandBus.Commands.Should().ContainSingle().Which.Should().BeOfType<DispatchLookupWork>();
+        environment.CommandBus.SentMessages.Should().ContainSingle().Which.Should().BeOfType<DispatchLookupWork>();
     }
 
     [Fact]
@@ -24,6 +24,6 @@ public sealed class WorkScheduledProjectsEnrichmentWorkTests
 
         await subject.Handle(WorkScheduledProjectorUnitTestEnvironment.CreateEvent(priority: LookupPriorityBand.Low));
 
-        environment.CommandBus.Commands.Cast<DispatchLookupWork>().Single().Priority.Should().Be(LookupPriorityBand.Low);
+        environment.CommandBus.SentMessages.Cast<DispatchLookupWork>().Single().Priority.Should().Be(LookupPriorityBand.Low);
     }
 }

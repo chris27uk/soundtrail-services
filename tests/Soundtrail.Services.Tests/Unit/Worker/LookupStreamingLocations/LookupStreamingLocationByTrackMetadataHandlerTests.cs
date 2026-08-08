@@ -19,7 +19,7 @@ public sealed class LookupStreamingLocationByTrackMetadataHandlerTests
 
         await subject.Handle(request, CancellationToken.None);
 
-        var completed = environment.CommandBus.Messages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
+        var completed = environment.CommandBus.SentMessages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
         completed.Result.Should().BeOfType<LookupResult.Succeeded>();
         environment.ReadStreamingLocationByProviderPort.RequestedArtistName.Should().Be("Northbound");
         environment.ReadStreamingLocationByProviderPort.RequestedTrackTitle.Should().Be("Summer Lights");
@@ -39,7 +39,7 @@ public sealed class LookupStreamingLocationByTrackMetadataHandlerTests
 
         await subject.Handle(request, CancellationToken.None);
 
-        var result = environment.CommandBus.Messages.Single()
+        var result = environment.CommandBus.SentMessages.Single()
             .Should().BeOfType<CatalogLookupCompleted>().Subject.Result
             .Should().BeOfType<LookupResult.NotFound>().Subject;
         result.Reason.Should().Be("Track metadata is incomplete for provider lookup.");
@@ -56,7 +56,7 @@ public sealed class LookupStreamingLocationByTrackMetadataHandlerTests
 
         await subject.Handle(request, CancellationToken.None);
 
-        var result = environment.CommandBus.Messages.Single()
+        var result = environment.CommandBus.SentMessages.Single()
             .Should().BeOfType<CatalogLookupCompleted>().Subject.Result
             .Should().BeOfType<LookupResult.NotFound>().Subject;
         result.Reason.Should().Be("Streaming location was not found for the requested provider.");

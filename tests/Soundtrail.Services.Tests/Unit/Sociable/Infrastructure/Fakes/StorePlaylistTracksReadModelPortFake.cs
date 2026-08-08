@@ -7,7 +7,6 @@ using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Contract;
 using Soundtrail.Services.Api.Features.Catalog.Shared.Contract;
 using Soundtrail.Services.Internal.Projector.Features.OnArtistCatalogChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnPlaylistTracksDiscovered.Adapters;
-using Soundtrail.Services.Tests.Unit.Sociable.GetTracksForPlaylist;
 
 namespace Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes
 {

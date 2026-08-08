@@ -1,6 +1,5 @@
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Operations;
-using Soundtrail.Services.Enrichment.Scheduler.Features.ImportKworbChart;
 using Soundtrail.Services.Enrichment.Scheduler.Features.ImportKworbChart.Adapters;
 
 namespace Soundtrail.Services.Tests.Unit.ImportKworbChart;

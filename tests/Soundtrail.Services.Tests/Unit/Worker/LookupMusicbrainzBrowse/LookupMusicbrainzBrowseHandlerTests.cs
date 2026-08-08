@@ -15,7 +15,7 @@ public sealed class LookupMusicbrainzBrowseHandlerTests
         await subject.Handle(request, CancellationToken.None);
 
         environment.ReadAlbumsByArtistIdPort.RequestedArtistId.Should().Be(request.ArtistId);
-        environment.CommandBus.Messages.Single()
+        environment.CommandBus.SentMessages.Single()
             .Should().BeOfType<CatalogLookupCompleted>().Subject.Result
             .Should().BeOfType<LookupResult.Succeeded>();
     }
@@ -30,7 +30,7 @@ public sealed class LookupMusicbrainzBrowseHandlerTests
         await subject.Handle(request, CancellationToken.None);
 
         environment.ReadTracksByArtistIdPort.RequestedArtistId.Should().Be(request.ArtistId);
-        environment.CommandBus.Messages.Single()
+        environment.CommandBus.SentMessages.Single()
             .Should().BeOfType<CatalogLookupCompleted>().Subject.Result
             .Should().BeOfType<LookupResult.Succeeded>();
     }
@@ -45,7 +45,7 @@ public sealed class LookupMusicbrainzBrowseHandlerTests
         await subject.Handle(request, CancellationToken.None);
 
         environment.ReadTracksByAlbumIdPort.RequestedAlbumId.Should().Be(request.AlbumId);
-        environment.CommandBus.Messages.Single()
+        environment.CommandBus.SentMessages.Single()
             .Should().BeOfType<CatalogLookupCompleted>().Subject.Result
             .Should().BeOfType<LookupResult.Succeeded>();
     }

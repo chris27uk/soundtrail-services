@@ -2,7 +2,7 @@ using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Domain.Common;
 
-namespace Soundtrail.Services.Tests.Integration.Worker.LookupPlaylistTracks;
+namespace Soundtrail.Services.Tests.Integration.GetTracksForPlaylist.Worker;
 
 public sealed class IdempotentLookupPlaylistTracksByProviderHandlerDecoratorIntegrationTests
 {
@@ -17,7 +17,7 @@ public sealed class IdempotentLookupPlaylistTracksByProviderHandlerDecoratorInte
         await environment.SaveReceiptChangesAsync();
 
         environment.InnerHandler.Calls.Should().Be(1);
-        environment.CommandBus.Messages.Should().BeEmpty();
+        environment.CommandBus.SentMessages.Should().BeEmpty();
         var receipt = await environment.LoadReceiptAsync(request.Id);
         receipt.Should().NotBeNull();
         receipt!.Completed.Should().BeTrue();
@@ -40,7 +40,7 @@ public sealed class IdempotentLookupPlaylistTracksByProviderHandlerDecoratorInte
         await subject.Handle(request);
 
         environment.InnerHandler.Calls.Should().Be(0);
-        var message = environment.CommandBus.Messages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
+        var message = environment.CommandBus.SentMessages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
         message.RequestedAt.Should().Be(request.RequestedAt);
         message.CorrelationId.Should().Be(request.CorrelationId);
         message.Result.Should().BeOfType<LookupResult.Duplicate>();

@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.TestHost;
-using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.Catalog.Search.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.Search.Contract;
+using Soundtrail.Services.Api.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Api.Search;
 
@@ -26,7 +26,7 @@ internal sealed class SearchRouteTestEnvironment : IDisposable
         builder.WebHost.UseTestServer();
         builder.Services.AddSingleton<IApiHandler<SearchRequest, SearchResponse?>>(new SearchHandlerFake());
         var app = builder.Build();
-        app.MapSearchEndpoints(new TypeRegistryFake());
+        app.MapSearchEndpoints(AppTypeRegistry.ServiceLocation);
         app.StartAsync().GetAwaiter().GetResult();
         return new SearchRouteTestEnvironment(app);
     }
@@ -53,36 +53,5 @@ internal sealed class SearchRouteTestEnvironment : IDisposable
                             null,
                             "https://cdn.soundtrail.test/artists/artist-3001.jpg")
                     ]));
-    }
-
-    private sealed class TypeRegistryFake : ITypeRegistry
-    {
-        public TDto ToDto<TDto>(object domainObject) where TDto : class => (ToDto(domainObject) as TDto)!;
-
-        public object ToDto(object domainObject)
-        {
-            var response = (SearchResponse)domainObject;
-            return new SearchResponseDto(
-                response.QueryText,
-                response.Filter.ToString(),
-                response.Results.Select(
-                        result => new SearchResultResponseDto(
-                            result.MusicCatalogId.NormalisedIdentifier,
-                            result.ResultType.ToString(),
-                            result.Title,
-                            result.ArtistName,
-                            result.AlbumTitle,
-                            result.ArtworkUrl))
-                    .ToArray(),
-                null);
-        }
-
-        public TDomain ToDomainObject<TDomain>(object dto) where TDomain : class => throw new NotSupportedException();
-
-        public object ToDomainObject(object? dto) => throw new NotSupportedException();
-
-        public void MapOnto<TSource, TTarget>(TSource source, TTarget target)
-            where TSource : class
-            where TTarget : class => throw new NotSupportedException();
     }
 }

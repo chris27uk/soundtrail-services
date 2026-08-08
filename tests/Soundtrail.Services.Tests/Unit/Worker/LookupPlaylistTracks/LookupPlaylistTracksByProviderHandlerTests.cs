@@ -17,7 +17,7 @@ public sealed class LookupPlaylistTracksByProviderHandlerTests
 
         await subject.Handle(request);
 
-        var message = environment.CommandBus.Messages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
+        var message = environment.CommandBus.SentMessages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
         message.RequestedAt.Should().Be(request.RequestedAt);
         message.CorrelationId.Should().Be(request.CorrelationId);
         var succeeded = message.Result.Should().BeOfType<LookupResult.Succeeded>().Subject;

@@ -11,6 +11,7 @@ using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;
+using Soundtrail.Services.Tests.Fakes;
 
 namespace Soundtrail.Services.Tests.Integration.Worker.LookupMusicbrainzSearchResults;
 
@@ -44,7 +45,7 @@ public sealed class LookupMusicbrainzSearchResultsHandlerIntegrationTests
                     BaseUrl = server.Url!,
                     UserAgent = "Soundtrail.Tests/1.0"
                 })),
-            new ClockFake(),
+            new ClockFake(new DateTimeOffset(2026, 7, 20, 11, 45, 0, TimeSpan.Zero)),
             commandBus);
         var request = new LookupMusicbrainzSearchResultsMessage(
             MessageId.For("cmd-mb-search"),
@@ -55,23 +56,7 @@ public sealed class LookupMusicbrainzSearchResultsHandlerIntegrationTests
 
         await handler.Handle(request, CancellationToken.None);
 
-        var completed = commandBus.Messages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
+        var completed = commandBus.SentMessages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
         completed.Result.Should().BeOfType<LookupResult.Succeeded>();
-    }
-
-    private sealed class CommandBusFake : ICommandBus
-    {
-        public List<IMessage> Messages { get; } = [];
-
-        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
-        {
-            Messages.Add(message);
-            return Task.CompletedTask;
-        }
-    }
-
-    private sealed class ClockFake : IClockPort
-    {
-        public DateTimeOffset UtcNow => new(2026, 7, 20, 11, 45, 0, TimeSpan.Zero);
     }
 }

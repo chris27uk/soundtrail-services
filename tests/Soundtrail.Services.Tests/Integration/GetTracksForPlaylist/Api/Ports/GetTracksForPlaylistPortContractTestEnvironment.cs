@@ -1,15 +1,15 @@
 using Raven.Client.Documents;
-using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Contract;
-using Soundtrail.Services.Tests.Integration.Ports;
+using Soundtrail.Services.Api.Infrastructure;
 using Soundtrail.Services.Tests.Fakes;
+using Soundtrail.Services.Tests.Integration.Ports;
 
-namespace Soundtrail.Services.Tests.Integration.Ports.GetTracksForPlaylist;
+namespace Soundtrail.Services.Tests.Integration.GetTracksForPlaylist.Api.Ports;
 
 internal sealed class GetTracksForPlaylistPortContractTestEnvironment : IAsyncDisposable
 {
@@ -139,48 +139,10 @@ internal sealed class GetTracksForPlaylistPortContractTestEnvironment : IAsyncDi
         }
 
         return new GetTracksForPlaylistPortContractTestEnvironment(
-            new RavenGetTracksForPlaylistPort(store, new TypeRegistryFake()),
+            new RavenGetTracksForPlaylistPort(store, AppTypeRegistry.ServiceLocation),
             playlistId,
             store,
             existingRecord?.Id);
-    }
-
-    private sealed class TypeRegistryFake : ITypeRegistry
-    {
-        public TDto ToDto<TDto>(object domainObject) where TDto : class => throw new NotSupportedException();
-
-        public object ToDto(object domainObject) => throw new NotSupportedException();
-
-        public TDomain ToDomainObject<TDomain>(object dto) where TDomain : class => (ToDomainObject(dto) as TDomain)!;
-
-        public object ToDomainObject(object? dto)
-        {
-            var record = (CatalogPlaylistTracksRecordDto)dto!;
-            return new GetTracksForPlaylistResponse(
-                PlaylistId.FromPlaylistName(record.PlaylistId),
-                record.Tracks.Select(
-                        track => new GetTracksForPlaylistTrackResponse(
-                            TrackId.From(track.TrackId),
-                            track.Title,
-                            track.ArtistName,
-                            track.AlbumTitle,
-                            track.DurationMs,
-                            track.Isrc,
-                            track.ReleaseDate,
-                            track.ArtworkUrl,
-                            track.StreamingLocations.Length > 0,
-                            track.StreamingLocations
-                                .Select(static location => new Soundtrail.Services.Api.Features.Catalog.Shared.Contract.StreamingLocationResponse(
-                                    location.Provider,
-                                    location.ExternalId,
-                                    location.Url))
-                                .ToArray()))
-                    .ToArray());
-        }
-
-        public void MapOnto<TSource, TTarget>(TSource source, TTarget target)
-            where TSource : class
-            where TTarget : class => throw new NotSupportedException();
     }
 }
 

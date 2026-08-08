@@ -17,8 +17,9 @@ using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
 using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
 using Soundtrail.Services.Tests.Integration.Ports;
 using StackExchange.Redis;
+using Soundtrail.Services.Tests.Fakes;
 
-namespace Soundtrail.Services.Tests.Integration.Worker.LookupPlaylistTracks;
+namespace Soundtrail.Services.Tests.Integration.GetTracksForPlaylist.Worker;
 
 internal sealed class LookupPlaylistTracksDecoratorIntegrationTestEnvironment : IAsyncDisposable
 {
@@ -81,7 +82,7 @@ internal sealed class LookupPlaylistTracksDecoratorIntegrationTestEnvironment : 
         return new LookupPlaylistTracksDecoratorIntegrationTestEnvironment(
             new CommandBusFake(),
             new InnerHandlerFake(),
-            new ClockFake(),
+            new ClockFake(new DateTimeOffset(2026, 7, 20, 11, 45, 0, TimeSpan.Zero)),
             redisServer,
             multiplexer,
             port);
@@ -95,7 +96,7 @@ internal sealed class LookupPlaylistTracksDecoratorIntegrationTestEnvironment : 
             new LookupPlaylistTracksDecoratorIntegrationTestEnvironment(
                 new CommandBusFake(),
                 new InnerHandlerFake(),
-                new ClockFake(),
+                new ClockFake(new DateTimeOffset(2026, 7, 20, 11, 45, 0, TimeSpan.Zero)),
                 documentStore: store,
                 receiptSession: session));
     }
@@ -179,17 +180,6 @@ internal sealed class LookupPlaylistTracksDecoratorIntegrationTestEnvironment : 
         return request;
     }
 
-    public sealed class CommandBusFake : ICommandBus
-    {
-        public List<IMessage> Messages { get; } = [];
-
-        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
-        {
-            Messages.Add(message);
-            return Task.CompletedTask;
-        }
-    }
-
     public sealed class InnerHandlerFake : IHandler<LookupPlaylistTracksByProviderMessage>
     {
         public int Calls { get; private set; }
@@ -206,10 +196,5 @@ internal sealed class LookupPlaylistTracksDecoratorIntegrationTestEnvironment : 
 
             return Task.CompletedTask;
         }
-    }
-
-    public sealed class ClockFake : IClockPort
-    {
-        public DateTimeOffset UtcNow { get; set; } = new(2026, 7, 20, 11, 45, 0, TimeSpan.Zero);
     }
 }

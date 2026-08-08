@@ -2,7 +2,7 @@ using Soundtrail.Adapters.Projection;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist;
-using Soundtrail.Services.Tests.Unit.Sociable.GetTracksForPlaylist;
+using Soundtrail.Services.Tests.Fakes;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Soundtrail.Services.Tests.Unit.Sociable.Infrastructure;

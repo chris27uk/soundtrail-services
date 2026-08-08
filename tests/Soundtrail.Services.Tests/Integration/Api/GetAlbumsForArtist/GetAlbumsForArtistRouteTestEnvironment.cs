@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.TestHost;
-using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Services.Api.Features.Catalog.GetAlbumsForArtist.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetAlbumsForArtist.Contract;
+using Soundtrail.Services.Api.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Api.GetAlbumsForArtist;
 
@@ -26,7 +26,7 @@ internal sealed class GetAlbumsForArtistRouteTestEnvironment : IDisposable
         builder.WebHost.UseTestServer();
         builder.Services.AddSingleton<IApiHandler<GetAlbumsForArtistRequest, GetAlbumsForArtistResponse?>>(new GetAlbumsForArtistHandlerFake());
         var app = builder.Build();
-        app.MapGetAlbumsForArtistEndpoints(new TypeRegistryFake());
+        app.MapGetAlbumsForArtistEndpoints(AppTypeRegistry.ServiceLocation);
         app.StartAsync().GetAwaiter().GetResult();
         return new GetAlbumsForArtistRouteTestEnvironment(app);
     }
@@ -52,35 +52,5 @@ internal sealed class GetAlbumsForArtistRouteTestEnvironment : IDisposable
                             new DateOnly(2024, 6, 7),
                             "https://cdn.soundtrail.test/albums/album-2001.jpg")
                     ]));
-    }
-
-    private sealed class TypeRegistryFake : ITypeRegistry
-    {
-        public TDto ToDto<TDto>(object domainObject) where TDto : class => (ToDto(domainObject) as TDto)!;
-
-        public object ToDto(object domainObject)
-        {
-            var response = (GetAlbumsForArtistResponse)domainObject;
-            return new GetAlbumsForArtistResponseDto(
-                response.ArtistId.Value,
-                response.ArtistName.Value,
-                response.Albums.Select(
-                        album => new GetAlbumsForArtistAlbumResponseDto(
-                            album.AlbumId.ArtistAlbumId,
-                            album.MusicCatalogId.NormalisedIdentifier,
-                            album.AlbumTitle,
-                            album.ReleaseDate,
-                            album.ArtworkUrl))
-                    .ToArray(),
-                null);
-        }
-
-        public TDomain ToDomainObject<TDomain>(object dto) where TDomain : class => throw new NotSupportedException();
-
-        public object ToDomainObject(object? dto) => throw new NotSupportedException();
-
-        public void MapOnto<TSource, TTarget>(TSource source, TTarget target)
-            where TSource : class
-            where TTarget : class => throw new NotSupportedException();
     }
 }

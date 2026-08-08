@@ -14,7 +14,7 @@ internal sealed class GetTracksForPlaylistUnitTestEnvironment
         PlaylistId playlistId,
         GetTracksForPlaylistPortFake port,
         CommandBusFake commandBus,
-        ClockPortFake clock)
+        ClockFake clock)
     {
         PlaylistId = playlistId;
         Port = port;
@@ -28,7 +28,7 @@ internal sealed class GetTracksForPlaylistUnitTestEnvironment
 
     public CommandBusFake CommandBus { get; }
 
-    public ClockPortFake Clock { get; }
+    public ClockFake Clock { get; }
 
     public static GetTracksForPlaylistUnitTestEnvironment ForExistingPlaylistTracks(
         PlaylistId? playlistId = null,
@@ -38,35 +38,19 @@ internal sealed class GetTracksForPlaylistUnitTestEnvironment
             GetTracksForPlaylistPortFake.Create().WithPlaylistTracks(
                 response ?? PlaylistTracks.CreateResponse(playlistId: playlistId ?? PlaylistTracks.DefaultPlaylistId)),
             new CommandBusFake(),
-            new ClockPortFake(new DateTimeOffset(2024, 6, 7, 8, 9, 10, TimeSpan.Zero)));
+            new ClockFake(new DateTimeOffset(2024, 6, 7, 8, 9, 10, TimeSpan.Zero)));
 
     public static GetTracksForPlaylistUnitTestEnvironment ForMissingPlaylistTracks(PlaylistId? playlistId = null) =>
         new(
             playlistId ?? PlaylistId.FromPlaylistName("WorldwideSongChart"),
             GetTracksForPlaylistPortFake.Create(),
             new CommandBusFake(),
-            new ClockPortFake(new DateTimeOffset(2024, 6, 7, 8, 9, 10, TimeSpan.Zero)));
+            new ClockFake(new DateTimeOffset(2024, 6, 7, 8, 9, 10, TimeSpan.Zero)));
 
     public GetTracksForPlaylistHandler CreateSubjectUnderTest() => new(Port, CommandBus, Clock);
 
     public GetTracksForPlaylistRequest CreateRequest() => new(PlaylistId);
 
     public TMessage SentMessage<TMessage>() where TMessage : IMessage =>
-        CommandBus.Commands.OfType<TMessage>().Single();
-
-    public sealed class CommandBusFake : ICommandBus
-    {
-        public List<IMessage> Commands { get; } = [];
-
-        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
-        {
-            Commands.Add(message);
-            return Task.CompletedTask;
-        }
-    }
-
-    public sealed class ClockPortFake(DateTimeOffset utcNow) : IClockPort
-    {
-        public DateTimeOffset UtcNow { get; } = utcNow;
-    }
+        CommandBus.SentMessages.OfType<TMessage>().Single();
 }

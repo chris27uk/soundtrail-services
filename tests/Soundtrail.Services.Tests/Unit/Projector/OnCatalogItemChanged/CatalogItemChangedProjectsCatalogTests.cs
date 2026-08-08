@@ -24,7 +24,7 @@ public sealed class CatalogItemChangedProjectsCatalogTests
         await subject.Handle(discovered);
 
         environment.StorePlaylistTracksReadModelPort.StoredEvent.Should().Be(discovered);
-        environment.CommandBus.Commands.Should().BeEmpty();
+        environment.CommandBus.SentMessages.Should().BeEmpty();
     }
 
     [Fact]

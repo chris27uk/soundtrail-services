@@ -32,7 +32,7 @@ public sealed class LookupMusicbrainzSearchResultsDecoratorTests
 
         await subject.Handle(request, CancellationToken.None);
 
-        var result = environment.CommandBus.Messages.Single()
+        var result = environment.CommandBus.SentMessages.Single()
             .Should().BeOfType<Soundtrail.Domain.Discovery.Messages.CatalogLookupCompleted>().Subject.Result
             .Should().BeOfType<LookupResult.Duplicate>().Subject;
         result.Reason.Should().Be("Lookup already completed.");
@@ -49,7 +49,7 @@ public sealed class LookupMusicbrainzSearchResultsDecoratorTests
 
         await Assert.ThrowsAsync<LookupExecutionShortCircuitException>(() => subject.Handle(request, CancellationToken.None));
 
-        var result = environment.CommandBus.Messages.Single()
+        var result = environment.CommandBus.SentMessages.Single()
             .Should().BeOfType<Soundtrail.Domain.Discovery.Messages.CatalogLookupCompleted>().Subject.Result
             .Should().BeOfType<LookupResult.Deferred>().Subject;
         result.DeferredUntil.Should().Be(retryAt);

@@ -1,4 +1,4 @@
-namespace Soundtrail.Services.Tests.Integration.Ports.LookupPlaylistTracks;
+namespace Soundtrail.Services.Tests.Integration.GetTracksForPlaylist.Worker.Ports.LookupPlaylistTracks;
 
 public sealed class PlaylistTracksExistTests
 {

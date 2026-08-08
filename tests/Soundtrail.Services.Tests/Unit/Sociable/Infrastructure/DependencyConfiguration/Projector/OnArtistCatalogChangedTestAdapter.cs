@@ -5,7 +5,6 @@ using Soundtrail.Services.Internal.Projector.Features.OnArtistCatalogChanged.Ada
 using Soundtrail.Services.Internal.Projector.Features.OnArtistCatalogChanged.Composition;
 using Soundtrail.Services.Internal.Projector.Infrastructure;
 using Soundtrail.Services.Tests.Fakes;
-using Soundtrail.Services.Tests.Unit.Sociable.GetTracksForPlaylist;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
 namespace Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.DependencyConfiguration.Projector;

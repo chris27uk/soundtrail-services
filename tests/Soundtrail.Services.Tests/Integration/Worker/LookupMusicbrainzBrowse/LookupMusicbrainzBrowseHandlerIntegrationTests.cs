@@ -14,6 +14,7 @@ using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;
+using Soundtrail.Services.Tests.Fakes;
 
 namespace Soundtrail.Services.Tests.Integration.Worker.LookupMusicbrainzBrowse;
 
@@ -37,7 +38,7 @@ public sealed class LookupMusicbrainzBrowseHandlerIntegrationTests
                 ArtistId.From("artist-mb-1")),
             CancellationToken.None);
 
-        environment.CommandBus.Messages.Single().Should().BeOfType<CatalogLookupCompleted>();
+        environment.CommandBus.SentMessages.Single().Should().BeOfType<CatalogLookupCompleted>();
     }
 
     [Fact]
@@ -58,7 +59,7 @@ public sealed class LookupMusicbrainzBrowseHandlerIntegrationTests
                 ArtistId.From("artist-mb-1")),
             CancellationToken.None);
 
-        environment.CommandBus.Messages.Single().Should().BeOfType<CatalogLookupCompleted>();
+        environment.CommandBus.SentMessages.Single().Should().BeOfType<CatalogLookupCompleted>();
     }
 
     [Fact]
@@ -79,7 +80,7 @@ public sealed class LookupMusicbrainzBrowseHandlerIntegrationTests
                 AlbumId.From("artist-mb-1", "release-mb-1")),
             CancellationToken.None);
 
-        environment.CommandBus.Messages.Single().Should().BeOfType<CatalogLookupCompleted>();
+        environment.CommandBus.SentMessages.Single().Should().BeOfType<CatalogLookupCompleted>();
     }
 
     private static Environment CreateEnvironment(string releaseBrowseJson, string recordingBrowseJson, string releaseLookupJson)
@@ -107,7 +108,7 @@ public sealed class LookupMusicbrainzBrowseHandlerIntegrationTests
                     BaseUrl = server.Url!,
                     UserAgent = "Soundtrail.Tests/1.0"
                 })),
-            new ClockFake(),
+            new ClockFake(new DateTimeOffset(2026, 7, 20, 11, 45, 0, TimeSpan.Zero)),
             new CommandBusFake());
     }
 
@@ -127,21 +128,5 @@ public sealed class LookupMusicbrainzBrowseHandlerIntegrationTests
             client.Dispose();
             server.Dispose();
         }
-    }
-
-    private sealed class CommandBusFake : ICommandBus
-    {
-        public List<IMessage> Messages { get; } = [];
-
-        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
-        {
-            Messages.Add(message);
-            return Task.CompletedTask;
-        }
-    }
-
-    private sealed class ClockFake : IClockPort
-    {
-        public DateTimeOffset UtcNow => new(2026, 7, 20, 11, 45, 0, TimeSpan.Zero);
     }
 }

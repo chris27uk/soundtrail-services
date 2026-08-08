@@ -10,6 +10,7 @@ using Soundtrail.Services.Enrichment.Worker.Infrastructure.Idempotency.Storage;
 using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
 using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
 using Soundtrail.Services.Enrichment.Worker.Shared.StreamingLocations;
+using Soundtrail.Services.Tests.Fakes;
 
 namespace Soundtrail.Services.Tests.Unit.Worker.LookupStreamingLocations;
 
@@ -17,7 +18,7 @@ internal sealed class LookupStreamingLocationsUnitTestEnvironment
 {
     private LookupStreamingLocationsUnitTestEnvironment()
     {
-        Clock = new ClockFake();
+        Clock = new ClockFake(new DateTimeOffset(2026, 7, 20, 11, 45, 0, TimeSpan.Zero));
         CommandBus = new CommandBusFake();
         ReadTrackForLookupPort = new ReadTrackForLookupPortFake();
         ReadStreamingLocationByProviderPort = new ReadStreamingLocationByProviderPortFake();
@@ -103,28 +104,6 @@ internal sealed class LookupStreamingLocationsUnitTestEnvironment
             title,
             artistName,
             isrc);
-
-    public sealed class ClockFake : IClockPort
-    {
-        public DateTimeOffset UtcNow { get; set; } = new(2026, 7, 20, 11, 45, 0, TimeSpan.Zero);
-    }
-
-    public sealed class CommandBusFake : ICommandBus
-    {
-        public List<object> Messages { get; } = [];
-
-        public Task SendAsync(IMessage message, CancellationToken cancellationToken = default)
-        {
-            Messages.Add(message);
-            return Task.CompletedTask;
-        }
-
-        public Task SendAsync(object message, CancellationToken cancellationToken = default)
-        {
-            Messages.Add(message);
-            return Task.CompletedTask;
-        }
-    }
 
     public sealed class ReadTrackForLookupPortFake : IReadTrackForLookupPort
     {

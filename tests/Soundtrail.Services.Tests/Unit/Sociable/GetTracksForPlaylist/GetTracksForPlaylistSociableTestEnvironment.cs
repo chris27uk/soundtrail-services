@@ -118,9 +118,6 @@ internal sealed class GetTracksForPlaylistSociableTestEnvironment : IDisposable
         return environment;
     }
 
-    public Task ProjectOnChange(Func<GetTracksForPlaylistHandler, Task> change) =>
-        pump.ProjectOnChange(change, sut);
-
     public Task<TResult> ProjectOnChange<TResult>(Func<GetTracksForPlaylistHandler, Task<TResult>> change) =>
         pump.ProjectOnChange(change, sut);
 

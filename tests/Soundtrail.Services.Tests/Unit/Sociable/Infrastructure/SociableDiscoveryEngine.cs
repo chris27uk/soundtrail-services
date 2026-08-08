@@ -5,7 +5,7 @@ using Soundtrail.Domain.Abstractions;
 using Soundtrail.Services.Enrichment.Orchestrator;
 using Soundtrail.Services.Enrichment.Worker;
 using Soundtrail.Services.Internal.Projector;
-using Soundtrail.Services.Tests.Unit.Sociable.GetTracksForPlaylist;
+using Soundtrail.Services.Tests.Fakes;
 using Soundtrail.Services.Tests.Unit.Sociable.GetTracksForPlaylist.Composition;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.DependencyConfiguration;
 using Microsoft.Extensions.Configuration;

@@ -16,7 +16,7 @@ public sealed class LookupStreamingLocationByIsrcHandlerTests
 
         await subject.Handle(request, CancellationToken.None);
 
-        var completed = environment.CommandBus.Messages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
+        var completed = environment.CommandBus.SentMessages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
         var result = completed.Result.Should().BeOfType<LookupResult.Succeeded>().Subject;
         result.Context.OriginalCommandId.Should().Be(request.Id);
         result.Value.Should().BeOfType<LookedUpData.TrackStreamingLink>();
@@ -34,7 +34,7 @@ public sealed class LookupStreamingLocationByIsrcHandlerTests
 
         await subject.Handle(request, CancellationToken.None);
 
-        var result = environment.CommandBus.Messages.Single()
+        var result = environment.CommandBus.SentMessages.Single()
             .Should().BeOfType<CatalogLookupCompleted>().Subject.Result
             .Should().BeOfType<LookupResult.Failed>().Subject;
         result.Reason.Should().Be("Track was not found for streaming lookup.");
@@ -52,7 +52,7 @@ public sealed class LookupStreamingLocationByIsrcHandlerTests
 
         await subject.Handle(request, CancellationToken.None);
 
-        var result = environment.CommandBus.Messages.Single()
+        var result = environment.CommandBus.SentMessages.Single()
             .Should().BeOfType<CatalogLookupCompleted>().Subject.Result
             .Should().BeOfType<LookupResult.NotFound>().Subject;
         result.Reason.Should().Be("Track does not have an ISRC.");

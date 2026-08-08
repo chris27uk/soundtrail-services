@@ -13,7 +13,7 @@ public sealed class ChartContainsMatchingTracksTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Should().ContainSingle();
+        environment.CommandBus.SentMessages.Should().ContainSingle();
     }
 
     [Fact]
@@ -23,7 +23,7 @@ public sealed class ChartContainsMatchingTracksTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().Operation.Should().Be(
+        environment.CommandBus.SentMessages.OfType<RequestKnownMusicDataMessage>().Single().Operation.Should().Be(
             new CatalogItemOperation.ChildTracksForPlaylist(PlaylistId.FromPlaylistName("WorldwideSongChart")));
     }
 
@@ -34,7 +34,7 @@ public sealed class ChartContainsMatchingTracksTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().Priority.Should().Be(LookupPriorityBand.High);
+        environment.CommandBus.SentMessages.OfType<RequestKnownMusicDataMessage>().Single().Priority.Should().Be(LookupPriorityBand.High);
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public sealed class ChartContainsMatchingTracksTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest(triggeredAt));
 
-        environment.CommandBus.Commands.Single().RequestedAt.Should().Be(new DateTimeOffset(2026, 7, 19, 10, 0, 0, TimeSpan.Zero));
+        environment.CommandBus.SentMessages.OfType<RequestKnownMusicDataMessage>().Single().RequestedAt.Should().Be(new DateTimeOffset(2026, 7, 19, 10, 0, 0, TimeSpan.Zero));
     }
 
     [Fact]
@@ -56,7 +56,7 @@ public sealed class ChartContainsMatchingTracksTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest(triggeredAt));
 
-        environment.CommandBus.Commands.Single().Id.Value.Should().Be("kworb:worldwidesongchart:2026071910");
+        environment.CommandBus.SentMessages.OfType<RequestKnownMusicDataMessage>().Single().Id.Value.Should().Be("kworb:worldwidesongchart:2026071910");
     }
 
     [Fact]
@@ -66,6 +66,6 @@ public sealed class ChartContainsMatchingTracksTests
 
         await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
 
-        environment.CommandBus.Commands.Single().CorrelationId.Value.Should().Be("kworb:worldwidesongchart:2026071910");
+        environment.CommandBus.SentMessages.OfType<RequestKnownMusicDataMessage>().Single().CorrelationId.Value.Should().Be("kworb:worldwidesongchart:2026071910");
     }
 }

@@ -1,5 +1,5 @@
 using Soundtrail.Adapters.FeatureOrchestration;
-using Soundtrail.Services.Tests.Unit.Sociable.GetTracksForPlaylist;
+using Soundtrail.Services.Tests.Fakes;
 
 namespace Soundtrail.Services.Tests.Unit.Sociable.Infrastructure;
 

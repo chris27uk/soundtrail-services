@@ -14,7 +14,7 @@ public sealed class LookupStreamingLocationByTrackMetadataHandlerIntegrationTest
 
         await subject.Handle(environment.CreateMetadataRequest(), CancellationToken.None);
 
-        var completed = environment.CommandBus.Messages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
+        var completed = environment.CommandBus.SentMessages.Single().Should().BeOfType<CatalogLookupCompleted>().Subject;
         completed.Result.Should().BeOfType<LookupResult.Succeeded>();
     }
 }

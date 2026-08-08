@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.TestHost;
-using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForArtist.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForArtist.Contract;
+using Soundtrail.Services.Api.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Api.GetTracksForArtist;
 
@@ -26,7 +26,7 @@ internal sealed class GetTracksForArtistRouteTestEnvironment : IDisposable
         builder.WebHost.UseTestServer();
         builder.Services.AddSingleton<IApiHandler<GetTracksForArtistRequest, GetTracksForArtistResponse?>>(new GetTracksForArtistHandlerFake());
         var app = builder.Build();
-        app.MapGetTracksForArtistEndpoints(new TypeRegistryFake());
+        app.MapGetTracksForArtistEndpoints(AppTypeRegistry.ServiceLocation);
         app.StartAsync().GetAwaiter().GetResult();
         return new GetTracksForArtistRouteTestEnvironment(app);
     }
@@ -57,40 +57,5 @@ internal sealed class GetTracksForArtistRouteTestEnvironment : IDisposable
                             false,
                             [])
                     ]));
-    }
-
-    private sealed class TypeRegistryFake : ITypeRegistry
-    {
-        public TDto ToDto<TDto>(object domainObject) where TDto : class => (ToDto(domainObject) as TDto)!;
-
-        public object ToDto(object domainObject)
-        {
-            var response = (GetTracksForArtistResponse)domainObject;
-            return new GetTracksForArtistResponseDto(
-                response.ArtistId.Value,
-                response.ArtistName.Value,
-                response.Tracks.Select(
-                        track => new GetTracksForArtistTrackResponseDto(
-                            track.TrackId.Value,
-                            track.Title,
-                            track.ArtistName,
-                            track.AlbumTitle,
-                            track.DurationMs,
-                            track.Isrc,
-                            track.ReleaseDate,
-                            track.ArtworkUrl,
-                            track.Playable,
-                            []))
-                    .ToArray(),
-                null);
-        }
-
-        public TDomain ToDomainObject<TDomain>(object dto) where TDomain : class => throw new NotSupportedException();
-
-        public object ToDomainObject(object? dto) => throw new NotSupportedException();
-
-        public void MapOnto<TSource, TTarget>(TSource source, TTarget target)
-            where TSource : class
-            where TTarget : class => throw new NotSupportedException();
     }
 }
