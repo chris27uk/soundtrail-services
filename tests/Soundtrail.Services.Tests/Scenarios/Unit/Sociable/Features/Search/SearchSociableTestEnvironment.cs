@@ -9,6 +9,7 @@ using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.Catalog.Search;
 using Soundtrail.Services.Api.Features.Catalog.Search.Contract;
 using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
+using Soundtrail.Services.Enrichment.Worker.Shared.StreamingLocations;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateChanged.Adapters;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure;
@@ -88,11 +89,13 @@ internal sealed class SearchSociableTestEnvironment : IDisposable
 
     public static SearchSociableTestEnvironment ForLocalTrackCandidate(
         TrackId? trackId = null,
-        string query = "Aurora Lane") =>
-        ComposeWithLocalCandidate(
+        string query = "Aurora Lane")
+    {
+        var resolvedTrackId = trackId ?? TrackId.From(TestTrackIds.Value("track-123"));
+        var environment = ComposeWithLocalCandidate(
             new SearchCriteria(query, SearchType.Track),
             new CatalogSearchCandidateProjection(
-                (trackId ?? TrackId.From(TestTrackIds.Value("track-123"))).Value,
+                resolvedTrackId.Value,
                 "track",
                 query,
                 query,
@@ -100,6 +103,19 @@ internal sealed class SearchSociableTestEnvironment : IDisposable
                 null,
                 null,
                 default));
+
+        // A local track candidate implies the track already exists in the catalog read model.
+        environment.engine
+            .RequireFake<IReadTrackForLookupPort, ReadTrackForLookupPortFake>()
+            .WithLookupTrack(new TrackLookupContext(
+                ArtistId.From("artist-123"),
+                resolvedTrackId,
+                query,
+                query,
+                Isrc: null));
+
+        return environment;
+    }
 
     public static SearchSociableTestEnvironment ForLocalArtistCandidate(
         ArtistId? artistId = null,

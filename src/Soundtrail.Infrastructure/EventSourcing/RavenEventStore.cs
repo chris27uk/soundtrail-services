@@ -43,7 +43,7 @@ internal sealed class RavenEventStore<TStreamId>(
         bool saveChanges = false,
         Func<IAsyncDocumentSession, LoadedEventStream<TStreamId>, IReadOnlyList<IDomainEvent>, OperationId?, CancellationToken, Task>? beforeSave = null)
     {
-        session.Advanced.UseOptimisticConcurrency = true;
+        session.Advanced.OptimisticConcurrencyMode = OptimisticConcurrencyMode.Writes;
 
         var metadataId = GetMetadataId(stream.StreamId);
         var metadata = await session.LoadAsync<RavenEventStreamMetadataRecord>(metadataId, cancellationToken)

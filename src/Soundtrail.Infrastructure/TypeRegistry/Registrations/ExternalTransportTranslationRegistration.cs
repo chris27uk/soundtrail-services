@@ -268,10 +268,10 @@ public sealed class ExternalTransportTranslationRegistration : ITypeTranslationR
                         value.ObservedAt)),
                 _ => throw new InvalidOperationException($"Unsupported looked up data '{succeeded.Value.GetType().Name}'.")
             },
-            _ => null,
-            _ => null,
-            _ => null,
-            _ => null);
+            _ => (CatalogLookupValueDto?)null,
+            _ => (CatalogLookupValueDto?)null,
+            _ => (CatalogLookupValueDto?)null,
+            _ => (CatalogLookupValueDto?)null);
 
     private static LookedUpData ParseValue(CatalogLookupValueDto? dto) =>
         dto?.ValueKind switch
@@ -304,11 +304,11 @@ public sealed class ExternalTransportTranslationRegistration : ITypeTranslationR
 
     private static CatalogItemCommandDto? GetExistingItem(LookupResult result) =>
         result.Match(
-            _ => null,
+            _ => (CatalogItemCommandDto?)null,
             duplicate => ToDto(duplicate.ExistingItem),
-            _ => null,
-            _ => null,
-            _ => null);
+            _ => (CatalogItemCommandDto?)null,
+            _ => (CatalogItemCommandDto?)null,
+            _ => (CatalogItemCommandDto?)null);
 
     private static CatalogItemCommandDto ToDto(CatalogItem item) =>
         item switch
@@ -438,7 +438,7 @@ public sealed class ExternalTransportTranslationRegistration : ITypeTranslationR
 
     private static string? GetReason(LookupResult result) =>
         result.Match(
-            _ => null,
+            _ => (string?)null,
             duplicate => duplicate.Reason,
             notFound => notFound.Reason,
             deferred => deferred.Reason,
