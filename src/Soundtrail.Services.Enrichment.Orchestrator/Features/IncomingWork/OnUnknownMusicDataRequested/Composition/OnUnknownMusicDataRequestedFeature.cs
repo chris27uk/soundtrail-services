@@ -4,17 +4,14 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Raven.Client.Documents;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Adapters.FeatureOrchestration;
-using Soundtrail.Adapters.Messaging;
 using Soundtrail.Adapters.Messaging.Asb;
 using Soundtrail.Adapters.Persistence;
 using Soundtrail.Adapters.TypeRegistry;
-using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.IncomingWork.OnUnknownMusicDataRequested.Adapters;
 using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure;
 using Soundtrail.Services.Enrichment.Orchestrator.Infrastructure.Messaging;
 using Soundtrail.Services.Enrichment.Orchestrator.Shared.RequestedWork;
-using Soundtrail.Services.ServiceDefaults;
 using WebApplication = Microsoft.AspNetCore.Builder.WebApplication;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.IncomingWork.OnUnknownMusicDataRequested.Composition;

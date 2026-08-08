@@ -143,7 +143,7 @@ internal sealed class GetTrackPortContractTestEnvironment : IAsyncDisposable
                 record.ArtworkUrl,
                 record.StreamingLocations.Length > 0,
                 record.StreamingLocations
-                    .Select(static location => new Soundtrail.Services.Api.Features.Catalog.Shared.Contract.StreamingLocationResponse(
+                    .Select(static location => new Soundtrail.Services.Api.Shared.Contract.StreamingLocationResponse(
                         location.Provider,
                         location.ExternalId,
                         location.Url))

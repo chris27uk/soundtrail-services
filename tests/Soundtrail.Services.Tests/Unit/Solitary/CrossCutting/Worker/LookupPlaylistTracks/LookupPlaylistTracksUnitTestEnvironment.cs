@@ -5,6 +5,7 @@ using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks;
+using Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks.Composition;
 using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
 using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForPlaylist;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;

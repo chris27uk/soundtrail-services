@@ -9,7 +9,7 @@ using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;
-using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForPlaylist;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForPlaylist.Support;
 
 namespace Soundtrail.Services.Tests.Integration.GetTracksForPlaylist.Worker.Ports.LookupPlaylistTracks;
 

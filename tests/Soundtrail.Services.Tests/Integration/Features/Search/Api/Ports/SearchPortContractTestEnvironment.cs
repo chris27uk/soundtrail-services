@@ -8,6 +8,7 @@ using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.Catalog.Search.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.Search.Contract;
 using Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
+using Soundtrail.Services.Tests.Integration.Features.Search.Support;
 
 namespace Soundtrail.Services.Tests.Integration.Search.Api.Ports;
 

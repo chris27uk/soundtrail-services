@@ -118,13 +118,19 @@ public sealed class TypeTranslationRegistry : ITypeRegistry
     {
         ArgumentNullException.ThrowIfNull(domainType);
 
-        if (this.dtoTypesByDomainType.TryGetValue(domainType, out var dtoType))
+        if (TryGetDtoTypeForDomain(domainType, out var dtoType))
         {
             return dtoType;
         }
 
         throw new InvalidOperationException(
             $"No DTO type registration exists for domain type '{domainType.FullName}'.");
+    }
+
+    public bool TryGetDtoTypeForDomain(Type domainType, out Type? dtoType)
+    {
+        ArgumentNullException.ThrowIfNull(domainType);
+        return this.dtoTypesByDomainType.TryGetValue(domainType, out dtoType);
     }
 
     public Type GetDomainTypeForDto(Type dtoType)
@@ -138,6 +144,19 @@ public sealed class TypeTranslationRegistry : ITypeRegistry
 
         throw new InvalidOperationException(
             $"No domain type registration exists for DTO type '{dtoType.FullName}'.");
+    }
+
+    public bool HasTranslation(Type sourceType, Type targetType)
+    {
+        ArgumentNullException.ThrowIfNull(sourceType);
+        ArgumentNullException.ThrowIfNull(targetType);
+
+        if (this.translators.ContainsKey((sourceType, targetType)))
+        {
+            return true;
+        }
+
+        return TryFindAssignableTranslation(sourceType, targetType, out _);
     }
 
     internal StoredEventTypeRegistration GetStoredEventRegistrationForDomain(Type domainType)
