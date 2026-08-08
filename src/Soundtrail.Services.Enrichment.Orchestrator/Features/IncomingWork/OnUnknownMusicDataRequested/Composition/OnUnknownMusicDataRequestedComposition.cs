@@ -9,18 +9,10 @@ using Soundtrail.Services.Enrichment.Orchestrator.Shared.RequestedWork;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.IncomingWork.OnUnknownMusicDataRequested.Composition;
 
-public sealed class OnUnknownMusicDataRequestedPorts(
-    Func<IServiceProvider, IWorkPlanner> workPlanner,
-    Func<IServiceProvider, ISearchForCandidates> searchForCandidates,
-    Func<IServiceProvider, IEventStreamRepository<CatalogWorkId>> discoveryRepository)
-{
-    public Func<IServiceProvider, IWorkPlanner> WorkPlanner { get; } = workPlanner;
-
-    public Func<IServiceProvider, ISearchForCandidates> SearchForCandidates { get; } = searchForCandidates;
-
-    public Func<IServiceProvider, IEventStreamRepository<CatalogWorkId>> DiscoveryRepository { get; } =
-        discoveryRepository;
-}
+public sealed record OnUnknownMusicDataRequestedPorts(
+    Func<IServiceProvider, IWorkPlanner> WorkPlanner,
+    Func<IServiceProvider, ISearchForCandidates> SearchForCandidates,
+    Func<IServiceProvider, IEventStreamRepository<CatalogWorkId>> DiscoveryRepository);
 
 public static class OnUnknownMusicDataRequestedComposition
 {

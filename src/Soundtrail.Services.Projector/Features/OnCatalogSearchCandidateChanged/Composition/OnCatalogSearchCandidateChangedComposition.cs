@@ -4,11 +4,8 @@ using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateCh
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateChanged.Composition;
 
-public sealed class OnCatalogSearchCandidateChangedPorts(
-    Func<IServiceProvider, IStoreCatalogSearchCandidatePort> searchCandidate)
-{
-    public Func<IServiceProvider, IStoreCatalogSearchCandidatePort> SearchCandidate { get; } = searchCandidate;
-}
+public sealed record OnCatalogSearchCandidateChangedPorts(
+    Func<IServiceProvider, IStoreCatalogSearchCandidatePort> SearchCandidate);
 
 public static class OnCatalogSearchCandidateChangedComposition
 {

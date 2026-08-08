@@ -17,35 +17,16 @@ using DomainCommandBus = Soundtrail.Domain.Abstractions.ICommandBus;
 
 namespace Soundtrail.Services.Enrichment.Worker.Shared.Composition;
 
-public sealed class CatalogEnrichmentReadPorts(
-    Func<IServiceProvider, IReadPlaylistTracksByProviderPort> readPlaylistTracks,
-    Func<IServiceProvider, IReadCatalogEntriesBySearchCriteriaPort> readCatalogEntries,
-    Func<IServiceProvider, IReadStreamingLocationByProviderPort> readStreamingLocation,
-    Func<IServiceProvider, IReadTrackForLookupPort> readTrackForLookup,
-    Func<IServiceProvider, IReadAlbumsByArtistIdPort> readAlbumsByArtistId,
-    Func<IServiceProvider, IReadTracksByArtistIdPort> readTracksByArtistId,
-    Func<IServiceProvider, IReadTracksByAlbumIdPort> readTracksByAlbumId,
-    Func<IServiceProvider, IClockPort> clock,
-    Func<IServiceProvider, DomainCommandBus> commandBus)
-{
-    public Func<IServiceProvider, IReadPlaylistTracksByProviderPort> ReadPlaylistTracks { get; } = readPlaylistTracks;
-
-    public Func<IServiceProvider, IReadCatalogEntriesBySearchCriteriaPort> ReadCatalogEntries { get; } = readCatalogEntries;
-
-    public Func<IServiceProvider, IReadStreamingLocationByProviderPort> ReadStreamingLocation { get; } = readStreamingLocation;
-
-    public Func<IServiceProvider, IReadTrackForLookupPort> ReadTrackForLookup { get; } = readTrackForLookup;
-
-    public Func<IServiceProvider, IReadAlbumsByArtistIdPort> ReadAlbumsByArtistId { get; } = readAlbumsByArtistId;
-
-    public Func<IServiceProvider, IReadTracksByArtistIdPort> ReadTracksByArtistId { get; } = readTracksByArtistId;
-
-    public Func<IServiceProvider, IReadTracksByAlbumIdPort> ReadTracksByAlbumId { get; } = readTracksByAlbumId;
-
-    public Func<IServiceProvider, IClockPort> Clock { get; } = clock;
-
-    public Func<IServiceProvider, DomainCommandBus> CommandBus { get; } = commandBus;
-}
+public sealed record CatalogEnrichmentReadPorts(
+    Func<IServiceProvider, IReadPlaylistTracksByProviderPort> ReadPlaylistTracks,
+    Func<IServiceProvider, IReadCatalogEntriesBySearchCriteriaPort> ReadCatalogEntries,
+    Func<IServiceProvider, IReadStreamingLocationByProviderPort> ReadStreamingLocation,
+    Func<IServiceProvider, IReadTrackForLookupPort> ReadTrackForLookup,
+    Func<IServiceProvider, IReadAlbumsByArtistIdPort> ReadAlbumsByArtistId,
+    Func<IServiceProvider, IReadTracksByArtistIdPort> ReadTracksByArtistId,
+    Func<IServiceProvider, IReadTracksByAlbumIdPort> ReadTracksByAlbumId,
+    Func<IServiceProvider, IClockPort> Clock,
+    Func<IServiceProvider, DomainCommandBus> CommandBus);
 
 public static class CatalogEnrichmentReadComposition
 {

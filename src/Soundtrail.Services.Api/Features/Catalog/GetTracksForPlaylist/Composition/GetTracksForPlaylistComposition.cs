@@ -7,17 +7,10 @@ using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Contract;
 
 namespace Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Composition;
 
-public sealed class GetTracksForPlaylistPorts(
-    Func<IServiceProvider, IGetTracksForPlaylistPort> getTracksForPlaylist,
-    Func<IServiceProvider, IClockPort> clock,
-    Func<IServiceProvider, ICommandBus> commandBus)
-{
-    public Func<IServiceProvider, IGetTracksForPlaylistPort> GetTracksForPlaylist { get; } = getTracksForPlaylist;
-
-    public Func<IServiceProvider, IClockPort> Clock { get; } = clock;
-
-    public Func<IServiceProvider, ICommandBus> CommandBus { get; } = commandBus;
-}
+public sealed record GetTracksForPlaylistPorts(
+    Func<IServiceProvider, IGetTracksForPlaylistPort> GetTracksForPlaylist,
+    Func<IServiceProvider, IClockPort> Clock,
+    Func<IServiceProvider, ICommandBus> CommandBus);
 
 public static class GetTracksForPlaylistComposition
 {

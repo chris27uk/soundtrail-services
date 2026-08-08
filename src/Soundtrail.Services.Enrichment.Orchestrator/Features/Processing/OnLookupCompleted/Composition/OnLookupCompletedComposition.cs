@@ -7,15 +7,9 @@ using Soundtrail.Domain.Discovery.Messages;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.Processing.OnLookupCompleted.Composition;
 
-public sealed class OnLookupCompletedPorts(
-    Func<IServiceProvider, IEventStreamRepository<CatalogWorkId>> discoveryRepository,
-    Func<IServiceProvider, ICommandBus> commandBus)
-{
-    public Func<IServiceProvider, IEventStreamRepository<CatalogWorkId>> DiscoveryRepository { get; } =
-        discoveryRepository;
-
-    public Func<IServiceProvider, ICommandBus> CommandBus { get; } = commandBus;
-}
+public sealed record OnLookupCompletedPorts(
+    Func<IServiceProvider, IEventStreamRepository<CatalogWorkId>> DiscoveryRepository,
+    Func<IServiceProvider, ICommandBus> CommandBus);
 
 public static class OnLookupCompletedComposition
 {

@@ -9,19 +9,10 @@ using Soundtrail.Services.Enrichment.Orchestrator.Features.Prioritisation.OnMusi
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.Prioritisation.OnMusicAssessmentRequired.Composition;
 
-public sealed class OnMusicAssessmentRequiredPorts(
-    Func<IServiceProvider, IPlanningAssessmentPolicy> assessmentPolicy,
-    Func<IServiceProvider, IDiscoveryPlanningProjectionReader> planningProjection,
-    Func<IServiceProvider, IEventStreamRepository<CatalogWorkId>> discoveryRepository)
-{
-    public Func<IServiceProvider, IPlanningAssessmentPolicy> AssessmentPolicy { get; } = assessmentPolicy;
-
-    public Func<IServiceProvider, IDiscoveryPlanningProjectionReader> PlanningProjection { get; } =
-        planningProjection;
-
-    public Func<IServiceProvider, IEventStreamRepository<CatalogWorkId>> DiscoveryRepository { get; } =
-        discoveryRepository;
-}
+public sealed record OnMusicAssessmentRequiredPorts(
+    Func<IServiceProvider, IPlanningAssessmentPolicy> AssessmentPolicy,
+    Func<IServiceProvider, IDiscoveryPlanningProjectionReader> PlanningProjection,
+    Func<IServiceProvider, IEventStreamRepository<CatalogWorkId>> DiscoveryRepository);
 
 public static class OnMusicAssessmentRequiredComposition
 {

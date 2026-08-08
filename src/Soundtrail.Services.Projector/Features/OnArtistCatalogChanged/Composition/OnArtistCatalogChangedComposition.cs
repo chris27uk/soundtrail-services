@@ -6,14 +6,9 @@ using Soundtrail.Services.Internal.Projector.Features.OnArtistCatalogChanged.Ada
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnArtistCatalogChanged.Composition;
 
-public sealed class OnArtistCatalogChangedPorts(
-    Func<IServiceProvider, IStoreArtistCatalogReadModelPort> artistCatalog,
-    Func<IServiceProvider, IEventStreamRepository<ArtistId>> artistRepository)
-{
-    public Func<IServiceProvider, IStoreArtistCatalogReadModelPort> ArtistCatalog { get; } = artistCatalog;
-
-    public Func<IServiceProvider, IEventStreamRepository<ArtistId>> ArtistRepository { get; } = artistRepository;
-}
+public sealed record OnArtistCatalogChangedPorts(
+    Func<IServiceProvider, IStoreArtistCatalogReadModelPort> ArtistCatalog,
+    Func<IServiceProvider, IEventStreamRepository<ArtistId>> ArtistRepository);
 
 public static class OnArtistCatalogChangedComposition
 {

@@ -5,10 +5,7 @@ using Soundtrail.Domain.Discovery.Messages;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.Processing.OnLookupWorkReady.Composition;
 
-public sealed class OnLookupWorkReadyPorts(Func<IServiceProvider, ICommandBus> commandBus)
-{
-    public Func<IServiceProvider, ICommandBus> CommandBus { get; } = commandBus;
-}
+public sealed record OnLookupWorkReadyPorts(Func<IServiceProvider, ICommandBus> CommandBus);
 
 public static class OnLookupWorkReadyComposition
 {

@@ -4,11 +4,8 @@ using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.Adap
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.Composition;
 
-public sealed class OnWorkFeedbackChangedPorts(
-    Func<IServiceProvider, IStoreDiscoveryFeedbackPort> discoveryFeedback)
-{
-    public Func<IServiceProvider, IStoreDiscoveryFeedbackPort> DiscoveryFeedback { get; } = discoveryFeedback;
-}
+public sealed record OnWorkFeedbackChangedPorts(
+    Func<IServiceProvider, IStoreDiscoveryFeedbackPort> DiscoveryFeedback);
 
 public static class OnWorkFeedbackChangedComposition
 {

@@ -1,3 +1,4 @@
+using System.Reflection;
 using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Adapters.Projection;
 using Soundtrail.Domain.Abstractions;
@@ -8,7 +9,6 @@ using Soundtrail.Services.Tests.Unit.Sociable.GetTracksForPlaylist;
 using Soundtrail.Services.Tests.Unit.Sociable.GetTracksForPlaylist.Composition;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.DependencyConfiguration;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Soundtrail.Services.Tests.Unit.Sociable.Infrastructure;
 
@@ -26,33 +26,25 @@ internal sealed class SociableDiscoveryEngine : IDisposable
     {
         this.serviceProvider = serviceProvider;
         this.scope = scope;
-        MessagePump = messagePump;
+        this.MessagePump = messagePump;
     }
 
     public SociableMessagePump MessagePump { get; }
 
-    public static SociableDiscoveryEngine Create(
-        DateTimeOffset utcNow = default,
-        ApiTestAdapters? api = null,
-        OrchestratorTestAdapters? orchestrator = null,
-        WorkerTestAdapters? worker = null,
-        ProjectorTestAdapters? projector = null)
+    public static SociableDiscoveryEngine Create(DateTimeOffset utcNow = default) =>
+        Create(new SociableDependencies { UtcNow = utcNow });
+
+    public static SociableDiscoveryEngine Create(SociableDependencies dependencies)
     {
+        ArgumentNullException.ThrowIfNull(dependencies);
+
         var services = new ServiceCollection();
-        services.AddSingleton(new SociableScenarioOptions(utcNow));
-        services.AddSingleton<CommandBusFake>();
-        services.AddSingleton<ICommandBus>(sp => sp.GetRequiredService<CommandBusFake>());
+        services.AddSingleton(new SociableScenarioOptions(dependencies.UtcNow));
+        services.AddSingleton(dependencies.CommandBus);
+        services.AddSingleton<ICommandBus>(dependencies.CommandBus);
         services.AddSingleton<DiscoveryEventProjector>();
 
-        IFeature[] adapters =
-        [
-            api ?? ApiTestAdapters.Default(),
-            orchestrator ?? OrchestratorTestAdapters.Default(),
-            worker ?? WorkerTestAdapters.Default(),
-            projector ?? ProjectorTestAdapters.Default(),
-        ];
-
-        foreach (var feature in adapters)
+        foreach (var feature in ResolveAdapters(dependencies.ReplaceAdapters))
         {
             feature.ConfigureServices(services, EmptyConfiguration);
         }
@@ -79,5 +71,66 @@ internal sealed class SociableDiscoveryEngine : IDisposable
     {
         scope.Dispose();
         serviceProvider.Dispose();
+    }
+
+    private static IReadOnlyList<IFeature> ResolveAdapters(IReadOnlyList<IFeature> replaceAdapters)
+    {
+        var adapters = DiscoverDefaultAdapters();
+
+        foreach (var replacement in replaceAdapters)
+        {
+            if (replacement is not ISociableFeature)
+            {
+                throw new InvalidOperationException(
+                    $"ReplaceAdapters entry '{replacement.GetType().Name}' must implement ISociableFeature.");
+            }
+
+            if (!adapters.ContainsKey(replacement.GetType()))
+            {
+                throw new InvalidOperationException(
+                    $"No discovered sociable adapter of type '{replacement.GetType().Name}' to replace.");
+            }
+
+            adapters[replacement.GetType()] = replacement;
+        }
+
+        return adapters.Values
+            .OrderBy(static adapter => adapter.GetType().FullName, StringComparer.Ordinal)
+            .ToArray();
+    }
+
+    private static Dictionary<Type, IFeature> DiscoverDefaultAdapters()
+    {
+        var adapterTypes = typeof(ISociableFeature).Assembly
+            .GetTypes()
+            .Where(static type => type is { IsClass: true, IsAbstract: false })
+            .Where(static type => typeof(ISociableFeature).IsAssignableFrom(type))
+            .OrderBy(static type => type.FullName, StringComparer.Ordinal)
+            .ToArray();
+
+        var adapters = new Dictionary<Type, IFeature>();
+
+        foreach (var adapterType in adapterTypes)
+        {
+            var defaultFactory = adapterType.GetMethod(
+                "Default",
+                BindingFlags.Public | BindingFlags.Static,
+                binder: null,
+                types: Type.EmptyTypes,
+                modifiers: null);
+
+            if (defaultFactory is null || !typeof(ISociableFeature).IsAssignableFrom(defaultFactory.ReturnType))
+            {
+                throw new InvalidOperationException(
+                    $"Sociable adapter '{adapterType.Name}' must expose public static Default() returning ISociableFeature.");
+            }
+
+            var instance = defaultFactory.Invoke(null, null)
+                ?? throw new InvalidOperationException($"'{adapterType.Name}.Default()' returned null.");
+
+            adapters[adapterType] = (IFeature)instance;
+        }
+
+        return adapters;
     }
 }
