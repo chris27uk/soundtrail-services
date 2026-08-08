@@ -39,8 +39,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Integration\Features\" />
-    <Folder Include="Unit\Solitary\CrossCutting\" />
+    <Folder Include="Scenarios\" />
   </ItemGroup>
 
   <ItemGroup>
