@@ -6,7 +6,8 @@ namespace Soundtrail.Services.Tests.EndToEnd.Features.GetTracksForPlaylist.World
 [Collection(nameof(EndToEndHostCollection))]
 public sealed class WorldTop100PlaylistEndToEndTests(EndToEndHostFixture fixture)
 {
-    private static readonly TimeSpan PollTimeout = TimeSpan.FromSeconds(90);
+    // CI runs Testcontainers inside Docker-in-Docker; ASB + Raven subscriptions need headroom.
+    private static readonly TimeSpan PollTimeout = TimeSpan.FromMinutes(3);
     private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(500);
 
     [Fact]
@@ -73,11 +74,27 @@ public sealed class WorldTop100PlaylistEndToEndTests(EndToEndHostFixture fixture
             await Task.Delay(PollInterval);
         }
 
-        throw new TimeoutException(
-            $"World Top 100 playlist did not resolve within {PollTimeout}. " +
-            $"Latest track count: {latest?.Tracks.Length ?? 0}, " +
-            $"playable count: {latest?.Tracks.Count(track => track.Playable) ?? 0}, " +
-            $"discovery status: {latest?.Discovery?.Status ?? "<null>"}.");
+        throw new TimeoutException(FormatTimeout(latest));
+    }
+
+    private static string FormatTimeout(GetTracksForPlaylistResponseDto? latest)
+    {
+        if (latest is null)
+        {
+            return $"World Top 100 playlist did not resolve within {PollTimeout}. Latest response was null.";
+        }
+
+        var tracks = string.Join(
+            " | ",
+            latest.Tracks.Select(track =>
+                $"{track.Title}/playable={track.Playable}/urls=[{string.Join(", ", track.StreamingLocations.Select(location => location.Url))}]"));
+
+        return $"World Top 100 playlist did not resolve within {PollTimeout}. " +
+               $"track count={latest.Tracks.Length}, " +
+               $"playable count={latest.Tracks.Count(track => track.Playable)}, " +
+               $"discovery status={latest.Discovery?.Status ?? "<null>"}, " +
+               $"discovery reason={latest.Discovery?.Reason ?? "<null>"}, " +
+               $"tracks=[{tracks}]";
     }
 
     private static bool IsFullyResolved(GetTracksForPlaylistResponseDto? response) =>

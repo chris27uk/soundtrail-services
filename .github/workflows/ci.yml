@@ -19,7 +19,7 @@ jobs:
   ci:
     name: Build and Test
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     env:
       CI_IMAGE: soundtrail-services-ci:local

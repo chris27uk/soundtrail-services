@@ -147,6 +147,9 @@ public sealed class RavenStoreArtistCatalogReadModelPort(IDocumentStore document
                 cancellationToken);
         }
 
+        session.Advanced.WaitForIndexesAfterSaveChanges(
+            timeout: TimeSpan.FromSeconds(30),
+            throwOnTimeout: false);
         await session.SaveChangesAsync(cancellationToken);
     }
 
