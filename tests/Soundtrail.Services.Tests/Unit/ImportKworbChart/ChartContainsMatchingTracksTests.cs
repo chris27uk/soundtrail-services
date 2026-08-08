@@ -11,7 +11,7 @@ public sealed class ChartContainsMatchingTracksTests
     {
         var environment = ImportKworbChartUnitTestEnvironment.Create();
 
-        await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
+        await environment.CreateSubjectUnderTest().HandleAsync(environment.CreateRequest());
 
         environment.CommandBus.SentMessages.Should().ContainSingle();
     }
@@ -21,7 +21,7 @@ public sealed class ChartContainsMatchingTracksTests
     {
         var environment = ImportKworbChartUnitTestEnvironment.Create();
 
-        await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
+        await environment.CreateSubjectUnderTest().HandleAsync(environment.CreateRequest());
 
         environment.CommandBus.SentMessages.OfType<RequestKnownMusicDataMessage>().Single().Operation.Should().Be(
             new CatalogItemOperation.ChildTracksForPlaylist(PlaylistId.FromPlaylistName("WorldwideSongChart")));
@@ -32,7 +32,7 @@ public sealed class ChartContainsMatchingTracksTests
     {
         var environment = ImportKworbChartUnitTestEnvironment.Create();
 
-        await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
+        await environment.CreateSubjectUnderTest().HandleAsync(environment.CreateRequest());
 
         environment.CommandBus.SentMessages.OfType<RequestKnownMusicDataMessage>().Single().Priority.Should().Be(LookupPriorityBand.High);
     }
@@ -43,7 +43,7 @@ public sealed class ChartContainsMatchingTracksTests
         var environment = ImportKworbChartUnitTestEnvironment.Create();
         var triggeredAt = new DateTimeOffset(2026, 7, 19, 10, 23, 45, TimeSpan.Zero);
 
-        await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest(triggeredAt));
+        await environment.CreateSubjectUnderTest().HandleAsync(environment.CreateRequest(triggeredAt));
 
         environment.CommandBus.SentMessages.OfType<RequestKnownMusicDataMessage>().Single().RequestedAt.Should().Be(new DateTimeOffset(2026, 7, 19, 10, 0, 0, TimeSpan.Zero));
     }
@@ -54,7 +54,7 @@ public sealed class ChartContainsMatchingTracksTests
         var environment = ImportKworbChartUnitTestEnvironment.Create();
         var triggeredAt = new DateTimeOffset(2026, 7, 19, 10, 59, 59, TimeSpan.Zero);
 
-        await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest(triggeredAt));
+        await environment.CreateSubjectUnderTest().HandleAsync(environment.CreateRequest(triggeredAt));
 
         environment.CommandBus.SentMessages.OfType<RequestKnownMusicDataMessage>().Single().Id.Value.Should().Be("kworb:worldwidesongchart:2026071910");
     }
@@ -64,7 +64,7 @@ public sealed class ChartContainsMatchingTracksTests
     {
         var environment = ImportKworbChartUnitTestEnvironment.Create();
 
-        await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest());
+        await environment.CreateSubjectUnderTest().HandleAsync(environment.CreateRequest());
 
         environment.CommandBus.SentMessages.OfType<RequestKnownMusicDataMessage>().Single().CorrelationId.Value.Should().Be("kworb:worldwidesongchart:2026071910");
     }

@@ -6,16 +6,16 @@ using TickerQ.Utilities.Enums;
 
 namespace Soundtrail.Services.Enrichment.Scheduler.Features.ImportKworbChart.Adapters;
 
-public sealed class ImportKworbChartTickerFunctions(IHandler<ImportKworbChartCommand> handler)
+public sealed class ImportKworbChartTickerFunctions(ISchedulerHandler<ImportKworbChartCommand> handler)
 {
     public const string FunctionName = "ImportKworbChart";
     public const string DefaultCronExpression = "0 * * * *";
 
     [TickerFunction(FunctionName, DefaultCronExpression, TickerTaskPriority.Normal, 1)]
     public Task ImportKworbChart(TickerFunctionContext _, CancellationToken cancellationToken) =>
-        ScheduledMessageTelemetry.HandleAsync(
-            handler,
+        ScheduledMessageTelemetry.ExecuteAsync(
             new ImportKworbChartCommand(DateTimeOffset.UtcNow),
-            sourceName: FunctionName,
+            FunctionName,
+            handler.HandleAsync,
             cancellationToken);
 }

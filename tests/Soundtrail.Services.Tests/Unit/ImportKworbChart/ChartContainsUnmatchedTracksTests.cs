@@ -10,8 +10,8 @@ public sealed class ChartContainsUnmatchedTracksTests
         var first = environment.CreateRequest(new DateTimeOffset(2026, 7, 19, 10, 1, 0, TimeSpan.Zero));
         var second = environment.CreateRequest(new DateTimeOffset(2026, 7, 19, 10, 59, 0, TimeSpan.Zero));
 
-        await environment.CreateSubjectUnderTest().Handle(first);
-        await environment.CreateSubjectUnderTest().Handle(second);
+        await environment.CreateSubjectUnderTest().HandleAsync(first);
+        await environment.CreateSubjectUnderTest().HandleAsync(second);
 
         environment.CommandBus.SentMessages.Select(x => x.Id.Value).Should().OnlyContain(x => x == "kworb:worldwidesongchart:2026071910");
     }
@@ -21,8 +21,8 @@ public sealed class ChartContainsUnmatchedTracksTests
     {
         var environment = ImportKworbChartUnitTestEnvironment.Create();
 
-        await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest(new DateTimeOffset(2026, 7, 19, 10, 59, 0, TimeSpan.Zero)));
-        await environment.CreateSubjectUnderTest().Handle(environment.CreateRequest(new DateTimeOffset(2026, 7, 19, 11, 0, 0, TimeSpan.Zero)));
+        await environment.CreateSubjectUnderTest().HandleAsync(environment.CreateRequest(new DateTimeOffset(2026, 7, 19, 10, 59, 0, TimeSpan.Zero)));
+        await environment.CreateSubjectUnderTest().HandleAsync(environment.CreateRequest(new DateTimeOffset(2026, 7, 19, 11, 0, 0, TimeSpan.Zero)));
 
         environment.CommandBus.SentMessages.Select(x => x.Id.Value)
             .Should()

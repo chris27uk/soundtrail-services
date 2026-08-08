@@ -1,7 +1,6 @@
 using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Services.Api.Infrastructure;
 using Soundtrail.Services.Enrichment.Orchestrator.Features.IncomingWork.OnKnownMusicDataRequested.Composition;
-using Soundtrail.Services.Enrichment.Scheduler.Features.ImportKworbChart.Composition;
 using Soundtrail.Services.Internal.Projector.Features.OnWorkScheduled.Composition;
 
 namespace Soundtrail.Services.Tests.Unit.Solitary.Architecture;
@@ -17,7 +16,6 @@ public sealed class TypeRegistryHandlerBoundaryCoverageTests
 
         var required = HandlerBoundaryTypeDiscovery.DiscoverRequiredTypes(
             orchestratorAssembly: typeof(OnKnownMusicDataRequestedFeature).Assembly,
-            schedulerAssembly: typeof(ImportKworbChartFeature).Assembly,
             projectorAssembly: typeof(OnWorkScheduledFeature).Assembly,
             apiAssembly: typeof(AppTypeRegistry).Assembly);
 

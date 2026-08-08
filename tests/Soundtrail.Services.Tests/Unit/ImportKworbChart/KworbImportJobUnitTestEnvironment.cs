@@ -1,33 +1,23 @@
-using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Operations;
+using Soundtrail.Domain.Discovery;
+using Soundtrail.Services.Enrichment.Scheduler.Features.ImportKworbChart;
 using Soundtrail.Services.Enrichment.Scheduler.Features.ImportKworbChart.Adapters;
+using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
 namespace Soundtrail.Services.Tests.Unit.ImportKworbChart;
 
 internal sealed class KworbImportJobUnitTestEnvironment
 {
-    private KworbImportJobUnitTestEnvironment(ImportKworbChartHandlerFake handler)
+    private KworbImportJobUnitTestEnvironment()
     {
-        Handler = handler;
+        CommandBus = new CommandBusFake();
+        Handler = new ImportKworbChartHandler(CommandBus);
     }
 
-    public ImportKworbChartHandlerFake Handler { get; }
+    public CommandBusFake CommandBus { get; }
 
-    public static KworbImportJobUnitTestEnvironment Create() => new(new ImportKworbChartHandlerFake());
+    public ImportKworbChartHandler Handler { get; }
+
+    public static KworbImportJobUnitTestEnvironment Create() => new();
 
     public ImportKworbChartTickerFunctions CreateSubjectUnderTest() => new(Handler);
-
-    public sealed class ImportKworbChartHandlerFake : IHandler<ImportKworbChartCommand>
-    {
-        public int Calls { get; private set; }
-
-        public ImportKworbChartCommand? Request { get; private set; }
-
-        public Task Handle(IncomingMessage<ImportKworbChartCommand> context, CancellationToken cancellationToken = default)
-        {
-            Calls++;
-            Request = context.Message;
-            return Task.CompletedTask;
-        }
-    }
 }

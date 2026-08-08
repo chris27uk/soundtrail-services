@@ -6,16 +6,15 @@ using Soundtrail.Domain.Operations;
 
 namespace Soundtrail.Services.Enrichment.Scheduler.Features.ImportKworbChart;
 
-public sealed class ImportKworbChartHandler(
-    ICommandBus commandBus) : IHandler<ImportKworbChartCommand>
+public sealed class ImportKworbChartHandler(ICommandBus commandBus) : ISchedulerHandler<ImportKworbChartCommand>
 {
-    public async Task Handle(IncomingMessage<ImportKworbChartCommand> context, CancellationToken cancellationToken = default)
+    public Task HandleAsync(ImportKworbChartCommand request, CancellationToken cancellationToken = default)
     {
-        var request = context.Message;
-        await commandBus.SendAsync(CreatePlaylistDiscoveryRequest(request), cancellationToken);
+        ArgumentNullException.ThrowIfNull(request);
+        return commandBus.SendAsync(CreatePlaylistDiscoveryRequest(request), cancellationToken);
     }
 
-    internal static RequestKnownMusicDataMessage CreatePlaylistDiscoveryRequest(ImportKworbChartCommand request)
+    private static RequestKnownMusicDataMessage CreatePlaylistDiscoveryRequest(ImportKworbChartCommand request)
     {
         var triggerWindowStartedAt = AlignToHour(request.TriggeredAt);
         var playlistId = PlaylistId.FromPlaylistName("WorldwideSongChart");

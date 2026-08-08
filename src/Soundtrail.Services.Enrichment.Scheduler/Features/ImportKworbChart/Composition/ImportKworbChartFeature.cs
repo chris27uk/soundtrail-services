@@ -15,7 +15,7 @@ public sealed class ImportKworbChartFeature : ISchedulerFeature
 {
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
-        services.TryAddScoped<IHandler<ImportKworbChartCommand>, ImportKworbChartHandler>();
+        services.TryAddScoped<ISchedulerHandler<ImportKworbChartCommand>, ImportKworbChartHandler>();
         services.TryAddScoped<ImportKworbChartTickerFunctions>();
     }
 

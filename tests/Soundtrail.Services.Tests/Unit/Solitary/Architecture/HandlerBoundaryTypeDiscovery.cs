@@ -11,7 +11,6 @@ internal static class HandlerBoundaryTypeDiscovery
 
     public static IReadOnlyList<DiscoveredType> DiscoverRequiredTypes(
         Assembly orchestratorAssembly,
-        Assembly schedulerAssembly,
         Assembly projectorAssembly,
         Assembly apiAssembly)
     {
@@ -20,11 +19,6 @@ internal static class HandlerBoundaryTypeDiscovery
         AddRange(
             discovered,
             DiscoverOpenGenericPayloads(orchestratorAssembly, typeof(IHandler<>), "handled"),
-            includeWhen: RequiresTypeRegistryPair);
-
-        AddRange(
-            discovered,
-            DiscoverOpenGenericPayloads(schedulerAssembly, typeof(IHandler<>), "handled"),
             includeWhen: RequiresTypeRegistryPair);
 
         AddRange(

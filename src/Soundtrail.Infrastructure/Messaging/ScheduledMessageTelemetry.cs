@@ -5,29 +5,29 @@ namespace Soundtrail.Adapters.Messaging;
 
 public static class ScheduledMessageTelemetry
 {
-    public static async Task HandleAsync<TMessage>(
-        IHandler<TMessage> handler,
-        TMessage message,
+    public static async Task ExecuteAsync<TCommand>(
+        TCommand command,
         string sourceName,
+        Func<TCommand, CancellationToken, Task> execute,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(handler);
-        ArgumentNullException.ThrowIfNull(message);
+        ArgumentNullException.ThrowIfNull(command);
         ArgumentException.ThrowIfNullOrWhiteSpace(sourceName);
+        ArgumentNullException.ThrowIfNull(execute);
 
-        var correlationId = message is IMessage domainMessage
+        var correlationId = command is IMessage domainMessage
             ? domainMessage.CorrelationId.Value
             : null;
 
         using var activity = MessageTelemetry.StartHandleActivity(
             dtoTypeName: null,
-            domainEventName: MessageTelemetry.DomainEventNameFor(typeof(TMessage)),
+            domainEventName: MessageTelemetry.DomainEventNameFor(typeof(TCommand)),
             correlationId: correlationId,
             sourceName: sourceName);
 
         try
         {
-            await handler.Handle(IncomingMessage<TMessage>.Create(message), cancellationToken);
+            await execute(command, cancellationToken);
             MessageTelemetry.AddCurrentEvent("message.processed");
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)

@@ -60,7 +60,6 @@ internal sealed class SociableDiscoveryEngine : IDisposable
         var commandBus = scope.ServiceProvider.GetRequiredService<CommandBusFake>();
         var handlers = scope.ServiceProvider.GetRequiredService<HandlerCollection>();
         var pump = new SociableMessagePump(commandBus, handlers);
-
         return new SociableDiscoveryEngine(provider, scope, pump);
     }
 

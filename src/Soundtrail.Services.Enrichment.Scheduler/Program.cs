@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Soundtrail.Adapters.FeatureOrchestration;
-using Soundtrail.Adapters.Projection;
 using Soundtrail.Services.Enrichment.Scheduler;
 using Soundtrail.Services.Enrichment.Scheduler.Infrastructure;
 using Soundtrail.Services.ServiceDefaults;
@@ -19,8 +18,6 @@ foreach (var feature in features)
 {
     feature.ConfigureServices(builder.Services, builder.Configuration);
 }
-
-HandlerCollection.AddMessageHandlersFromAssemblies(builder.Services, typeof(SchedulerAssemblyMarker));
 
 var app = builder.Build();
 
