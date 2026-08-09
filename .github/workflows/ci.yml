@@ -5,20 +5,46 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      semVer:
+        description: GitVersion SemVer for this build
+        required: true
+        type: string
+      informationalVersion:
+        description: GitVersion informational version
+        required: true
+        type: string
+      majorMinorPatch:
+        description: GitVersion major.minor.patch
+        required: true
+        type: string
+      shouldTag:
+        description: Push a vX.Y.Z tag after a successful main build
+        required: false
+        type: boolean
+        default: false
+      isPullRequest:
+        description: Whether the originating event was a pull request
+        required: false
+        type: boolean
+        default: false
 
-run-name: "${{ github.workflow }} ${{ github.event.pull_request.title || github.ref_name }} (#${{ github.run_number }})"
+run-name: ${{ inputs.semVer && format('Build {0}', inputs.semVer) || format('CI {0} #{1}', github.ref_name, github.run_number) }}
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ci-${{ github.workflow }}-${{ inputs.semVer || github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
+  actions: write
   contents: write
   checks: write
   pull-requests: write
 
 jobs:
   version:
+    if: github.event_name != 'workflow_dispatch'
     name: Version
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -26,6 +52,7 @@ jobs:
       semVer: ${{ steps.gitversion.outputs.semVer }}
       informationalVersion: ${{ steps.gitversion.outputs.informationalVersion }}
       majorMinorPatch: ${{ steps.gitversion.outputs.majorMinorPatch }}
+      buildRunId: ${{ steps.dispatch.outputs.run_id }}
 
     steps:
       - name: Checkout
@@ -49,17 +76,83 @@ jobs:
           echo "InformationalVersion: ${{ steps.gitversion.outputs.informationalVersion }}"
           echo "MajorMinorPatch: ${{ steps.gitversion.outputs.majorMinorPatch }}"
 
+      - name: Start versioned build
+        id: dispatch
+        uses: actions/github-script@v7
+        env:
+          SEM_VER: ${{ steps.gitversion.outputs.semVer }}
+          INFORMATIONAL_VERSION: ${{ steps.gitversion.outputs.informationalVersion }}
+          MAJOR_MINOR_PATCH: ${{ steps.gitversion.outputs.majorMinorPatch }}
+        with:
+          script: |
+            const ref = context.eventName === 'pull_request'
+              ? context.payload.pull_request.head.ref
+              : context.ref.replace(/^refs\/heads\//, '');
+            const startedAfter = new Date();
+            const semVer = process.env.SEM_VER;
+
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'ci.yml',
+              ref,
+              inputs: {
+                semVer,
+                informationalVersion: process.env.INFORMATIONAL_VERSION,
+                majorMinorPatch: process.env.MAJOR_MINOR_PATCH,
+                shouldTag: String(context.eventName === 'push' && ref === 'main'),
+                isPullRequest: String(context.eventName === 'pull_request')
+              }
+            });
+
+            core.info(`Dispatched versioned build for ${semVer} on ${ref}`);
+
+            let runId = null;
+            for (let attempt = 0; attempt < 30 && !runId; attempt++) {
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              const response = await github.rest.actions.listWorkflowRuns({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'ci.yml',
+                event: 'workflow_dispatch',
+                branch: ref,
+                per_page: 10
+              });
+
+              const match = response.data.workflow_runs.find(run =>
+                run.display_title === `Build ${semVer}` &&
+                new Date(run.created_at) >= startedAfter
+              );
+
+              if (match) {
+                runId = match.id;
+              }
+            }
+
+            if (!runId) {
+              throw new Error(`Timed out waiting for versioned build run 'Build ${semVer}' to appear.`);
+            }
+
+            core.setOutput('run_id', String(runId));
+            core.info(`Versioned build run: ${runId}`);
+
+      - name: Wait for versioned build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.dispatch.outputs.run_id }}
+        run: gh run watch "$RUN_ID" --exit-status
+
   ci:
-    name: Build ${{ needs.version.outputs.semVer }}
-    needs: version
+    if: github.event_name == 'workflow_dispatch'
+    name: Build ${{ inputs.semVer }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
     env:
       CI_IMAGE: soundtrail-services-ci:local
       NUGET_PACKAGES_HOST: ${{ github.workspace }}/.nuget/packages
-      BUILD_VERSION: ${{ needs.version.outputs.semVer }}
-      GITVERSION_INFORMATIONALVERSION: ${{ needs.version.outputs.informationalVersion }}
+      BUILD_VERSION: ${{ inputs.semVer }}
+      GITVERSION_INFORMATIONALVERSION: ${{ inputs.informationalVersion }}
 
     steps:
       - name: Checkout
@@ -113,7 +206,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Publish test results
-        if: always() && github.event_name == 'pull_request'
+        if: always() && inputs.isPullRequest == 'true'
         continue-on-error: true
         uses: dorny/test-reporter@v1
         with:
@@ -123,9 +216,9 @@ jobs:
           fail-on-error: false
 
       - name: Tag release version
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: inputs.shouldTag == 'true'
         env:
-          TAG: v${{ needs.version.outputs.majorMinorPatch }}
+          TAG: v${{ inputs.majorMinorPatch }}
         run: |
           if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
             echo "Tag $TAG already exists on origin; skipping."
