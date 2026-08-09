@@ -24,14 +24,13 @@ public sealed class LookupCompletedHandler(
         await using var scope = await DiscoveryHistoryScope.LoadFromEventStreamAsync(repository, streamId, historyContext, cancellationToken);
 
         scope.Aggregate.ApplyLookupResult(lookupRequest);
+        var nextAttempt = LookupPlanContinuation.PrepareNext(scope.Aggregate, lookupRequest);
         await scope.Aggregate.SaveAsync(cancellationToken);
 
-        await LookupPlanContinuation.ContinueAsync(
-            scope.Aggregate,
-            lookupRequest,
-            commandBus,
-            cancellationToken);
-        await scope.Aggregate.SaveAsync(cancellationToken);
+        if (nextAttempt is not null)
+        {
+            await commandBus.SendAsync(nextAttempt, cancellationToken);
+        }
 
         await PublishPlaylistTrackDiscoveryRequestsAsync(request, lookupRequest, cancellationToken);
         await PublishStreamingLocationDiscoveryRequestsAsync(request, lookupRequest, cancellationToken);

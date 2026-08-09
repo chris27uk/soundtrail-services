@@ -14,15 +14,13 @@ namespace Soundtrail.Services.Enrichment.Orchestrator.Features.Processing.OnLook
 /// </summary>
 internal static class LookupPlanContinuation
 {
-    public static async Task ContinueAsync(
+    public static IMessage? PrepareNext(
         DiscoveryHistory aggregate,
-        LookupResult result,
-        ICommandBus commandBus,
-        CancellationToken cancellationToken)
+        LookupResult result)
     {
         if (result is LookupResult.Succeeded)
         {
-            return;
+            return null;
         }
 
         var originalCommandId = GetOriginalCommandId(result);
@@ -31,53 +29,50 @@ internal static class LookupPlanContinuation
             .LastOrDefault(work => MatchesDispatch(work, originalCommandId));
         if (scheduled is null)
         {
-            return;
+            return null;
         }
 
         if (aggregate.IsWorkCompleted(scheduled.Target))
         {
-            return;
+            return null;
         }
 
         var dispatch = CreateDispatch(scheduled);
         var plan = LookupPlanningPolicy.Build(dispatch);
         if (plan.Attempts.Count == 0)
         {
-            return;
+            return null;
         }
 
         var attemptIndex = IndexOfAttempt(plan, dispatch, originalCommandId);
         if (attemptIndex < 0)
         {
-            return;
+            return null;
         }
 
         if (result is LookupResult.Deferred)
         {
-            await commandBus.SendAsync(
-                WorkerCommandFactory.Create(dispatch, plan.Attempts[attemptIndex]),
-                cancellationToken);
-            return;
+            return WorkerCommandFactory.Create(dispatch, plan.Attempts[attemptIndex]);
         }
 
         if (result is LookupResult.Duplicate)
         {
-            return;
+            return null;
         }
 
         if (attemptIndex < plan.Attempts.Count - 1)
         {
-            await commandBus.SendAsync(
-                WorkerCommandFactory.Create(dispatch, plan.Attempts[attemptIndex + 1]),
-                cancellationToken);
-            return;
+            return WorkerCommandFactory.Create(dispatch, plan.Attempts[attemptIndex + 1]);
         }
 
+        // Exhaustion must be in the same append as the final FailAttempt — a second Save with the
+        // same Completions OperationId would be dropped as DuplicateOperation.
         aggregate.ApplyWorkedCompleted(
             scheduled.Target,
             scheduled.Priority,
             "All lookup attempts exhausted.",
             GetCompletedAt(result));
+        return null;
     }
 
     private static bool MatchesDispatch(WorkScheduled work, MessageId originalCommandId)

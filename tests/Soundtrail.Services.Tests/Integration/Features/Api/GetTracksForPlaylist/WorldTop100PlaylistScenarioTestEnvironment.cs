@@ -254,10 +254,12 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
                 continue;
             }
 
+            // Unplayable tracks still complete streaming work after all lookup attempts are exhausted.
             await discoveryFeedbackPort.StoreAsync(
-                new WorkAttemptFailed(
+                new WorkCompleted(
                     new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.StreamingLocationForTrack(trackId)),
-                    "Streaming locations were not found in local WireMock services.",
+                    LookupPriorityBand.High,
+                    "All lookup attempts exhausted.",
                     Clock.UtcNow.AddMinutes(1)),
                 CancellationToken.None);
         }
