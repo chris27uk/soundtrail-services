@@ -6,6 +6,8 @@ on:
   pull_request:
     branches: [main]
 
+run-name: "${{ github.workflow }} ${{ github.event.pull_request.title || github.ref_name }} (#${{ github.run_number }})"
+
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -16,14 +18,14 @@ permissions:
   pull-requests: write
 
 jobs:
-  ci:
-    name: Build and Test
+  version:
+    name: Version
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-
-    env:
-      CI_IMAGE: soundtrail-services-ci:local
-      NUGET_PACKAGES_HOST: ${{ github.workspace }}/.nuget/packages
+    timeout-minutes: 5
+    outputs:
+      semVer: ${{ steps.gitversion.outputs.semVer }}
+      informationalVersion: ${{ steps.gitversion.outputs.informationalVersion }}
+      majorMinorPatch: ${{ steps.gitversion.outputs.majorMinorPatch }}
 
     steps:
       - name: Checkout
@@ -47,6 +49,24 @@ jobs:
           echo "InformationalVersion: ${{ steps.gitversion.outputs.informationalVersion }}"
           echo "MajorMinorPatch: ${{ steps.gitversion.outputs.majorMinorPatch }}"
 
+  ci:
+    name: Build ${{ needs.version.outputs.semVer }}
+    needs: version
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    env:
+      CI_IMAGE: soundtrail-services-ci:local
+      NUGET_PACKAGES_HOST: ${{ github.workspace }}/.nuget/packages
+      BUILD_VERSION: ${{ needs.version.outputs.semVer }}
+      GITVERSION_INFORMATIONALVERSION: ${{ needs.version.outputs.informationalVersion }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Build CI image
         run: docker build -t "$CI_IMAGE" -f .github/docker/Dockerfile.ci .
 
@@ -59,9 +79,6 @@ jobs:
             ${{ runner.os }}-nuget-
 
       - name: Restore
-        env:
-          BUILD_VERSION: ${{ steps.gitversion.outputs.semVer }}
-          GITVERSION_INFORMATIONALVERSION: ${{ steps.gitversion.outputs.informationalVersion }}
         run: |
           docker run --rm \
             --volume "${{ github.workspace }}:/src" \
@@ -73,9 +90,6 @@ jobs:
             pwsh ./build.ps1 -Restore -Configuration Release -Version "$BUILD_VERSION"
 
       - name: Build and Test
-        env:
-          BUILD_VERSION: ${{ steps.gitversion.outputs.semVer }}
-          GITVERSION_INFORMATIONALVERSION: ${{ steps.gitversion.outputs.informationalVersion }}
         run: |
           docker run --rm \
             --volume "${{ github.workspace }}:/src" \
@@ -111,7 +125,7 @@ jobs:
       - name: Tag release version
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
-          TAG: v${{ steps.gitversion.outputs.majorMinorPatch }}
+          TAG: v${{ needs.version.outputs.majorMinorPatch }}
         run: |
           if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
             echo "Tag $TAG already exists on origin; skipping."
