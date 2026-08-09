@@ -136,8 +136,8 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
             new CatalogItemOperation.ChildTracksForPlaylist(PlaylistId).StableIdentifier());
         var playlistDocumentId = CatalogPlaylistTracksRecordDto.GetDocumentId(PlaylistId.Value);
 
-        await EmbeddedRavenTestServer.DisposeAsync(documentStore, discoveryDocumentId);
-        await EmbeddedRavenTestServer.DisposeAsync(documentStore, playlistDocumentId);
+        await EmbeddedRavenTestServer.DeleteDocumentAsync(documentStore, discoveryDocumentId);
+        await EmbeddedRavenTestServer.DeleteDocumentAsync(documentStore, playlistDocumentId);
     }
 
     public async Task<StreamingCoverageSummary> MaterializeResolvedScenarioAsync()
@@ -311,10 +311,7 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
         client.Dispose();
         wireMockServer.Dispose();
 
-        foreach (var documentId in cleanupDocumentIds.Distinct(StringComparer.Ordinal))
-        {
-            await EmbeddedRavenTestServer.DisposeAsync(documentStore, documentId);
-        }
+        await EmbeddedRavenTestServer.DisposeAsync(documentStore);
     }
 
     private HttpClient CreateExternalClient() =>

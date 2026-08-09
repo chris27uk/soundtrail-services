@@ -29,15 +29,8 @@ public sealed class LookupStreamingLocationByTrackMetadataHandler(
 
         if (string.IsNullOrWhiteSpace(track.ArtistName) || string.IsNullOrWhiteSpace(track.Title))
         {
-            await commandBus.SendAsync(
-                CreateCompleted(
-                    request,
-                    new LookupResult.NotFound(
-                        CreateContext(request),
-                        "Track metadata is incomplete for provider lookup.",
-                        observedAt)),
-                cancellationToken);
-            return;
+            // Partial track projection — retry rather than burning later plan attempts as NotFound.
+            throw new TrackLookupNotReadyException(request.TrackId);
         }
 
         var link = await readStreamingLocationByProviderPort.ReadByTrackMetadataAsync(

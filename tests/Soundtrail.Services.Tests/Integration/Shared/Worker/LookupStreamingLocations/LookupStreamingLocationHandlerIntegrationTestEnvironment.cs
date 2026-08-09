@@ -124,11 +124,7 @@ internal sealed class LookupStreamingLocationHandlerIntegrationTestEnvironment :
     {
         httpClient.Dispose();
         wireMockServer.Dispose();
-
-        foreach (var documentId in cleanupDocumentIds)
-        {
-            EmbeddedRavenTestServer.DisposeAsync(documentStore, documentId).AsTask().GetAwaiter().GetResult();
-        }
+        EmbeddedRavenTestServer.DisposeAsync(documentStore).AsTask().GetAwaiter().GetResult();
     }
 
     private async Task SeedTrackAsync(string seed, string title, string artistName, string? isrc)

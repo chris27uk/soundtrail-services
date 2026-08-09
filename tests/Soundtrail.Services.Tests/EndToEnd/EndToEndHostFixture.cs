@@ -98,7 +98,7 @@ public sealed class EndToEndHostFixture : IAsyncLifetime
             await this.serviceBus.DisposeAsync();
         }
 
-        this.documentStore?.Dispose();
+        await EmbeddedRavenTestServer.DisposeAsync(this.documentStore);
     }
 
     private static Dictionary<string, string?> BuildConfiguration(

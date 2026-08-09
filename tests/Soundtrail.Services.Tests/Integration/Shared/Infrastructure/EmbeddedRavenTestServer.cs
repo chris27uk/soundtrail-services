@@ -11,11 +11,17 @@ namespace Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
 
 internal static class EmbeddedRavenTestServer
 {
-    private const string DefaultDatabaseName = "soundtrail-services-tests";
-    private static int serverStarted;
+    private static readonly object ServerSync = new();
+    private static bool serverStarted;
 
-    public static IDocumentStore CreateDocumentStore(string databaseName = DefaultDatabaseName)
+    /// <summary>
+    /// Creates a document store against the shared embedded Raven server.
+    /// When <paramref name="databaseName"/> is omitted, a unique database is created so tests can run in parallel.
+    /// </summary>
+    public static IDocumentStore CreateDocumentStore(string? databaseName = null)
     {
+        databaseName ??= $"soundtrail-tests-{Guid.NewGuid():N}";
+
         EnsureStarted();
         var serverUri = EmbeddedServer.Instance.GetServerUriAsync().GetAwaiter().GetResult();
         var store = new DocumentStore
@@ -40,40 +46,76 @@ internal static class EmbeddedRavenTestServer
         return serverUri.AbsoluteUri.TrimEnd('/');
     }
 
-    public static async ValueTask DisposeAsync(IDocumentStore? documentStore, string? documentId)
+    /// <summary>
+    /// Deletes a single document. Use for mid-test resets within a long-lived environment.
+    /// </summary>
+    public static async ValueTask DeleteDocumentAsync(IDocumentStore documentStore, string documentId)
     {
-        if (documentStore is null)
+        ArgumentNullException.ThrowIfNull(documentStore);
+        if (string.IsNullOrWhiteSpace(documentId))
         {
             return;
         }
 
         try
         {
-            if (!string.IsNullOrWhiteSpace(documentId))
-            {
-                using var session = documentStore.OpenAsyncSession();
-                session.Advanced.Defer(new DeleteCommandData(documentId, null));
-                await session.SaveChangesAsync();
-            }
+            using var session = documentStore.OpenAsyncSession();
+            session.Advanced.Defer(new DeleteCommandData(documentId, null));
+            await session.SaveChangesAsync();
         }
         catch
         {
         }
     }
 
+    /// <summary>
+    /// Deletes the store's database and disposes the store.
+    /// </summary>
+    public static ValueTask DisposeAsync(IDocumentStore? documentStore)
+    {
+        if (documentStore is null)
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        var databaseName = documentStore.Database;
+        try
+        {
+            documentStore.Maintenance.Server.Send(
+                new DeleteDatabasesOperation(databaseName, hardDelete: true));
+        }
+        catch
+        {
+        }
+
+        documentStore.Dispose();
+        return ValueTask.CompletedTask;
+    }
+
     private static void EnsureStarted()
     {
-        if (Interlocked.Exchange(ref serverStarted, 1) == 1)
+        if (Volatile.Read(ref serverStarted))
         {
             return;
         }
 
-        try
+        lock (ServerSync)
         {
-            EmbeddedServer.Instance.StartServer();
-        }
-        catch (InvalidOperationException exception) when (exception.Message.Contains("already started", StringComparison.OrdinalIgnoreCase))
-        {
+            if (serverStarted)
+            {
+                return;
+            }
+
+            try
+            {
+                EmbeddedServer.Instance.StartServer();
+            }
+            catch (InvalidOperationException exception)
+                when (exception.Message.Contains("already started", StringComparison.OrdinalIgnoreCase))
+            {
+            }
+
+            serverStarted = true;
         }
     }
 

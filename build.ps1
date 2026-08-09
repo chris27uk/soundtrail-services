@@ -76,6 +76,8 @@ if ($Clean) {
 }
 
 # === Restore ===
+# With -Restore, restore packages then continue into build/test (CI single-container path).
+# Without -Restore, build uses --no-restore and expects a prior restore.
 if ($Restore) {
     Invoke-Stage "NuGet Package Restore" {
         $restoreArgs = @(
@@ -93,9 +95,6 @@ if ($Restore) {
 
         Exec "dotnet" $restoreArgs
     }
-
-    Write-Host "Restore complete..."
-    exit 0
 }
 
 function Get-VersionBuildProperties {
@@ -129,52 +128,25 @@ Invoke-Stage "Build Solution" {
     ))
 }
 
-function Invoke-TestStage {
-    param(
-        [string]$StageName,
-        [string]$Filter,
-        [string]$ResultFileName
+# One `dotnet test` so the runner (and xUnit, once parallelization is enabled) sees the full pack.
+Invoke-Stage "Run Tests" {
+    $versionProperties = Get-VersionBuildProperties -BuildVersion $Version
+    $testArgs = @(
+        "test", $TestsPath,
+        "--logger", "trx;LogFileName=tests.trx",
+        "--results-directory", $OutReporting,
+        "/p:Configuration=$Configuration"
+    ) + $versionProperties + @(
+        "/maxcpucount:$MaxCpuCount",
+        "--no-build",
+        "--no-restore"
     )
 
-    Invoke-Stage $StageName {
-        $versionProperties = Get-VersionBuildProperties -BuildVersion $Version
-        $testArgs = @(
-            "test", $TestsPath,
-            "--logger", "trx;LogFileName=$ResultFileName",
-            "--results-directory", $OutReporting,
-            "/p:Configuration=$Configuration"
-        ) + $versionProperties + @(
-            "/maxcpucount:$MaxCpuCount",
-            "--no-build",
-            "--no-restore",
-            "--filter", $Filter
-        )
-
-        Exec "dotnet" $testArgs
+    if (-not [string]::IsNullOrWhiteSpace($TestFilter)) {
+        $testArgs += @("--filter", $TestFilter)
     }
-}
 
-if ([string]::IsNullOrWhiteSpace($TestFilter)) {
-    Invoke-TestStage `
-        -StageName "Run Unit Tests" `
-        -Filter "FullyQualifiedName~Soundtrail.Services.Tests.Unit" `
-        -ResultFileName "unit-tests.trx"
-
-    Invoke-TestStage `
-        -StageName "Run Integration Tests" `
-        -Filter "FullyQualifiedName~Soundtrail.Services.Tests.Integration" `
-        -ResultFileName "integration-tests.trx"
-
-    Invoke-TestStage `
-        -StageName "Run End-To-End Tests" `
-        -Filter "FullyQualifiedName~Soundtrail.Services.Tests.EndToEnd" `
-        -ResultFileName "end-to-end-tests.trx"
-}
-else {
-    Invoke-TestStage `
-        -StageName "Run Tests ($TestFilter)" `
-        -Filter $TestFilter `
-        -ResultFileName "tests.trx"
+    Exec "dotnet" $testArgs
 }
 
 # === Build Summary ===

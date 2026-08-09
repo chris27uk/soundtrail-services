@@ -14,6 +14,7 @@ concurrency:
 
 permissions:
   contents: write
+  actions: write
   checks: write
   pull-requests: write
 
@@ -75,8 +76,18 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build CI image
-        run: docker build -t "$CI_IMAGE" -f .github/docker/Dockerfile.ci .
+        uses: docker/build-push-action@v6
+        with:
+          context: .github/docker
+          file: .github/docker/Dockerfile.ci
+          tags: ${{ env.CI_IMAGE }}
+          load: true
+          cache-from: type=gha,scope=ci-image
+          cache-to: type=gha,mode=max,scope=ci-image
 
       - name: Cache NuGet packages
         uses: actions/cache@v4
@@ -86,18 +97,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-      - name: Restore
-        run: |
-          docker run --rm \
-            --volume "${{ github.workspace }}:/src" \
-            --volume "${{ env.NUGET_PACKAGES_HOST }}:/root/.nuget/packages" \
-            --env NUGET_PACKAGES=/root/.nuget/packages \
-            --env GITVERSION_INFORMATIONALVERSION \
-            --workdir /src \
-            "$CI_IMAGE" \
-            pwsh ./build.ps1 -Restore -Configuration Release -Version "$BUILD_VERSION"
-
-      - name: Build and Test
+      - name: Restore, Build and Test
         run: |
           docker run --rm \
             --volume "${{ github.workspace }}:/src" \
@@ -105,12 +105,13 @@ jobs:
             --volume /var/run/docker.sock:/var/run/docker.sock \
             --add-host=host.docker.internal:host-gateway \
             --env NUGET_PACKAGES=/root/.nuget/packages \
+            --env GITHUB_ACTIONS=true \
             --env GITVERSION_INFORMATIONALVERSION \
             --env TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal \
             --env TESTCONTAINERS_RYUK_DISABLED=true \
             --workdir /src \
             "$CI_IMAGE" \
-            pwsh ./build.ps1 -Configuration Release -Version "$BUILD_VERSION"
+            pwsh ./build.ps1 -Restore -Configuration Release -Version "$BUILD_VERSION"
 
       - name: Upload test reports
         if: always()

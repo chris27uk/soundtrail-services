@@ -233,11 +233,21 @@ public sealed class RavenStoreDiscoveryFeedbackPort(
                     CatalogDiscoveryFeedbackRecordDto.GetDocumentId(streamingTargetId),
                     cancellationToken);
 
-            if (streamingDiscovery is null || IsIncomplete(streamingDiscovery))
+            if (streamingDiscovery is null)
             {
-                return streamingDiscovery is null
-                    ? BuildStreamingProjectionPendingDiscovery(playlistDiscovery)
-                    : EmbedDiscovery(streamingDiscovery);
+                return BuildStreamingProjectionPendingDiscovery(playlistDiscovery);
+            }
+
+            if (IsIncomplete(streamingDiscovery))
+            {
+                return EmbedDiscovery(streamingDiscovery);
+            }
+
+            // Success completed before Repair wrote URLs onto the playlist row — keep waiting.
+            // Exhaustion ("All lookup attempts exhausted.") stays terminal with empty locations.
+            if (IsAwaitingSuccessfulStreamingProjection(streamingDiscovery))
+            {
+                return BuildStreamingProjectionPendingDiscovery(playlistDiscovery);
             }
         }
 
@@ -246,6 +256,10 @@ public sealed class RavenStoreDiscoveryFeedbackPort(
 
     private static bool IsIncomplete(CatalogDiscoveryFeedbackRecordDto discovery) =>
         discovery.Status is "requested" or "scheduled" or "deferred" or "attempt-failed";
+
+    private static bool IsAwaitingSuccessfulStreamingProjection(CatalogDiscoveryFeedbackRecordDto discovery) =>
+        discovery.Status == "completed"
+        && string.Equals(discovery.Reason, "Lookup completed.", StringComparison.Ordinal);
 
     private static CatalogDiscoveryFeedbackRecordDto BuildStreamingProjectionPendingDiscovery(
         CatalogDiscoveryFeedbackRecordDto playlistDiscovery)

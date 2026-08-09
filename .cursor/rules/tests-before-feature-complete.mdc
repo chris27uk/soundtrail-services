@@ -9,13 +9,9 @@ Do **not** call a feature, bugfix, or change set complete until the relevant tes
 
 ## Required gate
 
-Before stating work is done, run and confirm green:
+Before stating work is done, run and confirm green the **full test pack** via `./build.ps1` (or `dotnet test` on the test project with no filter).
 
-1. **Unit** — `FullyQualifiedName~Soundtrail.Services.Tests.Unit`
-2. **Integration** — `FullyQualifiedName~Soundtrail.Services.Tests.Integration`
-3. **End-to-end** — when the change touches messaging, projections, discovery, or API flows exercised by E2E — `FullyQualifiedName~Soundtrail.Services.Tests.EndToEnd`
-
-Prefer the full pack via `./build.ps1` (or the same filters with `dotnet test`) when the change is cross-cutting. Narrow to a subset only when the change is clearly isolated **and** you still run every pack that could regress.
+Narrow with `-TestFilter` / `--filter` only when the change is clearly isolated **and** you still cover every layer that could regress (Unit / Integration / EndToEnd namespaces).
 
 ## What “complete” means
 

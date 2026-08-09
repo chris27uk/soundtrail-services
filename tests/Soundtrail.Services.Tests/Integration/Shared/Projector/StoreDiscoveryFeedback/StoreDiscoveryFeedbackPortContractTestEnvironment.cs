@@ -87,15 +87,7 @@ internal sealed class StoreDiscoveryFeedbackPortContractTestEnvironment : IAsync
 
     public async ValueTask DisposeAsync()
     {
-        if (documentStore is null)
-        {
-            return;
-        }
-
-        foreach (var documentId in cleanupDocumentIds.Distinct(StringComparer.Ordinal))
-        {
-            await EmbeddedRavenTestServer.DisposeAsync(documentStore, documentId);
-        }
+        await EmbeddedRavenTestServer.DisposeAsync(documentStore);
     }
 
     private static StoreDiscoveryFeedbackPortContractTestEnvironment CreateFake()
@@ -245,11 +237,20 @@ internal sealed class StoreDiscoveryFeedbackPortContractFake : IStoreDiscoveryFe
                 ? fallbackDiscovery
                 : LoadFeedback(streamingTargetId);
 
-            if (streamingDiscovery is null || streamingDiscovery.Status is "requested" or "scheduled" or "deferred")
+            if (streamingDiscovery is null)
             {
-                return streamingDiscovery is null
-                    ? BuildStreamingPending(playlistDiscovery)
-                    : EmbedCopy(streamingDiscovery);
+                return BuildStreamingPending(playlistDiscovery);
+            }
+
+            if (streamingDiscovery.Status is "requested" or "scheduled" or "deferred" or "attempt-failed")
+            {
+                return EmbedCopy(streamingDiscovery);
+            }
+
+            if (streamingDiscovery.Status == "completed"
+                && string.Equals(streamingDiscovery.Reason, "Lookup completed.", StringComparison.Ordinal))
+            {
+                return BuildStreamingPending(playlistDiscovery);
             }
         }
 
