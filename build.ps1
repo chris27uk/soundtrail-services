@@ -84,11 +84,12 @@ if ($Restore) {
             "restore",
             $SolutionPath,
             "/p:Configuration=$Configuration",
-            "/p:RestorePackagesWithLockFile=true",
             "--verbosity", "minimal"
         )
 
         # CI must use committed lock files; local restore may update locks when packages change.
+        # Do not pass /p:RestorePackagesWithLockFile=true here — Directory.Build.props enables it,
+        # and AppHost opts out (Aspire injects host-RID packages that break cross-OS locked restore).
         if ($env:GITHUB_ACTIONS) {
             $restoreArgs += "--locked-mode"
         }
