@@ -39,6 +39,7 @@ jobs:
 
       - name: Determine version
         id: gitversion
+        shell: bash
         run: |
           set -euo pipefail
           /tools/dotnet-gitversion /output json > /tmp/gitversion.json
