@@ -15,6 +15,7 @@
       <PackageReference Include="MessagePack" Version="3.1.8" />
       <ProjectReference Include="..\src\Soundtrail.Services.Api\Soundtrail.Services.Api.csproj" />
       <ProjectReference Include="..\src\Soundtrail.Services.Enrichment.Scheduler\Soundtrail.Services.Enrichment.Scheduler.csproj" />
+      <ProjectReference Include="..\src\Soundtrail.Services.Enrichment.CatalogImport\Soundtrail.Services.Enrichment.CatalogImport.csproj" />
       <ProjectReference Include="..\src\Soundtrail.Services.Enrichment.Orchestrator\Soundtrail.Services.Enrichment.Orchestrator.csproj" />
       <ProjectReference Include="..\src\Soundtrail.Services.Enrichment.Worker\Soundtrail.Services.Enrichment.Worker.csproj" />
     </ItemGroup>

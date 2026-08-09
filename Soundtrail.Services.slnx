@@ -20,6 +20,7 @@
     <Project Path="src/Soundtrail.Services.Api/Soundtrail.Services.Api.csproj" />
     <Project Path="src/Soundtrail.Services.Enrichment.Orchestrator/Soundtrail.Services.Enrichment.Orchestrator.csproj" />
     <Project Path="src/Soundtrail.Services.Enrichment.Scheduler/Soundtrail.Services.Enrichment.Scheduler.csproj" />
+    <Project Path="src/Soundtrail.Services.Enrichment.CatalogImport/Soundtrail.Services.Enrichment.CatalogImport.csproj" />
     <Project Path="src/Soundtrail.Services.Enrichment.Worker/Soundtrail.Services.Enrichment.Worker.csproj" />
     <Project Path="src/Soundtrail.Services.Projector/Soundtrail.Services.Projector.csproj" />
   </Folder>

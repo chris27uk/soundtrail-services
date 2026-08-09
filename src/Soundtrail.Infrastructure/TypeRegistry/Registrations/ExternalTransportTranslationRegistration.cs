@@ -3,6 +3,8 @@ using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
+using Soundtrail.Domain.Catalog.MusicBrainzDumpImport;
+using Soundtrail.Domain.Catalog.MusicBrainzDumpImport.Messages;
 using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
@@ -17,6 +19,36 @@ public sealed class ExternalTransportTranslationRegistration : ITypeTranslationR
 {
     public void Register(TypeTranslationRegistry registry)
     {
+        registry.RegisterPair<StartMusicBrainzDumpImport, StartMusicBrainzDumpImportCommandDto>(
+            toDto: message => new StartMusicBrainzDumpImportCommandDto(
+                message.Id.Value,
+                message.CorrelationId.Value,
+                message.RequestedAt,
+                message.JobId.Value,
+                message.DumpVersion),
+            toDomainObject: dto => new StartMusicBrainzDumpImport(
+                MessageId.From(dto.CommandId),
+                CorrelationId.From(dto.CorrelationId),
+                dto.RequestedAt,
+                MusicBrainzDumpImportJobId.From(dto.JobId),
+                dto.DumpVersion));
+
+        registry.RegisterPair<ImportMusicBrainzDumpShard, ImportMusicBrainzDumpShardCommandDto>(
+            toDto: message => new ImportMusicBrainzDumpShardCommandDto(
+                message.Id.Value,
+                message.CorrelationId.Value,
+                message.RequestedAt,
+                message.JobId.Value,
+                message.Phase.ToString(),
+                message.ShardId),
+            toDomainObject: dto => new ImportMusicBrainzDumpShard(
+                MessageId.From(dto.CommandId),
+                CorrelationId.From(dto.CorrelationId),
+                dto.RequestedAt,
+                MusicBrainzDumpImportJobId.From(dto.JobId),
+                Enum.Parse<MusicBrainzDumpImportPhase>(dto.Phase),
+                dto.ShardId));
+
         registry.RegisterPair<AssessWorkMessage, AssessMusicCatalogItemCommandDto>(
             toDto: message => new AssessMusicCatalogItemCommandDto(
                 message.Id.Value,
