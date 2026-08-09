@@ -1,5 +1,3 @@
-using System.Diagnostics;
-using Soundtrail.Adapters.Messaging;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Domain.Discovery.Planning;
@@ -12,18 +10,11 @@ public sealed class LookupWorkReadyHandler(ICommandBus commandBus) : IHandler<Di
     public async Task Handle(IncomingMessage<DispatchLookupWork> context, CancellationToken cancellationToken = default)
     {
         var request = context.Message;
-        using var handlerActivity = MessageTelemetry.StartHandlerActivity(request, "dispatch-lookup-work");
-        MessageTelemetry.EnrichCurrentActivity(request, "dispatch-lookup-work");
-        MessageTelemetry.AddCurrentEvent("dispatch-lookup-work.received");
-
         var plan = LookupPlanningPolicy.Build(request);
-        Activity.Current?.SetTag("soundtrail.lookup_attempt_count", plan.Attempts.Count);
 
         foreach (var command in plan.Attempts.Select(attempt => WorkerCommandFactory.Create(request, attempt)))
         {
             await commandBus.SendAsync(command, cancellationToken);
         }
-
-        MessageTelemetry.AddCurrentEvent("dispatch-lookup-work.commands-published");
     }
 }

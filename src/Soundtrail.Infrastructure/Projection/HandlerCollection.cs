@@ -1,5 +1,6 @@
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
+using Soundtrail.Adapters.Messaging;
 using Soundtrail.Domain.Abstractions;
 
 namespace Soundtrail.Adapters.Projection;
@@ -101,6 +102,28 @@ public sealed class HandlerCollection
         EnsureHandlerCollectionRegistered(services);
     }
 
+    public static void AddScheduledMessageHandlersFromAssemblies(
+        IServiceCollection services,
+        params Type[] assemblyMarkers)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(assemblyMarkers);
+
+        var scheduledMessageTypes = DiscoverPayloadTypes(assemblyMarkers, typeof(IScheduledMessageHandler<>));
+        if (scheduledMessageTypes.Count == 0)
+        {
+            var assemblies = string.Join(
+                ", ",
+                assemblyMarkers.Select(static marker => marker.Assembly.GetName().Name));
+            throw new InvalidOperationException(
+                $"No IScheduledMessageHandler<> implementations were discovered in assemblies: {assemblies}.");
+        }
+
+        GetOrAddRegistrationState(services).AddScheduledMessageTypes(scheduledMessageTypes);
+        services.TryDecorate(typeof(IScheduledMessageHandler<>), typeof(TelemetryScheduledMessageHandlerDecorator<>));
+        EnsureHandlerCollectionRegistered(services);
+    }
+
     private List<Func<object, CancellationToken, Task>> GetOrCreate(Type payloadType)
     {
         if (handlers.TryGetValue(payloadType, out var registered))
@@ -160,6 +183,14 @@ public sealed class HandlerCollection
             registerMethod.MakeGenericMethod(messageType).Invoke(null, [collection, serviceProvider]);
         }
 
+        foreach (var scheduledMessageType in state.ScheduledMessageTypes)
+        {
+            var registerMethod = typeof(HandlerCollectionRegistrar)
+                .GetMethod(nameof(HandlerCollectionRegistrar.RegisterScheduledMessageHandler), BindingFlags.Public | BindingFlags.Static)
+                ?? throw new InvalidOperationException("Scheduled message handler registrar could not be found.");
+            registerMethod.MakeGenericMethod(scheduledMessageType).Invoke(null, [collection, serviceProvider]);
+        }
+
         foreach (var eventType in state.ProjectionEventTypes)
         {
             var registerMethod = typeof(HandlerCollectionRegistrar)
@@ -210,9 +241,12 @@ public sealed class HandlerCollection
 internal sealed class HandlerCollectionRegistrationState
 {
     private readonly HashSet<Type> messageTypes = [];
+    private readonly HashSet<Type> scheduledMessageTypes = [];
     private readonly HashSet<Type> projectionEventTypes = [];
 
     public IReadOnlyCollection<Type> MessageTypes => this.messageTypes;
+
+    public IReadOnlyCollection<Type> ScheduledMessageTypes => this.scheduledMessageTypes;
 
     public IReadOnlyCollection<Type> ProjectionEventTypes => this.projectionEventTypes;
 
@@ -221,6 +255,14 @@ internal sealed class HandlerCollectionRegistrationState
         foreach (var type in types)
         {
             this.messageTypes.Add(type);
+        }
+    }
+
+    public void AddScheduledMessageTypes(IEnumerable<Type> types)
+    {
+        foreach (var type in types)
+        {
+            this.scheduledMessageTypes.Add(type);
         }
     }
 
@@ -255,6 +297,18 @@ internal static class HandlerCollectionRegistrar
         if (handler is not null)
         {
             collection.RegisterHandler(handler);
+        }
+    }
+
+    public static void RegisterScheduledMessageHandler<TMessage>(
+        HandlerCollection collection,
+        IServiceProvider serviceProvider)
+        where TMessage : IScheduledMessage
+    {
+        var handler = serviceProvider.GetService<IScheduledMessageHandler<TMessage>>();
+        if (handler is not null)
+        {
+            collection.Register<TMessage>(handler.HandleAsync);
         }
     }
 }

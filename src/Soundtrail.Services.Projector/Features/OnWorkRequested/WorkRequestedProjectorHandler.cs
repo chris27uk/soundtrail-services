@@ -3,7 +3,6 @@ using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Domain.Discovery.Messages;
-using Soundtrail.Adapters.Messaging;
 using Soundtrail.Adapters.Projection;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnWorkRequested;
@@ -58,16 +57,6 @@ public sealed class WorkRequestedProjectorHandler(ICommandBus commandBus) :
         int? riskScore,
         CancellationToken cancellationToken)
     {
-        MessageTelemetry.EnrichCurrentActivity(
-            stage: "project-work-requested",
-            messageId: id,
-            correlationId: correlationId,
-            requestedAt: createdAt,
-            target: target,
-            trustLevel: trustLevel,
-            riskScore: riskScore);
-        MessageTelemetry.AddCurrentEvent("project-work-requested.assess-command-created");
-
         var command = new AssessWorkMessage(
             Id: id,
             CorrelationId: correlationId,

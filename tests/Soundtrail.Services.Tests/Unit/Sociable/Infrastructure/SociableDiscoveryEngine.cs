@@ -4,6 +4,7 @@ using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Adapters.Projection;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Services.Enrichment.Orchestrator;
+using Soundtrail.Services.Enrichment.Scheduler;
 using Soundtrail.Services.Enrichment.Worker;
 using Soundtrail.Services.Internal.Projector;
 using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForPlaylist.Support;
@@ -54,6 +55,9 @@ internal sealed class SociableDiscoveryEngine : IDisposable
             services,
             typeof(WorkerAssemblyMarker),
             typeof(OrchestratorAssemblyMarker));
+        HandlerCollection.AddScheduledMessageHandlersFromAssemblies(
+            services,
+            typeof(SchedulerAssemblyMarker));
 
         var provider = services.BuildServiceProvider();
         var scope = provider.CreateScope();
