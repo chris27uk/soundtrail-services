@@ -120,4 +120,55 @@ public sealed class StoreDiscoveryFeedbackPortContractTests
         playlist.Discovery!.Status.Should().Be("scheduled");
         playlist.Discovery.Reason.Should().Be("Track streaming projection is still catching up.");
     }
+
+    [Theory]
+    [MemberData(nameof(Implementations))]
+    public async Task Given_Unplayable_Playlist_Track_When_Streaming_Attempt_Failed_Then_Playlist_Discovery_Is_Scheduled_For_Catch_Up(
+        StoreDiscoveryFeedbackPortImplementation implementation)
+    {
+        await using var environment = StoreDiscoveryFeedbackPortContractTestEnvironment.Create(implementation);
+        var playlistId = PlaylistId.FromPlaylistName("world_top_100").Value;
+        var trackId = TestTrackIds.Create("unplayable-attempt-failed");
+        var playlistTarget = environment.PlaylistTarget("world_top_100");
+        var streamingTarget = environment.StreamingTarget(trackId);
+        await environment.SeedPlaylistAsync(
+            new CatalogPlaylistTracksRecordDto
+            {
+                Id = CatalogPlaylistTracksRecordDto.GetDocumentId(playlistId),
+                PlaylistId = playlistId,
+                TrackIds = [trackId.Value],
+                Tracks =
+                [
+                    new CatalogPlaylistTrackRecordDto
+                    {
+                        TrackId = trackId.Value,
+                        MusicCatalogId = trackId.Value,
+                        Title = "Glass Cities (Radio Edit)",
+                        ArtistName = "Neon Harbour",
+                        StreamingLocations = []
+                    }
+                ],
+                UpdatedAt = DateTimeOffset.UtcNow
+            });
+
+        await environment.Subject.StoreAsync(
+            new WorkCompleted(
+                playlistTarget,
+                LookupPriorityBand.High,
+                "Lookup completed.",
+                new DateTimeOffset(2026, 8, 2, 8, 0, 0, TimeSpan.Zero)),
+            CancellationToken.None);
+        await environment.Subject.StoreAsync(
+            new WorkAttemptFailed(
+                streamingTarget,
+                "Streaming location was not found for the requested provider.",
+                new DateTimeOffset(2026, 8, 2, 8, 0, 1, TimeSpan.Zero)),
+            CancellationToken.None);
+
+        var playlist = await environment.LoadPlaylistAsync(playlistId);
+
+        playlist!.Discovery.Should().NotBeNull();
+        playlist.Discovery!.Status.Should().Be("attempt-failed");
+        playlist.Discovery.Reason.Should().Be("Streaming location was not found for the requested provider.");
+    }
 }

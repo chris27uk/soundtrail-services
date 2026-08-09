@@ -245,7 +245,7 @@ public sealed class RavenStoreDiscoveryFeedbackPort(
     }
 
     private static bool IsIncomplete(CatalogDiscoveryFeedbackRecordDto discovery) =>
-        discovery.Status is "requested" or "scheduled" or "deferred";
+        discovery.Status is "requested" or "scheduled" or "deferred" or "attempt-failed";
 
     private static CatalogDiscoveryFeedbackRecordDto BuildStreamingProjectionPendingDiscovery(
         CatalogDiscoveryFeedbackRecordDto playlistDiscovery)

@@ -21,6 +21,18 @@ public sealed class RavenReadTrackForLookupPort(IDocumentStore documentStore) : 
             return null;
         }
 
+        // Prefer the artist id stamped onto the track document so lookup does not race the
+        // artist-tracks secondary index / projection.
+        if (!string.IsNullOrWhiteSpace(trackDocument.ArtistId))
+        {
+            return new TrackLookupContext(
+                ArtistId.From(trackDocument.ArtistId),
+                trackId,
+                trackDocument.Title,
+                trackDocument.ArtistName,
+                trackDocument.Isrc);
+        }
+
         var artistTracks = await session.Query<CatalogArtistTracksRecordDto>()
             .Customize(query => query.WaitForNonStaleResults())
             .SingleOrDefaultAsync(

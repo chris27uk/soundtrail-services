@@ -148,6 +148,7 @@ internal sealed class LookupStreamingLocationHandlerIntegrationTestEnvironment :
                 Id = trackDocumentId,
                 TrackId = trackId.Value,
                 MusicCatalogId = trackId.Value,
+                ArtistId = artistId.Value,
                 Title = title,
                 ArtistName = artistName,
                 Isrc = isrc,

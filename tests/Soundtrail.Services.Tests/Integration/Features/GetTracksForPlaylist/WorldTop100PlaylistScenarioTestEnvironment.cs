@@ -195,6 +195,7 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
                             Id = CatalogTrackRecordDto.GetDocumentId(track.TrackId.Value),
                             TrackId = track.TrackId.Value,
                             MusicCatalogId = track.TrackId.Value,
+                            ArtistId = entry.ArtistId.Value,
                             Title = track.Title,
                             ArtistName = track.ArtistName,
                             AlbumTitle = track.AlbumTitle,
