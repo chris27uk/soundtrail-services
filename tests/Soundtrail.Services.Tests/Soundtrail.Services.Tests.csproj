@@ -40,6 +40,8 @@
 
   <ItemGroup>
     <Folder Include="Integration\Features\" />
+    <Folder Include="Unit\Sociable\Features\OnDemand\" />
+    <Folder Include="Unit\Sociable\Features\Scheduled\" />
     <Folder Include="Unit\Solitary\CrossCutting\" />
   </ItemGroup>
 

@@ -100,6 +100,10 @@ internal static class ProductionCompositionTestEnvironment
             feature.ConfigureServices(builder.Services, builder.Configuration);
         }
 
+        HandlerCollection.AddScheduledMessageHandlersFromAssemblies(
+            builder.Services,
+            typeof(SchedulerAssemblyMarker));
+
         RemoveRavenDatabaseHostedService(builder.Services);
 
         builder.Services.BuildServiceProvider(

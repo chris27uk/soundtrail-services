@@ -125,6 +125,28 @@ public static class MessageTelemetry
     public static void AddCurrentEvent(string eventName) =>
         Activity.Current?.AddEvent(new ActivityEvent(eventName));
 
+    public const string ScheduleTriggeredEventName = "ScheduleTriggered";
+
+    public static Activity? StartScheduleActivity(IScheduledMessage message)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+
+        var activity = ActivitySource.StartActivity(
+            $"{message.GetType().Name} schedule",
+            ActivityKind.Internal);
+
+        if (activity is null)
+        {
+            return null;
+        }
+
+        activity.SetTag("messaging.operation", "schedule");
+        activity.SetTag("soundtrail.message_type", message.GetType().FullName);
+        activity.SetTag("soundtrail.triggered_at_utc", message.TriggeredAt.UtcDateTime);
+        activity.AddEvent(new ActivityEvent(ScheduleTriggeredEventName));
+        return activity;
+    }
+
     private static void EnrichActivity(Activity activity, IMessage message, string stage)
     {
         activity.SetTag("soundtrail.workflow_stage", stage);

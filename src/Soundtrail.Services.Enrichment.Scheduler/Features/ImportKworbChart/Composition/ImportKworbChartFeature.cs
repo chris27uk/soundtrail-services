@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Operations;
 using Soundtrail.Services.Enrichment.Scheduler.Features.ImportKworbChart.Adapters;
 using Soundtrail.Services.Enrichment.Scheduler.Infrastructure;
 
@@ -15,7 +14,9 @@ public sealed class ImportKworbChartFeature : ISchedulerFeature
 {
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
-        services.TryAddScoped<IHandler<ImportKworbChartCommand>, ImportKworbChartHandler>();
+        ImportKworbChartComposition.Configure(
+            services,
+            new(sp => sp.GetRequiredService<ICommandBus>()));
         services.TryAddScoped<ImportKworbChartTickerFunctions>();
     }
 

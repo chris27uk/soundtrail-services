@@ -16,10 +16,6 @@ public sealed class OnMusicAssessmentRequiredHandler(
     public async Task Handle(IncomingMessage<AssessWorkMessage> context, CancellationToken cancellationToken = default)
     {
         var request = context.Message;
-        using var handlerActivity = MessageTelemetry.StartHandlerActivity(request, "assess-work");
-        MessageTelemetry.EnrichCurrentActivity(request, "assess-work");
-        MessageTelemetry.AddCurrentEvent("assess-work.received");
-
         var aggregateContext = request.ToAggregateContext();
         var streamId = CatalogWorkId.From(request.Target);
         await using var scope = await DiscoveryHistoryScope.LoadFromEventStreamAsync(repository, streamId, aggregateContext, cancellationToken);
