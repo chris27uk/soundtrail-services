@@ -3,7 +3,7 @@ namespace Soundtrail.Domain.Catalog.Albums
     public sealed class Album(
         AlbumId albumId,
         string? albumTitle,
-        string? sourceAlbumId,
+        IEnumerable<SourceSystemId>? sourceSystemIds,
         DateOnly? releaseDate,
         string? artworkUrl,
         DateTimeOffset updatedAt)
@@ -12,7 +12,9 @@ namespace Soundtrail.Domain.Catalog.Albums
 
         public string? AlbumTitle { get; } = albumTitle;
 
-        public string? SourceAlbumId { get; } = sourceAlbumId;
+        public HashSet<SourceSystemId> SourceSystemIds { get; } = sourceSystemIds is null
+            ? []
+            : new HashSet<SourceSystemId>(sourceSystemIds);
 
         public DateOnly? ReleaseDate { get; } = releaseDate;
 

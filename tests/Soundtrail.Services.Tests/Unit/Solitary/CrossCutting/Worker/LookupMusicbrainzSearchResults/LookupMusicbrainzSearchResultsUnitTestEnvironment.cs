@@ -93,7 +93,7 @@ internal sealed class LookupMusicbrainzSearchResultsUnitTestEnvironment
                     new Soundtrail.Domain.Catalog.Albums.Album(
                         albumId,
                         "Rare Release",
-                        "release-mb-1",
+                        SourceSystemIdSet.FromLegacyMusicBrainz("release-mb-1"),
                         new DateOnly(2026, 1, 2),
                         artworkUrl: null,
                         updatedAt: new DateTimeOffset(2026, 7, 20, 11, 0, 0, TimeSpan.Zero)))),

@@ -14,4 +14,5 @@ public sealed record TrackDiscoveredEventDataRecordDto(
     DateOnly? ReleaseDate,
     string? ReleaseType,
     string SourceProvider,
-    DateTimeOffset ObservedAt) : RavenEventBodyDto;
+    DateTimeOffset ObservedAt,
+    IReadOnlyList<string>? SourceSystemIds = null) : RavenEventBodyDto;

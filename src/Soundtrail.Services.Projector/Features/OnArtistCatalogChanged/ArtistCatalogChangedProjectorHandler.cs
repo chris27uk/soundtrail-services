@@ -43,7 +43,7 @@ public sealed class ArtistCatalogChangedProjectorHandler(
                 .Select(album => new ArtistCatalogAlbumReadModel(
                     album.AlbumId,
                     album.AlbumTitle ?? string.Empty,
-                    album.SourceAlbumId,
+                    SourceSystemIdSet.MusicBrainzIdOrNull(album.SourceSystemIds),
                     album.ReleaseDate,
                     album.ArtworkUrl))
                 .ToArray(),
@@ -148,7 +148,7 @@ public sealed class ArtistCatalogChangedProjectorHandler(
             track.AlbumTitle = incoming.AlbumTitle;
             track.DurationMs = incoming.DurationMs;
             track.Isrc = incoming.Isrc;
-            track.Mbid = incoming.Mbid;
+            SourceSystemIdSet.UnionWith(track.SourceSystemIds, incoming.SourceSystemIds);
             track.ReleaseDate = incoming.ReleaseDate;
             track.ReleaseType = incoming.ReleaseType;
             track.ArtworkUrl = incoming.ArtworkUrl ?? track.ArtworkUrl;

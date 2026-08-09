@@ -125,15 +125,15 @@ Do not rely on the standalone-recording dump alone for catalogue tracks; use the
 
 ## Messaging
 
-Dedicated ASB queues for CatalogImport control messages. Do not reuse `lookup-musicbrainz`.
+Dedicated ASB queue (e.g. `catalog-import`). Do not reuse `lookup-musicbrainz`.
 
 | Message | Transport | Purpose |
 |---|---|---|
 | `ImportMusicBrainzDumpCommand` | TickerQ / `IScheduledMessage` (not ASB) | Schedule or manual start |
-| `StartMusicBrainzDumpImport` | ASB `catalog-import-start` | Wake single producer |
-| `ImportMusicBrainzDumpShard` | ASB `catalog-import-shard` | One shard for any free consumer |
+| `StartMusicBrainzDumpImport` | ASB | Wake single producer |
+| `ImportMusicBrainzDumpShard` | ASB | One shard for any free consumer |
 
-Each ASB message has a 1:1 Domain↔DTO TypeRegistry pair and its own listener (Orchestrator style). Optional in-process `Channel` + pump on each CatalogImport host: local ack-then-continue so ASB handlers return in seconds. Channels do **not** replace ASB for cross-instance fan-out.
+Optional in-process `Channel` + pump on each CatalogImport host: local ack-then-continue so ASB handlers return in seconds. Channels do **not** replace ASB for cross-instance fan-out.
 
 No per-row or per-MBID Service Bus messages. No v1 ASB Completed/Failed consumer.
 

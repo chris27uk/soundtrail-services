@@ -372,7 +372,7 @@ public sealed class ExternalTransportTranslationRegistration : ITypeTranslationR
                 null,
                 album.AlbumId.StableValue,
                 album.AlbumTitle,
-                album.SourceAlbumId,
+                SourceSystemIdSet.MusicBrainzIdOrNull(album.SourceSystemIds),
                 album.ReleaseDate,
                 album.ArtworkUrl,
                 null,
@@ -384,7 +384,8 @@ public sealed class ExternalTransportTranslationRegistration : ITypeTranslationR
                 null,
                 null,
                 null,
-                album.UpdatedAt),
+                album.UpdatedAt,
+                SourceSystemIdSet.ToStableValues(album.SourceSystemIds)),
             CatalogItem.MusicTrack(var track) => new CatalogItemCommandDto(
                 "track",
                 null,
@@ -402,9 +403,10 @@ public sealed class ExternalTransportTranslationRegistration : ITypeTranslationR
                 track.AlbumTitle,
                 track.DurationMs,
                 track.Isrc,
-                track.Mbid,
+                SourceSystemIdSet.MusicBrainzIdOrNull(track.SourceSystemIds),
                 track.ReleaseType,
-                track.UpdatedAt),
+                track.UpdatedAt,
+                SourceSystemIdSet.ToStableValues(track.SourceSystemIds)),
             _ => throw new InvalidOperationException($"Unsupported catalog item '{item.GetType().Name}'.")
         };
 
@@ -422,25 +424,12 @@ public sealed class ExternalTransportTranslationRegistration : ITypeTranslationR
                 new Album(
                     AlbumId.From(dto.AlbumId ?? throw new InvalidOperationException("Album id is required.")),
                     dto.AlbumTitle,
-                    dto.SourceAlbumId,
+                    ResolveCatalogItemSourceSystemIds(dto.SourceSystemIds, dto.SourceAlbumId),
                     dto.ReleaseDate,
                     dto.ArtworkUrl,
                     dto.UpdatedAt ?? DateTimeOffset.UtcNow)),
             "track" => new CatalogItem.MusicTrack(
-                new Track(TrackId.From(dto.TrackId ?? throw new InvalidOperationException("Track id is required.")))
-                {
-                    Title = dto.TrackTitle ?? string.Empty,
-                    ArtistName = dto.TrackArtistName ?? string.Empty,
-                    AlbumId = dto.TrackAlbumId,
-                    AlbumTitle = dto.TrackAlbumTitle,
-                    DurationMs = dto.DurationMs,
-                    Isrc = dto.Isrc,
-                    Mbid = dto.Mbid,
-                    ReleaseDate = dto.ReleaseDate,
-                    ReleaseType = dto.ReleaseType,
-                    ArtworkUrl = dto.ArtworkUrl,
-                    UpdatedAt = dto.UpdatedAt ?? DateTimeOffset.UtcNow
-                }),
+                CreateTrackFromDto(dto)),
             _ => throw new InvalidOperationException($"Unsupported catalog item kind '{dto.Kind}'.")
         };
 
@@ -691,4 +680,38 @@ public sealed class ExternalTransportTranslationRegistration : ITypeTranslationR
                 PlaylistId.FromPlaylistName(kind.Contains(':', StringComparison.Ordinal) ? kind[(kind.IndexOf(':') + 1)..] : value)),
             _ => throw new InvalidOperationException($"Unsupported catalog item operation '{kind}' with item kind '{itemKind}'.")
         };
+
+    private static Track CreateTrackFromDto(CatalogItemCommandDto dto)
+    {
+        var track = new Track(TrackId.From(dto.TrackId ?? throw new InvalidOperationException("Track id is required.")))
+        {
+            Title = dto.TrackTitle ?? string.Empty,
+            ArtistName = dto.TrackArtistName ?? string.Empty,
+            AlbumId = dto.TrackAlbumId,
+            AlbumTitle = dto.TrackAlbumTitle,
+            DurationMs = dto.DurationMs,
+            Isrc = dto.Isrc,
+            ReleaseDate = dto.ReleaseDate,
+            ReleaseType = dto.ReleaseType,
+            ArtworkUrl = dto.ArtworkUrl,
+            UpdatedAt = dto.UpdatedAt ?? DateTimeOffset.UtcNow
+        };
+        SourceSystemIdSet.UnionWith(
+            track.SourceSystemIds,
+            ResolveCatalogItemSourceSystemIds(dto.SourceSystemIds, dto.Mbid));
+        return track;
+    }
+
+    private static HashSet<SourceSystemId> ResolveCatalogItemSourceSystemIds(
+        IReadOnlyList<string>? sourceSystemIds,
+        string? legacyMusicBrainzId)
+    {
+        var set = SourceSystemIdSet.FromStableValues(sourceSystemIds);
+        if (set.Count == 0 && !string.IsNullOrWhiteSpace(legacyMusicBrainzId))
+        {
+            set.Add(SourceSystemId.MusicBrainz(legacyMusicBrainzId));
+        }
+
+        return set;
+    }
 }

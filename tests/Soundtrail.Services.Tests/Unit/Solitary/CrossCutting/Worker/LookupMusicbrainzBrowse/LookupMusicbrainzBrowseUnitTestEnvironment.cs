@@ -111,7 +111,7 @@ internal sealed class LookupMusicbrainzBrowseUnitTestEnvironment
                     new Album(
                         AlbumId.From(artistId.Value, "release-mb-1"),
                         "Rare Release",
-                        "release-mb-1",
+                        SourceSystemIdSet.FromLegacyMusicBrainz("release-mb-1"),
                         new DateOnly(2026, 1, 2),
                         artworkUrl: null,
                         updatedAt: new DateTimeOffset(2026, 7, 20, 11, 0, 0, TimeSpan.Zero))))
