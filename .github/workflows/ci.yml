@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
   checks: write
   pull-requests: write
 
@@ -28,6 +28,24 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v4.5.0
+        with:
+          versionSpec: '6.7.x'
+
+      - name: Determine version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v4.5.0
+
+      - name: Display version
+        run: |
+          echo "SemVer: ${{ steps.gitversion.outputs.semVer }}"
+          echo "AssemblySemVer: ${{ steps.gitversion.outputs.assemblySemVer }}"
+          echo "InformationalVersion: ${{ steps.gitversion.outputs.informationalVersion }}"
+          echo "MajorMinorPatch: ${{ steps.gitversion.outputs.majorMinorPatch }}"
 
       - name: Build CI image
         run: docker build -t "$CI_IMAGE" -f .github/docker/Dockerfile.ci .
@@ -41,16 +59,23 @@ jobs:
             ${{ runner.os }}-nuget-
 
       - name: Restore
+        env:
+          BUILD_VERSION: ${{ steps.gitversion.outputs.semVer }}
+          GITVERSION_INFORMATIONALVERSION: ${{ steps.gitversion.outputs.informationalVersion }}
         run: |
           docker run --rm \
             --volume "${{ github.workspace }}:/src" \
             --volume "${{ env.NUGET_PACKAGES_HOST }}:/root/.nuget/packages" \
             --env NUGET_PACKAGES=/root/.nuget/packages \
+            --env GITVERSION_INFORMATIONALVERSION \
             --workdir /src \
             "$CI_IMAGE" \
-            pwsh ./build.ps1 -Restore -Configuration Release
+            pwsh ./build.ps1 -Restore -Configuration Release -Version "$BUILD_VERSION"
 
       - name: Build and Test
+        env:
+          BUILD_VERSION: ${{ steps.gitversion.outputs.semVer }}
+          GITVERSION_INFORMATIONALVERSION: ${{ steps.gitversion.outputs.informationalVersion }}
         run: |
           docker run --rm \
             --volume "${{ github.workspace }}:/src" \
@@ -58,11 +83,12 @@ jobs:
             --volume /var/run/docker.sock:/var/run/docker.sock \
             --add-host=host.docker.internal:host-gateway \
             --env NUGET_PACKAGES=/root/.nuget/packages \
+            --env GITVERSION_INFORMATIONALVERSION \
             --env TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal \
             --env TESTCONTAINERS_RYUK_DISABLED=true \
             --workdir /src \
             "$CI_IMAGE" \
-            pwsh ./build.ps1 -Configuration Release
+            pwsh ./build.ps1 -Configuration Release -Version "$BUILD_VERSION"
 
       - name: Upload test reports
         if: always()
@@ -81,3 +107,19 @@ jobs:
           path: reports/*.trx
           reporter: dotnet-trx
           fail-on-error: false
+
+      - name: Tag release version
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          TAG: v${{ steps.gitversion.outputs.majorMinorPatch }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists on origin; skipping."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "refs/tags/$TAG"
+          echo "Created and pushed $TAG"

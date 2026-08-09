@@ -48,6 +48,9 @@ Invoke-Stage "Environment Details" {
     Write-Host "Max CPU Count: $MaxCpuCount"
     Write-Host "Configuration: $Configuration"
     Write-Host "Version: $Version"
+    if (-not [string]::IsNullOrWhiteSpace($env:GITVERSION_INFORMATIONALVERSION)) {
+        Write-Host "InformationalVersion: $($env:GITVERSION_INFORMATIONALVERSION)"
+    }
 }
 
 # === Clean ===
@@ -78,16 +81,33 @@ if ($Restore) {
     exit 0
 }
 
+function Get-VersionBuildProperties {
+    param(
+        [string]$BuildVersion
+    )
+
+    $properties = @(
+        "/p:Version=$BuildVersion"
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($env:GITVERSION_INFORMATIONALVERSION)) {
+        $properties += "/p:InformationalVersion=$($env:GITVERSION_INFORMATIONALVERSION)"
+    }
+
+    return $properties
+}
+
 # === Build ===
 Invoke-Stage "Build Solution" {
-    Exec "dotnet" @(
+    $versionProperties = Get-VersionBuildProperties -BuildVersion $Version
+    Exec "dotnet" (@(
         "build",
         $SolutionPath,
-        "/p:Configuration=$Configuration",
-        "/p:Version=$Version",
+        "/p:Configuration=$Configuration"
+    ) + $versionProperties + @(
         "/maxcpucount:$MaxCpuCount",
         "--no-restore"
-    )
+    ))
 }
 
 function Invoke-TestStage {
@@ -98,12 +118,13 @@ function Invoke-TestStage {
     )
 
     Invoke-Stage $StageName {
+        $versionProperties = Get-VersionBuildProperties -BuildVersion $Version
         $testArgs = @(
             "test", $TestsPath,
             "--logger", "trx;LogFileName=$ResultFileName",
             "--results-directory", $OutReporting,
-            "/p:Configuration=$Configuration",
-            "/p:Version=$Version",
+            "/p:Configuration=$Configuration"
+        ) + $versionProperties + @(
             "/maxcpucount:$MaxCpuCount",
             "--no-build",
             "--no-restore",
@@ -141,6 +162,9 @@ else {
 Invoke-Stage "Build Complete" {
     Write-Host "Build Summary" -ForegroundColor Cyan
     Write-Host "Version: $Version"
+    if (-not [string]::IsNullOrWhiteSpace($env:GITVERSION_INFORMATIONALVERSION)) {
+        Write-Host "InformationalVersion: $($env:GITVERSION_INFORMATIONALVERSION)"
+    }
     Write-Host "Configuration: $Configuration"
     Write-Host "Elapsed: $($StopWatch.Elapsed.ToString())"
     Write-Host "Test Results: $OutReporting"
