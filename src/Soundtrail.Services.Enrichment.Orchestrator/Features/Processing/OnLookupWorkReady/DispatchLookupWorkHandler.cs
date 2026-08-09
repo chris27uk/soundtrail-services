@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Discovery.Messages;
 using Soundtrail.Domain.Discovery.Planning;
@@ -11,6 +12,7 @@ public sealed class LookupWorkReadyHandler(ICommandBus commandBus) : IHandler<Di
     {
         var request = context.Message;
         var plan = LookupPlanningPolicy.Build(request);
+        Activity.Current?.SetTag("soundtrail.lookup_attempt_count", plan.Attempts.Count);
 
         foreach (var command in plan.Attempts.Select(attempt => WorkerCommandFactory.Create(request, attempt)))
         {

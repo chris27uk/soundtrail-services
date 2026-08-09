@@ -1,3 +1,4 @@
+using Soundtrail.Adapters.Messaging;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Discovery;
@@ -19,7 +20,10 @@ public sealed class OnKnownMusicDataRequestedHandler(
         await using var scope = await DiscoveryHistoryScope.LoadFromEventStreamAsync(repository, streamId, aggregateContext, cancellationToken);
 
         scope.Aggregate.Request(planner.Execute(request.Operation, WorkPlan()), request.Priority);
+        MessageTelemetry.AddCurrentEvent("known-music-data-requested.work-requested-appended");
+
         scope.Save();
+        MessageTelemetry.AddCurrentEvent("known-music-data-requested.saved");
     }
 
     private static WorkPlan WorkPlan()
