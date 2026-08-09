@@ -12,7 +12,7 @@ namespace Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
 internal static class EmbeddedRavenTestServer
 {
     private static readonly object ServerSync = new();
-    private static bool serverStarted;
+    private static string? serverUrl;
 
     /// <summary>
     /// Creates a document store against the shared embedded Raven server.
@@ -22,11 +22,9 @@ internal static class EmbeddedRavenTestServer
     {
         databaseName ??= $"soundtrail-tests-{Guid.NewGuid():N}";
 
-        EnsureStarted();
-        var serverUri = EmbeddedServer.Instance.GetServerUriAsync().GetAwaiter().GetResult();
         var store = new DocumentStore
         {
-            Urls = [serverUri.AbsoluteUri.TrimEnd('/')],
+            Urls = [GetReadyServerUrl()],
             Database = databaseName,
             Conventions = new DocumentConventions
             {
@@ -39,12 +37,7 @@ internal static class EmbeddedRavenTestServer
         return store;
     }
 
-    public static async Task<string> GetServerUrlAsync()
-    {
-        EnsureStarted();
-        var serverUri = await EmbeddedServer.Instance.GetServerUriAsync();
-        return serverUri.AbsoluteUri.TrimEnd('/');
-    }
+    public static Task<string> GetServerUrlAsync() => Task.FromResult(GetReadyServerUrl());
 
     /// <summary>
     /// Deletes a single document. Use for mid-test resets within a long-lived environment.
@@ -92,18 +85,24 @@ internal static class EmbeddedRavenTestServer
         return ValueTask.CompletedTask;
     }
 
-    private static void EnsureStarted()
+    /// <summary>
+    /// StartServer returns before the HTTP endpoint is ready for FirstTopologyUpdate.
+    /// Only publish the URL after GetServerUriAsync completes so parallel callers never
+    /// Initialize a DocumentStore against a still-booting process.
+    /// </summary>
+    private static string GetReadyServerUrl()
     {
-        if (Volatile.Read(ref serverStarted))
+        var existing = Volatile.Read(ref serverUrl);
+        if (existing is not null)
         {
-            return;
+            return existing;
         }
 
         lock (ServerSync)
         {
-            if (serverStarted)
+            if (serverUrl is not null)
             {
-                return;
+                return serverUrl;
             }
 
             try
@@ -115,7 +114,13 @@ internal static class EmbeddedRavenTestServer
             {
             }
 
-            serverStarted = true;
+            var serverUri = EmbeddedServer.Instance.GetServerUriAsync().GetAwaiter().GetResult();
+            var url = serverUri.AbsoluteUri.TrimEnd('/');
+
+            // Publish only after the server reports a URI (init finished). Parallel
+            // callers then share this URL instead of racing StartServer/FirstTopologyUpdate.
+            Volatile.Write(ref serverUrl, url);
+            return url;
         }
     }
 
