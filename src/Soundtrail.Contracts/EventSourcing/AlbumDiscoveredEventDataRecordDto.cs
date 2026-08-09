@@ -6,4 +6,5 @@ public sealed record AlbumDiscoveredEventDataRecordDto(
     string? SourceAlbumId,
     DateOnly? ReleaseDate,
     string SourceProvider,
-    DateTimeOffset ObservedAt) : RavenEventBodyDto;
+    DateTimeOffset ObservedAt,
+    IReadOnlyList<string>? SourceSystemIds = null) : RavenEventBodyDto;

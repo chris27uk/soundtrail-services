@@ -42,7 +42,8 @@ public sealed record CatalogItemCommandDto(
     string? Isrc,
     string? Mbid,
     string? ReleaseType,
-    DateTimeOffset? UpdatedAt);
+    DateTimeOffset? UpdatedAt,
+    IReadOnlyList<string>? SourceSystemIds = null);
 
 public sealed record TrackReferenceCommandDto(
     string ArtistName,

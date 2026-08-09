@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Tracks;
@@ -54,7 +55,7 @@ public sealed class MusicbrainzCatalogBrowsePort(
                     new Album(
                         AlbumId.From(artistId.Value, release.Id!),
                         release.Title,
-                        release.Id,
+                        SourceSystemIdSet.FromLegacyMusicBrainz(release.Id),
                         ParseDate(release.Date),
                         artworkUrl: null,
                         updatedAt: DateTimeOffset.UtcNow))))
@@ -112,11 +113,11 @@ public sealed class MusicbrainzCatalogBrowsePort(
                     AlbumTitle = albumTitle,
                     DurationMs = recording.Length,
                     Isrc = recording.Isrcs?.FirstOrDefault(),
-                    Mbid = recording.Id,
                     ReleaseDate = releaseDate,
                     ReleaseType = releaseType,
                     UpdatedAt = DateTimeOffset.UtcNow
                 };
+                SourceSystemIdSet.UnionWith(track.SourceSystemIds, SourceSystemIdSet.FromLegacyMusicBrainz(recording.Id));
 
                 return new CatalogDiscoveryEntry(
                     artistId,
@@ -178,11 +179,13 @@ public sealed class MusicbrainzCatalogBrowsePort(
                     AlbumTitle = albumTitle,
                     DurationMs = track.Length,
                     Isrc = track.Recording?.Isrcs?.FirstOrDefault(),
-                    Mbid = track.Recording?.Id,
                     ReleaseDate = releaseDate,
                     ReleaseType = releaseType,
                     UpdatedAt = DateTimeOffset.UtcNow
                 };
+                SourceSystemIdSet.UnionWith(
+                    discoveredTrack.SourceSystemIds,
+                    SourceSystemIdSet.FromLegacyMusicBrainz(track.Recording?.Id));
 
                 return new CatalogDiscoveryEntry(
                     artistId,

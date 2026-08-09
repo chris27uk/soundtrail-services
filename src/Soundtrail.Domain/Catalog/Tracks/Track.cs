@@ -16,7 +16,7 @@ namespace Soundtrail.Domain.Catalog.Tracks
 
         public string? Isrc { get; set; }
 
-        public string? Mbid { get; set; }
+        public HashSet<SourceSystemId> SourceSystemIds { get; } = new();
 
         public DateOnly? ReleaseDate { get; set; }
 

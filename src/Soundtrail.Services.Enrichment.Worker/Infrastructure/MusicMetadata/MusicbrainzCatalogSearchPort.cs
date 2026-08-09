@@ -106,7 +106,7 @@ public sealed class MusicbrainzCatalogSearchPort(
                         new Album(
                             albumId,
                             release.Title,
-                            release.Id,
+                            SourceSystemIdSet.FromLegacyMusicBrainz(release.Id),
                             ParseDate(release.Date),
                             artworkUrl: null,
                             updatedAt: DateTimeOffset.UtcNow)));
@@ -156,11 +156,11 @@ public sealed class MusicbrainzCatalogSearchPort(
                     AlbumTitle = albumTitle,
                     DurationMs = recording.Length,
                     Isrc = recording.Isrcs?.FirstOrDefault(),
-                    Mbid = recording.Id,
                     ReleaseDate = releaseDate,
                     ReleaseType = releaseType,
                     UpdatedAt = DateTimeOffset.UtcNow
                 };
+                SourceSystemIdSet.UnionWith(track.SourceSystemIds, SourceSystemIdSet.FromLegacyMusicBrainz(recording.Id));
 
                 return new CatalogDiscoveryEntry(
                     artistId,

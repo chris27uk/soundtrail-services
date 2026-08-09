@@ -108,9 +108,11 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
             AlbumId = "musicbrainz-artist:aurora-lane:release-midnight-signals",
             DurationMs = 214000,
             ReleaseDate = new DateOnly(2023, 11, 10),
-            Mbid = "mbid-midnight-signals-original",
             UpdatedAt = when
         };
+        SourceSystemIdSet.UnionWith(
+            track.SourceSystemIds,
+            SourceSystemIdSet.FromLegacyMusicBrainz("mbid-midnight-signals-original"));
 
         return new CatalogLookupCompleted(
             MessageId.New(),

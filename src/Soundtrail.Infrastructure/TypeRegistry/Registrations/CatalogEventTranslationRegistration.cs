@@ -20,14 +20,16 @@ public sealed class CatalogEventTranslationRegistration : ITypeTranslationRegist
             toDto: @event => new ArtistDiscoveredEventDataRecordDto(
                 @event.Artist.Id.Value,
                 @event.Artist.Name.Value,
-                @event.Artist.Id.Value,
+                SourceSystemIdSet.MusicBrainzIdOrNull(@event.Artist.SourceSystemIds),
                 "catalog",
-                @event.ObservedAt),
+                @event.ObservedAt,
+                SourceSystemIdSet.ToStableValues(@event.Artist.SourceSystemIds)),
             toDomainObject: dto => new ArtistDiscovered(
                 new Artist
                 {
                     Id = ArtistId.From(dto.ArtistId ?? throw new InvalidOperationException("Artist id is required.")),
-                    Name = ArtistName.From(dto.ArtistName ?? throw new InvalidOperationException("Artist name is required."))
+                    Name = ArtistName.From(dto.ArtistName ?? throw new InvalidOperationException("Artist name is required.")),
+                    SourceSystemIds = ResolveSourceSystemIds(dto.SourceSystemIds, dto.SourceArtistId)
                 },
                 dto.ObservedAt),
             occurredAtUtc: @event => @event.ObservedAt);
@@ -37,15 +39,16 @@ public sealed class CatalogEventTranslationRegistration : ITypeTranslationRegist
             toDto: @event => new AlbumDiscoveredEventDataRecordDto(
                 @event.Album.AlbumId.StableValue,
                 @event.Album.AlbumTitle,
-                @event.Album.SourceAlbumId,
+                SourceSystemIdSet.MusicBrainzIdOrNull(@event.Album.SourceSystemIds),
                 @event.Album.ReleaseDate,
                 "catalog",
-                @event.ObservedAt),
+                @event.ObservedAt,
+                SourceSystemIdSet.ToStableValues(@event.Album.SourceSystemIds)),
             toDomainObject: dto => new AlbumDiscovered(
                 new Album(
                     AlbumId.From(dto.AlbumId ?? throw new InvalidOperationException("Album id is required.")),
                     dto.AlbumTitle,
-                    dto.SourceAlbumId,
+                    ResolveSourceSystemIds(dto.SourceSystemIds, dto.SourceAlbumId),
                     dto.ReleaseDate,
                     artworkUrl: null,
                     updatedAt: dto.ObservedAt),
@@ -64,11 +67,12 @@ public sealed class CatalogEventTranslationRegistration : ITypeTranslationRegist
                 @event.Track.AlbumTitle,
                 @event.Track.DurationMs,
                 @event.Track.Isrc,
-                @event.Track.Mbid,
+                SourceSystemIdSet.MusicBrainzIdOrNull(@event.Track.SourceSystemIds),
                 @event.Track.ReleaseDate,
                 @event.Track.ReleaseType,
                 "catalog",
-                @event.ObservedAt),
+                @event.ObservedAt,
+                SourceSystemIdSet.ToStableValues(@event.Track.SourceSystemIds)),
             toDomainObject: dto =>
             {
                 var track = new Track(TrackId.From(dto.TrackId))
@@ -79,11 +83,13 @@ public sealed class CatalogEventTranslationRegistration : ITypeTranslationRegist
                     AlbumTitle = dto.AlbumTitle,
                     DurationMs = dto.DurationMs,
                     Isrc = dto.Isrc,
-                    Mbid = dto.Mbid,
                     ReleaseDate = dto.ReleaseDate,
                     ReleaseType = dto.ReleaseType,
                     UpdatedAt = dto.ObservedAt
                 };
+                SourceSystemIdSet.UnionWith(
+                    track.SourceSystemIds,
+                    ResolveSourceSystemIds(dto.SourceSystemIds, dto.Mbid));
 
                 return new TrackDiscovered(
                     track,
@@ -129,5 +135,18 @@ public sealed class CatalogEventTranslationRegistration : ITypeTranslationRegist
                 dto.TrackIds.Select(TrackId.From).ToArray(),
                 dto.ObservedAtUtc),
             occurredAtUtc: @event => @event.ObservedAt);
+    }
+
+    private static HashSet<SourceSystemId> ResolveSourceSystemIds(
+        IReadOnlyList<string>? sourceSystemIds,
+        string? legacyMusicBrainzId)
+    {
+        var set = SourceSystemIdSet.FromStableValues(sourceSystemIds);
+        if (set.Count == 0 && !string.IsNullOrWhiteSpace(legacyMusicBrainzId))
+        {
+            set.Add(SourceSystemId.MusicBrainz(legacyMusicBrainzId));
+        }
+
+        return set;
     }
 }
