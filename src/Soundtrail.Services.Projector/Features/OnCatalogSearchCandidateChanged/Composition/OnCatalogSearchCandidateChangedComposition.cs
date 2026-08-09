@@ -11,6 +11,6 @@ public static class OnCatalogSearchCandidateChangedComposition
 {
     public static void Configure(IServiceCollection services, OnCatalogSearchCandidateChangedPorts ports)
     {
-        services.TryAddSingleton(ports.SearchCandidate);
+        services.TryAddScoped(ports.SearchCandidate);
     }
 }

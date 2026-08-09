@@ -53,17 +53,19 @@ internal sealed class GetTracksForPlaylistApiTestEnvironment : IAsyncDisposable
 
     public static Task<GetTracksForPlaylistApiTestEnvironment> ForCatchingUpAsync(
         string playlistName = "unknown_playlist") =>
-        CreateAsync(playlistName);
+        CreateAsync($"{playlistName}-{EmbeddedRavenTestServer.NewIsolationKey()}");
 
     public static async Task<GetTracksForPlaylistApiTestEnvironment> ForDiscoveryPresentAsync()
     {
-        var environment = await CreateAsync("world_top_100");
+        var isolation = EmbeddedRavenTestServer.NewIsolationKey();
+        var playlistName = $"world_top_100-{isolation}";
+        var environment = await CreateAsync(playlistName);
         await environment.SeedPlaylistAsync(
             tracks: [],
             discovery: new CatalogDiscoveryFeedbackRecordDto
             {
                 TargetId = new CatalogItemOperation.ChildTracksForPlaylist(
-                    PlaylistId.FromPlaylistName("world_top_100")).StableIdentifier(),
+                    environment.PlaylistId).StableIdentifier(),
                 Status = "scheduled",
                 Priority = LookupPriorityBand.High.ToString(),
                 NextEligibleAtUtc = DateTimeOffset.UtcNow.AddSeconds(15),
@@ -76,8 +78,10 @@ internal sealed class GetTracksForPlaylistApiTestEnvironment : IAsyncDisposable
 
     public static async Task<GetTracksForPlaylistApiTestEnvironment> ForLookupCompleteAsync()
     {
-        var environment = await CreateAsync("world_top_100");
-        var trackId = global::Soundtrail.Services.Tests.TestTrackIds.Value("world-top-100-1");
+        var isolation = EmbeddedRavenTestServer.NewIsolationKey();
+        var playlistName = $"world_top_100-{isolation}";
+        var environment = await CreateAsync(playlistName);
+        var trackId = global::Soundtrail.Services.Tests.TestTrackIds.Value($"world-top-100-1-{isolation}");
         await environment.SeedPlaylistAsync(
             tracks:
             [
@@ -104,7 +108,7 @@ internal sealed class GetTracksForPlaylistApiTestEnvironment : IAsyncDisposable
             discovery: new CatalogDiscoveryFeedbackRecordDto
             {
                 TargetId = new CatalogItemOperation.ChildTracksForPlaylist(
-                    PlaylistId.FromPlaylistName("world_top_100")).StableIdentifier(),
+                    environment.PlaylistId).StableIdentifier(),
                 Status = "completed",
                 Priority = LookupPriorityBand.High.ToString(),
                 Reason = "Playlist metadata is available.",
@@ -116,7 +120,7 @@ internal sealed class GetTracksForPlaylistApiTestEnvironment : IAsyncDisposable
     public static Task<GetTracksForPlaylistApiTestEnvironment> ForPortFailureAsync(
         string playlistName = "world_top_100") =>
         CreateAsync(
-            playlistName,
+            $"{playlistName}-{EmbeddedRavenTestServer.NewIsolationKey()}",
             portFactory: _ => new FailingGetTracksForPlaylistPort(),
             requireDocumentStore: false);
 
@@ -133,7 +137,11 @@ internal sealed class GetTracksForPlaylistApiTestEnvironment : IAsyncDisposable
         await app.DisposeAsync();
         client.Dispose();
 
-        await EmbeddedRavenTestServer.DisposeAsync(documentStore);
+        if (documentStore is not null)
+        {
+            await EmbeddedRavenTestServer.DeleteDocumentsAsync(documentStore, cleanupDocumentIds);
+            await EmbeddedRavenTestServer.DisposeAsync(documentStore);
+        }
     }
 
     public async Task SeedPlaylistAsync(

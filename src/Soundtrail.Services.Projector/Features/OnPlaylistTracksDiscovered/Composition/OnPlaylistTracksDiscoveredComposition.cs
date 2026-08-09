@@ -11,6 +11,6 @@ public static class OnPlaylistTracksDiscoveredComposition
 {
     public static void Configure(IServiceCollection services, OnPlaylistTracksDiscoveredPorts ports)
     {
-        services.TryAddSingleton(ports.PlaylistTracks);
+        services.TryAddScoped(ports.PlaylistTracks);
     }
 }

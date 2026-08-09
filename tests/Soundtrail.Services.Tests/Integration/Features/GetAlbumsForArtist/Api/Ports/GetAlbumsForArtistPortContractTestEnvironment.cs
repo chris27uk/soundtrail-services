@@ -13,18 +13,18 @@ namespace Soundtrail.Services.Tests.Integration.GetAlbumsForArtist.Api.Ports;
 internal sealed class GetAlbumsForArtistPortContractTestEnvironment : IAsyncDisposable
 {
     private readonly IDocumentStore? documentStore;
-    private readonly string? databaseName;
+    private readonly List<string> cleanupDocumentIds;
 
     private GetAlbumsForArtistPortContractTestEnvironment(
         IGetAlbumsForArtistPort subject,
         ArtistId artistId,
         IDocumentStore? documentStore = null,
-        string? databaseName = null)
+        List<string>? cleanupDocumentIds = null)
     {
         Subject = subject;
         ArtistId = artistId;
         this.documentStore = documentStore;
-        this.databaseName = databaseName;
+        this.cleanupDocumentIds = cleanupDocumentIds ?? [];
     }
 
     public IGetAlbumsForArtistPort Subject { get; }
@@ -41,67 +41,90 @@ internal sealed class GetAlbumsForArtistPortContractTestEnvironment : IAsyncDisp
         DateOnly? releaseDate = null,
         string? artworkUrl = "https://cdn.soundtrail.test/albums/album-2201.jpg")
     {
-        var resolvedArtistId = ArtistId.From(artistId);
-        var resolvedAlbumId = AlbumId.From(artistId, albumId);
-        var response = new GetAlbumsForArtistResponse(
-            resolvedArtistId,
-            ArtistName.From(artistName),
-            [
-                new GetAlbumsForArtistAlbumResponse(
-                    resolvedAlbumId,
-                    new CatalogItemId.Album(resolvedAlbumId),
-                    albumTitle,
-                    releaseDate ?? new DateOnly(2024, 1, 2),
-                    artworkUrl)
-            ]);
-
-        return implementation switch
+        if (implementation == GetAlbumsForArtistPortImplementation.Fake)
         {
-            GetAlbumsForArtistPortImplementation.Fake => new GetAlbumsForArtistPortContractTestEnvironment(
-                new GetAlbumsForArtistPortFake(response),
-                resolvedArtistId),
-            GetAlbumsForArtistPortImplementation.Raven => await CreateRavenEnvironmentAsync(
+            var resolvedArtistId = ArtistId.From(artistId);
+            var resolvedAlbumId = AlbumId.From(artistId, albumId);
+            var response = new GetAlbumsForArtistResponse(
                 resolvedArtistId,
-                new CatalogArtistAlbumsRecordDto
-                {
-                    Id = CatalogArtistAlbumsRecordDto.GetDocumentId(artistId),
-                    ArtistId = artistId,
-                    ArtistName = artistName,
-                    Albums =
-                    [
-                        new CatalogArtistAlbumRecordDto
-                        {
-                            AlbumId = albumId,
-                            MusicCatalogId = musicCatalogId,
-                            AlbumTitle = albumTitle,
-                            ReleaseDate = response.Albums[0].ReleaseDate,
-                            ArtworkUrl = artworkUrl
-                        }
-                    ]
-                }),
-            _ => throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null)
-        };
+                ArtistName.From(artistName),
+                [
+                    new GetAlbumsForArtistAlbumResponse(
+                        resolvedAlbumId,
+                        new CatalogItemId.Album(resolvedAlbumId),
+                        albumTitle,
+                        releaseDate ?? new DateOnly(2024, 1, 2),
+                        artworkUrl)
+                ]);
+
+            return new GetAlbumsForArtistPortContractTestEnvironment(
+                new GetAlbumsForArtistPortFake(response),
+                resolvedArtistId);
+        }
+
+        if (implementation != GetAlbumsForArtistPortImplementation.Raven)
+        {
+            throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null);
+        }
+
+        var isolation = EmbeddedRavenTestServer.NewIsolationKey();
+        var uniqueArtistId = $"{artistId}-{isolation}";
+        var uniqueAlbumId = $"{albumId}-{isolation}";
+        var ravenArtistId = ArtistId.From(uniqueArtistId);
+        var resolvedReleaseDate = releaseDate ?? new DateOnly(2024, 1, 2);
+
+        return await CreateRavenEnvironmentAsync(
+            ravenArtistId,
+            new CatalogArtistAlbumsRecordDto
+            {
+                Id = CatalogArtistAlbumsRecordDto.GetDocumentId(uniqueArtistId),
+                ArtistId = uniqueArtistId,
+                ArtistName = artistName,
+                Albums =
+                [
+                    new CatalogArtistAlbumRecordDto
+                    {
+                        AlbumId = uniqueAlbumId,
+                        MusicCatalogId = $"{musicCatalogId}-{isolation}",
+                        AlbumTitle = albumTitle,
+                        ReleaseDate = resolvedReleaseDate,
+                        ArtworkUrl = artworkUrl
+                    }
+                ]
+            });
     }
 
     public static async Task<GetAlbumsForArtistPortContractTestEnvironment> ForMissingArtistAlbums(
         GetAlbumsForArtistPortImplementation implementation,
         ArtistId? artistId = null)
     {
-        var resolvedArtistId = artistId ?? ArtistId.From("artist-2102");
-
-        return implementation switch
+        if (implementation == GetAlbumsForArtistPortImplementation.Fake)
         {
-            GetAlbumsForArtistPortImplementation.Fake => new GetAlbumsForArtistPortContractTestEnvironment(
+            var resolvedArtistId = artistId ?? ArtistId.From("artist-2102");
+            return new GetAlbumsForArtistPortContractTestEnvironment(
                 new GetAlbumsForArtistPortFake(),
-                resolvedArtistId),
-            GetAlbumsForArtistPortImplementation.Raven => await CreateRavenEnvironmentAsync(resolvedArtistId),
-            _ => throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null)
-        };
+                resolvedArtistId);
+        }
+
+        if (implementation != GetAlbumsForArtistPortImplementation.Raven)
+        {
+            throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null);
+        }
+
+        var isolation = EmbeddedRavenTestServer.NewIsolationKey();
+        var ravenArtistId = ArtistId.From($"artist-2102-{isolation}");
+        return await CreateRavenEnvironmentAsync(ravenArtistId);
     }
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
-        return EmbeddedRavenTestServer.DisposeAsync(documentStore);
+        if (documentStore is null)
+        {
+            return;
+        }
+
+        await EmbeddedRavenTestServer.DeleteDocumentsAsync(documentStore, cleanupDocumentIds);
+        await EmbeddedRavenTestServer.DisposeAsync(documentStore);
     }
 
     private static async Task<GetAlbumsForArtistPortContractTestEnvironment> CreateRavenEnvironmentAsync(
@@ -109,9 +132,11 @@ internal sealed class GetAlbumsForArtistPortContractTestEnvironment : IAsyncDisp
         CatalogArtistAlbumsRecordDto? existingRecord = null)
     {
         var store = EmbeddedRavenTestServer.CreateDocumentStore();
+        var cleanupDocumentIds = new List<string>();
 
         if (existingRecord is not null)
         {
+            cleanupDocumentIds.Add(existingRecord.Id);
             using var session = store.OpenAsyncSession();
             await session.StoreAsync(existingRecord, existingRecord.Id);
             await session.SaveChangesAsync();
@@ -121,7 +146,7 @@ internal sealed class GetAlbumsForArtistPortContractTestEnvironment : IAsyncDisp
             new RavenGetAlbumsForArtistPort(store, new TypeRegistryFake()),
             artistId,
             store,
-            existingRecord?.Id);
+            cleanupDocumentIds);
     }
 
     private sealed class TypeRegistryFake : ITypeRegistry

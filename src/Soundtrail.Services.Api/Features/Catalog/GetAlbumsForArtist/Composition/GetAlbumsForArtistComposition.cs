@@ -18,10 +18,10 @@ public static class GetAlbumsForArtistComposition
 {
     public static void Configure(IServiceCollection services, GetAlbumsForArtistPorts ports)
     {
-        services.TryAddSingleton(ports.GetAlbumsForArtist);
-        services.TryAddSingleton(ports.Clock);
-        services.TryAddSingleton(ports.CommandBus);
-        services.TryAddSingleton(ports.DiscoveryFeedback);
+        services.TryAddScoped(ports.GetAlbumsForArtist);
+        services.TryAddScoped(ports.Clock);
+        services.TryAddScoped(ports.CommandBus);
+        services.TryAddScoped(ports.DiscoveryFeedback);
         services.TryAddScoped<
             IApiHandler<GetAlbumsForArtistRequest, GetAlbumsForArtistResponse?>,
             GetAlbumsForArtistHandler>();

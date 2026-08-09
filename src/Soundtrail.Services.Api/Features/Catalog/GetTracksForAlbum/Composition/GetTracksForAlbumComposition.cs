@@ -18,10 +18,10 @@ public static class GetTracksForAlbumComposition
 {
     public static void Configure(IServiceCollection services, GetTracksForAlbumPorts ports)
     {
-        services.TryAddSingleton(ports.GetTracksForAlbum);
-        services.TryAddSingleton(ports.Clock);
-        services.TryAddSingleton(ports.CommandBus);
-        services.TryAddSingleton(ports.DiscoveryFeedback);
+        services.TryAddScoped(ports.GetTracksForAlbum);
+        services.TryAddScoped(ports.Clock);
+        services.TryAddScoped(ports.CommandBus);
+        services.TryAddScoped(ports.DiscoveryFeedback);
         services.TryAddScoped<
             IApiHandler<GetTracksForAlbumRequest, GetTracksForAlbumResponse?>,
             GetTracksForAlbumHandler>();

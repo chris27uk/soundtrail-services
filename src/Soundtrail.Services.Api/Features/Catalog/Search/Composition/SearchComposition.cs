@@ -17,10 +17,10 @@ public static class SearchComposition
 {
     public static void Configure(IServiceCollection services, SearchPorts ports)
     {
-        services.TryAddSingleton(ports.Search);
-        services.TryAddSingleton(ports.Clock);
-        services.TryAddSingleton(ports.CommandBus);
-        services.TryAddSingleton(ports.DiscoveryFeedback);
+        services.TryAddScoped(ports.Search);
+        services.TryAddScoped(ports.Clock);
+        services.TryAddScoped(ports.CommandBus);
+        services.TryAddScoped(ports.DiscoveryFeedback);
         services.TryAddScoped<IApiHandler<SearchRequest, SearchResponse?>, SearchHandler>();
     }
 }

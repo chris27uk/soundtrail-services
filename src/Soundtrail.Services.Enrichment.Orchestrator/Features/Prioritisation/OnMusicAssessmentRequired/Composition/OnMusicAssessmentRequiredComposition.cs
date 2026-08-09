@@ -18,9 +18,9 @@ public static class OnMusicAssessmentRequiredComposition
 {
     public static void Configure(IServiceCollection services, OnMusicAssessmentRequiredPorts ports)
     {
-        services.TryAddSingleton(ports.AssessmentPolicy);
-        services.TryAddSingleton(ports.PlanningProjection);
-        services.TryAddSingleton(ports.DiscoveryRepository);
+        services.TryAddScoped(ports.AssessmentPolicy);
+        services.TryAddScoped(ports.PlanningProjection);
+        services.TryAddScoped(ports.DiscoveryRepository);
         services.TryAddScoped<OnMusicAssessmentRequiredHandler>();
         services.TryAddScoped<IHandler<AssessWorkMessage>, OnMusicAssessmentRequiredHandler>();
     }

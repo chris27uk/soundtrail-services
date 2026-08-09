@@ -63,7 +63,7 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
 
     public ClockFake Clock { get; }
 
-    public PlaylistId PlaylistId => PlaylistId.FromPlaylistName("world_top_100");
+    public PlaylistId PlaylistId { get; } = PlaylistId.FromPlaylistName("world_top_100");
 
     public static async Task<WorldTop100PlaylistScenarioTestEnvironment> CreateAsync()
     {
@@ -136,6 +136,8 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
             new CatalogItemOperation.ChildTracksForPlaylist(PlaylistId).StableIdentifier());
         var playlistDocumentId = CatalogPlaylistTracksRecordDto.GetDocumentId(PlaylistId.Value);
 
+        TrackForCleanup(discoveryDocumentId);
+        TrackForCleanup(playlistDocumentId);
         await EmbeddedRavenTestServer.DeleteDocumentAsync(documentStore, discoveryDocumentId);
         await EmbeddedRavenTestServer.DeleteDocumentAsync(documentStore, playlistDocumentId);
     }
@@ -299,7 +301,7 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
 
     public async Task<GetTracksForPlaylistResponseDto?> GetPlaylistAsync()
     {
-        var response = await Client.GetAsync("/catalog/playlists/world_top_100/tracks");
+        var response = await Client.GetAsync($"/catalog/playlists/{PlaylistId.Value}/tracks");
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<GetTracksForPlaylistResponseDto>();
     }
@@ -311,6 +313,7 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
         client.Dispose();
         wireMockServer.Dispose();
 
+        await EmbeddedRavenTestServer.DeleteDocumentsAsync(documentStore, cleanupDocumentIds);
         await EmbeddedRavenTestServer.DisposeAsync(documentStore);
     }
 

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Soundtrail.Adapters.Messaging;
@@ -7,6 +8,8 @@ namespace Soundtrail.Adapters.Projection;
 
 public sealed class HandlerCollection
 {
+    private static readonly ConcurrentDictionary<string, IReadOnlyList<Type>> PayloadTypesByDiscoveryKey = new();
+
     private readonly Dictionary<Type, List<Func<object, CancellationToken, Task>>> handlers = [];
 
     public HandlerCollection Register<TPayload>(Func<TPayload, CancellationToken, Task> handle)
@@ -211,6 +214,20 @@ public sealed class HandlerCollection
     }
 
     private static IReadOnlyList<Type> DiscoverPayloadTypes(
+        IReadOnlyList<Type> assemblyMarkers,
+        Type openHandlerContract)
+    {
+        var key = string.Join(
+            '\u001f',
+            assemblyMarkers
+                .Select(static marker => marker.Assembly.FullName ?? marker.Assembly.GetName().Name ?? marker.Assembly.ToString())
+                .Order(StringComparer.Ordinal)
+                .Append(openHandlerContract.AssemblyQualifiedName ?? openHandlerContract.FullName ?? openHandlerContract.Name));
+
+        return PayloadTypesByDiscoveryKey.GetOrAdd(key, _ => DiscoverPayloadTypesUncached(assemblyMarkers, openHandlerContract));
+    }
+
+    private static IReadOnlyList<Type> DiscoverPayloadTypesUncached(
         IReadOnlyList<Type> assemblyMarkers,
         Type openHandlerContract)
     {

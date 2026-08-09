@@ -14,18 +14,18 @@ namespace Soundtrail.Services.Tests.Integration.Features.GetTracksForPlaylist;
 internal sealed class GetTracksForPlaylistPortContractTestEnvironment : IAsyncDisposable
 {
     private readonly IDocumentStore? documentStore;
-    private readonly string? databaseName;
+    private readonly List<string> cleanupDocumentIds;
 
     private GetTracksForPlaylistPortContractTestEnvironment(
         IGetTracksForPlaylistPort subject,
         PlaylistId playlistId,
         IDocumentStore? documentStore = null,
-        string? databaseName = null)
+        List<string>? cleanupDocumentIds = null)
     {
         Subject = subject;
         PlaylistId = playlistId;
         this.documentStore = documentStore;
-        this.databaseName = databaseName;
+        this.cleanupDocumentIds = cleanupDocumentIds ?? [];
     }
 
     public IGetTracksForPlaylistPort Subject { get; }
@@ -46,83 +46,107 @@ internal sealed class GetTracksForPlaylistPortContractTestEnvironment : IAsyncDi
         string? artworkUrl = "https://cdn.soundtrail.test/tracks/track-3501.jpg",
         CatalogStreamingLocationRecordDto[]? streamingLocations = null)
     {
-        var resolvedPlaylistId = PlaylistId.FromPlaylistName(playlistName);
-        var trackIdValue = trackId ?? global::Soundtrail.Services.Tests.TestTrackIds.Value("track-3501");
-        var resolvedTrackId = TrackId.From(trackIdValue);
-        var resolvedStreamingLocations = streamingLocations ?? [];
-        var response = new GetTracksForPlaylistResponse(
-            resolvedPlaylistId,
-            [
-                new GetTracksForPlaylistTrackResponse(
-                    resolvedTrackId,
-                    title,
-                    artistName,
-                    albumTitle,
-                    durationMs,
-                    isrc,
-                    releaseDate ?? new DateOnly(2024, 1, 2),
-                    artworkUrl,
-                    resolvedStreamingLocations.Length > 0,
-                    resolvedStreamingLocations
-                        .Select(static location => new StreamingLocationResponse(
-                            location.Provider,
-                            location.ExternalId,
-                            location.Url))
-                        .ToArray())
-            ]);
-
-        return implementation switch
+        if (implementation == GetTracksForPlaylistPortImplementation.Fake)
         {
-            GetTracksForPlaylistPortImplementation.Fake => new GetTracksForPlaylistPortContractTestEnvironment(
-                GetTracksForPlaylistPortFake.Create().WithPlaylistTracks(response),
-                resolvedPlaylistId),
-            GetTracksForPlaylistPortImplementation.Raven => await CreateRavenEnvironmentAsync(
+            var resolvedPlaylistId = PlaylistId.FromPlaylistName(playlistName);
+            var trackIdValue = trackId ?? global::Soundtrail.Services.Tests.TestTrackIds.Value("track-3501");
+            var resolvedTrackId = TrackId.From(trackIdValue);
+            var resolvedStreamingLocations = streamingLocations ?? [];
+            var response = new GetTracksForPlaylistResponse(
                 resolvedPlaylistId,
-                new CatalogPlaylistTracksRecordDto
-                {
-                    Id = CatalogPlaylistTracksRecordDto.GetDocumentId(resolvedPlaylistId.Value),
-                    PlaylistId = resolvedPlaylistId.Value,
-                    TrackIds = [trackIdValue],
-                    Tracks =
-                    [
-                        new CatalogPlaylistTrackRecordDto
-                        {
-                            TrackId = trackIdValue,
-                            MusicCatalogId = musicCatalogId,
-                            Title = title,
-                            ArtistName = artistName,
-                            AlbumTitle = albumTitle,
-                            DurationMs = durationMs,
-                            Isrc = isrc,
-                            ReleaseDate = response.Tracks[0].ReleaseDate,
-                            ArtworkUrl = artworkUrl,
-                            StreamingLocations = resolvedStreamingLocations
-                        }
-                    ]
-                }),
-            _ => throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null)
-        };
+                [
+                    new GetTracksForPlaylistTrackResponse(
+                        resolvedTrackId,
+                        title,
+                        artistName,
+                        albumTitle,
+                        durationMs,
+                        isrc,
+                        releaseDate ?? new DateOnly(2024, 1, 2),
+                        artworkUrl,
+                        resolvedStreamingLocations.Length > 0,
+                        resolvedStreamingLocations
+                            .Select(static location => new StreamingLocationResponse(
+                                location.Provider,
+                                location.ExternalId,
+                                location.Url))
+                            .ToArray())
+                ]);
+
+            return new GetTracksForPlaylistPortContractTestEnvironment(
+                GetTracksForPlaylistPortFake.Create().WithPlaylistTracks(response),
+                resolvedPlaylistId);
+        }
+
+        if (implementation != GetTracksForPlaylistPortImplementation.Raven)
+        {
+            throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null);
+        }
+
+        var isolation = EmbeddedRavenTestServer.NewIsolationKey();
+        var uniquePlaylistName = $"{playlistName}-{isolation}";
+        var ravenPlaylistId = PlaylistId.FromPlaylistName(uniquePlaylistName);
+        var ravenTrackIdValue = global::Soundtrail.Services.Tests.TestTrackIds.Value($"track-3501-{isolation}");
+        var seededStreamingLocations = streamingLocations ?? [];
+        var resolvedReleaseDate = releaseDate ?? new DateOnly(2024, 1, 2);
+
+        return await CreateRavenEnvironmentAsync(
+            ravenPlaylistId,
+            new CatalogPlaylistTracksRecordDto
+            {
+                Id = CatalogPlaylistTracksRecordDto.GetDocumentId(ravenPlaylistId.Value),
+                PlaylistId = ravenPlaylistId.Value,
+                TrackIds = [ravenTrackIdValue],
+                Tracks =
+                [
+                    new CatalogPlaylistTrackRecordDto
+                    {
+                        TrackId = ravenTrackIdValue,
+                        MusicCatalogId = $"{musicCatalogId}-{isolation}",
+                        Title = title,
+                        ArtistName = artistName,
+                        AlbumTitle = albumTitle,
+                        DurationMs = durationMs,
+                        Isrc = isrc,
+                        ReleaseDate = resolvedReleaseDate,
+                        ArtworkUrl = artworkUrl,
+                        StreamingLocations = seededStreamingLocations
+                    }
+                ]
+            });
     }
 
     public static async Task<GetTracksForPlaylistPortContractTestEnvironment> ForMissingPlaylistTracks(
         GetTracksForPlaylistPortImplementation implementation,
         PlaylistId? playlistId = null)
     {
-        var resolvedPlaylistId = playlistId ?? PlaylistId.FromPlaylistName("WorldwideSongChart");
-
-        return implementation switch
+        if (implementation == GetTracksForPlaylistPortImplementation.Fake)
         {
-            GetTracksForPlaylistPortImplementation.Fake => new GetTracksForPlaylistPortContractTestEnvironment(
+            var resolvedPlaylistId = playlistId ?? PlaylistId.FromPlaylistName("WorldwideSongChart");
+            return new GetTracksForPlaylistPortContractTestEnvironment(
                 GetTracksForPlaylistPortFake.Create(),
-                resolvedPlaylistId),
-            GetTracksForPlaylistPortImplementation.Raven => await CreateRavenEnvironmentAsync(resolvedPlaylistId),
-            _ => throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null)
-        };
+                resolvedPlaylistId);
+        }
+
+        if (implementation != GetTracksForPlaylistPortImplementation.Raven)
+        {
+            throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null);
+        }
+
+        var isolation = EmbeddedRavenTestServer.NewIsolationKey();
+        var ravenPlaylistId = PlaylistId.FromPlaylistName($"WorldwideSongChart-{isolation}");
+        return await CreateRavenEnvironmentAsync(ravenPlaylistId);
     }
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
-        return EmbeddedRavenTestServer.DisposeAsync(this.documentStore);
+        if (documentStore is null)
+        {
+            return;
+        }
+
+        await EmbeddedRavenTestServer.DeleteDocumentsAsync(documentStore, cleanupDocumentIds);
+        await EmbeddedRavenTestServer.DisposeAsync(documentStore);
     }
 
     private static async Task<GetTracksForPlaylistPortContractTestEnvironment> CreateRavenEnvironmentAsync(
@@ -130,9 +154,11 @@ internal sealed class GetTracksForPlaylistPortContractTestEnvironment : IAsyncDi
         CatalogPlaylistTracksRecordDto? existingRecord = null)
     {
         var store = EmbeddedRavenTestServer.CreateDocumentStore();
+        var cleanupDocumentIds = new List<string>();
 
         if (existingRecord is not null)
         {
+            cleanupDocumentIds.Add(existingRecord.Id);
             using var session = store.OpenAsyncSession();
             await session.StoreAsync(existingRecord, existingRecord.Id);
             await session.SaveChangesAsync();
@@ -142,7 +168,7 @@ internal sealed class GetTracksForPlaylistPortContractTestEnvironment : IAsyncDi
             new RavenGetTracksForPlaylistPort(store, AppTypeRegistry.ServiceLocation),
             playlistId,
             store,
-            existingRecord?.Id);
+            cleanupDocumentIds);
     }
 }
 

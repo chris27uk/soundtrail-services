@@ -12,18 +12,18 @@ namespace Soundtrail.Services.Tests.Integration.Features.GetArtist;
 internal sealed class GetArtistPortContractTestEnvironment : IAsyncDisposable
 {
     private readonly IDocumentStore? documentStore;
-    private readonly string? databaseName;
+    private readonly List<string> cleanupDocumentIds;
 
     private GetArtistPortContractTestEnvironment(
         IGetArtistPort subject,
         ArtistId artistId,
         IDocumentStore? documentStore = null,
-        string? databaseName = null)
+        List<string>? cleanupDocumentIds = null)
     {
         Subject = subject;
         ArtistId = artistId;
         this.documentStore = documentStore;
-        this.databaseName = databaseName;
+        this.cleanupDocumentIds = cleanupDocumentIds ?? [];
     }
 
     public IGetArtistPort Subject { get; }
@@ -36,50 +36,71 @@ internal sealed class GetArtistPortContractTestEnvironment : IAsyncDisposable
         string artistName = "The Artist",
         string? imageUrl = "https://cdn.soundtrail.test/artists/artist-1001.jpg")
     {
-        var resolvedArtistId = ArtistId.From(artistId);
-        var response = new GetArtistResponse(
-            resolvedArtistId,
-            ArtistName.From(artistName),
-            null,
-            imageUrl);
-
-        return implementation switch
+        if (implementation == GetArtistPortImplementation.Fake)
         {
-            GetArtistPortImplementation.Fake => new GetArtistPortContractTestEnvironment(
-                new GetArtistPortFake(response),
-                resolvedArtistId),
-            GetArtistPortImplementation.Raven => await CreateRavenEnvironmentAsync(
+            var resolvedArtistId = ArtistId.From(artistId);
+            var response = new GetArtistResponse(
                 resolvedArtistId,
-                new CatalogArtistRecordDto
-                {
-                    Id = CatalogArtistRecordDto.GetDocumentId(artistId),
-                    ArtistId = artistId,
-                    Name = artistName,
-                    ArtworkUrl = imageUrl
-                }),
-            _ => throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null)
-        };
+                ArtistName.From(artistName),
+                null,
+                imageUrl);
+
+            return new GetArtistPortContractTestEnvironment(
+                new GetArtistPortFake(response),
+                resolvedArtistId);
+        }
+
+        if (implementation != GetArtistPortImplementation.Raven)
+        {
+            throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null);
+        }
+
+        var isolation = EmbeddedRavenTestServer.NewIsolationKey();
+        var uniqueArtistId = $"{artistId}-{isolation}";
+        var ravenArtistId = ArtistId.From(uniqueArtistId);
+
+        return await CreateRavenEnvironmentAsync(
+            ravenArtistId,
+            new CatalogArtistRecordDto
+            {
+                Id = CatalogArtistRecordDto.GetDocumentId(uniqueArtistId),
+                ArtistId = uniqueArtistId,
+                Name = artistName,
+                ArtworkUrl = imageUrl
+            });
     }
 
     public static async Task<GetArtistPortContractTestEnvironment> ForMissingArtist(
         GetArtistPortImplementation implementation,
         ArtistId? artistId = null)
     {
-        var resolvedArtistId = artistId ?? ArtistId.From("artist-1002");
-
-        return implementation switch
+        if (implementation == GetArtistPortImplementation.Fake)
         {
-            GetArtistPortImplementation.Fake => new GetArtistPortContractTestEnvironment(
+            var resolvedArtistId = artistId ?? ArtistId.From("artist-1002");
+            return new GetArtistPortContractTestEnvironment(
                 new GetArtistPortFake(),
-                resolvedArtistId),
-            GetArtistPortImplementation.Raven => await CreateRavenEnvironmentAsync(resolvedArtistId),
-            _ => throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null)
-        };
+                resolvedArtistId);
+        }
+
+        if (implementation != GetArtistPortImplementation.Raven)
+        {
+            throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null);
+        }
+
+        var isolation = EmbeddedRavenTestServer.NewIsolationKey();
+        var ravenArtistId = ArtistId.From($"artist-1002-{isolation}");
+        return await CreateRavenEnvironmentAsync(ravenArtistId);
     }
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
-        return EmbeddedRavenTestServer.DisposeAsync(this.documentStore);
+        if (documentStore is null)
+        {
+            return;
+        }
+
+        await EmbeddedRavenTestServer.DeleteDocumentsAsync(documentStore, cleanupDocumentIds);
+        await EmbeddedRavenTestServer.DisposeAsync(documentStore);
     }
 
     private static async Task<GetArtistPortContractTestEnvironment> CreateRavenEnvironmentAsync(
@@ -87,9 +108,11 @@ internal sealed class GetArtistPortContractTestEnvironment : IAsyncDisposable
         CatalogArtistRecordDto? existingRecord = null)
     {
         var store = EmbeddedRavenTestServer.CreateDocumentStore();
+        var cleanupDocumentIds = new List<string>();
 
         if (existingRecord is not null)
         {
+            cleanupDocumentIds.Add(existingRecord.Id);
             using var session = store.OpenAsyncSession();
             await session.StoreAsync(existingRecord, existingRecord.Id);
             await session.SaveChangesAsync();
@@ -99,7 +122,7 @@ internal sealed class GetArtistPortContractTestEnvironment : IAsyncDisposable
             new RavenGetArtistPort(store, new TypeRegistryFake()),
             artistId,
             store,
-            existingRecord?.Id);
+            cleanupDocumentIds);
     }
 
     private sealed class TypeRegistryFake : ITypeRegistry

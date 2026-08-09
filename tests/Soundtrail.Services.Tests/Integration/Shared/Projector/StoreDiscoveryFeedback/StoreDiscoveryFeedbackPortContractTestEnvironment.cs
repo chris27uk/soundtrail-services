@@ -15,15 +15,18 @@ internal sealed class StoreDiscoveryFeedbackPortContractTestEnvironment : IAsync
     private readonly IDocumentStore? documentStore;
     private readonly StoreDiscoveryFeedbackPortContractFake? fake;
     private readonly List<string> cleanupDocumentIds = [];
+    private readonly string? isolationKey;
 
     private StoreDiscoveryFeedbackPortContractTestEnvironment(
         IStoreDiscoveryFeedbackPort subject,
         IDocumentStore? documentStore,
-        StoreDiscoveryFeedbackPortContractFake? fake)
+        StoreDiscoveryFeedbackPortContractFake? fake,
+        string? isolationKey = null)
     {
         Subject = subject;
         this.documentStore = documentStore;
         this.fake = fake;
+        this.isolationKey = isolationKey;
     }
 
     public IStoreDiscoveryFeedbackPort Subject { get; }
@@ -37,8 +40,14 @@ internal sealed class StoreDiscoveryFeedbackPortContractTestEnvironment : IAsync
             _ => throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null)
         };
 
+    public string UniquePlaylistName(string playlistName = "world_top_100") =>
+        isolationKey is null ? playlistName : $"{playlistName}-{isolationKey}";
+
+    public PlaylistId PlaylistIdFor(string playlistName = "world_top_100") =>
+        PlaylistId.FromPlaylistName(UniquePlaylistName(playlistName));
+
     public EnrichmentTarget PlaylistTarget(string playlistName = "world_top_100") =>
-        Work.DiscoverPlaylistTracks(PlaylistId.FromPlaylistName(playlistName));
+        Work.DiscoverPlaylistTracks(PlaylistIdFor(playlistName));
 
     public EnrichmentTarget StreamingTarget(TrackId trackId) =>
         Work.EnrichTrackStreamingLocation(trackId);
@@ -87,6 +96,12 @@ internal sealed class StoreDiscoveryFeedbackPortContractTestEnvironment : IAsync
 
     public async ValueTask DisposeAsync()
     {
+        if (documentStore is null)
+        {
+            return;
+        }
+
+        await EmbeddedRavenTestServer.DeleteDocumentsAsync(documentStore, cleanupDocumentIds);
         await EmbeddedRavenTestServer.DisposeAsync(documentStore);
     }
 
@@ -102,7 +117,8 @@ internal sealed class StoreDiscoveryFeedbackPortContractTestEnvironment : IAsync
         return new StoreDiscoveryFeedbackPortContractTestEnvironment(
             new RavenStoreDiscoveryFeedbackPort(store),
             store,
-            fake: null);
+            fake: null,
+            isolationKey: EmbeddedRavenTestServer.NewIsolationKey());
     }
 }
 

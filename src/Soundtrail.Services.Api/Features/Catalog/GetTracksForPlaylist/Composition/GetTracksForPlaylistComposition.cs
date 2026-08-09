@@ -16,9 +16,9 @@ public static class GetTracksForPlaylistComposition
 {
     public static void Configure(IServiceCollection services, GetTracksForPlaylistPorts ports)
     {
-        services.TryAddSingleton(ports.GetTracksForPlaylist);
-        services.TryAddSingleton(ports.Clock);
-        services.TryAddSingleton(ports.CommandBus);
+        services.TryAddScoped(ports.GetTracksForPlaylist);
+        services.TryAddScoped(ports.Clock);
+        services.TryAddScoped(ports.CommandBus);
         services.TryAddScoped<
             IApiHandler<GetTracksForPlaylistRequest, GetTracksForPlaylistResponse?>,
             GetTracksForPlaylistHandler>();

@@ -29,15 +29,12 @@ public sealed class TrackExistsTests
     public async Task Given_An_Existing_Track_When_Requesting_The_Track_Then_The_Track_Id_Is_Returned(
         GetTrackPortImplementation implementation)
     {
-        var trackIdValue = TestTrackIds.Value("track-603");
-        var expectedTrackId = TestTrackIds.Create("track-603");
         await using var environment = await GetTrackPortContractTestEnvironment.ForExistingTrack(
-            implementation,
-            trackId: trackIdValue);
+            implementation);
 
         var result = await environment.Subject.GetTrackAsync(environment.TrackId, CancellationToken.None);
 
-        result!.TrackId.Should().Be(expectedTrackId);
+        result!.TrackId.Should().Be(environment.TrackId);
     }
 
     [Theory]

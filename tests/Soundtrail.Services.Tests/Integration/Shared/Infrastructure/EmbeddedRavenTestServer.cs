@@ -11,33 +11,60 @@ namespace Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
 
 internal static class EmbeddedRavenTestServer
 {
+    private const string SharedDatabaseName = "soundtrail-tests";
+
     private static readonly object ServerSync = new();
     private static string? serverUrl;
+    private static IDocumentStore? sharedStore;
 
     /// <summary>
-    /// Creates a document store against the shared embedded Raven server.
-    /// When <paramref name="databaseName"/> is omitted, a unique database is created so tests can run in parallel.
+    /// Returns the shared document store against the shared embedded Raven database.
+    /// Tests isolate via unique document/entity ids, not per-test databases.
+    /// When <paramref name="databaseName"/> is provided, creates an isolated store (escape hatch).
     /// </summary>
     public static IDocumentStore CreateDocumentStore(string? databaseName = null)
     {
-        databaseName ??= $"soundtrail-tests-{Guid.NewGuid():N}";
-
-        var store = new DocumentStore
+        if (databaseName is not null)
         {
-            Urls = [GetReadyServerUrl()],
-            Database = databaseName,
-            Conventions = new DocumentConventions
-            {
-                FindCollectionName = type => type.Name
-            }
-        };
+            return CreateIsolatedDocumentStore(databaseName);
+        }
 
-        store.Initialize();
-        EnsureDatabaseExists(store);
-        return store;
+        var existing = Volatile.Read(ref sharedStore);
+        if (existing is not null)
+        {
+            return existing;
+        }
+
+        lock (ServerSync)
+        {
+            if (sharedStore is not null)
+            {
+                return sharedStore;
+            }
+
+            var store = new DocumentStore
+            {
+                Urls = [GetReadyServerUrl()],
+                Database = SharedDatabaseName,
+                Conventions = new DocumentConventions
+                {
+                    FindCollectionName = type => type.Name
+                }
+            };
+
+            store.Initialize();
+            EnsureDatabaseExists(store);
+            Volatile.Write(ref sharedStore, store);
+            return store;
+        }
     }
 
     public static Task<string> GetServerUrlAsync() => Task.FromResult(GetReadyServerUrl());
+
+    /// <summary>
+    /// Unique key for entity/document ids so parallel tests sharing one DB do not collide.
+    /// </summary>
+    public static string NewIsolationKey() => Guid.NewGuid().ToString("N");
 
     /// <summary>
     /// Deletes a single document. Use for mid-test resets within a long-lived environment.
@@ -62,11 +89,46 @@ internal static class EmbeddedRavenTestServer
     }
 
     /// <summary>
-    /// Deletes the store's database and disposes the store.
+    /// Deletes the listed documents from the store (best-effort). Prefer this over dropping databases.
+    /// </summary>
+    public static async ValueTask DeleteDocumentsAsync(
+        IDocumentStore documentStore,
+        IEnumerable<string> documentIds)
+    {
+        ArgumentNullException.ThrowIfNull(documentStore);
+        ArgumentNullException.ThrowIfNull(documentIds);
+
+        var ids = documentIds
+            .Where(static id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+        if (ids.Length == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            using var session = documentStore.OpenAsyncSession();
+            foreach (var documentId in ids)
+            {
+                session.Advanced.Defer(new DeleteCommandData(documentId, null));
+            }
+
+            await session.SaveChangesAsync();
+        }
+        catch
+        {
+        }
+    }
+
+    /// <summary>
+    /// For the shared store: no-op (do not delete the database or dispose the store).
+    /// For isolated stores: deletes the database and disposes the store.
     /// </summary>
     public static ValueTask DisposeAsync(IDocumentStore? documentStore)
     {
-        if (documentStore is null)
+        if (documentStore is null || ReferenceEquals(documentStore, Volatile.Read(ref sharedStore)))
         {
             return ValueTask.CompletedTask;
         }
@@ -83,6 +145,23 @@ internal static class EmbeddedRavenTestServer
 
         documentStore.Dispose();
         return ValueTask.CompletedTask;
+    }
+
+    private static IDocumentStore CreateIsolatedDocumentStore(string databaseName)
+    {
+        var store = new DocumentStore
+        {
+            Urls = [GetReadyServerUrl()],
+            Database = databaseName,
+            Conventions = new DocumentConventions
+            {
+                FindCollectionName = type => type.Name
+            }
+        };
+
+        store.Initialize();
+        EnsureDatabaseExists(store);
+        return store;
     }
 
     /// <summary>

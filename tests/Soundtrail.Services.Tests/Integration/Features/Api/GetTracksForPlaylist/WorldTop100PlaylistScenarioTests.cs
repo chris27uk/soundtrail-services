@@ -11,7 +11,7 @@ public sealed class WorldTop100PlaylistScenarioTests
         var pending = await environment.GetPlaylistAsync();
 
         pending.Should().NotBeNull();
-        pending!.PlaylistId.Should().Be("worldtop100");
+        pending!.PlaylistId.Should().Be(environment.PlaylistId.Value);
         pending.Tracks.Should().BeEmpty();
         pending.Discovery.Should().NotBeNull();
         pending.Discovery!.Status.Should().Be("scheduled");

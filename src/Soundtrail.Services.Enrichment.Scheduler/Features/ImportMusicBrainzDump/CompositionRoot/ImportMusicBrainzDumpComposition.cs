@@ -14,8 +14,8 @@ public static class ImportMusicBrainzDumpComposition
 {
     public static void Configure(IServiceCollection services, ImportMusicBrainzDumpPorts ports)
     {
-        services.TryAddSingleton(ports.CommandBus);
-        services.TryAddSingleton(ports.JobStore);
+        services.TryAddScoped(ports.CommandBus);
+        services.TryAddScoped(ports.JobStore);
         services.TryAddScoped<IScheduledMessageHandler<ImportMusicBrainzDumpCommand>, ImportMusicBrainzDumpHandler>();
     }
 }

@@ -18,6 +18,13 @@ internal sealed class SociableDiscoveryEngine : IDisposable
 {
     private static readonly IConfiguration EmptyConfiguration = new ConfigurationBuilder().Build();
 
+    /// <summary>
+    /// Default adapter ConfigureServices + handler assembly scanning, frozen once.
+    /// Per-test Create clones these recipes and builds a fresh ServiceProvider.
+    /// Fakes are not shared across tests; assembly scanning runs once.
+    /// </summary>
+    private static readonly Lazy<ServiceDescriptor[]> DefaultRegistrations = new(BuildDefaultRegistrations);
+
     private readonly ServiceProvider serviceProvider;
     private readonly IServiceScope scope;
 
@@ -40,34 +47,25 @@ internal sealed class SociableDiscoveryEngine : IDisposable
     {
         ArgumentNullException.ThrowIfNull(dependencies);
 
-        var services = new ServiceCollection();
-        services.AddSingleton(new SociableScenarioOptions(dependencies.UtcNow));
-        services.AddSingleton(dependencies.CommandBus);
-        services.AddSingleton<ICommandBus>(dependencies.CommandBus);
-        services.AddSingleton<DiscoveryEventProjector>();
-
-        foreach (var feature in ResolveAdapters(dependencies.ReplaceAdapters))
+        if (dependencies.ReplaceAdapters.Count > 0)
         {
-            feature.ConfigureServices(services, EmptyConfiguration);
+            return CreateFromScratch(dependencies);
         }
 
-        HandlerCollection.AddProjectionHandlersFromAssemblies(services, typeof(ProjectorAssemblyMarker));
-        HandlerCollection.AddMessageHandlersFromAssemblies(
-            services,
-            typeof(WorkerAssemblyMarker),
-            typeof(OrchestratorAssemblyMarker),
-            typeof(CatalogImportAssemblyMarker));
-        HandlerCollection.AddScheduledMessageHandlersFromAssemblies(
-            services,
-            typeof(SchedulerAssemblyMarker));
+        IServiceCollection services = new ServiceCollection();
+        AddPerTestOverlays(services, dependencies);
 
-        var provider = services.BuildServiceProvider();
-        var scope = provider.CreateScope();
-        var commandBus = scope.ServiceProvider.GetRequiredService<CommandBusFake>();
-        var handlers = scope.ServiceProvider.GetRequiredService<HandlerCollection>();
-        var pump = new SociableMessagePump(commandBus, handlers);
+        foreach (var descriptor in DefaultRegistrations.Value)
+        {
+            if (IsPerTestOverlay(descriptor))
+            {
+                continue;
+            }
 
-        return new SociableDiscoveryEngine(provider, scope, pump);
+            services.Add(descriptor);
+        }
+
+        return CreateEngine(services);
     }
 
     public TFake RequireFake<TService, TFake>() where TService : class where TFake : class, TService =>
@@ -82,6 +80,120 @@ internal sealed class SociableDiscoveryEngine : IDisposable
     {
         scope.Dispose();
         serviceProvider.Dispose();
+    }
+
+    private static ServiceDescriptor[] BuildDefaultRegistrations()
+    {
+        var services = new ServiceCollection();
+
+        // Sentinels so adapter TryAddScoped(ports.CommandBus) skips and does not leave
+        // a recursive sp => GetRequiredService<ICommandBus>() factory in the template.
+        AddPerTestOverlays(
+            services,
+            new SociableDependencies { CommandBus = CommandBusFake.Empty() });
+        services.AddSingleton<DiscoveryEventProjector>();
+
+        foreach (var feature in ResolveAdapters(replaceAdapters: []))
+        {
+            feature.ConfigureServices(services, EmptyConfiguration);
+        }
+
+        AddHandlerRegistrations(services);
+        return PromoteScopedToSingleton(services).ToArray();
+    }
+
+    private static SociableDiscoveryEngine CreateFromScratch(SociableDependencies dependencies)
+    {
+        var services = new ServiceCollection();
+        AddPerTestOverlays(services, dependencies);
+        services.AddSingleton<DiscoveryEventProjector>();
+
+        foreach (var feature in ResolveAdapters(dependencies.ReplaceAdapters))
+        {
+            feature.ConfigureServices(services, EmptyConfiguration);
+        }
+
+        AddHandlerRegistrations(services);
+        return CreateEngine(PromoteScopedToSingleton(services));
+    }
+
+    /// <summary>
+    /// Production compositions register ports as scoped (correct for Raven/request graphs).
+    /// Sociable builds one ServiceProvider per test, but DiscoveryEventProjector opens nested
+    /// scopes — scoped fakes would be empty there after seeding in the outer scope.
+    /// Promote scoped → singleton for this provider only so nested scopes share fakes/SUTs,
+    /// while each test still gets a fresh provider (fakes are never shared across tests).
+    /// </summary>
+    private static IServiceCollection PromoteScopedToSingleton(IServiceCollection services)
+    {
+        IServiceCollection promoted = new ServiceCollection();
+        foreach (var descriptor in services)
+        {
+            promoted.Add(PromoteScopedToSingleton(descriptor));
+        }
+
+        return promoted;
+    }
+
+    private static ServiceDescriptor PromoteScopedToSingleton(ServiceDescriptor descriptor)
+    {
+        if (descriptor.Lifetime != ServiceLifetime.Scoped)
+        {
+            return descriptor;
+        }
+
+        if (descriptor.ImplementationFactory is not null)
+        {
+            return ServiceDescriptor.Singleton(descriptor.ServiceType, descriptor.ImplementationFactory);
+        }
+
+        if (descriptor.ImplementationType is not null)
+        {
+            return ServiceDescriptor.Singleton(descriptor.ServiceType, descriptor.ImplementationType);
+        }
+
+        if (descriptor.ImplementationInstance is not null)
+        {
+            return ServiceDescriptor.Singleton(descriptor.ServiceType, descriptor.ImplementationInstance);
+        }
+
+        return descriptor;
+    }
+
+    private static void AddPerTestOverlays(IServiceCollection services, SociableDependencies dependencies)
+    {
+        services.AddSingleton(new SociableScenarioOptions(dependencies.UtcNow));
+        services.AddSingleton(dependencies.CommandBus);
+        services.AddSingleton<ICommandBus>(dependencies.CommandBus);
+    }
+
+    private static bool IsPerTestOverlay(ServiceDescriptor descriptor) =>
+        descriptor.ServiceType == typeof(SociableScenarioOptions)
+        || descriptor.ServiceType == typeof(CommandBusFake)
+        || (descriptor.ServiceType == typeof(ICommandBus) && descriptor.ImplementationInstance is not null);
+
+    private static void AddHandlerRegistrations(IServiceCollection services)
+    {
+        HandlerCollection.AddProjectionHandlersFromAssemblies(services, typeof(ProjectorAssemblyMarker));
+        HandlerCollection.AddMessageHandlersFromAssemblies(
+            services,
+            typeof(WorkerAssemblyMarker),
+            typeof(OrchestratorAssemblyMarker),
+            typeof(CatalogImportAssemblyMarker));
+        HandlerCollection.AddScheduledMessageHandlersFromAssemblies(
+            services,
+            typeof(SchedulerAssemblyMarker));
+    }
+
+    private static SociableDiscoveryEngine CreateEngine(IServiceCollection services)
+    {
+        var provider = services.BuildServiceProvider();
+        var scope = provider.CreateScope();
+        var commandBus = scope.ServiceProvider.GetRequiredService<CommandBusFake>();
+        var handlers = scope.ServiceProvider.GetRequiredService<HandlerCollection>();
+        var pump = new SociableMessagePump(commandBus, handlers);
+
+        return new SociableDiscoveryEngine(provider, scope, pump);
     }
 
     private static IReadOnlyList<IFeature> ResolveAdapters(IReadOnlyList<IFeature> replaceAdapters)

@@ -1,7 +1,6 @@
 using Raven.Client.Documents;
 using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Contracts.Persistence;
-using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Tracks;
@@ -14,18 +13,18 @@ namespace Soundtrail.Services.Tests.Integration.GetTracksForAlbum.Api.Ports;
 internal sealed class GetTracksForAlbumPortContractTestEnvironment : IAsyncDisposable
 {
     private readonly IDocumentStore? documentStore;
-    private readonly string? databaseName;
+    private readonly List<string> cleanupDocumentIds;
 
     private GetTracksForAlbumPortContractTestEnvironment(
         IGetTracksForAlbumPort subject,
         AlbumId albumId,
         IDocumentStore? documentStore = null,
-        string? databaseName = null)
+        List<string>? cleanupDocumentIds = null)
     {
         Subject = subject;
         AlbumId = albumId;
         this.documentStore = documentStore;
-        this.databaseName = databaseName;
+        this.cleanupDocumentIds = cleanupDocumentIds ?? [];
     }
 
     public IGetTracksForAlbumPort Subject { get; }
@@ -46,77 +45,101 @@ internal sealed class GetTracksForAlbumPortContractTestEnvironment : IAsyncDispo
         DateOnly? releaseDate = null,
         string? artworkUrl = "https://cdn.soundtrail.test/tracks/track-1301.jpg")
     {
-        var resolvedAlbumId = AlbumId.From(artistId, albumId);
-        var trackIdValue = trackId ?? global::Soundtrail.Services.Tests.TestTrackIds.Value("track-1301");
-        var resolvedTrackId = TrackId.From(trackIdValue);
-        var response = new GetTracksForAlbumResponse(
-            ArtistId.From(artistId),
-            resolvedAlbumId,
-            albumTitle,
-            [
-                new GetTracksForAlbumTrackResponse(
-                    resolvedTrackId,
-                    title,
-                    artistName,
-                    durationMs,
-                    isrc,
-                    releaseDate ?? new DateOnly(2024, 1, 2),
-                    artworkUrl,
-                    false,
-                    [])
-            ]);
-
-        return implementation switch
+        if (implementation == GetTracksForAlbumPortImplementation.Fake)
         {
-            GetTracksForAlbumPortImplementation.Fake => new GetTracksForAlbumPortContractTestEnvironment(
-                new GetTracksForAlbumPortFake(response),
-                resolvedAlbumId),
-            GetTracksForAlbumPortImplementation.Raven => await CreateRavenEnvironmentAsync(
+            var resolvedAlbumId = AlbumId.From(artistId, albumId);
+            var trackIdValue = trackId ?? global::Soundtrail.Services.Tests.TestTrackIds.Value("track-1301");
+            var resolvedTrackId = TrackId.From(trackIdValue);
+            var response = new GetTracksForAlbumResponse(
+                ArtistId.From(artistId),
                 resolvedAlbumId,
-                new CatalogAlbumTracksRecordDto
-                {
-                    Id = CatalogAlbumTracksRecordDto.GetDocumentId(resolvedAlbumId.StableValue),
-                    ArtistId = artistId,
-                    AlbumId = albumId,
-                    AlbumTitle = albumTitle,
-                    Tracks =
-                    [
-                        new CatalogAlbumTrackRecordDto
-                        {
-                            TrackId = trackIdValue,
-                            MusicCatalogId = musicCatalogId,
-                            Title = title,
-                            ArtistName = artistName,
-                            DurationMs = durationMs,
-                            Isrc = isrc,
-                            ReleaseDate = response.Tracks[0].ReleaseDate,
-                            ArtworkUrl = artworkUrl
-                        }
-                    ]
-                }),
-            _ => throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null)
-        };
+                albumTitle,
+                [
+                    new GetTracksForAlbumTrackResponse(
+                        resolvedTrackId,
+                        title,
+                        artistName,
+                        durationMs,
+                        isrc,
+                        releaseDate ?? new DateOnly(2024, 1, 2),
+                        artworkUrl,
+                        false,
+                        [])
+                ]);
+
+            return new GetTracksForAlbumPortContractTestEnvironment(
+                new GetTracksForAlbumPortFake(response),
+                resolvedAlbumId);
+        }
+
+        if (implementation != GetTracksForAlbumPortImplementation.Raven)
+        {
+            throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null);
+        }
+
+        var isolation = EmbeddedRavenTestServer.NewIsolationKey();
+        var uniqueArtistId = $"{artistId}-{isolation}";
+        var uniqueAlbumId = $"{albumId}-{isolation}";
+        var ravenTrackIdValue = global::Soundtrail.Services.Tests.TestTrackIds.Value($"track-1301-{isolation}");
+        var ravenAlbumId = AlbumId.From(uniqueArtistId, uniqueAlbumId);
+        var resolvedReleaseDate = releaseDate ?? new DateOnly(2024, 1, 2);
+
+        return await CreateRavenEnvironmentAsync(
+            ravenAlbumId,
+            new CatalogAlbumTracksRecordDto
+            {
+                Id = CatalogAlbumTracksRecordDto.GetDocumentId(ravenAlbumId.StableValue),
+                ArtistId = uniqueArtistId,
+                AlbumId = uniqueAlbumId,
+                AlbumTitle = albumTitle,
+                Tracks =
+                [
+                    new CatalogAlbumTrackRecordDto
+                    {
+                        TrackId = ravenTrackIdValue,
+                        MusicCatalogId = $"{musicCatalogId}-{isolation}",
+                        Title = title,
+                        ArtistName = artistName,
+                        DurationMs = durationMs,
+                        Isrc = isrc,
+                        ReleaseDate = resolvedReleaseDate,
+                        ArtworkUrl = artworkUrl
+                    }
+                ]
+            });
     }
 
     public static async Task<GetTracksForAlbumPortContractTestEnvironment> ForMissingAlbumTracks(
         GetTracksForAlbumPortImplementation implementation,
         AlbumId? albumId = null)
     {
-        var resolvedAlbumId = albumId ?? AlbumId.From("artist-1102", "album-1202");
-
-        return implementation switch
+        if (implementation == GetTracksForAlbumPortImplementation.Fake)
         {
-            GetTracksForAlbumPortImplementation.Fake => new GetTracksForAlbumPortContractTestEnvironment(
+            var resolvedAlbumId = albumId ?? AlbumId.From("artist-1102", "album-1202");
+            return new GetTracksForAlbumPortContractTestEnvironment(
                 new GetTracksForAlbumPortFake(),
-                resolvedAlbumId),
-            GetTracksForAlbumPortImplementation.Raven => await CreateRavenEnvironmentAsync(resolvedAlbumId),
-            _ => throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null)
-        };
+                resolvedAlbumId);
+        }
+
+        if (implementation != GetTracksForAlbumPortImplementation.Raven)
+        {
+            throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null);
+        }
+
+        var isolation = EmbeddedRavenTestServer.NewIsolationKey();
+        var ravenAlbumId = AlbumId.From($"artist-1102-{isolation}", $"album-1202-{isolation}");
+        return await CreateRavenEnvironmentAsync(ravenAlbumId);
     }
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
-        return EmbeddedRavenTestServer.DisposeAsync(documentStore);
+        if (documentStore is null)
+        {
+            return;
+        }
+
+        await EmbeddedRavenTestServer.DeleteDocumentsAsync(documentStore, cleanupDocumentIds);
+        await EmbeddedRavenTestServer.DisposeAsync(documentStore);
     }
 
     private static async Task<GetTracksForAlbumPortContractTestEnvironment> CreateRavenEnvironmentAsync(
@@ -124,9 +147,11 @@ internal sealed class GetTracksForAlbumPortContractTestEnvironment : IAsyncDispo
         CatalogAlbumTracksRecordDto? existingRecord = null)
     {
         var store = EmbeddedRavenTestServer.CreateDocumentStore();
+        var cleanupDocumentIds = new List<string>();
 
         if (existingRecord is not null)
         {
+            cleanupDocumentIds.Add(existingRecord.Id);
             using var session = store.OpenAsyncSession();
             await session.StoreAsync(existingRecord, existingRecord.Id);
             await session.SaveChangesAsync();
@@ -136,7 +161,7 @@ internal sealed class GetTracksForAlbumPortContractTestEnvironment : IAsyncDispo
             new RavenGetTracksForAlbumPort(store, new TypeRegistryFake()),
             albumId,
             store,
-            existingRecord?.Id);
+            cleanupDocumentIds);
     }
 
     private sealed class TypeRegistryFake : ITypeRegistry

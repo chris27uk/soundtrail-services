@@ -14,8 +14,8 @@ public static class OnArtistCatalogChangedComposition
 {
     public static void Configure(IServiceCollection services, OnArtistCatalogChangedPorts ports)
     {
-        services.TryAddSingleton(ports.ArtistCatalog);
-        services.TryAddSingleton(ports.ArtistRepository);
+        services.TryAddScoped(ports.ArtistCatalog);
+        services.TryAddScoped(ports.ArtistRepository);
         // CatalogItemChanged invokes this after appending; must not rely on Scrutor handler order.
         services.TryAddScoped<ArtistCatalogChangedProjectorHandler>();
     }

@@ -3,6 +3,7 @@ using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Shared.Projector.StoreDiscoveryFeedback;
 
@@ -49,7 +50,7 @@ public sealed class StoreDiscoveryFeedbackPortContractTests
         StoreDiscoveryFeedbackPortImplementation implementation)
     {
         await using var environment = StoreDiscoveryFeedbackPortContractTestEnvironment.Create(implementation);
-        var playlistId = PlaylistId.FromPlaylistName("world_top_100").Value;
+        var playlistId = environment.PlaylistIdFor("world_top_100").Value;
         var target = environment.PlaylistTarget("world_top_100");
         await environment.SeedPlaylistAsync(
             new CatalogPlaylistTracksRecordDto
@@ -83,8 +84,8 @@ public sealed class StoreDiscoveryFeedbackPortContractTests
         StoreDiscoveryFeedbackPortImplementation implementation)
     {
         await using var environment = StoreDiscoveryFeedbackPortContractTestEnvironment.Create(implementation);
-        var playlistId = PlaylistId.FromPlaylistName("world_top_100").Value;
-        var trackId = TestTrackIds.Create("unplayable-1");
+        var playlistId = environment.PlaylistIdFor("world_top_100").Value;
+        var trackId = TestTrackIds.Create($"unplayable-1-{EmbeddedRavenTestServer.NewIsolationKey()}");
         var playlistTarget = environment.PlaylistTarget("world_top_100");
         await environment.SeedPlaylistAsync(
             new CatalogPlaylistTracksRecordDto
@@ -127,8 +128,8 @@ public sealed class StoreDiscoveryFeedbackPortContractTests
         StoreDiscoveryFeedbackPortImplementation implementation)
     {
         await using var environment = StoreDiscoveryFeedbackPortContractTestEnvironment.Create(implementation);
-        var playlistId = PlaylistId.FromPlaylistName("world_top_100").Value;
-        var trackId = TestTrackIds.Create("unplayable-attempt-failed");
+        var playlistId = environment.PlaylistIdFor("world_top_100").Value;
+        var trackId = TestTrackIds.Create($"unplayable-attempt-failed-{EmbeddedRavenTestServer.NewIsolationKey()}");
         var playlistTarget = environment.PlaylistTarget("world_top_100");
         var streamingTarget = environment.StreamingTarget(trackId);
         await environment.SeedPlaylistAsync(
@@ -178,8 +179,8 @@ public sealed class StoreDiscoveryFeedbackPortContractTests
         StoreDiscoveryFeedbackPortImplementation implementation)
     {
         await using var environment = StoreDiscoveryFeedbackPortContractTestEnvironment.Create(implementation);
-        var playlistId = PlaylistId.FromPlaylistName("world_top_100").Value;
-        var trackId = TestTrackIds.Create("unplayable-exhausted");
+        var playlistId = environment.PlaylistIdFor("world_top_100").Value;
+        var trackId = TestTrackIds.Create($"unplayable-exhausted-{EmbeddedRavenTestServer.NewIsolationKey()}");
         var playlistTarget = environment.PlaylistTarget("world_top_100");
         var streamingTarget = environment.StreamingTarget(trackId);
         await environment.SeedPlaylistAsync(
@@ -230,8 +231,8 @@ public sealed class StoreDiscoveryFeedbackPortContractTests
         StoreDiscoveryFeedbackPortImplementation implementation)
     {
         await using var environment = StoreDiscoveryFeedbackPortContractTestEnvironment.Create(implementation);
-        var playlistId = PlaylistId.FromPlaylistName("world_top_100").Value;
-        var trackId = TestTrackIds.Create("glass-cities-pending-repair");
+        var playlistId = environment.PlaylistIdFor("world_top_100").Value;
+        var trackId = TestTrackIds.Create($"glass-cities-pending-repair-{EmbeddedRavenTestServer.NewIsolationKey()}");
         var playlistTarget = environment.PlaylistTarget("world_top_100");
         var streamingTarget = environment.StreamingTarget(trackId);
         await environment.SeedPlaylistAsync(

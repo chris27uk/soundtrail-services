@@ -12,7 +12,7 @@ public static class GetArtistComposition
 {
     public static void Configure(IServiceCollection services, GetArtistPorts ports)
     {
-        services.TryAddSingleton(ports.GetArtist);
+        services.TryAddScoped(ports.GetArtist);
         services.TryAddScoped<IApiHandler<GetArtistRequest, GetArtistResponse?>, GetArtistHandler>();
     }
 }

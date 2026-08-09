@@ -15,8 +15,8 @@ public static class OnLookupCompletedComposition
 {
     public static void Configure(IServiceCollection services, OnLookupCompletedPorts ports)
     {
-        services.TryAddSingleton(ports.DiscoveryRepository);
-        services.TryAddSingleton(ports.CommandBus);
+        services.TryAddScoped(ports.DiscoveryRepository);
+        services.TryAddScoped(ports.CommandBus);
         services.TryAddScoped<LookupCompletedHandler>();
         services.TryAddScoped<IHandler<CatalogLookupCompleted>, LookupCompletedHandler>();
     }

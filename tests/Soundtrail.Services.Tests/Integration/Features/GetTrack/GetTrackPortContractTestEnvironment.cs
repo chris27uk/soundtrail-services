@@ -13,25 +13,25 @@ namespace Soundtrail.Services.Tests.Integration.Features.GetTrack;
 internal sealed class GetTrackPortContractTestEnvironment : IAsyncDisposable
 {
     private readonly IDocumentStore? documentStore;
-    private readonly string? databaseName;
+    private readonly List<string> cleanupDocumentIds;
 
     private GetTrackPortContractTestEnvironment(
         IGetTrackPort subject,
         TrackId trackId,
         IDocumentStore? documentStore = null,
-        string? databaseName = null)
+        List<string>? cleanupDocumentIds = null)
     {
         Subject = subject;
         TrackId = trackId;
         this.documentStore = documentStore;
-        this.databaseName = databaseName;
+        this.cleanupDocumentIds = cleanupDocumentIds ?? [];
     }
 
     public IGetTrackPort Subject { get; }
 
     public TrackId TrackId { get; }
 
-    public static async Task<GetTrackPortContractTestEnvironment> ForExistingTrack(
+    public static Task<GetTrackPortContractTestEnvironment> ForExistingTrack(
         GetTrackPortImplementation implementation,
         string? trackId = null,
         string musicCatalogId = "mc_track_601",
@@ -41,7 +41,51 @@ internal sealed class GetTrackPortContractTestEnvironment : IAsyncDisposable
         int? durationMs = 201000,
         string? isrc = "GBAYE2400301",
         DateOnly? releaseDate = null,
-        string? artworkUrl = "https://cdn.soundtrail.test/tracks/mc_track_601.jpg")
+        string? artworkUrl = "https://cdn.soundtrail.test/tracks/mc_track_601.jpg") =>
+        implementation switch
+        {
+            GetTrackPortImplementation.Fake => Task.FromResult(CreateFakeExisting(
+                trackId, musicCatalogId, title, artistName, albumTitle, durationMs, isrc, releaseDate, artworkUrl)),
+            GetTrackPortImplementation.Raven => CreateRavenExistingAsync(
+                musicCatalogId, title, artistName, albumTitle, durationMs, isrc, releaseDate, artworkUrl),
+            _ => throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null)
+        };
+
+    public static Task<GetTrackPortContractTestEnvironment> ForMissingTrack(
+        GetTrackPortImplementation implementation,
+        TrackId? trackId = null) =>
+        implementation switch
+        {
+            GetTrackPortImplementation.Fake => Task.FromResult(new GetTrackPortContractTestEnvironment(
+                new GetTrackPortFake(),
+                trackId ?? global::Soundtrail.Services.Tests.TestTrackIds.Create("track-602"))),
+            GetTrackPortImplementation.Raven => CreateRavenEnvironmentAsync(
+                global::Soundtrail.Services.Tests.TestTrackIds.Create(
+                    $"track-602-{EmbeddedRavenTestServer.NewIsolationKey()}")),
+            _ => throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null)
+        };
+
+    public async ValueTask DisposeAsync()
+    {
+        if (documentStore is null)
+        {
+            return;
+        }
+
+        await EmbeddedRavenTestServer.DeleteDocumentsAsync(documentStore, cleanupDocumentIds);
+        await EmbeddedRavenTestServer.DisposeAsync(documentStore);
+    }
+
+    private static GetTrackPortContractTestEnvironment CreateFakeExisting(
+        string? trackId,
+        string musicCatalogId,
+        string title,
+        string artistName,
+        string? albumTitle,
+        int? durationMs,
+        string? isrc,
+        DateOnly? releaseDate,
+        string? artworkUrl)
     {
         var trackIdValue = trackId ?? global::Soundtrail.Services.Tests.TestTrackIds.Value("track-601");
         var resolvedTrackId = TrackId.From(trackIdValue);
@@ -57,49 +101,38 @@ internal sealed class GetTrackPortContractTestEnvironment : IAsyncDisposable
             false,
             []);
 
-        return implementation switch
-        {
-            GetTrackPortImplementation.Fake => new GetTrackPortContractTestEnvironment(
-                new GetTrackPortFake(response),
-                resolvedTrackId),
-            GetTrackPortImplementation.Raven => await CreateRavenEnvironmentAsync(
-                resolvedTrackId,
-                new CatalogTrackRecordDto
-                {
-                    Id = CatalogTrackRecordDto.GetDocumentId(trackIdValue),
-                    TrackId = trackIdValue,
-                    MusicCatalogId = musicCatalogId,
-                    Title = title,
-                    ArtistName = artistName,
-                    AlbumTitle = albumTitle,
-                    DurationMs = durationMs,
-                    Isrc = isrc,
-                    ReleaseDate = response.ReleaseDate,
-                    ArtworkUrl = artworkUrl
-                }),
-            _ => throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null)
-        };
+        return new GetTrackPortContractTestEnvironment(
+            new GetTrackPortFake(response),
+            resolvedTrackId);
     }
 
-    public static async Task<GetTrackPortContractTestEnvironment> ForMissingTrack(
-        GetTrackPortImplementation implementation,
-        TrackId? trackId = null)
+    private static async Task<GetTrackPortContractTestEnvironment> CreateRavenExistingAsync(
+        string musicCatalogId,
+        string title,
+        string artistName,
+        string? albumTitle,
+        int? durationMs,
+        string? isrc,
+        DateOnly? releaseDate,
+        string? artworkUrl)
     {
-        var resolvedTrackId = trackId ?? global::Soundtrail.Services.Tests.TestTrackIds.Create("track-602");
-
-        return implementation switch
-        {
-            GetTrackPortImplementation.Fake => new GetTrackPortContractTestEnvironment(
-                new GetTrackPortFake(),
-                resolvedTrackId),
-            GetTrackPortImplementation.Raven => await CreateRavenEnvironmentAsync(resolvedTrackId),
-            _ => throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null)
-        };
-    }
-
-    public ValueTask DisposeAsync()
-    {
-        return EmbeddedRavenTestServer.DisposeAsync(this.documentStore);
+        var isolation = EmbeddedRavenTestServer.NewIsolationKey();
+        var trackIdValue = global::Soundtrail.Services.Tests.TestTrackIds.Value($"track-601-{isolation}");
+        return await CreateRavenEnvironmentAsync(
+            TrackId.From(trackIdValue),
+            new CatalogTrackRecordDto
+            {
+                Id = CatalogTrackRecordDto.GetDocumentId(trackIdValue),
+                TrackId = trackIdValue,
+                MusicCatalogId = $"{musicCatalogId}-{isolation}",
+                Title = title,
+                ArtistName = artistName,
+                AlbumTitle = albumTitle,
+                DurationMs = durationMs,
+                Isrc = isrc,
+                ReleaseDate = releaseDate ?? new DateOnly(2024, 1, 2),
+                ArtworkUrl = artworkUrl
+            });
     }
 
     private static async Task<GetTrackPortContractTestEnvironment> CreateRavenEnvironmentAsync(
@@ -107,9 +140,11 @@ internal sealed class GetTrackPortContractTestEnvironment : IAsyncDisposable
         CatalogTrackRecordDto? existingRecord = null)
     {
         var store = EmbeddedRavenTestServer.CreateDocumentStore();
+        var cleanupDocumentIds = new List<string>();
 
         if (existingRecord is not null)
         {
+            cleanupDocumentIds.Add(existingRecord.Id);
             using var session = store.OpenAsyncSession();
             await session.StoreAsync(existingRecord, existingRecord.Id);
             await session.SaveChangesAsync();
@@ -119,7 +154,7 @@ internal sealed class GetTrackPortContractTestEnvironment : IAsyncDisposable
             new RavenGetTrackPort(store, new TypeRegistryFake()),
             trackId,
             store,
-            existingRecord?.Id);
+            cleanupDocumentIds);
     }
 
     private sealed class TypeRegistryFake : ITypeRegistry
