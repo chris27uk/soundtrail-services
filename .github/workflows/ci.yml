@@ -30,7 +30,7 @@ on:
         type: boolean
         default: false
 
-run-name: ${{ inputs.semVer && format('Build {0}', inputs.semVer) || format('CI {0} #{1}', github.ref_name, github.run_number) }}
+run-name: "${{ inputs.semVer && format('Build {0}', inputs.semVer) || format('CI {0} ({1})', github.ref_name, github.run_number) }}"
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ inputs.semVer || github.event.pull_request.number || github.ref }}
