@@ -9,6 +9,7 @@ using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.Catalog.Search;
 using Soundtrail.Services.Api.Features.Catalog.Search.Contract;
 using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
+using Soundtrail.Services.Enrichment.Worker.Shared.StreamingLocations;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateChanged.Adapters;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure;
@@ -184,6 +185,21 @@ internal sealed class SearchSociableTestEnvironment : IDisposable
             .StoreAsync(candidate, CancellationToken.None)
             .GetAwaiter()
             .GetResult();
+
+        if (string.Equals(candidate.CandidateKind, "track", StringComparison.Ordinal))
+        {
+            // Local track candidates imply a catalog track already exists; seed lookup so
+            // streaming enrichment can proceed instead of racing as "not ready".
+            environment.engine
+                .RequireFake<IReadTrackForLookupPort, ReadTrackForLookupPortFake>()
+                .WithLookupTrack(new TrackLookupContext(
+                    ArtistId.From(candidate.ArtistName ?? "local-artist"),
+                    TrackId.From(candidate.CatalogItemId),
+                    candidate.Title,
+                    candidate.ArtistName ?? candidate.Title,
+                    Isrc: null));
+        }
+
         return environment;
     }
 
