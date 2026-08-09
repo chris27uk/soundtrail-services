@@ -110,7 +110,8 @@ Use the same PowerShell make script and container image as CI for consistent res
 ### Consistent build (container — preferred)
 
 ```bash
-docker build -t soundtrail-services-ci:local -f .github/docker/Dockerfile.ci .
+# Optional local image; CI pulls a prebuilt GHCR image tagged by Dockerfile hash.
+docker build -t soundtrail-services-ci:local -f .github/docker/Dockerfile.ci .github/docker
 
 docker run --rm \
   -v "$PWD:/src" \
@@ -159,9 +160,9 @@ dotnet test tests/Soundtrail.Services.Tests/Soundtrail.Services.Tests.csproj \
 
 ### CI
 
-GitHub Actions builds [`.github/docker/Dockerfile.ci`](.github/docker/Dockerfile.ci) (pinned .NET SDK + PowerShell, Buildx/GHA layer cache) and runs a single container invoke of [`build.ps1 -Restore`](build.ps1) on every push and pull request to `main`. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+GitHub Actions pulls a prebuilt CI image from GHCR tagged by the Dockerfile hash (pinned .NET SDK + PowerShell + Docker CLI). If that tag is missing, CI builds and pushes it once; Dockerfile changes are also published by [`.github/workflows/ci-image.yml`](.github/workflows/ci-image.yml). The Build job then runs a single container invoke of [`build.ps1 -Restore`](build.ps1). See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
-The PR check is the workflow job **Build and Test** (plus a **Test Results** annotation on pull requests). To block merges until it passes, in GitHub go to **Settings → Rules → Rulesets** (or **Branches → Branch protection**) for `main` and require status check `Build and Test`.
+The PR check is the workflow job **Build \<SemVer\>** (plus a **Test Results** annotation on pull requests). To block merges until it passes, in GitHub go to **Settings → Rules → Rulesets** (or **Branches → Branch protection**) for `main` and require that Build status check.
 
 ## Further reading
 

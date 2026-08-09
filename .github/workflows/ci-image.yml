@@ -1,0 +1,66 @@
+name: CI Image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/docker/Dockerfile.ci
+      - .github/workflows/ci-image.yml
+  pull_request:
+    paths:
+      - .github/docker/Dockerfile.ci
+      - .github/workflows/ci-image.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: ci-image-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Publish CI image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve image ref
+        id: image
+        run: |
+          tag="$(sha256sum .github/docker/Dockerfile.ci | cut -c1-16)"
+          image="ghcr.io/${{ github.repository_owner }}/soundtrail-services-ci:${tag}"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "image=${image}" >> "$GITHUB_OUTPUT"
+          echo "Image: ${image}"
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build image
+        run: |
+          docker build \
+            --platform linux/amd64 \
+            --file .github/docker/Dockerfile.ci \
+            --tag "${{ steps.image.outputs.image }}" \
+            .github/docker
+
+      - name: Push image
+        if: github.event_name != 'pull_request'
+        run: |
+          docker push "${{ steps.image.outputs.image }}"
+          {
+            echo "## CI image"
+            echo ""
+            echo "- \`${{ steps.image.outputs.image }}\`"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
