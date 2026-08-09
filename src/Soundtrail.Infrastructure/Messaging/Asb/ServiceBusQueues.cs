@@ -12,6 +12,8 @@ public static class ServiceBusQueues
     public const string LookupPlaybackReferences = "lookup-playback-references";
     public const string LookupMusicPlaylists = "lookup-music-playlists";
     public const string CatalogLookupCompleted = "catalog-lookup-completed";
+    public const string CatalogImportStart = "catalog-import-start";
+    public const string CatalogImportShard = "catalog-import-shard";
 
     public static IReadOnlyList<string> All { get; } =
     [
@@ -22,7 +24,9 @@ public static class ServiceBusQueues
         LookupMusicBrainz,
         LookupPlaybackReferences,
         LookupMusicPlaylists,
-        CatalogLookupCompleted
+        CatalogLookupCompleted,
+        CatalogImportStart,
+        CatalogImportShard
     ];
 
     public static string For<TDto>() => For(typeof(TDto));
@@ -69,6 +73,16 @@ public static class ServiceBusQueues
         if (dtoType == typeof(CatalogLookupCompletedCommandDto))
         {
             return CatalogLookupCompleted;
+        }
+
+        if (dtoType == typeof(StartMusicBrainzDumpImportCommandDto))
+        {
+            return CatalogImportStart;
+        }
+
+        if (dtoType == typeof(ImportMusicBrainzDumpShardCommandDto))
+        {
+            return CatalogImportShard;
         }
 
         throw new InvalidOperationException(

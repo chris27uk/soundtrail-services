@@ -125,6 +125,20 @@ public static class AppHostComposition
             scheduler = scheduler.WaitFor(serviceBus);
         }
 
+        var catalogImport = builder.AddProject<Soundtrail_Services_Enrichment_CatalogImport>("soundtrail-catalog-import")
+            .WithHttpEndpoint(name: "http")
+            .WithReference(serviceBus)
+            .WaitFor(ravenDb)
+            .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
+            .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
+            .WithEnvironment("RavenDb__Database", "soundtrail")
+            .WithEnvironment("MusicBrainzDump__Source", "fixture");
+
+        if (useServiceBusEmulator)
+        {
+            catalogImport = catalogImport.WaitFor(serviceBus);
+        }
+
         var orchestrator = builder.AddProject<Soundtrail_Services_Enrichment_Orchestrator>("soundtrail-orchestrator")
             .WithHttpEndpoint(name: "http")
             .WithReference(serviceBus)
