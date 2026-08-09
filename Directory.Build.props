@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- Commit packages.lock.json beside each project; CI restore uses locked mode. -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
+</Project>

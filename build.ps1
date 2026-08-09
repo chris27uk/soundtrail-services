@@ -42,12 +42,21 @@ Invoke-Stage "Ensure Output Directories Exist" {
 }
 
 # === Environment info ===
-Invoke-Stage "Environment Details" {
-    Exec "dotnet" @("--info")
-    Write-Host "Platform: $($IsWindows ? "Windows" : $IsMacOS ? "macOS" : "Linux")"
-    Write-Host "Max CPU Count: $MaxCpuCount"
-    Write-Host "Configuration: $Configuration"
-    Write-Host "Version: $Version"
+# Skip verbose SDK dump in CI — it obscures stage timings and adds seconds on every invoke.
+if (-not $env:GITHUB_ACTIONS) {
+    Invoke-Stage "Environment Details" {
+        Exec "dotnet" @("--info")
+        Write-Host "Platform: $($IsWindows ? "Windows" : $IsMacOS ? "macOS" : "Linux")"
+        Write-Host "Max CPU Count: $MaxCpuCount"
+        Write-Host "Configuration: $Configuration"
+        Write-Host "Version: $Version"
+        if (-not [string]::IsNullOrWhiteSpace($env:GITVERSION_INFORMATIONALVERSION)) {
+            Write-Host "InformationalVersion: $($env:GITVERSION_INFORMATIONALVERSION)"
+        }
+    }
+}
+else {
+    Write-Host "CI build: Configuration=$Configuration Version=$Version MaxCpuCount=$MaxCpuCount"
     if (-not [string]::IsNullOrWhiteSpace($env:GITVERSION_INFORMATIONALVERSION)) {
         Write-Host "InformationalVersion: $($env:GITVERSION_INFORMATIONALVERSION)"
     }
@@ -69,12 +78,20 @@ if ($Clean) {
 # === Restore ===
 if ($Restore) {
     Invoke-Stage "NuGet Package Restore" {
-        Exec "dotnet" @(
+        $restoreArgs = @(
             "restore",
             $SolutionPath,
             "/p:Configuration=$Configuration",
-            "--verbosity", "normal"
+            "/p:RestorePackagesWithLockFile=true",
+            "--verbosity", "minimal"
         )
+
+        # CI must use committed lock files; local restore may update locks when packages change.
+        if ($env:GITHUB_ACTIONS) {
+            $restoreArgs += "--locked-mode"
+        }
+
+        Exec "dotnet" $restoreArgs
     }
 
     Write-Host "Restore complete..."
@@ -87,7 +104,9 @@ function Get-VersionBuildProperties {
     )
 
     $properties = @(
-        "/p:Version=$BuildVersion"
+        "/p:Version=$BuildVersion",
+        # Belt-and-braces: never let MSBuild sneak a restore into compile.
+        "/p:RestoreDuringBuild=false"
     )
 
     if (-not [string]::IsNullOrWhiteSpace($env:GITVERSION_INFORMATIONALVERSION)) {
