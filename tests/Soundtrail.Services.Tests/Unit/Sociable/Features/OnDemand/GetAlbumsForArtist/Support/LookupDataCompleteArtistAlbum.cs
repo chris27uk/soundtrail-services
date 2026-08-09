@@ -19,7 +19,7 @@ internal sealed record LookupDataCompleteArtistAlbum(CatalogDiscoveryEntry Catal
         var album = new Album(
             albumId,
             albumTitle,
-            sourceAlbumId ?? albumId.ArtistAlbumId,
+            SourceSystemIdSet.FromLegacyMusicBrainz(sourceAlbumId ?? albumId.ArtistAlbumId),
             releaseDate,
             artworkUrl,
             catalogUpdatedAt);

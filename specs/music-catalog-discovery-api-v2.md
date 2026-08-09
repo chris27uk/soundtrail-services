@@ -42,7 +42,7 @@ Provider playback reference source:
 - public API security
 - customer API rate limiting
 - app attestation
-- MusicBrainz dump console implementation
+- MusicBrainz dump console / Import Tool (obsolete; replaced by CatalogImport — see `specs/musicbrainz-catalog-dump-import.md`)
 - direct Sonos queue manipulation
 - Sonos URI generation
 - artwork implementation for MVP
@@ -235,16 +235,16 @@ Projection store and search store.
 
 ### Import Path
 
-MusicBrainz dump import bypasses planner and worker.
+MusicBrainz dump import bypasses planner and worker. It is owned by the **CatalogImport** service (producer/consumer dump ETL), not a console Import Tool. Full contract: `specs/musicbrainz-catalog-dump-import.md`.
 
 ```text
-Import Tool
+CatalogImport (Scheduler trigger → producer → shard consumers)
     -> Event Store
-    -> Projector
+    -> Bulk read-model projection (importer) / Projector rebuild
     -> RavenDB
 ```
 
-Import writes events, never RavenDB documents directly.
+Import writes domain events (and bulk-projects read models). It does not treat Raven read models as the only write target. Live CDC skips dump-tagged (`bulk-import`) events; rebuild replays all events.
 
 ## Core Events
 
@@ -473,7 +473,7 @@ Key scenarios:
 - Discovery orchestration owns retry estimates.
 - Event store is source of truth.
 - RavenDB contains projections only.
-- MusicBrainz dump import emits events.
+- MusicBrainz dump import (CatalogImport) emits catalog events and bulk-projects read models (`specs/musicbrainz-catalog-dump-import.md`).
 - Provider failures are tracked per provider.
 - Artwork can be added without redesigning existing entities.
 - Discovery lifecycle state is derived from discovery event streams only.

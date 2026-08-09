@@ -132,7 +132,7 @@ public sealed class ArtistCatalog
         track.AlbumTitle = @event.Track.AlbumTitle;
         track.DurationMs = @event.Track.DurationMs;
         track.Isrc = @event.Track.Isrc;
-        track.Mbid = @event.Track.Mbid;
+        SourceSystemIdSet.UnionWith(track.SourceSystemIds, @event.Track.SourceSystemIds);
         track.ReleaseDate = @event.Track.ReleaseDate;
         track.ReleaseType = @event.Track.ReleaseType;
         track.UpdatedAt = @event.ObservedAt;
