@@ -23,6 +23,9 @@ jobs:
     name: Version
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    container:
+      image: gittools/gitversion:6.7.0-ubuntu.24.04-8.0
+      options: --entrypoint ""
     outputs:
       semVer: ${{ steps.gitversion.outputs.semVer }}
       informationalVersion: ${{ steps.gitversion.outputs.informationalVersion }}
@@ -34,14 +37,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@v4.5.0
-        with:
-          versionSpec: '6.7.x'
-
       - name: Determine version
         id: gitversion
-        uses: gittools/actions/gitversion/execute@v4.5.0
+        run: |
+          set -euo pipefail
+          /tools/dotnet-gitversion /output json > /tmp/gitversion.json
+          perl -MJSON::PP -e '
+            open my $fh, "<", "/tmp/gitversion.json" or die $!;
+            my $v = decode_json(do { local $/; <$fh> });
+            open my $out, ">>", $ENV{GITHUB_OUTPUT} or die $!;
+            print $out "semVer=$v->{SemVer}\n";
+            print $out "assemblySemVer=$v->{AssemblySemVer}\n";
+            print $out "informationalVersion=$v->{InformationalVersion}\n";
+            print $out "majorMinorPatch=$v->{MajorMinorPatch}\n";
+          '
 
       - name: Display version
         run: |
