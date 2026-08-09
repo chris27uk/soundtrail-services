@@ -162,32 +162,56 @@ jobs:
             --workdir /src \
             "${{ steps.ci-image.outputs.image }}" \
             pwsh ./build.ps1 -Restore -Configuration Release -Version "$BUILD_VERSION"
-  release:
-    name: Release
-    needs: ci
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    steps:
-      - name: Upload test reports
+
+      # Single package for Release: version stamp + whatever TRX the build produced.
+      - name: Prepare build package
+        if: always()
+        run: |
+          mkdir -p package/reports
+          if compgen -G "reports/*" > /dev/null; then
+            cp -a reports/. package/reports/
+          fi
+          printf '%s\n' "$BUILD_VERSION" > package/version.txt
+
+      - name: Upload build package
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-reports
-          path: reports/
-          if-no-files-found: ignore
-  
+          name: build
+          path: package/
+
+  release:
+    name: Release
+    needs: [version, ci]
+    # Keep a static check name for branch protection even when Build's display name includes SemVer.
+    # Run after Version even if Build fails so TRX can still be published, then fail the job if Build did.
+    if: ${{ always() && !cancelled() && needs.version.result == 'success' && needs.ci.result != 'cancelled' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download build package
+        uses: actions/download-artifact@v4
+        with:
+          name: build
+          path: package
+
       - name: Publish test results
-        if: always() && github.event_name == 'pull_request'
-        continue-on-error: true
+        if: github.event_name == 'pull_request'
         uses: dorny/test-reporter@v1
         with:
           name: Test Results
-          path: reports/*.trx
+          path: package/reports/*.trx
           reporter: dotnet-trx
-          fail-on-error: false
-  
+          fail-on-error: true
+          fail-on-empty: false
+
       - name: Tag release version
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: needs.ci.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           TAG: v${{ needs.version.outputs.majorMinorPatch }}
         run: |
@@ -195,9 +219,15 @@ jobs:
             echo "Tag $TAG already exists on origin; skipping."
             exit 0
           fi
-  
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag -a "$TAG" -m "Release $TAG"
           git push origin "refs/tags/$TAG"
           echo "Created and pushed $TAG"
+
+      - name: Require build success
+        if: needs.ci.result != 'success'
+        run: |
+          echo "::error::Build did not succeed (result=${{ needs.ci.result }})"
+          exit 1
