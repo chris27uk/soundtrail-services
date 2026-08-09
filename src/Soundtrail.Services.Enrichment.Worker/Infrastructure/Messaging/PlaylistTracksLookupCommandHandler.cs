@@ -1,4 +1,5 @@
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Adapters.Messaging;
 using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Discovery.Messages;
@@ -9,8 +10,10 @@ public sealed class PlaylistTracksLookupCommandHandler(
     ITypeRegistry typeRegistry,
     IHandler<LookupPlaylistTracksByProviderMessage> innerHandler) : IHandler<PlaylistTracksLookupCommandDto>
 {
-    public Task Handle(IncomingMessage<PlaylistTracksLookupCommandDto> context, CancellationToken cancellationToken = default) =>
-        innerHandler.Handle(
-            context.WithMessage(typeRegistry.ToDomainObject<LookupPlaylistTracksByProviderMessage>(context.Message)),
-            cancellationToken);
+    public Task Handle(IncomingMessage<PlaylistTracksLookupCommandDto> context, CancellationToken cancellationToken = default)
+    {
+        var domainMessage = typeRegistry.ToDomainObject<LookupPlaylistTracksByProviderMessage>(context.Message);
+        MessageTelemetry.SetDomainEventName(typeof(LookupPlaylistTracksByProviderMessage));
+        return innerHandler.Handle(context.WithMessage(domainMessage), cancellationToken);
+    }
 }

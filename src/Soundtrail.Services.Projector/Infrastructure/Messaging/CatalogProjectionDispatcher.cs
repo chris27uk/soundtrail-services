@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using Soundtrail.Adapters.Messaging;
 using Soundtrail.Adapters.Projection;
 using Soundtrail.Contracts.EventSourcing;
 
@@ -7,13 +9,41 @@ internal sealed class CatalogProjectionDispatcher(
     StoredEventDomainEventResolver resolver,
     HandlerCollection handlers)
 {
-    public Task DispatchAsync(RavenStoredEventRecord storedEvent, CancellationToken cancellationToken)
+    public const string SubscriptionName = "projector/catalog";
+
+    public async Task DispatchAsync(RavenStoredEventRecord storedEvent, CancellationToken cancellationToken)
     {
-        return storedEvent.AggregateType switch
+        if (storedEvent.AggregateType is not "catalog-stream")
         {
-            "catalog-stream" => handlers.HandleAsync(resolver.Resolve(storedEvent), cancellationToken),
-            _ => throw new InvalidOperationException(
-                $"Unsupported catalog aggregate type '{storedEvent.AggregateType}'.")
-        };
+            throw new InvalidOperationException(
+                $"Unsupported catalog aggregate type '{storedEvent.AggregateType}'.");
+        }
+
+        var domainEvent = resolver.Resolve(storedEvent);
+        using var activity = MessageTelemetry.StartHandleActivity(
+            dtoTypeName: storedEvent.BodyType,
+            domainEventName: MessageTelemetry.DomainEventNameFor(domainEvent.GetType()),
+            correlationId: storedEvent.CorrelationId,
+            sourceName: SubscriptionName,
+            messageId: storedEvent.EventId);
+
+        try
+        {
+            await handlers.HandleAsync(domainEvent, cancellationToken);
+            MessageTelemetry.AddCurrentEvent("message.processed");
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+        {
+            Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            Activity.Current?.AddEvent(
+                new ActivityEvent(
+                    "exception",
+                    tags: new ActivityTagsCollection
+                    {
+                        { "exception.type", ex.GetType().FullName },
+                        { "exception.message", ex.Message }
+                    }));
+            throw;
+        }
     }
 }
