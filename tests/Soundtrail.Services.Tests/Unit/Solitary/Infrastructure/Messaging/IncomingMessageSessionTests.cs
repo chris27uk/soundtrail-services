@@ -87,21 +87,57 @@ public sealed class IncomingMessageSessionTests
     }
 
     [Fact]
-    public void Given_A_Transport_Envelope_When_Starting_Consume_Activity_Then_Core_Consume_Tags_Are_Present()
+    public void Given_A_Transport_Envelope_When_Starting_Handle_Activity_Then_Core_Handle_Tags_Are_Present()
     {
         using var activityProbe = ActivityProbe.Start();
         var envelope = TestEnvironment.Create().CreateEnvelope(retryCount: 3);
 
-        using var activity = MessageTelemetry.StartConsumeActivity(envelope);
+        using var activity = MessageTelemetry.StartHandleActivity(
+            envelope,
+            typeof(DtoMessage),
+            typeof(DomainMessage));
+        MessageTelemetry.RecordHandleMessageEvent(activity);
 
         activity.Should().NotBeNull();
-        activity!.GetTagItem("messaging.system").Should().Be("azure_service_bus");
-        activity.GetTagItem("messaging.operation").Should().Be("process");
-        activity.GetTagItem("messaging.destination.name").Should().Be(ServiceBusQueues.KnownMusicDataRequests);
-        activity.GetTagItem("messaging.message.id").Should().Be("message-123");
+        activity!.OperationName.Should().Be(MessageTelemetry.HandleMessageActivityName);
+        activity.GetTagItem("soundtrail.dto_type_name").Should().Be(typeof(DtoMessage).FullName);
+        activity.GetTagItem("soundtrail.domain_event_name").Should().Be(typeof(DomainMessage).FullName);
+        activity.GetTagItem("soundtrail.correlation_id").Should().Be("corr-123");
         activity.GetTagItem("messaging.conversation_id").Should().Be("corr-123");
-        activity.GetTagItem("soundtrail.transport_message_type").Should().Be(typeof(DtoMessage).FullName);
+        activity.GetTagItem("soundtrail.queue_name").Should().Be(ServiceBusQueues.KnownMusicDataRequests);
+        activity.GetTagItem("soundtrail.is_retry").Should().Be(true);
         activity.GetTagItem("soundtrail.retry_count").Should().Be(3);
+        activity.GetTagItem("messaging.message.id").Should().Be("message-123");
+        activity.Events.Select(x => x.Name).Should().Contain(MessageTelemetry.HandleMessageActivityName);
+    }
+
+    [Fact]
+    public void Given_A_Dto_Type_When_Resolving_Domain_Event_Name_Then_It_Is_Rejected()
+    {
+        MessageTelemetry.IsTransportDtoType(typeof(SampleCommandDto)).Should().BeTrue();
+        MessageTelemetry.DomainEventNameFor(typeof(SampleCommandDto)).Should().BeNull();
+        MessageTelemetry.DomainEventNameFor(typeof(DomainMessage)).Should().Be(typeof(DomainMessage).FullName);
+    }
+
+    [Fact]
+    public void Given_A_Message_When_Starting_Publish_Activity_Then_Core_Publish_Tags_Are_Present()
+    {
+        using var activityProbe = ActivityProbe.Start();
+        var message = new DomainMessage();
+        var dto = new DtoMessage("dto-123");
+
+        using var activity = MessageTelemetry.StartPublishActivity(
+            message,
+            dto,
+            ServiceBusQueues.KnownMusicDataRequests);
+
+        activity.Should().NotBeNull();
+        activity!.OperationName.Should().Be(MessageTelemetry.PublishMessageActivityName);
+        activity.GetTagItem("soundtrail.dto_type_name").Should().Be(typeof(DtoMessage).FullName);
+        activity.GetTagItem("soundtrail.domain_event_name").Should().Be(typeof(DomainMessage).FullName);
+        activity.GetTagItem("soundtrail.correlation_id").Should().Be(message.CorrelationId.Value);
+        activity.GetTagItem("soundtrail.queue_name").Should().Be(ServiceBusQueues.KnownMusicDataRequests);
+        activity.Events.Select(x => x.Name).Should().Contain(MessageTelemetry.PublishMessageActivityName);
     }
 
     [Fact]
@@ -116,11 +152,44 @@ public sealed class IncomingMessageSessionTests
         activity!.GetTagItem("soundtrail.workflow_stage").Should().Be("test-stage");
         activity.GetTagItem("message.id").Should().Be("telemetry-123");
         activity.GetTagItem("messaging.conversation_id").Should().Be("telemetry-corr");
-        activity.GetTagItem("soundtrail.message_type").Should().Be(typeof(TargetedPrioritisedMessage).FullName);
+        activity.GetTagItem("soundtrail.domain_event_name").Should().Be(typeof(TargetedPrioritisedMessage).FullName);
         activity.GetTagItem("soundtrail.target").Should().Be(message.Target.NormalisedIdentifier);
         activity.GetTagItem("soundtrail.target_kind").Should().Be(message.Target.GetType().Name);
         activity.GetTagItem("soundtrail.trust_level").Should().Be(88);
         activity.GetTagItem("soundtrail.risk_score").Should().Be(7);
+    }
+
+    [Fact]
+    public async Task Given_A_Valid_Message_When_Processing_Then_Handle_Activity_Includes_Handle_Message_Event()
+    {
+        using var activityProbe = ActivityProbe.Start();
+        var environment = TestEnvironment.Create();
+        var session = environment.CreateSession();
+
+        await session.ProcessAsync(environment.CreateEnvelope(retryCount: 2), environment.Lifecycle, CancellationToken.None);
+
+        activityProbe.LastStoppedActivity.Should().NotBeNull();
+        activityProbe.LastStoppedActivity!.OperationName.Should().Be(MessageTelemetry.HandleMessageActivityName);
+        activityProbe.LastStoppedActivity.Events.Select(x => x.Name).Should().Contain(MessageTelemetry.HandleMessageActivityName);
+        activityProbe.LastStoppedActivity.Events.Select(x => x.Name).Should().Contain("message.processed");
+        activityProbe.LastStoppedActivity.GetTagItem("soundtrail.is_retry").Should().Be(true);
+        activityProbe.LastStoppedActivity.GetTagItem("soundtrail.retry_count").Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Given_A_Telemetry_Decorator_When_Handling_Then_It_Emits_Started_And_Completed_Events()
+    {
+        using var activityProbe = ActivityProbe.Start();
+        var inner = new HandlerSpy(null, null);
+        var decorator = new TelemetryHandlerDecorator<DomainMessage>(inner);
+        var message = new DomainMessage();
+
+        await decorator.Handle(IncomingMessage<DomainMessage>.Create(message));
+
+        inner.Invocations.Should().ContainSingle();
+        activityProbe.LastStoppedActivity.Should().NotBeNull();
+        activityProbe.LastStoppedActivity!.Events.Select(x => x.Name).Should().Contain("domain.started");
+        activityProbe.LastStoppedActivity.Events.Select(x => x.Name).Should().Contain("domain.completed");
     }
 
     private sealed class TestEnvironment
@@ -304,6 +373,8 @@ public sealed class IncomingMessageSessionTests
     }
 
     private sealed record DtoMessage(string Id);
+
+    private sealed record SampleCommandDto(string Id);
 
     private sealed record DomainMessage : IMessage
     {

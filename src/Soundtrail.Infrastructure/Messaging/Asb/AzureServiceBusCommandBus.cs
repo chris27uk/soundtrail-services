@@ -14,7 +14,7 @@ internal sealed class AzureServiceBusCommandBus(
         var dto = TypeTranslationRegistry.Default.ToDto(message);
         var queueName = ServiceBusQueues.For(dto.GetType());
 
-        using var activity = MessageTelemetry.StartPublishActivity(message, dto);
+        using var activity = MessageTelemetry.StartPublishActivity(message, dto, queueName);
         await transport.SendAsync(
             queueName,
             dto,

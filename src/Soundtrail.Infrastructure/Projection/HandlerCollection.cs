@@ -79,6 +79,7 @@ public sealed class HandlerCollection
             typeof(IProjectionEventHandler<>));
         GetOrAddRegistrationState(services).AddProjectionEventTypes(eventTypes);
         EnsureHandlerCollectionRegistered(services);
+        services.TryDecorate(typeof(IProjectionEventHandler<>), typeof(TelemetryProjectionEventHandlerDecorator<>));
     }
 
     public static void AddMessageHandlersFromAssemblies(
@@ -100,6 +101,7 @@ public sealed class HandlerCollection
 
         GetOrAddRegistrationState(services).AddMessageTypes(messageTypes);
         EnsureHandlerCollectionRegistered(services);
+        services.TryDecorate(typeof(IHandler<>), typeof(TelemetryHandlerDecorator<>));
     }
 
     public static void AddScheduledMessageHandlersFromAssemblies(

@@ -11,7 +11,7 @@ internal sealed class DiscoveryProjectionSubscriptionService(
     IDocumentStore documentStore,
     ILogger<RavenEventSubscriptionBackgroundService> logger) : RavenEventSubscriptionBackgroundService(scopeFactory, documentStore, logger)
 {
-    protected override string SubscriptionName => "projector/discovery";
+    protected override string SubscriptionName => DiscoveryProjectionDispatcher.SubscriptionName;
 
     protected override Expression<Func<RavenStoredEventRecord, bool>> Filter =>
         x => x.AggregateType == "catalog-stream"

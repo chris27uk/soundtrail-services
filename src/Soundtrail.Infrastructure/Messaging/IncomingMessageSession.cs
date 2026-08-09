@@ -21,7 +21,10 @@ internal sealed class IncomingMessageSession<TDto, TDomain>(
         IMessageLifecycle lifecycle,
         CancellationToken cancellationToken)
     {
-        using var activity = MessageTelemetry.StartConsumeActivity(envelope);
+        using var activity = MessageTelemetry.StartHandleActivity(
+            envelope,
+            typeof(TDto),
+            typeof(TDomain));
         ICommandBus? commandBus = null;
 
         try
@@ -47,8 +50,14 @@ internal sealed class IncomingMessageSession<TDto, TDomain>(
 
             if (message is IMessage domainMessage)
             {
-                MessageTelemetry.EnrichCurrentActivity(domainMessage, "consume");
+                MessageTelemetry.EnrichCurrentActivity(domainMessage, "handle");
             }
+            else
+            {
+                MessageTelemetry.SetDomainEventName(message.GetType());
+            }
+
+            MessageTelemetry.RecordHandleMessageEvent(activity);
 
             await handlers.HandleAsync(incomingMessage, cancellationToken);
 
