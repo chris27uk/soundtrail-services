@@ -1,0 +1,34 @@
+---
+description: Require the full test pack to pass before calling a feature complete
+alwaysApply: true
+---
+
+# Tests must pass before feature complete
+
+Do **not** call a feature, bugfix, or change set complete until the relevant test pack has been **executed locally (or in CI) and passed**.
+
+## Required gate
+
+Before stating work is done, run and confirm green:
+
+1. **Unit** — `FullyQualifiedName~Soundtrail.Services.Tests.Unit`
+2. **Integration** — `FullyQualifiedName~Soundtrail.Services.Tests.Integration`
+3. **End-to-end** — when the change touches messaging, projections, discovery, or API flows exercised by E2E — `FullyQualifiedName~Soundtrail.Services.Tests.EndToEnd`
+
+Prefer the full pack via `./build.ps1` (or the same filters with `dotnet test`) when the change is cross-cutting. Narrow to a subset only when the change is clearly isolated **and** you still run every pack that could regress.
+
+## What “complete” means
+
+- ❌ Do not say “done”, “fixed”, or “feature complete” based only on reasoning, partial tests, or a prior green run from before the latest edits.
+- ✅ Re-run after the final code change. Fix failures before declaring complete.
+- If Docker/Testcontainers are unavailable for integration/E2E, say so explicitly and do not claim full completion.
+
+## Examples
+
+```text
+# ❌ BAD
+Implemented serialization. Feature complete.
+
+# ✅ GOOD
+Implemented serialization. Ran unit + integration (pass). E2E WorldTop100 pass. Feature complete.
+```
