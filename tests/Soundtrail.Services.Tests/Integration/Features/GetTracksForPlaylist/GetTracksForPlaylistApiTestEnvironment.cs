@@ -131,15 +131,7 @@ internal sealed class GetTracksForPlaylistApiTestEnvironment : IAsyncDisposable
         await this.app.DisposeAsync();
         this.client.Dispose();
 
-        if (this.documentStore is null)
-        {
-            return;
-        }
-
-        foreach (var documentId in this.cleanupDocumentIds.Distinct(StringComparer.Ordinal))
-        {
-            await EmbeddedRavenTestServer.DisposeAsync(this.documentStore, documentId);
-        }
+        await EmbeddedRavenTestServer.DisposeAsync(this.documentStore);
     }
 
     public async Task SeedPlaylistAsync(
@@ -239,7 +231,7 @@ internal sealed class GetTracksForPlaylistApiTestEnvironment : IAsyncDisposable
         }
 
         var playlistDocumentId = CatalogPlaylistTracksRecordDto.GetDocumentId(PlaylistId.Value);
-        await EmbeddedRavenTestServer.DisposeAsync(this.documentStore, playlistDocumentId);
+        await EmbeddedRavenTestServer.DeleteDocumentAsync(this.documentStore, playlistDocumentId);
     }
 
     private void TrackForCleanup(string documentId)

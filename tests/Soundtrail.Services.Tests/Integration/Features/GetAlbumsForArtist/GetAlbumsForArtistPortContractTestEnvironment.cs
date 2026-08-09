@@ -102,7 +102,7 @@ internal sealed class GetAlbumsForArtistPortContractTestEnvironment : IAsyncDisp
 
     public ValueTask DisposeAsync()
     {
-        return EmbeddedRavenTestServer.DisposeAsync(this.documentStore, this.databaseName);
+        return EmbeddedRavenTestServer.DisposeAsync(this.documentStore);
     }
 
     private static async Task<GetAlbumsForArtistPortContractTestEnvironment> CreateRavenEnvironmentAsync(

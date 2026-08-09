@@ -2,6 +2,9 @@ using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Domain.Discovery.Messages;
+using Soundtrail.Domain.Discovery.Planning;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.Processing.OnLookupWorkReady.Collaborators;
 
 namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Orchestrator.OnLookupCompleted;
 
@@ -43,6 +46,38 @@ public sealed class LookupCompletedHandlerTests
         await subject.Handle(LookupCompletedHandlerUnitTestEnvironment.CreateDeferred());
 
         environment.Repository.AppendedEvents.Last().Should().BeOfType<WorkDeferred>();
+    }
+
+    [Fact]
+    public async Task Given_A_NotFound_Streaming_Attempt_When_Handling_Then_The_Next_Attempt_Is_Dispatched()
+    {
+        var environment = LookupCompletedHandlerUnitTestEnvironment.Create();
+        var trackId = TestTrackIds.Create("lookup-streaming-1");
+        environment.SeedForStreamingLocation(trackId);
+        var subject = environment.CreateSubject();
+        var scheduledAt = new DateTimeOffset(2026, 7, 19, 9, 45, 30, TimeSpan.Zero);
+        var target = Work.EnrichTrackStreamingLocation(trackId);
+        var dispatch = new DispatchLookupWork(
+            target,
+            LookupPriorityBand.Low,
+            MessageId.Deterministic("DispatchLookupWork", target.NormalisedIdentifier, scheduledAt.ToString("O")),
+            CorrelationId.From("corr-streaming-completed"),
+            scheduledAt);
+        var plan = LookupPlanningPolicy.Build(dispatch);
+        var firstAttempt = WorkerCommandFactory.Create(dispatch, plan.Attempts[0]);
+        var secondAttempt = WorkerCommandFactory.Create(dispatch, plan.Attempts[1]);
+
+        await subject.Handle(
+            LookupCompletedHandlerUnitTestEnvironment.CreateNotFound(
+                trackId,
+                firstAttempt.Id));
+
+        environment.Repository.AppendedEvents.Should().ContainSingle(e => e is WorkAttemptFailed);
+        environment.CommandBus.SentMessages
+            .Should()
+            .ContainSingle()
+            .Which.Id.Should()
+            .Be(secondAttempt.Id);
     }
 
     [Fact]

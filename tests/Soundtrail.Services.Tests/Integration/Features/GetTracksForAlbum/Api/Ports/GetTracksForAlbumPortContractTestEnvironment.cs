@@ -116,7 +116,7 @@ internal sealed class GetTracksForAlbumPortContractTestEnvironment : IAsyncDispo
 
     public ValueTask DisposeAsync()
     {
-        return EmbeddedRavenTestServer.DisposeAsync(documentStore, databaseName);
+        return EmbeddedRavenTestServer.DisposeAsync(documentStore);
     }
 
     private static async Task<GetTracksForAlbumPortContractTestEnvironment> CreateRavenEnvironmentAsync(

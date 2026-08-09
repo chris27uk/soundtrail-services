@@ -6,6 +6,11 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <UserSecretsId>d90eef79-ea8a-4b0a-b3c4-cf08923d2e4a</UserSecretsId>
+        <!--
+          Aspire injects host-RID Dashboard/Orchestration packages at restore time.
+          Keep a lock file per SDK RID so locked-mode works on macOS and linux CI.
+        -->
+        <NuGetLockFilePath>packages.$(NETCoreSdkRuntimeIdentifier).lock.json</NuGetLockFilePath>
     </PropertyGroup>
 
     <ItemGroup>

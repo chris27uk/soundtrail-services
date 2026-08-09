@@ -123,7 +123,7 @@ internal sealed class GetTracksForPlaylistPortContractTestEnvironment : IAsyncDi
 
     public ValueTask DisposeAsync()
     {
-        return EmbeddedRavenTestServer.DisposeAsync(documentStore, databaseName);
+        return EmbeddedRavenTestServer.DisposeAsync(documentStore);
     }
 
     private static async Task<GetTracksForPlaylistPortContractTestEnvironment> CreateRavenEnvironmentAsync(

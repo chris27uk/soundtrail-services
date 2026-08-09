@@ -1,6 +1,7 @@
 using Soundtrail.Adapters.Projection;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
+using Soundtrail.Services.Enrichment.Worker.Shared.StreamingLocations;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
 namespace Soundtrail.Services.Tests.Unit.Sociable.Infrastructure;
@@ -35,14 +36,52 @@ internal sealed class SociableMessagePump(CommandBusFake commandBus, HandlerColl
 
     public async Task PumpAsync()
     {
-        for (var iteration = 0; iteration < 500 && commandBus.TryDequeue(out var message); iteration++)
+        var deferredNotReady = new Queue<IMessage>();
+        TrackLookupNotReadyException? lastNotReady = null;
+        var madeProgress = false;
+
+        for (var iteration = 0; iteration < 500; iteration++)
         {
-            await messageHandlers.HandleAsync(message, CancellationToken.None);
+            if (!commandBus.TryDequeue(out var message))
+            {
+                if (deferredNotReady.Count == 0)
+                {
+                    return;
+                }
+
+                if (!madeProgress)
+                {
+                    throw (Exception?)lastNotReady
+                          ?? new InvalidOperationException(
+                              "The sociable message pump stalled on track lookup that was not ready.");
+                }
+
+                // Replay deferred lookups after other work has had a chance to project tracks.
+                madeProgress = false;
+                while (deferredNotReady.Count > 0)
+                {
+                    commandBus.Requeue(deferredNotReady.Dequeue());
+                }
+
+                continue;
+            }
+
+            try
+            {
+                await messageHandlers.HandleAsync(message, CancellationToken.None);
+                madeProgress = true;
+            }
+            catch (TrackLookupNotReadyException ex)
+            {
+                lastNotReady = ex;
+                deferredNotReady.Enqueue(message);
+            }
         }
 
-        if (commandBus.Messages.Count > 0)
+        if (deferredNotReady.Count > 0 || commandBus.Messages.Count > 0)
         {
-            throw new InvalidOperationException("The sociable message pump did not drain all known work.");
+            throw (Exception?)lastNotReady
+                  ?? new InvalidOperationException("The sociable message pump did not drain all known work.");
         }
     }
 }

@@ -5,8 +5,9 @@ using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Domain.Discovery.Messages;
-using Soundtrail.Services.Enrichment.Orchestrator.Features.Processing.OnLookupCompleted.Extensions;
 using Soundtrail.Domain.Search;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.Processing.OnLookupCompleted.Collaborators;
+using Soundtrail.Services.Enrichment.Orchestrator.Features.Processing.OnLookupCompleted.Extensions;
 
 namespace Soundtrail.Services.Enrichment.Orchestrator.Features.Processing.OnLookupCompleted;
 
@@ -21,10 +22,16 @@ public sealed class LookupCompletedHandler(
         var streamId = lookupRequest.StreamId();
         var historyContext = request.ToAggregateContext();
         await using var scope = await DiscoveryHistoryScope.LoadFromEventStreamAsync(repository, streamId, historyContext, cancellationToken);
-        
+
         scope.Aggregate.ApplyLookupResult(lookupRequest);
-        
+        var nextAttempt = LookupPlanContinuation.PrepareNext(scope.Aggregate, lookupRequest);
         await scope.Aggregate.SaveAsync(cancellationToken);
+
+        if (nextAttempt is not null)
+        {
+            await commandBus.SendAsync(nextAttempt, cancellationToken);
+        }
+
         await PublishPlaylistTrackDiscoveryRequestsAsync(request, lookupRequest, cancellationToken);
         await PublishStreamingLocationDiscoveryRequestsAsync(request, lookupRequest, cancellationToken);
     }

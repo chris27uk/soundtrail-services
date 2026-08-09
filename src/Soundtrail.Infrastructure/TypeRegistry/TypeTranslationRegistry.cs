@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace Soundtrail.Adapters.TypeRegistry;
@@ -127,7 +128,7 @@ public sealed class TypeTranslationRegistry : ITypeRegistry
             $"No DTO type registration exists for domain type '{domainType.FullName}'.");
     }
 
-    public bool TryGetDtoTypeForDomain(Type domainType, out Type? dtoType)
+    public bool TryGetDtoTypeForDomain(Type domainType, [NotNullWhen(true)] out Type? dtoType)
     {
         ArgumentNullException.ThrowIfNull(domainType);
         return this.dtoTypesByDomainType.TryGetValue(domainType, out dtoType);

@@ -8,6 +8,8 @@ public sealed class CatalogTrackRecordDto
 
     public string MusicCatalogId { get; set; } = string.Empty;
 
+    public string ArtistId { get; set; } = string.Empty;
+
     public string Title { get; set; } = string.Empty;
 
     public string ArtistName { get; set; } = string.Empty;

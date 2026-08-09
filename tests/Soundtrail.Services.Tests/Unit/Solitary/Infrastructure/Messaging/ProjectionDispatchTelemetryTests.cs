@@ -12,6 +12,7 @@ using Soundtrail.Services.Internal.Projector.Infrastructure.Messaging;
 
 namespace Soundtrail.Services.Tests.Unit.Solitary.Infrastructure.Messaging;
 
+[Collection(nameof(ActivityTelemetryCollection))]
 public sealed class ProjectionDispatchTelemetryTests
 {
     [Fact]

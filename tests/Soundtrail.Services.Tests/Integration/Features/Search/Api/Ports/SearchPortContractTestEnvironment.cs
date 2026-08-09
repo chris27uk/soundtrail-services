@@ -98,7 +98,7 @@ internal sealed class SearchPortContractTestEnvironment : IAsyncDisposable
 
     public ValueTask DisposeAsync()
     {
-        return EmbeddedRavenTestServer.DisposeAsync(documentStore, databaseName);
+        return EmbeddedRavenTestServer.DisposeAsync(documentStore);
     }
 
     private static async Task<SearchPortContractTestEnvironment> CreateRavenEnvironmentAsync(

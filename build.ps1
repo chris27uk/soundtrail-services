@@ -42,12 +42,24 @@ Invoke-Stage "Ensure Output Directories Exist" {
 }
 
 # === Environment info ===
-Invoke-Stage "Environment Details" {
-    Exec "dotnet" @("--info")
-    Write-Host "Platform: $($IsWindows ? "Windows" : $IsMacOS ? "macOS" : "Linux")"
-    Write-Host "Max CPU Count: $MaxCpuCount"
-    Write-Host "Configuration: $Configuration"
-    Write-Host "Version: $Version"
+# Skip verbose SDK dump in CI — it obscures stage timings and adds seconds on every invoke.
+if (-not $env:GITHUB_ACTIONS) {
+    Invoke-Stage "Environment Details" {
+        Exec "dotnet" @("--info")
+        Write-Host "Platform: $($IsWindows ? "Windows" : $IsMacOS ? "macOS" : "Linux")"
+        Write-Host "Max CPU Count: $MaxCpuCount"
+        Write-Host "Configuration: $Configuration"
+        Write-Host "Version: $Version"
+        if (-not [string]::IsNullOrWhiteSpace($env:GITVERSION_INFORMATIONALVERSION)) {
+            Write-Host "InformationalVersion: $($env:GITVERSION_INFORMATIONALVERSION)"
+        }
+    }
+}
+else {
+    Write-Host "CI build: Configuration=$Configuration Version=$Version MaxCpuCount=$MaxCpuCount"
+    if (-not [string]::IsNullOrWhiteSpace($env:GITVERSION_INFORMATIONALVERSION)) {
+        Write-Host "InformationalVersion: $($env:GITVERSION_INFORMATIONALVERSION)"
+    }
 }
 
 # === Clean ===
@@ -64,83 +76,87 @@ if ($Clean) {
 }
 
 # === Restore ===
+# With -Restore, restore packages then continue into build/test (CI single-container path).
+# Without -Restore, build uses --no-restore and expects a prior restore.
 if ($Restore) {
     Invoke-Stage "NuGet Package Restore" {
-        Exec "dotnet" @(
+        $restoreArgs = @(
             "restore",
             $SolutionPath,
             "/p:Configuration=$Configuration",
-            "--verbosity", "normal"
+            "--verbosity", "minimal"
         )
+
+        # CI must use committed lock files; local restore may update locks when packages change.
+        # Do not pass /p:RestorePackagesWithLockFile=true here — Directory.Build.props enables it,
+        # and AppHost opts out (Aspire injects host-RID packages that break cross-OS locked restore).
+        if ($env:GITHUB_ACTIONS) {
+            $restoreArgs += "--locked-mode"
+        }
+
+        Exec "dotnet" $restoreArgs
+    }
+}
+
+function Get-VersionBuildProperties {
+    param(
+        [string]$BuildVersion
+    )
+
+    $properties = @(
+        "/p:Version=$BuildVersion",
+        # Belt-and-braces: never let MSBuild sneak a restore into compile.
+        "/p:RestoreDuringBuild=false"
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($env:GITVERSION_INFORMATIONALVERSION)) {
+        $properties += "/p:InformationalVersion=$($env:GITVERSION_INFORMATIONALVERSION)"
     }
 
-    Write-Host "Restore complete..."
-    exit 0
+    return $properties
 }
 
 # === Build ===
 Invoke-Stage "Build Solution" {
-    Exec "dotnet" @(
+    $versionProperties = Get-VersionBuildProperties -BuildVersion $Version
+    Exec "dotnet" (@(
         "build",
         $SolutionPath,
-        "/p:Configuration=$Configuration",
-        "/p:Version=$Version",
+        "/p:Configuration=$Configuration"
+    ) + $versionProperties + @(
         "/maxcpucount:$MaxCpuCount",
         "--no-restore"
-    )
+    ))
 }
 
-function Invoke-TestStage {
-    param(
-        [string]$StageName,
-        [string]$Filter,
-        [string]$ResultFileName
+# One `dotnet test` so the runner (and xUnit, once parallelization is enabled) sees the full pack.
+Invoke-Stage "Run Tests" {
+    $versionProperties = Get-VersionBuildProperties -BuildVersion $Version
+    $testArgs = @(
+        "test", $TestsPath,
+        "--logger", "trx;LogFileName=tests.trx",
+        "--results-directory", $OutReporting,
+        "/p:Configuration=$Configuration"
+    ) + $versionProperties + @(
+        "/maxcpucount:$MaxCpuCount",
+        "--no-build",
+        "--no-restore"
     )
 
-    Invoke-Stage $StageName {
-        $testArgs = @(
-            "test", $TestsPath,
-            "--logger", "trx;LogFileName=$ResultFileName",
-            "--results-directory", $OutReporting,
-            "/p:Configuration=$Configuration",
-            "/p:Version=$Version",
-            "/maxcpucount:$MaxCpuCount",
-            "--no-build",
-            "--no-restore",
-            "--filter", $Filter
-        )
-
-        Exec "dotnet" $testArgs
+    if (-not [string]::IsNullOrWhiteSpace($TestFilter)) {
+        $testArgs += @("--filter", $TestFilter)
     }
-}
 
-if ([string]::IsNullOrWhiteSpace($TestFilter)) {
-    Invoke-TestStage `
-        -StageName "Run Unit Tests" `
-        -Filter "FullyQualifiedName~Soundtrail.Services.Tests.Unit" `
-        -ResultFileName "unit-tests.trx"
-
-    Invoke-TestStage `
-        -StageName "Run Integration Tests" `
-        -Filter "FullyQualifiedName~Soundtrail.Services.Tests.Integration" `
-        -ResultFileName "integration-tests.trx"
-
-    Invoke-TestStage `
-        -StageName "Run End-To-End Tests" `
-        -Filter "FullyQualifiedName~Soundtrail.Services.Tests.EndToEnd" `
-        -ResultFileName "end-to-end-tests.trx"
-}
-else {
-    Invoke-TestStage `
-        -StageName "Run Tests ($TestFilter)" `
-        -Filter $TestFilter `
-        -ResultFileName "tests.trx"
+    Exec "dotnet" $testArgs
 }
 
 # === Build Summary ===
 Invoke-Stage "Build Complete" {
     Write-Host "Build Summary" -ForegroundColor Cyan
     Write-Host "Version: $Version"
+    if (-not [string]::IsNullOrWhiteSpace($env:GITVERSION_INFORMATIONALVERSION)) {
+        Write-Host "InformationalVersion: $($env:GITVERSION_INFORMATIONALVERSION)"
+    }
     Write-Host "Configuration: $Configuration"
     Write-Host "Elapsed: $($StopWatch.Elapsed.ToString())"
     Write-Host "Test Results: $OutReporting"

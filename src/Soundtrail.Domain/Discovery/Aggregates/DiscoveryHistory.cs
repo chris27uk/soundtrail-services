@@ -73,6 +73,14 @@ public sealed class DiscoveryHistory
     public WorkDemandState? GetDemandState(EnrichmentTarget target) =>
         demandByTarget.GetValueOrDefault(target.NormalisedIdentifier);
 
+    public bool IsWorkCompleted(EnrichmentTarget target) =>
+        completedTargets.Contains(target.NormalisedIdentifier);
+
+    public EnrichmentTarget? TryGetLastScheduledTarget() =>
+        stream.Events.OfType<WorkScheduled>().LastOrDefault()?.Target;
+
+    public IReadOnlyList<IDomainEvent> Events => stream.Events;
+
     public PlanningAssessmentFlow Assess(PlanningAssessment assessment) => new(this, assessment);
 
     public void ApplyWorkedCompleted(
@@ -120,7 +128,9 @@ public sealed class DiscoveryHistory
                 ApplyDataReceived(succeeded, completion.Target);
                 ApplyWorkedCompleted(completion.Target, completion.Priority, "Lookup completed.", succeeded.CompletedAt);
             },
-            duplicate => ApplyWorkedCompleted(completion.Target, completion.Priority, duplicate.Reason, duplicate.CompletedAt),
+            // Duplicate means this attempt already ran (admission/idempotency). Do not complete the
+            // whole enrichment target — continuation may still need later attempts.
+            duplicate => { },
             notFound => FailAttempt(completion.Target, notFound.Reason, notFound.CompletedAt),
             deferred => DeferResult(completion.Target, completion.Priority, deferred.DeferredUntil, deferred.Reason, deferred.CompletedAt),
             failed => FailAttempt(completion.Target, failed.Reason, failed.CompletedAt));
@@ -347,6 +357,11 @@ public sealed class DiscoveryHistory
 
     public async Task SaveAsync(CancellationToken cancellationToken)
     {
+        if (uncommittedEvents.Count == 0)
+        {
+            return;
+        }
+
         var append = await this.repository.AppendAsync(
             this.stream,
             uncommittedEvents.AsReadOnly(),

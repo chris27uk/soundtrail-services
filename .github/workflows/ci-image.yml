@@ -1,0 +1,85 @@
+name: CI Image
+
+on:
+  # Path filters on pull_request match the whole PR diff vs base, so once the
+  # Dockerfile is in the PR every synchronize re-runs this. Publish on main
+  # (real path changes) or manual dispatch instead; CI pull-or-builds on miss.
+  push:
+    branches: [main]
+    paths:
+      - .github/docker/Dockerfile.ci
+      - .github/workflows/ci-image.yml
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Rebuild with --no-cache and push (overwrite existing tag)
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: ci-image-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Publish CI image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve image ref
+        id: image
+        run: |
+          tag="$(sha256sum .github/docker/Dockerfile.ci | cut -c1-16)"
+          image="ghcr.io/${{ github.repository_owner }}/soundtrail-services-ci:${tag}"
+          force="${{ github.event_name == 'workflow_dispatch' && inputs.force || false }}"
+
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "image=${image}" >> "$GITHUB_OUTPUT"
+          echo "force=${force}" >> "$GITHUB_OUTPUT"
+          echo "Image: ${image} (force=${force})"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Skip when tag already exists
+        id: existing
+        if: steps.image.outputs.force != 'true'
+        run: |
+          if docker manifest inspect "${{ steps.image.outputs.image }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag already published; skipping build (use force=true to rebuild)."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build image
+        if: steps.image.outputs.force == 'true' || steps.existing.outputs.exists != 'true'
+        run: |
+          args=(--platform linux/amd64 --file .github/docker/Dockerfile.ci --tag "${{ steps.image.outputs.image }}" .github/docker)
+          if [[ "${{ steps.image.outputs.force }}" == "true" ]]; then
+            args=(--no-cache "${args[@]}")
+          fi
+          docker build "${args[@]}"
+
+      - name: Push image
+        if: steps.image.outputs.force == 'true' || steps.existing.outputs.exists != 'true'
+        run: |
+          docker push "${{ steps.image.outputs.image }}"
+          {
+            echo "## CI image"
+            echo ""
+            echo "- \`${{ steps.image.outputs.image }}\`"
+            echo "- force: \`${{ steps.image.outputs.force }}\`"
+          } | tee -a "$GITHUB_STEP_SUMMARY"

@@ -157,6 +157,25 @@ internal sealed class LookupCompletedHandlerUnitTestEnvironment
                 when));
     }
 
+    public static CatalogLookupCompleted CreateNotFound(
+        TrackId trackId,
+        MessageId originalCommandId,
+        DateTimeOffset? completedAt = null)
+    {
+        var when = completedAt ?? new DateTimeOffset(2026, 7, 19, 10, 0, 0, TimeSpan.Zero);
+
+        return new CatalogLookupCompleted(
+            MessageId.New(),
+            when.AddMinutes(-15),
+            CorrelationId.From("corr-not-found"),
+            new LookupResult.NotFound(
+                new LookupResultContext(
+                    CatalogWorkId.From(new CatalogItemOperation.StreamingLocationForTrack(trackId)),
+                    originalCommandId),
+                "Streaming location was not found for the requested provider.",
+                when));
+    }
+
     public void SeedForStreamingLocation(TrackId? trackId = null)
     {
         var resolvedTrackId = trackId ?? TestTrackIds.Create("lookup-streaming-1");

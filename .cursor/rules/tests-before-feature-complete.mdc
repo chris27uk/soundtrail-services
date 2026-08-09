@@ -1,0 +1,30 @@
+---
+description: Require the full test pack to pass before calling a feature complete
+alwaysApply: true
+---
+
+# Tests must pass before feature complete
+
+Do **not** call a feature, bugfix, or change set complete until the relevant test pack has been **executed locally (or in CI) and passed**.
+
+## Required gate
+
+Before stating work is done, run and confirm green the **full test pack** via `./build.ps1` (or `dotnet test` on the test project with no filter).
+
+Narrow with `-TestFilter` / `--filter` only when the change is clearly isolated **and** you still cover every layer that could regress (Unit / Integration / EndToEnd namespaces).
+
+## What “complete” means
+
+- ❌ Do not say “done”, “fixed”, or “feature complete” based only on reasoning, partial tests, or a prior green run from before the latest edits.
+- ✅ Re-run after the final code change. Fix failures before declaring complete.
+- If Docker/Testcontainers are unavailable for integration/E2E, say so explicitly and do not claim full completion.
+
+## Examples
+
+```text
+# ❌ BAD
+Implemented serialization. Feature complete.
+
+# ✅ GOOD
+Implemented serialization. Ran unit + integration (pass). E2E WorldTop100 pass. Feature complete.
+```

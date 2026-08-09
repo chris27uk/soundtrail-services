@@ -14,9 +14,15 @@ public sealed class LookupWorkReadyHandler(ICommandBus commandBus) : IHandler<Di
         var plan = LookupPlanningPolicy.Build(request);
         Activity.Current?.SetTag("soundtrail.lookup_attempt_count", plan.Attempts.Count);
 
-        foreach (var command in plan.Attempts.Select(attempt => WorkerCommandFactory.Create(request, attempt)))
+        // Dispatch only the first attempt. LookupCompletedHandler advances the plan so
+        // Completions never race on the same discovery stream.
+        if (plan.Attempts.Count == 0)
         {
-            await commandBus.SendAsync(command, cancellationToken);
+            return;
         }
+
+        await commandBus.SendAsync(
+            WorkerCommandFactory.Create(request, plan.Attempts[0]),
+            cancellationToken);
     }
 }

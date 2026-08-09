@@ -74,15 +74,7 @@ internal sealed class StorePlaylistTracksReadModelPortContractTestEnvironment : 
 
     public async ValueTask DisposeAsync()
     {
-        if (documentStore is null)
-        {
-            return;
-        }
-
-        foreach (var documentId in cleanupDocumentIds.Distinct(StringComparer.Ordinal))
-        {
-            await EmbeddedRavenTestServer.DisposeAsync(documentStore, documentId);
-        }
+        await EmbeddedRavenTestServer.DisposeAsync(documentStore);
     }
 
     private static StorePlaylistTracksReadModelPortContractTestEnvironment CreateFake(PlaylistId playlistId)

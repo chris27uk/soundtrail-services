@@ -6,6 +6,7 @@
   </Configurations>
   <Folder Name="/ 0-build/">
     <File Path=".github/workflows/ci.yml" />
+    <File Path=".github\docker\Dockerfile.ci" />
     <File Path="build.ps1" />
   </Folder>
   <Folder Name="/ 0-build/Scripts/">

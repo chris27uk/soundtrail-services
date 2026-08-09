@@ -1,26 +1,26 @@
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Messages;
+using Soundtrail.Services.Enrichment.Worker.Shared.StreamingLocations;
 
 namespace Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForArtist.Scenarios.StreamingLookupMissingTrack.Worker;
 
 public sealed class CatalogLookupCompletedMessageEnqueuedTests
 {
     [Fact]
-    public async Task Then_The_Isrc_Lookup_Result_Is_Failed()
+    public async Task Then_The_Isrc_Lookup_Throws_Track_Lookup_Not_Ready()
     {
         var environment = GetTracksForArtistSociableTestEnvironment.ForStreamingLookupMissingTrack();
 
-        await environment.ProjectOnChange(sut => sut.Handle(environment.CreateRequest()));
+        var act = () => environment.ProjectOnChange(sut => sut.Handle(environment.CreateRequest()));
 
-        IsrcResult(environment).Should().BeOfType<LookupResult.Failed>()
-            .Which.Reason.Should().Be("Track was not found for streaming lookup.");
-    }
+        await act.Should().ThrowAsync<TrackLookupNotReadyException>();
 
-    private static LookupResult IsrcResult(GetTracksForArtistSociableTestEnvironment environment) =>
         environment.SentMessages<CatalogLookupCompleted>()
-            .Single(message =>
+            .Where(message =>
                 message.Result is LookupResult.Failed failed &&
-                failed.Context.OriginalCommandId ==
-                    environment.SentMessages<LookupStreamingLocationByIsrcMessage>().First().Id)
-            .Result;
+                environment.SentMessages<LookupStreamingLocationByIsrcMessage>().Any(lookup =>
+                    failed.Context.OriginalCommandId == lookup.Id))
+            .Should()
+            .BeEmpty();
+    }
 }

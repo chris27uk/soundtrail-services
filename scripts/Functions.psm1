@@ -65,13 +65,20 @@ function Exec {
 }
 
 # Writes a title and invokes a script function - used for readability of named
-# blocks of powershell.
+# blocks of powershell. Prints stage elapsed time so CI logs separate restore/build/test cost.
 function Invoke-Stage(
     [string]$Name,
     [ScriptBlock]$Action)
 {
     Write-Title $Name
-    Invoke-Command -ScriptBlock $Action
+    $stageWatch = [System.Diagnostics.StopWatch]::StartNew()
+    try {
+        Invoke-Command -ScriptBlock $Action
+    }
+    finally {
+        $stageWatch.Stop()
+        Write-Host ("Stage '{0}' completed in {1}" -f $Name, $stageWatch.Elapsed.ToString()) -ForegroundColor DarkGray
+    }
 }
 
 Export-ModuleMember -Function Write-Title, Invoke-InPath, Exec, Invoke-Stage

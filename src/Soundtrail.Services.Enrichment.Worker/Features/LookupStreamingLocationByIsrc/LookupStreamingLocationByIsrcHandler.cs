@@ -24,15 +24,7 @@ public sealed class LookupStreamingLocationByIsrcHandler(
 
         if (track is null)
         {
-            await commandBus.SendAsync(
-                CreateCompleted(
-                    request,
-                    new LookupResult.Failed(
-                        CreateContext(request),
-                        "Track was not found for streaming lookup.",
-                        observedAt)),
-                cancellationToken);
-            return;
+            throw new TrackLookupNotReadyException(request.TrackId);
         }
 
         if (string.IsNullOrWhiteSpace(track.Isrc))

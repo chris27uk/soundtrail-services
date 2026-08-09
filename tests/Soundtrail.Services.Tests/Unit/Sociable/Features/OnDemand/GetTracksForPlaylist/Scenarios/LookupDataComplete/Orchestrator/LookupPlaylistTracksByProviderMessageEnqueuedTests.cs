@@ -10,9 +10,8 @@ public sealed class LookupPlaylistTracksByProviderMessageEnqueuedTests
 {
     public static TheoryData<ProviderName> Providers => new()
     {
-        ProviderName.Spotify,
-        ProviderName.AppleMusic,
-        ProviderName.YoutubeMusic
+        // Lookup attempts run sequentially; Spotify is first and succeeds for this scenario.
+        ProviderName.Spotify
     };
 
     [Theory]

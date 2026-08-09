@@ -5,6 +5,7 @@ using Soundtrail.Domain.Operations;
 
 namespace Soundtrail.Services.Tests.Unit.Solitary.Infrastructure.Messaging;
 
+[Collection(nameof(ActivityTelemetryCollection))]
 public sealed class TelemetryScheduledMessageHandlerDecoratorTests
 {
     [Fact]

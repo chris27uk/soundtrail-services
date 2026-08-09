@@ -133,6 +133,7 @@ public sealed class RavenStoreArtistCatalogReadModelPort(IDocumentStore document
                     Id = CatalogTrackRecordDto.GetDocumentId(track.TrackId.Value),
                     TrackId = track.TrackId.Value,
                     MusicCatalogId = track.TrackId.Value,
+                    ArtistId = readModel.ArtistId.Value,
                     Title = track.Title,
                     ArtistName = track.ArtistName,
                     AlbumTitle = track.AlbumTitle,

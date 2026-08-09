@@ -136,8 +136,8 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
             new CatalogItemOperation.ChildTracksForPlaylist(PlaylistId).StableIdentifier());
         var playlistDocumentId = CatalogPlaylistTracksRecordDto.GetDocumentId(PlaylistId.Value);
 
-        await EmbeddedRavenTestServer.DisposeAsync(documentStore, discoveryDocumentId);
-        await EmbeddedRavenTestServer.DisposeAsync(documentStore, playlistDocumentId);
+        await EmbeddedRavenTestServer.DeleteDocumentAsync(documentStore, discoveryDocumentId);
+        await EmbeddedRavenTestServer.DeleteDocumentAsync(documentStore, playlistDocumentId);
     }
 
     public async Task<StreamingCoverageSummary> MaterializeResolvedScenarioAsync()
@@ -196,6 +196,7 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
                             Id = CatalogTrackRecordDto.GetDocumentId(track.TrackId.Value),
                             TrackId = track.TrackId.Value,
                             MusicCatalogId = track.TrackId.Value,
+                            ArtistId = entry.ArtistId.Value,
                             Title = track.Title,
                             ArtistName = track.ArtistName,
                             AlbumTitle = track.AlbumTitle,
@@ -253,10 +254,12 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
                 continue;
             }
 
+            // Unplayable tracks still complete streaming work after all lookup attempts are exhausted.
             await discoveryFeedbackPort.StoreAsync(
-                new WorkAttemptFailed(
+                new WorkCompleted(
                     new EnrichmentTarget.KnownCatalogItemOperation(new CatalogItemOperation.StreamingLocationForTrack(trackId)),
-                    "Streaming locations were not found in local WireMock services.",
+                    LookupPriorityBand.High,
+                    "All lookup attempts exhausted.",
                     Clock.UtcNow.AddMinutes(1)),
                 CancellationToken.None);
         }
@@ -308,10 +311,7 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
         client.Dispose();
         wireMockServer.Dispose();
 
-        foreach (var documentId in cleanupDocumentIds.Distinct(StringComparer.Ordinal))
-        {
-            await EmbeddedRavenTestServer.DisposeAsync(documentStore, documentId);
-        }
+        await EmbeddedRavenTestServer.DisposeAsync(documentStore);
     }
 
     private HttpClient CreateExternalClient() =>

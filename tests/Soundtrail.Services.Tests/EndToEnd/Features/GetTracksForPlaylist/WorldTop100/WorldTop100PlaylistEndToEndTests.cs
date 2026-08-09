@@ -94,7 +94,8 @@ public sealed class WorldTop100PlaylistEndToEndTests(EndToEndHostFixture fixture
                $"playable count={latest.Tracks.Count(track => track.Playable)}, " +
                $"discovery status={latest.Discovery?.Status ?? "<null>"}, " +
                $"discovery reason={latest.Discovery?.Reason ?? "<null>"}, " +
-               $"tracks=[{tracks}]";
+               $"tracks=[{tracks}]. " +
+               "If status=completed with missing playable URLs, streaming WorkCompleted likely raced ahead of playlist Repair.";
     }
 
     private static bool IsFullyResolved(GetTracksForPlaylistResponseDto? response) =>

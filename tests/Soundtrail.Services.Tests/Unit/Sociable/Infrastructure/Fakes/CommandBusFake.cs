@@ -35,4 +35,6 @@ internal sealed class CommandBusFake : ICommandBus
     }
 
     public bool TryDequeue(out IMessage message) => this.queue.TryDequeue(out message!);
+  
+    public void Requeue(IMessage message) => this.queue.Enqueue(message);
 }
