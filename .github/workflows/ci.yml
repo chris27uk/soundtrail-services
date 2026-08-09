@@ -23,9 +23,6 @@ jobs:
     name: Version
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    container:
-      image: gittools/gitversion:6.7.0-ubuntu.24.04-8.0
-      options: --entrypoint ""
     outputs:
       semVer: ${{ steps.gitversion.outputs.semVer }}
       informationalVersion: ${{ steps.gitversion.outputs.informationalVersion }}
@@ -39,19 +36,45 @@ jobs:
 
       - name: Determine version
         id: gitversion
-        shell: bash
+        env:
+          GITVERSION_IMAGE: gittools/gitversion:6.7.0-ubuntu.24.04-8.0
         run: |
           set -euo pipefail
-          /tools/dotnet-gitversion /output json > /tmp/gitversion.json
-          perl -MJSON::PP -e '
-            open my $fh, "<", "/tmp/gitversion.json" or die $!;
-            my $v = decode_json(do { local $/; <$fh> });
-            open my $out, ">>", $ENV{GITHUB_OUTPUT} or die $!;
-            print $out "semVer=$v->{SemVer}\n";
-            print $out "assemblySemVer=$v->{AssemblySemVer}\n";
-            print $out "informationalVersion=$v->{InformationalVersion}\n";
-            print $out "majorMinorPatch=$v->{MajorMinorPatch}\n";
-          '
+
+          docker pull "$GITVERSION_IMAGE"
+
+          set +e
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/repo" \
+            --workdir /repo \
+            --env GITHUB_ACTIONS=true \
+            --env GITHUB_REF \
+            --env GITHUB_BASE_REF \
+            --env GITHUB_HEAD_REF \
+            --entrypoint /tools/dotnet-gitversion \
+            "$GITVERSION_IMAGE" \
+            /output json > /tmp/gitversion.json 2> /tmp/gitversion.err
+          gv_exit=$?
+          set -e
+
+          if [[ -s /tmp/gitversion.err ]]; then
+            echo "GitVersion stderr:" >&2
+            cat /tmp/gitversion.err >&2
+          fi
+
+          if [[ $gv_exit -ne 0 ]]; then
+            echo "::error::GitVersion exited with code $gv_exit"
+            echo "GitVersion stdout:" >&2
+            cat /tmp/gitversion.json >&2 || true
+            exit "$gv_exit"
+          fi
+
+          jq -r '
+            "semVer=\(.SemVer)",
+            "assemblySemVer=\(.AssemblySemVer)",
+            "informationalVersion=\(.InformationalVersion)",
+            "majorMinorPatch=\(.MajorMinorPatch)"
+          ' /tmp/gitversion.json >> "$GITHUB_OUTPUT"
 
       - name: Display version
         run: |
