@@ -23,6 +23,17 @@ internal static class TestInfrastructureWarmup
             // Fire-and-forget on the thread pool loses to aggressive parallelization.
             _ = Bootstrap.Value;
             EndToEndHostFixture.EnsureWarmupStarted();
+            AppDomain.CurrentDomain.ProcessExit += static (_, _) =>
+            {
+                try
+                {
+                    EndToEndHostFixture.ShutdownSharedAsync().GetAwaiter().GetResult();
+                }
+                catch
+                {
+                    // Best-effort; MTP may already have torn down the process.
+                }
+            };
         }
         catch
         {

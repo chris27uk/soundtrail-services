@@ -27,6 +27,7 @@ public sealed class EndToEndHostFixture : IAsyncLifetime, IAsyncDisposable
     public const string EnvironmentName = "EndToEnd";
 
     private static readonly Lazy<Task<SharedHosts>> Shared = new(StartSharedOnDedicatedThread);
+    private static int shutdownStarted;
 
     private SharedHosts? hosts;
 
@@ -42,6 +43,33 @@ public sealed class EndToEndHostFixture : IAsyncLifetime, IAsyncDisposable
     public static void EnsureWarmupStarted() => _ = Shared.Value;
 
     /// <summary>
+    /// Stops shared E2E hosts so MTP does not wait 10s for leftover foreground threads.
+    /// Idempotent — safe from collection dispose and process-exit fallback.
+    /// </summary>
+    public static async Task ShutdownSharedAsync()
+    {
+        if (Interlocked.Exchange(ref shutdownStarted, 1) != 0)
+        {
+            return;
+        }
+
+        if (!Shared.IsValueCreated)
+        {
+            return;
+        }
+
+        try
+        {
+            var hosts = await Shared.Value.ConfigureAwait(false);
+            await hosts.DisposeAsync().ConfigureAwait(false);
+        }
+        catch
+        {
+            // Best-effort teardown at process end.
+        }
+    }
+
+    /// <summary>
     /// Host warmup runs on a dedicated thread with its own sync context so awaits do not
     /// sit behind a saturated xUnit thread pool.
     /// </summary>
@@ -53,11 +81,7 @@ public sealed class EndToEndHostFixture : IAsyncLifetime, IAsyncDisposable
         this.hosts = await Shared.Value;
     }
 
-    public ValueTask DisposeAsync()
-    {
-        // Shared hosts live for the process so background warmup stays valid.
-        return ValueTask.CompletedTask;
-    }
+    public async ValueTask DisposeAsync() => await ShutdownSharedAsync();
 
     private static async Task<SharedHosts> StartSharedAsync()
     {
@@ -292,14 +316,48 @@ public sealed class EndToEndHostFixture : IAsyncLifetime, IAsyncDisposable
         }
     }
 
-    private sealed record SharedHosts(
+    private sealed class SharedHosts(
         IDocumentStore DocumentStore,
         HttpClient ApiClient,
         WebApplication Api,
         WebApplication Orchestrator,
         WebApplication Worker,
         WebApplication Projector,
-        ProviderStubServer ProviderStubs);
+        ProviderStubServer ProviderStubs) : IAsyncDisposable
+    {
+        public IDocumentStore DocumentStore { get; } = DocumentStore;
+        public HttpClient ApiClient { get; } = ApiClient;
+
+        public async ValueTask DisposeAsync()
+        {
+            await StopAsync(Projector);
+            await StopAsync(Worker);
+            await StopAsync(Orchestrator);
+            await StopAsync(Api);
+            ApiClient.Dispose();
+            await ProviderStubs.DisposeAsync();
+            DocumentStore.Dispose();
+        }
+
+        private static async Task StopAsync(WebApplication app)
+        {
+            try
+            {
+                await app.StopAsync();
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                await app.DisposeAsync();
+            }
+            catch
+            {
+            }
+        }
+    }
 }
 
 [CollectionDefinition(nameof(EndToEndHostCollection))]

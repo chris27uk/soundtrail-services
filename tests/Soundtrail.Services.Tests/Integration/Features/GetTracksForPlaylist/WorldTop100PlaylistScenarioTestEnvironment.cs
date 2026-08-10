@@ -66,7 +66,10 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
 
     public static async Task<WorldTop100PlaylistScenarioTestEnvironment> CreateAsync()
     {
-        var documentStore = EmbeddedRavenTestServer.CreateDocumentStore();
+        // Isolated DB: two scenario copies + other world_top_100 writers share the process-wide
+        // Raven store and race on the same playlist/discovery document ids under MTP parallelization.
+        var documentStore = EmbeddedRavenTestServer.CreateDocumentStore(
+            $"soundtrail-test-wt100-{EmbeddedRavenTestServer.NewIsolationKey()}");
         var wireMockServer = WireMockServer.Start();
         WorldTop100ProviderStubs.Configure(wireMockServer);
 

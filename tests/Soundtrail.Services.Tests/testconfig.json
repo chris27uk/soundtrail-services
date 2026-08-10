@@ -3,6 +3,7 @@
   "xUnit": {
     "parallelAlgorithm": "aggressive",
     "maxParallelThreads": "unlimited",
-    "parallelizeTestCollections": true
+    "parallelizeTestCollections": true,
+    "shutdownForegroundThreadWaitSeconds": 2
   }
 }

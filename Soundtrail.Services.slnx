@@ -31,6 +31,5 @@
   </Folder>
   <Folder Name="/3-tests/">
     <Project Path="tests/Soundtrail.Services.Tests/Soundtrail.Services.Tests.csproj" />
-    <Project Path="tests/Soundtrail.Services.Tests.Mtp/Soundtrail.Services.Tests.Mtp.csproj" />
   </Folder>
 </Solution>
