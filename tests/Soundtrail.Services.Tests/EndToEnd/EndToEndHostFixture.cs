@@ -26,79 +26,70 @@ public sealed class EndToEndHostFixture : IAsyncLifetime
 {
     public const string EnvironmentName = "EndToEnd";
 
-    private readonly string databaseName = $"soundtrail-e2e-{Guid.NewGuid():N}";
-    private LocalServiceBusEmulator? serviceBus;
-    private LocalRedisTestServer? redis;
-    private ProviderStubServer? providerStubs;
-    private IDocumentStore? documentStore;
-    private WebApplication? api;
-    private WebApplication? orchestrator;
-    private WebApplication? worker;
-    private WebApplication? projector;
-    private HttpClient? apiClient;
+    private static readonly Lazy<Task<SharedHosts>> Shared = new(StartSharedAsync);
+
+    private SharedHosts? hosts;
 
     public HttpClient ApiClient =>
-        this.apiClient ?? throw new InvalidOperationException("End-to-end hosts have not been started.");
+        this.hosts?.ApiClient ?? throw new InvalidOperationException("End-to-end hosts have not been started.");
 
     public IDocumentStore DocumentStore =>
-        this.documentStore ?? throw new InvalidOperationException("End-to-end hosts have not been started.");
+        this.hosts?.DocumentStore ?? throw new InvalidOperationException("End-to-end hosts have not been started.");
+
+    /// <summary>
+    /// Begins shared host startup so container/host work overlaps the parallel suite.
+    /// </summary>
+    public static void EnsureWarmupStarted() => _ = Shared.Value;
 
     public async Task InitializeAsync()
     {
-        this.serviceBus = await LocalServiceBusEmulator.StartAsync();
-        this.redis = await LocalRedisTestServer.StartAsync();
-        this.providerStubs = ProviderStubServer.Start();
-        this.documentStore = EmbeddedRavenTestServer.CreateDocumentStore(this.databaseName);
-
-        var ravenUrl = await EmbeddedRavenTestServer.GetServerUrlAsync();
-        var configuration = BuildConfiguration(
-            this.serviceBus.ConnectionString,
-            ravenUrl,
-            this.databaseName,
-            this.redis.ConnectionString,
-            this.providerStubs.BaseUrl);
-
-        this.api = BuildApi(configuration, this.documentStore);
-        this.orchestrator = BuildOrchestrator(configuration, this.documentStore);
-        this.worker = BuildWorker(configuration, this.documentStore);
-        this.projector = BuildProjector(configuration, this.documentStore);
-
-        await this.projector.StartAsync();
-        await this.orchestrator.StartAsync();
-        await this.worker.StartAsync();
-        await this.api.StartAsync();
-
-        this.apiClient = this.api.GetTestClient();
+        this.hosts = await Shared.Value;
     }
 
-    public async Task DisposeAsync()
+    public Task DisposeAsync()
     {
-        if (this.apiClient is not null)
-        {
-            this.apiClient.Dispose();
-        }
+        // Shared hosts live for the process so background warmup stays valid.
+        return Task.CompletedTask;
+    }
 
-        await StopAndDisposeAsync(this.api);
-        await StopAndDisposeAsync(this.worker);
-        await StopAndDisposeAsync(this.orchestrator);
-        await StopAndDisposeAsync(this.projector);
+    private static async Task<SharedHosts> StartSharedAsync()
+    {
+        var databaseName = $"soundtrail-e2e-{Guid.NewGuid():N}";
+        var serviceBusTask = LocalServiceBusEmulator.StartAsync();
+        var redisTask = LocalRedisTestServer.StartAsync();
+        var ravenUrlTask = EmbeddedRavenTestServer.GetServerUrlAsync();
+        await Task.WhenAll(serviceBusTask, redisTask, ravenUrlTask);
 
-        if (this.providerStubs is not null)
-        {
-            await this.providerStubs.DisposeAsync();
-        }
+        var serviceBus = await serviceBusTask;
+        var redis = await redisTask;
+        var ravenUrl = await ravenUrlTask;
+        var providerStubs = ProviderStubServer.Start();
+        var documentStore = EmbeddedRavenTestServer.CreateDocumentStore(databaseName);
+        var configuration = BuildConfiguration(
+            serviceBus.ConnectionString,
+            ravenUrl,
+            databaseName,
+            redis.ConnectionString,
+            providerStubs.BaseUrl);
 
-        if (this.redis is not null)
-        {
-            await this.redis.DisposeAsync();
-        }
+        var api = BuildApi(configuration, documentStore);
+        var orchestrator = BuildOrchestrator(configuration, documentStore);
+        var worker = BuildWorker(configuration, documentStore);
+        var projector = BuildProjector(configuration, documentStore);
 
-        if (this.serviceBus is not null)
-        {
-            await this.serviceBus.DisposeAsync();
-        }
+        await projector.StartAsync();
+        await orchestrator.StartAsync();
+        await worker.StartAsync();
+        await api.StartAsync();
 
-        await EmbeddedRavenTestServer.DisposeAsync(this.documentStore);
+        return new SharedHosts(
+            documentStore,
+            api.GetTestClient(),
+            api,
+            orchestrator,
+            worker,
+            projector,
+            providerStubs);
     }
 
     private static Dictionary<string, string?> BuildConfiguration(
@@ -114,7 +105,7 @@ public sealed class EndToEndHostFixture : IAsyncLifetime
             ["RavenDb:Database"] = databaseName,
             ["ConnectionStrings:Redis"] = redisConnectionString,
             ["LookupExecutionAdmission:ActiveLeaseSeconds"] = "300",
-            ["LookupExecutionAdmission:KeyPrefix"] = "lookup-execution-admission-e2e",
+            ["LookupExecutionAdmission:KeyPrefix"] = $"lookup-execution-admission-e2e-{Guid.NewGuid():N}",
             ["Kworb:BaseUrl"] = providerBaseUrl,
             ["MusicBrainz:BaseUrl"] = providerBaseUrl,
             ["MusicBrainz:UserAgent"] = "Soundtrail.Services.Tests/1.0",
@@ -283,23 +274,14 @@ public sealed class EndToEndHostFixture : IAsyncLifetime
         }
     }
 
-    private static async Task StopAndDisposeAsync(WebApplication? app)
-    {
-        if (app is null)
-        {
-            return;
-        }
-
-        try
-        {
-            await app.StopAsync();
-        }
-        catch
-        {
-        }
-
-        await app.DisposeAsync();
-    }
+    private sealed record SharedHosts(
+        IDocumentStore DocumentStore,
+        HttpClient ApiClient,
+        WebApplication Api,
+        WebApplication Orchestrator,
+        WebApplication Worker,
+        WebApplication Projector,
+        ProviderStubServer ProviderStubs);
 }
 
 [CollectionDefinition(nameof(EndToEndHostCollection))]

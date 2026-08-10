@@ -1,4 +1,6 @@
 using System.Runtime.CompilerServices;
+using Soundtrail.Services.Tests.EndToEnd;
+using Soundtrail.Services.Tests.EndToEnd.Shared;
 using Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
 
 namespace Soundtrail.Services.Tests;
@@ -8,15 +10,17 @@ internal static class TestInfrastructureWarmup
     [ModuleInitializer]
     internal static void Initialize()
     {
-        // Start Redis immediately on the assembly-load thread (not Task.Run) so it overlaps
-        // the suite. Service Bus stays lazy: starting it here raced host wiring in E2E.
+        // Start on the assembly-load thread — do not Task.Run. Under a saturated test
+        // thread pool, queued work waits until the suite drains and E2E opens an idle gap.
         try
         {
             _ = LocalRedisTestServer.StartAsync();
+            _ = LocalServiceBusEmulator.StartAsync();
+            EndToEndHostFixture.EnsureWarmupStarted();
         }
         catch
         {
-            // Surfaces on first StartAsync await.
+            // Surfaces when the E2E fixture InitializeAsync awaits the shared task.
         }
     }
 }
