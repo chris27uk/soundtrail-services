@@ -129,24 +129,56 @@ Invoke-Stage "Build Solution" {
     ))
 }
 
-# One `dotnet test` so the runner (and xUnit, once parallelization is enabled) sees the full pack.
+function ConvertTo-MtpTestFilterArgs {
+    param(
+        [string]$Filter
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Filter)) {
+        return @()
+    }
+
+    # VSTest-style filters used in docs/scripts — map to xUnit v3 MTP simple filters.
+    if ($Filter -match 'FullyQualifiedName~EndToEnd') {
+        return @('--filter-namespace', 'Soundtrail.Services.Tests.EndToEnd')
+    }
+    if ($Filter -match 'FullyQualifiedName~Integration') {
+        return @('--filter-namespace', 'Soundtrail.Services.Tests.Integration')
+    }
+    if ($Filter -match 'FullyQualifiedName~Unit') {
+        return @('--filter-namespace', 'Soundtrail.Services.Tests.Unit')
+    }
+    if ($Filter -match 'FullyQualifiedName~(?<name>.+)$') {
+        $name = $Matches['name']
+        if ($name -match '\.') {
+            return @('--filter-class', $name)
+        }
+        return @('--filter-method', $name)
+    }
+
+    throw "Unsupported -TestFilter '$Filter'. Use FullyQualifiedName~EndToEnd|Integration|Unit or a class/method fragment."
+}
+
+# One test run via Microsoft Testing Platform (xUnit v3 executable).
 Invoke-Stage "Run Tests" {
     $versionProperties = Get-VersionBuildProperties -BuildVersion $Version
     $testArgs = @(
-        "test", $TestsPath,
-        "--logger", "trx;LogFileName=tests.trx",
-        "--results-directory", $OutReporting,
-        "/p:Configuration=$Configuration"
-    ) + $versionProperties + @(
-        "/maxcpucount:$MaxCpuCount",
+        "run", "--project", $TestsPath,
+        "/p:Configuration=$Configuration",
         "--no-build",
         "--no-restore"
+    ) + $versionProperties + @(
+        "--",
+        "--report-xunit-trx",
+        "--report-xunit-trx-filename", "tests.trx",
+        "--results-directory", $OutReporting
     )
 
     if (-not [string]::IsNullOrWhiteSpace($TestFilter)) {
-        $testArgs += @("--filter", $TestFilter)
+        $testArgs += ConvertTo-MtpTestFilterArgs -Filter $TestFilter
     }
 
+    $env:TESTINGPLATFORM_TELEMETRY_OPTOUT = "1"
     Exec "dotnet" $testArgs
 }
 

@@ -1,13 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <OutputType>Exe</OutputType>
+    <RootNamespace>Soundtrail.Services.Tests.Mtp</RootNamespace>
+    <TargetFramework>net10.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+    <!-- Opt-in MTP for dotnet test without changing solution-wide global.json (main pack stays VSTest/xUnit 2). -->
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
   </PropertyGroup>
 
   <ItemGroup>
@@ -45,11 +48,13 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
+  <!-- Reuse E2E infrastructure from the main test project (not v2 ICollectionFixture types). -->
   <ItemGroup>
-    <Folder Include="Integration\Features\" />
-    <Folder Include="Unit\Sociable\Features\OnDemand\" />
-    <Folder Include="Unit\Sociable\Features\Scheduled\" />
-    <Folder Include="Unit\Solitary\CrossCutting\" />
+    <Compile Include="..\Soundtrail.Services.Tests\EndToEnd\Shared\**\*.cs" Link="Linked\EndToEnd\Shared\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\Soundtrail.Services.Tests\Integration\Shared\Infrastructure\TestInfrastructureException.cs" Link="Linked\Infrastructure\TestInfrastructureException.cs" />
+    <Compile Include="..\Soundtrail.Services.Tests\Integration\Shared\Infrastructure\EmbeddedRavenTestServer.cs" Link="Linked\Infrastructure\EmbeddedRavenTestServer.cs" />
+    <Compile Include="..\Soundtrail.Services.Tests\Integration\Shared\Infrastructure\LocalRedisTestServer.cs" Link="Linked\Infrastructure\LocalRedisTestServer.cs" />
+    <Compile Include="..\Soundtrail.Services.Tests\Integration\Shared\Infrastructure\TestContainerWarmup.cs" Link="Linked\Infrastructure\TestContainerWarmup.cs" />
   </ItemGroup>
 
   <ItemGroup>

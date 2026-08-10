@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using Testcontainers.ServiceBus;
+using Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
 using Xunit.Sdk;
 
 namespace Soundtrail.Services.Tests.EndToEnd.Shared;
@@ -76,7 +77,8 @@ internal sealed class LocalServiceBusEmulator : IAsyncDisposable
             }
             catch (Exception exception) when (exception is not SkipException and not OperationCanceledException)
             {
-                throw new SkipException($"Azure Service Bus emulator could not be started locally: {exception.Message}");
+                throw TestInfrastructureException.Unavailable(
+                    $"Azure Service Bus emulator could not be started locally: {exception.Message}");
             }
         }
         finally

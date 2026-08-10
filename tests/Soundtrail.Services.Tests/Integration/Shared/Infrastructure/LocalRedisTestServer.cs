@@ -85,7 +85,8 @@ internal sealed class LocalRedisTestServer
             }
             catch (Exception exception) when (exception is not SkipException and not OperationCanceledException)
             {
-                throw new SkipException($"Redis test container could not be started locally: {exception.Message}");
+                throw TestInfrastructureException.Unavailable(
+                    $"Redis test container could not be started locally: {exception.Message}");
             }
         }
         finally

@@ -9,6 +9,15 @@ namespace Soundtrail.Services.Tests.EndToEnd.Shared;
 /// </summary>
 internal static class DedicatedThreadTaskRunner
 {
+    public static Task RunAsync(Func<Task> work, string threadName) =>
+        RunAsync(
+            async () =>
+            {
+                await work().ConfigureAwait(false);
+                return 0;
+            },
+            threadName);
+
     public static Task<T> RunAsync<T>(Func<Task<T>> work, string threadName)
     {
         ArgumentNullException.ThrowIfNull(work);

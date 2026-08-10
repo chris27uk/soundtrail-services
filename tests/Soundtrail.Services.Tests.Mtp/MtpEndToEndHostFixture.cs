@@ -1,3 +1,4 @@
+using System.Net.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,12 +21,13 @@ using Soundtrail.Services.ServiceDefaults;
 using Soundtrail.Services.Tests.EndToEnd.Shared;
 using Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
 
-namespace Soundtrail.Services.Tests.EndToEnd;
+namespace Soundtrail.Services.Tests.Mtp;
 
-public sealed class EndToEndHostFixture : IAsyncLifetime, IAsyncDisposable
+/// <summary>
+/// xUnit v3 fixture (ValueTask lifetime) wrapping the same shared E2E host bootstrap as the VSTest pack.
+/// </summary>
+public sealed class MtpEndToEndHostFixture : IAsyncLifetime, IAsyncDisposable
 {
-    public const string EnvironmentName = "EndToEnd";
-
     private static readonly Lazy<Task<SharedHosts>> Shared = new(StartSharedOnDedicatedThread);
 
     private SharedHosts? hosts;
@@ -36,36 +38,24 @@ public sealed class EndToEndHostFixture : IAsyncLifetime, IAsyncDisposable
     public IDocumentStore DocumentStore =>
         this.hosts?.DocumentStore ?? throw new InvalidOperationException("End-to-end hosts have not been started.");
 
-    /// <summary>
-    /// Begins shared host startup so container/host work overlaps the parallel suite.
-    /// </summary>
     public static void EnsureWarmupStarted() => _ = Shared.Value;
-
-    /// <summary>
-    /// Host warmup runs on a dedicated thread with its own sync context so awaits do not
-    /// sit behind a saturated xUnit thread pool.
-    /// </summary>
-    private static Task<SharedHosts> StartSharedOnDedicatedThread() =>
-        DedicatedThreadTaskRunner.RunAsync(StartSharedAsync, "Soundtrail.E2E.HostWarmup");
 
     public async ValueTask InitializeAsync()
     {
         this.hosts = await Shared.Value;
+        await MtpSpikeDiagnostics.RecordFixtureReadyAsync();
     }
 
-    public ValueTask DisposeAsync()
-    {
-        // Shared hosts live for the process so background warmup stays valid.
-        return ValueTask.CompletedTask;
-    }
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+
+    private static Task<SharedHosts> StartSharedOnDedicatedThread() =>
+        DedicatedThreadTaskRunner.RunAsync(StartSharedAsync, "Soundtrail.E2E.MtpHostWarmup");
 
     private static async Task<SharedHosts> StartSharedAsync()
     {
-        // Stable name + orphan cleanup in EmbeddedRavenTestServer keeps Community's
-        // 15 subscriptions/cluster headroom (2 projector subs × leftover Guid DBs).
+        const string environmentName = "EndToEnd";
         var databaseName = EmbeddedRavenTestServer.EndToEndDatabaseName;
 
-        // Testcontainers / Docker APIs need thread-pool continuations.
         var (serviceBus, redis, ravenUrl) = await DedicatedThreadTaskRunner.WithThreadPoolContinuationsAsync(
             async () =>
             {
@@ -86,12 +76,11 @@ public sealed class EndToEndHostFixture : IAsyncLifetime, IAsyncDisposable
             redis.ConnectionString,
             providerStubs.BaseUrl);
 
-        var api = BuildApi(configuration, documentStore);
-        var orchestrator = BuildOrchestrator(configuration, documentStore);
-        var worker = BuildWorker(configuration, documentStore);
-        var projector = BuildProjector(configuration, documentStore);
+        var api = BuildApi(environmentName, configuration, documentStore);
+        var orchestrator = BuildOrchestrator(environmentName, configuration, documentStore);
+        var worker = BuildWorker(environmentName, configuration, documentStore);
+        var projector = BuildProjector(environmentName, configuration, documentStore);
 
-        // ASP.NET StartAsync also assumes pool continuations (avoid sync-context deadlock).
         await DedicatedThreadTaskRunner.WithThreadPoolContinuationsAsync(async () =>
         {
             await projector.StartAsync();
@@ -145,26 +134,24 @@ public sealed class EndToEndHostFixture : IAsyncLifetime, IAsyncDisposable
         };
 
     private static WebApplication BuildApi(
+        string environmentName,
         IReadOnlyDictionary<string, string?> configuration,
         IDocumentStore documentStore)
     {
-        var builder = CreateBuilder(configuration);
+        var builder = CreateBuilder(environmentName, configuration);
         builder.Services.AddSingleton(documentStore);
         builder.Services.AddCatalogSearchAttemptQueue(builder.Configuration);
-
         builder.Services.AddFeatures<ApiAssemblyMarker>();
 #pragma warning disable ASP0000
         using var bootstrapProvider = builder.Services.BuildServiceProvider();
 #pragma warning restore ASP0000
         var features = bootstrapProvider.GetServices<IFeature>().ToArray();
-
         foreach (var feature in features)
         {
             feature.ConfigureServices(builder.Services, builder.Configuration);
         }
 
         RemoveRavenDatabaseHostedService(builder.Services);
-
         var app = builder.Build();
         foreach (var feature in features.OfType<IApiFeature>())
         {
@@ -176,19 +163,18 @@ public sealed class EndToEndHostFixture : IAsyncLifetime, IAsyncDisposable
     }
 
     private static WebApplication BuildOrchestrator(
+        string environmentName,
         IReadOnlyDictionary<string, string?> configuration,
         IDocumentStore documentStore)
     {
-        var builder = CreateBuilder(configuration);
+        var builder = CreateBuilder(environmentName, configuration);
         builder.Services.AddSingleton(documentStore);
         builder.Services.AddAzureServiceBusMessageProcessing(builder.Configuration, builder.Environment);
-
         builder.Services.AddFeatures<OrchestratorAssemblyMarker>();
 #pragma warning disable ASP0000
         using var bootstrapProvider = builder.Services.BuildServiceProvider();
 #pragma warning restore ASP0000
         var features = bootstrapProvider.GetServices<IFeature>().ToArray();
-
         foreach (var feature in features)
         {
             feature.ConfigureServices(builder.Services, builder.Configuration);
@@ -196,7 +182,6 @@ public sealed class EndToEndHostFixture : IAsyncLifetime, IAsyncDisposable
 
         HandlerCollection.AddMessageHandlersFromAssemblies(builder.Services, typeof(OrchestratorAssemblyMarker));
         RemoveRavenDatabaseHostedService(builder.Services);
-
         var app = builder.Build();
         foreach (var feature in features.OfType<IOrchestratorFeature>())
         {
@@ -208,20 +193,19 @@ public sealed class EndToEndHostFixture : IAsyncLifetime, IAsyncDisposable
     }
 
     private static WebApplication BuildWorker(
+        string environmentName,
         IReadOnlyDictionary<string, string?> configuration,
         IDocumentStore documentStore)
     {
-        var builder = CreateBuilder(configuration);
+        var builder = CreateBuilder(environmentName, configuration);
         builder.Services.AddSingleton(documentStore);
         builder.Services.AddAzureServiceBusMessageProcessing(builder.Configuration, builder.Environment);
         builder.Services.AddWorkerStartupValidation(builder.Configuration);
-
         builder.Services.AddFeatures<WorkerAssemblyMarker>();
 #pragma warning disable ASP0000
         using var bootstrapProvider = builder.Services.BuildServiceProvider();
 #pragma warning restore ASP0000
         var features = bootstrapProvider.GetServices<IFeature>().ToArray();
-
         foreach (var feature in features)
         {
             feature.ConfigureServices(builder.Services, builder.Configuration);
@@ -229,25 +213,23 @@ public sealed class EndToEndHostFixture : IAsyncLifetime, IAsyncDisposable
 
         HandlerCollection.AddMessageHandlersFromAssemblies(builder.Services, typeof(WorkerAssemblyMarker));
         RemoveRavenDatabaseHostedService(builder.Services);
-
         var app = builder.Build();
         app.MapDefaultEndpoints();
         return app;
     }
 
     private static WebApplication BuildProjector(
+        string environmentName,
         IReadOnlyDictionary<string, string?> configuration,
         IDocumentStore documentStore)
     {
-        var builder = CreateBuilder(configuration);
+        var builder = CreateBuilder(environmentName, configuration);
         builder.Services.AddSingleton(documentStore);
-
         builder.Services.AddFeatures<ProjectorAssemblyMarker>();
 #pragma warning disable ASP0000
         using var bootstrapProvider = builder.Services.BuildServiceProvider();
 #pragma warning restore ASP0000
         var features = bootstrapProvider.GetServices<IFeature>().ToArray();
-
         foreach (var feature in features)
         {
             feature.ConfigureServices(builder.Services, builder.Configuration);
@@ -255,7 +237,6 @@ public sealed class EndToEndHostFixture : IAsyncLifetime, IAsyncDisposable
 
         HandlerCollection.AddFromAssemblies(builder.Services, typeof(ProjectorAssemblyMarker));
         RemoveRavenDatabaseHostedService(builder.Services);
-
         var app = builder.Build();
         foreach (var feature in features.OfType<IProjectorFeature>())
         {
@@ -266,12 +247,14 @@ public sealed class EndToEndHostFixture : IAsyncLifetime, IAsyncDisposable
         return app;
     }
 
-    private static WebApplicationBuilder CreateBuilder(IReadOnlyDictionary<string, string?> configuration)
+    private static WebApplicationBuilder CreateBuilder(
+        string environmentName,
+        IReadOnlyDictionary<string, string?> configuration)
     {
         var builder = WebApplication.CreateBuilder(
             new WebApplicationOptions
             {
-                EnvironmentName = EnvironmentName
+                EnvironmentName = environmentName
             });
         builder.WebHost.UseTestServer();
         builder.Configuration.AddInMemoryCollection(configuration);
@@ -302,5 +285,5 @@ public sealed class EndToEndHostFixture : IAsyncLifetime, IAsyncDisposable
         ProviderStubServer ProviderStubs);
 }
 
-[CollectionDefinition(nameof(EndToEndHostCollection))]
-public sealed class EndToEndHostCollection : ICollectionFixture<EndToEndHostFixture>;
+[CollectionDefinition(nameof(MtpEndToEndHostCollection))]
+public sealed class MtpEndToEndHostCollection : ICollectionFixture<MtpEndToEndHostFixture>;

@@ -68,6 +68,11 @@ internal static class EmbeddedRavenTestServer
     public static Task<string> GetServerUrlAsync() => Task.FromResult(GetReadyServerUrl());
 
     /// <summary>
+    /// Starts embedded Raven during assembly warmup so first integration test does not pay cold-start cost.
+    /// </summary>
+    public static void EnsureServerStarted() => _ = GetReadyServerUrl();
+
+    /// <summary>
     /// Unique key for entity/document ids so parallel tests sharing one DB do not collide.
     /// </summary>
     public static string NewIsolationKey() => Guid.NewGuid().ToString("N");

@@ -1,11 +1,14 @@
 using System.Runtime.CompilerServices;
 using Soundtrail.Services.Tests.EndToEnd;
+using Soundtrail.Services.Tests.EndToEnd.Shared;
 using Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
 
 namespace Soundtrail.Services.Tests;
 
 internal static class TestInfrastructureWarmup
 {
+    private static readonly Lazy<Task> Bootstrap = new(StartBootstrapOnDedicatedThread);
+
     [ModuleInitializer]
     internal static void Initialize()
     {
@@ -16,14 +19,29 @@ internal static class TestInfrastructureWarmup
 
         try
         {
-            // Overlap Redis/ASB discovery with the parallel suite (env / AppHost / Testcontainers).
-            _ = LocalRedisTestServer.StartAsync();
+            // Dedicated thread: container pull/start overlaps the full parallel suite.
+            // Fire-and-forget on the thread pool loses to aggressive parallelization.
+            _ = Bootstrap.Value;
             EndToEndHostFixture.EnsureWarmupStarted();
         }
         catch
         {
-            // Surfaces when the E2E fixture InitializeAsync awaits the shared task.
+            // Surfaces when a test first awaits shared infra.
         }
+    }
+
+    private static Task StartBootstrapOnDedicatedThread() =>
+        DedicatedThreadTaskRunner.RunAsync(StartBootstrapAsync, "Soundtrail.TestInfra.Bootstrap");
+
+    private static async Task StartBootstrapAsync()
+    {
+        await DedicatedThreadTaskRunner.WithThreadPoolContinuationsAsync(async () =>
+        {
+            var redisTask = LocalRedisTestServer.StartAsync();
+            var serviceBusTask = LocalServiceBusEmulator.StartAsync();
+            var ravenTask = Task.Run(EmbeddedRavenTestServer.EnsureServerStarted);
+            await Task.WhenAll(redisTask, serviceBusTask, ravenTask);
+        });
     }
 
     private static void EnsureThreadPoolHeadroom()
