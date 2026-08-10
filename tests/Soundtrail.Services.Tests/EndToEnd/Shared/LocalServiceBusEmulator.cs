@@ -3,37 +3,76 @@ using Xunit.Sdk;
 
 namespace Soundtrail.Services.Tests.EndToEnd.Shared;
 
+/// <summary>
+/// Process-wide Azure Service Bus for E2E.
+/// Set <c>SOUNDTRAIL_TEST_SERVICEBUS</c> to reuse a local emulator (e.g. AppHost);
+/// otherwise starts Testcontainers.
+/// </summary>
 internal sealed class LocalServiceBusEmulator : IAsyncDisposable
 {
-    private readonly ServiceBusContainer container;
+    private static readonly SemaphoreSlim Sync = new(1, 1);
+    private static LocalServiceBusEmulator? shared;
 
-    private LocalServiceBusEmulator(ServiceBusContainer container)
+    private readonly string connectionString;
+    private readonly ServiceBusContainer? container;
+
+    private LocalServiceBusEmulator(string connectionString, ServiceBusContainer? container = null)
     {
+        this.connectionString = connectionString;
         this.container = container;
     }
 
-    public string ConnectionString => this.container.GetConnectionString();
+    public string ConnectionString => this.connectionString;
 
     public static async Task<LocalServiceBusEmulator> StartAsync(CancellationToken cancellationToken = default)
     {
+        var existing = Volatile.Read(ref shared);
+        if (existing is not null)
+        {
+            return existing;
+        }
+
+        await Sync.WaitAsync(cancellationToken);
         try
         {
-            var configPath = ResolveConfigPath();
-            var container = new ServiceBusBuilder()
-                .WithAcceptLicenseAgreement(true)
-                .WithConfig(configPath)
-                .Build();
+            if (shared is not null)
+            {
+                return shared;
+            }
 
-            await container.StartAsync(cancellationToken);
-            return new LocalServiceBusEmulator(container);
+            try
+            {
+                var fromEnvironment = Environment.GetEnvironmentVariable("SOUNDTRAIL_TEST_SERVICEBUS");
+                if (!string.IsNullOrWhiteSpace(fromEnvironment))
+                {
+                    var emulator = new LocalServiceBusEmulator(fromEnvironment.Trim());
+                    Volatile.Write(ref shared, emulator);
+                    return emulator;
+                }
+
+                var configPath = ResolveConfigPath();
+                var container = new ServiceBusBuilder()
+                    .WithAcceptLicenseAgreement(true)
+                    .WithConfig(configPath)
+                    .Build();
+
+                await container.StartAsync(cancellationToken);
+                var started = new LocalServiceBusEmulator(container.GetConnectionString(), container);
+                Volatile.Write(ref shared, started);
+                return started;
+            }
+            catch (Exception exception) when (exception is not SkipException and not OperationCanceledException)
+            {
+                throw new SkipException($"Azure Service Bus emulator could not be started locally: {exception.Message}");
+            }
         }
-        catch (Exception exception) when (exception is not SkipException)
+        finally
         {
-            throw new SkipException($"Azure Service Bus emulator could not be started locally: {exception.Message}");
+            Sync.Release();
         }
     }
 
-    public ValueTask DisposeAsync() => this.container.DisposeAsync();
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     private static string ResolveConfigPath()
     {

@@ -199,6 +199,7 @@ internal static class EmbeddedRavenTestServer
             // Publish only after the server reports a URI (init finished). Parallel
             // callers then share this URL instead of racing StartServer/FirstTopologyUpdate.
             Volatile.Write(ref serverUrl, url);
+            TestContainerWarmup.EnsureServiceBusWarmupStarted();
             return url;
         }
     }

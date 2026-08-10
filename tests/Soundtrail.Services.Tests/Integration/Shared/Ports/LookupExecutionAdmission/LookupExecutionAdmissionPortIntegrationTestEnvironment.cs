@@ -9,17 +9,10 @@ namespace Soundtrail.Services.Tests.Integration.Shared.Ports.LookupExecutionAdmi
 
 internal sealed class LookupExecutionAdmissionPortIntegrationTestEnvironment : IAsyncDisposable
 {
-    private readonly LocalRedisTestServer redisServer;
-    private readonly IConnectionMultiplexer connectionMultiplexer;
-
     private LookupExecutionAdmissionPortIntegrationTestEnvironment(
-        LocalRedisTestServer redisServer,
-        IConnectionMultiplexer connectionMultiplexer,
         RedisLookupExecutionAdmissionPort subject,
         DateTimeOffset requestedAt)
     {
-        this.redisServer = redisServer;
-        this.connectionMultiplexer = connectionMultiplexer;
         Subject = subject;
         RequestedAt = requestedAt;
     }
@@ -38,8 +31,7 @@ internal sealed class LookupExecutionAdmissionPortIntegrationTestEnvironment : I
         int activeLeaseSeconds,
         int minimumSpacingSeconds = 1)
     {
-        var redisServer = await LocalRedisTestServer.StartAsync();
-        var connectionMultiplexer = await ConnectionMultiplexer.ConnectAsync(redisServer.ConnectionString);
+        var connectionMultiplexer = await LocalRedisTestServer.GetSharedMultiplexerAsync();
         var subject = new RedisLookupExecutionAdmissionPort(
             connectionMultiplexer,
             Options.Create(new SourceApiBudgetsOptions
@@ -59,8 +51,6 @@ internal sealed class LookupExecutionAdmissionPortIntegrationTestEnvironment : I
             }));
 
         return new LookupExecutionAdmissionPortIntegrationTestEnvironment(
-            redisServer,
-            connectionMultiplexer,
             subject,
             new DateTimeOffset(2026, 7, 21, 9, 0, 0, TimeSpan.Zero));
     }
@@ -68,9 +58,5 @@ internal sealed class LookupExecutionAdmissionPortIntegrationTestEnvironment : I
     public LookupExecutionAdmissionRequest CreateRequest(string messageId) =>
         new(LookupSource.Kworb, MessageId.For(messageId), RequestedAt);
 
-    public ValueTask DisposeAsync()
-    {
-        connectionMultiplexer.Dispose();
-        return redisServer.DisposeAsync();
-    }
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }

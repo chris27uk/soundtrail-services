@@ -395,39 +395,6 @@ public sealed class IncomingMessageSessionTests
         public DateTimeOffset RequestedAt { get; init; } = new(2026, 7, 28, 12, 1, 0, TimeSpan.Zero);
     }
 
-    private sealed class ActivityProbe : IDisposable
-    {
-        private readonly ActivityListener listener;
-
-        private ActivityProbe(ActivityListener listener)
-        {
-            this.listener = listener;
-        }
-
-        public Activity? LastStoppedActivity { get; private set; }
-
-        public static ActivityProbe Start()
-        {
-            ActivityProbe? probe = null;
-            var listener = new ActivityListener
-            {
-                ShouldListenTo = source => source.Name == "Soundtrail.Messaging",
-                Sample = static (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-                SampleUsingParentId = static (ref ActivityCreationOptions<string> _) => ActivitySamplingResult.AllDataAndRecorded,
-                ActivityStopped = activity => probe!.LastStoppedActivity = activity
-            };
-
-            ActivitySource.AddActivityListener(listener);
-            probe = new ActivityProbe(listener);
-            return probe;
-        }
-
-        public void Dispose()
-        {
-            this.listener.Dispose();
-        }
-    }
-
     private sealed record TargetedPrioritisedMessage : ITargetedMessage, IPrioritisedMessage
     {
         public MessageId Id { get; init; } = MessageId.For("telemetry-123");

@@ -1,27 +1,17 @@
 using Microsoft.Extensions.Options;
 using Soundtrail.Adapters.Timing;
-using Soundtrail.Contracts.Common;
-using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Common;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.ExecutionAdmission;
 using Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
-using StackExchange.Redis;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
 namespace Soundtrail.Services.Tests.Integration.Shared.Worker;
 
 internal sealed class LookupExecutionAdmissionDecoratorIntegrationTestEnvironment : IAsyncDisposable
 {
-    private readonly LocalRedisTestServer redisServer;
-    private readonly IConnectionMultiplexer connectionMultiplexer;
-
     private LookupExecutionAdmissionDecoratorIntegrationTestEnvironment(
-        LocalRedisTestServer redisServer,
-        IConnectionMultiplexer connectionMultiplexer,
         RedisLookupExecutionAdmissionPort admissionPort)
     {
-        this.redisServer = redisServer;
-        this.connectionMultiplexer = connectionMultiplexer;
         AdmissionPort = admissionPort;
         CommandBus = new CommandBusFake();
         Clock = new ClockFake(new DateTimeOffset(2026, 7, 21, 10, 0, 0, TimeSpan.Zero));
@@ -37,8 +27,7 @@ internal sealed class LookupExecutionAdmissionDecoratorIntegrationTestEnvironmen
         int maxRequests = 2,
         int activeLeaseSeconds = 300)
     {
-        var redisServer = await LocalRedisTestServer.StartAsync();
-        var connectionMultiplexer = await ConnectionMultiplexer.ConnectAsync(redisServer.ConnectionString);
+        var connectionMultiplexer = await LocalRedisTestServer.GetSharedMultiplexerAsync();
         var budgets = new SourceApiBudgetsOptions
         {
             MusicBrainz = CreatePolicy(maxRequests),
@@ -55,17 +44,10 @@ internal sealed class LookupExecutionAdmissionDecoratorIntegrationTestEnvironmen
                 KeyPrefix = $"lookup-execution-decorator-tests:{Guid.NewGuid():N}"
             }));
 
-        return new LookupExecutionAdmissionDecoratorIntegrationTestEnvironment(
-            redisServer,
-            connectionMultiplexer,
-            admissionPort);
+        return new LookupExecutionAdmissionDecoratorIntegrationTestEnvironment(admissionPort);
     }
 
-    public ValueTask DisposeAsync()
-    {
-        connectionMultiplexer.Dispose();
-        return redisServer.DisposeAsync();
-    }
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     private static ApiBudgetPolicy CreatePolicy(int maxRequests) =>
         new()
