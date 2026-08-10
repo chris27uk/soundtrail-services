@@ -26,7 +26,7 @@ public sealed class EndToEndHostFixture : IAsyncLifetime
 {
     public const string EnvironmentName = "EndToEnd";
 
-    private static readonly Lazy<Task<SharedHosts>> Shared = new(StartSharedAsync);
+    private static readonly Lazy<Task<SharedHosts>> Shared = new(StartSharedOnDedicatedThread);
 
     private SharedHosts? hosts;
 
@@ -41,6 +41,13 @@ public sealed class EndToEndHostFixture : IAsyncLifetime
     /// </summary>
     public static void EnsureWarmupStarted() => _ = Shared.Value;
 
+    /// <summary>
+    /// Host warmup runs on a dedicated thread with its own sync context so awaits do not
+    /// sit behind a saturated xUnit thread pool.
+    /// </summary>
+    private static Task<SharedHosts> StartSharedOnDedicatedThread() =>
+        DedicatedThreadTaskRunner.RunAsync(StartSharedAsync, "Soundtrail.E2E.HostWarmup");
+
     public async Task InitializeAsync()
     {
         this.hosts = await Shared.Value;
@@ -54,16 +61,23 @@ public sealed class EndToEndHostFixture : IAsyncLifetime
 
     private static async Task<SharedHosts> StartSharedAsync()
     {
-        var databaseName = $"soundtrail-e2e-{Guid.NewGuid():N}";
-        var serviceBusTask = LocalServiceBusEmulator.StartAsync();
-        var redisTask = LocalRedisTestServer.StartAsync();
-        var ravenUrlTask = EmbeddedRavenTestServer.GetServerUrlAsync();
-        await Task.WhenAll(serviceBusTask, redisTask, ravenUrlTask);
+        // Stable name + orphan cleanup in EmbeddedRavenTestServer keeps Community's
+        // 15 subscriptions/cluster headroom (2 projector subs × leftover Guid DBs).
+        var databaseName = EmbeddedRavenTestServer.EndToEndDatabaseName;
 
-        var serviceBus = await serviceBusTask;
-        var redis = await redisTask;
-        var ravenUrl = await ravenUrlTask;
+        // Testcontainers / Docker APIs need thread-pool continuations.
+        var (serviceBus, redis, ravenUrl) = await DedicatedThreadTaskRunner.WithThreadPoolContinuationsAsync(
+            async () =>
+            {
+                var serviceBusTask = LocalServiceBusEmulator.StartAsync();
+                var redisTask = LocalRedisTestServer.StartAsync();
+                var ravenUrlTask = EmbeddedRavenTestServer.GetServerUrlAsync();
+                await Task.WhenAll(serviceBusTask, redisTask, ravenUrlTask);
+                return (await serviceBusTask, await redisTask, await ravenUrlTask);
+            });
+
         var providerStubs = ProviderStubServer.Start();
+        EmbeddedRavenTestServer.DeleteEndToEndDatabase();
         var documentStore = EmbeddedRavenTestServer.CreateDocumentStore(databaseName);
         var configuration = BuildConfiguration(
             serviceBus.ConnectionString,
@@ -77,10 +91,14 @@ public sealed class EndToEndHostFixture : IAsyncLifetime
         var worker = BuildWorker(configuration, documentStore);
         var projector = BuildProjector(configuration, documentStore);
 
-        await projector.StartAsync();
-        await orchestrator.StartAsync();
-        await worker.StartAsync();
-        await api.StartAsync();
+        // ASP.NET StartAsync also assumes pool continuations (avoid sync-context deadlock).
+        await DedicatedThreadTaskRunner.WithThreadPoolContinuationsAsync(async () =>
+        {
+            await projector.StartAsync();
+            await orchestrator.StartAsync();
+            await worker.StartAsync();
+            await api.StartAsync();
+        });
 
         return new SharedHosts(
             documentStore,

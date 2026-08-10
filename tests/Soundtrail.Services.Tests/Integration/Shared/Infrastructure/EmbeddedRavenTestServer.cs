@@ -13,6 +13,12 @@ internal static class EmbeddedRavenTestServer
 {
     private const string SharedDatabaseName = "soundtrail-tests";
 
+    /// <summary>
+    /// Stable E2E database name. Prefer this over per-run Guid names so Embedded DataDir
+    /// does not accumulate databases (and Raven Community's 15 subscriptions/cluster).
+    /// </summary>
+    public const string EndToEndDatabaseName = "soundtrail-e2e";
+
     private static readonly object ServerSync = new();
     private static string? serverUrl;
     private static IDocumentStore? sharedStore;
@@ -196,12 +202,129 @@ internal static class EmbeddedRavenTestServer
             var serverUri = EmbeddedServer.Instance.GetServerUriAsync().GetAwaiter().GetResult();
             var url = serverUri.AbsoluteUri.TrimEnd('/');
 
+            // Embedded persists under bin/.../RavenDB across testhost runs. Shared Lazy E2E
+            // never disposes its store, and older Guid-named DBs left subscriptions that
+            // hit Community's 15-per-cluster limit. Wipe orphans before any CreateAsync.
+            DeleteOrphanedTestDatabases(url);
+
             // Publish only after the server reports a URI (init finished). Parallel
             // callers then share this URL instead of racing StartServer/FirstTopologyUpdate.
             Volatile.Write(ref serverUrl, url);
             TestContainerWarmup.EnsureServiceBusWarmupStarted();
             return url;
         }
+    }
+
+    /// <summary>
+    /// Drops leftover E2E / isolated test databases (and their subscriptions) while keeping
+    /// the shared integration database and the stable E2E database name (wiped separately
+    /// when E2E hosts start).
+    /// </summary>
+    public static void DeleteOrphanedTestDatabases(string? serverUrlOverride = null)
+    {
+        var url = serverUrlOverride ?? Volatile.Read(ref serverUrl);
+        if (url is null)
+        {
+            return;
+        }
+
+        try
+        {
+            using var adminStore = new DocumentStore { Urls = [url] }.Initialize();
+            var names = adminStore.Maintenance.Server.Send(new GetDatabaseNamesOperation(0, 1024));
+            foreach (var name in names.Where(IsOrphanedTestDatabase))
+            {
+                try
+                {
+                    adminStore.Maintenance.Server.Send(
+                        new DeleteDatabasesOperation(name, hardDelete: true));
+                }
+                catch
+                {
+                }
+            }
+        }
+        catch
+        {
+        }
+
+        // Folders left from crashed runs may remount on the next Embedded start even if
+        // they were not in GetDatabaseNamesOperation — remove them from DataDir too.
+        DeleteOrphanedDatabaseDirectories();
+    }
+
+    /// <summary>
+    /// Ensures the stable E2E database is absent so Shared Lazy hosts start from a clean slate.
+    /// </summary>
+    public static void DeleteEndToEndDatabase()
+    {
+        var url = Volatile.Read(ref serverUrl) ?? GetReadyServerUrl();
+        try
+        {
+            using var adminStore = new DocumentStore { Urls = [url] }.Initialize();
+            adminStore.Maintenance.Server.Send(
+                new DeleteDatabasesOperation(EndToEndDatabaseName, hardDelete: true));
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            var directory = Path.Combine(AppContext.BaseDirectory, "RavenDB", "Databases", EndToEndDatabaseName);
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+        catch
+        {
+        }
+    }
+
+    private static void DeleteOrphanedDatabaseDirectories()
+    {
+        try
+        {
+            var databasesRoot = Path.Combine(AppContext.BaseDirectory, "RavenDB", "Databases");
+            if (!Directory.Exists(databasesRoot))
+            {
+                return;
+            }
+
+            foreach (var directory in Directory.EnumerateDirectories(databasesRoot))
+            {
+                var name = Path.GetFileName(directory);
+                if (!IsOrphanedTestDatabase(name))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    Directory.Delete(directory, recursive: true);
+                }
+                catch
+                {
+                }
+            }
+        }
+        catch
+        {
+        }
+    }
+
+    private static bool IsOrphanedTestDatabase(string name)
+    {
+        if (string.Equals(name, SharedDatabaseName, StringComparison.Ordinal)
+            || string.Equals(name, EndToEndDatabaseName, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        // Legacy Guid E2E DBs and any isolated/legacy soundtrail-test* DB.
+        return name.StartsWith("soundtrail-e2e-", StringComparison.Ordinal)
+            || name.StartsWith("soundtrail-test", StringComparison.Ordinal);
     }
 
     private static void EnsureDatabaseExists(IDocumentStore documentStore)
