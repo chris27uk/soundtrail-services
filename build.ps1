@@ -27,7 +27,7 @@ $env:NUGET_PACKAGES = $nugetPath
 [Environment]::SetEnvironmentVariable("NUGET_PACKAGES", $nugetPath, "Process")
 Write-Host "NuGet packages path: $nugetPath"
 
-The # Project paths
+# Project paths
 $SolutionPath = Join-Path $PSScriptRoot "Soundtrail.Services.slnx"
 $TestsPath = Join-Path $PSScriptRoot "tests/Soundtrail.Services.Tests/Soundtrail.Services.Tests.csproj"
 
