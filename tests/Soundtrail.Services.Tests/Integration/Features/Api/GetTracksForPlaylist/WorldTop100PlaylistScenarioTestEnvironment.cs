@@ -76,7 +76,7 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
 
         var commandBus = new CommandBusFake();
         var clock = new ClockFake();
-        var builder = WebApplication.CreateBuilder();
+        var builder = WebApplication.CreateBuilder().Quiet();
         builder.WebHost.UseTestServer();
 
         builder.Services.AddSingleton(commandBus);

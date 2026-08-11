@@ -179,7 +179,22 @@ Invoke-Stage "Run Tests" {
     }
 
     $env:TESTINGPLATFORM_TELEMETRY_OPTOUT = "1"
-    Exec "dotnet" $testArgs
+    # Keep host/framework chatter out of CI so the MTP summary stays visible.
+    # Dotted category names must use SetEnvironmentVariable (PowerShell $env: breaks on '.').
+    $env:Logging__LogLevel__Default = "Warning"
+    $env:Logging__LogLevel__Microsoft = "Warning"
+    $env:Logging__LogLevel__System = "Warning"
+    [Environment]::SetEnvironmentVariable("Logging__LogLevel__Microsoft.AspNetCore", "Warning", "Process")
+    [Environment]::SetEnvironmentVariable("Logging__LogLevel__Microsoft.Hosting.Lifetime", "Warning", "Process")
+
+    # Stream live (Exec buffers until exit and buries the summary under megabytes of host logs).
+    Write-Host "> dotnet $($testArgs -join ' ')" -ForegroundColor Cyan
+    & dotnet @testArgs
+    $testExitCode = $LASTEXITCODE
+    Write-TestRunSummary -TrxPath (Join-Path $OutReporting "tests.trx")
+    if ($testExitCode -ne 0) {
+        throw "Command failed with exit code ${testExitCode}: dotnet $($testArgs -join ' ')"
+    }
 }
 
 # === Build Summary ===
@@ -192,4 +207,5 @@ Invoke-Stage "Build Complete" {
     Write-Host "Configuration: $Configuration"
     Write-Host "Elapsed: $($StopWatch.Elapsed.ToString())"
     Write-Host "Test Results: $OutReporting"
+    Write-TestRunSummary -TrxPath (Join-Path $OutReporting "tests.trx")
 }

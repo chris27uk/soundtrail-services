@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
+using Microsoft.Extensions.Logging.Abstractions;
 using StackExchange.Redis;
 using Xunit.Sdk;
 
@@ -81,6 +82,7 @@ internal sealed class LocalRedisTestServer
                 var container = new ContainerBuilder()
                     .WithImage("redis:7-alpine")
                     .WithPortBinding(RedisPort, true)
+                    .WithLogger(NullLogger.Instance)
                     .WithWaitStrategy(Wait.ForUnixContainer().UntilInternalTcpPortIsAvailable(RedisPort))
                     .Build();
 

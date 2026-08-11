@@ -300,7 +300,7 @@ public sealed class EndToEndHostFixture : IAsyncLifetime, IAsyncDisposable
         builder.WebHost.UseTestServer();
         builder.Configuration.AddInMemoryCollection(configuration);
         builder.AddServiceDefaults();
-        return builder;
+        return builder.Quiet();
     }
 
     private static void RemoveRavenDatabaseHostedService(IServiceCollection services)

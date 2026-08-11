@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
+using Microsoft.Extensions.Logging.Abstractions;
 using Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
 using Xunit.Sdk;
 
@@ -88,6 +89,7 @@ internal sealed class LocalServiceBusEmulator : IAsyncDisposable
                     .WithResourceMapping(
                         new FileInfo(configPath),
                         new FileInfo("/etc/openservicebus/config.json"))
+                    .WithLogger(NullLogger.Instance)
                     .WithWaitStrategy(
                         Wait.ForUnixContainer()
                             .UntilInternalTcpPortIsAvailable(AmqpPort)

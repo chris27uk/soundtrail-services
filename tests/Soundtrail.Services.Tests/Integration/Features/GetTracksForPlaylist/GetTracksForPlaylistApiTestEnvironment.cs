@@ -182,7 +182,7 @@ internal sealed class GetTracksForPlaylistApiTestEnvironment : IAsyncDisposable
         var clock = new ClockFake(DateTimeOffset.UtcNow);
         var playlistId = PlaylistId.FromPlaylistName(playlistName);
 
-        var builder = WebApplication.CreateBuilder();
+        var builder = WebApplication.CreateBuilder().Quiet();
         builder.WebHost.UseTestServer();
         builder.Services.AddProblemDetails();
         builder.Services.ConfigureHttpJsonOptions(options =>

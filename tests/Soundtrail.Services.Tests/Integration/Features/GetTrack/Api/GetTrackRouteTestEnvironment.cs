@@ -4,6 +4,7 @@ using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Api.Features.Catalog.GetTrack.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetTrack.Contract;
+using Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.GetTrack.Api;
 
@@ -20,7 +21,7 @@ internal sealed class GetTrackRouteTestEnvironment : IDisposable
 
     public static GetTrackRouteTestEnvironment ForExistingTrack(string trackId)
     {
-        var builder = WebApplication.CreateBuilder();
+        var builder = WebApplication.CreateBuilder().Quiet();
         builder.WebHost.UseTestServer();
         builder.Services.AddSingleton<IApiHandler<GetTrackRequest, GetTrackResponse?>>(
             new GetTrackHandlerFake(trackId));
