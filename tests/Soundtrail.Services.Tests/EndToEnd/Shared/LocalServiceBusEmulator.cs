@@ -11,7 +11,7 @@ namespace Soundtrail.Services.Tests.EndToEnd.Shared;
 /// <summary>
 /// Process-wide Azure Service Bus for E2E.
 /// Prefers <c>SOUNDTRAIL_TEST_SERVICEBUS</c>, then a running local emulator (AppHost),
-/// otherwise starts Testcontainers (~10–20s cold).
+/// otherwise starts Testcontainers when allowed (~10–20s cold). Disabled in CI.
 /// </summary>
 internal sealed class LocalServiceBusEmulator : IAsyncDisposable
 {
@@ -64,6 +64,13 @@ internal sealed class LocalServiceBusEmulator : IAsyncDisposable
                     return fromLocal;
                 }
 
+                if (!TestInfrastructurePolicy.AllowTestcontainers)
+                {
+                    throw TestInfrastructurePolicy.MissingInfrastructure(
+                        "Azure Service Bus emulator",
+                        "SOUNDTRAIL_TEST_SERVICEBUS");
+                }
+
                 var configPath = ResolveConfigPath();
                 var container = new ServiceBusBuilder()
                     .WithAcceptLicenseAgreement(true)
@@ -75,7 +82,10 @@ internal sealed class LocalServiceBusEmulator : IAsyncDisposable
                 Volatile.Write(ref shared, started);
                 return started;
             }
-            catch (Exception exception) when (exception is not SkipException and not OperationCanceledException)
+            catch (Exception exception) when (
+                exception is not SkipException
+                and not OperationCanceledException
+                and not InvalidOperationException)
             {
                 throw TestInfrastructureException.Unavailable(
                     $"Azure Service Bus emulator could not be started locally: {exception.Message}");

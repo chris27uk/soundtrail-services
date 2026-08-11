@@ -117,8 +117,24 @@ internal static class DedicatedThreadTaskRunner
     {
         private readonly BlockingCollection<(SendOrPostCallback Callback, object? State)> queue = new();
 
-        public override void Post(SendOrPostCallback d, object? state) =>
-            this.queue.Add((d, state));
+        public override void Post(SendOrPostCallback d, object? state)
+        {
+            // Host shutdown (and late ASP.NET callbacks) can race Complete().
+            if (this.queue.IsAddingCompleted)
+            {
+                ThreadPool.QueueUserWorkItem(_ => d(state));
+                return;
+            }
+
+            try
+            {
+                this.queue.Add((d, state));
+            }
+            catch (InvalidOperationException)
+            {
+                ThreadPool.QueueUserWorkItem(_ => d(state));
+            }
+        }
 
         public override void Send(SendOrPostCallback d, object? state)
         {

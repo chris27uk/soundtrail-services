@@ -12,7 +12,7 @@ namespace Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
 /// <summary>
 /// Process-wide Redis for tests.
 /// Prefers <c>SOUNDTRAIL_TEST_REDIS</c>, then a running local instance (e.g. AppHost on 6379),
-/// otherwise starts Testcontainers (~2–4s cold).
+/// otherwise starts Testcontainers when allowed (~2–4s cold). Disabled in CI.
 /// </summary>
 internal sealed class LocalRedisTestServer
 {
@@ -70,6 +70,13 @@ internal sealed class LocalRedisTestServer
                     return fromLocal;
                 }
 
+                if (!TestInfrastructurePolicy.AllowTestcontainers)
+                {
+                    throw TestInfrastructurePolicy.MissingInfrastructure(
+                        "Redis",
+                        "SOUNDTRAIL_TEST_REDIS");
+                }
+
                 var container = new ContainerBuilder()
                     .WithImage("redis:7-alpine")
                     .WithPortBinding(RedisPort, true)
@@ -83,7 +90,10 @@ internal sealed class LocalRedisTestServer
                 Volatile.Write(ref shared, server);
                 return server;
             }
-            catch (Exception exception) when (exception is not SkipException and not OperationCanceledException)
+            catch (Exception exception) when (
+                exception is not SkipException
+                and not OperationCanceledException
+                and not InvalidOperationException)
             {
                 throw TestInfrastructureException.Unavailable(
                     $"Redis test container could not be started locally: {exception.Message}");

@@ -1,0 +1,65 @@
+# Pre-started Redis + Azure Service Bus emulator for CI.
+# The test SDK container joins this compose network and uses service DNS names.
+name: soundtrail-test-infra
+
+services:
+  redis:
+    image: redis:7-alpine
+    networks: [soundtrail-test]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Soundtrail_CI_Passw0rd!"
+    networks:
+      soundtrail-test:
+        aliases: [mssql]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'Soundtrail_CI_Passw0rd!' -Q 'SELECT 1' || exit 1"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  servicebus-emulator:
+    image: mcr.microsoft.com/azure-messaging/servicebus-emulator:1.1.2
+    depends_on:
+      mssql:
+        condition: service_healthy
+    volumes:
+      # start-test-infra.sh sets an absolute path; default works from repo root compose invocation.
+      - ${SOUNDTRAIL_SERVICEBUS_CONFIG:-../../Soundtrail.Services.AppHost/servicebus-emulator/Config.json}:/ServiceBus_Emulator/ConfigFiles/Config.json:ro
+    environment:
+      SQL_SERVER: mssql
+      MSSQL_SA_PASSWORD: "Soundtrail_CI_Passw0rd!"
+      ACCEPT_EULA: "Y"
+      SQL_WAIT_INTERVAL: "2"
+      EMULATOR_HTTP_PORT: "5300"
+    networks:
+      soundtrail-test:
+        aliases: [servicebus-emulator, sb-emulator]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "bash -c 'exec 3<>/dev/tcp/127.0.0.1/5672'"
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 15s
+
+networks:
+  soundtrail-test:
+    name: soundtrail-test
+    driver: bridge
