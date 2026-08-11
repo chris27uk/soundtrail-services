@@ -91,19 +91,12 @@ jobs:
           echo "InformationalVersion: ${{ steps.gitversion.outputs.informationalVersion }}"
           echo "MajorMinorPatch: ${{ steps.gitversion.outputs.majorMinorPatch }}"
 
-  # Each matrix leg gets a fresh runner. Undersized hosts soft-skip; a later leg builds.
-  # (gh run rerun cannot run while this workflow is still in progress.)
   ci:
-    name: Build ${{ needs.version.outputs.semVer }} (${{ matrix.attempt }}/8)
+    name: Build ${{ needs.version.outputs.semVer }}
     needs: version
+    # Private repos: ubuntu-latest is 2 vCPU (public is 4). See GitHub-hosted runners docs.
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    strategy:
-      # Undersized hosts soft-succeed (exit 0); a real build failure cancels further attempts.
-      fail-fast: true
-      max-parallel: 1
-      matrix:
-        attempt: [1, 2, 3, 4, 5, 6, 7, 8]
 
     env:
       NUGET_PACKAGES_HOST: ${{ github.workspace }}/.nuget/packages
@@ -111,44 +104,12 @@ jobs:
       GITVERSION_INFORMATIONALVERSION: ${{ needs.version.outputs.informationalVersion }}
 
     steps:
-      - name: Check whether a prior attempt already built
-        id: prior
-        continue-on-error: true
-        uses: actions/download-artifact@v7
-        with:
-          name: ci-build-ok
-          path: .ci-build-ok
-
-      - name: Decide whether to build on this runner
-        id: gate
-        run: |
-          set -euo pipefail
-          if [ -f .ci-build-ok/ok ]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "usable=false" >> "$GITHUB_OUTPUT"
-            echo "Prior attempt already produced a build; skipping."
-            exit 0
-          fi
-
-          cpus="$(nproc)"
-          echo "attempt=${{ matrix.attempt }}/8 host nproc=${cpus}"
-          echo "skip=false" >> "$GITHUB_OUTPUT"
-          if [ "$cpus" -lt 4 ]; then
-            echo "usable=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::Undersized runner (${cpus} vCPUs); soft-skipping so the next matrix attempt can land on a 4-vCPU host."
-            exit 0
-          fi
-
-          echo "usable=true" >> "$GITHUB_OUTPUT"
-
       - name: Checkout
-        if: steps.gate.outputs.usable == 'true'
         uses: actions/checkout@v7
         with:
           fetch-depth: 1
 
       - name: Resolve CI image
-        if: steps.gate.outputs.usable == 'true'
         id: ci-image
         run: |
           tag="$(sha256sum .github/docker/Dockerfile.ci | cut -c1-16)"
@@ -157,7 +118,6 @@ jobs:
           echo "CI image: ${image}"
 
       - name: Log in to GHCR
-        if: steps.gate.outputs.usable == 'true'
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
@@ -165,7 +125,6 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Pull CI image
-        if: steps.gate.outputs.usable == 'true'
         run: |
           image="${{ steps.ci-image.outputs.image }}"
           if docker pull "$image"; then
@@ -182,7 +141,6 @@ jobs:
           docker push "$image"
 
       - name: Cache NuGet packages
-        if: steps.gate.outputs.usable == 'true'
         uses: actions/cache@v6
         with:
           path: ${{ env.NUGET_PACKAGES_HOST }}
@@ -192,7 +150,6 @@ jobs:
 
       # Intermediate outputs only — bin holds Raven Embedded data (root-owned, unreadable to cache).
       - name: Cache MSBuild outputs
-        if: steps.gate.outputs.usable == 'true'
         uses: actions/cache@v6
         with:
           path: |
@@ -202,7 +159,6 @@ jobs:
             ${{ runner.os }}-msbuild-obj-${{ hashFiles('.github/docker/Dockerfile.ci', 'global.json', 'Directory.Build.props', '**/packages.lock.json', '**/packages.*.lock.json') }}-
 
       - name: Restore, Build and Test
-        if: steps.gate.outputs.usable == 'true'
         run: |
           docker run --rm \
             --volume "${{ github.workspace }}:/src" \
@@ -220,14 +176,14 @@ jobs:
 
       # Docker leaves root-owned trees; make obj cacheable and drop Raven runtime junk.
       - name: Fix workspace permissions for caches
-        if: always() && steps.gate.outputs.usable == 'true'
+        if: always()
         run: |
           sudo chown -R "$(id -u):$(id -g)" .
           find . -type d -name RavenDB -prune -exec rm -rf {} +
 
       # Single package for Release: version stamp + whatever TRX the build produced.
       - name: Prepare build package
-        if: success() && steps.gate.outputs.usable == 'true'
+        if: always()
         run: |
           mkdir -p package/reports
           if compgen -G "reports/*" > /dev/null; then
@@ -236,51 +192,18 @@ jobs:
           printf '%s\n' "$BUILD_VERSION" > package/version.txt
 
       - name: Upload build package
-        if: success() && steps.gate.outputs.usable == 'true'
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: build
           path: package/
 
-      - name: Mark attempt succeeded
-        if: success() && steps.gate.outputs.usable == 'true'
-        run: |
-          mkdir -p .ci-build-ok
-          echo ok > .ci-build-ok/ok
-
-      - name: Upload success marker
-        if: success() && steps.gate.outputs.usable == 'true'
-        uses: actions/upload-artifact@v7
-        with:
-          name: ci-build-ok
-          path: .ci-build-ok/
-
-  ci-ok:
-    name: Build gate
-    needs: ci
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Require a successful 4-vCPU build attempt
-        uses: actions/download-artifact@v7
-        with:
-          name: ci-build-ok
-          path: .ci-build-ok
-
-      - name: Confirm marker
-        run: |
-          if [ ! -f .ci-build-ok/ok ]; then
-            echo "::error::No CI attempt produced a build (likely never landed a 4-vCPU runner)."
-            exit 1
-          fi
-          echo "Build attempt succeeded."
-
   release:
     name: Release
-    needs: [version, ci-ok]
+    needs: [version, ci]
     # Keep a static check name for branch protection even when Build's display name includes SemVer.
     # Run after Version even if Build fails so TRX can still be published, then fail the job if Build did.
-    if: ${{ always() && !cancelled() && needs.version.result == 'success' && needs.ci-ok.result != 'cancelled' }}
+    if: ${{ always() && !cancelled() && needs.version.result == 'success' && needs.ci.result != 'cancelled' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -290,7 +213,6 @@ jobs:
           fetch-depth: 0
 
       - name: Download build package
-        continue-on-error: true
         uses: actions/download-artifact@v7
         with:
           name: build
@@ -307,7 +229,7 @@ jobs:
           fail-on-empty: false
 
       - name: Tag release version
-        if: needs.ci-ok.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: needs.ci.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           TAG: v${{ needs.version.outputs.majorMinorPatch }}
         run: |
@@ -323,7 +245,7 @@ jobs:
           echo "Created and pushed $TAG"
 
       - name: Require build success
-        if: needs.ci-ok.result != 'success'
+        if: needs.ci.result != 'success'
         run: |
-          echo "::error::Build did not succeed (result=${{ needs.ci-ok.result }})"
+          echo "::error::Build did not succeed (result=${{ needs.ci.result }})"
           exit 1
