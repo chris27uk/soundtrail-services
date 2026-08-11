@@ -155,6 +155,7 @@ jobs:
       - name: Restore, Build and Test
         run: |
           docker run --rm \
+            --network soundtrail-test \
             --volume "${{ github.workspace }}:/src" \
             --volume "${{ env.NUGET_PACKAGES_HOST }}:/root/.nuget/packages" \
             --volume /var/run/docker.sock:/var/run/docker.sock \
@@ -163,8 +164,8 @@ jobs:
             --env GITHUB_ACTIONS=true \
             --env GITVERSION_INFORMATIONALVERSION \
             --env SOUNDTRAIL_TEST_NO_TESTCONTAINERS=1 \
-            --env SOUNDTRAIL_TEST_REDIS=host.docker.internal:6379,abortConnect=false \
-            --env SOUNDTRAIL_TEST_SERVICEBUS="Endpoint=sb://host.docker.internal:5672;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true" \
+            --env SOUNDTRAIL_TEST_REDIS=redis:6379,abortConnect=false \
+            --env SOUNDTRAIL_TEST_SERVICEBUS="Endpoint=sb://servicebus-emulator;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true" \
             --env TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal \
             --env TESTCONTAINERS_RYUK_DISABLED=true \
             --workdir /src \

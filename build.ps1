@@ -27,10 +27,9 @@ $env:NUGET_PACKAGES = $nugetPath
 [Environment]::SetEnvironmentVariable("NUGET_PACKAGES", $nugetPath, "Process")
 Write-Host "NuGet packages path: $nugetPath"
 
-# Project paths — CI builds the test graph only (skips AppHost Aspire + MTP spike).
+The # Project paths
 $SolutionPath = Join-Path $PSScriptRoot "Soundtrail.Services.slnx"
 $TestsPath = Join-Path $PSScriptRoot "tests/Soundtrail.Services.Tests/Soundtrail.Services.Tests.csproj"
-$BuildProjectPath = if ($env:GITHUB_ACTIONS) { $TestsPath } else { $SolutionPath }
 
 # Output directories
 $OutReporting = Join-Path $OutputDir "reports"
@@ -83,7 +82,7 @@ if ($Restore) {
     Invoke-Stage "NuGet Package Restore" {
         $restoreArgs = @(
             "restore",
-            $BuildProjectPath,
+            $SolutionPath,
             "/p:Configuration=$Configuration",
             "--verbosity", "minimal"
         )
@@ -122,7 +121,7 @@ Invoke-Stage "Build Solution" {
     $versionProperties = Get-VersionBuildProperties -BuildVersion $Version
     Exec "dotnet" (@(
         "build",
-        $BuildProjectPath,
+        $SolutionPath,
         "/p:Configuration=$Configuration"
     ) + $versionProperties + @(
         "/maxcpucount:$MaxCpuCount",
