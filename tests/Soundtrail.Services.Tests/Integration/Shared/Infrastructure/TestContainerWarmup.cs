@@ -3,7 +3,7 @@ using Soundtrail.Services.Tests.EndToEnd.Shared;
 namespace Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
 
 /// <summary>
-/// Kicks off Service Bus emulator startup once Raven is up so container pull/start
+/// Kicks off OpenServiceBus startup once Raven is up so container pull/start
 /// overlaps the integration wave. Avoids Task.Run (thread-pool starvation delays it).
 /// </summary>
 internal static class TestContainerWarmup

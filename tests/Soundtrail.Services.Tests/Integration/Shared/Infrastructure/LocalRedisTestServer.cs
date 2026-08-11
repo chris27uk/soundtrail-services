@@ -12,7 +12,8 @@ namespace Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
 /// <summary>
 /// Process-wide Redis for tests.
 /// Prefers <c>SOUNDTRAIL_TEST_REDIS</c>, then a running local instance (e.g. AppHost on 6379),
-/// otherwise starts Testcontainers when allowed (~2–4s cold). Disabled in CI.
+/// otherwise starts Testcontainers when allowed (~1–2s cold). Opt out with
+/// <c>SOUNDTRAIL_TEST_NO_TESTCONTAINERS</c> and provide <c>SOUNDTRAIL_TEST_REDIS</c>.
 /// </summary>
 internal sealed class LocalRedisTestServer
 {

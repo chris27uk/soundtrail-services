@@ -2,7 +2,8 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
-using Testcontainers.ServiceBus;
+using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Containers;
 using Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
 using Xunit.Sdk;
 
@@ -10,13 +11,19 @@ namespace Soundtrail.Services.Tests.EndToEnd.Shared;
 
 /// <summary>
 /// Process-wide Azure Service Bus for E2E.
-/// Prefers <c>SOUNDTRAIL_TEST_SERVICEBUS</c>, then a running local emulator (AppHost),
-/// otherwise starts Testcontainers when allowed (~10–20s cold). Disabled in CI.
+/// Prefers <c>SOUNDTRAIL_TEST_SERVICEBUS</c>, then a running local emulator (AppHost or compose),
+/// otherwise starts OpenServiceBus via Testcontainers when allowed (~1s cold).
 /// </summary>
 internal sealed class LocalServiceBusEmulator : IAsyncDisposable
 {
+    private const string OpenServiceBusImage = "mauritsarissen/openservicebus:latest";
+
+    private const ushort AmqpPort = 5672;
+
+    private const ushort ManagementPort = 5300;
+
     private const string DevelopmentEmulatorConnectionStringFormat =
-        "Endpoint=sb://127.0.0.1:{0};SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true";
+        "Endpoint=sb://{0}:{1};SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true";
 
     private static readonly Regex AmqpPortPattern = new(
         @"(?:0\.0\.0\.0|127\.0\.0\.1|\[::\]):(\d+)->5672/tcp",
@@ -72,13 +79,30 @@ internal sealed class LocalServiceBusEmulator : IAsyncDisposable
                 }
 
                 var configPath = ResolveConfigPath();
-                var container = new ServiceBusBuilder()
-                    .WithAcceptLicenseAgreement(true)
-                    .WithConfig(configPath)
+                var container = new ContainerBuilder()
+                    .WithImage(OpenServiceBusImage)
+                    .WithPortBinding(AmqpPort, true)
+                    .WithPortBinding(ManagementPort, true)
+                    .WithEnvironment("OPENSERVICEBUS__STORAGE__MODE", "InMemory")
+                    .WithEnvironment("OPENSERVICEBUS_CONFIG", "/etc/openservicebus/config.json")
+                    .WithResourceMapping(
+                        new FileInfo(configPath),
+                        new FileInfo("/etc/openservicebus/config.json"))
+                    .WithWaitStrategy(
+                        Wait.ForUnixContainer()
+                            .UntilInternalTcpPortIsAvailable(AmqpPort)
+                            .UntilHttpRequestIsSucceeded(
+                                request => request.ForPort(ManagementPort).ForPath("/health")))
                     .Build();
 
                 await container.StartAsync(cancellationToken);
-                var started = new LocalServiceBusEmulator(container.GetConnectionString());
+                var amqpPort = container.GetMappedPublicPort(AmqpPort);
+                // Prefer loopback for host-run tests; Hostname is host.docker.internal in CI DinD.
+                var host = string.IsNullOrWhiteSpace(container.Hostname) || container.Hostname is "localhost"
+                    ? "127.0.0.1"
+                    : container.Hostname;
+                var connectionString = BuildDevelopmentConnectionString(host, amqpPort);
+                var started = new LocalServiceBusEmulator(connectionString);
                 Volatile.Write(ref shared, started);
                 return started;
             }
@@ -121,7 +145,7 @@ internal sealed class LocalServiceBusEmulator : IAsyncDisposable
                 continue;
             }
 
-            emulator = new LocalServiceBusEmulator(string.Format(DevelopmentEmulatorConnectionStringFormat, port));
+            emulator = new LocalServiceBusEmulator(BuildDevelopmentConnectionString("127.0.0.1", port));
             return true;
         }
 
@@ -189,7 +213,7 @@ internal sealed class LocalServiceBusEmulator : IAsyncDisposable
         var ports = new List<(int Priority, int Port)>();
         foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
-            if (line.IndexOf("servicebus-emulator", StringComparison.OrdinalIgnoreCase) < 0)
+            if (!LooksLikeServiceBusContainer(line))
             {
                 continue;
             }
@@ -223,6 +247,13 @@ internal sealed class LocalServiceBusEmulator : IAsyncDisposable
             return false;
         }
     }
+
+    private static bool LooksLikeServiceBusContainer(string dockerPsLine) =>
+        dockerPsLine.Contains("servicebus-emulator", StringComparison.OrdinalIgnoreCase)
+        || dockerPsLine.Contains("openservicebus", StringComparison.OrdinalIgnoreCase);
+
+    private static string BuildDevelopmentConnectionString(string host, int port) =>
+        string.Format(DevelopmentEmulatorConnectionStringFormat, host, port);
 
     private static string ResolveConfigPath()
     {

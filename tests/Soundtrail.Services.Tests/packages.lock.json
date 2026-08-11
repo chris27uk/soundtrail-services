@@ -48,16 +48,6 @@
           "SharpZipLib": "1.4.2"
         }
       },
-      "Testcontainers.ServiceBus": {
-        "type": "Direct",
-        "requested": "[4.8.1, )",
-        "resolved": "4.8.1",
-        "contentHash": "JKzCyawnZGlg8OmYxNTyCZ3xVxM5GtUkZxFF9XF2TdI7k2Qf6eB7ds660u72LEmc3Wry2HmYcKo5RcdhpCwfqQ==",
-        "dependencies": {
-          "Testcontainers": "4.8.1",
-          "Testcontainers.MsSql": "4.8.1"
-        }
-      },
       "WireMock.Net": {
         "type": "Direct",
         "requested": "[2.12.0, )",
@@ -1365,14 +1355,6 @@
         "type": "Transitive",
         "resolved": "6.0.1",
         "contentHash": "yliDgLh9S9Mcy5hBIdZmX6yphYIW3NH+3HN1kV1m7V1e0s7LNTw/tHNjJP4U9nSMEgl3w1TzYv/KA1Tg9NYy6w=="
-      },
-      "Testcontainers.MsSql": {
-        "type": "Transitive",
-        "resolved": "4.8.1",
-        "contentHash": "6uJdmEHc5fyd+RMSDQ2SrHt9eXfCjHtaqI5Nx/Wp+aRSb1ahCDB3N2n0d4Sjqo/tL7e2W7Ifh4X6IVFGHSF7hw==",
-        "dependencies": {
-          "Testcontainers": "4.8.1"
-        }
       },
       "TickerQ": {
         "type": "Transitive",

@@ -25,7 +25,6 @@
     <PackageReference Include="RavenDB.Client" Version="7.2.5" />
     <PackageReference Include="RavenDB.Embedded" Version="7.2.5" />
     <PackageReference Include="Testcontainers" Version="4.8.1" />
-    <PackageReference Include="Testcontainers.ServiceBus" Version="4.8.1" />
     <PackageReference Include="WireMock.Net" Version="2.12.0" />
     <PackageReference Include="xunit.v3.mtp-v2" Version="3.2.2" />
   </ItemGroup>
