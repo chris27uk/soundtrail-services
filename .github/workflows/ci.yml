@@ -148,19 +148,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-      # Intermediate outputs only — bin holds Raven Embedded data (root-owned, unreadable to cache).
-      - name: Cache MSBuild outputs
-        uses: actions/cache@v6
-        with:
-          path: |
-            **/obj
-          key: ${{ runner.os }}-msbuild-obj-${{ hashFiles('.github/docker/Dockerfile.ci', 'global.json', 'Directory.Build.props', '**/packages.lock.json', '**/packages.*.lock.json') }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-msbuild-obj-${{ hashFiles('.github/docker/Dockerfile.ci', 'global.json', 'Directory.Build.props', '**/packages.lock.json', '**/packages.*.lock.json') }}-
-
       - name: Restore, Build and Test
         run: |
-          # Stamp apps only on main — PRs stay unstamped so **/obj cache stays useful.
+          # Stamp apps only on main — PRs stay unstamped (faster; version only matters for ship).
           publish_args=()
           if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
             publish_args+=(-Publish)
@@ -180,8 +170,8 @@ jobs:
             "${{ steps.ci-image.outputs.image }}" \
             pwsh ./build.ps1 -Restore "${publish_args[@]}" -Configuration Release -Version "$BUILD_VERSION"
 
-      # Docker leaves root-owned trees; make obj cacheable and drop Raven runtime junk.
-      - name: Fix workspace permissions for caches
+      # Docker leaves root-owned trees; drop Raven runtime junk before packaging.
+      - name: Fix workspace permissions
         if: always()
         run: |
           sudo chown -R "$(id -u):$(id -g)" .

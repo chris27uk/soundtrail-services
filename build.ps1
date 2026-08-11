@@ -128,8 +128,8 @@ if ($Restore) {
 }
 
 function Get-CompileBuildProperties {
-    # Do not pass Version / InformationalVersion here — they regenerate AssemblyInfo and
-    # defeat incremental compile + the **/obj cache. Stamp those only on publish.
+    # Do not pass Version / InformationalVersion here — stamp those only on publish
+    # so compile stays stable and shippable apps get the real SemVer.
     return @(
         "/p:RestoreDuringBuild=false",
         "/p:IncludeSourceRevisionInInformationalVersion=false"
@@ -238,8 +238,7 @@ Invoke-Stage "Run Tests" {
 
 # === Publish (version-stamped apps) ===
 # Rebuilds each app with Version / InformationalVersion but reuses already-built
-# project references (BuildProjectReferences=false) so the unstamped compile graph
-# and **/obj cache stay mostly intact.
+# project references (BuildProjectReferences=false) so publish stays cheap.
 if ($Publish) {
     Invoke-Stage "Publish Apps" {
         $versionProperties = Get-PublishVersionProperties -BuildVersion $Version
