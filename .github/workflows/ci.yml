@@ -233,7 +233,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           echo "Re-queuing run ${{ github.run_id }} after undersized runner (attempt ${{ github.run_attempt }})"
-          gh run rerun "${{ github.run_id }}" --failed
+          gh run rerun "${{ github.run_id }}" --repo "${{ github.repository }}" --failed
 
   release:
     name: Release
