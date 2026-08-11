@@ -29,7 +29,7 @@ public sealed class WorkFeedbackChangedProjectsDiscoveryFeedbackTests
         var subject = environment.CreateDeferredHandler();
         var @event = WorkFeedbackChangedProjectorUnitTestEnvironment.CreateDeferred();
 
-        await subject.HandleAsync(@event);
+        await subject.HandleAsync(@event, TestContext.Current.CancellationToken);
 
         environment.StoreDiscoveryFeedbackPort.StoredEvent.Should().BeSameAs(@event);
     }
@@ -41,7 +41,7 @@ public sealed class WorkFeedbackChangedProjectsDiscoveryFeedbackTests
         var subject = environment.CreateRejectedHandler();
         var @event = WorkFeedbackChangedProjectorUnitTestEnvironment.CreateRejected();
 
-        await subject.HandleAsync(@event);
+        await subject.HandleAsync(@event, TestContext.Current.CancellationToken);
 
         environment.StoreDiscoveryFeedbackPort.StoredEvent.Should().BeSameAs(@event);
     }
@@ -53,7 +53,7 @@ public sealed class WorkFeedbackChangedProjectsDiscoveryFeedbackTests
         var subject = environment.CreateIgnoredHandler();
         var @event = WorkFeedbackChangedProjectorUnitTestEnvironment.CreateIgnored();
 
-        await subject.HandleAsync(@event);
+        await subject.HandleAsync(@event, TestContext.Current.CancellationToken);
 
         environment.StoreDiscoveryFeedbackPort.StoredEvent.Should().BeSameAs(@event);
     }
@@ -65,7 +65,7 @@ public sealed class WorkFeedbackChangedProjectsDiscoveryFeedbackTests
         var subject = environment.CreateAttemptFailedHandler();
         var @event = WorkFeedbackChangedProjectorUnitTestEnvironment.CreateAttemptFailed();
 
-        await subject.HandleAsync(@event);
+        await subject.HandleAsync(@event, TestContext.Current.CancellationToken);
 
         environment.StoreDiscoveryFeedbackPort.StoredEvent.Should().BeSameAs(@event);
     }

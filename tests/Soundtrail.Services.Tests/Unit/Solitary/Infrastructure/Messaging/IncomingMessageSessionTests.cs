@@ -185,7 +185,7 @@ public sealed class IncomingMessageSessionTests
         var decorator = new TelemetryHandlerDecorator<DomainMessage>(inner);
         var message = new DomainMessage();
 
-        await decorator.Handle(IncomingMessage<DomainMessage>.Create(message));
+        await decorator.Handle(IncomingMessage<DomainMessage>.Create(message), TestContext.Current.CancellationToken);
 
         inner.Invocations.Should().ContainSingle();
         activityProbe.LastStoppedActivity.Should().NotBeNull();

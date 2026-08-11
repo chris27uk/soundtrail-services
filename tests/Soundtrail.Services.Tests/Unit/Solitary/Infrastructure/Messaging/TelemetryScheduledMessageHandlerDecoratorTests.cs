@@ -14,7 +14,7 @@ public sealed class TelemetryScheduledMessageHandlerDecoratorTests
         using var probe = ActivityProbe.Start();
         var decorator = new TelemetryScheduledMessageHandlerDecorator<ImportKworbChartCommand>(new NoOpHandler());
 
-        await decorator.HandleAsync(new ImportKworbChartCommand(new DateTimeOffset(2026, 7, 19, 10, 23, 0, TimeSpan.Zero)));
+        await decorator.HandleAsync(new ImportKworbChartCommand(new DateTimeOffset(2026, 7, 19, 10, 23, 0, TimeSpan.Zero)), TestContext.Current.CancellationToken);
 
         probe.LastStoppedActivity.Should().NotBeNull();
         probe.LastStoppedActivity!.Events.Select(x => x.Name)

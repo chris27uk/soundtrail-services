@@ -18,7 +18,7 @@ public sealed class WorkRequestedProjectsAssessWorkTests
                 trustLevel: 100,
                 riskScore: 0,
                 requestedAt: new DateTimeOffset(2026, 7, 15, 8, 11, 0, TimeSpan.Zero),
-                correlationId: "correlation-1"));
+                correlationId: "correlation-1"), TestContext.Current.CancellationToken);
 
         var firstId = environment.CommandBus.SentMessages.Cast<AssessWorkMessage>().Single().Id.Value;
 
@@ -29,7 +29,7 @@ public sealed class WorkRequestedProjectsAssessWorkTests
                 trustLevel: 100,
                 riskScore: 0,
                 requestedAt: new DateTimeOffset(2026, 7, 15, 8, 11, 0, TimeSpan.Zero),
-                correlationId: "correlation-1"));
+                correlationId: "correlation-1"), TestContext.Current.CancellationToken);
 
         var secondId = environment.CommandBus.SentMessages.Cast<AssessWorkMessage>().Last().Id.Value;
 
@@ -47,7 +47,7 @@ public sealed class WorkRequestedProjectsAssessWorkTests
             WorkRequestedProjectorUnitTestEnvironment.CreateSearchCriteriaWorkRequested(
                 query: "Midnight Signals Aurora Lane (2024 Remake Radio Edit Extended Version Featuring Someone Else)",
                 searchType: SearchType.Track,
-                correlationId: "child_tracks_for_playlist:worldtop100:search:midnight-signals-aurora-lane-2024-remake-radio-edit-extended-version-featuring-someone-else"));
+                correlationId: "child_tracks_for_playlist:worldtop100:search:midnight-signals-aurora-lane-2024-remake-radio-edit-extended-version-featuring-someone-else"), TestContext.Current.CancellationToken);
 
         environment.CommandBus.SentMessages.Cast<AssessWorkMessage>().Single().Id.Value.Length.Should().BeLessThanOrEqualTo(128);
     }

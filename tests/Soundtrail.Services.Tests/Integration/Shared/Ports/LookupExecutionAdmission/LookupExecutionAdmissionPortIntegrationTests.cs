@@ -76,7 +76,7 @@ public sealed class LookupExecutionAdmissionPortIntegrationTests
         var second = environment.CreateRequest("msg-second");
 
         var acquired = await environment.Subject.TryAcquireAsync(first, CancellationToken.None);
-        await Task.Delay(TimeSpan.FromMilliseconds(1200));
+        await Task.Delay(TimeSpan.FromMilliseconds(1200), TestContext.Current.CancellationToken);
         var retried = await environment.Subject.TryAcquireAsync(first, CancellationToken.None);
         var distinct = await environment.Subject.TryAcquireAsync(second, CancellationToken.None);
 

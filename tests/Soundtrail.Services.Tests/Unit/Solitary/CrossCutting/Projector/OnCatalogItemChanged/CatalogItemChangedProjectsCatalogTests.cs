@@ -9,7 +9,7 @@ public sealed class CatalogItemChangedProjectsCatalogTests
         var subject = environment.CreateCatalogTrackChangedSubject();
         var trackId = TestTrackIds.Create("projected-playlist-track");
 
-        await subject.Handle(trackId);
+        await subject.Handle(trackId, TestContext.Current.CancellationToken);
 
         environment.StorePlaylistTracksReadModelPort.RepairedTrackId.Should().Be(trackId);
     }

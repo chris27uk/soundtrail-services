@@ -13,7 +13,7 @@ public sealed class PlaylistTracksRouteTests
         await using var environment = await GetTracksForPlaylistApiTestEnvironment.ForCatchingUpAsync();
 
         var response = await environment.Client.GetAsync(
-            $"/catalog/playlists/{environment.PlaylistId.Value}/tracks");
+            $"/catalog/playlists/{environment.PlaylistId.Value}/tracks", TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
@@ -37,9 +37,9 @@ public sealed class PlaylistTracksRouteTests
         await using var environment = await GetTracksForPlaylistApiTestEnvironment.ForLookupCompleteAsync();
 
         var response = await environment.Client.GetAsync(
-            $"/catalog/playlists/{environment.PlaylistId.Value}/tracks");
-        var body = await response.Content.ReadFromJsonAsync<GetTracksForPlaylistResponseDto>();
-        var raw = await response.Content.ReadAsStringAsync();
+            $"/catalog/playlists/{environment.PlaylistId.Value}/tracks", TestContext.Current.CancellationToken);
+        var body = await response.Content.ReadFromJsonAsync<GetTracksForPlaylistResponseDto>(TestContext.Current.CancellationToken);
+        var raw = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         body.Should().NotBeNull();
@@ -56,7 +56,7 @@ public sealed class PlaylistTracksRouteTests
         await using var environment = await GetTracksForPlaylistApiTestEnvironment.ForPortFailureAsync();
 
         var response = await environment.Client.GetAsync(
-            $"/catalog/playlists/{environment.PlaylistId.Value}/tracks");
+            $"/catalog/playlists/{environment.PlaylistId.Value}/tracks", TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
     }

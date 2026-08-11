@@ -18,7 +18,7 @@ public sealed class KnownCatalogItemRequestsWorkTests
         ];
         var subject = environment.CreateSubject();
 
-        await subject.Handle(OnKnownMusicDataRequestedHandlerUnitTestEnvironment.CreateKnownArtistRequest(priority: LookupPriorityBand.High));
+        await subject.Handle(OnKnownMusicDataRequestedHandlerUnitTestEnvironment.CreateKnownArtistRequest(priority: LookupPriorityBand.High), TestContext.Current.CancellationToken);
 
         environment.Repository.AppendedEvents.Should().BeEmpty();
     }
@@ -34,7 +34,7 @@ public sealed class KnownCatalogItemRequestsWorkTests
         ];
         var subject = environment.CreateSubject();
 
-        await subject.Handle(OnKnownMusicDataRequestedHandlerUnitTestEnvironment.CreateKnownArtistRequest(priority: LookupPriorityBand.High, trustLevel: 88, riskScore: 7, correlationId: "corr-new"));
+        await subject.Handle(OnKnownMusicDataRequestedHandlerUnitTestEnvironment.CreateKnownArtistRequest(priority: LookupPriorityBand.High, trustLevel: 88, riskScore: 7, correlationId: "corr-new"), TestContext.Current.CancellationToken);
 
         var raised = environment.Repository.AppendedEvents.Should().ContainSingle().Which.Should().BeOfType<WorkPriorityRaised>().Subject;
         raised.Target.Should().Be(target);
@@ -55,7 +55,7 @@ public sealed class KnownCatalogItemRequestsWorkTests
         ];
         var subject = environment.CreateSubject();
 
-        await subject.Handle(OnKnownMusicDataRequestedHandlerUnitTestEnvironment.CreateKnownArtistRequest());
+        await subject.Handle(OnKnownMusicDataRequestedHandlerUnitTestEnvironment.CreateKnownArtistRequest(), TestContext.Current.CancellationToken);
 
         environment.Repository.AppendedEvents.Should().BeEmpty();
     }

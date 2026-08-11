@@ -65,7 +65,7 @@ public sealed class ProjectionDispatchTelemetryTests
         var inner = new ProjectionHandlerSpy();
         var decorator = new TelemetryProjectionEventHandlerDecorator<WorkRequested>(inner);
 
-        await decorator.HandleAsync(CreateWorkRequested("corr-2"));
+        await decorator.HandleAsync(CreateWorkRequested("corr-2"), TestContext.Current.CancellationToken);
 
         inner.Calls.Should().Be(1);
         probe.LastStoppedActivity.Should().NotBeNull();
