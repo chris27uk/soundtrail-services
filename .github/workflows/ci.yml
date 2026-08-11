@@ -160,6 +160,12 @@ jobs:
 
       - name: Restore, Build and Test
         run: |
+          # Stamp apps only on main — PRs stay unstamped so **/obj cache stays useful.
+          publish_args=()
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+            publish_args+=(-Publish)
+          fi
+
           docker run --rm \
             --volume "${{ github.workspace }}:/src" \
             --volume "${{ env.NUGET_PACKAGES_HOST }}:/root/.nuget/packages" \
@@ -172,7 +178,7 @@ jobs:
             --env TESTCONTAINERS_RYUK_DISABLED=true \
             --workdir /src \
             "${{ steps.ci-image.outputs.image }}" \
-            pwsh ./build.ps1 -Restore -Publish -Configuration Release -Version "$BUILD_VERSION"
+            pwsh ./build.ps1 -Restore "${publish_args[@]}" -Configuration Release -Version "$BUILD_VERSION"
 
       # Docker leaves root-owned trees; make obj cacheable and drop Raven runtime junk.
       - name: Fix workspace permissions for caches
@@ -181,7 +187,7 @@ jobs:
           sudo chown -R "$(id -u):$(id -g)" .
           find . -type d -name RavenDB -prune -exec rm -rf {} +
 
-      # Single package for Release: version stamp + whatever TRX the build produced.
+      # Package: version + TRX (+ publish-versions.txt when main ran -Publish).
       - name: Prepare build package
         if: always()
         run: |
