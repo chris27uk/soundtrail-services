@@ -6,6 +6,7 @@ param(
     [string]$OutputDir = "$PSScriptRoot",
     [switch]$Restore,
     [switch]$Clean,
+    [switch]$Publish,
     [int]$MaxCpuCount = 0,  # 0 = use all available cores
     [string]$TestFilter = ""
 )
@@ -33,8 +34,20 @@ $TestsPath = Join-Path $PSScriptRoot "tests/Soundtrail.Services.Tests/Soundtrail
 # CI never runs AppHost; build the test project graph only (services + tests).
 $BuildPath = if ($env:GITHUB_ACTIONS) { $TestsPath } else { $SolutionPath }
 
+# Shippable apps (exclude AppHost / libraries / tests). Version is stamped only on publish.
+$PublishProjects = @(
+    "src/Soundtrail.Services.Api/Soundtrail.Services.Api.csproj",
+    "src/Soundtrail.Services.Enrichment.CatalogImport/Soundtrail.Services.Enrichment.CatalogImport.csproj",
+    "src/Soundtrail.Services.Enrichment.Orchestrator/Soundtrail.Services.Enrichment.Orchestrator.csproj",
+    "src/Soundtrail.Services.Enrichment.Scheduler/Soundtrail.Services.Enrichment.Scheduler.csproj",
+    "src/Soundtrail.Services.Enrichment.Worker/Soundtrail.Services.Enrichment.Worker.csproj",
+    "src/Soundtrail.Services.Projector/Soundtrail.Services.Projector.csproj"
+)
+
 # Output directories
 $OutReporting = Join-Path $OutputDir "reports"
+$OutPublish = Join-Path $OutputDir "artifacts/publish"
+$OutPackage = Join-Path $OutputDir "package"
 
 function Get-CiFastBuildProperties {
     if (-not $env:GITHUB_ACTIONS) {
@@ -114,15 +127,25 @@ if ($Restore) {
     }
 }
 
-function Get-VersionBuildProperties {
+function Get-CompileBuildProperties {
+    # Do not pass Version / InformationalVersion here — they regenerate AssemblyInfo and
+    # defeat incremental compile + the **/obj cache. Stamp those only on publish.
+    return @(
+        "/p:RestoreDuringBuild=false",
+        "/p:IncludeSourceRevisionInInformationalVersion=false"
+    ) + (Get-CiFastBuildProperties)
+}
+
+function Get-PublishVersionProperties {
     param(
         [string]$BuildVersion
     )
 
     $properties = @(
         "/p:Version=$BuildVersion",
-        # Belt-and-braces: never let MSBuild sneak a restore into compile.
-        "/p:RestoreDuringBuild=false"
+        "/p:RestoreDuringBuild=false",
+        # GitVersion already embeds the commit; don't append SourceRevisionId again.
+        "/p:IncludeSourceRevisionInInformationalVersion=false"
     )
 
     if (-not [string]::IsNullOrWhiteSpace($env:GITVERSION_INFORMATIONALVERSION)) {
@@ -134,13 +157,13 @@ function Get-VersionBuildProperties {
 
 # === Build ===
 Invoke-Stage "Build Solution" {
-    $versionProperties = Get-VersionBuildProperties -BuildVersion $Version
     Write-Host "Build target: $BuildPath"
+    Write-Host "Compile is unstamped (Version applied at publish only)"
     Exec "dotnet" (@(
         "build",
         $BuildPath,
         "/p:Configuration=$Configuration"
-    ) + $versionProperties + (Get-CiFastBuildProperties) + @(
+    ) + (Get-CompileBuildProperties) + @(
         "/maxcpucount:$MaxCpuCount",
         "--no-restore"
     ))
@@ -178,13 +201,12 @@ function ConvertTo-MtpTestFilterArgs {
 
 # One test run via Microsoft Testing Platform (xUnit v3 executable).
 Invoke-Stage "Run Tests" {
-    $versionProperties = Get-VersionBuildProperties -BuildVersion $Version
     $testArgs = @(
         "run", "--project", $TestsPath,
         "/p:Configuration=$Configuration",
         "--no-build",
         "--no-restore"
-    ) + $versionProperties + @(
+    ) + @(
         "--",
         "--report-xunit-trx",
         "--report-xunit-trx-filename", "tests.trx",
@@ -214,6 +236,58 @@ Invoke-Stage "Run Tests" {
     }
 }
 
+# === Publish (version-stamped apps) ===
+# Rebuilds each app with Version / InformationalVersion but reuses already-built
+# project references (BuildProjectReferences=false) so the unstamped compile graph
+# and **/obj cache stay mostly intact.
+if ($Publish) {
+    Invoke-Stage "Publish Apps" {
+        $versionProperties = Get-PublishVersionProperties -BuildVersion $Version
+        New-Item -ItemType Directory -Force -Path $OutPublish | Out-Null
+        New-Item -ItemType Directory -Force -Path $OutPackage | Out-Null
+
+        $versionManifest = [System.Collections.Generic.List[string]]::new()
+        $versionManifest.Add("Version=$Version")
+        if (-not [string]::IsNullOrWhiteSpace($env:GITVERSION_INFORMATIONALVERSION)) {
+            $versionManifest.Add("InformationalVersion=$($env:GITVERSION_INFORMATIONALVERSION)")
+        }
+
+        foreach ($relativeProject in $PublishProjects) {
+            $projectPath = Join-Path $PSScriptRoot $relativeProject
+            $projectName = [System.IO.Path]::GetFileNameWithoutExtension($relativeProject)
+            $appOut = Join-Path $OutPublish $projectName
+
+            Write-Host "Publishing $projectName -> $appOut"
+            Exec "dotnet" (@(
+                "publish",
+                $projectPath,
+                "/p:Configuration=$Configuration",
+                "--output", $appOut,
+                "/p:BuildProjectReferences=false"
+            ) + $versionProperties + (Get-CiFastBuildProperties) + @(
+                "/maxcpucount:$MaxCpuCount",
+                "--no-restore"
+            ))
+
+            $dllPath = Join-Path $appOut "$projectName.dll"
+            if (Test-Path $dllPath) {
+                $infoVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($dllPath).ProductVersion
+                $fileVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($dllPath).FileVersion
+                $versionManifest.Add("$projectName FileVersion=$fileVersion ProductVersion=$infoVersion")
+                Write-Host "  stamped: FileVersion=$fileVersion ProductVersion=$infoVersion"
+            }
+            else {
+                Write-Host "  warning: expected assembly not found at $dllPath"
+            }
+        }
+
+        $manifestPath = Join-Path $OutPackage "publish-versions.txt"
+        $versionManifest | Set-Content -Path $manifestPath -Encoding utf8
+        Write-Host "Published apps: $OutPublish"
+        Write-Host "Version manifest: $manifestPath"
+    }
+}
+
 # === Build Summary ===
 Invoke-Stage "Build Complete" {
     Write-Host "Build Summary" -ForegroundColor Cyan
@@ -224,5 +298,8 @@ Invoke-Stage "Build Complete" {
     Write-Host "Configuration: $Configuration"
     Write-Host "Elapsed: $($StopWatch.Elapsed.ToString())"
     Write-Host "Test Results: $OutReporting"
+    if ($Publish) {
+        Write-Host "Published Apps: $OutPublish"
+    }
     Write-TestRunSummary -TrxPath (Join-Path $OutReporting "tests.trx")
 }

@@ -46,6 +46,7 @@ x64/
 [Ii]dea/
 [Dd]ist/
 [Aa]rtifacts/
+package/
 reports/
 
 # Test / local runtime artifacts (Raven embedded, coverage, etc.)

@@ -172,7 +172,7 @@ jobs:
             --env TESTCONTAINERS_RYUK_DISABLED=true \
             --workdir /src \
             "${{ steps.ci-image.outputs.image }}" \
-            pwsh ./build.ps1 -Restore -Configuration Release -Version "$BUILD_VERSION"
+            pwsh ./build.ps1 -Restore -Publish -Configuration Release -Version "$BUILD_VERSION"
 
       # Docker leaves root-owned trees; make obj cacheable and drop Raven runtime junk.
       - name: Fix workspace permissions for caches
