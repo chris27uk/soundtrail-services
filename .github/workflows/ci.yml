@@ -17,6 +17,7 @@ permissions:
   packages: write
   checks: write
   pull-requests: write
+  actions: write
 
 jobs:
   version:
@@ -96,6 +97,8 @@ jobs:
     needs: version
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    outputs:
+      undersized_runner: ${{ steps.cpu.outputs.undersized }}
 
     env:
       NUGET_PACKAGES_HOST: ${{ github.workspace }}/.nuget/packages
@@ -103,6 +106,21 @@ jobs:
       GITVERSION_INFORMATIONALVERSION: ${{ needs.version.outputs.informationalVersion }}
 
     steps:
+      # Step retries stay on the same VM — fail fast and requeue the job for a new runner.
+      - name: Require 4-vCPU runner
+        id: cpu
+        run: |
+          set -euo pipefail
+          cpus="$(nproc)"
+          echo "Host nproc=${cpus} (run_attempt=${{ github.run_attempt }})"
+          echo "cpus=${cpus}" >> "$GITHUB_OUTPUT"
+          if [ "$cpus" -lt 4 ]; then
+            echo "undersized=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::Undersized runner (${cpus} vCPUs). Failing this attempt so the job can be re-queued onto a 4-vCPU host."
+            exit 1
+          fi
+          echo "undersized=false" >> "$GITHUB_OUTPUT"
+
       - name: Checkout
         uses: actions/checkout@v7
         with:
@@ -147,16 +165,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-      # Incremental MSBuild across commits: restore prior obj/bin, then compile only dirty projects.
+      # Intermediate outputs only — bin holds Raven Embedded data (root-owned, unreadable to cache).
       - name: Cache MSBuild outputs
         uses: actions/cache@v6
         with:
           path: |
-            **/bin
             **/obj
-          key: ${{ runner.os }}-msbuild-${{ hashFiles('.github/docker/Dockerfile.ci', 'global.json', 'Directory.Build.props', '**/packages.lock.json', '**/packages.*.lock.json') }}-${{ github.sha }}
+          key: ${{ runner.os }}-msbuild-obj-${{ hashFiles('.github/docker/Dockerfile.ci', 'global.json', 'Directory.Build.props', '**/packages.lock.json', '**/packages.*.lock.json') }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-msbuild-${{ hashFiles('.github/docker/Dockerfile.ci', 'global.json', 'Directory.Build.props', '**/packages.lock.json', '**/packages.*.lock.json') }}-
+            ${{ runner.os }}-msbuild-obj-${{ hashFiles('.github/docker/Dockerfile.ci', 'global.json', 'Directory.Build.props', '**/packages.lock.json', '**/packages.*.lock.json') }}-
 
       - name: Restore, Build and Test
         run: |
@@ -173,6 +190,13 @@ jobs:
             --workdir /src \
             "${{ steps.ci-image.outputs.image }}" \
             pwsh ./build.ps1 -Restore -Configuration Release -Version "$BUILD_VERSION"
+
+      # Docker leaves root-owned trees; make obj cacheable and drop Raven runtime junk.
+      - name: Fix workspace permissions for caches
+        if: always()
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" .
+          find . -type d -name RavenDB -prune -exec rm -rf {} +
 
       # Single package for Release: version stamp + whatever TRX the build produced.
       - name: Prepare build package
@@ -191,12 +215,38 @@ jobs:
           name: build
           path: package/
 
+  # A step retry would stay on the same VM. Re-running failed jobs assigns a new runner.
+  requeue-on-undersized-runner:
+    name: Requeue for 4-vCPU runner
+    needs: ci
+    if: >
+      always()
+      && !cancelled()
+      && needs.ci.result == 'failure'
+      && needs.ci.outputs.undersized_runner == 'true'
+      && github.run_attempt < 8
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Re-run failed jobs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Re-queuing run ${{ github.run_id }} after undersized runner (attempt ${{ github.run_attempt }})"
+          gh run rerun "${{ github.run_id }}" --failed
+
   release:
     name: Release
     needs: [version, ci]
     # Keep a static check name for branch protection even when Build's display name includes SemVer.
     # Run after Version even if Build fails so TRX can still be published, then fail the job if Build did.
-    if: ${{ always() && !cancelled() && needs.version.result == 'success' && needs.ci.result != 'cancelled' }}
+    # Skip while we are re-queuing for a larger runner (avoids noisy Release failures mid-retry).
+    if: >
+      always()
+      && !cancelled()
+      && needs.version.result == 'success'
+      && needs.ci.result != 'cancelled'
+      && needs.ci.outputs.undersized_runner != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
