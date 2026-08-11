@@ -1,11 +1,14 @@
 using Soundtrail.Adapters.Projection;
+using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.OnWorkCompleted;
 using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.OnWorkDeferred;
 using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.OnWorkFailed;
 using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.OnWorkIgnored;
 using Soundtrail.Services.Internal.Projector.Features.OnWorkFeedbackChanged.OnWorkRejected;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForPlaylist.Support;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
 namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Projector.OnWorkFeedbackChanged;
@@ -13,15 +16,22 @@ namespace Soundtrail.Services.Tests.Unit.Solitary.CrossCutting.Projector.OnWorkF
 internal sealed class WorkFeedbackChangedProjectorUnitTestEnvironment
 {
     private WorkFeedbackChangedProjectorUnitTestEnvironment(
-        StoreDiscoveryFeedbackPortFake storeDiscoveryFeedbackPort)
+        StoreDiscoveryFeedbackPortFake storeDiscoveryFeedbackPort,
+        StorePlaylistTracksReadModelPortFake storePlaylistTracksReadModelPort)
     {
         StoreDiscoveryFeedbackPort = storeDiscoveryFeedbackPort;
+        StorePlaylistTracksReadModelPort = storePlaylistTracksReadModelPort;
     }
 
     public StoreDiscoveryFeedbackPortFake StoreDiscoveryFeedbackPort { get; }
 
+    public StorePlaylistTracksReadModelPortFake StorePlaylistTracksReadModelPort { get; }
+
     public static WorkFeedbackChangedProjectorUnitTestEnvironment Create() =>
-        new(new StoreDiscoveryFeedbackPortFake());
+        new(new StoreDiscoveryFeedbackPortFake(), StorePlaylistTracksReadModelPortFake.ForRepairTracking());
+
+    public IProjectionEventHandler<WorkCompleted> CreateCompletedHandler() =>
+        new WorkCompletedEventHandler(StoreDiscoveryFeedbackPort, StorePlaylistTracksReadModelPort);
 
     public IProjectionEventHandler<WorkDeferred> CreateDeferredHandler() =>
         new WorkDeferredEventHandler(StoreDiscoveryFeedbackPort);
@@ -34,6 +44,27 @@ internal sealed class WorkFeedbackChangedProjectorUnitTestEnvironment
 
     public IProjectionEventHandler<WorkAttemptFailed> CreateAttemptFailedHandler() =>
         new WorkAttemptFailedEventHandler(StoreDiscoveryFeedbackPort);
+
+    public static WorkCompleted CreateStreamingLookupCompleted(string trackKey = "feedback-track-completed") =>
+        new(
+            Work.EnrichTrackStreamingLocation(TestTrackIds.Create(trackKey)),
+            LookupPriorityBand.High,
+            "Lookup completed.",
+            new DateTimeOffset(2026, 7, 19, 11, 5, 0, TimeSpan.Zero));
+
+    public static WorkCompleted CreateStreamingLookupExhausted(string trackKey = "feedback-track-exhausted") =>
+        new(
+            Work.EnrichTrackStreamingLocation(TestTrackIds.Create(trackKey)),
+            LookupPriorityBand.High,
+            "All lookup attempts exhausted.",
+            new DateTimeOffset(2026, 7, 19, 11, 5, 0, TimeSpan.Zero));
+
+    public static WorkCompleted CreatePlaylistLookupCompleted() =>
+        new(
+            Work.DiscoverPlaylistTracks(PlaylistId.FromPlaylistName("world_top_100")),
+            LookupPriorityBand.High,
+            "Lookup completed.",
+            new DateTimeOffset(2026, 7, 19, 11, 5, 0, TimeSpan.Zero));
 
     public static WorkDeferred CreateDeferred() =>
         new(
@@ -66,5 +97,4 @@ internal sealed class WorkFeedbackChangedProjectorUnitTestEnvironment
             Work.EnrichTrackStreamingLocation(TestTrackIds.Create("feedback-track-attempt-failed")),
             "Provider timeout",
             new DateTimeOffset(2026, 7, 19, 11, 3, 0, TimeSpan.Zero));
-
 }
