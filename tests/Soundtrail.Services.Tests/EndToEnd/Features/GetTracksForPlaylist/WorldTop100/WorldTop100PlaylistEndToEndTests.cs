@@ -8,7 +8,7 @@ public sealed class WorldTop100PlaylistEndToEndTests(EndToEndHostFixture fixture
 {
     // CI runs Testcontainers inside Docker-in-Docker; ASB + Raven subscriptions need headroom.
     private static readonly TimeSpan PollTimeout = TimeSpan.FromMinutes(3);
-    private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(500);
+    private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(100);
 
     [Fact]
     public async Task Given_An_Empty_Catalog_When_Requesting_WorldTop100_Then_Discovery_Completes_With_Fuzzy_Matched_Tracks()
@@ -71,7 +71,7 @@ public sealed class WorldTop100PlaylistEndToEndTests(EndToEndHostFixture fixture
                 return latest;
             }
 
-            await Task.Delay(PollInterval);
+            await Task.Delay(PollInterval, TestContext.Current.CancellationToken);
         }
 
         throw new TimeoutException(FormatTimeout(latest));

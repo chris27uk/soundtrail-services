@@ -23,11 +23,14 @@ internal static class TestInfrastructureWarmup
             // Fire-and-forget on the thread pool loses to aggressive parallelization.
             _ = Bootstrap.Value;
             EndToEndHostFixture.EnsureWarmupStarted();
+            // Prefer TestRunLifetime (assembly fixture) for ordered teardown before MTP's
+            // foreground-thread wait. ProcessExit is a last-ditch fallback only.
             AppDomain.CurrentDomain.ProcessExit += static (_, _) =>
             {
                 try
                 {
                     EndToEndHostFixture.ShutdownSharedAsync().GetAwaiter().GetResult();
+                    EmbeddedRavenTestServer.ShutdownAsync().AsTask().GetAwaiter().GetResult();
                 }
                 catch
                 {

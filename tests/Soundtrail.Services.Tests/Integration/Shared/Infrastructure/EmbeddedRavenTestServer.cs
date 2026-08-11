@@ -73,6 +73,36 @@ internal static class EmbeddedRavenTestServer
     public static void EnsureServerStarted() => _ = GetReadyServerUrl();
 
     /// <summary>
+    /// Stops the shared store and embedded server so MTP does not wait on leftover foreground threads.
+    /// </summary>
+    public static async ValueTask ShutdownAsync()
+    {
+        IDocumentStore? store;
+        lock (ServerSync)
+        {
+            store = sharedStore;
+            sharedStore = null;
+            serverUrl = null;
+        }
+
+        try
+        {
+            store?.Dispose();
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            await EmbeddedServer.Instance.StopServerAsync().ConfigureAwait(false);
+        }
+        catch
+        {
+        }
+    }
+
+    /// <summary>
     /// Unique key for entity/document ids so parallel tests sharing one DB do not collide.
     /// </summary>
     public static string NewIsolationKey() => Guid.NewGuid().ToString("N");

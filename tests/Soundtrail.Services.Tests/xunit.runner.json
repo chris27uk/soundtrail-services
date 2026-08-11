@@ -4,5 +4,5 @@
   "maxParallelThreads": -1,
   "parallelizeTestCollections": true,
   "shutdownAfterTestRun": true,
-  "shutdownForegroundThreadWaitSeconds": 2
+  "shutdownForegroundThreadWaitSeconds": 1
 }

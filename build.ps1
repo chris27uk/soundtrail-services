@@ -30,9 +30,25 @@ Write-Host "NuGet packages path: $nugetPath"
 # Project paths
 $SolutionPath = Join-Path $PSScriptRoot "Soundtrail.Services.slnx"
 $TestsPath = Join-Path $PSScriptRoot "tests/Soundtrail.Services.Tests/Soundtrail.Services.Tests.csproj"
+# CI never runs AppHost; build the test project graph only (services + tests).
+$BuildPath = if ($env:GITHUB_ACTIONS) { $TestsPath } else { $SolutionPath }
 
 # Output directories
 $OutReporting = Join-Path $OutputDir "reports"
+
+function Get-CiFastBuildProperties {
+    if (-not $env:GITHUB_ACTIONS) {
+        return @()
+    }
+
+    # Analyzers belong in the IDE / review, not every cold CI compile.
+    return @(
+        "/p:RunAnalyzersDuringBuild=false",
+        "/p:RunAnalyzers=false",
+        "/p:EnableNETAnalyzers=false",
+        "/p:GenerateDocumentationFile=false"
+    )
+}
 
 # === Ensure output directories exist ===
 Invoke-Stage "Ensure Output Directories Exist" {
@@ -82,10 +98,10 @@ if ($Restore) {
     Invoke-Stage "NuGet Package Restore" {
         $restoreArgs = @(
             "restore",
-            $SolutionPath,
+            $BuildPath,
             "/p:Configuration=$Configuration",
             "--verbosity", "minimal"
-        )
+        ) + (Get-CiFastBuildProperties)
 
         # CI must use committed lock files; local restore may update locks when packages change.
         # Do not pass /p:RestorePackagesWithLockFile=true here — Directory.Build.props enables it,
@@ -119,11 +135,12 @@ function Get-VersionBuildProperties {
 # === Build ===
 Invoke-Stage "Build Solution" {
     $versionProperties = Get-VersionBuildProperties -BuildVersion $Version
+    Write-Host "Build target: $BuildPath"
     Exec "dotnet" (@(
         "build",
-        $SolutionPath,
+        $BuildPath,
         "/p:Configuration=$Configuration"
-    ) + $versionProperties + @(
+    ) + $versionProperties + (Get-CiFastBuildProperties) + @(
         "/maxcpucount:$MaxCpuCount",
         "--no-restore"
     ))

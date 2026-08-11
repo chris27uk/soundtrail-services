@@ -4,6 +4,6 @@
     "parallelAlgorithm": "aggressive",
     "maxParallelThreads": "unlimited",
     "parallelizeTestCollections": true,
-    "shutdownForegroundThreadWaitSeconds": 2
+    "shutdownForegroundThreadWaitSeconds": 1
   }
 }

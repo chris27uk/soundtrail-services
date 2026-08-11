@@ -147,6 +147,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
+      # Incremental MSBuild across commits: restore prior obj/bin, then compile only dirty projects.
+      - name: Cache MSBuild outputs
+        uses: actions/cache@v6
+        with:
+          path: |
+            **/bin
+            **/obj
+          key: ${{ runner.os }}-msbuild-${{ hashFiles('.github/docker/Dockerfile.ci', 'global.json', 'Directory.Build.props', '**/packages.lock.json', '**/packages.*.lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-msbuild-${{ hashFiles('.github/docker/Dockerfile.ci', 'global.json', 'Directory.Build.props', '**/packages.lock.json', '**/packages.*.lock.json') }}-
+
       - name: Restore, Build and Test
         run: |
           docker run --rm \
