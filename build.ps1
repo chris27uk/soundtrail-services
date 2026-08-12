@@ -34,7 +34,8 @@ $TestsPath = Join-Path $PSScriptRoot "tests/Soundtrail.Services.Tests/Soundtrail
 # CI never runs AppHost; build the test project graph only (services + tests).
 $BuildPath = if ($env:GITHUB_ACTIONS) { $TestsPath } else { $SolutionPath }
 
-# Shippable apps (exclude AppHost / libraries / tests). Version is stamped only on publish.
+# Shippable apps (exclude AppHost / libraries / tests). Assembly versions stay pinned;
+# deploy sets OTEL_SERVICE_VERSION from GitVersion / package manifest.
 $PublishProjects = @(
     "src/Soundtrail.Services.Api/Soundtrail.Services.Api.csproj",
     "src/Soundtrail.Services.Enrichment.CatalogImport/Soundtrail.Services.Enrichment.CatalogImport.csproj",
@@ -128,37 +129,16 @@ if ($Restore) {
 }
 
 function Get-CompileBuildProperties {
-    # Do not pass Version / InformationalVersion here — stamp those only on publish
-    # so compile stays stable and shippable apps get the real SemVer.
+    # Version metadata is pinned in Directory.Build.props. Runtime SemVer is OTEL_SERVICE_VERSION.
     return @(
-        "/p:RestoreDuringBuild=false",
-        "/p:IncludeSourceRevisionInInformationalVersion=false"
+        "/p:RestoreDuringBuild=false"
     ) + (Get-CiFastBuildProperties)
-}
-
-function Get-PublishVersionProperties {
-    param(
-        [string]$BuildVersion
-    )
-
-    $properties = @(
-        "/p:Version=$BuildVersion",
-        "/p:RestoreDuringBuild=false",
-        # GitVersion already embeds the commit; don't append SourceRevisionId again.
-        "/p:IncludeSourceRevisionInInformationalVersion=false"
-    )
-
-    if (-not [string]::IsNullOrWhiteSpace($env:GITVERSION_INFORMATIONALVERSION)) {
-        $properties += "/p:InformationalVersion=$($env:GITVERSION_INFORMATIONALVERSION)"
-    }
-
-    return $properties
 }
 
 # === Build ===
 Invoke-Stage "Build Solution" {
     Write-Host "Build target: $BuildPath"
-    Write-Host "Compile is unstamped (Version applied at publish only)"
+    Write-Host "Compile uses pinned assembly versions (runtime SemVer via OTEL_SERVICE_VERSION)"
     Exec "dotnet" (@(
         "build",
         $BuildPath,
@@ -236,20 +216,27 @@ Invoke-Stage "Run Tests" {
     }
 }
 
-# === Publish (version-stamped apps) ===
-# Rebuilds each app with Version / InformationalVersion but reuses already-built
-# project references (BuildProjectReferences=false) so publish stays cheap.
+# === Publish apps (packaging only; assembly versions stay pinned) ===
+# Deploy must set OTEL_SERVICE_VERSION from package/version.txt (or GitVersion InformationalVersion).
 if ($Publish) {
     Invoke-Stage "Publish Apps" {
-        $versionProperties = Get-PublishVersionProperties -BuildVersion $Version
         New-Item -ItemType Directory -Force -Path $OutPublish | Out-Null
         New-Item -ItemType Directory -Force -Path $OutPackage | Out-Null
 
+        $otelServiceVersion = if (-not [string]::IsNullOrWhiteSpace($env:GITVERSION_INFORMATIONALVERSION)) {
+            $env:GITVERSION_INFORMATIONALVERSION
+        }
+        elseif (-not [string]::IsNullOrWhiteSpace($env:OTEL_SERVICE_VERSION)) {
+            $env:OTEL_SERVICE_VERSION
+        }
+        else {
+            $Version
+        }
+
         $versionManifest = [System.Collections.Generic.List[string]]::new()
         $versionManifest.Add("Version=$Version")
-        if (-not [string]::IsNullOrWhiteSpace($env:GITVERSION_INFORMATIONALVERSION)) {
-            $versionManifest.Add("InformationalVersion=$($env:GITVERSION_INFORMATIONALVERSION)")
-        }
+        $versionManifest.Add("OTEL_SERVICE_VERSION=$otelServiceVersion")
+        $versionManifest.Add("# Deploy: set OTEL_SERVICE_VERSION on each service process from this value.")
 
         foreach ($relativeProject in $PublishProjects) {
             $projectPath = Join-Path $PSScriptRoot $relativeProject
@@ -263,17 +250,15 @@ if ($Publish) {
                 "/p:Configuration=$Configuration",
                 "--output", $appOut,
                 "/p:BuildProjectReferences=false"
-            ) + $versionProperties + (Get-CiFastBuildProperties) + @(
+            ) + (Get-CompileBuildProperties) + @(
                 "/maxcpucount:$MaxCpuCount",
                 "--no-restore"
             ))
 
             $dllPath = Join-Path $appOut "$projectName.dll"
             if (Test-Path $dllPath) {
-                $infoVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($dllPath).ProductVersion
-                $fileVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($dllPath).FileVersion
-                $versionManifest.Add("$projectName FileVersion=$fileVersion ProductVersion=$infoVersion")
-                Write-Host "  stamped: FileVersion=$fileVersion ProductVersion=$infoVersion"
+                $versionManifest.Add("$projectName published")
+                Write-Host "  published (assembly versions pinned; runtime SemVer via OTEL_SERVICE_VERSION=$otelServiceVersion)"
             }
             else {
                 Write-Host "  warning: expected assembly not found at $dllPath"
@@ -282,8 +267,11 @@ if ($Publish) {
 
         $manifestPath = Join-Path $OutPackage "publish-versions.txt"
         $versionManifest | Set-Content -Path $manifestPath -Encoding utf8
+        # Same value deploy should inject as OTEL_SERVICE_VERSION.
+        Set-Content -Path (Join-Path $OutPackage "version.txt") -Value $Version -Encoding utf8
         Write-Host "Published apps: $OutPublish"
         Write-Host "Version manifest: $manifestPath"
+        Write-Host "OTEL_SERVICE_VERSION (deploy): $otelServiceVersion"
     }
 }
 

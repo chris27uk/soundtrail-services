@@ -102,6 +102,8 @@ jobs:
       NUGET_PACKAGES_HOST: ${{ github.workspace }}/.nuget/packages
       BUILD_VERSION: ${{ needs.version.outputs.semVer }}
       GITVERSION_INFORMATIONALVERSION: ${{ needs.version.outputs.informationalVersion }}
+      # Runtime / App Insights identity; assemblies stay pinned at 1.0.0 for incremental compile.
+      OTEL_SERVICE_VERSION: ${{ needs.version.outputs.informationalVersion }}
 
     steps:
       - name: Checkout
@@ -164,6 +166,7 @@ jobs:
             --env NUGET_PACKAGES=/root/.nuget/packages \
             --env GITHUB_ACTIONS=true \
             --env GITVERSION_INFORMATIONALVERSION \
+            --env OTEL_SERVICE_VERSION \
             --env TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal \
             --env TESTCONTAINERS_RYUK_DISABLED=true \
             --workdir /src \

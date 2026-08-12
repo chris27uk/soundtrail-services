@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
 namespace Soundtrail.Services.ServiceDefaults;
@@ -54,6 +55,9 @@ public static class Extensions
         });
 
         builder.Services.AddOpenTelemetry()
+            .ConfigureResource(resource => resource.AddService(
+                serviceName: builder.Environment.ApplicationName,
+                serviceVersion: ServiceVersion.Resolve()))
             .WithMetrics(metrics =>
             {
                 metrics.AddAspNetCoreInstrumentation()
