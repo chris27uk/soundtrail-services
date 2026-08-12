@@ -125,14 +125,6 @@ if ($Restore) {
         }
 
         Exec "dotnet" $restoreArgs
-
-        # CI: drop unused RID payloads / .nupkg copies (RavenDB.Embedded dominates).
-        if ($env:GITHUB_ACTIONS) {
-            Invoke-Stage "Prune NuGet CI Cache" {
-                $prune = Join-Path $PSScriptRoot "scripts/Prune-NuGetCiCache.ps1"
-                & $prune -PackagesPath $nugetPath
-            }
-        }
     }
 }
 

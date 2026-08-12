@@ -142,15 +142,13 @@ jobs:
             .github/docker
           docker push "$image"
 
-      # v2: pruned linux-x64 cache (no multi-RID Raven / .nupkg ballast). Do not
-      # fall back to nuget-v1 keys — those are ~1GB compressed and re-bloat the tree.
       - name: Cache NuGet packages
         uses: actions/cache@v6
         with:
           path: ${{ env.NUGET_PACKAGES_HOST }}
-          key: ${{ runner.os }}-nuget-v2-${{ hashFiles('**/packages.lock.json', '**/*.csproj', '.github/docker/Dockerfile.ci') }}
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj', '.github/docker/Dockerfile.ci') }}
           restore-keys: |
-            ${{ runner.os }}-nuget-v2-
+            ${{ runner.os }}-nuget-
 
       - name: Restore, Build and Test
         run: |
