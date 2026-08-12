@@ -99,13 +99,38 @@ flowchart TB
 
 ## Developer build
 
-Use the same PowerShell make script as CI. Pin the .NET SDK with [`global.json`](global.json) (`rollForward: disable`).
+Use the same PowerShell make script and container image as CI for consistent restore/build/test behaviour.
 
 ### Prerequisites
 
-- .NET SDK **exactly** the version in [`global.json`](global.json)
-- PowerShell 7+ (`pwsh`)
-- Docker (integration / end-to-end Testcontainers: Redis, Azure Service Bus emulator)
+- Docker
+- PowerShell 7+ (`pwsh`) if running the script on the host
+- .NET SDK matching [`global.json`](global.json) if running outside the container
+
+### Consistent build (container — preferred)
+
+```bash
+# Optional local image; CI pulls a prebuilt GHCR image tagged by Dockerfile hash.
+docker build -t soundtrail-services-ci:local -f .github/docker/Dockerfile.ci .github/docker
+
+docker run --rm \
+  -v "$PWD:/src" \
+  -w /src \
+  soundtrail-services-ci:local \
+  pwsh ./build.ps1 -Restore
+
+docker run --rm \
+  -v "$PWD:/src" \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  --add-host=host.docker.internal:host-gateway \
+  -e TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal \
+  -e TESTCONTAINERS_RYUK_DISABLED=true \
+  -w /src \
+  soundtrail-services-ci:local \
+  pwsh ./build.ps1
+```
+
+The Docker socket mount is required so integration and end-to-end tests can start Testcontainers (Redis, Azure Service Bus emulator).
 
 ### Host build
 
@@ -124,7 +149,7 @@ Useful switches:
 ./build.ps1 -Configuration Debug
 ```
 
-Default CI path restores, builds, then runs the full test pack (unit + integration + end-to-end) and writes a TRX report under `reports/`.
+Default CI path restores, builds, then runs the full test pack in one `dotnet test` (unit + integration + end-to-end) and writes a TRX report under `reports/`.
 
 End-to-end tests start RavenDB Embedded in-process, WireMock in-process, and Azure Service Bus emulator + Redis via Testcontainers. Docker must be running; you do not need to start compose yourself. Queue names are fixed in code (`ServiceBusQueues`); configure only `ServiceBus:ConnectionString`.
 
@@ -135,7 +160,7 @@ dotnet test tests/Soundtrail.Services.Tests/Soundtrail.Services.Tests.csproj \
 
 ### CI
 
-GitHub Actions installs the SDK from [`global.json`](global.json) via `actions/setup-dotnet`, verifies `dotnet --version` matches exactly, then runs [`build.ps1 -Restore`](build.ps1) on the runner (host Docker for Testcontainers). See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+GitHub Actions pulls a prebuilt CI image from GHCR tagged by the Dockerfile hash (pinned .NET SDK + PowerShell + Docker CLI). If that tag is missing, CI builds and pushes it once; Dockerfile changes are also published by [`.github/workflows/ci-image.yml`](.github/workflows/ci-image.yml). The Build job then runs a single container invoke of [`build.ps1 -Restore`](build.ps1). See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 The PR check is the workflow job **Build \<SemVer\>** (plus a **Test Results** annotation on pull requests). To block merges until it passes, in GitHub go to **Settings → Rules → Rulesets** (or **Branches → Branch protection**) for `main` and require that Build status check.
 

@@ -14,6 +14,7 @@ concurrency:
 
 permissions:
   contents: write
+  packages: write
   checks: write
   pull-requests: write
 
@@ -98,13 +99,11 @@ jobs:
     timeout-minutes: 45
 
     env:
-      NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+      NUGET_PACKAGES_HOST: ${{ github.workspace }}/.nuget/packages
       BUILD_VERSION: ${{ needs.version.outputs.semVer }}
       GITVERSION_INFORMATIONALVERSION: ${{ needs.version.outputs.informationalVersion }}
       # Runtime / App Insights identity; assemblies stay pinned at 1.0.0 for incremental compile.
       OTEL_SERVICE_VERSION: ${{ needs.version.outputs.informationalVersion }}
-      # Host Docker socket (no DinD); Ryuk not needed on ephemeral runners.
-      TESTCONTAINERS_RYUK_DISABLED: "true"
 
     steps:
       - name: Checkout
@@ -112,47 +111,76 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v5
-        with:
-          global-json-file: global.json
-
-      - name: Verify .NET SDK
+      - name: Resolve CI image
+        id: ci-image
         run: |
-          set -euo pipefail
-          expected="$(jq -r '.sdk.version' global.json)"
-          actual="$(dotnet --version)"
-          echo "Expected SDK: ${expected}"
-          echo "Actual SDK:   ${actual}"
-          if [[ "$actual" != "$expected" ]]; then
-            echo "::error::SDK mismatch (global.json rollForward=disable requires exact ${expected})"
-            dotnet --info
-            exit 1
-          fi
-          dotnet --info
+          tag="$(sha256sum .github/docker/Dockerfile.ci | cut -c1-16)"
+          image="ghcr.io/${{ github.repository_owner }}/soundtrail-services-ci:${tag}"
+          echo "image=${image}" >> "$GITHUB_OUTPUT"
+          echo "CI image: ${image}"
 
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull CI image
+        run: |
+          image="${{ steps.ci-image.outputs.image }}"
+          if docker pull "$image"; then
+            echo "Pulled $image"
+            exit 0
+          fi
+
+          echo "Image not in GHCR; building and publishing $image"
+          docker build \
+            --platform linux/amd64 \
+            --file .github/docker/Dockerfile.ci \
+            --tag "$image" \
+            .github/docker
+          docker push "$image"
+
+      # v2: pruned linux-x64 cache (no multi-RID Raven / .nupkg ballast). Do not
+      # fall back to nuget-v1 keys — those are ~1GB compressed and re-bloat the tree.
       - name: Cache NuGet packages
         uses: actions/cache@v6
         with:
-          path: ${{ env.NUGET_PACKAGES }}
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj', 'global.json') }}
+          path: ${{ env.NUGET_PACKAGES_HOST }}
+          key: ${{ runner.os }}-nuget-v2-${{ hashFiles('**/packages.lock.json', '**/*.csproj', '.github/docker/Dockerfile.ci') }}
           restore-keys: |
-            ${{ runner.os }}-nuget-
+            ${{ runner.os }}-nuget-v2-
 
       - name: Restore, Build and Test
-        shell: pwsh
         run: |
-          $publishArgs = @()
-          if ($env:GITHUB_EVENT_NAME -eq 'push' -and $env:GITHUB_REF -eq 'refs/heads/main') {
-            $publishArgs += '-Publish'
-          }
+          # Stamp apps only on main — PRs stay unstamped (faster; version only matters for ship).
+          publish_args=()
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+            publish_args+=(-Publish)
+          fi
 
-          & ./build.ps1 -Restore @publishArgs -Configuration Release -Version $env:BUILD_VERSION
+          docker run --rm \
+            --volume "${{ github.workspace }}:/src" \
+            --volume "${{ env.NUGET_PACKAGES_HOST }}:/root/.nuget/packages" \
+            --volume /var/run/docker.sock:/var/run/docker.sock \
+            --add-host=host.docker.internal:host-gateway \
+            --env NUGET_PACKAGES=/root/.nuget/packages \
+            --env GITHUB_ACTIONS=true \
+            --env GITVERSION_INFORMATIONALVERSION \
+            --env OTEL_SERVICE_VERSION \
+            --env TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal \
+            --env TESTCONTAINERS_RYUK_DISABLED=true \
+            --workdir /src \
+            "${{ steps.ci-image.outputs.image }}" \
+            pwsh ./build.ps1 -Restore "${publish_args[@]}" -Configuration Release -Version "$BUILD_VERSION"
 
-      # Embedded Raven leaves runtime trees under bin/; drop before packaging.
-      - name: Clean RavenDB runtime data
+      # Docker leaves root-owned trees; drop Raven runtime junk before packaging.
+      - name: Fix workspace permissions
         if: always()
-        run: find . -type d -name RavenDB -prune -exec rm -rf {} +
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" .
+          find . -type d -name RavenDB -prune -exec rm -rf {} +
 
       # Package: version + TRX (+ publish-versions.txt when main ran -Publish).
       - name: Prepare build package

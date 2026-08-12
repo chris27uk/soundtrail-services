@@ -1,0 +1,2 @@
+# Dockerfile.ci does not COPY the repo; keep the build context empty.
+*
