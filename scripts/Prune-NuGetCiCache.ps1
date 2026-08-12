@@ -31,11 +31,15 @@ if (-not (Test-Path -LiteralPath $PackagesPath)) {
 }
 
 $resolvedPackages = (Resolve-Path -LiteralPath $PackagesPath).Path
-$userCache = Join-Path $HOME '.nuget/packages'
-if ((Test-Path -LiteralPath $userCache) -and -not $Force) {
-    $resolvedUser = (Resolve-Path -LiteralPath $userCache).Path
-    if ($resolvedPackages -eq $resolvedUser) {
-        throw "Refusing to prune the user NuGet cache at $resolvedUser. Use a CI packages path or pass -Force."
+# Protect a developer's machine cache. In GitHub Actions the job uses
+# NUGET_PACKAGES under $HOME (e.g. /root/.nuget/packages in the CI image) on purpose.
+if (-not $Force -and -not $env:GITHUB_ACTIONS) {
+    $userCache = Join-Path $HOME '.nuget/packages'
+    if (Test-Path -LiteralPath $userCache) {
+        $resolvedUser = (Resolve-Path -LiteralPath $userCache).Path
+        if ($resolvedPackages -eq $resolvedUser) {
+            throw "Refusing to prune the user NuGet cache at $resolvedUser. Use a CI packages path or pass -Force."
+        }
     }
 }
 
