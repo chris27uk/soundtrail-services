@@ -1,0 +1,69 @@
+# CI sidecars for the published testhost. Local default remains Embedded + Testcontainers.
+# Usage: docker compose -f docker-compose.ci.yml up -d redis openservicebus ravendb
+
+name: soundtrail-ci
+
+services:
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  openservicebus:
+    image: mauritsarissen/openservicebus:latest
+    environment:
+      OPENSERVICEBUS__STORAGE__MODE: InMemory
+      OPENSERVICEBUS_CONFIG: /etc/openservicebus/config.json
+    volumes:
+      - ./Soundtrail.Services.AppHost/servicebus-emulator/Config.json:/etc/openservicebus/config.json:ro
+    ports:
+      - "5672:5672"
+      - "5300:5300"
+
+  ravendb:
+    # Pin to client 7.2.5. Spike: Embedded nupkg ~890MB vs this image ~378MB compressed (linux-only).
+    image: ravendb/ravendb:7.2.5-ubuntu.24.04-x64
+    environment:
+      RAVEN_Setup_Mode: None
+      RAVEN_License_Eula_Accepted: "true"
+      RAVEN_Security_UnsecuredAccessAllowed: PrivateNetwork
+      RAVEN_ServerUrl: http://0.0.0.0:8080
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "/usr/lib/ravendb/scripts/healthcheck.sh"]
+      interval: 2s
+      timeout: 5s
+      retries: 40
+      start_period: 15s
+
+  testhost:
+    image: soundtrail-testhost:ci
+    depends_on:
+      redis:
+        condition: service_healthy
+      ravendb:
+        condition: service_healthy
+      openservicebus:
+        condition: service_started
+    environment:
+      SOUNDTRAIL_TEST_NO_TESTCONTAINERS: "true"
+      SOUNDTRAIL_TEST_REDIS: "redis:6379,abortConnect=false"
+      SOUNDTRAIL_TEST_SERVICEBUS: "Endpoint=sb://openservicebus:5672;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true"
+      SOUNDTRAIL_TEST_RAVEN: "http://ravendb:8080"
+      GITVERSION_INFORMATIONALVERSION: "${GITVERSION_INFORMATIONALVERSION:-}"
+      OTEL_SERVICE_VERSION: "${OTEL_SERVICE_VERSION:-}"
+    volumes:
+      - ./reports:/reports
+    command:
+      - --report-xunit-trx
+      - --report-xunit-trx-filename
+      - tests.trx
+      - --results-directory
+      - /reports
