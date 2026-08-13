@@ -60,7 +60,9 @@ function Get-CiFastBuildProperties {
         "/p:RunAnalyzersDuringBuild=false",
         "/p:RunAnalyzers=false",
         "/p:EnableNETAnalyzers=false",
-        "/p:GenerateDocumentationFile=false"
+        "/p:GenerateDocumentationFile=false",
+        "/p:IsTransformWebConfigInHostBuild=false",
+        "/p:UseSharedCompilation=true"
     )
 }
 
@@ -145,6 +147,7 @@ Invoke-Stage "Build Solution" {
         "/p:Configuration=$Configuration"
     ) + (Get-CompileBuildProperties) + @(
         "/maxcpucount:$MaxCpuCount",
+        "--verbosity", "q",
         "--no-restore"
     ))
 }
@@ -252,6 +255,7 @@ if ($Publish) {
                 "/p:BuildProjectReferences=false"
             ) + (Get-CompileBuildProperties) + @(
                 "/maxcpucount:$MaxCpuCount",
+                "--verbosity", "q",
                 "--no-restore"
             ))
 

@@ -10,5 +10,10 @@
     <InformationalVersion>1.0.0</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Deterministic>true</Deterministic>
+
+    <!-- Skip XML-doc generation and IIS web.config transform during compile. -->
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <IsTransformWebConfigInHostBuild>false</IsTransformWebConfigInHostBuild>
+    <UseSharedCompilation>true</UseSharedCompilation>
   </PropertyGroup>
 </Project>
