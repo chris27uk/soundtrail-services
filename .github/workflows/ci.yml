@@ -130,26 +130,13 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p reports
-          docker compose -f docker-compose.ci.yml up -d redis openservicebus ravendb
-
-          echo "Waiting for Redis, OpenServiceBus, RavenDB..."
-          for _ in $(seq 1 60); do
-            redis_ok=0
-            bus_ok=0
-            raven_ok=0
-            docker compose -f docker-compose.ci.yml exec -T redis redis-cli ping >/dev/null 2>&1 && redis_ok=1
-            curl -fsS http://127.0.0.1:5300/health >/dev/null 2>&1 && bus_ok=1
-            curl -fsS http://127.0.0.1:8080/setup/alive >/dev/null 2>&1 && raven_ok=1
-            if [[ "$redis_ok" == 1 && "$bus_ok" == 1 && "$raven_ok" == 1 ]]; then
-              echo "Dependencies ready."
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "::error::Timed out waiting for test dependencies (redis=$redis_ok bus=$bus_ok raven=$raven_ok)"
+          # Use compose healthchecks (Raven's is /usr/lib/ravendb/scripts/healthcheck.sh).
+          # Host curl to /setup/alive is not a 7.2 probe and timed out while the container was already healthy.
+          docker compose -f docker-compose.ci.yml up -d --wait --wait-timeout 120 redis openservicebus ravendb
+          # OpenServiceBus has no image healthcheck; confirm management HTTP before testhost starts.
+          curl -fsS --retry 20 --retry-delay 1 --retry-all-errors http://127.0.0.1:5300/health >/dev/null
+          echo "Dependencies ready."
           docker compose -f docker-compose.ci.yml ps
-          docker compose -f docker-compose.ci.yml logs --no-color | tail -n 200
-          exit 1
 
       - name: Run tests
         run: |
