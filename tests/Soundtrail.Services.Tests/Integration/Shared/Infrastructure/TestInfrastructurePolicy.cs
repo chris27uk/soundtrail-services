@@ -4,10 +4,13 @@ namespace Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
 /// Redis/ASB default to OpenServiceBus + Redis via Testcontainers (~1s cold start each).
 /// Opt out with <see cref="DisableTestcontainersEnvironmentVariable"/> and provide env vars
 /// or a running local instance (AppHost, compose, etc.).
+/// Raven defaults to Embedded locally; set <see cref="RavenUrlEnvironmentVariable"/> to use a server.
 /// </summary>
 internal static class TestInfrastructurePolicy
 {
     public const string DisableTestcontainersEnvironmentVariable = "SOUNDTRAIL_TEST_NO_TESTCONTAINERS";
+
+    public const string RavenUrlEnvironmentVariable = "SOUNDTRAIL_TEST_RAVEN";
 
     /// <summary>
     /// When false, Redis/ASB must come from env or an already-running local instance.

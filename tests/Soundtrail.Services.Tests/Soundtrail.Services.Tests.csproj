@@ -8,6 +8,12 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+    <!-- Referenced apps each ship appsettings.json; publish flattens to one folder. -->
+    <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
+    <!-- Local default: Embedded. CI compose sets false and uses packages.ci.lock.json. -->
+    <UseEmbeddedRaven Condition="'$(UseEmbeddedRaven)' == ''">true</UseEmbeddedRaven>
+    <DefineConstants Condition="'$(UseEmbeddedRaven)' != 'false'">$(DefineConstants);USE_EMBEDDED_RAVEN</DefineConstants>
+    <NuGetLockFilePath Condition="'$(UseEmbeddedRaven)' == 'false'">packages.ci.lock.json</NuGetLockFilePath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,7 +29,7 @@
     <PackageReference Include="FluentAssertions" Version="8.10.0" />
     <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="10.0.0" />
     <PackageReference Include="RavenDB.Client" Version="7.2.5" />
-    <PackageReference Include="RavenDB.Embedded" Version="7.2.5" />
+    <PackageReference Include="RavenDB.Embedded" Version="7.2.5" Condition="'$(UseEmbeddedRaven)' != 'false'" />
     <PackageReference Include="Testcontainers" Version="4.8.1" />
     <PackageReference Include="WireMock.Net" Version="2.12.0" />
     <PackageReference Include="xunit.v3.mtp-v2" Version="4.0.0-pre.154" />

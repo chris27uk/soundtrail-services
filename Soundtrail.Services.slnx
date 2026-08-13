@@ -6,8 +6,11 @@
   </Configurations>
   <Folder Name="/ 0-build/">
     <File Path=".github/workflows/ci.yml" />
-    <File Path=".github\docker\Dockerfile.ci" />
+    <File Path="Dockerfile.ci" />
+    <File Path="docker-compose.ci.yml" />
+    <File Path=".dockerignore" />
     <File Path="build.ps1" />
+    <File Path="global.json" />
   </Folder>
   <Folder Name="/ 0-build/Scripts/">
     <File Path="scripts/Functions.psm1" />

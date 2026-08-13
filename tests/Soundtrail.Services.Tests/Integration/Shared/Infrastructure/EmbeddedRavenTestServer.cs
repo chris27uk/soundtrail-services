@@ -5,7 +5,9 @@ using Raven.Client.Exceptions;
 using Raven.Client.Exceptions.Database;
 using Raven.Client.ServerWide;
 using Raven.Client.ServerWide.Operations;
+#if USE_EMBEDDED_RAVEN
 using Raven.Embedded;
+#endif
 
 namespace Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
 
@@ -22,6 +24,7 @@ internal static class EmbeddedRavenTestServer
     private static readonly object ServerSync = new();
     private static string? serverUrl;
     private static IDocumentStore? sharedStore;
+    private static bool usesExternalServer;
 
     /// <summary>
     /// Returns the shared document store against the shared embedded Raven database.
@@ -93,6 +96,12 @@ internal static class EmbeddedRavenTestServer
         {
         }
 
+        if (usesExternalServer)
+        {
+            return;
+        }
+
+#if USE_EMBEDDED_RAVEN
         try
         {
             await EmbeddedServer.Instance.StopServerAsync().ConfigureAwait(false);
@@ -100,6 +109,7 @@ internal static class EmbeddedRavenTestServer
         catch
         {
         }
+#endif
     }
 
     /// <summary>
@@ -225,17 +235,34 @@ internal static class EmbeddedRavenTestServer
                 return serverUrl;
             }
 
-            try
+            string url;
+            var fromEnvironment = Environment.GetEnvironmentVariable(
+                TestInfrastructurePolicy.RavenUrlEnvironmentVariable);
+            if (!string.IsNullOrWhiteSpace(fromEnvironment))
             {
-                EmbeddedServer.Instance.StartServer();
+                url = fromEnvironment.Trim().TrimEnd('/');
+                usesExternalServer = true;
             }
-            catch (InvalidOperationException exception)
-                when (exception.Message.Contains("already started", StringComparison.OrdinalIgnoreCase))
+            else
             {
-            }
+#if USE_EMBEDDED_RAVEN
+                try
+                {
+                    EmbeddedServer.Instance.StartServer();
+                }
+                catch (InvalidOperationException exception)
+                    when (exception.Message.Contains("already started", StringComparison.OrdinalIgnoreCase))
+                {
+                }
 
-            var serverUri = EmbeddedServer.Instance.GetServerUriAsync().GetAwaiter().GetResult();
-            var url = serverUri.AbsoluteUri.TrimEnd('/');
+                var serverUri = EmbeddedServer.Instance.GetServerUriAsync().GetAwaiter().GetResult();
+                url = serverUri.AbsoluteUri.TrimEnd('/');
+#else
+                throw TestInfrastructurePolicy.MissingInfrastructure(
+                    "RavenDB",
+                    TestInfrastructurePolicy.RavenUrlEnvironmentVariable);
+#endif
+            }
 
             // Embedded persists under bin/.../RavenDB across testhost runs. Shared Lazy E2E
             // never disposes its store, and older Guid-named DBs left subscriptions that
