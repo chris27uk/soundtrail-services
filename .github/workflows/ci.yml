@@ -119,8 +119,8 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: /tmp/sidecar-images
-          # v3: sidecars.tar + tooling.tar (BuildKit + aspnet) for bootstrap / no testhost --load.
-          key: docker-sidecars-v3-${{ hashFiles('docker-compose.ci.yml') }}
+          # v4: save by tag/digest (not ID); sidecars.tar includes aspnet; tooling.tar is BuildKit only.
+          key: docker-sidecars-v4-${{ hashFiles('docker-compose.ci.yml') }}
 
       - name: Start test dependencies
         run: |
@@ -195,7 +195,7 @@ jobs:
             sidecar_size=$(stat -c%s "$sidecar")
             tooling_size=$(stat -c%s "$tooling")
             echo "sidecar tar bytes=$sidecar_size tooling tar bytes=$tooling_size"
-            if (( sidecar_size >= 10000000 && tooling_size >= 1000000 )); then
+            if (( sidecar_size >= 10000000 && tooling_size >= 100000 )); then
               echo "cache=true" >> "$GITHUB_OUTPUT"
             else
               echo "sidecar/tooling tar too small to cache; removing"
@@ -213,7 +213,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: /tmp/sidecar-images
-          key: docker-sidecars-v3-${{ hashFiles('docker-compose.ci.yml') }}
+          key: docker-sidecars-v4-${{ hashFiles('docker-compose.ci.yml') }}
 
       # Package: version + TRX (+ published apps on main).
       - name: Prepare build package

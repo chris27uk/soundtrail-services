@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Sync load/pull BuildKit + aspnet before setup-buildx (avoids Hub pull during bootstrap).
+# Sync load/pull BuildKit before setup-buildx (avoids Hub pull during bootstrap).
+# Aspnet lives in sidecars.tar and is loaded with Redis/OSB/Raven in the background.
 set -euo pipefail
 
 # shellcheck source=ci-image-refs.sh
@@ -24,7 +25,7 @@ ensure_image() {
 
 if [[ -f "$tar_path" ]]; then
   tar_size=$(stat -c%s "$tar_path" 2>/dev/null || stat -f%z "$tar_path")
-  if (( tar_size >= 1000000 )); then
+  if (( tar_size >= 100000 )); then
     echo "Loading CI tooling images from $tar_path ($tar_size bytes)"
     if ! docker load -i "$tar_path"; then
       echo "Tooling tar was unusable; pulling instead."
@@ -37,4 +38,3 @@ if [[ -f "$tar_path" ]]; then
 fi
 
 ensure_image "$CI_BUILDKIT_IMAGE"
-ensure_image "$CI_ASPNET_IMAGE"

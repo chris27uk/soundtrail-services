@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
-# Load/pull Redis/OSB/Raven, then bring sidecars up.
-# BuildKit + aspnet are loaded separately (scripts/ci-load-tooling-images.sh) before Buildx.
+# Load/pull Redis/OSB/Raven (+ aspnet for testhost), then bring sidecars up.
+# BuildKit is loaded separately (scripts/ci-load-tooling-images.sh) before Buildx.
 # docker save runs after tests (see ci.yml) so it does not contend with HttpClient.
 set -euo pipefail
+
+# shellcheck source=ci-image-refs.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ci-image-refs.sh"
 
 compose=(docker compose -f docker-compose.ci.yml)
 tar_path="${SIDECAR_IMAGE_TAR:-/tmp/sidecar-images/sidecars.tar}"
@@ -30,8 +33,15 @@ if [[ -f "$tar_path" ]]; then
   fi
 fi
 if [[ "$tar_ok" -ne 1 ]]; then
-  echo "Pulling sidecar images"
-  "${compose[@]}" pull redis openservicebus ravendb
+  echo "Pulling sidecar + aspnet images"
+  docker pull "$CI_REDIS_IMAGE"
+  docker pull "$CI_OPENSERVICEBUS_IMAGE"
+  docker pull "$CI_RAVENDB_IMAGE"
+  docker pull "$CI_ASPNET_IMAGE"
+elif ! docker image inspect "$CI_ASPNET_IMAGE" >/dev/null 2>&1; then
+  # Older caches saved by ID only (no tags) or without aspnet — fill the gap.
+  echo "Aspnet tag missing after cache load; pulling $CI_ASPNET_IMAGE"
+  docker pull "$CI_ASPNET_IMAGE"
 fi
 
 echo "Starting sidecars"
