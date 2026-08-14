@@ -11,7 +11,9 @@ public sealed class MusicbrainzBrowseFailureTests
 
         var action = () => environment.AlbumsPort.ReadAsync(environment.ArtistId, CancellationToken.None);
 
-        await action.Should().ThrowAsync<HttpRequestException>();
+        // HttpClient.Timeout surfaces as TaskCanceledException; a refused connect is HttpRequestException.
+        await action.Should().ThrowAsync<Exception>()
+            .Where(ex => ex is HttpRequestException or TaskCanceledException);
     }
 
     [Fact]

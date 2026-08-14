@@ -171,8 +171,23 @@ jobs:
           while [[ ! -f /tmp/sidecars.done && ! -f /tmp/sidecars.failed && $SECONDS -lt $deadline ]]; do
             sleep 1
           done
-          docker compose -f docker-compose.ci.yml down -v --remove-orphans || true
           tar=/tmp/sidecar-images/sidecars.tar
+          mkdir -p /tmp/sidecar-images
+          # Save after tests so docker save does not contend with the testhost.
+          if [[ ! -f "$tar" ]]; then
+            echo "Saving sidecar images for cache"
+            set +e
+            mapfile -t ids < <(docker compose -f docker-compose.ci.yml images -q redis openservicebus ravendb | awk 'NF && !seen[$0]++')
+            if (( ${#ids[@]} >= 1 )) && docker save "${ids[@]}" -o "${tar}.partial"; then
+              mv "${tar}.partial" "$tar"
+              echo "Wrote sidecar tar ($(stat -c%s "$tar") bytes)"
+            else
+              echo "docker save failed; sidecar cache will be skipped this run."
+              rm -f "${tar}.partial"
+            fi
+            set -e
+          fi
+          docker compose -f docker-compose.ci.yml down -v --remove-orphans || true
           if [[ -f "$tar" ]]; then
             size=$(stat -c%s "$tar")
             echo "sidecar tar bytes=$size"

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Pull/load CI sidecars, wait until healthy, then optionally docker-save for GHA cache.
-# Designed to run in the background while the testhost image builds.
+# Pull/load CI sidecars and wait until healthy while testhost builds.
+# docker save runs after tests (see ci.yml) so it does not contend with HttpClient.
 set -euo pipefail
 
 compose=(docker compose -f docker-compose.ci.yml)
@@ -43,21 +43,4 @@ curl -fsS --retry 20 --retry-delay 1 --retry-all-errors http://127.0.0.1:5300/he
 echo "Dependencies ready."
 "${compose[@]}" ps
 touch /tmp/sidecars.ready
-
-# Best-effort: do not fail the job if cache tar cannot be written.
-# config --images includes testhost, which is still building when this runs.
-if [[ ! -f "$tar_path" ]]; then
-  echo "Saving sidecar images for cache"
-  set +e
-  mapfile -t ids < <("${compose[@]}" images -q redis openservicebus ravendb | awk 'NF && !seen[$0]++')
-  if (( ${#ids[@]} >= 1 )) && docker save "${ids[@]}" -o "${tar_path}.partial"; then
-    mv "${tar_path}.partial" "$tar_path"
-    echo "Wrote sidecar tar ($(stat -c%s "$tar_path") bytes)"
-  else
-    echo "docker save failed; sidecar cache will be skipped this run."
-    rm -f "${tar_path}.partial"
-  fi
-  set -e
-fi
-
 touch /tmp/sidecars.done
