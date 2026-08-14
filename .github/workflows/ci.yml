@@ -3,6 +3,8 @@ name: CI
 on:
   push:
     branches: [main]
+    # Push e.g. ci-cache/1 from a branch to seed image + BuildKit caches without merging.
+    tags: ['ci-cache/**']
   pull_request:
     branches: [main]
 
@@ -147,7 +149,8 @@ jobs:
           target: publish-testhost-out
           outputs: type=local,dest=testhost
           cache-from: type=gha,scope=soundtrail-testhost
-          cache-to: type=gha,mode=max,scope=soundtrail-testhost
+          # Write BuildKit layer cache only from ci-cache/* tags (test seed); PRs restore only.
+          cache-to: ${{ startsWith(github.ref, 'refs/tags/ci-cache/') && 'type=gha,mode=max,scope=soundtrail-testhost' || '' }}
 
       - name: Wait for test dependencies
         run: bash scripts/ci-wait-sidecars.sh
@@ -172,6 +175,8 @@ jobs:
         if: always()
         env:
           CACHE_HIT: ${{ steps.sidecar-cache.outputs.cache-hit }}
+          # Sidecar/tooling image cache is seeded only from ci-cache/* tags; PRs restore but never save.
+          SEED_IMAGE_CACHE: ${{ startsWith(github.ref, 'refs/tags/ci-cache/') && 'true' || 'false' }}
         run: |
           set -euo pipefail
           echo "cache=false" >> "$GITHUB_OUTPUT"
@@ -179,11 +184,13 @@ jobs:
           while [[ ! -f /tmp/sidecars.done && ! -f /tmp/sidecars.failed && $SECONDS -lt $deadline ]]; do
             sleep 1
           done
-          bash scripts/ci-save-sidecar-images.sh
+          if [[ "$SEED_IMAGE_CACHE" == "true" && "$CACHE_HIT" != "true" ]]; then
+            bash scripts/ci-save-sidecar-images.sh
+          fi
           docker compose -f docker-compose.ci.yml down -v --remove-orphans || true
           sidecar=/tmp/sidecar-images/sidecars.tar
           tooling=/tmp/sidecar-images/tooling.tar
-          if [[ "$CACHE_HIT" != "true" && -f "$sidecar" && -f "$tooling" ]]; then
+          if [[ "$SEED_IMAGE_CACHE" == "true" && "$CACHE_HIT" != "true" && -f "$sidecar" && -f "$tooling" ]]; then
             sidecar_size=$(stat -c%s "$sidecar")
             tooling_size=$(stat -c%s "$tooling")
             echo "sidecar tar bytes=$sidecar_size tooling tar bytes=$tooling_size"
@@ -196,7 +203,11 @@ jobs:
           fi
 
       - name: Save sidecar image cache
-        if: always() && steps.sidecar-cache.outputs.cache-hit != 'true' && steps.stop-sidecars.outputs.cache == 'true'
+        if: >
+          always()
+          && startsWith(github.ref, 'refs/tags/ci-cache/')
+          && steps.sidecar-cache.outputs.cache-hit != 'true'
+          && steps.stop-sidecars.outputs.cache == 'true'
         continue-on-error: true
         uses: actions/cache/save@v4
         with:
