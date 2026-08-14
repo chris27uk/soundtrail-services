@@ -112,6 +112,21 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Cache sidecar images
+        uses: actions/cache@v4
+        with:
+          path: /tmp/sidecar-images
+          key: docker-sidecars-${{ hashFiles('docker-compose.ci.yml') }}
+
+      - name: Start test dependencies
+        run: |
+          set -euo pipefail
+          mkdir -p reports /tmp/sidecar-images
+          # Overlap Raven/OSB/Redis pull+health with testhost buildx load.
+          nohup bash scripts/ci-start-sidecars.sh >/tmp/sidecars.log 2>&1 &
+          echo $! > /tmp/sidecars.pid
+          disown || true
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -126,17 +141,8 @@ jobs:
           cache-from: type=gha,scope=soundtrail-testhost
           cache-to: type=gha,mode=max,scope=soundtrail-testhost
 
-      - name: Start test dependencies
-        run: |
-          set -euo pipefail
-          mkdir -p reports
-          # Use compose healthchecks (Raven's is /usr/lib/ravendb/scripts/healthcheck.sh).
-          # Host curl to /setup/alive is not a 7.2 probe and timed out while the container was already healthy.
-          docker compose -f docker-compose.ci.yml up -d --wait --wait-timeout 120 redis openservicebus ravendb
-          # OpenServiceBus has no image healthcheck; confirm management HTTP before testhost starts.
-          curl -fsS --retry 20 --retry-delay 1 --retry-all-errors http://127.0.0.1:5300/health >/dev/null
-          echo "Dependencies ready."
-          docker compose -f docker-compose.ci.yml ps
+      - name: Wait for test dependencies
+        run: bash scripts/ci-wait-sidecars.sh
 
       - name: Run tests
         run: |
@@ -155,7 +161,14 @@ jobs:
 
       - name: Stop test dependencies
         if: always()
-        run: docker compose -f docker-compose.ci.yml down -v --remove-orphans || true
+        run: |
+          set -euo pipefail
+          # Let docker save finish so the sidecar image cache post-step can upload.
+          deadline=$((SECONDS + 60))
+          while [[ ! -f /tmp/sidecars.done && ! -f /tmp/sidecars.failed && $SECONDS -lt $deadline ]]; do
+            sleep 1
+          done
+          docker compose -f docker-compose.ci.yml down -v --remove-orphans || true
 
       # Package: version + TRX (+ published apps on main).
       - name: Prepare build package

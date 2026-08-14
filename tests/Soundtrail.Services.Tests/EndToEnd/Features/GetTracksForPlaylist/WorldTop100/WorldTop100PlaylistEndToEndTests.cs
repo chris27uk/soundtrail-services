@@ -1,4 +1,6 @@
 using System.Net.Http.Json;
+using Soundtrail.Contracts.Persistence;
+using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Adapters;
 
 namespace Soundtrail.Services.Tests.EndToEnd.Features.GetTracksForPlaylist.WorldTop100;
@@ -6,9 +8,12 @@ namespace Soundtrail.Services.Tests.EndToEnd.Features.GetTracksForPlaylist.World
 [Collection(nameof(EndToEndHostCollection))]
 public sealed class WorldTop100PlaylistEndToEndTests(EndToEndHostFixture fixture)
 {
-    // CI runs Testcontainers inside Docker-in-Docker; ASB + Raven subscriptions need headroom.
+    // HTTP GET also publishes RequestKnownMusicData; polling the API floods the bus on 2-vCPU CI.
+    // Wait on the Raven read model, then one GET to assert the HTTP contract.
     private static readonly TimeSpan PollTimeout = TimeSpan.FromMinutes(3);
-    private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(100);
+    private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(50);
+    private static readonly string PlaylistDocumentId =
+        CatalogPlaylistTracksRecordDto.GetDocumentId(PlaylistId.FromPlaylistName("world_top_100").Value);
 
     [Fact]
     public async Task Given_An_Empty_Catalog_When_Requesting_WorldTop100_Then_Discovery_Completes_With_Fuzzy_Matched_Tracks()
@@ -60,21 +65,47 @@ public sealed class WorldTop100PlaylistEndToEndTests(EndToEndHostFixture fixture
 
     private async Task<GetTracksForPlaylistResponseDto?> WaitForResolvedPlaylistAsync()
     {
-        var deadline = DateTime.UtcNow.Add(PollTimeout);
-        GetTracksForPlaylistResponseDto? latest = null;
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        timeout.CancelAfter(PollTimeout);
 
-        while (DateTime.UtcNow < deadline)
+        try
         {
-            latest = await GetPlaylistAsync();
-            if (IsFullyResolved(latest))
+            while (!timeout.Token.IsCancellationRequested)
             {
-                return latest;
-            }
+                if (PlaylistReadModelIsResolved())
+                {
+                    return await GetPlaylistAsync();
+                }
 
-            await Task.Delay(PollInterval, TestContext.Current.CancellationToken);
+                await Task.Delay(PollInterval, timeout.Token);
+            }
+        }
+        catch (OperationCanceledException) when (!TestContext.Current.CancellationToken.IsCancellationRequested)
+        {
         }
 
-        throw new TimeoutException(FormatTimeout(latest));
+        throw new TimeoutException(FormatTimeout(await GetPlaylistAsync()));
+    }
+
+    private bool PlaylistReadModelIsResolved()
+    {
+        using var session = fixture.DocumentStore.OpenSession();
+        var record = session.Load<CatalogPlaylistTracksRecordDto>(PlaylistDocumentId);
+        if (record is not { Discovery.Status: "completed", Tracks.Length: 4 })
+        {
+            return false;
+        }
+
+        return record.Tracks.Count(static track => track.StreamingLocations.Length > 0) == 2
+            && record.Tracks
+                .SelectMany(static track => track.StreamingLocations)
+                .Select(static location => location.Url)
+                .OrderBy(static url => url, StringComparer.Ordinal)
+                .SequenceEqual(
+                [
+                    "https://music.youtube.com/watch?v=glass-cities-radio",
+                    "https://open.spotify.com/track/midnight-signals"
+                ]);
     }
 
     private static string FormatTimeout(GetTracksForPlaylistResponseDto? latest)
@@ -97,21 +128,4 @@ public sealed class WorldTop100PlaylistEndToEndTests(EndToEndHostFixture fixture
                $"tracks=[{tracks}]. " +
                "If status=completed with missing playable URLs, streaming WorkCompleted likely raced ahead of playlist Repair.";
     }
-
-    private static bool IsFullyResolved(GetTracksForPlaylistResponseDto? response) =>
-        response is
-        {
-            Discovery.Status: "completed",
-            Tracks.Length: 4
-        }
-        && response.Tracks.Count(static track => track.Playable) == 2
-        && response.Tracks
-            .SelectMany(static track => track.StreamingLocations)
-            .Select(static location => location.Url)
-            .OrderBy(static url => url, StringComparer.Ordinal)
-            .SequenceEqual(
-            [
-                "https://music.youtube.com/watch?v=glass-cities-radio",
-                "https://open.spotify.com/track/midnight-signals"
-            ]);
 }

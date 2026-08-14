@@ -5,7 +5,9 @@ name: soundtrail-ci
 
 services:
   redis:
-    image: redis:7-alpine
+    # linux/amd64 7.4.10-alpine. pull_policy missing: GHA cache load skips Hub extract.
+    image: redis:7-alpine@sha256:9702d01c1f10c3ea9f48211b4362e44f154ff02d063e6f7268eba804059f53bf
+    pull_policy: missing
     command: ["redis-server", "--save", "", "--appendonly", "no"]
     ports:
       - "6379:6379"
@@ -16,7 +18,9 @@ services:
       retries: 15
 
   openservicebus:
-    image: mauritsarissen/openservicebus:latest
+    # Pin linux/amd64; :latest moves. pull_policy missing after GHA docker load.
+    image: mauritsarissen/openservicebus:latest@sha256:72ec683f93d8de419b58030a2652d4065f3aa8fac77d3c1f7f468c860c5af3cd
+    pull_policy: missing
     environment:
       OPENSERVICEBUS__STORAGE__MODE: InMemory
       OPENSERVICEBUS_CONFIG: /etc/openservicebus/config.json
@@ -28,7 +32,8 @@ services:
 
   ravendb:
     # Pin to client 7.2.5. Spike: Embedded nupkg ~890MB vs this image ~378MB compressed (linux-only).
-    image: ravendb/ravendb:7.2.5-ubuntu.24.04-x64
+    image: ravendb/ravendb:7.2.5-ubuntu.24.04-x64@sha256:d8f45d0eed364f79235d36c64d7f74d01185b17c0d23b74b8515e0cba848dc6d
+    pull_policy: missing
     environment:
       RAVEN_Setup_Mode: None
       RAVEN_License_Eula_Accepted: "true"
@@ -65,6 +70,11 @@ services:
     volumes:
       - ./reports:/reports
     command:
+      # 2 vCPU GHA runners: unlimited+aggressive saturates the box and starves E2E hosts.
+      - --max-threads
+      - "2x"
+      - --parallel-algorithm
+      - conservative
       - --report-xunit-trx
       - --report-xunit-trx-filename
       - tests.trx
