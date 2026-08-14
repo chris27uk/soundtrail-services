@@ -149,11 +149,12 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: /tmp/sidecar-images
-          # Exact key first (current v* / pr-N / main); fall back to last release then any v4.
-          key: docker-sidecars-v4-${{ needs.version.outputs.imageCacheKey }}-${{ hashFiles('docker-compose.ci.yml') }}
+          # v5: invalidate ID-only sidecar tars (v4 pr-* seeds); save/load by tag+digest ref.
+          key: docker-sidecars-v5-${{ needs.version.outputs.imageCacheKey }}-${{ hashFiles('docker-compose.ci.yml') }}
           restore-keys: |
-            docker-sidecars-v4-${{ needs.version.outputs.imageCacheFallback }}-${{ hashFiles('docker-compose.ci.yml') }}
-            docker-sidecars-v4-${{ needs.version.outputs.imageCacheFallback }}-
+            docker-sidecars-v5-${{ needs.version.outputs.imageCacheFallback }}-${{ hashFiles('docker-compose.ci.yml') }}
+            docker-sidecars-v5-${{ needs.version.outputs.imageCacheFallback }}-
+            docker-sidecars-v5-
             docker-sidecars-v4-
 
       - name: Start test dependencies
@@ -244,7 +245,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: /tmp/sidecar-images
-          key: docker-sidecars-v4-${{ needs.version.outputs.imageCacheKey }}-${{ hashFiles('docker-compose.ci.yml') }}
+          key: docker-sidecars-v5-${{ needs.version.outputs.imageCacheKey }}-${{ hashFiles('docker-compose.ci.yml') }}
 
       # Package: version + TRX (+ published apps on main).
       - name: Prepare build package

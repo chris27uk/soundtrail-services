@@ -16,6 +16,20 @@ cleanup_on_error() {
 }
 trap cleanup_on_error ERR
 
+image_present() {
+  docker image inspect "$1" >/dev/null 2>&1
+}
+
+ensure_image() {
+  local ref=$1
+  if image_present "$ref"; then
+    echo "Already present: $ref"
+    return 0
+  fi
+  echo "Pulling $ref"
+  docker pull "$ref"
+}
+
 tar_ok=0
 if [[ -f "$tar_path" ]]; then
   tar_size=$(stat -c%s "$tar_path" 2>/dev/null || stat -f%z "$tar_path")
@@ -32,16 +46,25 @@ if [[ -f "$tar_path" ]]; then
     rm -f "$tar_path"
   fi
 fi
-if [[ "$tar_ok" -ne 1 ]]; then
-  echo "Pulling sidecar + aspnet images"
-  docker pull "$CI_REDIS_IMAGE"
-  docker pull "$CI_OPENSERVICEBUS_IMAGE"
-  docker pull "$CI_RAVENDB_IMAGE"
-  docker pull "$CI_ASPNET_IMAGE"
-elif ! docker image inspect "$CI_ASPNET_IMAGE" >/dev/null 2>&1; then
-  # Older caches saved by ID only (no tags) or without aspnet — fill the gap.
-  echo "Aspnet tag missing after cache load; pulling $CI_ASPNET_IMAGE"
-  docker pull "$CI_ASPNET_IMAGE"
+
+# ID-only tars load layers but drop names — ensure every pin is addressable by ref
+# so compose/testhost skip Hub pulls. Missing refs also signal a poisoned cache (re-save under new key).
+missing=0
+for ref in "${CI_SIDECAR_IMAGES[@]}"; do
+  if ! image_present "$ref"; then
+    missing=1
+    break
+  fi
+done
+
+if [[ "$tar_ok" -ne 1 || "$missing" -eq 1 ]]; then
+  if [[ "$missing" -eq 1 && "$tar_ok" -eq 1 ]]; then
+    echo "Cached sidecar tar missing tag/digest refs; ensuring pins (will reseed on miss/new key)."
+    touch /tmp/sidecars.need-reseed
+  fi
+  for ref in "${CI_SIDECAR_IMAGES[@]}"; do
+    ensure_image "$ref"
+  done
 fi
 
 echo "Starting sidecars"
