@@ -13,7 +13,7 @@ public sealed class MusicbrainzBrowseFailureTests
 
         // HttpClient.Timeout surfaces as TaskCanceledException; a refused connect is HttpRequestException.
         await action.Should().ThrowAsync<Exception>()
-            .Where(ex => ex is HttpRequestException or TaskCanceledException);
+            .Where(ex => ex is HttpRequestException || ex is TaskCanceledException);
     }
 
     [Fact]
