@@ -89,6 +89,10 @@ RUN --mount=type=cache,id=msbuild-obj,target=/tmp/msbuild-cache \
       /p:ErrorOnDuplicatePublishOutputFiles=false \
       /p:BuildProjectReferences=false
 
+# Local CI export of published MTP bits only (avoids docker-container --load of full testhost).
+FROM scratch AS publish-testhost-out
+COPY --from=publish-testhost /testhost /
+
 FROM build AS publish-apps
 WORKDIR /artifacts/publish
 RUN --mount=type=cache,id=msbuild-obj,target=/tmp/msbuild-cache \

@@ -117,29 +117,35 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: /tmp/sidecar-images
-          # v2: v1 stored an empty dir (~205B) on a failed run; cache hits never overwrite.
-          key: docker-sidecars-v2-${{ hashFiles('docker-compose.ci.yml') }}
+          # v3: sidecars.tar + tooling.tar (BuildKit + aspnet) for bootstrap / no testhost --load.
+          key: docker-sidecars-v3-${{ hashFiles('docker-compose.ci.yml') }}
 
       - name: Start test dependencies
         run: |
           set -euo pipefail
-          mkdir -p reports /tmp/sidecar-images
-          # Overlap Raven/OSB/Redis pull+health with testhost buildx load.
+          mkdir -p reports testhost /tmp/sidecar-images
+          # Overlap Raven/OSB/Redis load+health with tooling load + testhost build.
           nohup bash scripts/ci-start-sidecars.sh >/tmp/sidecars.log 2>&1 &
           echo $! > /tmp/sidecars.pid
           disown || true
 
+      # docker-container is required for type=gha cache export; docker driver cannot.
+      # Prefetch BuildKit so setup-buildx skips the Hub pull (~5s).
+      - name: Load CI tooling images
+        run: bash scripts/ci-load-tooling-images.sh
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
 
       - name: Build testhost
         uses: docker/build-push-action@v6
         with:
           context: .
           file: Dockerfile.ci
-          target: testhost
-          load: true
-          tags: soundtrail-testhost:ci
+          target: publish-testhost-out
+          outputs: type=local,dest=testhost
           cache-from: type=gha,scope=soundtrail-testhost
           cache-to: type=gha,mode=max,scope=soundtrail-testhost
 
@@ -164,6 +170,8 @@ jobs:
       - name: Stop test dependencies
         id: stop-sidecars
         if: always()
+        env:
+          CACHE_HIT: ${{ steps.sidecar-cache.outputs.cache-hit }}
         run: |
           set -euo pipefail
           echo "cache=false" >> "$GITHUB_OUTPUT"
@@ -171,34 +179,19 @@ jobs:
           while [[ ! -f /tmp/sidecars.done && ! -f /tmp/sidecars.failed && $SECONDS -lt $deadline ]]; do
             sleep 1
           done
-          tar=/tmp/sidecar-images/sidecars.tar
-          mkdir -p /tmp/sidecar-images
-          # Only docker-save when restore missed. Re-saving an existing GHA key fails
-          # ("Unable to reserve cache... another job may be creating this cache").
-          wrote=0
-          if [[ ! -f "$tar" ]]; then
-            echo "Saving sidecar images for cache"
-            set +e
-            mapfile -t ids < <(docker compose -f docker-compose.ci.yml images -q redis openservicebus ravendb | awk 'NF && !seen[$0]++')
-            if (( ${#ids[@]} >= 1 )) && docker save "${ids[@]}" -o "${tar}.partial"; then
-              mv "${tar}.partial" "$tar"
-              echo "Wrote sidecar tar ($(stat -c%s "$tar") bytes)"
-              wrote=1
-            else
-              echo "docker save failed; sidecar cache will be skipped this run."
-              rm -f "${tar}.partial"
-            fi
-            set -e
-          fi
+          bash scripts/ci-save-sidecar-images.sh
           docker compose -f docker-compose.ci.yml down -v --remove-orphans || true
-          if (( wrote == 1 )) && [[ -f "$tar" ]]; then
-            size=$(stat -c%s "$tar")
-            echo "sidecar tar bytes=$size"
-            if (( size >= 10000000 )); then
+          sidecar=/tmp/sidecar-images/sidecars.tar
+          tooling=/tmp/sidecar-images/tooling.tar
+          if [[ "$CACHE_HIT" != "true" && -f "$sidecar" && -f "$tooling" ]]; then
+            sidecar_size=$(stat -c%s "$sidecar")
+            tooling_size=$(stat -c%s "$tooling")
+            echo "sidecar tar bytes=$sidecar_size tooling tar bytes=$tooling_size"
+            if (( sidecar_size >= 10000000 && tooling_size >= 1000000 )); then
               echo "cache=true" >> "$GITHUB_OUTPUT"
             else
-              echo "sidecar tar too small to cache; removing"
-              rm -f "$tar"
+              echo "sidecar/tooling tar too small to cache; removing"
+              rm -f "$sidecar" "$tooling"
             fi
           fi
 
@@ -208,7 +201,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: /tmp/sidecar-images
-          key: docker-sidecars-v2-${{ hashFiles('docker-compose.ci.yml') }}
+          key: docker-sidecars-v3-${{ hashFiles('docker-compose.ci.yml') }}
 
       # Package: version + TRX (+ published apps on main).
       - name: Prepare build package

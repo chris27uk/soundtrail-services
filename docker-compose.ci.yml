@@ -52,7 +52,11 @@ services:
       start_period: 15s
 
   testhost:
-    image: soundtrail-testhost:ci
+    # Same digest as Dockerfile.ci RUNTIME_IMAGE. Published tests are bind-mounted from
+    # buildx type=local (publish-testhost-out) so CI never docker-loads the fat testhost image.
+    image: mcr.microsoft.com/dotnet/aspnet:10.0.9-noble@sha256:7644f992230d35cf230017189d4038c0ae0f7388b13f4f7ae1900a155bafb597
+    pull_policy: missing
+    working_dir: /app
     depends_on:
       redis:
         condition: service_healthy
@@ -67,8 +71,17 @@ services:
       SOUNDTRAIL_TEST_RAVEN: "http://ravendb:8080"
       GITVERSION_INFORMATIONALVERSION: "${GITVERSION_INFORMATIONALVERSION:-}"
       OTEL_SERVICE_VERSION: "${OTEL_SERVICE_VERSION:-}"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+      DOTNET_NOLOGO: "true"
+      TESTINGPLATFORM_TELEMETRY_OPTOUT: "1"
+      Logging__LogLevel__Default: Warning
+      Logging__LogLevel__Microsoft: Warning
+      Logging__LogLevel__System: Warning
     volumes:
+      - ./testhost:/app:ro
       - ./reports:/reports
+    entrypoint: ["dotnet", "Soundtrail.Services.Tests.dll"]
     command:
       - --report-xunit-trx
       - --report-xunit-trx-filename

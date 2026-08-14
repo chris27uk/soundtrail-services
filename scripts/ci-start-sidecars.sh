@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Pull/load CI sidecars and wait until healthy while testhost builds.
+# Load/pull Redis/OSB/Raven, then bring sidecars up.
+# BuildKit + aspnet are loaded separately (scripts/ci-load-tooling-images.sh) before Buildx.
 # docker save runs after tests (see ci.yml) so it does not contend with HttpClient.
 set -euo pipefail
 
