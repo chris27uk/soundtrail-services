@@ -173,7 +173,9 @@ jobs:
           done
           tar=/tmp/sidecar-images/sidecars.tar
           mkdir -p /tmp/sidecar-images
-          # Save after tests so docker save does not contend with the testhost.
+          # Only docker-save when restore missed. Re-saving an existing GHA key fails
+          # ("Unable to reserve cache... another job may be creating this cache").
+          wrote=0
           if [[ ! -f "$tar" ]]; then
             echo "Saving sidecar images for cache"
             set +e
@@ -181,6 +183,7 @@ jobs:
             if (( ${#ids[@]} >= 1 )) && docker save "${ids[@]}" -o "${tar}.partial"; then
               mv "${tar}.partial" "$tar"
               echo "Wrote sidecar tar ($(stat -c%s "$tar") bytes)"
+              wrote=1
             else
               echo "docker save failed; sidecar cache will be skipped this run."
               rm -f "${tar}.partial"
@@ -188,7 +191,7 @@ jobs:
             set -e
           fi
           docker compose -f docker-compose.ci.yml down -v --remove-orphans || true
-          if [[ -f "$tar" ]]; then
+          if (( wrote == 1 )) && [[ -f "$tar" ]]; then
             size=$(stat -c%s "$tar")
             echo "sidecar tar bytes=$size"
             if (( size >= 10000000 )); then
@@ -200,7 +203,8 @@ jobs:
           fi
 
       - name: Save sidecar image cache
-        if: always() && steps.stop-sidecars.outputs.cache == 'true'
+        if: always() && steps.sidecar-cache.outputs.cache-hit != 'true' && steps.stop-sidecars.outputs.cache == 'true'
+        continue-on-error: true
         uses: actions/cache/save@v4
         with:
           path: /tmp/sidecar-images
