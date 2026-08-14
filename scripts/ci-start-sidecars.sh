@@ -44,11 +44,20 @@ echo "Dependencies ready."
 "${compose[@]}" ps
 touch /tmp/sidecars.ready
 
+# Best-effort: do not fail the job if cache tar cannot be written.
+# config --images includes testhost, which is still building when this runs.
 if [[ ! -f "$tar_path" ]]; then
   echo "Saving sidecar images for cache"
-  mapfile -t images < <("${compose[@]}" config --images)
-  docker save "${images[@]}" -o "${tar_path}.partial"
-  mv "${tar_path}.partial" "$tar_path"
+  set +e
+  mapfile -t ids < <("${compose[@]}" images -q redis openservicebus ravendb | awk 'NF && !seen[$0]++')
+  if (( ${#ids[@]} >= 1 )) && docker save "${ids[@]}" -o "${tar_path}.partial"; then
+    mv "${tar_path}.partial" "$tar_path"
+    echo "Wrote sidecar tar ($(stat -c%s "$tar_path") bytes)"
+  else
+    echo "docker save failed; sidecar cache will be skipped this run."
+    rm -f "${tar_path}.partial"
+  fi
+  set -e
 fi
 
 touch /tmp/sidecars.done
