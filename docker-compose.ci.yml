@@ -70,11 +70,6 @@ services:
     volumes:
       - ./reports:/reports
     command:
-      # 2 vCPU GHA runners: unlimited+aggressive saturates the box and starves E2E hosts.
-      - --max-threads
-      - "2x"
-      - --parallel-algorithm
-      - conservative
       - --report-xunit-trx
       - --report-xunit-trx-filename
       - tests.trx

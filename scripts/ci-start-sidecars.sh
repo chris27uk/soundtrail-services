@@ -12,14 +12,23 @@ cleanup_on_error() {
 }
 trap cleanup_on_error ERR
 
+tar_ok=0
 if [[ -f "$tar_path" ]]; then
-  echo "Loading cached sidecar images from $tar_path"
-  if ! docker load -i "$tar_path"; then
-    echo "Cached sidecar tar was unusable; pulling instead."
+  tar_size=$(stat -c%s "$tar_path" 2>/dev/null || stat -f%z "$tar_path")
+  if (( tar_size >= 10000000 )); then
+    echo "Loading cached sidecar images from $tar_path ($tar_size bytes)"
+    if docker load -i "$tar_path"; then
+      tar_ok=1
+    else
+      echo "Cached sidecar tar was unusable; pulling instead."
+      rm -f "$tar_path"
+    fi
+  else
+    echo "Cached sidecar tar is too small ($tar_size bytes); pulling instead."
     rm -f "$tar_path"
-    "${compose[@]}" pull redis openservicebus ravendb
   fi
-else
+fi
+if [[ "$tar_ok" -ne 1 ]]; then
   echo "Pulling sidecar images"
   "${compose[@]}" pull redis openservicebus ravendb
 fi

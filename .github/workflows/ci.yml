@@ -112,11 +112,13 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Cache sidecar images
-        uses: actions/cache@v4
+      - name: Restore sidecar image cache
+        id: sidecar-cache
+        uses: actions/cache/restore@v4
         with:
           path: /tmp/sidecar-images
-          key: docker-sidecars-${{ hashFiles('docker-compose.ci.yml') }}
+          # v2: v1 stored an empty dir (~205B) on a failed run; cache hits never overwrite.
+          key: docker-sidecars-v2-${{ hashFiles('docker-compose.ci.yml') }}
 
       - name: Start test dependencies
         run: |
@@ -160,15 +162,34 @@ jobs:
           cache-from: type=gha,scope=soundtrail-testhost
 
       - name: Stop test dependencies
+        id: stop-sidecars
         if: always()
         run: |
           set -euo pipefail
-          # Let docker save finish so the sidecar image cache post-step can upload.
-          deadline=$((SECONDS + 60))
+          echo "cache=false" >> "$GITHUB_OUTPUT"
+          deadline=$((SECONDS + 90))
           while [[ ! -f /tmp/sidecars.done && ! -f /tmp/sidecars.failed && $SECONDS -lt $deadline ]]; do
             sleep 1
           done
           docker compose -f docker-compose.ci.yml down -v --remove-orphans || true
+          tar=/tmp/sidecar-images/sidecars.tar
+          if [[ -f "$tar" ]]; then
+            size=$(stat -c%s "$tar")
+            echo "sidecar tar bytes=$size"
+            if (( size >= 10000000 )); then
+              echo "cache=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "sidecar tar too small to cache; removing"
+              rm -f "$tar"
+            fi
+          fi
+
+      - name: Save sidecar image cache
+        if: always() && steps.stop-sidecars.outputs.cache == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/sidecar-images
+          key: docker-sidecars-v2-${{ hashFiles('docker-compose.ci.yml') }}
 
       # Package: version + TRX (+ published apps on main).
       - name: Prepare build package
