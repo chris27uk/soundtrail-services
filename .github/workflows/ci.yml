@@ -3,8 +3,8 @@ name: CI
 on:
   push:
     branches: [main]
-    # Push e.g. ci-cache/1 from a branch to seed image + BuildKit caches without merging.
-    tags: ['ci-cache/**']
+    # Release job on main pushes v${{ semVer }}; that tag run seeds image/BuildKit caches.
+    tags: ['v*']
   pull_request:
     branches: [main]
 
@@ -149,8 +149,8 @@ jobs:
           target: publish-testhost-out
           outputs: type=local,dest=testhost
           cache-from: type=gha,scope=soundtrail-testhost
-          # Write BuildKit layer cache only from ci-cache/* tags (test seed); PRs restore only.
-          cache-to: ${{ startsWith(github.ref, 'refs/tags/ci-cache/') && 'type=gha,mode=max,scope=soundtrail-testhost' || '' }}
+          # Write BuildKit layer cache from semver tag runs; PRs/main restore only (main publish also exports).
+          cache-to: ${{ startsWith(github.ref, 'refs/tags/v') && 'type=gha,mode=max,scope=soundtrail-testhost' || '' }}
 
       - name: Wait for test dependencies
         run: bash scripts/ci-wait-sidecars.sh
@@ -169,14 +169,15 @@ jobs:
           target: publish-apps-out
           outputs: type=local,dest=package/publish
           cache-from: type=gha,scope=soundtrail-testhost
+          cache-to: type=gha,mode=max,scope=soundtrail-testhost
 
       - name: Stop test dependencies
         id: stop-sidecars
         if: always()
         env:
           CACHE_HIT: ${{ steps.sidecar-cache.outputs.cache-hit }}
-          # Sidecar/tooling image cache is seeded only from ci-cache/* tags; PRs restore but never save.
-          SEED_IMAGE_CACHE: ${{ startsWith(github.ref, 'refs/tags/ci-cache/') && 'true' || 'false' }}
+          # Sidecar/tooling image cache is seeded from automatic v* release tags; PRs restore but never save.
+          SEED_IMAGE_CACHE: ${{ startsWith(github.ref, 'refs/tags/v') && 'true' || 'false' }}
         run: |
           set -euo pipefail
           echo "cache=false" >> "$GITHUB_OUTPUT"
@@ -205,7 +206,7 @@ jobs:
       - name: Save sidecar image cache
         if: >
           always()
-          && startsWith(github.ref, 'refs/tags/ci-cache/')
+          && startsWith(github.ref, 'refs/tags/v')
           && steps.sidecar-cache.outputs.cache-hit != 'true'
           && steps.stop-sidecars.outputs.cache == 'true'
         continue-on-error: true
@@ -271,7 +272,7 @@ jobs:
       - name: Tag release version
         if: needs.ci.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
-          TAG: v${{ needs.version.outputs.majorMinorPatch }}
+          TAG: v${{ needs.version.outputs.semVer }}
         run: |
           if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
             echo "Tag $TAG already exists on origin; skipping."
