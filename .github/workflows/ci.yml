@@ -218,25 +218,28 @@ jobs:
         with:
           fetch-depth: 1
 
+      # Split caches: small tooling restore first, then large sidecars.
+      # (run: scripts cannot call the cache API — ACTIONS_RUNTIME_TOKEN is only
+      # injected into uses: actions, so background restore always "misses".)
       - name: Restore BuildKit image cache
         id: tooling-cache
         uses: actions/cache/restore@v4
         with:
           path: /tmp/sidecar-images/tooling.tar
-          # Small critical-path cache (~240MB) so buildx is not blocked on sidecars.
           key: docker-tooling-v1-buildx-stable-1
 
-      # Large sidecar restore overlaps buildx + testhost compile (same runner).
-      - name: Restore sidecar image cache (background)
-        env:
-          SIDECAR_CACHE_KEY: docker-sidecars-v8-${{ needs.version.outputs.imageCacheKey }}-${{ hashFiles('docker-compose.ci.yml') }}
-          SIDECAR_CACHE_RESTORE_KEYS: |
+      - name: Restore sidecar image cache
+        id: sidecar-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/sidecar-images/sidecars.tar
+          key: docker-sidecars-v8-${{ needs.version.outputs.imageCacheKey }}-${{ hashFiles('docker-compose.ci.yml') }}
+          restore-keys: |
             docker-sidecars-v8-${{ needs.version.outputs.imageCacheFallback }}-${{ hashFiles('docker-compose.ci.yml') }}
             docker-sidecars-v8-${{ needs.version.outputs.imageCacheFallback }}-
             docker-sidecars-v8-
-        run: bash scripts/ci-restore-sidecar-cache-bg.sh
 
-      # Sidecars warm in background; returns when BuildKit is ready for buildx.
+      # Sidecar docker load/up overlaps tooling load + later buildx/build.
       - name: Bootstrap images
         run: bash scripts/ci-bootstrap.sh
 
@@ -276,6 +279,8 @@ jobs:
         if: always()
         env:
           SEED_TOOLING_CACHE: ${{ steps.tooling-cache.outputs.cache-hit != 'true' && 'true' || 'false' }}
+          # Exact hit only — restore-keys / miss reseed. Avoids "key already reserved".
+          SEED_SIDECAR_CACHE: ${{ steps.sidecar-cache.outputs.cache-hit != 'true' && 'true' || 'false' }}
         run: |
           set -euo pipefail
           echo "tooling_cache=false" >> "$GITHUB_OUTPUT"
@@ -286,14 +291,9 @@ jobs:
             sleep 1
           done
 
-          # Exact hit skips re-upload; restore-keys / miss reseed.
-          sidecar_hit=false
-          if [[ -f /tmp/sidecar-cache.hit ]]; then
-            sidecar_hit="$(tr -d '[:space:]' </tmp/sidecar-cache.hit)"
-          fi
-          seed_sidecars=true
-          if [[ "$sidecar_hit" == "true" && ! -f /tmp/sidecars.need-reseed ]]; then
-            seed_sidecars=false
+          seed_sidecars="$SEED_SIDECAR_CACHE"
+          if [[ -f /tmp/sidecars.need-reseed ]]; then
+            seed_sidecars=true
           fi
 
           if [[ "$SEED_TOOLING_CACHE" == "true" || "$seed_sidecars" == "true" ]]; then
@@ -338,7 +338,7 @@ jobs:
           key: docker-tooling-v1-buildx-stable-1
 
       - name: Save sidecar image cache
-        if: always() && steps.stop-sidecars.outputs.sidecar_cache == 'true'
+        if: always() && steps.sidecar-cache.outputs.cache-hit != 'true' && steps.stop-sidecars.outputs.sidecar_cache == 'true'
         continue-on-error: true
         uses: actions/cache/save@v4
         with:
