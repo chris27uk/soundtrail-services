@@ -173,6 +173,17 @@ jobs:
             docker-sidecars-v9-${{ steps.cache-keys.outputs.imageCacheFallback }}-
             docker-sidecars-v9-
 
+      - name: Wait for BuildKit image
+        run: bash scripts/ci-wait-tooling.sh
+
+      # Buildx before sidecar docker load — avoids daemon lock fights; load overlaps testhost (~10s).
+      - name: Set up Docker Buildx
+        run: bash scripts/ci-setup-buildx.sh
+
+      - name: Start sidecars (background)
+        run: bash scripts/ci-start-sidecars-bg.sh
+
+      # Network restore overlaps sidecar docker load.
       - name: Restore runtime image cache
         id: runtime-cache
         uses: actions/cache/restore@v4
@@ -180,18 +191,6 @@ jobs:
           path: /tmp/sidecar-images/runtime.tar
           key: docker-runtime-v1-aspnet-10.0.9-noble
 
-      - name: Wait for BuildKit image
-        run: bash scripts/ci-wait-tooling.sh
-
-      # Load+up in one bg process so health overlaps Buildx/testhost (do not wait for load first).
-      - name: Start sidecars (background)
-        run: bash scripts/ci-start-sidecars-bg.sh
-
-      # docker-container is required for type=gha cache; thin script avoids setup-buildx-action overhead.
-      - name: Set up Docker Buildx
-        run: bash scripts/ci-setup-buildx.sh
-
-      # Aspnet only for compose run testhost — load after Buildx create, overlaps testhost export.
       - name: Load runtime image (background)
         run: bash scripts/ci-load-runtime-bg.sh
 
