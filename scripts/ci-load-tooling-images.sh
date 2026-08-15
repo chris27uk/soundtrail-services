@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Sync load/pull BuildKit before setup-buildx (avoids Hub pull during bootstrap).
-# Aspnet lives in sidecars.tar and is loaded with Redis/OSB/Raven in the background.
+# Aspnet lives in runtime.tar (loaded separately during Buildx/testhost).
 set -euo pipefail
 
 # shellcheck source=ci-image-refs.sh

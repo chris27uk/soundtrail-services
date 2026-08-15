@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Write sidecar + tooling tars when missing (for GHA cache).
+# Write sidecar + tooling + runtime tars when missing (for GHA cache).
 # Save by tag (not digest/ID) so docker load restores RepoTags and compose skips Hub.
 set -euo pipefail
 
@@ -9,6 +9,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ci-image-refs.sh"
 dir="${SIDECAR_IMAGE_DIR:-/tmp/sidecar-images}"
 sidecar_tar="${SIDECAR_IMAGE_TAR:-$dir/sidecars.tar}"
 tooling_tar="${SIDECAR_TOOLING_TAR:-$dir/tooling.tar}"
+runtime_tar="${SIDECAR_RUNTIME_TAR:-$dir/runtime.tar}"
 mkdir -p "$dir"
 
 if [[ ! -f "$sidecar_tar" ]]; then
@@ -41,11 +42,25 @@ else
   echo "Tooling tar already present; skip docker save."
 fi
 
+if [[ ! -f "$runtime_tar" ]]; then
+  echo "Saving CI runtime image for cache (aspnet by tag)"
+  set +e
+  if docker save "${CI_RUNTIME_TAGS[@]}" -o "${runtime_tar}.partial"; then
+    mv "${runtime_tar}.partial" "$runtime_tar"
+    echo "Wrote runtime tar ($(stat -c%s "$runtime_tar") bytes)"
+  else
+    echo "docker save (runtime) failed; will skip cache upload if incomplete."
+    rm -f "${runtime_tar}.partial"
+  fi
+  set -e
+else
+  echo "Runtime tar already present; skip docker save."
+fi
+
 if [[ -f "$sidecar_tar" && -f "$tooling_tar" ]]; then
   sidecar_size=$(stat -c%s "$sidecar_tar")
   tooling_size=$(stat -c%s "$tooling_tar")
   echo "sidecar tar bytes=$sidecar_size tooling tar bytes=$tooling_size"
-  # BuildKit-only tooling tar is much smaller than the old aspnet+buildkit bundle.
   if (( sidecar_size >= 10000000 && tooling_size >= 100000 )); then
     echo "cache_ok=true"
     exit 0

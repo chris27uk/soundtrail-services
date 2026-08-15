@@ -121,6 +121,8 @@ jobs:
       DOTNET_CLI_TELEMETRY_OPTOUT: "1"
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
       DOTNET_NOLOGO: "true"
+      DOCKER_BUILD_SUMMARY: "false"
+      DOCKER_BUILD_RECORD_UPLOAD: "false"
 
     steps:
       - name: Checkout
@@ -149,6 +151,21 @@ jobs:
           key: buildkit-export-v1-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
           lookup-only: true
 
+      # Sidecars first so docker load overlaps tooling GHA restore.
+      - name: Restore sidecar image cache
+        id: sidecar-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/sidecar-images/sidecars.tar
+          key: docker-sidecars-v9-${{ steps.cache-keys.outputs.imageCacheKey }}-${{ hashFiles('docker-compose.ci.yml') }}
+          restore-keys: |
+            docker-sidecars-v9-${{ steps.cache-keys.outputs.imageCacheFallback }}-${{ hashFiles('docker-compose.ci.yml') }}
+            docker-sidecars-v9-${{ steps.cache-keys.outputs.imageCacheFallback }}-
+            docker-sidecars-v9-
+
+      - name: Load sidecar images (background)
+        run: bash scripts/ci-load-sidecars-bg.sh
+
       - name: Restore BuildKit image cache
         id: tooling-cache
         uses: actions/cache/restore@v4
@@ -156,31 +173,31 @@ jobs:
           path: /tmp/sidecar-images/tooling.tar
           key: docker-tooling-v1-buildx-stable-1
 
-      # Critical path: start tooling docker load while sidecar GHA restore downloads.
-      - name: Load BuildKit image (background)
-        run: bash scripts/ci-load-tooling-bg.sh
+      # Avoid docker daemon lock fights: finish sidecar load before tooling load.
+      - name: Wait for sidecar images
+        run: bash scripts/ci-wait-sidecars-loaded.sh
 
-      - name: Restore sidecar image cache
-        id: sidecar-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: /tmp/sidecar-images/sidecars.tar
-          key: docker-sidecars-v8-${{ steps.cache-keys.outputs.imageCacheKey }}-${{ hashFiles('docker-compose.ci.yml') }}
-          restore-keys: |
-            docker-sidecars-v8-${{ steps.cache-keys.outputs.imageCacheFallback }}-${{ hashFiles('docker-compose.ci.yml') }}
-            docker-sidecars-v8-${{ steps.cache-keys.outputs.imageCacheFallback }}-
-            docker-sidecars-v8-
+      - name: Load BuildKit image
+        run: bash scripts/ci-load-tooling-images.sh
 
-      - name: Wait for BuildKit image
-        run: bash scripts/ci-wait-tooling.sh
-
-      # After tooling load — sidecars must not contend for the Docker daemon lock.
+      # Healthchecks overlap Buildx + testhost.
       - name: Start sidecars (background)
         run: bash scripts/ci-start-sidecars-bg.sh
 
       # docker-container is required for type=gha cache; thin script avoids setup-buildx-action overhead.
       - name: Set up Docker Buildx
         run: bash scripts/ci-setup-buildx.sh
+
+      # Aspnet only needed for compose run testhost — load during Buildx/testhost.
+      - name: Restore runtime image cache
+        id: runtime-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/sidecar-images/runtime.tar
+          key: docker-runtime-v1-aspnet-10.0.9-noble
+
+      - name: Load runtime image (background)
+        run: bash scripts/ci-load-runtime-bg.sh
 
       - name: Build testhost
         id: build-testhost
@@ -240,10 +257,12 @@ jobs:
         env:
           SEED_TOOLING_CACHE: ${{ steps.tooling-cache.outputs.cache-hit != 'true' && 'true' || 'false' }}
           SEED_SIDECAR_CACHE: ${{ steps.sidecar-cache.outputs.cache-hit != 'true' && 'true' || 'false' }}
+          SEED_RUNTIME_CACHE: ${{ steps.runtime-cache.outputs.cache-hit != 'true' && 'true' || 'false' }}
         run: |
           set -euo pipefail
           echo "tooling_cache=false" >> "$GITHUB_OUTPUT"
           echo "sidecar_cache=false" >> "$GITHUB_OUTPUT"
+          echo "runtime_cache=false" >> "$GITHUB_OUTPUT"
 
           deadline=$((SECONDS + 90))
           while [[ ! -f /tmp/sidecars.done && ! -f /tmp/sidecars.failed && $SECONDS -lt $deadline ]]; do
@@ -254,13 +273,20 @@ jobs:
           if [[ -f /tmp/sidecars.need-reseed ]]; then
             seed_sidecars=true
           fi
+          seed_runtime="$SEED_RUNTIME_CACHE"
+          if [[ -f /tmp/runtime.need-reseed ]]; then
+            seed_runtime=true
+          fi
 
-          if [[ "$SEED_TOOLING_CACHE" == "true" || "$seed_sidecars" == "true" ]]; then
+          if [[ "$SEED_TOOLING_CACHE" == "true" || "$seed_sidecars" == "true" || "$seed_runtime" == "true" ]]; then
             if [[ "$seed_sidecars" == "true" ]]; then
               rm -f /tmp/sidecar-images/sidecars.tar
             fi
             if [[ "$SEED_TOOLING_CACHE" == "true" ]]; then
               rm -f /tmp/sidecar-images/tooling.tar
+            fi
+            if [[ "$seed_runtime" == "true" ]]; then
+              rm -f /tmp/sidecar-images/runtime.tar
             fi
             bash scripts/ci-save-sidecar-images.sh
           fi
@@ -269,6 +295,7 @@ jobs:
 
           sidecar=/tmp/sidecar-images/sidecars.tar
           tooling=/tmp/sidecar-images/tooling.tar
+          runtime=/tmp/sidecar-images/runtime.tar
           if [[ "$SEED_TOOLING_CACHE" == "true" && -f "$tooling" ]]; then
             tooling_size=$(stat -c%s "$tooling")
             echo "tooling tar bytes=$tooling_size"
@@ -287,6 +314,15 @@ jobs:
               rm -f "$sidecar"
             fi
           fi
+          if [[ "$seed_runtime" == "true" && -f "$runtime" ]]; then
+            runtime_size=$(stat -c%s "$runtime")
+            echo "runtime tar bytes=$runtime_size"
+            if (( runtime_size >= 100000 )); then
+              echo "runtime_cache=true" >> "$GITHUB_OUTPUT"
+            else
+              rm -f "$runtime"
+            fi
+          fi
 
       - name: Save BuildKit image cache
         if: always() && steps.tooling-cache.outputs.cache-hit != 'true' && steps.stop-sidecars.outputs.tooling_cache == 'true'
@@ -302,7 +338,15 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: /tmp/sidecar-images/sidecars.tar
-          key: docker-sidecars-v8-${{ steps.cache-keys.outputs.imageCacheKey }}-${{ hashFiles('docker-compose.ci.yml') }}
+          key: docker-sidecars-v9-${{ steps.cache-keys.outputs.imageCacheKey }}-${{ hashFiles('docker-compose.ci.yml') }}
+
+      - name: Save runtime image cache
+        if: always() && steps.runtime-cache.outputs.cache-hit != 'true' && steps.stop-sidecars.outputs.runtime_cache == 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/sidecar-images/runtime.tar
+          key: docker-runtime-v1-aspnet-10.0.9-noble
 
       # Package: version + TRX (+ published apps on main).
       - name: Prepare build package
