@@ -41,11 +41,13 @@ jobs:
           fetch-depth: 100
           fetch-tags: true
 
-      # Native tool (~seconds) instead of docker load of ~188MB image (~12s+).
-      - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@v4.7.0
+      # Standalone binary (~34MB) — avoids Docker (~188MB) and SDK (global.json pins 10.0.301).
+      - name: Restore GitVersion binary
+        id: gv-bin-cache
+        uses: actions/cache/restore@v4
         with:
-          versionSpec: '6.7.0'
+          path: /tmp/gitversion-bin
+          key: gitversion-bin-linux-x64-6.7.0
 
       - name: Restore previous SemVer floor
         id: gv-semver-cache
@@ -60,6 +62,7 @@ jobs:
         id: gitversion
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITVERSION_URL: https://github.com/GitTools/GitVersion/releases/download/6.7.0/gitversion-linux-x64-6.7.0.tar.gz
         run: |
           set -euo pipefail
 
@@ -67,7 +70,14 @@ jobs:
           base_ref="${GITHUB_BASE_REF:-main}"
           git fetch --no-tags --depth=100 origin "${base_ref}:refs/remotes/origin/${base_ref}" || true
 
-          mkdir -p /tmp/gitversion-prev
+          mkdir -p /tmp/gitversion-bin /tmp/gitversion-prev
+          gv_bin=/tmp/gitversion-bin/gitversion
+          if [[ ! -x "$gv_bin" ]]; then
+            echo "Downloading GitVersion binary"
+            curl -fsSL "$GITVERSION_URL" | tar -xzf - -C /tmp/gitversion-bin
+            chmod +x "$gv_bin"
+            echo "need_bin_cache=true" >> "$GITHUB_OUTPUT"
+          fi
 
           # Floor: previous CI MajorMinorPatch on this ref, else latest v* tag.
           # Passed via /overrideconfig next-version (env placeholders are not expanded there).
@@ -88,7 +98,7 @@ jobs:
           fi
 
           set +e
-          dotnet-gitversion "${gv_args[@]}" > /tmp/gitversion.json 2> /tmp/gitversion.err
+          "$gv_bin" "${gv_args[@]}" > /tmp/gitversion.json 2> /tmp/gitversion.err
           gv_exit=$?
           set -e
 
@@ -133,6 +143,13 @@ jobs:
             echo "imageCacheKey=${cache_key}"
             echo "imageCacheFallback=${fallback}"
           } >> "$GITHUB_OUTPUT"
+
+      - name: Save GitVersion binary
+        if: always() && steps.gitversion.outputs.need_bin_cache == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/gitversion-bin
+          key: gitversion-bin-linux-x64-6.7.0
 
       - name: Save SemVer floor
         if: always() && steps.gitversion.outcome == 'success'
