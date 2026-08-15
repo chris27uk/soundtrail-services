@@ -41,12 +41,11 @@ jobs:
           fetch-depth: 100
           fetch-tags: true
 
-      - name: Restore GitVersion image
-        id: gv-image-cache
-        uses: actions/cache/restore@v4
+      # Native tool (~seconds) instead of docker load of ~188MB image (~12s+).
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v4.7.0
         with:
-          path: /tmp/gitversion-image
-          key: gitversion-image-6.7.0-ubuntu.24.04-8.0-b77cb19872aa
+          versionSpec: '6.7.0'
 
       - name: Restore previous SemVer floor
         id: gv-semver-cache
@@ -60,9 +59,6 @@ jobs:
       - name: Determine version
         id: gitversion
         env:
-          # Digest-pinned; local tag used for docker save/load RepoTags.
-          GITVERSION_IMAGE: gittools/gitversion:6.7.0-ubuntu.24.04-8.0@sha256:b77cb19872aa0374e2127bf3ca0234993cf31eff96b532c50b815e6231254c9e
-          GITVERSION_TAG: gittools/gitversion:6.7.0-ubuntu.24.04-8.0
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
@@ -71,19 +67,7 @@ jobs:
           base_ref="${GITHUB_BASE_REF:-main}"
           git fetch --no-tags --depth=100 origin "${base_ref}:refs/remotes/origin/${base_ref}" || true
 
-          mkdir -p /tmp/gitversion-image /tmp/gitversion-prev
-          img_tar=/tmp/gitversion-image/gitversion.tar
-          if [[ -f "$img_tar" ]]; then
-            echo "Loading cached GitVersion image"
-            docker load -i "$img_tar"
-          else
-            echo "Pulling GitVersion image"
-            docker pull "$GITVERSION_IMAGE"
-            docker tag "$GITVERSION_IMAGE" "$GITVERSION_TAG"
-            docker save "$GITVERSION_TAG" -o "${img_tar}.partial"
-            mv "${img_tar}.partial" "$img_tar"
-            echo "need_image_cache=true" >> "$GITHUB_OUTPUT"
-          fi
+          mkdir -p /tmp/gitversion-prev
 
           # Floor: previous CI MajorMinorPatch on this ref, else latest v* tag.
           # Passed via /overrideconfig next-version (env placeholders are not expanded there).
@@ -104,21 +88,7 @@ jobs:
           fi
 
           set +e
-          docker run --rm \
-            --volume "$GITHUB_WORKSPACE:/repo" \
-            --workdir /repo \
-            --env GITHUB_ACTIONS=true \
-            --env GITHUB_EVENT_NAME \
-            --env GITHUB_REF \
-            --env GITHUB_REF_NAME \
-            --env GITHUB_REF_TYPE \
-            --env GITHUB_BASE_REF \
-            --env GITHUB_HEAD_REF \
-            --env GITHUB_SHA \
-            --env GITHUB_RUN_NUMBER \
-            --entrypoint /tools/dotnet-gitversion \
-            "$GITVERSION_TAG" \
-            "${gv_args[@]}" > /tmp/gitversion.json 2> /tmp/gitversion.err
+          dotnet-gitversion "${gv_args[@]}" > /tmp/gitversion.json 2> /tmp/gitversion.err
           gv_exit=$?
           set -e
 
@@ -163,13 +133,6 @@ jobs:
             echo "imageCacheKey=${cache_key}"
             echo "imageCacheFallback=${fallback}"
           } >> "$GITHUB_OUTPUT"
-
-      - name: Save GitVersion image
-        if: always() && steps.gitversion.outputs.need_image_cache == 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: /tmp/gitversion-image
-          key: gitversion-image-6.7.0-ubuntu.24.04-8.0-b77cb19872aa
 
       - name: Save SemVer floor
         if: always() && steps.gitversion.outcome == 'success'
