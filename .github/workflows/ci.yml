@@ -151,7 +151,17 @@ jobs:
           key: buildkit-export-v1-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
           lookup-only: true
 
-      # Sidecars first so docker load overlaps tooling GHA restore.
+      - name: Restore BuildKit image cache
+        id: tooling-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/sidecar-images/tooling.tar
+          key: docker-tooling-v1-buildx-stable-1
+
+      # Start tooling docker load while sidecar + runtime GHA restores download.
+      - name: Load BuildKit image (background)
+        run: bash scripts/ci-load-tooling-bg.sh
+
       - name: Restore sidecar image cache
         id: sidecar-cache
         uses: actions/cache/restore@v4
@@ -163,32 +173,6 @@ jobs:
             docker-sidecars-v9-${{ steps.cache-keys.outputs.imageCacheFallback }}-
             docker-sidecars-v9-
 
-      - name: Load sidecar images (background)
-        run: bash scripts/ci-load-sidecars-bg.sh
-
-      - name: Restore BuildKit image cache
-        id: tooling-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: /tmp/sidecar-images/tooling.tar
-          key: docker-tooling-v1-buildx-stable-1
-
-      # Avoid docker daemon lock fights: finish sidecar load before tooling load.
-      - name: Wait for sidecar images
-        run: bash scripts/ci-wait-sidecars-loaded.sh
-
-      - name: Load BuildKit image
-        run: bash scripts/ci-load-tooling-images.sh
-
-      # Healthchecks overlap Buildx + testhost.
-      - name: Start sidecars (background)
-        run: bash scripts/ci-start-sidecars-bg.sh
-
-      # docker-container is required for type=gha cache; thin script avoids setup-buildx-action overhead.
-      - name: Set up Docker Buildx
-        run: bash scripts/ci-setup-buildx.sh
-
-      # Aspnet only needed for compose run testhost — load during Buildx/testhost.
       - name: Restore runtime image cache
         id: runtime-cache
         uses: actions/cache/restore@v4
@@ -196,6 +180,18 @@ jobs:
           path: /tmp/sidecar-images/runtime.tar
           key: docker-runtime-v1-aspnet-10.0.9-noble
 
+      - name: Wait for BuildKit image
+        run: bash scripts/ci-wait-tooling.sh
+
+      # Load+up in one bg process so health overlaps Buildx/testhost (do not wait for load first).
+      - name: Start sidecars (background)
+        run: bash scripts/ci-start-sidecars-bg.sh
+
+      # docker-container is required for type=gha cache; thin script avoids setup-buildx-action overhead.
+      - name: Set up Docker Buildx
+        run: bash scripts/ci-setup-buildx.sh
+
+      # Aspnet only for compose run testhost — load after Buildx create, overlaps testhost export.
       - name: Load runtime image (background)
         run: bash scripts/ci-load-runtime-bg.sh
 
