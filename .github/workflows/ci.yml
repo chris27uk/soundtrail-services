@@ -130,21 +130,49 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Resolve image cache keys
-        id: cache-keys
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: bash scripts/ci-resolve-image-cache-keys.sh
-
       # Start before caches/build so Version (≈8s) finishes during Build setup.
       - name: Await version metadata (background)
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/ci-await-version-meta-bg.sh
 
+      # Sidecars first so Raven/OSB/Redis come up while testhost cache restores.
+      - name: Restore sidecar image cache
+        id: sidecar-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            /tmp/sidecar-images/sidecars.tar
+            /tmp/sidecar-images/runtime.tar
+          key: docker-sidecars-v10-${{ hashFiles('docker-compose.ci.yml', 'scripts/ci-image-refs.sh') }}
+          restore-keys: |
+            docker-sidecars-v10-
+            docker-sidecars-v9-
+
+      - name: Start sidecars (background)
+        run: bash scripts/ci-start-sidecars-bg.sh
+
+      - name: Load runtime image (background)
+        run: bash scripts/ci-load-runtime-bg.sh
+
+      # Published testhost bits for this exact source tree (skips Buildx on PR warms).
+      - name: Restore testhost output
+        id: testhost-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: testhost
+          key: testhost-out-v1-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
+
+      - name: Decide testhost reuse
+        id: testhost
+        env:
+          TESTHOST_CACHE_HIT: ${{ steps.testhost-cache.outputs.cache-hit }}
+        run: bash scripts/ci-decide-testhost.sh
+
       # Skip cache-to when this exact source tree already exported (warm no-op builds).
       - name: Check BuildKit export marker
         id: bk-export
+        if: steps.testhost.outputs.need_buildx == 'true'
         uses: actions/cache/restore@v4
         with:
           path: /tmp/buildkit-export-marker
@@ -153,43 +181,27 @@ jobs:
 
       - name: Restore BuildKit image cache
         id: tooling-cache
+        if: steps.testhost.outputs.need_buildx == 'true'
         uses: actions/cache/restore@v4
         with:
           path: /tmp/sidecar-images/tooling.tar
           key: docker-tooling-v1-buildx-stable-1
 
-      # Start tooling docker load while sidecar + runtime GHA restores download.
       - name: Load BuildKit image (background)
+        if: steps.testhost.outputs.need_buildx == 'true'
         run: bash scripts/ci-load-tooling-bg.sh
 
-      - name: Restore sidecar image cache
-        id: sidecar-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            /tmp/sidecar-images/sidecars.tar
-            /tmp/sidecar-images/runtime.tar
-          key: docker-sidecars-v9-${{ steps.cache-keys.outputs.imageCacheKey }}-${{ hashFiles('docker-compose.ci.yml') }}
-          restore-keys: |
-            docker-sidecars-v9-${{ steps.cache-keys.outputs.imageCacheFallback }}-${{ hashFiles('docker-compose.ci.yml') }}
-            docker-sidecars-v9-${{ steps.cache-keys.outputs.imageCacheFallback }}-
-            docker-sidecars-v9-
-
       - name: Wait for BuildKit image
+        if: steps.testhost.outputs.need_buildx == 'true'
         run: bash scripts/ci-wait-tooling.sh
 
-      # Load+up overlaps Buildx/testhost (same proven shape as the ~52s warm baseline).
-      - name: Start sidecars (background)
-        run: bash scripts/ci-start-sidecars-bg.sh
-
       - name: Set up Docker Buildx
+        if: steps.testhost.outputs.need_buildx == 'true'
         run: bash scripts/ci-setup-buildx.sh
-
-      - name: Load runtime image (background)
-        run: bash scripts/ci-load-runtime-bg.sh
 
       - name: Build testhost
         id: build-testhost
+        if: steps.testhost.outputs.hit != 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -240,11 +252,19 @@ jobs:
           path: /tmp/buildkit-export-marker
           key: buildkit-export-v1-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
 
+      - name: Save testhost output
+        if: always() && steps.testhost-cache.outputs.cache-hit != 'true' && steps.build-testhost.outcome == 'success'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: testhost
+          key: testhost-out-v1-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
+
       - name: Stop test dependencies
         id: stop-sidecars
         if: always()
         env:
-          SEED_TOOLING_CACHE: ${{ steps.tooling-cache.outputs.cache-hit != 'true' && 'true' || 'false' }}
+          SEED_TOOLING_CACHE: ${{ steps.tooling-cache.outcome == 'success' && steps.tooling-cache.outputs.cache-hit != 'true' && 'true' || 'false' }}
           SEED_SIDECAR_CACHE: ${{ steps.sidecar-cache.outputs.cache-hit != 'true' && 'true' || 'false' }}
         run: |
           set -euo pipefail
@@ -316,7 +336,7 @@ jobs:
           path: |
             /tmp/sidecar-images/sidecars.tar
             /tmp/sidecar-images/runtime.tar
-          key: docker-sidecars-v9-${{ steps.cache-keys.outputs.imageCacheKey }}-${{ hashFiles('docker-compose.ci.yml') }}
+          key: docker-sidecars-v10-${{ hashFiles('docker-compose.ci.yml', 'scripts/ci-image-refs.sh') }}
 
       # Package: version + TRX (+ published apps on main).
       - name: Prepare build package
