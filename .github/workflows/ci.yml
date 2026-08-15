@@ -3,7 +3,7 @@ name: CI
 on:
   push:
     branches: [main]
-    # On main, Build tags v${{ BUILD_VERSION }}; that tag run seeds image/BuildKit caches.
+    # Release job on main pushes v${{ semVer }}; that tag run seeds image/BuildKit caches.
     tags: ['v*']
   pull_request:
     branches: [main]
@@ -338,8 +338,35 @@ jobs:
             } > package/publish-versions.txt
           fi
 
+      - name: Upload build package
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: build
+          path: package/
+
+  release:
+    name: Release
+    needs: [version, ci]
+    # Keep a static check name for branch protection even when Build's display name includes SemVer.
+    # Run after Version even if Build fails so TRX can still be published, then fail the job if Build did.
+    if: ${{ always() && !cancelled() && needs.version.result == 'success' && needs.ci.result != 'cancelled' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Download build package
+        uses: actions/download-artifact@v7
+        with:
+          name: build
+          path: package
+
       - name: Publish test results
-        if: always() && !cancelled() && github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request'
         uses: dorny/test-reporter@v3
         with:
           name: Test Results
@@ -348,21 +375,11 @@ jobs:
           fail-on-error: true
           fail-on-empty: false
 
-      - name: Upload build package
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: build
-          path: package/
-
       - name: Tag release version
-        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: needs.ci.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          TAG: v${{ needs.version.outputs.semVer }}
         run: |
-          if [[ -z "${BUILD_VERSION:-}" || "$BUILD_VERSION" == "unknown" ]]; then
-            echo "::error::BUILD_VERSION unset; cannot tag"
-            exit 1
-          fi
-          TAG="v${BUILD_VERSION}"
           if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
             echo "Tag $TAG already exists on origin; skipping."
             exit 0
@@ -373,3 +390,9 @@ jobs:
           git tag -a "$TAG" -m "Release $TAG"
           git push origin "refs/tags/$TAG"
           echo "Created and pushed $TAG"
+
+      - name: Require build success
+        if: needs.ci.result != 'success'
+        run: |
+          echo "::error::Build did not succeed (result=${{ needs.ci.result }})"
+          exit 1
