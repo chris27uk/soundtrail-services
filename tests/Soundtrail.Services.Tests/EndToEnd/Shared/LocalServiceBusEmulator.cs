@@ -17,7 +17,9 @@ namespace Soundtrail.Services.Tests.EndToEnd.Shared;
 /// </summary>
 internal sealed class LocalServiceBusEmulator : IAsyncDisposable
 {
-    private const string OpenServiceBusImage = "mauritsarissen/openservicebus:latest";
+    // Digest pin (immutable). Keep aligned with scripts/ci-image-refs.sh CI_OPENSERVICEBUS_IMAGE.
+    private const string OpenServiceBusImage =
+        "mauritsarissen/openservicebus@sha256:72ec683f93d8de419b58030a2652d4065f3aa8fac77d3c1f7f468c860c5af3cd";
 
     private const ushort AmqpPort = 5672;
 

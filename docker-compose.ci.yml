@@ -19,8 +19,9 @@ services:
       retries: 15
 
   openservicebus:
-    # Tag only (digest pin: CI_OPENSERVICEBUS_IMAGE in scripts/ci-image-refs.sh).
-    image: mauritsarissen/openservicebus:latest
+    # Immutable local tag (digest pin: CI_OPENSERVICEBUS_IMAGE in scripts/ci-image-refs.sh).
+    # Retagged after digest pull — never :latest.
+    image: mauritsarissen/openservicebus:sha-72ec683f93d8
     pull_policy: missing
     environment:
       OPENSERVICEBUS__STORAGE__MODE: InMemory

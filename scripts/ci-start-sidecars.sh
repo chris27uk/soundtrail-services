@@ -30,6 +30,27 @@ ensure_image() {
   docker pull "$ref"
 }
 
+# Digest pull may leave only an ID / digest ref. Compose + docker save need RepoTags.
+pin_tag_from_digest() {
+  local digest_ref=$1
+  local tag=$2
+  if image_present "$tag"; then
+    return 0
+  fi
+  local id
+  id=$(docker image inspect -f '{{.Id}}' "$digest_ref")
+  docker tag "$id" "$tag"
+  echo "Pinned $tag <- $digest_ref"
+}
+
+ensure_pinned_sidecars() {
+  local i
+  for i in "${!CI_SIDECAR_IMAGES[@]}"; do
+    ensure_image "${CI_SIDECAR_IMAGES[$i]}"
+    pin_tag_from_digest "${CI_SIDECAR_IMAGES[$i]}" "${CI_SIDECAR_TAGS[$i]}"
+  done
+}
+
 # Tags survive docker load; digest refs do not. Prefer tags for "warm cache" checks.
 tags_present() {
   local tag
@@ -59,15 +80,13 @@ if [[ -f "$tar_path" ]]; then
 fi
 
 # ID-only / digest-only tars load layers but drop RepoTags — pull digest pins
-# (content-addressed) which also create the short tags compose expects.
+# (content-addressed) then retag to immutable local names compose expects.
 if [[ "$tar_ok" -ne 1 ]] || ! tags_present; then
   if [[ "$tar_ok" -eq 1 ]]; then
     echo "Cached sidecar tar missing tag refs; ensuring digest pins (will reseed on miss/new key)."
     touch /tmp/sidecars.need-reseed
   fi
-  for ref in "${CI_SIDECAR_IMAGES[@]}"; do
-    ensure_image "$ref"
-  done
+  ensure_pinned_sidecars
 else
   for tag in "${CI_SIDECAR_TAGS[@]}"; do
     echo "Already present: $tag"
