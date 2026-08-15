@@ -166,7 +166,9 @@ jobs:
         id: sidecar-cache
         uses: actions/cache/restore@v4
         with:
-          path: /tmp/sidecar-images/sidecars.tar
+          path: |
+            /tmp/sidecar-images/sidecars.tar
+            /tmp/sidecar-images/runtime.tar
           key: docker-sidecars-v9-${{ steps.cache-keys.outputs.imageCacheKey }}-${{ hashFiles('docker-compose.ci.yml') }}
           restore-keys: |
             docker-sidecars-v9-${{ steps.cache-keys.outputs.imageCacheFallback }}-${{ hashFiles('docker-compose.ci.yml') }}
@@ -176,20 +178,12 @@ jobs:
       - name: Wait for BuildKit image
         run: bash scripts/ci-wait-tooling.sh
 
-      # Buildx before sidecar docker load — avoids daemon lock fights; load overlaps testhost (~10s).
-      - name: Set up Docker Buildx
-        run: bash scripts/ci-setup-buildx.sh
-
+      # Load+up overlaps Buildx/testhost (same proven shape as the ~52s warm baseline).
       - name: Start sidecars (background)
         run: bash scripts/ci-start-sidecars-bg.sh
 
-      # Network restore overlaps sidecar docker load.
-      - name: Restore runtime image cache
-        id: runtime-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: /tmp/sidecar-images/runtime.tar
-          key: docker-runtime-v1-aspnet-10.0.9-noble
+      - name: Set up Docker Buildx
+        run: bash scripts/ci-setup-buildx.sh
 
       - name: Load runtime image (background)
         run: bash scripts/ci-load-runtime-bg.sh
@@ -252,12 +246,10 @@ jobs:
         env:
           SEED_TOOLING_CACHE: ${{ steps.tooling-cache.outputs.cache-hit != 'true' && 'true' || 'false' }}
           SEED_SIDECAR_CACHE: ${{ steps.sidecar-cache.outputs.cache-hit != 'true' && 'true' || 'false' }}
-          SEED_RUNTIME_CACHE: ${{ steps.runtime-cache.outputs.cache-hit != 'true' && 'true' || 'false' }}
         run: |
           set -euo pipefail
           echo "tooling_cache=false" >> "$GITHUB_OUTPUT"
           echo "sidecar_cache=false" >> "$GITHUB_OUTPUT"
-          echo "runtime_cache=false" >> "$GITHUB_OUTPUT"
 
           deadline=$((SECONDS + 90))
           while [[ ! -f /tmp/sidecars.done && ! -f /tmp/sidecars.failed && $SECONDS -lt $deadline ]]; do
@@ -265,23 +257,20 @@ jobs:
           done
 
           seed_sidecars="$SEED_SIDECAR_CACHE"
-          if [[ -f /tmp/sidecars.need-reseed ]]; then
+          if [[ -f /tmp/sidecars.need-reseed || -f /tmp/runtime.need-reseed ]]; then
             seed_sidecars=true
           fi
-          seed_runtime="$SEED_RUNTIME_CACHE"
-          if [[ -f /tmp/runtime.need-reseed ]]; then
-            seed_runtime=true
+          # Also reseed when runtime.tar missing from a sidecars-only cache hit.
+          if [[ ! -f /tmp/sidecar-images/runtime.tar ]]; then
+            seed_sidecars=true
           fi
 
-          if [[ "$SEED_TOOLING_CACHE" == "true" || "$seed_sidecars" == "true" || "$seed_runtime" == "true" ]]; then
+          if [[ "$SEED_TOOLING_CACHE" == "true" || "$seed_sidecars" == "true" ]]; then
             if [[ "$seed_sidecars" == "true" ]]; then
-              rm -f /tmp/sidecar-images/sidecars.tar
+              rm -f /tmp/sidecar-images/sidecars.tar /tmp/sidecar-images/runtime.tar
             fi
             if [[ "$SEED_TOOLING_CACHE" == "true" ]]; then
               rm -f /tmp/sidecar-images/tooling.tar
-            fi
-            if [[ "$seed_runtime" == "true" ]]; then
-              rm -f /tmp/sidecar-images/runtime.tar
             fi
             bash scripts/ci-save-sidecar-images.sh
           fi
@@ -300,22 +289,14 @@ jobs:
               rm -f "$tooling"
             fi
           fi
-          if [[ "$seed_sidecars" == "true" && -f "$sidecar" ]]; then
+          if [[ "$seed_sidecars" == "true" && -f "$sidecar" && -f "$runtime" ]]; then
             sidecar_size=$(stat -c%s "$sidecar")
-            echo "sidecar tar bytes=$sidecar_size"
-            if (( sidecar_size >= 10000000 )); then
+            runtime_size=$(stat -c%s "$runtime")
+            echo "sidecar tar bytes=$sidecar_size runtime tar bytes=$runtime_size"
+            if (( sidecar_size >= 10000000 && runtime_size >= 100000 )); then
               echo "sidecar_cache=true" >> "$GITHUB_OUTPUT"
             else
-              rm -f "$sidecar"
-            fi
-          fi
-          if [[ "$seed_runtime" == "true" && -f "$runtime" ]]; then
-            runtime_size=$(stat -c%s "$runtime")
-            echo "runtime tar bytes=$runtime_size"
-            if (( runtime_size >= 100000 )); then
-              echo "runtime_cache=true" >> "$GITHUB_OUTPUT"
-            else
-              rm -f "$runtime"
+              rm -f "$sidecar" "$runtime"
             fi
           fi
 
@@ -332,16 +313,10 @@ jobs:
         continue-on-error: true
         uses: actions/cache/save@v4
         with:
-          path: /tmp/sidecar-images/sidecars.tar
+          path: |
+            /tmp/sidecar-images/sidecars.tar
+            /tmp/sidecar-images/runtime.tar
           key: docker-sidecars-v9-${{ steps.cache-keys.outputs.imageCacheKey }}-${{ hashFiles('docker-compose.ci.yml') }}
-
-      - name: Save runtime image cache
-        if: always() && steps.runtime-cache.outputs.cache-hit != 'true' && steps.stop-sidecars.outputs.runtime_cache == 'true'
-        continue-on-error: true
-        uses: actions/cache/save@v4
-        with:
-          path: /tmp/sidecar-images/runtime.tar
-          key: docker-runtime-v1-aspnet-10.0.9-noble
 
       # Package: version + TRX (+ published apps on main).
       - name: Prepare build package
