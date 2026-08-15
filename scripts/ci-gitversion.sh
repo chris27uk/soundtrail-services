@@ -18,7 +18,9 @@ if [[ ! -x "$gv_bin" ]]; then
   fi
 fi
 
-# Mainline on PR merge refs needs the base branch in the shallow window even with a floor.
+# Build uses fetch-depth: 1; Mainline needs history on HEAD plus the base branch.
+# --deepen grows the current shallow tip; base/tags cover merge-base + next-version floor.
+git fetch --no-tags --deepen=100 2>/dev/null || true
 base_ref="${GITHUB_BASE_REF:-main}"
 git fetch --no-tags --depth=100 origin "${base_ref}:refs/remotes/origin/${base_ref}" 2>/dev/null || true
 git fetch --depth=1 origin "+refs/tags/v*:refs/tags/v*" 2>/dev/null || true
