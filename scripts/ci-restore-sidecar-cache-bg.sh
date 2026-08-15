@@ -31,21 +31,28 @@ fi
 
 (
   set +e
-  export INPUT_PATH="/tmp/sidecar-images/sidecars.tar"
-  export INPUT_KEY="$SIDECAR_CACHE_KEY"
-  export INPUT_RESTORE-KEYS="${SIDECAR_CACHE_RESTORE_KEYS:-}"
-  export INPUT_ENABLECROSSOSARCHIVE=false
-  export INPUT_FAIL-ON-CACHE-MISS=false
-  export INPUT_LOOKUP-ONLY=false
-  export GITHUB_OUTPUT="$outdir/github_output"
+  # Hyphenated INPUT_* names are valid for the action but not for bash `export`.
   echo "Restoring sidecar cache key=$SIDECAR_CACHE_KEY"
-  node "$restore_js"
+  env \
+    INPUT_PATH="/tmp/sidecar-images/sidecars.tar" \
+    INPUT_KEY="$SIDECAR_CACHE_KEY" \
+    "INPUT_RESTORE-KEYS=${SIDECAR_CACHE_RESTORE_KEYS:-}" \
+    INPUT_ENABLECROSSOSARCHIVE=false \
+    "INPUT_FAIL-ON-CACHE-MISS=false" \
+    "INPUT_LOOKUP-ONLY=false" \
+    GITHUB_OUTPUT="$outdir/github_output" \
+    node "$restore_js"
   status=$?
   hit=false
   if grep -q '^cache-hit=true' "$outdir/github_output" 2>/dev/null; then
     hit=true
   fi
   echo "$hit" >/tmp/sidecar-cache.hit
+  if [[ -f "$outdir/github_output" ]]; then
+    echo "---- restore outputs ----"
+    cat "$outdir/github_output"
+    echo "---- end restore outputs ----"
+  fi
   if [[ "$status" -ne 0 ]]; then
     echo "Sidecar cache restore exited $status (hit=$hit)"
   else
