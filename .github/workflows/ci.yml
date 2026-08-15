@@ -81,6 +81,24 @@ jobs:
           path: /tmp/gitversion-prev
           key: gitversion-semver-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref_name }}-${{ github.sha }}
 
+      - name: Package version metadata
+        if: always() && steps.gitversion.outcome == 'success'
+        run: |
+          mkdir -p version-meta
+          {
+            echo "BUILD_VERSION=${{ steps.gitversion.outputs.semVer }}"
+            echo "GITVERSION_INFORMATIONALVERSION=${{ steps.gitversion.outputs.informationalVersion }}"
+            echo "OTEL_SERVICE_VERSION=${{ steps.gitversion.outputs.informationalVersion }}"
+          } > version-meta/version.env
+
+      - name: Upload version metadata
+        if: always() && steps.gitversion.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: version-meta
+          path: version-meta/
+          if-no-files-found: error
+
       - name: Summary
         if: always() && steps.gitversion.outcome == 'success'
         run: |
@@ -92,7 +110,7 @@ jobs:
             echo "- MajorMinorPatch: \`${{ steps.gitversion.outputs.majorMinorPatch }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
-  # Parallel with Version. Build computes its own SemVer (no artifact wait).
+  # Parallel with Version. SemVer arrives via version-meta (await overlaps testhost build).
   ci:
     name: Build
     # Private repos: ubuntu-latest is 2 vCPU (public is 4). See GitHub-hosted runners docs.
@@ -115,6 +133,21 @@ jobs:
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: bash scripts/ci-resolve-image-cache-keys.sh
+
+      # Start before caches/build so Version (≈8s) finishes during Build setup.
+      - name: Await version metadata (background)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ci-await-version-meta-bg.sh
+
+      # Skip cache-to when this exact source tree already exported (warm no-op builds).
+      - name: Check BuildKit export marker
+        id: bk-export
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/buildkit-export-marker
+          key: buildkit-export-v1-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
+          lookup-only: true
 
       - name: Restore BuildKit image cache
         id: tooling-cache
@@ -145,20 +178,9 @@ jobs:
       - name: Start sidecars (background)
         run: bash scripts/ci-start-sidecars-bg.sh
 
-      # docker-container is required for type=gha cache export; docker driver cannot.
+      # docker-container is required for type=gha cache; thin script avoids setup-buildx-action overhead.
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver: docker-container
-
-      # Skip cache-to when this exact source tree already exported (warm no-op builds).
-      - name: Check BuildKit export marker
-        id: bk-export
-        uses: actions/cache/restore@v4
-        with:
-          path: /tmp/buildkit-export-marker
-          key: buildkit-export-v1-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
-          lookup-only: true
+        run: bash scripts/ci-setup-buildx.sh
 
       - name: Build testhost
         id: build-testhost
@@ -166,31 +188,18 @@ jobs:
         with:
           context: .
           file: Dockerfile.ci
+          builder: soundtrail-ci
           target: publish-testhost-out
           outputs: type=local,dest=testhost
+          provenance: false
+          sbom: false
           cache-from: type=gha,scope=soundtrail-testhost
           cache-to: ${{ steps.bk-export.outputs.cache-hit != 'true' && 'type=gha,mode=max,scope=soundtrail-testhost' || '' }}
 
-      # Off critical path: SemVer only needed for tests / package (Version job is for Release).
-      - name: Restore GitVersion binary
-        uses: actions/cache/restore@v4
-        with:
-          path: /tmp/gitversion-bin
-          key: gitversion-bin-linux-x64-6.7.0
-
-      - name: Restore previous SemVer floor
-        uses: actions/cache/restore@v4
-        with:
-          path: /tmp/gitversion-prev
-          key: gitversion-semver-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref_name }}-${{ github.sha }}
-          restore-keys: |
-            gitversion-semver-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref_name }}-
-
-      - name: Determine version
+      - name: Apply version metadata
         env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          WRITE_GITHUB_ENV: "1"
-        run: bash scripts/ci-gitversion.sh
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ci-await-version-meta-wait.sh
 
       - name: Run tests
         run: bash scripts/ci-run-tests.sh
@@ -202,8 +211,11 @@ jobs:
         with:
           context: .
           file: Dockerfile.ci
+          builder: soundtrail-ci
           target: publish-apps-out
           outputs: type=local,dest=package/publish
+          provenance: false
+          sbom: false
           cache-from: type=gha,scope=soundtrail-testhost
           cache-to: ${{ steps.bk-export.outputs.cache-hit != 'true' && 'type=gha,mode=max,scope=soundtrail-testhost' || '' }}
 
@@ -253,7 +265,7 @@ jobs:
             bash scripts/ci-save-sidecar-images.sh
           fi
 
-          docker compose -f docker-compose.ci.yml down -v --remove-orphans || true
+          docker compose -f docker-compose.ci.yml down -v --remove-orphans --timeout 1 || true
 
           sidecar=/tmp/sidecar-images/sidecars.tar
           tooling=/tmp/sidecar-images/tooling.tar
