@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Restore sidecars.tar from GHA cache in the background (overlaps buildx/build).
-# Uses the already-downloaded actions/cache restore entrypoint with a private
-# GITHUB_OUTPUT so we do not race the job's real output file.
+# Uses @actions/cache (same API as actions/cache/restore) so hyphenated INPUT_*
+# env quirks and restore-only entrypoint issues are avoided.
 set -euo pipefail
 
 outdir=/tmp/sidecar-cache
@@ -16,49 +16,61 @@ if [[ -z "${SIDECAR_CACHE_KEY:-}" ]]; then
   exit 0
 fi
 
-# actions/cache@v4 restore action entrypoint (bundled; avoid npm install on critical path).
-restore_js="$(find /home/runner/work/_actions/actions/cache -path '*/dist/restore-only/index.js' 2>/dev/null | sort | tail -1 || true)"
-if [[ -z "$restore_js" ]]; then
-  # Older layouts used dist/restore/index.js
-  restore_js="$(find /home/runner/work/_actions/actions/cache -path '*/dist/restore/index.js' 2>/dev/null | sort | tail -1 || true)"
-fi
-if [[ -z "$restore_js" ]]; then
-  echo "actions/cache restore entrypoint not found; sidecars will pull if needed"
-  echo "false" >/tmp/sidecar-cache.hit
-  touch /tmp/sidecar-cache.done
-  exit 0
-fi
-
 (
   set +e
-  # Hyphenated INPUT_* names are valid for the action but not for bash `export`.
   echo "Restoring sidecar cache key=$SIDECAR_CACHE_KEY"
-  env \
-    INPUT_PATH="/tmp/sidecar-images/sidecars.tar" \
-    INPUT_KEY="$SIDECAR_CACHE_KEY" \
-    "INPUT_RESTORE-KEYS=${SIDECAR_CACHE_RESTORE_KEYS:-}" \
-    INPUT_ENABLECROSSOSARCHIVE=false \
-    "INPUT_FAIL-ON-CACHE-MISS=false" \
-    "INPUT_LOOKUP-ONLY=false" \
-    GITHUB_OUTPUT="$outdir/github_output" \
-    node "$restore_js"
+  if [[ -z "${ACTIONS_CACHE_URL:-}${ACTIONS_RESULTS_URL:-}" || -z "${ACTIONS_RUNTIME_TOKEN:-}" ]]; then
+    echo "ACTIONS_CACHE_URL/RESULTS_URL or ACTIONS_RUNTIME_TOKEN missing; cannot restore"
+    echo "false" >/tmp/sidecar-cache.hit
+    touch /tmp/sidecar-cache.done
+    exit 0
+  fi
+
+  pkg=/tmp/ci-actions-cache
+  mkdir -p "$pkg"
+  # Install overlaps tooling docker load / buildx (~seconds).
+  if [[ ! -d "$pkg/node_modules/@actions/cache" ]]; then
+    echo "Installing @actions/cache for background restore"
+    npm install --prefix "$pkg" @actions/cache@4.0.3 --no-fund --no-audit --silent
+  fi
+
+  node <<'NODE'
+const fs = require('fs');
+const cache = require('/tmp/ci-actions-cache/node_modules/@actions/cache');
+
+const path = '/tmp/sidecar-images/sidecars.tar';
+const key = process.env.SIDECAR_CACHE_KEY;
+const restoreKeys = (process.env.SIDECAR_CACHE_RESTORE_KEYS || '')
+  .split(/\r?\n/)
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+(async () => {
+  let matched = undefined;
+  try {
+    matched = await cache.restoreCache([path], key, restoreKeys);
+  } catch (err) {
+    console.error('restoreCache failed:', err && err.message ? err.message : err);
+    if (err && err.stack) console.error(err.stack);
+  }
+  const exact = matched === key;
+  fs.writeFileSync('/tmp/sidecar-cache.hit', exact ? 'true' : 'false');
+  fs.writeFileSync('/tmp/sidecar-cache.matched', matched || '');
+  console.log(`matched-key=${matched || '(none)'} exact-hit=${exact}`);
+  if (matched && fs.existsSync(path)) {
+    const st = fs.statSync(path);
+    console.log(`restored ${path} (${st.size} bytes)`);
+  }
+})().finally(() => {
+  fs.writeFileSync('/tmp/sidecar-cache.done', '1');
+});
+NODE
   status=$?
-  hit=false
-  if grep -q '^cache-hit=true' "$outdir/github_output" 2>/dev/null; then
-    hit=true
-  fi
-  echo "$hit" >/tmp/sidecar-cache.hit
-  if [[ -f "$outdir/github_output" ]]; then
-    echo "---- restore outputs ----"
-    cat "$outdir/github_output"
-    echo "---- end restore outputs ----"
-  fi
   if [[ "$status" -ne 0 ]]; then
-    echo "Sidecar cache restore exited $status (hit=$hit)"
-  else
-    echo "Sidecar cache restore finished (exact-hit=$hit)"
+    echo "Sidecar cache restore node exited $status"
+    echo "false" >/tmp/sidecar-cache.hit
+    touch /tmp/sidecar-cache.done
   fi
-  touch /tmp/sidecar-cache.done
 ) >/tmp/sidecar-cache.log 2>&1 &
 echo $! >/tmp/sidecar-cache.pid
 echo "Sidecar cache restore pid=$(cat /tmp/sidecar-cache.pid)"
