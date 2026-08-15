@@ -218,19 +218,23 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Restore sidecar image cache
-        id: sidecar-cache
+      - name: Restore BuildKit image cache
+        id: tooling-cache
         uses: actions/cache/restore@v4
         with:
-          path: /tmp/sidecar-images
-          # v6: save/load by tag only (v5 saved name:tag@digest → ID-only on load).
-          key: docker-sidecars-v7-${{ needs.version.outputs.imageCacheKey }}-${{ hashFiles('docker-compose.ci.yml') }}
-          restore-keys: |
-            docker-sidecars-v7-${{ needs.version.outputs.imageCacheFallback }}-${{ hashFiles('docker-compose.ci.yml') }}
-            docker-sidecars-v7-${{ needs.version.outputs.imageCacheFallback }}-
-            docker-sidecars-v7-
-            docker-sidecars-v6-
-            docker-sidecars-v5-
+          path: /tmp/sidecar-images/tooling.tar
+          # Small critical-path cache (~240MB) so buildx is not blocked on sidecars.
+          key: docker-tooling-v1-buildx-stable-1
+
+      # Large sidecar restore overlaps buildx + testhost compile (same runner).
+      - name: Restore sidecar image cache (background)
+        env:
+          SIDECAR_CACHE_KEY: docker-sidecars-v8-${{ needs.version.outputs.imageCacheKey }}-${{ hashFiles('docker-compose.ci.yml') }}
+          SIDECAR_CACHE_RESTORE_KEYS: |
+            docker-sidecars-v8-${{ needs.version.outputs.imageCacheFallback }}-${{ hashFiles('docker-compose.ci.yml') }}
+            docker-sidecars-v8-${{ needs.version.outputs.imageCacheFallback }}-
+            docker-sidecars-v8-
+        run: bash scripts/ci-restore-sidecar-cache-bg.sh
 
       # Sidecars warm in background; returns when BuildKit is ready for buildx.
       - name: Bootstrap images
@@ -271,42 +275,75 @@ jobs:
         id: stop-sidecars
         if: always()
         env:
-          # Save under exact key on miss (PR / main / new tag). Exact hit skips re-upload.
-          SEED_IMAGE_CACHE: ${{ steps.sidecar-cache.outputs.cache-hit != 'true' && 'true' || 'false' }}
+          SEED_TOOLING_CACHE: ${{ steps.tooling-cache.outputs.cache-hit != 'true' && 'true' || 'false' }}
         run: |
           set -euo pipefail
-          echo "cache=false" >> "$GITHUB_OUTPUT"
+          echo "tooling_cache=false" >> "$GITHUB_OUTPUT"
+          echo "sidecar_cache=false" >> "$GITHUB_OUTPUT"
+
           deadline=$((SECONDS + 90))
           while [[ ! -f /tmp/sidecars.done && ! -f /tmp/sidecars.failed && $SECONDS -lt $deadline ]]; do
             sleep 1
           done
-          if [[ "$SEED_IMAGE_CACHE" == "true" ]]; then
-            # Partial restore-keys hit may leave stale/incomplete tars; rewrite for this exact key.
-            rm -f /tmp/sidecar-images/sidecars.tar /tmp/sidecar-images/tooling.tar
+
+          # Exact hit skips re-upload; restore-keys / miss reseed.
+          sidecar_hit=false
+          if [[ -f /tmp/sidecar-cache.hit ]]; then
+            sidecar_hit="$(tr -d '[:space:]' </tmp/sidecar-cache.hit)"
+          fi
+          seed_sidecars=true
+          if [[ "$sidecar_hit" == "true" && ! -f /tmp/sidecars.need-reseed ]]; then
+            seed_sidecars=false
+          fi
+
+          if [[ "$SEED_TOOLING_CACHE" == "true" || "$seed_sidecars" == "true" ]]; then
+            if [[ "$seed_sidecars" == "true" ]]; then
+              rm -f /tmp/sidecar-images/sidecars.tar
+            fi
+            if [[ "$SEED_TOOLING_CACHE" == "true" ]]; then
+              rm -f /tmp/sidecar-images/tooling.tar
+            fi
             bash scripts/ci-save-sidecar-images.sh
           fi
+
           docker compose -f docker-compose.ci.yml down -v --remove-orphans || true
+
           sidecar=/tmp/sidecar-images/sidecars.tar
           tooling=/tmp/sidecar-images/tooling.tar
-          if [[ "$SEED_IMAGE_CACHE" == "true" && -f "$sidecar" && -f "$tooling" ]]; then
-            sidecar_size=$(stat -c%s "$sidecar")
+          if [[ "$SEED_TOOLING_CACHE" == "true" && -f "$tooling" ]]; then
             tooling_size=$(stat -c%s "$tooling")
-            echo "sidecar tar bytes=$sidecar_size tooling tar bytes=$tooling_size"
-            if (( sidecar_size >= 10000000 && tooling_size >= 100000 )); then
-              echo "cache=true" >> "$GITHUB_OUTPUT"
+            echo "tooling tar bytes=$tooling_size"
+            if (( tooling_size >= 100000 )); then
+              echo "tooling_cache=true" >> "$GITHUB_OUTPUT"
             else
-              echo "sidecar/tooling tar too small to cache; removing"
-              rm -f "$sidecar" "$tooling"
+              rm -f "$tooling"
+            fi
+          fi
+          if [[ "$seed_sidecars" == "true" && -f "$sidecar" ]]; then
+            sidecar_size=$(stat -c%s "$sidecar")
+            echo "sidecar tar bytes=$sidecar_size"
+            if (( sidecar_size >= 10000000 )); then
+              echo "sidecar_cache=true" >> "$GITHUB_OUTPUT"
+            else
+              rm -f "$sidecar"
             fi
           fi
 
-      - name: Save sidecar image cache
-        if: always() && steps.sidecar-cache.outputs.cache-hit != 'true' && steps.stop-sidecars.outputs.cache == 'true'
+      - name: Save BuildKit image cache
+        if: always() && steps.tooling-cache.outputs.cache-hit != 'true' && steps.stop-sidecars.outputs.tooling_cache == 'true'
         continue-on-error: true
         uses: actions/cache/save@v4
         with:
-          path: /tmp/sidecar-images
-          key: docker-sidecars-v7-${{ needs.version.outputs.imageCacheKey }}-${{ hashFiles('docker-compose.ci.yml') }}
+          path: /tmp/sidecar-images/tooling.tar
+          key: docker-tooling-v1-buildx-stable-1
+
+      - name: Save sidecar image cache
+        if: always() && steps.stop-sidecars.outputs.sidecar_cache == 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/sidecar-images/sidecars.tar
+          key: docker-sidecars-v8-${{ needs.version.outputs.imageCacheKey }}-${{ hashFiles('docker-compose.ci.yml') }}
 
       # Package: version + TRX (+ published apps on main).
       - name: Prepare build package

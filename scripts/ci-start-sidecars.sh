@@ -16,6 +16,39 @@ cleanup_on_error() {
 }
 trap cleanup_on_error ERR
 
+# When tooling is on the critical path, sidecar GHA restore runs in the background.
+# Wait for that restore to finish before docker load / Hub pull.
+if [[ "${WAIT_FOR_SIDECAR_CACHE:-}" == "1" ]]; then
+  echo "Waiting for background sidecar cache restore"
+  # If restore was never kicked off (local/dev), do not block for the full timeout.
+  sleep 0.2
+  if [[ ! -f /tmp/sidecar-cache.pid && ! -f /tmp/sidecar-cache.done ]]; then
+    echo "No sidecar cache restore in flight; continuing."
+    touch /tmp/sidecar-cache.done
+  fi
+  deadline=$((SECONDS + "${SIDECAR_CACHE_WAIT_TIMEOUT:-180}"))
+  while [[ ! -f /tmp/sidecar-cache.done ]]; do
+    if (( SECONDS >= deadline )); then
+      echo "Timed out waiting for sidecar cache restore; continuing without it."
+      break
+    fi
+    if [[ -f /tmp/sidecar-cache.pid ]]; then
+      pid="$(cat /tmp/sidecar-cache.pid)"
+      if [[ -n "$pid" ]] && ! kill -0 "$pid" 2>/dev/null && [[ ! -f /tmp/sidecar-cache.done ]]; then
+        echo "Sidecar cache restore process exited early; continuing."
+        touch /tmp/sidecar-cache.done
+        break
+      fi
+    fi
+    sleep 0.5
+  done
+  if [[ -f /tmp/sidecar-cache.log ]]; then
+    echo "---- sidecar cache restore log ----"
+    cat /tmp/sidecar-cache.log
+    echo "---- end sidecar cache restore log ----"
+  fi
+fi
+
 image_present() {
   docker image inspect "$1" >/dev/null 2>&1
 }
