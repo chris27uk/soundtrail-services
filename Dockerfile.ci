@@ -78,8 +78,9 @@ RUN --mount=type=cache,id=msbuild-obj,target=/tmp/msbuild-cache \
       /p:UseSharedCompilation=true
 
 FROM build AS publish-testhost
-RUN --mount=type=cache,id=msbuild-obj,target=/tmp/msbuild-cache \
-    dotnet publish tests/Soundtrail.Services.Tests/Soundtrail.Services.Tests.csproj \
+# No cache mount: --no-build only copies outputs. A mount made this layer
+# miss GHA cache-from and re-run publish on every warm testhost export.
+RUN dotnet publish tests/Soundtrail.Services.Tests/Soundtrail.Services.Tests.csproj \
       --no-build \
       --no-restore \
       --verbosity q \
