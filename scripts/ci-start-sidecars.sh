@@ -44,11 +44,19 @@ pin_tag_from_digest() {
 }
 
 ensure_pinned_sidecars() {
-  local i
+  # Parallel pulls on cache miss (Hub round-trips dominate; daemon serializes layers fine).
+  local i pids=() p status=0
   for i in "${!CI_SIDECAR_IMAGES[@]}"; do
-    ensure_image "${CI_SIDECAR_IMAGES[$i]}"
-    pin_tag_from_digest "${CI_SIDECAR_IMAGES[$i]}" "${CI_SIDECAR_TAGS[$i]}"
+    (
+      ensure_image "${CI_SIDECAR_IMAGES[$i]}"
+      pin_tag_from_digest "${CI_SIDECAR_IMAGES[$i]}" "${CI_SIDECAR_TAGS[$i]}"
+    ) &
+    pids+=($!)
   done
+  for p in "${pids[@]}"; do
+    wait "$p" || status=1
+  done
+  return "$status"
 }
 
 # Tags survive docker load; digest refs do not. Prefer tags for "warm cache" checks.

@@ -37,30 +37,88 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          fetch-depth: 0
+          # Shallow + tags; /allowshallow + next-version floor cover Mainline base.
+          fetch-depth: 100
           fetch-tags: true
+
+      - name: Restore GitVersion image
+        id: gv-image-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/gitversion-image
+          key: gitversion-image-6.7.0-ubuntu.24.04-8.0-b77cb19872aa
+
+      - name: Restore previous SemVer floor
+        id: gv-semver-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/gitversion-prev
+          key: gitversion-semver-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            gitversion-semver-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref_name }}-
 
       - name: Determine version
         id: gitversion
         env:
-          GITVERSION_IMAGE: gittools/gitversion:6.7.0-ubuntu.24.04-8.0
+          # Digest-pinned; local tag used for docker save/load RepoTags.
+          GITVERSION_IMAGE: gittools/gitversion:6.7.0-ubuntu.24.04-8.0@sha256:b77cb19872aa0374e2127bf3ca0234993cf31eff96b532c50b815e6231254c9e
+          GITVERSION_TAG: gittools/gitversion:6.7.0-ubuntu.24.04-8.0
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
 
-          docker pull "$GITVERSION_IMAGE"
+          # Ensure base branch is in the shallow window (PR / feature branch merge-base).
+          base_ref="${GITHUB_BASE_REF:-main}"
+          git fetch --no-tags --depth=100 origin "${base_ref}:refs/remotes/origin/${base_ref}" || true
+
+          mkdir -p /tmp/gitversion-image /tmp/gitversion-prev
+          img_tar=/tmp/gitversion-image/gitversion.tar
+          if [[ -f "$img_tar" ]]; then
+            echo "Loading cached GitVersion image"
+            docker load -i "$img_tar"
+          else
+            echo "Pulling GitVersion image"
+            docker pull "$GITVERSION_IMAGE"
+            docker tag "$GITVERSION_IMAGE" "$GITVERSION_TAG"
+            docker save "$GITVERSION_TAG" -o "${img_tar}.partial"
+            mv "${img_tar}.partial" "$img_tar"
+            echo "need_image_cache=true" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Floor: previous CI MajorMinorPatch on this ref, else latest v* tag.
+          # Passed via /overrideconfig next-version (env placeholders are not expanded there).
+          floor=""
+          if [[ -f /tmp/gitversion-prev/majorMinorPatch ]]; then
+            floor=$(tr -d '[:space:]' < /tmp/gitversion-prev/majorMinorPatch)
+            echo "SemVer floor from previous CI: ${floor}"
+          fi
+          last_tag=$(git describe --tags --match 'v[0-9]*' --abbrev=0 HEAD 2>/dev/null || true)
+          if [[ -z "$floor" && -n "$last_tag" ]]; then
+            floor="${last_tag#v}"
+            echo "SemVer floor from tag: ${floor}"
+          fi
+
+          gv_args=(/allowshallow /verbosity Quiet /output json)
+          if [[ -n "$floor" ]]; then
+            gv_args+=(/overrideconfig "next-version=${floor}")
+          fi
 
           set +e
           docker run --rm \
             --volume "$GITHUB_WORKSPACE:/repo" \
             --workdir /repo \
             --env GITHUB_ACTIONS=true \
+            --env GITHUB_EVENT_NAME \
             --env GITHUB_REF \
+            --env GITHUB_REF_NAME \
+            --env GITHUB_REF_TYPE \
             --env GITHUB_BASE_REF \
             --env GITHUB_HEAD_REF \
+            --env GITHUB_SHA \
+            --env GITHUB_RUN_NUMBER \
             --entrypoint /tools/dotnet-gitversion \
-            "$GITVERSION_IMAGE" \
-            /output json > /tmp/gitversion.json 2> /tmp/gitversion.err
+            "$GITVERSION_TAG" \
+            "${gv_args[@]}" > /tmp/gitversion.json 2> /tmp/gitversion.err
           gv_exit=$?
           set -e
 
@@ -83,8 +141,10 @@ jobs:
             "majorMinorPatch=\(.MajorMinorPatch)"
           ' /tmp/gitversion.json >> "$GITHUB_OUTPUT"
 
+          jq -r '.MajorMinorPatch' /tmp/gitversion.json > /tmp/gitversion-prev/majorMinorPatch
+          jq -r '.SemVer' /tmp/gitversion.json > /tmp/gitversion-prev/semVer
+
           # Last release on this ancestry (branch → main's last tag; tag → that tag).
-          last_tag=$(git describe --tags --match 'v[0-9]*' --abbrev=0 HEAD 2>/dev/null || true)
           fallback="${last_tag:-none}"
 
           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
@@ -103,6 +163,20 @@ jobs:
             echo "imageCacheKey=${cache_key}"
             echo "imageCacheFallback=${fallback}"
           } >> "$GITHUB_OUTPUT"
+
+      - name: Save GitVersion image
+        if: always() && steps.gitversion.outputs.need_image_cache == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/gitversion-image
+          key: gitversion-image-6.7.0-ubuntu.24.04-8.0-b77cb19872aa
+
+      - name: Save SemVer floor
+        if: always() && steps.gitversion.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/gitversion-prev
+          key: gitversion-semver-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref_name }}-${{ github.sha }}
 
       - name: Display version
         run: |
@@ -158,20 +232,11 @@ jobs:
             docker-sidecars-v6-
             docker-sidecars-v5-
 
-      - name: Start test dependencies
-        run: |
-          set -euo pipefail
-          mkdir -p reports testhost /tmp/sidecar-images
-          # Overlap Raven/OSB/Redis load+health with tooling load + testhost build.
-          nohup bash scripts/ci-start-sidecars.sh >/tmp/sidecars.log 2>&1 &
-          echo $! > /tmp/sidecars.pid
-          disown || true
+      # Sidecars warm in background; returns when BuildKit is ready for buildx.
+      - name: Bootstrap images
+        run: bash scripts/ci-bootstrap.sh
 
       # docker-container is required for type=gha cache export; docker driver cannot.
-      # Prefetch BuildKit so setup-buildx skips the Hub pull (~5s).
-      - name: Load CI tooling images
-        run: bash scripts/ci-load-tooling-images.sh
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
@@ -188,13 +253,8 @@ jobs:
           cache-from: type=gha,scope=soundtrail-testhost
           cache-to: type=gha,mode=max,scope=soundtrail-testhost
 
-      - name: Wait for test dependencies
-        run: bash scripts/ci-wait-sidecars.sh
-
       - name: Run tests
-        run: |
-          set -euo pipefail
-          docker compose -f docker-compose.ci.yml run --rm --no-deps testhost
+        run: bash scripts/ci-run-tests.sh
 
       - name: Publish apps
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
