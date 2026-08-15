@@ -18,9 +18,9 @@ public static class OnUnknownMusicDataRequestedComposition
 {
     public static void Configure(IServiceCollection services, OnUnknownMusicDataRequestedPorts ports)
     {
-        services.TryAddSingleton(ports.WorkPlanner);
-        services.TryAddSingleton(ports.SearchForCandidates);
-        services.TryAddSingleton(ports.DiscoveryRepository);
+        services.TryAddScoped(ports.WorkPlanner);
+        services.TryAddScoped(ports.SearchForCandidates);
+        services.TryAddScoped(ports.DiscoveryRepository);
         services.TryAddScoped<IHandler<RequestUnknownMusicDataMessage>, OnUnknownMusicDataRequestedHandler>();
     }
 }

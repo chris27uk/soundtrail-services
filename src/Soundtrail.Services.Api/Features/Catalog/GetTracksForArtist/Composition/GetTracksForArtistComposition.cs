@@ -18,10 +18,10 @@ public static class GetTracksForArtistComposition
 {
     public static void Configure(IServiceCollection services, GetTracksForArtistPorts ports)
     {
-        services.TryAddSingleton(ports.GetTracksForArtist);
-        services.TryAddSingleton(ports.Clock);
-        services.TryAddSingleton(ports.CommandBus);
-        services.TryAddSingleton(ports.DiscoveryFeedback);
+        services.TryAddScoped(ports.GetTracksForArtist);
+        services.TryAddScoped(ports.Clock);
+        services.TryAddScoped(ports.CommandBus);
+        services.TryAddScoped(ports.DiscoveryFeedback);
         services.TryAddScoped<
             IApiHandler<GetTracksForArtistRequest, GetTracksForArtistResponse?>,
             GetTracksForArtistHandler>();

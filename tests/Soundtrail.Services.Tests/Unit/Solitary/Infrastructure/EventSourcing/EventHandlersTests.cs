@@ -31,7 +31,7 @@ public sealed class EventHandlersTests
             return Task.CompletedTask;
         });
 
-        await handlers.HandleAsync(new TestDomainEvent());
+        await handlers.HandleAsync(new TestDomainEvent(), TestContext.Current.CancellationToken);
 
         executions.Should().Equal("sync", "async");
     }

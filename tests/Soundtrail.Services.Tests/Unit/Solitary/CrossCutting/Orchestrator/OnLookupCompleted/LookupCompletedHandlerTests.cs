@@ -22,7 +22,7 @@ public sealed class LookupCompletedHandlerTests
         await subject.Handle(
             LookupCompletedHandlerUnitTestEnvironment.CreateSearchCompleted(
                 "Midnight Signals Aurora Lane",
-                TrackId.From(TestTrackIds.Value("23e97290be26a0d4877206df841e194ede54a324000b461100000000"))));
+                TrackId.From(TestTrackIds.Value("23e97290be26a0d4877206df841e194ede54a324000b461100000000"))), TestContext.Current.CancellationToken);
 
         var command = environment.CommandBus.SentMessages
             .Should()
@@ -43,7 +43,7 @@ public sealed class LookupCompletedHandlerTests
         environment.SeedForStreamingLocation(trackId);
         var subject = environment.CreateSubject();
 
-        await subject.Handle(LookupCompletedHandlerUnitTestEnvironment.CreateDeferred());
+        await subject.Handle(LookupCompletedHandlerUnitTestEnvironment.CreateDeferred(), TestContext.Current.CancellationToken);
 
         environment.Repository.AppendedEvents.Last().Should().BeOfType<WorkDeferred>();
     }
@@ -70,7 +70,7 @@ public sealed class LookupCompletedHandlerTests
         await subject.Handle(
             LookupCompletedHandlerUnitTestEnvironment.CreateNotFound(
                 trackId,
-                firstAttempt.Id));
+                firstAttempt.Id), TestContext.Current.CancellationToken);
 
         environment.Repository.AppendedEvents.Should().ContainSingle(e => e is WorkAttemptFailed);
         environment.CommandBus.SentMessages
@@ -87,7 +87,7 @@ public sealed class LookupCompletedHandlerTests
         environment.SeedForStreamingLocation();
         var subject = environment.CreateSubject();
 
-        await subject.Handle(LookupCompletedHandlerUnitTestEnvironment.CreateStreamingLocationCompleted());
+        await subject.Handle(LookupCompletedHandlerUnitTestEnvironment.CreateStreamingLocationCompleted(), TestContext.Current.CancellationToken);
 
         environment.Repository.LoadCalls.Should().Be(1);
     }
@@ -107,7 +107,7 @@ public sealed class LookupCompletedHandlerTests
                 new DateTimeOffset(2026, 7, 19, 9, 40, 30, TimeSpan.Zero),
                 "streaming-isrc:Spotify"));
 
-        await subject.Handle(completed);
+        await subject.Handle(completed, TestContext.Current.CancellationToken);
 
         environment.Repository.AppendedEvents.Last().Should().Be(
             new WorkCompleted(

@@ -35,11 +35,13 @@ internal sealed class StorePlaylistTracksReadModelPortContractTestEnvironment : 
         StorePlaylistTracksReadModelPortImplementation implementation,
         string playlistName = "projector_playlist_tracks")
     {
-        var playlistId = PlaylistId.FromPlaylistName(playlistName);
         return implementation switch
         {
-            StorePlaylistTracksReadModelPortImplementation.Fake => CreateFake(playlistId),
-            StorePlaylistTracksReadModelPortImplementation.Raven => CreateRaven(playlistId),
+            StorePlaylistTracksReadModelPortImplementation.Fake =>
+                CreateFake(PlaylistId.FromPlaylistName(playlistName)),
+            StorePlaylistTracksReadModelPortImplementation.Raven =>
+                CreateRaven(PlaylistId.FromPlaylistName(
+                    $"{playlistName}-{EmbeddedRavenTestServer.NewIsolationKey()}")),
             _ => throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null)
         };
     }
@@ -74,6 +76,12 @@ internal sealed class StorePlaylistTracksReadModelPortContractTestEnvironment : 
 
     public async ValueTask DisposeAsync()
     {
+        if (documentStore is null)
+        {
+            return;
+        }
+
+        await EmbeddedRavenTestServer.DeleteDocumentsAsync(documentStore, cleanupDocumentIds);
         await EmbeddedRavenTestServer.DisposeAsync(documentStore);
     }
 

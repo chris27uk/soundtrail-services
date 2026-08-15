@@ -13,7 +13,7 @@ public sealed class IdempotentLookupPlaylistTracksByProviderHandlerDecoratorTest
         var subject = environment.CreateIdempotencySubject();
         var request = environment.CreateRequest();
 
-        await subject.Handle(request);
+        await subject.Handle(request, TestContext.Current.CancellationToken);
 
         environment.InnerHandler.Calls.Should().Be(1);
         environment.ReceiptStore.TryBeginCommandIds.Should().Equal(request.Id);
@@ -30,7 +30,7 @@ public sealed class IdempotentLookupPlaylistTracksByProviderHandlerDecoratorTest
         var subject = environment.CreateIdempotencySubject();
         var request = environment.CreateRequest();
 
-        await subject.Handle(request);
+        await subject.Handle(request, TestContext.Current.CancellationToken);
 
         environment.InnerHandler.Calls.Should().Be(0);
         environment.ReceiptStore.CompletedCommandIds.Should().BeEmpty();
@@ -50,7 +50,7 @@ public sealed class IdempotentLookupPlaylistTracksByProviderHandlerDecoratorTest
         var subject = environment.CreateIdempotencySubject();
         var request = environment.CreateRequest();
 
-        await subject.Handle(request);
+        await subject.Handle(request, TestContext.Current.CancellationToken);
 
         environment.ReceiptStore.CompletedCommandIds.Should().BeEmpty();
         environment.ReceiptStore.ReleasedCommandIds.Should().Equal(request.Id);

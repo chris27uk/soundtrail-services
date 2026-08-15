@@ -11,7 +11,7 @@ public sealed class ArtistTracksRouteExistsTests
         var artistId = "artist-2501";
         using var environment = GetTracksForArtistRouteTestEnvironment.ForExistingArtistTracks(artistId);
 
-        var response = await environment.Client.GetAsync($"/catalog/artists/{artistId}/tracks");
+        var response = await environment.Client.GetAsync($"/catalog/artists/{artistId}/tracks", TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }

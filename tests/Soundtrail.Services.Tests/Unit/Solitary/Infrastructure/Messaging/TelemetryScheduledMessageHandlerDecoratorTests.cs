@@ -14,7 +14,7 @@ public sealed class TelemetryScheduledMessageHandlerDecoratorTests
         using var probe = ActivityProbe.Start();
         var decorator = new TelemetryScheduledMessageHandlerDecorator<ImportKworbChartCommand>(new NoOpHandler());
 
-        await decorator.HandleAsync(new ImportKworbChartCommand(new DateTimeOffset(2026, 7, 19, 10, 23, 0, TimeSpan.Zero)));
+        await decorator.HandleAsync(new ImportKworbChartCommand(new DateTimeOffset(2026, 7, 19, 10, 23, 0, TimeSpan.Zero)), TestContext.Current.CancellationToken);
 
         probe.LastStoppedActivity.Should().NotBeNull();
         probe.LastStoppedActivity!.Events.Select(x => x.Name)
@@ -54,33 +54,4 @@ public sealed class TelemetryScheduledMessageHandlerDecoratorTests
             throw new InvalidOperationException("scheduled failure");
     }
 
-    private sealed class ActivityProbe : IDisposable
-    {
-        private readonly ActivityListener listener;
-
-        private ActivityProbe(ActivityListener listener)
-        {
-            this.listener = listener;
-        }
-
-        public Activity? LastStoppedActivity { get; private set; }
-
-        public static ActivityProbe Start()
-        {
-            ActivityProbe? probe = null;
-            var listener = new ActivityListener
-            {
-                ShouldListenTo = source => source.Name == "Soundtrail.Messaging",
-                Sample = static (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-                SampleUsingParentId = static (ref ActivityCreationOptions<string> _) => ActivitySamplingResult.AllDataAndRecorded,
-                ActivityStopped = activity => probe!.LastStoppedActivity = activity
-            };
-
-            ActivitySource.AddActivityListener(listener);
-            probe = new ActivityProbe(listener);
-            return probe;
-        }
-
-        public void Dispose() => this.listener.Dispose();
-    }
 }

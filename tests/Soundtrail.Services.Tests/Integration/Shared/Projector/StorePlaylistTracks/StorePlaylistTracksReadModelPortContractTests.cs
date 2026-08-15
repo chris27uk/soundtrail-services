@@ -1,6 +1,7 @@
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Discovery.Events;
+using Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Shared.Projector.StorePlaylistTracks;
 
@@ -17,7 +18,8 @@ public sealed class StorePlaylistTracksReadModelPortContractTests
         StorePlaylistTracksReadModelPortImplementation implementation)
     {
         await using var environment = StorePlaylistTracksReadModelPortContractTestEnvironment.Create(implementation);
-        var discoveredTrackId = TestTrackIds.Create("spotify-track");
+        var discoveredTrackId = TestTrackIds.Create(
+            $"spotify-track-{EmbeddedRavenTestServer.NewIsolationKey()}");
         await environment.SeedCatalogTrackAsync(CreateCatalogTrack(discoveredTrackId, "Spotify Track", "Spotify Artist"));
 
         await environment.Subject.StoreAsync(
@@ -51,19 +53,13 @@ public sealed class StorePlaylistTracksReadModelPortContractTests
             implementation,
             playlistName: "parent_child_playlist");
 
-        var parentTrackId = MustCreate("Neon Harbour", "Glass Cities");
-        var childTrackId = MustCreate(
-            "Neon Harbour",
-            "Glass Cities (Radio Edit)",
-            "Glass Cities Remixes",
-            new DateOnly(2024, 6, 23),
-            "Radio Edit");
+        var (artistName, parentTrackId, childTrackId) = CreateIsolatedParentChildPair();
 
         await environment.SeedCatalogTrackAsync(
             CreateCatalogTrack(
                 childTrackId,
                 title: "Glass Cities (Radio Edit)",
-                artistName: "Neon Harbour",
+                artistName: artistName,
                 albumTitle: "Glass Cities Remixes",
                 releaseDate: new DateOnly(2024, 6, 23),
                 releaseType: "Radio Edit"));
@@ -93,13 +89,7 @@ public sealed class StorePlaylistTracksReadModelPortContractTests
             implementation,
             playlistName: "repair_playlist");
 
-        var parentTrackId = MustCreate("Neon Harbour", "Glass Cities");
-        var childTrackId = MustCreate(
-            "Neon Harbour",
-            "Glass Cities (Radio Edit)",
-            "Glass Cities Remixes",
-            new DateOnly(2024, 6, 23),
-            "Radio Edit");
+        var (artistName, parentTrackId, childTrackId) = CreateIsolatedParentChildPair();
 
         await environment.Subject.StoreAsync(
             new PlaylistTracksDiscovered(
@@ -112,7 +102,7 @@ public sealed class StorePlaylistTracksReadModelPortContractTests
             CreateCatalogTrack(
                 childTrackId,
                 title: "Glass Cities (Radio Edit)",
-                artistName: "Neon Harbour",
+                artistName: artistName,
                 albumTitle: "Glass Cities Remixes",
                 releaseDate: new DateOnly(2024, 6, 23),
                 releaseType: "Radio Edit"));
@@ -136,24 +126,18 @@ public sealed class StorePlaylistTracksReadModelPortContractTests
             implementation,
             playlistName: "streaming_preference_store");
 
-        var parentTrackId = MustCreate("Neon Harbour", "Glass Cities");
-        var childTrackId = MustCreate(
-            "Neon Harbour",
-            "Glass Cities (Radio Edit)",
-            "Glass Cities Remixes",
-            new DateOnly(2024, 6, 23),
-            "Radio Edit");
+        var (artistName, parentTrackId, childTrackId) = CreateIsolatedParentChildPair();
 
         await environment.SeedCatalogTrackAsync(
             CreateCatalogTrack(
                 parentTrackId,
                 title: "Glass Cities",
-                artistName: "Neon Harbour"));
+                artistName: artistName));
         await environment.SeedCatalogTrackAsync(
             CreateCatalogTrack(
                 childTrackId,
                 title: "Glass Cities (Radio Edit)",
-                artistName: "Neon Harbour",
+                artistName: artistName,
                 albumTitle: "Glass Cities Remixes",
                 releaseDate: new DateOnly(2024, 6, 23),
                 releaseType: "Radio Edit",
@@ -184,24 +168,18 @@ public sealed class StorePlaylistTracksReadModelPortContractTests
             implementation,
             playlistName: "streaming_preference_repair");
 
-        var parentTrackId = MustCreate("Neon Harbour", "Glass Cities");
-        var childTrackId = MustCreate(
-            "Neon Harbour",
-            "Glass Cities (Radio Edit)",
-            "Glass Cities Remixes",
-            new DateOnly(2024, 6, 23),
-            "Radio Edit");
+        var (artistName, parentTrackId, childTrackId) = CreateIsolatedParentChildPair();
 
         await environment.SeedCatalogTrackAsync(
             CreateCatalogTrack(
                 parentTrackId,
                 title: "Glass Cities",
-                artistName: "Neon Harbour"));
+                artistName: artistName));
         await environment.SeedCatalogTrackAsync(
             CreateCatalogTrack(
                 childTrackId,
                 title: "Glass Cities (Radio Edit)",
-                artistName: "Neon Harbour",
+                artistName: artistName,
                 albumTitle: "Glass Cities Remixes",
                 releaseDate: new DateOnly(2024, 6, 23),
                 releaseType: "Radio Edit"));
@@ -221,7 +199,7 @@ public sealed class StorePlaylistTracksReadModelPortContractTests
             CreateCatalogTrack(
                 childTrackId,
                 title: "Glass Cities (Radio Edit)",
-                artistName: "Neon Harbour",
+                artistName: artistName,
                 albumTitle: "Glass Cities Remixes",
                 releaseDate: new DateOnly(2024, 6, 23),
                 releaseType: "Radio Edit",
@@ -235,6 +213,20 @@ public sealed class StorePlaylistTracksReadModelPortContractTests
         after.Tracks[0].TrackId.Should().Be(childTrackId.Value);
         after.Tracks[0].StreamingLocations.Should().ContainSingle()
             .Which.Url.Should().Be("https://music.youtube.com/watch?v=glass-cities-radio");
+    }
+
+    private static (string ArtistName, TrackId Parent, TrackId Child) CreateIsolatedParentChildPair()
+    {
+        var isolation = EmbeddedRavenTestServer.NewIsolationKey();
+        var artistName = $"Neon Harbour {isolation}";
+        var parentTrackId = MustCreate(artistName, "Glass Cities");
+        var childTrackId = MustCreate(
+            artistName,
+            "Glass Cities (Radio Edit)",
+            "Glass Cities Remixes",
+            new DateOnly(2024, 6, 23),
+            "Radio Edit");
+        return (artistName, parentTrackId, childTrackId);
     }
 
     private static CatalogTrackRecordDto CreateCatalogTrack(

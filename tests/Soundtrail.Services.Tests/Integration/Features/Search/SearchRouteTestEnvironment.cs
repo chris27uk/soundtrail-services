@@ -6,6 +6,7 @@ using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.Catalog.Search.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.Search.Contract;
 using Soundtrail.Services.Api.Infrastructure;
+using Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Features.Search;
 
@@ -22,7 +23,7 @@ internal sealed class SearchRouteTestEnvironment : IDisposable
 
     public static SearchRouteTestEnvironment ForExistingSearchResults()
     {
-        var builder = WebApplication.CreateBuilder();
+        var builder = WebApplication.CreateBuilder().Quiet();
         builder.WebHost.UseTestServer();
         builder.Services.AddSingleton<IApiHandler<SearchRequest, SearchResponse?>>(new SearchHandlerFake());
         var app = builder.Build();

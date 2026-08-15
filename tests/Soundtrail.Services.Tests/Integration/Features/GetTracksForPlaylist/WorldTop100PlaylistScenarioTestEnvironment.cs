@@ -62,17 +62,19 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
 
     public ClockFake Clock { get; }
 
-    public PlaylistId PlaylistId => PlaylistId.FromPlaylistName("world_top_100");
+    public PlaylistId PlaylistId { get; } = PlaylistId.FromPlaylistName("world_top_100");
 
     public static async Task<WorldTop100PlaylistScenarioTestEnvironment> CreateAsync()
     {
+        // Shared store: this is the only worldtop100 writer on soundtrail-tests (E2E uses soundtrail-e2e).
+        // ResetScenarioStateAsync clears leftover documents from a previous testhost run.
         var documentStore = EmbeddedRavenTestServer.CreateDocumentStore();
         var wireMockServer = WireMockServer.Start();
         WorldTop100ProviderStubs.Configure(wireMockServer);
 
         var commandBus = new CommandBusFake();
         var clock = new ClockFake();
-        var builder = WebApplication.CreateBuilder();
+        var builder = WebApplication.CreateBuilder().Quiet();
         builder.WebHost.UseTestServer();
 
         builder.Services.AddSingleton(commandBus);
@@ -135,6 +137,8 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
             new CatalogItemOperation.ChildTracksForPlaylist(PlaylistId).StableIdentifier());
         var playlistDocumentId = CatalogPlaylistTracksRecordDto.GetDocumentId(PlaylistId.Value);
 
+        TrackForCleanup(discoveryDocumentId);
+        TrackForCleanup(playlistDocumentId);
         await EmbeddedRavenTestServer.DeleteDocumentAsync(this.documentStore, discoveryDocumentId);
         await EmbeddedRavenTestServer.DeleteDocumentAsync(this.documentStore, playlistDocumentId);
     }
@@ -298,7 +302,7 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
 
     public async Task<GetTracksForPlaylistResponseDto?> GetPlaylistAsync()
     {
-        var response = await Client.GetAsync("/catalog/playlists/world_top_100/tracks");
+        var response = await Client.GetAsync($"/catalog/playlists/{PlaylistId.Value}/tracks");
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<GetTracksForPlaylistResponseDto>();
     }
@@ -310,6 +314,7 @@ internal sealed class WorldTop100PlaylistScenarioTestEnvironment : IAsyncDisposa
         this.client.Dispose();
         this.wireMockServer.Dispose();
 
+        await EmbeddedRavenTestServer.DeleteDocumentsAsync(this.documentStore, this.cleanupDocumentIds);
         await EmbeddedRavenTestServer.DisposeAsync(this.documentStore);
     }
 

@@ -10,7 +10,7 @@ public sealed class TrackRouteExistsTests
         var trackId = TestTrackIds.Value("track-501");
         using var environment = GetTrackRouteTestEnvironment.ForExistingTrack(trackId);
 
-        var response = await environment.Client.GetAsync($"/catalog/tracks/{trackId}");
+        var response = await environment.Client.GetAsync($"/catalog/tracks/{trackId}", TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }

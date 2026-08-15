@@ -16,8 +16,8 @@ public static class OnKnownMusicDataRequestedComposition
 {
     public static void Configure(IServiceCollection services, OnKnownMusicDataRequestedPorts ports)
     {
-        services.TryAddSingleton(ports.WorkPlanner);
-        services.TryAddSingleton(ports.DiscoveryRepository);
+        services.TryAddScoped(ports.WorkPlanner);
+        services.TryAddScoped(ports.DiscoveryRepository);
         services.TryAddScoped<IHandler<RequestKnownMusicDataMessage>, OnKnownMusicDataRequestedHandler>();
     }
 }

@@ -15,8 +15,8 @@ public static class GetAlbumComposition
 {
     public static void Configure(IServiceCollection services, GetAlbumPorts ports)
     {
-        services.TryAddSingleton(ports.GetAlbum);
-        services.TryAddSingleton(ports.Clock);
+        services.TryAddScoped(ports.GetAlbum);
+        services.TryAddScoped(ports.Clock);
         services.TryAddScoped<IApiHandler<GetAlbumRequest, GetAlbumResponse?>, GetAlbumHandler>();
     }
 }

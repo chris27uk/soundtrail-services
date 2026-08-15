@@ -32,15 +32,15 @@ public static class CatalogEnrichmentReadComposition
 {
     public static void Configure(IServiceCollection services, CatalogEnrichmentReadPorts ports)
     {
-        services.TryAddSingleton(ports.ReadPlaylistTracks);
-        services.TryAddSingleton(ports.ReadCatalogEntries);
-        services.TryAddSingleton(ports.ReadStreamingLocation);
-        services.TryAddSingleton(ports.ReadTrackForLookup);
-        services.TryAddSingleton(ports.ReadAlbumsByArtistId);
-        services.TryAddSingleton(ports.ReadTracksByArtistId);
-        services.TryAddSingleton(ports.ReadTracksByAlbumId);
-        services.TryAddSingleton(ports.Clock);
-        services.TryAddSingleton(ports.CommandBus);
+        services.TryAddScoped(ports.ReadPlaylistTracks);
+        services.TryAddScoped(ports.ReadCatalogEntries);
+        services.TryAddScoped(ports.ReadStreamingLocation);
+        services.TryAddScoped(ports.ReadTrackForLookup);
+        services.TryAddScoped(ports.ReadAlbumsByArtistId);
+        services.TryAddScoped(ports.ReadTracksByArtistId);
+        services.TryAddScoped(ports.ReadTracksByAlbumId);
+        services.TryAddScoped(ports.Clock);
+        services.TryAddScoped(ports.CommandBus);
 
         services.TryAddScoped<IHandler<LookupPlaylistTracksByProviderMessage>, LookupPlaylistTracksByProviderHandler>();
         services.TryAddScoped<IHandler<LookupMusicbrainzSearchResultsMessage>, LookupMusicbrainzSearchResultsHandler>();

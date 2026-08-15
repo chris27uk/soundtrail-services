@@ -4,6 +4,7 @@ using Soundtrail.Domain.Catalog.Playlists;
 using Soundtrail.Domain.Common;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks.Adapters;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks.Ports;
+using Soundtrail.Services.Tests.Integration.Shared;
 using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTracksForPlaylist.Support;
 using System.Net;
 using WireMock.RequestBuilders;
@@ -122,22 +123,14 @@ internal sealed class ReadPlaylistTracksByProviderPortContractTestEnvironment : 
             client);
     }
 
-    private static string ReadFixtureHtml()
-    {
-        var fixturePath = Path.Combine(
-            AppContext.BaseDirectory,
-            "..",
-            "..",
-            "..",
+    private static string ReadFixtureHtml() =>
+        TestFixtureFiles.ReadAllText(
             "Integration",
             "Features",
             "GetTracksForPlaylist",
             "Support",
             "Fixtures",
             "kworb-worldwide-song-chart.html");
-
-        return File.ReadAllText(Path.GetFullPath(fixturePath));
-    }
 }
 
 public enum ReadPlaylistTracksByProviderPortImplementation

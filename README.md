@@ -99,46 +99,21 @@ flowchart TB
 
 ## Developer build
 
-Use the same PowerShell make script and container image as CI for consistent restore/build/test behaviour.
+Local default is [`build.ps1`](build.ps1) with the SDK in [`global.json`](global.json), RavenDB Embedded, and Testcontainers. Docker is required for Redis and OpenServiceBus when you do not already have those services running.
 
 ### Prerequisites
 
-- Docker
-- PowerShell 7+ (`pwsh`) if running the script on the host
-- .NET SDK matching [`global.json`](global.json) if running outside the container
+- .NET SDK matching [`global.json`](global.json) (`rollForward: disable`)
+- PowerShell 7+ (`pwsh`)
+- Docker (integration / end-to-end Testcontainers)
 
-### Consistent build (container — preferred)
-
-```bash
-# Optional local image; CI pulls a prebuilt GHCR image tagged by Dockerfile hash.
-docker build -t soundtrail-services-ci:local -f .github/docker/Dockerfile.ci .github/docker
-
-docker run --rm \
-  -v "$PWD:/src" \
-  -w /src \
-  soundtrail-services-ci:local \
-  pwsh ./build.ps1 -Restore
-
-docker run --rm \
-  -v "$PWD:/src" \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  --add-host=host.docker.internal:host-gateway \
-  -e TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal \
-  -e TESTCONTAINERS_RYUK_DISABLED=true \
-  -w /src \
-  soundtrail-services-ci:local \
-  pwsh ./build.ps1
-```
-
-The Docker socket mount is required so integration and end-to-end tests can start Testcontainers (Redis, Azure Service Bus emulator).
-
-### Host build
+### Host build (local default)
 
 ```powershell
 ./build.ps1 -Restore
 ```
 
-`-Restore` restores packages (locked-mode in CI) then builds and runs the test pack. Omit `-Restore` only when `project.assets.json` is already present and you want compile/test with `--no-restore`.
+`-Restore` restores packages then builds and runs the full test pack. Omit `-Restore` only when `project.assets.json` is already present and you want compile/test with `--no-restore`.
 
 Useful switches:
 
@@ -149,8 +124,6 @@ Useful switches:
 ./build.ps1 -Configuration Debug
 ```
 
-Default CI path restores, builds, then runs the full test pack in one `dotnet test` (unit + integration + end-to-end) and writes a TRX report under `reports/`.
-
 End-to-end tests start RavenDB Embedded in-process, WireMock in-process, and Azure Service Bus emulator + Redis via Testcontainers. Docker must be running; you do not need to start compose yourself. Queue names are fixed in code (`ServiceBusQueues`); configure only `ServiceBus:ConnectionString`.
 
 ```bash
@@ -158,9 +131,23 @@ dotnet test tests/Soundtrail.Services.Tests/Soundtrail.Services.Tests.csproj \
   --filter "FullyQualifiedName~Soundtrail.Services.Tests.EndToEnd"
 ```
 
+### CI parity (optional)
+
+CI does **not** use Embedded Raven or Testcontainers. It builds a published testhost ([`Dockerfile.ci`](Dockerfile.ci)) and runs it next to Redis, OpenServiceBus, and RavenDB 7.2.5:
+
+```bash
+docker build -t soundtrail-testhost:ci --target testhost -f Dockerfile.ci .
+mkdir -p reports
+docker compose -f docker-compose.ci.yml up -d redis openservicebus ravendb
+docker compose -f docker-compose.ci.yml run --rm --no-deps testhost
+docker compose -f docker-compose.ci.yml down -v
+```
+
+Point a host-run testhost at the same sidecars with `SOUNDTRAIL_TEST_NO_TESTCONTAINERS=1`, `SOUNDTRAIL_TEST_REDIS`, `SOUNDTRAIL_TEST_SERVICEBUS`, and `SOUNDTRAIL_TEST_RAVEN`.
+
 ### CI
 
-GitHub Actions pulls a prebuilt CI image from GHCR tagged by the Dockerfile hash (pinned .NET SDK + PowerShell + Docker CLI). If that tag is missing, CI builds and pushes it once; Dockerfile changes are also published by [`.github/workflows/ci-image.yml`](.github/workflows/ci-image.yml). The Build job then runs a single container invoke of [`build.ps1 -Restore`](build.ps1). See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+GitHub Actions uses Buildx + `type=gha` layer cache to build the testhost image from [`Dockerfile.ci`](Dockerfile.ci) (restore → build → publish, no RavenDB.Embedded in the restore graph). Sidecars come from [`docker-compose.ci.yml`](docker-compose.ci.yml). See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 The PR check is the workflow job **Build \<SemVer\>** (plus a **Test Results** annotation on pull requests). To block merges until it passes, in GitHub go to **Settings → Rules → Rulesets** (or **Branches → Branch protection**) for `main` and require that Build status check.
 

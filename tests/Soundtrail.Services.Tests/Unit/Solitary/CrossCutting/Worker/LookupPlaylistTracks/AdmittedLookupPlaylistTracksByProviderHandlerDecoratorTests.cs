@@ -15,7 +15,7 @@ public sealed class AdmittedLookupPlaylistTracksByProviderHandlerDecoratorTests
         var subject = environment.CreateAdmissionSubject();
         var request = environment.CreateRequest();
 
-        await subject.Handle(request);
+        await subject.Handle(request, TestContext.Current.CancellationToken);
 
         environment.InnerHandler.Calls.Should().Be(1);
         environment.AdmissionPort.RequestedAdmission.Should().Be(

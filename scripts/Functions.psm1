@@ -81,4 +81,47 @@ function Invoke-Stage(
     }
 }
 
-Export-ModuleMember -Function Write-Title, Invoke-InPath, Exec, Invoke-Stage
+# Prints a concise TRX summary so CI logs still show totals after noisy host output.
+function Write-TestRunSummary {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$TrxPath
+    )
+
+    if (-not (Test-Path -LiteralPath $TrxPath)) {
+        Write-Host "Test summary: TRX not found at $TrxPath" -ForegroundColor Yellow
+        return
+    }
+
+    try {
+        [xml]$trx = Get-Content -LiteralPath $TrxPath -Raw
+        $ns = New-Object System.Xml.XmlNamespaceManager($trx.NameTable)
+        $ns.AddNamespace("t", "http://microsoft.com/schemas/VisualStudio/TeamTest/2010")
+        $counters = $trx.SelectSingleNode("//t:ResultSummary/t:Counters", $ns)
+        if ($null -eq $counters) {
+            $counters = $trx.SelectSingleNode("//ResultSummary/Counters")
+        }
+        if ($null -eq $counters) {
+            Write-Host "Test summary: unable to parse counters from $TrxPath" -ForegroundColor Yellow
+            return
+        }
+
+        $total = [int]$counters.GetAttribute("total")
+        $passed = [int]$counters.GetAttribute("passed")
+        $failed = [int]$counters.GetAttribute("failed")
+        $skipped = [int]($counters.GetAttribute("notExecuted"))
+        if ($counters.HasAttribute("total") -eq $false) {
+            $total = $passed + $failed + $skipped
+        }
+
+        $color = if ($failed -gt 0) { "Red" } else { "Green" }
+        Write-Host ""
+        Write-Host ("Test summary: {0} total, {1} passed, {2} failed, {3} skipped ({4})" -f `
+            $total, $passed, $failed, $skipped, $TrxPath) -ForegroundColor $color
+    }
+    catch {
+        Write-Host "Test summary: failed to read $TrxPath ($_)" -ForegroundColor Yellow
+    }
+}
+
+Export-ModuleMember -Function Write-Title, Invoke-InPath, Exec, Invoke-Stage, Write-TestRunSummary

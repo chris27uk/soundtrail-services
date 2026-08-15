@@ -1,0 +1,93 @@
+# CI sidecars for the published testhost. Local default remains Embedded + Testcontainers.
+# Usage: docker compose -f docker-compose.ci.yml up -d redis openservicebus ravendb
+
+name: soundtrail-ci
+
+services:
+  redis:
+    # Tag only so GHA docker load (RepoTags) satisfies pull_policy: missing.
+    # Digest pin: scripts/ci-image-refs.sh (CI_REDIS_IMAGE).
+    image: redis:7-alpine
+    pull_policy: missing
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  openservicebus:
+    # Immutable local tag (digest pin: CI_OPENSERVICEBUS_IMAGE in scripts/ci-image-refs.sh).
+    # Retagged after digest pull — never :latest.
+    image: mauritsarissen/openservicebus:sha-72ec683f93d8
+    pull_policy: missing
+    environment:
+      OPENSERVICEBUS__STORAGE__MODE: InMemory
+      OPENSERVICEBUS_CONFIG: /etc/openservicebus/config.json
+    volumes:
+      - ./Soundtrail.Services.AppHost/servicebus-emulator/Config.json:/etc/openservicebus/config.json:ro
+    ports:
+      - "5672:5672"
+      - "5300:5300"
+
+  ravendb:
+    # Tag only (digest pin: CI_RAVENDB_IMAGE in scripts/ci-image-refs.sh).
+    # Spike: Embedded nupkg ~890MB vs this image ~378MB compressed (linux-only).
+    image: ravendb/ravendb:7.2.5-ubuntu.24.04-x64
+    pull_policy: missing
+    environment:
+      RAVEN_Setup_Mode: None
+      RAVEN_License_Eula_Accepted: "true"
+      RAVEN_Security_UnsecuredAccessAllowed: PublicNetwork
+      RAVEN_ServerUrl: http://0.0.0.0:8080
+      RAVEN_ServerUrl_Tcp: tcp://0.0.0.0:38888
+      RAVEN_PublicServerUrl: http://ravendb:8080
+      RAVEN_PublicServerUrl_Tcp: tcp://ravendb:38888
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "/usr/lib/ravendb/scripts/healthcheck.sh"]
+      interval: 2s
+      timeout: 5s
+      retries: 40
+      start_period: 15s
+
+  testhost:
+    # Tag only (digest pin: CI_ASPNET_IMAGE / Dockerfile.ci RUNTIME_IMAGE).
+    # Published tests are bind-mounted from buildx type=local (publish-testhost-out).
+    image: mcr.microsoft.com/dotnet/aspnet:10.0.9-noble
+    pull_policy: missing
+    working_dir: /app
+    depends_on:
+      redis:
+        condition: service_healthy
+      ravendb:
+        condition: service_healthy
+      openservicebus:
+        condition: service_started
+    environment:
+      SOUNDTRAIL_TEST_NO_TESTCONTAINERS: "true"
+      SOUNDTRAIL_TEST_REDIS: "redis:6379,abortConnect=false"
+      SOUNDTRAIL_TEST_SERVICEBUS: "Endpoint=sb://openservicebus:5672;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true"
+      SOUNDTRAIL_TEST_RAVEN: "http://ravendb:8080"
+      GITVERSION_INFORMATIONALVERSION: "${GITVERSION_INFORMATIONALVERSION:-}"
+      OTEL_SERVICE_VERSION: "${OTEL_SERVICE_VERSION:-}"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+      DOTNET_NOLOGO: "true"
+      TESTINGPLATFORM_TELEMETRY_OPTOUT: "1"
+      Logging__LogLevel__Default: Warning
+      Logging__LogLevel__Microsoft: Warning
+      Logging__LogLevel__System: Warning
+    volumes:
+      - ./testhost:/app:ro
+      - ./reports:/reports
+    entrypoint: ["dotnet", "Soundtrail.Services.Tests.dll"]
+    command:
+      - --report-xunit-trx
+      - --report-xunit-trx-filename
+      - tests.trx
+      - --results-directory
+      - /reports

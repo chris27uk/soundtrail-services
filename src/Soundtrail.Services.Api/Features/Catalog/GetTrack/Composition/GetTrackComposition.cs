@@ -12,7 +12,7 @@ public static class GetTrackComposition
 {
     public static void Configure(IServiceCollection services, GetTrackPorts ports)
     {
-        services.TryAddSingleton(ports.GetTrack);
+        services.TryAddScoped(ports.GetTrack);
         services.TryAddScoped<IApiHandler<GetTrackRequest, GetTrackResponse?>, GetTrackHandler>();
     }
 }

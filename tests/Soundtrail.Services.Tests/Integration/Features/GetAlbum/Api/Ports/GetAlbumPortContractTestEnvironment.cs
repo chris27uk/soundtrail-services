@@ -1,7 +1,6 @@
 using Raven.Client.Documents;
 using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Contracts.Persistence;
-using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Services.Api.Features.Catalog.GetAlbum.Adapters;
@@ -13,18 +12,18 @@ namespace Soundtrail.Services.Tests.Integration.GetAlbum.Api.Ports;
 internal sealed class GetAlbumPortContractTestEnvironment : IAsyncDisposable
 {
     private readonly IDocumentStore? documentStore;
-    private readonly string? databaseName;
+    private readonly List<string> cleanupDocumentIds;
 
     private GetAlbumPortContractTestEnvironment(
         IGetAlbumPort subject,
         AlbumId albumId,
         IDocumentStore? documentStore = null,
-        string? databaseName = null)
+        List<string>? cleanupDocumentIds = null)
     {
         Subject = subject;
         AlbumId = albumId;
         this.documentStore = documentStore;
-        this.databaseName = databaseName;
+        this.cleanupDocumentIds = cleanupDocumentIds ?? [];
     }
 
     public IGetAlbumPort Subject { get; }
@@ -39,53 +38,76 @@ internal sealed class GetAlbumPortContractTestEnvironment : IAsyncDisposable
         string albumName = "The Album",
         DateOnly? releaseDate = null)
     {
-        var resolvedAlbumId = AlbumId.From(artistId, albumId);
-        var response = new GetAlbumResponse(
-            ArtistId.From(artistId),
-            ArtistName.From(artistName),
-            resolvedAlbumId,
-            albumName,
-            releaseDate ?? new DateOnly(2024, 1, 2));
-
-        return implementation switch
+        if (implementation == GetAlbumPortImplementation.Fake)
         {
-            GetAlbumPortImplementation.Fake => new GetAlbumPortContractTestEnvironment(
-                new GetAlbumPortFake(response),
-                resolvedAlbumId),
-            GetAlbumPortImplementation.Raven => await CreateRavenEnvironmentAsync(
+            var resolvedAlbumId = AlbumId.From(artistId, albumId);
+            var response = new GetAlbumResponse(
+                ArtistId.From(artistId),
+                ArtistName.From(artistName),
                 resolvedAlbumId,
-                new CatalogAlbumRecordDto
-                {
-                    Id = CatalogAlbumRecordDto.GetDocumentId(resolvedAlbumId.ArtistAlbumId),
-                    ArtistId = artistId,
-                    AlbumId = albumId,
-                    ArtistName = artistName,
-                    Name = albumName,
-                    ReleaseDate = response.ReleaseDate
-                }),
-            _ => throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null)
-        };
+                albumName,
+                releaseDate ?? new DateOnly(2024, 1, 2));
+
+            return new GetAlbumPortContractTestEnvironment(
+                new GetAlbumPortFake(response),
+                resolvedAlbumId);
+        }
+
+        if (implementation != GetAlbumPortImplementation.Raven)
+        {
+            throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null);
+        }
+
+        var isolation = EmbeddedRavenTestServer.NewIsolationKey();
+        var uniqueArtistId = $"{artistId}-{isolation}";
+        var uniqueAlbumId = $"{albumId}-{isolation}";
+        var ravenAlbumId = AlbumId.From(uniqueArtistId, uniqueAlbumId);
+        var resolvedReleaseDate = releaseDate ?? new DateOnly(2024, 1, 2);
+
+        return await CreateRavenEnvironmentAsync(
+            ravenAlbumId,
+            new CatalogAlbumRecordDto
+            {
+                Id = CatalogAlbumRecordDto.GetDocumentId(ravenAlbumId.ArtistAlbumId),
+                ArtistId = uniqueArtistId,
+                AlbumId = uniqueAlbumId,
+                ArtistName = artistName,
+                Name = albumName,
+                ReleaseDate = resolvedReleaseDate
+            });
     }
 
     public static async Task<GetAlbumPortContractTestEnvironment> ForMissingAlbum(
         GetAlbumPortImplementation implementation,
         AlbumId? albumId = null)
     {
-        var resolvedAlbumId = albumId ?? AlbumId.From("artist-902", "album-902");
-
-        return implementation switch
+        if (implementation == GetAlbumPortImplementation.Fake)
         {
-            GetAlbumPortImplementation.Fake => new GetAlbumPortContractTestEnvironment(
+            var resolvedAlbumId = albumId ?? AlbumId.From("artist-902", "album-902");
+            return new GetAlbumPortContractTestEnvironment(
                 new GetAlbumPortFake(),
-                resolvedAlbumId),
-            GetAlbumPortImplementation.Raven => await CreateRavenEnvironmentAsync(resolvedAlbumId),
-            _ => throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null)
-        };
+                resolvedAlbumId);
+        }
+
+        if (implementation != GetAlbumPortImplementation.Raven)
+        {
+            throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null);
+        }
+
+        var isolation = EmbeddedRavenTestServer.NewIsolationKey();
+        var ravenAlbumId = AlbumId.From($"artist-902-{isolation}", $"album-902-{isolation}");
+        return await CreateRavenEnvironmentAsync(ravenAlbumId);
     }
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
-        return EmbeddedRavenTestServer.DisposeAsync(documentStore);
+        if (documentStore is null)
+        {
+            return;
+        }
+
+        await EmbeddedRavenTestServer.DeleteDocumentsAsync(documentStore, cleanupDocumentIds);
+        await EmbeddedRavenTestServer.DisposeAsync(documentStore);
     }
 
     private static async Task<GetAlbumPortContractTestEnvironment> CreateRavenEnvironmentAsync(
@@ -93,9 +115,11 @@ internal sealed class GetAlbumPortContractTestEnvironment : IAsyncDisposable
         CatalogAlbumRecordDto? existingRecord = null)
     {
         var store = EmbeddedRavenTestServer.CreateDocumentStore();
+        var cleanupDocumentIds = new List<string>();
 
         if (existingRecord is not null)
         {
+            cleanupDocumentIds.Add(existingRecord.Id);
             using var session = store.OpenAsyncSession();
             await session.StoreAsync(existingRecord, existingRecord.Id);
             await session.SaveChangesAsync();
@@ -105,7 +129,7 @@ internal sealed class GetAlbumPortContractTestEnvironment : IAsyncDisposable
             new RavenGetAlbumPort(store, new TypeRegistryFake()),
             albumId,
             store,
-            existingRecord?.Id);
+            cleanupDocumentIds);
     }
 
     private sealed class TypeRegistryFake : ITypeRegistry

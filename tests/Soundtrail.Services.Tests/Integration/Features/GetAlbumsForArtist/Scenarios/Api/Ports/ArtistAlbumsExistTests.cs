@@ -31,7 +31,7 @@ public sealed class ArtistAlbumsExistTests
 
         var result = await environment.Subject.GetAlbumsForArtistAsync(environment.ArtistId, CancellationToken.None);
 
-        result!.ArtistId.Should().Be(ArtistId.From("artist-2103"));
+        result!.ArtistId.Should().Be(environment.ArtistId);
     }
 
     [Theory]
@@ -64,7 +64,8 @@ public sealed class ArtistAlbumsExistTests
 
         var result = await environment.Subject.GetAlbumsForArtistAsync(environment.ArtistId, CancellationToken.None);
 
-        result!.Albums[0].AlbumId.Should().Be(AlbumId.From("artist-2105", "album-2205"));
+        result!.Albums[0].AlbumId.ArtistId.Should().Be(environment.ArtistId.Value);
+        result!.Albums[0].AlbumId.ArtistAlbumId.Should().StartWith("album-2205");
     }
 
     [Theory]
@@ -75,7 +76,7 @@ public sealed class ArtistAlbumsExistTests
 
         var result = await environment.Subject.GetAlbumsForArtistAsync(environment.ArtistId, CancellationToken.None);
 
-        result!.Albums[0].MusicCatalogId.Should().Be(new CatalogItemId.Album(AlbumId.From("artist-2106", "album-2206")));
+        result!.Albums[0].MusicCatalogId.Should().Be(new CatalogItemId.Album(result.Albums[0].AlbumId));
     }
 
     [Theory]

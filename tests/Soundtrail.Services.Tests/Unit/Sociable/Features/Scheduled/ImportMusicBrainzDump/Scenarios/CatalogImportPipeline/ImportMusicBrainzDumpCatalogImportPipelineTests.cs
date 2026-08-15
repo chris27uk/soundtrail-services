@@ -141,7 +141,7 @@ public sealed class ImportMusicBrainzDumpCatalogImportPipelineTests
 
         var job = environment.RequireJob(jobId);
         job.GetOrAddShard(MusicBrainzDumpImportPhase.Artists, 0).MarkCompleted();
-        await environment.JobStore.SaveAsync(job);
+        await environment.JobStore.SaveAsync(job, TestContext.Current.CancellationToken);
 
         await environment.EnqueueShardAndProcessAsync(
             jobId,
@@ -170,7 +170,7 @@ public sealed class ImportMusicBrainzDumpCatalogImportPipelineTests
 
         var job = environment.RequireJob(jobId);
         job.GetOrAddShard(MusicBrainzDumpImportPhase.Artists, 0).MarkCompleted();
-        await environment.JobStore.SaveAsync(job);
+        await environment.JobStore.SaveAsync(job, TestContext.Current.CancellationToken);
 
         await environment.EnqueueShardAndProcessAsync(
             jobId,

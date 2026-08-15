@@ -29,14 +29,13 @@ public sealed class ArtistExistsTests
     public async Task Given_An_Existing_Artist_When_Requesting_The_Artist_Then_The_Artist_Id_Is_Returned(
         GetArtistPortImplementation implementation)
     {
-        var artistId = "artist-1003";
         await using var environment = await GetArtistPortContractTestEnvironment.ForExistingArtist(
             implementation,
-            artistId: artistId);
+            artistId: "artist-1003");
 
         var result = await environment.Subject.GetArtistAsync(environment.ArtistId, CancellationToken.None);
 
-        result!.ArtistId.Value.Should().Be(artistId);
+        result!.ArtistId.Should().Be(environment.ArtistId);
     }
 
     [Theory]

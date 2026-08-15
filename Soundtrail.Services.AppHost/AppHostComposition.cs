@@ -23,6 +23,12 @@ public static class AppHostComposition
         var useProviderStubs = builder.Configuration.GetValue("LocalDevelopment:UseProviderStubs", false);
         var useServiceBusEmulator = builder.Configuration.GetValue("LocalDevelopment:UseServiceBusEmulator", false);
         var ravenDbLicensePath = builder.Configuration["RavenDb:LicensePath"];
+        var otelServiceVersion = Environment.GetEnvironmentVariable("OTEL_SERVICE_VERSION");
+        if (string.IsNullOrWhiteSpace(otelServiceVersion))
+        {
+            otelServiceVersion = "0.0.0-local";
+        }
+
         var serviceBusEmulatorConfigPath = Path.Combine(
             resolvedContentRootPath,
             "servicebus-emulator",
@@ -85,6 +91,7 @@ public static class AppHostComposition
             .WithUrlForEndpoint("http", url => url.Url = apiPublicUrl)
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
+            .WithEnvironment("OTEL_SERVICE_VERSION", otelServiceVersion)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
             .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail");
@@ -103,6 +110,7 @@ public static class AppHostComposition
             .WithHttpEndpoint(name: "http")
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
+            .WithEnvironment("OTEL_SERVICE_VERSION", otelServiceVersion)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
             .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail");
@@ -116,6 +124,7 @@ public static class AppHostComposition
             .WithHttpEndpoint(name: "http")
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
+            .WithEnvironment("OTEL_SERVICE_VERSION", otelServiceVersion)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
             .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail");
@@ -129,6 +138,7 @@ public static class AppHostComposition
             .WithHttpEndpoint(name: "http")
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
+            .WithEnvironment("OTEL_SERVICE_VERSION", otelServiceVersion)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
             .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail")
@@ -143,6 +153,7 @@ public static class AppHostComposition
             .WithHttpEndpoint(name: "http")
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
+            .WithEnvironment("OTEL_SERVICE_VERSION", otelServiceVersion)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
             .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail");
@@ -157,6 +168,7 @@ public static class AppHostComposition
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
             .WaitFor(redis)
+            .WithEnvironment("OTEL_SERVICE_VERSION", otelServiceVersion)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
             .WithEnvironment("ConnectionStrings__Redis", $"{redis.GetEndpoint("tcp").Property(EndpointProperty.Host)}:{redis.GetEndpoint("tcp").Property(EndpointProperty.Port)},abortConnect=false")
             .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)

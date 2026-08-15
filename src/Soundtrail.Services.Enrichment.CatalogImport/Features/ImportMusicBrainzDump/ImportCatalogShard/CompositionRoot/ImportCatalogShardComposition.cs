@@ -15,8 +15,8 @@ public static class ImportCatalogShardComposition
 {
     public static void Configure(IServiceCollection services, ImportCatalogShardPorts ports)
     {
-        services.TryAddSingleton(ports.WorkQueue);
-        services.TryAddSingleton(ports.ImportCatalogShardJob);
+        services.TryAddScoped(ports.WorkQueue);
+        services.TryAddScoped(ports.ImportCatalogShardJob);
         services.TryAddScoped<IHandler<ImportMusicBrainzDumpShard>, ImportMusicBrainzDumpShardHandler>();
     }
 }

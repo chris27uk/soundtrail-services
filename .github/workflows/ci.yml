@@ -3,6 +3,8 @@ name: CI
 on:
   push:
     branches: [main]
+    # Release job on main pushes v${{ semVer }}; that tag run seeds image/BuildKit caches.
+    tags: ['v*']
   pull_request:
     branches: [main]
 
@@ -14,9 +16,9 @@ concurrency:
 
 permissions:
   contents: write
-  packages: write
   checks: write
   pull-requests: write
+  actions: write
 
 jobs:
   version:
@@ -27,143 +29,296 @@ jobs:
       semVer: ${{ steps.gitversion.outputs.semVer }}
       informationalVersion: ${{ steps.gitversion.outputs.informationalVersion }}
       majorMinorPatch: ${{ steps.gitversion.outputs.majorMinorPatch }}
+      imageCacheKey: ${{ steps.gitversion.outputs.imageCacheKey }}
+      imageCacheFallback: ${{ steps.gitversion.outputs.imageCacheFallback }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      # Caches before checkout — no workspace needed.
+      - name: Restore GitVersion binary
+        id: gv-bin-cache
+        uses: actions/cache/restore@v4
         with:
-          fetch-depth: 0
+          path: /tmp/gitversion-bin
+          key: gitversion-bin-linux-x64-6.7.0
+
+      - name: Restore previous SemVer floor
+        id: gv-semver-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/gitversion-prev
+          key: gitversion-semver-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            gitversion-semver-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref_name }}-
+
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # Shallow history; script fetches main + v* tags for Mainline base versions.
+          fetch-depth: 100
+          fetch-tags: false
+          sparse-checkout: |
+            GitVersion.yml
+            scripts/ci-gitversion.sh
+          sparse-checkout-cone-mode: false
 
       - name: Determine version
         id: gitversion
         env:
-          GITVERSION_IMAGE: gittools/gitversion:6.7.0-ubuntu.24.04-8.0
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: bash scripts/ci-gitversion.sh
+
+      - name: Save GitVersion binary
+        if: always() && steps.gitversion.outputs.need_bin_cache == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/gitversion-bin
+          key: gitversion-bin-linux-x64-6.7.0
+
+      - name: Save SemVer floor
+        if: always() && steps.gitversion.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/gitversion-prev
+          key: gitversion-semver-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref_name }}-${{ github.sha }}
+
+      - name: Package version metadata
+        if: always() && steps.gitversion.outcome == 'success'
         run: |
-          set -euo pipefail
+          mkdir -p version-meta
+          {
+            echo "BUILD_VERSION=${{ steps.gitversion.outputs.semVer }}"
+            echo "GITVERSION_INFORMATIONALVERSION=${{ steps.gitversion.outputs.informationalVersion }}"
+            echo "OTEL_SERVICE_VERSION=${{ steps.gitversion.outputs.informationalVersion }}"
+          } > version-meta/version.env
 
-          docker pull "$GITVERSION_IMAGE"
+      - name: Upload version metadata
+        if: always() && steps.gitversion.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: version-meta
+          path: version-meta/
+          if-no-files-found: error
 
-          set +e
-          docker run --rm \
-            --volume "$GITHUB_WORKSPACE:/repo" \
-            --workdir /repo \
-            --env GITHUB_ACTIONS=true \
-            --env GITHUB_REF \
-            --env GITHUB_BASE_REF \
-            --env GITHUB_HEAD_REF \
-            --entrypoint /tools/dotnet-gitversion \
-            "$GITVERSION_IMAGE" \
-            /output json > /tmp/gitversion.json 2> /tmp/gitversion.err
-          gv_exit=$?
-          set -e
-
-          if [[ -s /tmp/gitversion.err ]]; then
-            echo "GitVersion stderr:" >&2
-            cat /tmp/gitversion.err >&2
-          fi
-
-          if [[ $gv_exit -ne 0 ]]; then
-            echo "::error::GitVersion exited with code $gv_exit"
-            echo "GitVersion stdout:" >&2
-            cat /tmp/gitversion.json >&2 || true
-            exit "$gv_exit"
-          fi
-
-          jq -r '
-            "semVer=\(.SemVer)",
-            "assemblySemVer=\(.AssemblySemVer)",
-            "informationalVersion=\(.InformationalVersion)",
-            "majorMinorPatch=\(.MajorMinorPatch)"
-          ' /tmp/gitversion.json >> "$GITHUB_OUTPUT"
-
-      - name: Display version
+      - name: Summary
+        if: always() && steps.gitversion.outcome == 'success'
         run: |
           {
             echo "## Build version"
             echo ""
             echo "- SemVer: \`${{ steps.gitversion.outputs.semVer }}\`"
-            echo "- AssemblySemVer: \`${{ steps.gitversion.outputs.assemblySemVer }}\`"
             echo "- InformationalVersion: \`${{ steps.gitversion.outputs.informationalVersion }}\`"
             echo "- MajorMinorPatch: \`${{ steps.gitversion.outputs.majorMinorPatch }}\`"
-          } | tee -a "$GITHUB_STEP_SUMMARY"
-          echo "SemVer: ${{ steps.gitversion.outputs.semVer }}"
-          echo "AssemblySemVer: ${{ steps.gitversion.outputs.assemblySemVer }}"
-          echo "InformationalVersion: ${{ steps.gitversion.outputs.informationalVersion }}"
-          echo "MajorMinorPatch: ${{ steps.gitversion.outputs.majorMinorPatch }}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
+  # Parallel with Version. SemVer arrives via version-meta (await overlaps testhost build).
   ci:
-    name: Build ${{ needs.version.outputs.semVer }}
-    needs: version
+    name: Build
+    # Private repos: ubuntu-latest is 2 vCPU (public is 4). See GitHub-hosted runners docs.
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
     env:
-      NUGET_PACKAGES_HOST: ${{ github.workspace }}/.nuget/packages
-      BUILD_VERSION: ${{ needs.version.outputs.semVer }}
-      GITVERSION_INFORMATIONALVERSION: ${{ needs.version.outputs.informationalVersion }}
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+      DOTNET_NOLOGO: "true"
+      DOCKER_BUILD_SUMMARY: "false"
+      DOCKER_BUILD_RECORD_UPLOAD: "false"
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
 
-      - name: Resolve CI image
-        id: ci-image
-        run: |
-          tag="$(sha256sum .github/docker/Dockerfile.ci | cut -c1-16)"
-          image="ghcr.io/${{ github.repository_owner }}/soundtrail-services-ci:${tag}"
-          echo "image=${image}" >> "$GITHUB_OUTPUT"
-          echo "CI image: ${image}"
+      - name: Resolve image cache keys
+        id: cache-keys
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: bash scripts/ci-resolve-image-cache-keys.sh
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+      # Start before caches/build so Version (≈8s) finishes during Build setup.
+      - name: Await version metadata (background)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ci-await-version-meta-bg.sh
+
+      # Skip cache-to when this exact source tree already exported (warm no-op builds).
+      - name: Check BuildKit export marker
+        id: bk-export
+        uses: actions/cache/restore@v4
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          path: /tmp/buildkit-export-marker
+          key: buildkit-export-v1-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
+          lookup-only: true
 
-      - name: Pull CI image
+      - name: Restore BuildKit image cache
+        id: tooling-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/sidecar-images/tooling.tar
+          key: docker-tooling-v1-buildx-stable-1
+
+      # Start tooling docker load while sidecar + runtime GHA restores download.
+      - name: Load BuildKit image (background)
+        run: bash scripts/ci-load-tooling-bg.sh
+
+      - name: Restore sidecar image cache
+        id: sidecar-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            /tmp/sidecar-images/sidecars.tar
+            /tmp/sidecar-images/runtime.tar
+          key: docker-sidecars-v9-${{ steps.cache-keys.outputs.imageCacheKey }}-${{ hashFiles('docker-compose.ci.yml') }}
+          restore-keys: |
+            docker-sidecars-v9-${{ steps.cache-keys.outputs.imageCacheFallback }}-${{ hashFiles('docker-compose.ci.yml') }}
+            docker-sidecars-v9-${{ steps.cache-keys.outputs.imageCacheFallback }}-
+            docker-sidecars-v9-
+
+      - name: Wait for BuildKit image
+        run: bash scripts/ci-wait-tooling.sh
+
+      # Load+up overlaps Buildx/testhost (same proven shape as the ~52s warm baseline).
+      - name: Start sidecars (background)
+        run: bash scripts/ci-start-sidecars-bg.sh
+
+      - name: Set up Docker Buildx
+        run: bash scripts/ci-setup-buildx.sh
+
+      - name: Load runtime image (background)
+        run: bash scripts/ci-load-runtime-bg.sh
+
+      - name: Build testhost
+        id: build-testhost
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.ci
+          builder: soundtrail-ci
+          target: publish-testhost-out
+          outputs: type=local,dest=testhost
+          provenance: false
+          sbom: false
+          cache-from: type=gha,scope=soundtrail-testhost
+          cache-to: ${{ steps.bk-export.outputs.cache-hit != 'true' && 'type=gha,mode=max,scope=soundtrail-testhost' || '' }}
+
+      - name: Apply version metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ci-await-version-meta-wait.sh
+
+      - name: Run tests
+        run: bash scripts/ci-run-tests.sh
+
+      - name: Publish apps
+        id: publish-apps
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.ci
+          builder: soundtrail-ci
+          target: publish-apps-out
+          outputs: type=local,dest=package/publish
+          provenance: false
+          sbom: false
+          cache-from: type=gha,scope=soundtrail-testhost
+          cache-to: ${{ steps.bk-export.outputs.cache-hit != 'true' && 'type=gha,mode=max,scope=soundtrail-testhost' || '' }}
+
+      - name: Save BuildKit export marker
+        # Stamp when we exported; do not require tests so flaky tests do not force re-export.
+        if: always() && steps.bk-export.outputs.cache-hit != 'true' && steps.build-testhost.outcome == 'success'
         run: |
-          image="${{ steps.ci-image.outputs.image }}"
-          if docker pull "$image"; then
-            echo "Pulled $image"
-            exit 0
+          mkdir -p /tmp/buildkit-export-marker
+          date -u > /tmp/buildkit-export-marker/stamp
+
+      - name: Upload BuildKit export marker
+        if: always() && steps.bk-export.outputs.cache-hit != 'true' && steps.build-testhost.outcome == 'success'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/buildkit-export-marker
+          key: buildkit-export-v1-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
+
+      - name: Stop test dependencies
+        id: stop-sidecars
+        if: always()
+        env:
+          SEED_TOOLING_CACHE: ${{ steps.tooling-cache.outputs.cache-hit != 'true' && 'true' || 'false' }}
+          SEED_SIDECAR_CACHE: ${{ steps.sidecar-cache.outputs.cache-hit != 'true' && 'true' || 'false' }}
+        run: |
+          set -euo pipefail
+          echo "tooling_cache=false" >> "$GITHUB_OUTPUT"
+          echo "sidecar_cache=false" >> "$GITHUB_OUTPUT"
+
+          deadline=$((SECONDS + 90))
+          while [[ ! -f /tmp/sidecars.done && ! -f /tmp/sidecars.failed && $SECONDS -lt $deadline ]]; do
+            sleep 1
+          done
+
+          seed_sidecars="$SEED_SIDECAR_CACHE"
+          if [[ -f /tmp/sidecars.need-reseed || -f /tmp/runtime.need-reseed ]]; then
+            seed_sidecars=true
+          fi
+          # Also reseed when runtime.tar missing from a sidecars-only cache hit.
+          if [[ ! -f /tmp/sidecar-images/runtime.tar ]]; then
+            seed_sidecars=true
           fi
 
-          echo "Image not in GHCR; building and publishing $image"
-          docker build \
-            --platform linux/amd64 \
-            --file .github/docker/Dockerfile.ci \
-            --tag "$image" \
-            .github/docker
-          docker push "$image"
+          if [[ "$SEED_TOOLING_CACHE" == "true" || "$seed_sidecars" == "true" ]]; then
+            if [[ "$seed_sidecars" == "true" ]]; then
+              rm -f /tmp/sidecar-images/sidecars.tar /tmp/sidecar-images/runtime.tar
+            fi
+            if [[ "$SEED_TOOLING_CACHE" == "true" ]]; then
+              rm -f /tmp/sidecar-images/tooling.tar
+            fi
+            bash scripts/ci-save-sidecar-images.sh
+          fi
 
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
+          docker compose -f docker-compose.ci.yml down -v --remove-orphans --timeout 1 || true
+
+          sidecar=/tmp/sidecar-images/sidecars.tar
+          tooling=/tmp/sidecar-images/tooling.tar
+          runtime=/tmp/sidecar-images/runtime.tar
+          if [[ "$SEED_TOOLING_CACHE" == "true" && -f "$tooling" ]]; then
+            tooling_size=$(stat -c%s "$tooling")
+            echo "tooling tar bytes=$tooling_size"
+            if (( tooling_size >= 100000 )); then
+              echo "tooling_cache=true" >> "$GITHUB_OUTPUT"
+            else
+              rm -f "$tooling"
+            fi
+          fi
+          if [[ "$seed_sidecars" == "true" && -f "$sidecar" && -f "$runtime" ]]; then
+            sidecar_size=$(stat -c%s "$sidecar")
+            runtime_size=$(stat -c%s "$runtime")
+            echo "sidecar tar bytes=$sidecar_size runtime tar bytes=$runtime_size"
+            if (( sidecar_size >= 10000000 && runtime_size >= 100000 )); then
+              echo "sidecar_cache=true" >> "$GITHUB_OUTPUT"
+            else
+              rm -f "$sidecar" "$runtime"
+            fi
+          fi
+
+      - name: Save BuildKit image cache
+        if: always() && steps.tooling-cache.outputs.cache-hit != 'true' && steps.stop-sidecars.outputs.tooling_cache == 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
         with:
-          path: ${{ env.NUGET_PACKAGES_HOST }}
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj', '.github/docker/Dockerfile.ci') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
+          path: /tmp/sidecar-images/tooling.tar
+          key: docker-tooling-v1-buildx-stable-1
 
-      - name: Restore, Build and Test
-        run: |
-          docker run --rm \
-            --volume "${{ github.workspace }}:/src" \
-            --volume "${{ env.NUGET_PACKAGES_HOST }}:/root/.nuget/packages" \
-            --volume /var/run/docker.sock:/var/run/docker.sock \
-            --add-host=host.docker.internal:host-gateway \
-            --env NUGET_PACKAGES=/root/.nuget/packages \
-            --env GITHUB_ACTIONS=true \
-            --env GITVERSION_INFORMATIONALVERSION \
-            --env TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal \
-            --env TESTCONTAINERS_RYUK_DISABLED=true \
-            --workdir /src \
-            "${{ steps.ci-image.outputs.image }}" \
-            pwsh ./build.ps1 -Restore -Configuration Release -Version "$BUILD_VERSION"
+      - name: Save sidecar image cache
+        if: always() && steps.sidecar-cache.outputs.cache-hit != 'true' && steps.stop-sidecars.outputs.sidecar_cache == 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            /tmp/sidecar-images/sidecars.tar
+            /tmp/sidecar-images/runtime.tar
+          key: docker-sidecars-v9-${{ steps.cache-keys.outputs.imageCacheKey }}-${{ hashFiles('docker-compose.ci.yml') }}
 
-      # Single package for Release: version stamp + whatever TRX the build produced.
+      # Package: version + TRX (+ published apps on main).
       - name: Prepare build package
         if: always()
         run: |
@@ -171,11 +326,21 @@ jobs:
           if compgen -G "reports/*" > /dev/null; then
             cp -a reports/. package/reports/
           fi
-          printf '%s\n' "$BUILD_VERSION" > package/version.txt
+          if [[ -z "${BUILD_VERSION:-}" ]]; then
+            echo "::warning::BUILD_VERSION unset; writing unknown"
+          fi
+          printf '%s\n' "${BUILD_VERSION:-unknown}" > package/version.txt
+          if [[ -d package/publish ]]; then
+            {
+              echo "Version=${BUILD_VERSION:-unknown}"
+              echo "OTEL_SERVICE_VERSION=${OTEL_SERVICE_VERSION:-}"
+              echo "# Deploy: set OTEL_SERVICE_VERSION on each service process from this value."
+            } > package/publish-versions.txt
+          fi
 
       - name: Upload build package
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build
           path: package/
@@ -190,19 +355,19 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Download build package
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: build
           path: package
 
       - name: Publish test results
         if: github.event_name == 'pull_request'
-        uses: dorny/test-reporter@v1
+        uses: dorny/test-reporter@v3
         with:
           name: Test Results
           path: package/reports/*.trx
@@ -213,7 +378,7 @@ jobs:
       - name: Tag release version
         if: needs.ci.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
-          TAG: v${{ needs.version.outputs.majorMinorPatch }}
+          TAG: v${{ needs.version.outputs.semVer }}
         run: |
           if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
             echo "Tag $TAG already exists on origin; skipping."

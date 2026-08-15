@@ -39,7 +39,7 @@ public sealed class AlbumExistsTests
 
         var result = await environment.Subject.GetAlbumAsync(environment.AlbumId, CancellationToken.None);
 
-        result!.ArtistId.Value.Should().Be(artistId);
+        result!.ArtistId.Value.Should().Be(environment.AlbumId.ArtistId);
     }
 
     [Theory]
@@ -62,17 +62,14 @@ public sealed class AlbumExistsTests
     public async Task Given_An_Existing_Album_When_Requesting_The_Album_Then_The_Album_Id_Is_Returned(
         GetAlbumPortImplementation implementation)
     {
-        var artistId = "artist-905";
-        var albumId = "album-905";
-        var expectedAlbumId = AlbumId.From(artistId, albumId);
         await using var environment = await GetAlbumPortContractTestEnvironment.ForExistingAlbum(
             implementation,
-            artistId: artistId,
-            albumId: albumId);
+            artistId: "artist-905",
+            albumId: "album-905");
 
         var result = await environment.Subject.GetAlbumAsync(environment.AlbumId, CancellationToken.None);
 
-        result!.AlbumId.Should().Be(expectedAlbumId);
+        result!.AlbumId.Should().Be(environment.AlbumId);
     }
 
     [Theory]

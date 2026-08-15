@@ -65,7 +65,7 @@ public sealed class ProjectionDispatchTelemetryTests
         var inner = new ProjectionHandlerSpy();
         var decorator = new TelemetryProjectionEventHandlerDecorator<WorkRequested>(inner);
 
-        await decorator.HandleAsync(CreateWorkRequested("corr-2"));
+        await decorator.HandleAsync(CreateWorkRequested("corr-2"), TestContext.Current.CancellationToken);
 
         inner.Calls.Should().Be(1);
         probe.LastStoppedActivity.Should().NotBeNull();
@@ -109,33 +109,4 @@ public sealed class ProjectionDispatchTelemetryTests
             where TTarget : class => throw new NotSupportedException();
     }
 
-    private sealed class ActivityProbe : IDisposable
-    {
-        private readonly ActivityListener listener;
-
-        private ActivityProbe(ActivityListener listener)
-        {
-            this.listener = listener;
-        }
-
-        public Activity? LastStoppedActivity { get; private set; }
-
-        public static ActivityProbe Start()
-        {
-            ActivityProbe? probe = null;
-            var listener = new ActivityListener
-            {
-                ShouldListenTo = source => source.Name == "Soundtrail.Messaging",
-                Sample = static (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-                SampleUsingParentId = static (ref ActivityCreationOptions<string> _) => ActivitySamplingResult.AllDataAndRecorded,
-                ActivityStopped = activity => probe!.LastStoppedActivity = activity
-            };
-
-            ActivitySource.AddActivityListener(listener);
-            probe = new ActivityProbe(listener);
-            return probe;
-        }
-
-        public void Dispose() => this.listener.Dispose();
-    }
 }

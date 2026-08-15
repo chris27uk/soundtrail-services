@@ -185,7 +185,7 @@ public sealed class IncomingMessageSessionTests
         var decorator = new TelemetryHandlerDecorator<DomainMessage>(inner);
         var message = new DomainMessage();
 
-        await decorator.Handle(IncomingMessage<DomainMessage>.Create(message));
+        await decorator.Handle(IncomingMessage<DomainMessage>.Create(message), TestContext.Current.CancellationToken);
 
         inner.Invocations.Should().ContainSingle();
         activityProbe.LastStoppedActivity.Should().NotBeNull();
@@ -393,39 +393,6 @@ public sealed class IncomingMessageSessionTests
         public CorrelationId CorrelationId { get; init; } = CorrelationId.From("reply-corr");
 
         public DateTimeOffset RequestedAt { get; init; } = new(2026, 7, 28, 12, 1, 0, TimeSpan.Zero);
-    }
-
-    private sealed class ActivityProbe : IDisposable
-    {
-        private readonly ActivityListener listener;
-
-        private ActivityProbe(ActivityListener listener)
-        {
-            this.listener = listener;
-        }
-
-        public Activity? LastStoppedActivity { get; private set; }
-
-        public static ActivityProbe Start()
-        {
-            ActivityProbe? probe = null;
-            var listener = new ActivityListener
-            {
-                ShouldListenTo = source => source.Name == "Soundtrail.Messaging",
-                Sample = static (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-                SampleUsingParentId = static (ref ActivityCreationOptions<string> _) => ActivitySamplingResult.AllDataAndRecorded,
-                ActivityStopped = activity => probe!.LastStoppedActivity = activity
-            };
-
-            ActivitySource.AddActivityListener(listener);
-            probe = new ActivityProbe(listener);
-            return probe;
-        }
-
-        public void Dispose()
-        {
-            this.listener.Dispose();
-        }
     }
 
     private sealed record TargetedPrioritisedMessage : ITargetedMessage, IPrioritisedMessage

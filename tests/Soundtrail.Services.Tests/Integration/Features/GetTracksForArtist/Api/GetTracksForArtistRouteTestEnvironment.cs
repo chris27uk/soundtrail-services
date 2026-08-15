@@ -5,6 +5,7 @@ using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForArtist.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForArtist.Contract;
 using Soundtrail.Services.Api.Infrastructure;
+using Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.GetTracksForArtist.Api;
 
@@ -21,7 +22,7 @@ internal sealed class GetTracksForArtistRouteTestEnvironment : IDisposable
 
     public static GetTracksForArtistRouteTestEnvironment ForExistingArtistTracks(string artistId)
     {
-        var builder = WebApplication.CreateBuilder();
+        var builder = WebApplication.CreateBuilder().Quiet();
         builder.WebHost.UseTestServer();
         builder.Services.AddSingleton<IApiHandler<GetTracksForArtistRequest, GetTracksForArtistResponse?>>(
             new GetTracksForArtistHandlerFake(artistId));

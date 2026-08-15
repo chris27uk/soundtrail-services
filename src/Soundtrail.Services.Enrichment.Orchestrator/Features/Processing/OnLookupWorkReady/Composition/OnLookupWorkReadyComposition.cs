@@ -11,7 +11,7 @@ public static class OnLookupWorkReadyComposition
 {
     public static void Configure(IServiceCollection services, OnLookupWorkReadyPorts ports)
     {
-        services.TryAddSingleton(ports.CommandBus);
+        services.TryAddScoped(ports.CommandBus);
         services.TryAddScoped<LookupWorkReadyHandler>();
         services.TryAddScoped<IHandler<DispatchLookupWork>, LookupWorkReadyHandler>();
     }

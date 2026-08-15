@@ -11,6 +11,6 @@ public static class OnWorkFeedbackChangedComposition
 {
     public static void Configure(IServiceCollection services, OnWorkFeedbackChangedPorts ports)
     {
-        services.TryAddSingleton(ports.DiscoveryFeedback);
+        services.TryAddScoped(ports.DiscoveryFeedback);
     }
 }

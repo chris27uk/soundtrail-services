@@ -18,7 +18,7 @@ public sealed class UnknownMusicDataRequestsWorkTests
         ];
         var subject = environment.CreateSubject();
 
-        await subject.Handle(OnUnknownMusicDataRequestedHandlerUnitTestEnvironment.CreateUnknownRequest(query: "u2", searchType: SearchType.Artist));
+        await subject.Handle(OnUnknownMusicDataRequestedHandlerUnitTestEnvironment.CreateUnknownRequest(query: "u2", searchType: SearchType.Artist), TestContext.Current.CancellationToken);
 
         environment.Repository.AppendedEvents.Should().BeEmpty();
     }
@@ -34,7 +34,7 @@ public sealed class UnknownMusicDataRequestsWorkTests
         ];
         var subject = environment.CreateSubject();
 
-        await subject.Handle(OnUnknownMusicDataRequestedHandlerUnitTestEnvironment.CreateUnknownRequest(query: "u2", searchType: SearchType.Artist, priority: LookupPriorityBand.High, trustLevel: 88, riskScore: 7, correlationId: "corr-new"));
+        await subject.Handle(OnUnknownMusicDataRequestedHandlerUnitTestEnvironment.CreateUnknownRequest(query: "u2", searchType: SearchType.Artist, priority: LookupPriorityBand.High, trustLevel: 88, riskScore: 7, correlationId: "corr-new"), TestContext.Current.CancellationToken);
 
         var raised = environment.Repository.AppendedEvents.Should().ContainSingle().Which.Should().BeOfType<WorkPriorityRaised>().Subject;
         raised.Target.Should().Be(target);

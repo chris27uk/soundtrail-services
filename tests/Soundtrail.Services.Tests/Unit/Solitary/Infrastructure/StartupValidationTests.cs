@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Soundtrail.Adapters.Messaging;
@@ -10,13 +11,15 @@ namespace Soundtrail.Services.Tests.Unit.Solitary.Infrastructure;
 
 public class StartupValidationTests
 {
+    private static readonly TimeSpan HealthCheckTimeout = TimeSpan.FromSeconds(2);
+
     [Fact]
     public async Task Given_All_Startup_Validation_Passes_When_Host_Starts_Then_Readiness_Is_Healthy()
     {
         using var host = await StartHostAsync(
             builder => builder.Services.AddStartupValidation("pass", (_, _) => Task.CompletedTask));
 
-        var result = await host.Services.GetRequiredService<HealthCheckService>().CheckHealthAsync();
+        var result = await CheckHealthAsync(host);
 
         result.Status.Should().Be(HealthStatus.Healthy);
         host.Services.GetRequiredService<StartupValidationState>().GetSnapshot().Completed.Should().BeTrue();
@@ -30,7 +33,7 @@ public class StartupValidationTests
                 "failing-check",
                 (_, _) => Task.FromException(new InvalidOperationException("broken configuration"))));
 
-        var result = await host.Services.GetRequiredService<HealthCheckService>().CheckHealthAsync();
+        var result = await CheckHealthAsync(host);
         var entry = result.Entries["startup_validation"];
 
         result.Status.Should().Be(HealthStatus.Unhealthy);
@@ -46,7 +49,7 @@ public class StartupValidationTests
             builder.Services.AddAzureServiceBusCommandBus();
         });
 
-        var result = await host.Services.GetRequiredService<HealthCheckService>().CheckHealthAsync();
+        var result = await CheckHealthAsync(host);
         var entry = result.Entries["startup_validation"];
 
         result.Status.Should().Be(HealthStatus.Unhealthy);
@@ -68,11 +71,17 @@ public class StartupValidationTests
                 builder.Services.AddWorkerStartupValidation(builder.Configuration);
             });
 
-        var result = await host.Services.GetRequiredService<HealthCheckService>().CheckHealthAsync();
+        var result = await CheckHealthAsync(host);
         var entry = result.Entries["startup_validation"];
 
         result.Status.Should().Be(HealthStatus.Unhealthy);
         entry.Data.Values.Should().Contain(value => value.ToString()!.Contains("SourceBudgets:MusicBrainz is not configured."));
+    }
+
+    private static async Task<HealthReport> CheckHealthAsync(IHost host)
+    {
+        using var timeout = new CancellationTokenSource(HealthCheckTimeout);
+        return await host.Services.GetRequiredService<HealthCheckService>().CheckHealthAsync(timeout.Token);
     }
 
     private static async Task<IHost> StartHostAsync(Action<HostApplicationBuilder> configure)
@@ -83,7 +92,8 @@ public class StartupValidationTests
                 EnvironmentName = Environments.Development
             });
 
-        builder.AddServiceDefaults();
+        // Avoid AddServiceDefaults: OTEL + StandardResilienceHandler (10s/attempt, 30s total) on every HttpClient.
+        builder.Services.AddStartupValidationInfrastructure();
         configure(builder);
 
         var host = builder.Build();

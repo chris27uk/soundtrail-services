@@ -11,7 +11,7 @@ public static class ImportKworbChartComposition
 {
     public static void Configure(IServiceCollection services, ImportKworbChartPorts ports)
     {
-        services.TryAddSingleton(ports.CommandBus);
+        services.TryAddScoped(ports.CommandBus);
         services.TryAddScoped<IScheduledMessageHandler<ImportKworbChartCommand>, ImportKworbChartHandler>();
     }
 }

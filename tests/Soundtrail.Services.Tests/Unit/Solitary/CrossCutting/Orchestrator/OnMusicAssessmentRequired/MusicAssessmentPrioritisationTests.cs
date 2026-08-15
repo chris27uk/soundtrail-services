@@ -19,7 +19,7 @@ public sealed class MusicAssessmentPrioritisationTests
         environment.ProjectionReader.ProjectionToReturn = new(false, null, 7, 3);
         var subject = environment.CreateSubject();
 
-        await subject.Handle(OnMusicAssessmentRequiredHandlerUnitTestEnvironment.CreateRequest(priority: LookupPriorityBand.Low));
+        await subject.Handle(OnMusicAssessmentRequiredHandlerUnitTestEnvironment.CreateRequest(priority: LookupPriorityBand.Low), TestContext.Current.CancellationToken);
 
         var deferred = environment.Repository.AppendedEvents.OfType<WorkDeferred>().Single();
         deferred.NextEligibleAt.Should().BeAfter(deferred.DeferredAt);
@@ -34,7 +34,7 @@ public sealed class MusicAssessmentPrioritisationTests
         environment.ProjectionReader.ProjectionToReturn = new(true, expectedCompletion, 1, 1);
         var subject = environment.CreateSubject();
 
-        await subject.Handle(OnMusicAssessmentRequiredHandlerUnitTestEnvironment.CreateRequest());
+        await subject.Handle(OnMusicAssessmentRequiredHandlerUnitTestEnvironment.CreateRequest(), TestContext.Current.CancellationToken);
 
         var ignored = environment.Repository.AppendedEvents.OfType<WorkIgnored>().Single();
         ignored.Reason.Should().Contain("already planned");
@@ -52,7 +52,7 @@ public sealed class MusicAssessmentPrioritisationTests
         ];
         var subject = environment.CreateSubject();
 
-        await subject.Handle(OnMusicAssessmentRequiredHandlerUnitTestEnvironment.CreateRequest(target: target));
+        await subject.Handle(OnMusicAssessmentRequiredHandlerUnitTestEnvironment.CreateRequest(target: target), TestContext.Current.CancellationToken);
 
         environment.Repository.AppendedEvents.OfType<WorkIgnored>().Single().Reason.Should().Contain("completed");
     }
@@ -68,7 +68,7 @@ public sealed class MusicAssessmentPrioritisationTests
         ];
         var subject = environment.CreateSubject();
 
-        await subject.Handle(OnMusicAssessmentRequiredHandlerUnitTestEnvironment.CreateRequest(target: target));
+        await subject.Handle(OnMusicAssessmentRequiredHandlerUnitTestEnvironment.CreateRequest(target: target), TestContext.Current.CancellationToken);
 
         environment.Repository.AppendedEvents.OfType<WorkRejected>().Single().Reason.Should().Contain("previously rejected");
     }
@@ -85,7 +85,7 @@ public sealed class MusicAssessmentPrioritisationTests
         environment.ProjectionReader.ProjectionToReturn = new(false, null, 7, 3);
         var subject = environment.CreateSubject();
 
-        await subject.Handle(OnMusicAssessmentRequiredHandlerUnitTestEnvironment.CreateRequest(priority: LookupPriorityBand.High));
+        await subject.Handle(OnMusicAssessmentRequiredHandlerUnitTestEnvironment.CreateRequest(priority: LookupPriorityBand.High), TestContext.Current.CancellationToken);
 
         environment.Repository.AppendedEvents.OfType<WorkScheduled>().Should().ContainSingle();
         environment.Repository.AppendedEvents.Should().NotContain(x => x is WorkDeferred);
@@ -109,7 +109,7 @@ public sealed class MusicAssessmentPrioritisationTests
         environment.ProjectionReader.ProjectionToReturn = new(false, null, 7, 3);
         var subject = environment.CreateSubject();
 
-        await subject.Handle(OnMusicAssessmentRequiredHandlerUnitTestEnvironment.CreateRequest(target: target, priority: LookupPriorityBand.Low, trustLevel: 50, riskScore: 5));
+        await subject.Handle(OnMusicAssessmentRequiredHandlerUnitTestEnvironment.CreateRequest(target: target, priority: LookupPriorityBand.Low, trustLevel: 50, riskScore: 5), TestContext.Current.CancellationToken);
 
         environment.Repository.AppendedEvents.OfType<WorkScheduled>().Should().ContainSingle();
         environment.Repository.AppendedEvents.Should().NotContain(x => x is WorkDeferred);

@@ -23,6 +23,7 @@ using Soundtrail.Services.Enrichment.Scheduler.Infrastructure;
 using Soundtrail.Services.Internal.Projector;
 using Soundtrail.Services.Internal.Projector.Infrastructure;
 using Soundtrail.Services.ServiceDefaults;
+using Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Shared.Composition;
 
@@ -369,7 +370,7 @@ internal static class ProductionCompositionTestEnvironment
             });
 
         builder.AddServiceDefaults();
-        return builder;
+        return builder.Quiet();
     }
 
     private static void AssertAzureServiceBusListenerRegistered<TDto, TDomain>(IServiceProvider services)

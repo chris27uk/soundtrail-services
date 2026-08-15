@@ -15,23 +15,27 @@ namespace Soundtrail.Services.Tests.Integration.Features.Search;
 internal sealed class SearchPortContractTestEnvironment : IAsyncDisposable
 {
     private readonly IDocumentStore? documentStore;
-    private readonly string? databaseName;
+    private readonly List<string> cleanupDocumentIds;
 
     private SearchPortContractTestEnvironment(
         ISearchPort subject,
         SearchCriteria searchCriteria,
         IDocumentStore? documentStore = null,
-        string? databaseName = null)
+        List<string>? cleanupDocumentIds = null,
+        string? seededCatalogItemId = null)
     {
         Subject = subject;
         SearchCriteria = searchCriteria;
         this.documentStore = documentStore;
-        this.databaseName = databaseName;
+        this.cleanupDocumentIds = cleanupDocumentIds ?? [];
+        SeededCatalogItemId = seededCatalogItemId;
     }
 
     public ISearchPort Subject { get; }
 
     public SearchCriteria SearchCriteria { get; }
+
+    public string? SeededCatalogItemId { get; }
 
     public static async Task<SearchPortContractTestEnvironment> ForExistingResults(
         SearchPortImplementation implementation,
@@ -44,40 +48,52 @@ internal sealed class SearchPortContractTestEnvironment : IAsyncDisposable
         string? albumTitle = null,
         string? artworkUrl = "https://cdn.soundtrail.test/artists/artist-3101.jpg")
     {
-        var searchCriteria = new SearchCriteria(queryText, filter);
-        var response = new SearchResponse(
-            queryText,
-            filter,
-            [
-                new SearchResultResponse(
-                    ParseMusicCatalogId(musicCatalogId, resultType),
-                    resultType,
-                    title,
-                    artistName,
-                    albumTitle,
-                    artworkUrl)
-            ]);
-
-        return implementation switch
+        if (implementation == SearchPortImplementation.Fake)
         {
-            SearchPortImplementation.Fake => new SearchPortContractTestEnvironment(
+            var searchCriteria = new SearchCriteria(queryText, filter);
+            var response = new SearchResponse(
+                queryText,
+                filter,
+                [
+                    new SearchResultResponse(
+                        ParseMusicCatalogId(musicCatalogId, resultType),
+                        resultType,
+                        title,
+                        artistName,
+                        albumTitle,
+                        artworkUrl)
+                ]);
+
+            return new SearchPortContractTestEnvironment(
                 new SearchPortFake(response),
-                searchCriteria),
-            SearchPortImplementation.Raven => await CreateRavenEnvironmentAsync(
-                searchCriteria,
-                new CatalogSearchCandidateRecordDto
-                {
-                    Id = CatalogSearchCandidateRecordDto.GetDocumentId(musicCatalogId),
-                    CatalogItemId = musicCatalogId,
-                    CandidateKind = resultType.ToString().ToLowerInvariant(),
-                    SearchText = queryText,
-                    Title = title,
-                    ArtistName = artistName,
-                    AlbumTitle = albumTitle,
-                    ArtworkUrl = artworkUrl
-                }),
-            _ => throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null)
-        };
+                searchCriteria);
+        }
+
+        if (implementation != SearchPortImplementation.Raven)
+        {
+            throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null);
+        }
+
+        var isolation = EmbeddedRavenTestServer.NewIsolationKey();
+        var uniqueQueryText = $"{queryText}-{isolation}";
+        var uniqueMusicCatalogId = resultType == SearchType.Track
+            ? global::Soundtrail.Services.Tests.TestTrackIds.Value($"track-search-{isolation}")
+            : $"{musicCatalogId}-{isolation}";
+        var ravenSearchCriteria = new SearchCriteria(uniqueQueryText, filter);
+
+        return await CreateRavenEnvironmentAsync(
+            ravenSearchCriteria,
+            new CatalogSearchCandidateRecordDto
+            {
+                Id = CatalogSearchCandidateRecordDto.GetDocumentId(uniqueMusicCatalogId),
+                CatalogItemId = uniqueMusicCatalogId,
+                CandidateKind = resultType.ToString().ToLowerInvariant(),
+                SearchText = uniqueQueryText,
+                Title = title,
+                ArtistName = artistName,
+                AlbumTitle = albumTitle,
+                ArtworkUrl = artworkUrl
+            });
     }
 
     public static async Task<SearchPortContractTestEnvironment> ForMissingResults(
@@ -85,20 +101,33 @@ internal sealed class SearchPortContractTestEnvironment : IAsyncDisposable
         string queryText = "u2",
         SearchType filter = SearchType.Artist)
     {
-        var searchCriteria = new SearchCriteria(queryText, filter);
-        return implementation switch
+        if (implementation == SearchPortImplementation.Fake)
         {
-            SearchPortImplementation.Fake => new SearchPortContractTestEnvironment(
+            var searchCriteria = new SearchCriteria(queryText, filter);
+            return new SearchPortContractTestEnvironment(
                 new SearchPortFake(),
-                searchCriteria),
-            SearchPortImplementation.Raven => await CreateRavenEnvironmentAsync(searchCriteria),
-            _ => throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null)
-        };
+                searchCriteria);
+        }
+
+        if (implementation != SearchPortImplementation.Raven)
+        {
+            throw new ArgumentOutOfRangeException(nameof(implementation), implementation, null);
+        }
+
+        var isolation = EmbeddedRavenTestServer.NewIsolationKey();
+        var ravenSearchCriteria = new SearchCriteria($"{queryText}-{isolation}", filter);
+        return await CreateRavenEnvironmentAsync(ravenSearchCriteria);
     }
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
-        return EmbeddedRavenTestServer.DisposeAsync(this.documentStore);
+        if (documentStore is null)
+        {
+            return;
+        }
+
+        await EmbeddedRavenTestServer.DeleteDocumentsAsync(documentStore, cleanupDocumentIds);
+        await EmbeddedRavenTestServer.DisposeAsync(documentStore);
     }
 
     private static async Task<SearchPortContractTestEnvironment> CreateRavenEnvironmentAsync(
@@ -106,9 +135,11 @@ internal sealed class SearchPortContractTestEnvironment : IAsyncDisposable
         CatalogSearchCandidateRecordDto? existingRecord = null)
     {
         var store = EmbeddedRavenTestServer.CreateDocumentStore();
+        var cleanupDocumentIds = new List<string>();
 
         if (existingRecord is not null)
         {
+            cleanupDocumentIds.Add(existingRecord.Id);
             using var session = store.OpenAsyncSession();
             await session.StoreAsync(existingRecord, existingRecord.Id);
             await session.SaveChangesAsync();
@@ -118,7 +149,8 @@ internal sealed class SearchPortContractTestEnvironment : IAsyncDisposable
             new RavenSearchPort(store),
             searchCriteria,
             store,
-            existingRecord?.Id);
+            cleanupDocumentIds,
+            existingRecord?.CatalogItemId);
     }
 
     private static CatalogItemId ParseMusicCatalogId(string value, SearchType filter) =>

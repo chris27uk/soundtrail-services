@@ -1,0 +1,130 @@
+# syntax=docker/dockerfile:1.7
+# Multi-stage CI: restore (locks) → build → published MTP testhost.
+# Local dev still uses ./build.ps1 + Embedded Raven + Testcontainers.
+
+ARG SDK_IMAGE=mcr.microsoft.com/dotnet/sdk:10.0.301-noble
+ARG RUNTIME_IMAGE=mcr.microsoft.com/dotnet/aspnet:10.0.9-noble
+
+FROM ${SDK_IMAGE} AS restore
+WORKDIR /src
+
+# Packages must live in this layer (not only a BuildKit cache mount). GHA layer cache
+# can replay restore while a fresh buildx builder has an empty nuget mount; --no-restore
+# then fails with NETSDK1064 (missing Dunet, etc.).
+ENV DOTNET_CLI_TELEMETRY_OPTOUT=1 \
+    DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 \
+    DOTNET_NOLOGO=true \
+    NUGET_PACKAGES=/nuget/packages
+
+COPY global.json Directory.Build.props ./
+COPY src/Soundtrail.Contracts/Soundtrail.Contracts.csproj src/Soundtrail.Contracts/packages.lock.json src/Soundtrail.Contracts/
+COPY src/Soundtrail.Domain/Soundtrail.Domain.csproj src/Soundtrail.Domain/packages.lock.json src/Soundtrail.Domain/
+COPY src/Soundtrail.Infrastructure/Soundtrail.Infrastructure.csproj src/Soundtrail.Infrastructure/packages.lock.json src/Soundtrail.Infrastructure/
+COPY Soundtrail.Services.ServiceDefaults/Soundtrail.Services.ServiceDefaults.csproj Soundtrail.Services.ServiceDefaults/packages.lock.json Soundtrail.Services.ServiceDefaults/
+COPY src/Soundtrail.Services.Api/Soundtrail.Services.Api.csproj src/Soundtrail.Services.Api/packages.lock.json src/Soundtrail.Services.Api/
+COPY src/Soundtrail.Services.Enrichment.CatalogImport/Soundtrail.Services.Enrichment.CatalogImport.csproj src/Soundtrail.Services.Enrichment.CatalogImport/packages.lock.json src/Soundtrail.Services.Enrichment.CatalogImport/
+COPY src/Soundtrail.Services.Enrichment.Orchestrator/Soundtrail.Services.Enrichment.Orchestrator.csproj src/Soundtrail.Services.Enrichment.Orchestrator/packages.lock.json src/Soundtrail.Services.Enrichment.Orchestrator/
+COPY src/Soundtrail.Services.Enrichment.Scheduler/Soundtrail.Services.Enrichment.Scheduler.csproj src/Soundtrail.Services.Enrichment.Scheduler/packages.lock.json src/Soundtrail.Services.Enrichment.Scheduler/
+COPY src/Soundtrail.Services.Enrichment.Worker/Soundtrail.Services.Enrichment.Worker.csproj src/Soundtrail.Services.Enrichment.Worker/packages.lock.json src/Soundtrail.Services.Enrichment.Worker/
+COPY src/Soundtrail.Services.Projector/Soundtrail.Services.Projector.csproj src/Soundtrail.Services.Projector/packages.lock.json src/Soundtrail.Services.Projector/
+COPY tests/Soundtrail.Services.Tests/Soundtrail.Services.Tests.csproj tests/Soundtrail.Services.Tests/packages.lock.json tests/Soundtrail.Services.Tests/packages.ci.lock.json tests/Soundtrail.Services.Tests/
+
+RUN --mount=type=cache,id=nuget,target=/cache/nuget \
+    --mount=type=cache,id=msbuild-obj,target=/tmp/msbuild-cache \
+    mkdir -p /nuget/packages /cache/nuget \
+    && if [ -n "$(ls -A /cache/nuget 2>/dev/null)" ]; then \
+         cp -a /cache/nuget/. /nuget/packages/; \
+       fi \
+    && dotnet restore tests/Soundtrail.Services.Tests/Soundtrail.Services.Tests.csproj \
+      --locked-mode \
+      --verbosity minimal \
+      /p:Configuration=Release \
+      /p:UseEmbeddedRaven=false \
+      /p:RunAnalyzersDuringBuild=false \
+      /p:RunAnalyzers=false \
+      /p:EnableNETAnalyzers=false \
+      /p:GenerateDocumentationFile=false \
+      /p:IsTransformWebConfigInHostBuild=false \
+      /p:UseSharedCompilation=true \
+    && cp -a /nuget/packages/. /cache/nuget/
+
+FROM restore AS build
+# Least-changing first so a test-only edit does not invalidate Domain/Infrastructure layers.
+COPY src/Soundtrail.Contracts/ src/Soundtrail.Contracts/
+COPY src/Soundtrail.Domain/ src/Soundtrail.Domain/
+COPY Soundtrail.Services.ServiceDefaults/ Soundtrail.Services.ServiceDefaults/
+COPY src/Soundtrail.Infrastructure/ src/Soundtrail.Infrastructure/
+COPY src/Soundtrail.Services.Api/ src/Soundtrail.Services.Api/
+COPY src/Soundtrail.Services.Enrichment.CatalogImport/ src/Soundtrail.Services.Enrichment.CatalogImport/
+COPY src/Soundtrail.Services.Enrichment.Orchestrator/ src/Soundtrail.Services.Enrichment.Orchestrator/
+COPY src/Soundtrail.Services.Enrichment.Scheduler/ src/Soundtrail.Services.Enrichment.Scheduler/
+COPY src/Soundtrail.Services.Enrichment.Worker/ src/Soundtrail.Services.Enrichment.Worker/
+COPY src/Soundtrail.Services.Projector/ src/Soundtrail.Services.Projector/
+COPY tests/Soundtrail.Services.Tests/ tests/Soundtrail.Services.Tests/
+COPY Soundtrail.Services.AppHost/servicebus-emulator/Config.json Soundtrail.Services.AppHost/servicebus-emulator/Config.json
+
+RUN --mount=type=cache,id=msbuild-obj,target=/tmp/msbuild-cache \
+    dotnet build tests/Soundtrail.Services.Tests/Soundtrail.Services.Tests.csproj \
+      --no-restore \
+      --verbosity q \
+      /p:Configuration=Release \
+      /p:RestoreDuringBuild=false \
+      /p:UseEmbeddedRaven=false \
+      /p:RunAnalyzersDuringBuild=false \
+      /p:RunAnalyzers=false \
+      /p:EnableNETAnalyzers=false \
+      /p:GenerateDocumentationFile=false \
+      /p:IsTransformWebConfigInHostBuild=false \
+      /p:UseSharedCompilation=true
+
+FROM build AS publish-testhost
+RUN --mount=type=cache,id=msbuild-obj,target=/tmp/msbuild-cache \
+    dotnet publish tests/Soundtrail.Services.Tests/Soundtrail.Services.Tests.csproj \
+      --no-build \
+      --no-restore \
+      --verbosity q \
+      --output /testhost \
+      /p:Configuration=Release \
+      /p:UseEmbeddedRaven=false \
+      /p:ErrorOnDuplicatePublishOutputFiles=false \
+      /p:BuildProjectReferences=false
+
+# Local CI export of published MTP bits only (avoids docker-container --load of full testhost).
+FROM scratch AS publish-testhost-out
+COPY --from=publish-testhost /testhost /
+
+FROM build AS publish-apps
+WORKDIR /artifacts/publish
+RUN --mount=type=cache,id=msbuild-obj,target=/tmp/msbuild-cache \
+    for project in \
+      src/Soundtrail.Services.Api/Soundtrail.Services.Api.csproj \
+      src/Soundtrail.Services.Enrichment.CatalogImport/Soundtrail.Services.Enrichment.CatalogImport.csproj \
+      src/Soundtrail.Services.Enrichment.Orchestrator/Soundtrail.Services.Enrichment.Orchestrator.csproj \
+      src/Soundtrail.Services.Enrichment.Scheduler/Soundtrail.Services.Enrichment.Scheduler.csproj \
+      src/Soundtrail.Services.Enrichment.Worker/Soundtrail.Services.Enrichment.Worker.csproj \
+      src/Soundtrail.Services.Projector/Soundtrail.Services.Projector.csproj; do \
+      name="$(basename "${project}" .csproj)"; \
+      dotnet publish "/src/${project}" \
+        --no-build \
+        --no-restore \
+        --verbosity q \
+        --output "/artifacts/publish/${name}" \
+        /p:Configuration=Release \
+        /p:BuildProjectReferences=false \
+        /p:UseEmbeddedRaven=false; \
+    done
+
+FROM scratch AS publish-apps-out
+COPY --from=publish-apps /artifacts/publish /
+
+FROM ${RUNTIME_IMAGE} AS testhost
+WORKDIR /app
+ENV DOTNET_CLI_TELEMETRY_OPTOUT=1 \
+    DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 \
+    DOTNET_NOLOGO=true \
+    TESTINGPLATFORM_TELEMETRY_OPTOUT=1 \
+    Logging__LogLevel__Default=Warning \
+    Logging__LogLevel__Microsoft=Warning \
+    Logging__LogLevel__System=Warning
+COPY --from=publish-testhost /testhost ./
+ENTRYPOINT ["dotnet", "Soundtrail.Services.Tests.dll"]

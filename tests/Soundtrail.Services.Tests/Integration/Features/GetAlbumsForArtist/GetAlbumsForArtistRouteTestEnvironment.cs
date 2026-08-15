@@ -6,6 +6,7 @@ using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Services.Api.Features.Catalog.GetAlbumsForArtist.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetAlbumsForArtist.Contract;
 using Soundtrail.Services.Api.Infrastructure;
+using Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Integration.Features.GetAlbumsForArtist;
 
@@ -22,7 +23,7 @@ internal sealed class GetAlbumsForArtistRouteTestEnvironment : IDisposable
 
     public static GetAlbumsForArtistRouteTestEnvironment ForExistingArtistAlbums()
     {
-        var builder = WebApplication.CreateBuilder();
+        var builder = WebApplication.CreateBuilder().Quiet();
         builder.WebHost.UseTestServer();
         builder.Services.AddSingleton<IApiHandler<GetAlbumsForArtistRequest, GetAlbumsForArtistResponse?>>(new GetAlbumsForArtistHandlerFake());
         var app = builder.Build();

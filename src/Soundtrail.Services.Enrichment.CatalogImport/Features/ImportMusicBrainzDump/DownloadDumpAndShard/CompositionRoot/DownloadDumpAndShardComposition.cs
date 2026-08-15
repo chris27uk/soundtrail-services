@@ -15,8 +15,8 @@ public static class DownloadDumpAndShardComposition
 {
     public static void Configure(IServiceCollection services, DownloadDumpAndShardPorts ports)
     {
-        services.TryAddSingleton(ports.WorkQueue);
-        services.TryAddSingleton(ports.DownloadDumpAndShardJob);
+        services.TryAddScoped(ports.WorkQueue);
+        services.TryAddScoped(ports.DownloadDumpAndShardJob);
         services.TryAddScoped<IHandler<StartMusicBrainzDumpImport>, StartMusicBrainzDumpImportHandler>();
     }
 }

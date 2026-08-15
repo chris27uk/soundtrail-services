@@ -23,13 +23,53 @@ public sealed class WorkFeedbackChangedProjectsDiscoveryFeedbackTests
     }
 
     [Fact]
+    public async Task Given_Streaming_Lookup_Completed_When_Projecting_Then_Feedback_Is_Updated_And_Playlist_Is_Repaired()
+    {
+        var environment = WorkFeedbackChangedProjectorUnitTestEnvironment.Create();
+        var subject = environment.CreateCompletedHandler();
+        var @event = WorkFeedbackChangedProjectorUnitTestEnvironment.CreateStreamingLookupCompleted();
+        var trackId = TestTrackIds.Create("feedback-track-completed");
+
+        await subject.HandleAsync(@event, TestContext.Current.CancellationToken);
+
+        environment.StoreDiscoveryFeedbackPort.StoredEvent.Should().BeSameAs(@event);
+        environment.StorePlaylistTracksReadModelPort.RepairedTrackId.Should().Be(trackId);
+    }
+
+    [Fact]
+    public async Task Given_Streaming_Lookup_Exhausted_When_Projecting_Then_Feedback_Is_Updated_Without_Repair()
+    {
+        var environment = WorkFeedbackChangedProjectorUnitTestEnvironment.Create();
+        var subject = environment.CreateCompletedHandler();
+        var @event = WorkFeedbackChangedProjectorUnitTestEnvironment.CreateStreamingLookupExhausted();
+
+        await subject.HandleAsync(@event, TestContext.Current.CancellationToken);
+
+        environment.StoreDiscoveryFeedbackPort.StoredEvent.Should().BeSameAs(@event);
+        environment.StorePlaylistTracksReadModelPort.RepairedTrackId.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Given_Playlist_Lookup_Completed_When_Projecting_Then_Feedback_Is_Updated_Without_Repair()
+    {
+        var environment = WorkFeedbackChangedProjectorUnitTestEnvironment.Create();
+        var subject = environment.CreateCompletedHandler();
+        var @event = WorkFeedbackChangedProjectorUnitTestEnvironment.CreatePlaylistLookupCompleted();
+
+        await subject.HandleAsync(@event, TestContext.Current.CancellationToken);
+
+        environment.StoreDiscoveryFeedbackPort.StoredEvent.Should().BeSameAs(@event);
+        environment.StorePlaylistTracksReadModelPort.RepairedTrackId.Should().BeNull();
+    }
+
+    [Fact]
     public async Task Given_A_Work_Deferred_Event_When_Projecting_Then_Feedback_Is_Updated()
     {
         var environment = WorkFeedbackChangedProjectorUnitTestEnvironment.Create();
         var subject = environment.CreateDeferredHandler();
         var @event = WorkFeedbackChangedProjectorUnitTestEnvironment.CreateDeferred();
 
-        await subject.HandleAsync(@event);
+        await subject.HandleAsync(@event, TestContext.Current.CancellationToken);
 
         environment.StoreDiscoveryFeedbackPort.StoredEvent.Should().BeSameAs(@event);
     }
@@ -41,7 +81,7 @@ public sealed class WorkFeedbackChangedProjectsDiscoveryFeedbackTests
         var subject = environment.CreateRejectedHandler();
         var @event = WorkFeedbackChangedProjectorUnitTestEnvironment.CreateRejected();
 
-        await subject.HandleAsync(@event);
+        await subject.HandleAsync(@event, TestContext.Current.CancellationToken);
 
         environment.StoreDiscoveryFeedbackPort.StoredEvent.Should().BeSameAs(@event);
     }
@@ -53,7 +93,7 @@ public sealed class WorkFeedbackChangedProjectsDiscoveryFeedbackTests
         var subject = environment.CreateIgnoredHandler();
         var @event = WorkFeedbackChangedProjectorUnitTestEnvironment.CreateIgnored();
 
-        await subject.HandleAsync(@event);
+        await subject.HandleAsync(@event, TestContext.Current.CancellationToken);
 
         environment.StoreDiscoveryFeedbackPort.StoredEvent.Should().BeSameAs(@event);
     }
@@ -65,7 +105,7 @@ public sealed class WorkFeedbackChangedProjectsDiscoveryFeedbackTests
         var subject = environment.CreateAttemptFailedHandler();
         var @event = WorkFeedbackChangedProjectorUnitTestEnvironment.CreateAttemptFailed();
 
-        await subject.HandleAsync(@event);
+        await subject.HandleAsync(@event, TestContext.Current.CancellationToken);
 
         environment.StoreDiscoveryFeedbackPort.StoredEvent.Should().BeSameAs(@event);
     }

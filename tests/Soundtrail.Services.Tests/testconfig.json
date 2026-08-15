@@ -1,0 +1,9 @@
+{
+  "$schema": "https://xunit.net/schema/v3/testconfig.schema.json",
+  "xUnit": {
+    "parallelAlgorithm": "aggressive",
+    "maxParallelThreads": "unlimited",
+    "parallelizeTestCollections": true,
+    "shutdownForegroundThreadWaitSeconds": 1
+  }
+}

@@ -12,7 +12,7 @@ public sealed class AlbumRouteExistsTests
         var albumId = "album-501";
         using var environment = GetAlbumRouteTestEnvironment.ForExistingAlbum(artistId, albumId);
 
-        var response = await environment.Client.GetAsync($"/catalog/artists/{artistId}/albums/{albumId}");
+        var response = await environment.Client.GetAsync($"/catalog/artists/{artistId}/albums/{albumId}", TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }

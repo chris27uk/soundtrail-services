@@ -30,18 +30,22 @@ internal sealed class LookupStreamingLocationHandlerIntegrationTestEnvironment :
         WireMockServer wireMockServer,
         HttpClient httpClient,
         CommandBusFake commandBus,
-        ClockFake clock)
+        ClockFake clock,
+        string seed)
     {
         this.documentStore = documentStore;
         this.wireMockServer = wireMockServer;
         this.httpClient = httpClient;
         CommandBus = commandBus;
         Clock = clock;
+        Seed = seed;
     }
 
     public CommandBusFake CommandBus { get; }
 
     public ClockFake Clock { get; }
+
+    public string Seed { get; }
 
     public static async Task<LookupStreamingLocationHandlerIntegrationTestEnvironment> CreateAsync(
         string responseJson,
@@ -50,6 +54,8 @@ internal sealed class LookupStreamingLocationHandlerIntegrationTestEnvironment :
         string artistName = "The Travellers",
         string? isrc = "GBAYE2410001")
     {
+        var isolation = EmbeddedRavenTestServer.NewIsolationKey();
+        var isolatedSeed = $"{seed}-{isolation}";
         var store = EmbeddedRavenTestServer.CreateDocumentStore();
         var server = WireMockServer.Start();
         server
@@ -70,9 +76,10 @@ internal sealed class LookupStreamingLocationHandlerIntegrationTestEnvironment :
             server,
             client,
             new CommandBusFake(),
-            new ClockFake(new DateTimeOffset(2026, 7, 20, 11, 45, 0, TimeSpan.Zero)));
+            new ClockFake(new DateTimeOffset(2026, 7, 20, 11, 45, 0, TimeSpan.Zero)),
+            isolatedSeed);
 
-        await environment.SeedTrackAsync(seed, title, artistName, isrc);
+        await environment.SeedTrackAsync(isolatedSeed, title, artistName, isrc);
         return environment;
     }
 
@@ -102,28 +109,38 @@ internal sealed class LookupStreamingLocationHandlerIntegrationTestEnvironment :
             Clock,
             CommandBus);
 
-    public LookupStreamingLocationByIsrcMessage CreateIsrcRequest(string seed = "streaming-integration-track") =>
-        new(
-            MessageId.For($"cmd-isrc:{seed}"),
-            CorrelationId.From($"corr:{seed}"),
+    public LookupStreamingLocationByIsrcMessage CreateIsrcRequest(string? seed = null)
+    {
+        var resolvedSeed = seed ?? Seed;
+        return new(
+            MessageId.For($"cmd-isrc:{resolvedSeed}"),
+            CorrelationId.From($"corr:{resolvedSeed}"),
             new DateTimeOffset(2026, 7, 20, 10, 30, 0, TimeSpan.Zero),
             LookupPriorityBand.High,
-            global::Soundtrail.Services.Tests.TestTrackIds.Create(seed),
+            global::Soundtrail.Services.Tests.TestTrackIds.Create(resolvedSeed),
             ProviderName.Spotify);
+    }
 
-    public LookupStreamingLocationByTrackMetadataMessage CreateMetadataRequest(string seed = "streaming-integration-track") =>
-        new(
-            MessageId.For($"cmd-metadata:{seed}"),
-            CorrelationId.From($"corr:{seed}"),
+    public LookupStreamingLocationByTrackMetadataMessage CreateMetadataRequest(string? seed = null)
+    {
+        var resolvedSeed = seed ?? Seed;
+        return new(
+            MessageId.For($"cmd-metadata:{resolvedSeed}"),
+            CorrelationId.From($"corr:{resolvedSeed}"),
             new DateTimeOffset(2026, 7, 20, 10, 30, 0, TimeSpan.Zero),
             LookupPriorityBand.High,
-            global::Soundtrail.Services.Tests.TestTrackIds.Create(seed),
+            global::Soundtrail.Services.Tests.TestTrackIds.Create(resolvedSeed),
             ProviderName.AppleMusic);
+    }
 
     public void Dispose()
     {
         httpClient.Dispose();
         wireMockServer.Dispose();
+        EmbeddedRavenTestServer.DeleteDocumentsAsync(documentStore, cleanupDocumentIds)
+            .AsTask()
+            .GetAwaiter()
+            .GetResult();
         EmbeddedRavenTestServer.DisposeAsync(documentStore).AsTask().GetAwaiter().GetResult();
     }
 
