@@ -29,7 +29,6 @@ jobs:
       semVer: ${{ steps.gitversion.outputs.semVer }}
       informationalVersion: ${{ steps.gitversion.outputs.informationalVersion }}
       majorMinorPatch: ${{ steps.gitversion.outputs.majorMinorPatch }}
-      # Exact cache id for this run (v1.0.46 | pr-47 | main). Fallback = last release tag.
       imageCacheKey: ${{ steps.gitversion.outputs.imageCacheKey }}
       imageCacheFallback: ${{ steps.gitversion.outputs.imageCacheFallback }}
 
@@ -158,6 +157,25 @@ jobs:
           path: /tmp/gitversion-prev
           key: gitversion-semver-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref_name }}-${{ github.sha }}
 
+      - name: Upload version metadata
+        if: always() && steps.gitversion.outcome == 'success'
+        run: |
+          mkdir -p version-meta
+          {
+            echo "BUILD_VERSION=${{ steps.gitversion.outputs.semVer }}"
+            echo "GITVERSION_INFORMATIONALVERSION=${{ steps.gitversion.outputs.informationalVersion }}"
+            echo "OTEL_SERVICE_VERSION=${{ steps.gitversion.outputs.informationalVersion }}"
+          } > version-meta/version.env
+
+      - name: Upload version-meta artifact
+        if: always() && steps.gitversion.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: version-meta
+          path: version-meta/
+          retention-days: 1
+          if-no-files-found: error
+
       - name: Display version
         run: |
           {
@@ -177,20 +195,18 @@ jobs:
           echo "ImageCacheKey: ${{ steps.gitversion.outputs.imageCacheKey }}"
           echo "ImageCacheFallback: ${{ steps.gitversion.outputs.imageCacheFallback }}"
 
+  # Runs in parallel with Version. Cache keys derived from GitHub context; SemVer applied before tests.
   ci:
-    name: Build ${{ needs.version.outputs.semVer }}
-    needs: version
+    name: Build
     # Private repos: ubuntu-latest is 2 vCPU (public is 4). See GitHub-hosted runners docs.
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
     env:
-      BUILD_VERSION: ${{ needs.version.outputs.semVer }}
-      GITVERSION_INFORMATIONALVERSION: ${{ needs.version.outputs.informationalVersion }}
-      OTEL_SERVICE_VERSION: ${{ needs.version.outputs.informationalVersion }}
       DOTNET_CLI_TELEMETRY_OPTOUT: "1"
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
       DOTNET_NOLOGO: "true"
+      GH_TOKEN: ${{ github.token }}
 
     steps:
       - name: Checkout
@@ -198,9 +214,12 @@ jobs:
         with:
           fetch-depth: 1
 
-      # Split caches: small tooling restore first, then large sidecars.
-      # (run: scripts cannot call the cache API — ACTIONS_RUNTIME_TOKEN is only
-      # injected into uses: actions, so background restore always "misses".)
+      - name: Resolve image cache keys
+        id: cache-keys
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: bash scripts/ci-resolve-image-cache-keys.sh
+
       - name: Restore BuildKit image cache
         id: tooling-cache
         uses: actions/cache/restore@v4
@@ -208,20 +227,27 @@ jobs:
           path: /tmp/sidecar-images/tooling.tar
           key: docker-tooling-v1-buildx-stable-1
 
+      # Critical path: start tooling docker load while sidecar GHA restore downloads.
+      - name: Load BuildKit image (background)
+        run: bash scripts/ci-load-tooling-bg.sh
+
       - name: Restore sidecar image cache
         id: sidecar-cache
         uses: actions/cache/restore@v4
         with:
           path: /tmp/sidecar-images/sidecars.tar
-          key: docker-sidecars-v8-${{ needs.version.outputs.imageCacheKey }}-${{ hashFiles('docker-compose.ci.yml') }}
+          key: docker-sidecars-v8-${{ steps.cache-keys.outputs.imageCacheKey }}-${{ hashFiles('docker-compose.ci.yml') }}
           restore-keys: |
-            docker-sidecars-v8-${{ needs.version.outputs.imageCacheFallback }}-${{ hashFiles('docker-compose.ci.yml') }}
-            docker-sidecars-v8-${{ needs.version.outputs.imageCacheFallback }}-
+            docker-sidecars-v8-${{ steps.cache-keys.outputs.imageCacheFallback }}-${{ hashFiles('docker-compose.ci.yml') }}
+            docker-sidecars-v8-${{ steps.cache-keys.outputs.imageCacheFallback }}-
             docker-sidecars-v8-
 
-      # Sidecar docker load/up overlaps tooling load + later buildx/build.
-      - name: Bootstrap images
-        run: bash scripts/ci-bootstrap.sh
+      - name: Wait for BuildKit image
+        run: bash scripts/ci-wait-tooling.sh
+
+      # After tooling load — sidecars must not contend for the Docker daemon lock.
+      - name: Start sidecars (background)
+        run: bash scripts/ci-start-sidecars-bg.sh
 
       # docker-container is required for type=gha cache export; docker driver cannot.
       - name: Set up Docker Buildx
@@ -229,21 +255,34 @@ jobs:
         with:
           driver: docker-container
 
+      # Skip cache-to when this exact source tree already exported (warm no-op builds).
+      - name: Check BuildKit export marker
+        id: bk-export
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/buildkit-export-marker
+          key: buildkit-export-v1-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
+          lookup-only: true
+
       - name: Build testhost
+        id: build-testhost
         uses: docker/build-push-action@v6
         with:
           context: .
           file: Dockerfile.ci
           target: publish-testhost-out
           outputs: type=local,dest=testhost
-          # Shared scope so PR commit deltas accumulate (hundreds of commits live here).
           cache-from: type=gha,scope=soundtrail-testhost
-          cache-to: type=gha,mode=max,scope=soundtrail-testhost
+          cache-to: ${{ steps.bk-export.outputs.cache-hit != 'true' && 'type=gha,mode=max,scope=soundtrail-testhost' || '' }}
+
+      - name: Apply version metadata
+        run: bash scripts/ci-await-version-meta.sh
 
       - name: Run tests
         run: bash scripts/ci-run-tests.sh
 
       - name: Publish apps
+        id: publish-apps
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/build-push-action@v6
         with:
@@ -252,14 +291,28 @@ jobs:
           target: publish-apps-out
           outputs: type=local,dest=package/publish
           cache-from: type=gha,scope=soundtrail-testhost
-          cache-to: type=gha,mode=max,scope=soundtrail-testhost
+          cache-to: ${{ steps.bk-export.outputs.cache-hit != 'true' && 'type=gha,mode=max,scope=soundtrail-testhost' || '' }}
+
+      - name: Save BuildKit export marker
+        # Stamp when we exported; do not require tests so flaky tests do not force re-export.
+        if: always() && steps.bk-export.outputs.cache-hit != 'true' && steps.build-testhost.outcome == 'success'
+        run: |
+          mkdir -p /tmp/buildkit-export-marker
+          date -u > /tmp/buildkit-export-marker/stamp
+
+      - name: Upload BuildKit export marker
+        if: always() && steps.bk-export.outputs.cache-hit != 'true' && steps.build-testhost.outcome == 'success'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/buildkit-export-marker
+          key: buildkit-export-v1-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
 
       - name: Stop test dependencies
         id: stop-sidecars
         if: always()
         env:
           SEED_TOOLING_CACHE: ${{ steps.tooling-cache.outputs.cache-hit != 'true' && 'true' || 'false' }}
-          # Exact hit only — restore-keys / miss reseed. Avoids "key already reserved".
           SEED_SIDECAR_CACHE: ${{ steps.sidecar-cache.outputs.cache-hit != 'true' && 'true' || 'false' }}
         run: |
           set -euo pipefail
@@ -323,7 +376,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: /tmp/sidecar-images/sidecars.tar
-          key: docker-sidecars-v8-${{ needs.version.outputs.imageCacheKey }}-${{ hashFiles('docker-compose.ci.yml') }}
+          key: docker-sidecars-v8-${{ steps.cache-keys.outputs.imageCacheKey }}-${{ hashFiles('docker-compose.ci.yml') }}
 
       # Package: version + TRX (+ published apps on main).
       - name: Prepare build package
@@ -333,11 +386,14 @@ jobs:
           if compgen -G "reports/*" > /dev/null; then
             cp -a reports/. package/reports/
           fi
-          printf '%s\n' "$BUILD_VERSION" > package/version.txt
+          if [[ -z "${BUILD_VERSION:-}" ]]; then
+            bash scripts/ci-await-version-meta.sh || true
+          fi
+          printf '%s\n' "${BUILD_VERSION:-unknown}" > package/version.txt
           if [[ -d package/publish ]]; then
             {
-              echo "Version=$BUILD_VERSION"
-              echo "OTEL_SERVICE_VERSION=$OTEL_SERVICE_VERSION"
+              echo "Version=${BUILD_VERSION:-unknown}"
+              echo "OTEL_SERVICE_VERSION=${OTEL_SERVICE_VERSION:-}"
               echo "# Deploy: set OTEL_SERVICE_VERSION on each service process from this value."
             } > package/publish-versions.txt
           fi
