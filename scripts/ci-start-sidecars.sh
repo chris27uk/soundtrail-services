@@ -30,6 +30,17 @@ ensure_image() {
   docker pull "$ref"
 }
 
+# Tags survive docker load; digest refs do not. Prefer tags for "warm cache" checks.
+tags_present() {
+  local tag
+  for tag in "${CI_SIDECAR_TAGS[@]}"; do
+    if ! image_present "$tag"; then
+      return 1
+    fi
+  done
+  return 0
+}
+
 tar_ok=0
 if [[ -f "$tar_path" ]]; then
   tar_size=$(stat -c%s "$tar_path" 2>/dev/null || stat -f%z "$tar_path")
@@ -47,23 +58,19 @@ if [[ -f "$tar_path" ]]; then
   fi
 fi
 
-# ID-only tars load layers but drop names — ensure every pin is addressable by ref
-# so compose/testhost skip Hub pulls. Missing refs also signal a poisoned cache (re-save under new key).
-missing=0
-for ref in "${CI_SIDECAR_IMAGES[@]}"; do
-  if ! image_present "$ref"; then
-    missing=1
-    break
-  fi
-done
-
-if [[ "$tar_ok" -ne 1 || "$missing" -eq 1 ]]; then
-  if [[ "$missing" -eq 1 && "$tar_ok" -eq 1 ]]; then
-    echo "Cached sidecar tar missing tag/digest refs; ensuring pins (will reseed on miss/new key)."
+# ID-only / digest-only tars load layers but drop RepoTags — pull digest pins
+# (content-addressed) which also create the short tags compose expects.
+if [[ "$tar_ok" -ne 1 ]] || ! tags_present; then
+  if [[ "$tar_ok" -eq 1 ]]; then
+    echo "Cached sidecar tar missing tag refs; ensuring digest pins (will reseed on miss/new key)."
     touch /tmp/sidecars.need-reseed
   fi
   for ref in "${CI_SIDECAR_IMAGES[@]}"; do
     ensure_image "$ref"
+  done
+else
+  for tag in "${CI_SIDECAR_TAGS[@]}"; do
+    echo "Already present: $tag"
   done
 fi
 

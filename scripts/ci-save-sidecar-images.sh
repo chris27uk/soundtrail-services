@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Write sidecar + tooling tars when missing (for GHA cache).
-# Save by ref (not ID) so docker load restores tags and skips Hub re-pulls.
+# Save by tag (not digest/ID) so docker load restores RepoTags and compose skips Hub.
 set -euo pipefail
 
 # shellcheck source=ci-image-refs.sh
@@ -12,9 +12,9 @@ tooling_tar="${SIDECAR_TOOLING_TAR:-$dir/tooling.tar}"
 mkdir -p "$dir"
 
 if [[ ! -f "$sidecar_tar" ]]; then
-  echo "Saving sidecar images for cache (by tag/digest ref)"
+  echo "Saving sidecar images for cache (by tag)"
   set +e
-  if docker save "${CI_SIDECAR_IMAGES[@]}" -o "${sidecar_tar}.partial"; then
+  if docker save "${CI_SIDECAR_TAGS[@]}" -o "${sidecar_tar}.partial"; then
     mv "${sidecar_tar}.partial" "$sidecar_tar"
     echo "Wrote sidecar tar ($(stat -c%s "$sidecar_tar") bytes)"
   else

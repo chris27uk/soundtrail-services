@@ -5,8 +5,9 @@ name: soundtrail-ci
 
 services:
   redis:
-    # linux/amd64 7.4.10-alpine. pull_policy missing: GHA cache load skips Hub extract.
-    image: redis:7-alpine@sha256:9702d01c1f10c3ea9f48211b4362e44f154ff02d063e6f7268eba804059f53bf
+    # Tag only so GHA docker load (RepoTags) satisfies pull_policy: missing.
+    # Digest pin: scripts/ci-image-refs.sh (CI_REDIS_IMAGE).
+    image: redis:7-alpine
     pull_policy: missing
     command: ["redis-server", "--save", "", "--appendonly", "no"]
     ports:
@@ -18,8 +19,8 @@ services:
       retries: 15
 
   openservicebus:
-    # Pin linux/amd64; :latest moves. pull_policy missing after GHA docker load.
-    image: mauritsarissen/openservicebus:latest@sha256:72ec683f93d8de419b58030a2652d4065f3aa8fac77d3c1f7f468c860c5af3cd
+    # Tag only (digest pin: CI_OPENSERVICEBUS_IMAGE in scripts/ci-image-refs.sh).
+    image: mauritsarissen/openservicebus:latest
     pull_policy: missing
     environment:
       OPENSERVICEBUS__STORAGE__MODE: InMemory
@@ -31,8 +32,9 @@ services:
       - "5300:5300"
 
   ravendb:
-    # Pin to client 7.2.5. Spike: Embedded nupkg ~890MB vs this image ~378MB compressed (linux-only).
-    image: ravendb/ravendb:7.2.5-ubuntu.24.04-x64@sha256:d8f45d0eed364f79235d36c64d7f74d01185b17c0d23b74b8515e0cba848dc6d
+    # Tag only (digest pin: CI_RAVENDB_IMAGE in scripts/ci-image-refs.sh).
+    # Spike: Embedded nupkg ~890MB vs this image ~378MB compressed (linux-only).
+    image: ravendb/ravendb:7.2.5-ubuntu.24.04-x64
     pull_policy: missing
     environment:
       RAVEN_Setup_Mode: None
@@ -52,9 +54,9 @@ services:
       start_period: 15s
 
   testhost:
-    # Same digest as Dockerfile.ci RUNTIME_IMAGE. Published tests are bind-mounted from
-    # buildx type=local (publish-testhost-out) so CI never docker-loads the fat testhost image.
-    image: mcr.microsoft.com/dotnet/aspnet:10.0.9-noble@sha256:7644f992230d35cf230017189d4038c0ae0f7388b13f4f7ae1900a155bafb597
+    # Tag only (digest pin: CI_ASPNET_IMAGE / Dockerfile.ci RUNTIME_IMAGE).
+    # Published tests are bind-mounted from buildx type=local (publish-testhost-out).
+    image: mcr.microsoft.com/dotnet/aspnet:10.0.9-noble
     pull_policy: missing
     working_dir: /app
     depends_on:
