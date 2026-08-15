@@ -33,14 +33,7 @@ jobs:
       imageCacheFallback: ${{ steps.gitversion.outputs.imageCacheFallback }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          # Shallow + tags; /allowshallow + next-version floor cover Mainline base.
-          fetch-depth: 100
-          fetch-tags: true
-
-      # Standalone binary (~34MB) — avoids Docker (~188MB) and SDK (global.json pins 10.0.301).
+      # Caches before checkout — no workspace needed.
       - name: Restore GitVersion binary
         id: gv-bin-cache
         uses: actions/cache/restore@v4
@@ -57,91 +50,22 @@ jobs:
           restore-keys: |
             gitversion-semver-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref_name }}-
 
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # Shallow + sparse: floor + /allowshallow cover Mainline; tags fetched only if needed.
+          fetch-depth: 20
+          fetch-tags: false
+          sparse-checkout: |
+            GitVersion.yml
+            scripts/ci-gitversion.sh
+          sparse-checkout-cone-mode: false
+
       - name: Determine version
         id: gitversion
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          GITVERSION_URL: https://github.com/GitTools/GitVersion/releases/download/6.7.0/gitversion-linux-x64-6.7.0.tar.gz
-        run: |
-          set -euo pipefail
-
-          # Ensure base branch is in the shallow window (PR / feature branch merge-base).
-          base_ref="${GITHUB_BASE_REF:-main}"
-          git fetch --no-tags --depth=100 origin "${base_ref}:refs/remotes/origin/${base_ref}" || true
-
-          mkdir -p /tmp/gitversion-bin /tmp/gitversion-prev
-          gv_bin=/tmp/gitversion-bin/gitversion
-          if [[ ! -x "$gv_bin" ]]; then
-            echo "Downloading GitVersion binary"
-            curl -fsSL "$GITVERSION_URL" | tar -xzf - -C /tmp/gitversion-bin
-            chmod +x "$gv_bin"
-            echo "need_bin_cache=true" >> "$GITHUB_OUTPUT"
-          fi
-
-          # Floor: previous CI MajorMinorPatch on this ref, else latest v* tag.
-          # Passed via /overrideconfig next-version (env placeholders are not expanded there).
-          floor=""
-          if [[ -f /tmp/gitversion-prev/majorMinorPatch ]]; then
-            floor=$(tr -d '[:space:]' < /tmp/gitversion-prev/majorMinorPatch)
-            echo "SemVer floor from previous CI: ${floor}"
-          fi
-          last_tag=$(git describe --tags --match 'v[0-9]*' --abbrev=0 HEAD 2>/dev/null || true)
-          if [[ -z "$floor" && -n "$last_tag" ]]; then
-            floor="${last_tag#v}"
-            echo "SemVer floor from tag: ${floor}"
-          fi
-
-          gv_args=(/allowshallow /verbosity Quiet /output json)
-          if [[ -n "$floor" ]]; then
-            gv_args+=(/overrideconfig "next-version=${floor}")
-          fi
-
-          set +e
-          "$gv_bin" "${gv_args[@]}" > /tmp/gitversion.json 2> /tmp/gitversion.err
-          gv_exit=$?
-          set -e
-
-          if [[ -s /tmp/gitversion.err ]]; then
-            echo "GitVersion stderr:" >&2
-            cat /tmp/gitversion.err >&2
-          fi
-
-          if [[ $gv_exit -ne 0 ]]; then
-            echo "::error::GitVersion exited with code $gv_exit"
-            echo "GitVersion stdout:" >&2
-            cat /tmp/gitversion.json >&2 || true
-            exit "$gv_exit"
-          fi
-
-          jq -r '
-            "semVer=\(.SemVer)",
-            "assemblySemVer=\(.AssemblySemVer)",
-            "informationalVersion=\(.InformationalVersion)",
-            "majorMinorPatch=\(.MajorMinorPatch)"
-          ' /tmp/gitversion.json >> "$GITHUB_OUTPUT"
-
-          jq -r '.MajorMinorPatch' /tmp/gitversion.json > /tmp/gitversion-prev/majorMinorPatch
-          jq -r '.SemVer' /tmp/gitversion.json > /tmp/gitversion-prev/semVer
-
-          # Last release on this ancestry (branch → main's last tag; tag → that tag).
-          fallback="${last_tag:-none}"
-
-          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
-            # Exact current tag first; fallback is previous release for a warm miss.
-            cache_key="${GITHUB_REF_NAME}"
-            prev_tag=$(git describe --tags --match 'v[0-9]*' --abbrev=0 HEAD^ 2>/dev/null || true)
-            fallback="${prev_tag:-$fallback}"
-          elif [[ "${GITHUB_EVENT_NAME}" == pull_request ]]; then
-            # Stable across PR commits so later pushes reuse this PR's saved images.
-            cache_key="pr-${PR_NUMBER}"
-          else
-            cache_key="main"
-          fi
-
-          {
-            echo "imageCacheKey=${cache_key}"
-            echo "imageCacheFallback=${fallback}"
-          } >> "$GITHUB_OUTPUT"
+        run: bash scripts/ci-gitversion.sh
 
       - name: Save GitVersion binary
         if: always() && steps.gitversion.outputs.need_bin_cache == 'true'
@@ -157,45 +81,18 @@ jobs:
           path: /tmp/gitversion-prev
           key: gitversion-semver-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref_name }}-${{ github.sha }}
 
-      - name: Upload version metadata
+      - name: Summary
         if: always() && steps.gitversion.outcome == 'success'
-        run: |
-          mkdir -p version-meta
-          {
-            echo "BUILD_VERSION=${{ steps.gitversion.outputs.semVer }}"
-            echo "GITVERSION_INFORMATIONALVERSION=${{ steps.gitversion.outputs.informationalVersion }}"
-            echo "OTEL_SERVICE_VERSION=${{ steps.gitversion.outputs.informationalVersion }}"
-          } > version-meta/version.env
-
-      - name: Upload version-meta artifact
-        if: always() && steps.gitversion.outcome == 'success'
-        uses: actions/upload-artifact@v7
-        with:
-          name: version-meta
-          path: version-meta/
-          retention-days: 1
-          if-no-files-found: error
-
-      - name: Display version
         run: |
           {
             echo "## Build version"
             echo ""
             echo "- SemVer: \`${{ steps.gitversion.outputs.semVer }}\`"
-            echo "- AssemblySemVer: \`${{ steps.gitversion.outputs.assemblySemVer }}\`"
             echo "- InformationalVersion: \`${{ steps.gitversion.outputs.informationalVersion }}\`"
             echo "- MajorMinorPatch: \`${{ steps.gitversion.outputs.majorMinorPatch }}\`"
-            echo "- Image cache key: \`${{ steps.gitversion.outputs.imageCacheKey }}\`"
-            echo "- Image cache fallback: \`${{ steps.gitversion.outputs.imageCacheFallback }}\`"
-          } | tee -a "$GITHUB_STEP_SUMMARY"
-          echo "SemVer: ${{ steps.gitversion.outputs.semVer }}"
-          echo "AssemblySemVer: ${{ steps.gitversion.outputs.assemblySemVer }}"
-          echo "InformationalVersion: ${{ steps.gitversion.outputs.informationalVersion }}"
-          echo "MajorMinorPatch: ${{ steps.gitversion.outputs.majorMinorPatch }}"
-          echo "ImageCacheKey: ${{ steps.gitversion.outputs.imageCacheKey }}"
-          echo "ImageCacheFallback: ${{ steps.gitversion.outputs.imageCacheFallback }}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
-  # Runs in parallel with Version. Cache keys derived from GitHub context; SemVer applied before tests.
+  # Parallel with Version. Build computes its own SemVer (no artifact wait).
   ci:
     name: Build
     # Private repos: ubuntu-latest is 2 vCPU (public is 4). See GitHub-hosted runners docs.
@@ -206,7 +103,6 @@ jobs:
       DOTNET_CLI_TELEMETRY_OPTOUT: "1"
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
       DOTNET_NOLOGO: "true"
-      GH_TOKEN: ${{ github.token }}
 
     steps:
       - name: Checkout
@@ -275,8 +171,26 @@ jobs:
           cache-from: type=gha,scope=soundtrail-testhost
           cache-to: ${{ steps.bk-export.outputs.cache-hit != 'true' && 'type=gha,mode=max,scope=soundtrail-testhost' || '' }}
 
-      - name: Apply version metadata
-        run: bash scripts/ci-await-version-meta.sh
+      # Off critical path: SemVer only needed for tests / package (Version job is for Release).
+      - name: Restore GitVersion binary
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/gitversion-bin
+          key: gitversion-bin-linux-x64-6.7.0
+
+      - name: Restore previous SemVer floor
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/gitversion-prev
+          key: gitversion-semver-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            gitversion-semver-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref_name }}-
+
+      - name: Determine version
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          WRITE_GITHUB_ENV: "1"
+        run: bash scripts/ci-gitversion.sh
 
       - name: Run tests
         run: bash scripts/ci-run-tests.sh
@@ -387,7 +301,7 @@ jobs:
             cp -a reports/. package/reports/
           fi
           if [[ -z "${BUILD_VERSION:-}" ]]; then
-            bash scripts/ci-await-version-meta.sh || true
+            echo "::warning::BUILD_VERSION unset; writing unknown"
           fi
           printf '%s\n' "${BUILD_VERSION:-unknown}" > package/version.txt
           if [[ -d package/publish ]]; then
