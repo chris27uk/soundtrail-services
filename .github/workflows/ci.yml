@@ -53,8 +53,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          # Shallow + sparse: floor + /allowshallow cover Mainline; tags fetched only if needed.
-          fetch-depth: 20
+          # Shallow history; script fetches main + v* tags for Mainline base versions.
+          fetch-depth: 100
           fetch-tags: false
           sparse-checkout: |
             GitVersion.yml

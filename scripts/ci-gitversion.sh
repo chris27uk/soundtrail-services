@@ -18,6 +18,11 @@ if [[ ! -x "$gv_bin" ]]; then
   fi
 fi
 
+# Mainline on PR merge refs needs the base branch in the shallow window even with a floor.
+base_ref="${GITHUB_BASE_REF:-main}"
+git fetch --no-tags --depth=100 origin "${base_ref}:refs/remotes/origin/${base_ref}" 2>/dev/null || true
+git fetch --depth=1 origin "+refs/tags/v*:refs/tags/v*" 2>/dev/null || true
+
 floor=""
 if [[ -f /tmp/gitversion-prev/majorMinorPatch ]]; then
   floor=$(tr -d '[:space:]' < /tmp/gitversion-prev/majorMinorPatch)
@@ -25,19 +30,9 @@ if [[ -f /tmp/gitversion-prev/majorMinorPatch ]]; then
 fi
 
 last_tag=$(git describe --tags --match 'v[0-9]*' --abbrev=0 HEAD 2>/dev/null || true)
-if [[ -z "$floor" && -z "$last_tag" ]]; then
-  git fetch --depth=1 origin "+refs/tags/v*:refs/tags/v*" 2>/dev/null || true
-  last_tag=$(git describe --tags --match 'v[0-9]*' --abbrev=0 HEAD 2>/dev/null || true)
-fi
 if [[ -z "$floor" && -n "$last_tag" ]]; then
   floor="${last_tag#v}"
   echo "SemVer floor from tag: ${floor}"
-fi
-
-# Only deepen history when we lack a floor (ConfiguredNextVersion + allowshallow otherwise).
-if [[ -z "$floor" ]]; then
-  base_ref="${GITHUB_BASE_REF:-main}"
-  git fetch --no-tags --depth=50 origin "${base_ref}:refs/remotes/origin/${base_ref}" 2>/dev/null || true
 fi
 
 gv_args=(/allowshallow /verbosity Quiet /output json)
