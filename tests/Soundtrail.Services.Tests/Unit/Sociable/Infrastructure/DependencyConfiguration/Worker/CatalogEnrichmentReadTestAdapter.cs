@@ -32,6 +32,7 @@ internal sealed class CatalogEnrichmentReadTestAdapter(CatalogEnrichmentReadPort
             _ => new ReadAlbumsByArtistIdPortFake(),
             _ => new ReadTracksByArtistIdPortFake(),
             _ => new ReadTracksByAlbumIdPortFake(),
+            _ => new MusicBrainzDumpFreshnessEvaluatorFake(),
             sp => new ClockFake(sp.GetRequiredService<SociableScenarioOptions>().UtcNow),
             sp => sp.GetRequiredService<ICommandBus>());
 

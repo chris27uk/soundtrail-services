@@ -13,7 +13,7 @@ public sealed class ImportMusicBrainzDumpArtistsFixtureTests
     [Fact]
     public async Task Given_Fixture_Artists_When_Processed_Then_Artists_Are_Imported()
     {
-        using var environment = ImportMusicBrainzDumpSociableTestEnvironment.ForArtistsFixture(
+        using var environment = ImportMusicBrainzDumpSociableTestEnvironment.ForDumpContainingArtists(
             DateTimeOffset.Parse("2026-08-01T00:00:00Z"),
             ArtistA,
             ArtistB);
@@ -26,7 +26,7 @@ public sealed class ImportMusicBrainzDumpArtistsFixtureTests
     [Fact]
     public async Task Given_Fixture_Artists_When_Processed_Then_Imported_Artist_Has_MusicBrainz_Source_Id()
     {
-        using var environment = ImportMusicBrainzDumpSociableTestEnvironment.ForArtistsFixture(
+        using var environment = ImportMusicBrainzDumpSociableTestEnvironment.ForDumpContainingArtists(
             DateTimeOffset.Parse("2026-08-01T00:00:00Z"),
             ArtistA);
 
@@ -39,7 +39,7 @@ public sealed class ImportMusicBrainzDumpArtistsFixtureTests
     [Fact]
     public async Task Given_Fixture_Artists_When_Processed_Then_Imported_Artist_Name_Comes_From_The_Dump()
     {
-        using var environment = ImportMusicBrainzDumpSociableTestEnvironment.ForArtistsFixture(
+        using var environment = ImportMusicBrainzDumpSociableTestEnvironment.ForDumpContainingArtists(
             DateTimeOffset.Parse("2026-08-01T00:00:00Z"),
             ArtistA);
 
@@ -51,7 +51,7 @@ public sealed class ImportMusicBrainzDumpArtistsFixtureTests
     [Fact]
     public async Task Given_Fixture_Artists_When_Processed_Then_All_Artists_Shards_Are_Completed()
     {
-        using var environment = ImportMusicBrainzDumpSociableTestEnvironment.ForArtistsFixture(
+        using var environment = ImportMusicBrainzDumpSociableTestEnvironment.ForDumpContainingArtists(
             DateTimeOffset.Parse("2026-08-01T00:00:00Z"),
             ArtistA,
             ArtistB);
@@ -65,7 +65,7 @@ public sealed class ImportMusicBrainzDumpArtistsFixtureTests
     [Fact]
     public async Task Given_A_Bad_Row_When_Processed_Then_The_Job_Still_Completes()
     {
-        using var environment = ImportMusicBrainzDumpSociableTestEnvironment.ForArtistsFixture(
+        using var environment = ImportMusicBrainzDumpSociableTestEnvironment.ForDumpContainingArtists(
             DateTimeOffset.Parse("2026-08-01T00:00:00Z"),
             ArtistA,
             BadRow);
@@ -79,7 +79,7 @@ public sealed class ImportMusicBrainzDumpArtistsFixtureTests
     [Fact]
     public async Task Given_A_Bad_Row_When_Processed_Then_Only_Valid_Artists_Are_Imported()
     {
-        using var environment = ImportMusicBrainzDumpSociableTestEnvironment.ForArtistsFixture(
+        using var environment = ImportMusicBrainzDumpSociableTestEnvironment.ForDumpContainingArtists(
             DateTimeOffset.Parse("2026-08-01T00:00:00Z"),
             ArtistA,
             BadRow);

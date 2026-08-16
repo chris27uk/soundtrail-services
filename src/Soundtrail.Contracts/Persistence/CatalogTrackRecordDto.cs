@@ -16,6 +16,8 @@ public sealed class CatalogTrackRecordDto
 
     public string? AlbumTitle { get; set; }
 
+    public string? AlbumId { get; set; }
+
     public int? DurationMs { get; set; }
 
     public string? Isrc { get; set; }

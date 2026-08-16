@@ -90,7 +90,7 @@ public sealed class ImportMusicBrainzDumpRecordingsFixtureTests
     private static ImportMusicBrainzDumpSociableTestEnvironment Fixture(
         IReadOnlyList<string> tracks,
         IReadOnlyList<string>? releaseGroups = null) =>
-        ImportMusicBrainzDumpSociableTestEnvironment.ForArtistsReleaseGroupsAndTracksFixture(
+        ImportMusicBrainzDumpSociableTestEnvironment.ForDumpContainingArtistsAlbumsAndTracks(
             DateTimeOffset.Parse("2026-08-01T00:00:00Z"),
             [ArtistA, ArtistB],
             releaseGroups ?? [ReleaseGroupSingle],

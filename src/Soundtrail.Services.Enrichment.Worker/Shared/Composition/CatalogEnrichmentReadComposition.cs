@@ -11,6 +11,7 @@ using Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks.Ports;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupStreamingLocationByIsrc;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupStreamingLocationByTrackMetadata;
+using Soundtrail.Services.Enrichment.Worker.Shared.MusicBrainzDumpFreshness;
 using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
 using Soundtrail.Services.Enrichment.Worker.Shared.StreamingLocations;
 using DomainCommandBus = Soundtrail.Domain.Abstractions.ICommandBus;
@@ -25,6 +26,7 @@ public sealed record CatalogEnrichmentReadPorts(
     Func<IServiceProvider, IReadAlbumsByArtistIdPort> ReadAlbumsByArtistId,
     Func<IServiceProvider, IReadTracksByArtistIdPort> ReadTracksByArtistId,
     Func<IServiceProvider, IReadTracksByAlbumIdPort> ReadTracksByAlbumId,
+    Func<IServiceProvider, IMusicBrainzDumpFreshnessEvaluator> DumpFreshnessEvaluator,
     Func<IServiceProvider, IClockPort> Clock,
     Func<IServiceProvider, DomainCommandBus> CommandBus);
 
@@ -39,6 +41,7 @@ public static class CatalogEnrichmentReadComposition
         services.TryAddScoped(ports.ReadAlbumsByArtistId);
         services.TryAddScoped(ports.ReadTracksByArtistId);
         services.TryAddScoped(ports.ReadTracksByAlbumId);
+        services.TryAddScoped(ports.DumpFreshnessEvaluator);
         services.TryAddScoped(ports.Clock);
         services.TryAddScoped(ports.CommandBus);
 

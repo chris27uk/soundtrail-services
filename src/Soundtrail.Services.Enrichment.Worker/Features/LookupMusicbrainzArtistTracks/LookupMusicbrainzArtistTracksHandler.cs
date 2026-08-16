@@ -4,11 +4,13 @@ using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Domain.Discovery.Messages;
+using Soundtrail.Services.Enrichment.Worker.Shared.MusicBrainzDumpFreshness;
 using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.LookupMusicbrainzArtistTracks;
 
 public sealed class LookupMusicbrainzArtistTracksHandler(
+    IMusicBrainzDumpFreshnessEvaluator dumpFreshnessEvaluator,
     IReadTracksByArtistIdPort readTracksByArtistIdPort,
     IClockPort clock,
     ICommandBus commandBus) : IHandler<LookupMusicbrainzArtistTracksMessage>
@@ -16,8 +18,14 @@ public sealed class LookupMusicbrainzArtistTracksHandler(
     public async Task Handle(IncomingMessage<LookupMusicbrainzArtistTracksMessage> context, CancellationToken cancellationToken = default)
     {
         var request = context.Message;
-        var entries = await readTracksByArtistIdPort.ReadAsync(request.ArtistId, cancellationToken);
         var observedAt = clock.UtcNow;
+        var freshness = await dumpFreshnessEvaluator.EvaluateArtistTracksAsync(
+            request.ArtistId,
+            observedAt,
+            cancellationToken);
+        var entries = freshness.UseCatalog
+            ? freshness.CatalogEntries
+            : await readTracksByArtistIdPort.ReadAsync(request.ArtistId, cancellationToken);
 
         await commandBus.SendAsync(
             new CatalogLookupCompleted(
