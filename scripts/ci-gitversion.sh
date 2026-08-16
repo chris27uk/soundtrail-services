@@ -18,12 +18,33 @@ if [[ ! -x "$gv_bin" ]]; then
   fi
 fi
 
-# Build uses fetch-depth: 1; Mainline needs history on HEAD plus the base branch.
-# --deepen grows the current shallow tip; base/tags cover merge-base + next-version floor.
-git fetch --no-tags --deepen=100 2>/dev/null || true
+# Mainline walks merge parents. A shallow checkout of pull/N/merge often lacks
+# those parents after "merge main into PR", which GitVersion reports as
+# "Cannot find the base commit of merged branch."
 base_ref="${GITHUB_BASE_REF:-main}"
-git fetch --no-tags --depth=100 origin "${base_ref}:refs/remotes/origin/${base_ref}" 2>/dev/null || true
-git fetch --depth=1 origin "+refs/tags/v*:refs/tags/v*" 2>/dev/null || true
+fetch_version_history() {
+  git fetch --no-tags --deepen=100 2>/dev/null || true
+  git fetch --no-tags --depth=100 origin "${base_ref}:refs/remotes/origin/${base_ref}" 2>/dev/null || true
+  if [[ -n "${GITHUB_HEAD_REF:-}" ]]; then
+    git fetch --no-tags origin "${GITHUB_HEAD_REF}:refs/remotes/origin/${GITHUB_HEAD_REF}" 2>/dev/null || true
+  fi
+  git fetch --depth=1 origin "+refs/tags/v*:refs/tags/v*" 2>/dev/null || true
+}
+
+unshallow_version_history() {
+  echo "Unshallowing for GitVersion Mainline merge-base walk."
+  if [[ "$(git rev-parse --is-shallow-repository)" == "true" ]]; then
+    git fetch --unshallow --no-tags origin 2>/dev/null \
+      || git fetch --no-tags --deepen=5000 origin 2>/dev/null \
+      || true
+  fi
+  git fetch --no-tags origin "${base_ref}:refs/remotes/origin/${base_ref}" 2>/dev/null || true
+  if [[ -n "${GITHUB_HEAD_REF:-}" ]]; then
+    git fetch --no-tags origin "${GITHUB_HEAD_REF}:refs/remotes/origin/${GITHUB_HEAD_REF}" 2>/dev/null || true
+  fi
+}
+
+fetch_version_history
 
 floor=""
 if [[ -f /tmp/gitversion-prev/majorMinorPatch ]]; then
@@ -42,10 +63,19 @@ if [[ -n "$floor" ]]; then
   gv_args+=(/overrideconfig "next-version=${floor}")
 fi
 
-set +e
-"$gv_bin" "${gv_args[@]}" > /tmp/gitversion.json 2> /tmp/gitversion.err
-gv_exit=$?
-set -e
+run_gitversion() {
+  set +e
+  "$gv_bin" "${gv_args[@]}" > /tmp/gitversion.json 2> /tmp/gitversion.err
+  gv_exit=$?
+  set -e
+}
+
+run_gitversion
+
+if [[ $gv_exit -ne 0 ]] && grep -q "Cannot find the base commit of merged branch" /tmp/gitversion.err /tmp/gitversion.json 2>/dev/null; then
+  unshallow_version_history
+  run_gitversion
+fi
 
 if [[ -s /tmp/gitversion.err ]]; then
   echo "GitVersion stderr:" >&2
