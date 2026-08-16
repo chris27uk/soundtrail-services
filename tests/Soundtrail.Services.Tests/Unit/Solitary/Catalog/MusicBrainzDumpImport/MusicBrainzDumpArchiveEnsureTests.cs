@@ -263,7 +263,7 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
         Directory.CreateDirectory(versionRoot);
         MusicBrainzDumpArchiveFixtures.CopyTo(versionRoot, "artist.tar.xz");
 
-        var store = CreateStore(directory.Path, source: "local");
+        var store = CreateStore(directory.Path);
         var path = await store.EnsureArtistsJsonlAsync(
             MusicBrainzDumpImportJobId.ForDumpVersion(dumpVersion),
             dumpVersion);
@@ -272,14 +272,14 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
     }
 
     [Fact]
-    public async Task Given_Http_Source_And_Missing_Archive_When_Ensuring_Artists_Then_Download_Is_Used()
+    public async Task Given_Missing_Archive_When_Ensuring_Artists_Then_Download_Is_Used()
     {
         using var directory = TemporaryDirectory.Create();
         var dumpVersion = "2026-08";
         Directory.CreateDirectory(Path.Combine(directory.Path, dumpVersion));
         var archiveBytes = MusicBrainzDumpArchiveFixtures.ReadBytes("artist.tar.xz");
         var downloader = new RecordingDownloader(archiveBytes);
-        var store = CreateStore(directory.Path, source: "http", downloader);
+        var store = CreateStore(directory.Path, downloader);
 
         var path = await store.EnsureArtistsJsonlAsync(
             MusicBrainzDumpImportJobId.ForDumpVersion(dumpVersion),
@@ -291,7 +291,7 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
     }
 
     [Fact]
-    public async Task Given_Http_Source_And_Existing_Archive_When_Ensuring_Artists_Then_Download_Is_Skipped()
+    public async Task Given_Existing_Archive_When_Ensuring_Artists_Then_Download_Is_Skipped()
     {
         using var directory = TemporaryDirectory.Create();
         var dumpVersion = "2026-08";
@@ -299,7 +299,7 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
         Directory.CreateDirectory(versionRoot);
         MusicBrainzDumpArchiveFixtures.CopyTo(versionRoot, "artist.tar.xz");
         var downloader = new RecordingDownloader([]);
-        var store = CreateStore(directory.Path, source: "http", downloader);
+        var store = CreateStore(directory.Path, downloader);
 
         var path = await store.EnsureArtistsJsonlAsync(
             MusicBrainzDumpImportJobId.ForDumpVersion(dumpVersion),
@@ -310,7 +310,7 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
     }
 
     [Fact]
-    public async Task Given_Http_Source_When_Ensuring_Tracks_Then_Http_Is_Not_Used()
+    public async Task Given_Track_Archive_When_Ensuring_Tracks_Then_Http_Is_Not_Used()
     {
         using var directory = TemporaryDirectory.Create();
         var dumpVersion = "2026-08";
@@ -318,7 +318,7 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
         Directory.CreateDirectory(versionRoot);
         MusicBrainzDumpArchiveFixtures.CopyTo(versionRoot, "track.tar.xz");
         var downloader = new RecordingDownloader([]);
-        var store = CreateStore(directory.Path, source: "http", downloader);
+        var store = CreateStore(directory.Path, downloader);
 
         var path = await store.EnsureTracksJsonlAsync(
             MusicBrainzDumpImportJobId.ForDumpVersion(dumpVersion),
@@ -336,7 +336,7 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
         var versionRoot = Path.Combine(directory.Path, dumpVersion);
         Directory.CreateDirectory(versionRoot);
         MusicBrainzDumpArchiveFixtures.CopyTo(versionRoot, "release.tar.xz");
-        var store = CreateStore(directory.Path, source: "local");
+        var store = CreateStore(directory.Path);
 
         var path = await store.EnsureTracksJsonlAsync(
             MusicBrainzDumpImportJobId.ForDumpVersion(dumpVersion),
@@ -351,13 +351,13 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
     }
 
     [Fact]
-    public async Task Given_Http_Source_And_Missing_Track_When_Ensuring_Tracks_Then_Release_May_Be_Downloaded()
+    public async Task Given_Missing_Track_When_Ensuring_Tracks_Then_Release_May_Be_Downloaded()
     {
         using var directory = TemporaryDirectory.Create();
         var dumpVersion = "2026-08";
         Directory.CreateDirectory(Path.Combine(directory.Path, dumpVersion));
         var downloader = new RecordingDownloader(MusicBrainzDumpArchiveFixtures.ReadBytes("release.tar.xz"));
-        var store = CreateStore(directory.Path, source: "http", downloader);
+        var store = CreateStore(directory.Path, downloader);
 
         var path = await store.EnsureTracksJsonlAsync(
             MusicBrainzDumpImportJobId.ForDumpVersion(dumpVersion),
@@ -370,13 +370,11 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
 
     private static LocalMusicBrainzDumpArchiveStore CreateStore(
         string archiveDirectory,
-        string source,
         IMusicBrainzDumpDownloader? downloader = null) =>
         new(
             Options.Create(
                 new MusicBrainzDumpOptions
                 {
-                    Source = source,
                     ArchiveDirectory = archiveDirectory,
                     BaseUrl = "https://example.test/json-dumps"
                 }),

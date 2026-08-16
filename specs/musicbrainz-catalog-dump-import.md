@@ -209,7 +209,7 @@ Skip the row; record failed data for diagnosis; emit a metric. Do not fail the e
 
 - Dev: local disk and/or Azurite blob for **cache** (archives and shards) after HTTPS download.
 - Prod: blob storage for compressed archive and uncompressed shard JSONL.
-- Origin is always HTTPS (`MusicBrainzDump:Source=http` + `BaseUrl`). CatalogImport has no fixture source mode.
+- Origin is always HTTPS (`MusicBrainzDump:BaseUrl`). Missing versioned archives are downloaded into the local/blob cache; there is no separate source-mode switch.
 
 ## Testing
 
@@ -226,7 +226,7 @@ Minimum sociable scenarios: happy path one phase; resume from shard checkpoint; 
 
 Prerequisites: run AppHost with RavenDB, the Service Bus emulator, and (optionally) Azurite for blob dump storage.
 
-AppHost starts a dedicated **HTTP dump-source** container (Caddy) that bind-mounts `Soundtrail.Services.AppHost/testdata/musicbrainz-dump-source/` and serves MetaBrainz-layout paths (`/{DumpVersion}/{entity}.tar.xz`). Smoke archives for `2026-08` are committed; replace or add multi-GB official dumps in that mount for a realistic E2E (do not commit multi-GB files). CatalogImport is wired production-shaped: `Source=http`, `BaseUrl` → dump-source, `DumpVersion=2026-08`, `ArchiveDirectory` → a local cache under `testdata/musicbrainz-dump-cache/`. Downloads resume via HTTP Range when interrupted. Startup validation fails fast if required smoke archives are missing from the dump-source mount.
+AppHost starts a dedicated **HTTP dump-source** container (Caddy) that bind-mounts `Soundtrail.Services.AppHost/testdata/musicbrainz-dump-source/` and serves MetaBrainz-layout paths (`/{DumpVersion}/{entity}.tar.xz`). Smoke archives for `2026-08` are committed; replace or add multi-GB official dumps in that mount for a realistic E2E (do not commit multi-GB files). CatalogImport is wired with `BaseUrl` → dump-source, `DumpVersion=2026-08`, and `ArchiveDirectory` → a local cache under `testdata/musicbrainz-dump-cache/`. Downloads resume via HTTP Range when interrupted. Startup validation fails fast if required smoke archives are missing from the dump-source mount.
 
 Trigger: open the Scheduler TickerQ dashboard and run function `ImportMusicBrainzDump` (manual). The monthly cron uses the same handler.
 

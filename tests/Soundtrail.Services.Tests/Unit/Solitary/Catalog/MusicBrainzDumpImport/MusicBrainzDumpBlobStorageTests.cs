@@ -38,7 +38,7 @@ public sealed class BlobMusicBrainzDumpArchiveStoreTests
             MusicBrainzDumpArchiveFixtures.CopyTo(directory.Path, "artist.tar.xz"));
 
         var downloader = new RecordingDownloader([]);
-        var store = CreateStore(directory.Path, blobs, downloader, source: "http");
+        var store = CreateStore(directory.Path, blobs, downloader);
 
         var path = await store.EnsureArtistsJsonlAsync(
             MusicBrainzDumpImportJobId.ForDumpVersion(dumpVersion),
@@ -60,7 +60,7 @@ public sealed class BlobMusicBrainzDumpArchiveStoreTests
 
         var blobs = new InMemoryMusicBrainzDumpBlobContainer();
         var downloader = new RecordingDownloader([]);
-        var store = CreateStore(directory.Path, blobs, downloader, source: "local");
+        var store = CreateStore(directory.Path, blobs, downloader);
 
         var path = await store.EnsureArtistsJsonlAsync(
             MusicBrainzDumpImportJobId.ForDumpVersion(dumpVersion),
@@ -73,7 +73,7 @@ public sealed class BlobMusicBrainzDumpArchiveStoreTests
     }
 
     [Fact]
-    public async Task Given_Http_Source_And_Missing_Archive_When_Ensuring_Artists_Then_Download_Is_Uploaded()
+    public async Task Given_Missing_Archive_When_Ensuring_Artists_Then_Download_Is_Uploaded()
     {
         using var directory = TemporaryDirectory.Create();
         var dumpVersion = "2026-08";
@@ -81,7 +81,7 @@ public sealed class BlobMusicBrainzDumpArchiveStoreTests
 
         var blobs = new InMemoryMusicBrainzDumpBlobContainer();
         var downloader = new RecordingDownloader(MusicBrainzDumpArchiveFixtures.ReadBytes("artist.tar.xz"));
-        var store = CreateStore(directory.Path, blobs, downloader, source: "http");
+        var store = CreateStore(directory.Path, blobs, downloader);
 
         var path = await store.EnsureArtistsJsonlAsync(
             MusicBrainzDumpImportJobId.ForDumpVersion(dumpVersion),
@@ -97,13 +97,11 @@ public sealed class BlobMusicBrainzDumpArchiveStoreTests
     private static BlobMusicBrainzDumpArchiveStore CreateStore(
         string archiveDirectory,
         IMusicBrainzDumpBlobContainer blobs,
-        IMusicBrainzDumpDownloader downloader,
-        string source) =>
+        IMusicBrainzDumpDownloader downloader) =>
         new(
             Options.Create(
                 new MusicBrainzDumpOptions
                 {
-                    Source = source,
                     Storage = MusicBrainzDumpOptions.BlobStorage,
                     ArchiveDirectory = archiveDirectory,
                     BaseUrl = "https://example.test/json-dumps"

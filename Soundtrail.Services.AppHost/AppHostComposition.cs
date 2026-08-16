@@ -175,7 +175,6 @@ public static class AppHostComposition
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
             .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail")
-            .WithEnvironment("MusicBrainzDump__Source", "http")
             .WithEnvironment("MusicBrainzDump__BaseUrl", musicBrainzDumpSource.GetEndpoint("http"))
             .WithEnvironment("MusicBrainzDump__DumpVersion", dumpVersion)
             .WithEnvironment("MusicBrainzDump__ArchiveDirectory", musicBrainzDumpCacheDirectory);
