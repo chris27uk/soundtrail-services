@@ -104,12 +104,41 @@ public static class AppHostStartupValidator
 
     private static void ValidateMusicBrainzDumpSource(IConfiguration configuration, string contentRootPath)
     {
-        var sourceDirectory = configuration["MusicBrainzDump:DumpSourceDirectory"]
-            ?? Path.Combine(contentRootPath, "testdata", "musicbrainz-dump-source");
-        var dumpVersion = configuration["MusicBrainzDump:DumpVersion"]
-            ?? MusicBrainzDumpDemo.DumpVersion;
+        var sourceDirectory = Path.GetFullPath(
+            configuration["MusicBrainzDump:DumpSourceDirectory"]
+            ?? Path.Combine(contentRootPath, "testdata", "musicbrainz-dump-source"));
 
-        var versionRoot = Path.Combine(Path.GetFullPath(sourceDirectory), dumpVersion.Trim());
+        var latestPointerPath = Path.Combine(sourceDirectory, "LATEST");
+        string snapshotId;
+        if (File.Exists(latestPointerPath))
+        {
+            snapshotId = File.ReadAllText(latestPointerPath).Trim();
+            if (string.IsNullOrWhiteSpace(snapshotId) ||
+                string.Equals(snapshotId, "LATEST", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"MusicBrainz dump source LATEST pointer at '{latestPointerPath}' must contain a concrete snapshot directory name.");
+            }
+        }
+        else
+        {
+            snapshotId = Directory.EnumerateDirectories(sourceDirectory)
+                .Select(Path.GetFileName)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Where(name => !string.Equals(name, "LATEST", StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(name => name, StringComparer.Ordinal)
+                .FirstOrDefault()
+                ?? throw new InvalidOperationException(
+                    $"MusicBrainz dump source at '{sourceDirectory}' requires a LATEST pointer file or at least one snapshot directory.");
+        }
+
+        var versionRoot = Path.Combine(sourceDirectory, snapshotId);
+        if (!Directory.Exists(versionRoot))
+        {
+            throw new InvalidOperationException(
+                $"MusicBrainz dump source snapshot directory was not found at '{versionRoot}' (from LATEST/discovery).");
+        }
+
         RequireArchive(versionRoot, "artist.tar.xz");
         RequireArchive(versionRoot, "release-group.tar.xz");
 
