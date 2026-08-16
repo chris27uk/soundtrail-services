@@ -15,8 +15,12 @@ internal sealed class WorkScheduledCdcService(
     protected override string SubscriptionName => "projector/work-scheduled";
 
     protected override Expression<Func<RavenStoredEventRecord, bool>> Filter =>
-        x => x.AggregateType == "catalog-stream" && x.EventType == "work-scheduled";
+        x => x.AggregateType == "catalog-stream"
+            && x.ProjectionHint != "bulk-import"
+            && x.EventType == "work-scheduled";
 
+    protected override bool IsSubscriptionDefinitionStale(Raven.Client.Documents.Subscriptions.SubscriptionState state) =>
+        !state.Query.Contains("bulk-import", StringComparison.Ordinal);
     protected override async Task HandleAsync(
         IServiceProvider serviceProvider,
         RavenStoredEventRecord storedEvent,

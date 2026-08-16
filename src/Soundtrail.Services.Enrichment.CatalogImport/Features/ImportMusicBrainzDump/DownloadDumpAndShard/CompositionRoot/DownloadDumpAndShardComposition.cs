@@ -9,7 +9,10 @@ namespace Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrain
 
 public sealed record DownloadDumpAndShardPorts(
     Func<IServiceProvider, IDownloadDumpAndShardWorkQueue> WorkQueue,
-    Func<IServiceProvider, IDownloadDumpAndShardJob> DownloadDumpAndShardJob);
+    Func<IServiceProvider, IDownloadDumpAndShardJob> DownloadDumpAndShardJob,
+    Func<IServiceProvider, IMusicBrainzDumpArchiveStore> ArchiveStore,
+    Func<IServiceProvider, IMusicBrainzDumpShardStore> ShardStore,
+    Func<IServiceProvider, IArtistShardPartitioner> Partitioner);
 
 public static class DownloadDumpAndShardComposition
 {
@@ -17,6 +20,9 @@ public static class DownloadDumpAndShardComposition
     {
         services.TryAddScoped(ports.WorkQueue);
         services.TryAddScoped(ports.DownloadDumpAndShardJob);
+        services.TryAddSingleton(ports.ArchiveStore);
+        services.TryAddSingleton(ports.ShardStore);
+        services.TryAddSingleton(ports.Partitioner);
         services.TryAddScoped<IHandler<StartMusicBrainzDumpImport>, StartMusicBrainzDumpImportHandler>();
     }
 }

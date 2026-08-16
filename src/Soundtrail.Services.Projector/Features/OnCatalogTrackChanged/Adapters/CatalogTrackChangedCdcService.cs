@@ -16,10 +16,12 @@ internal sealed class CatalogTrackChangedCdcService(
 
     protected override System.Linq.Expressions.Expression<Func<RavenStoredEventRecord, bool>> Filter =>
         x => x.AggregateType == "artist-catalog-stream"
+             && x.ProjectionHint != "bulk-import"
              && (x.EventType == "track-discovered" || x.EventType == "streaming-location-discovered");
 
     protected override bool IsSubscriptionDefinitionStale(Raven.Client.Documents.Subscriptions.SubscriptionState state) =>
-        !state.Query.Contains("streaming-location-discovered", StringComparison.Ordinal);
+        !state.Query.Contains("streaming-location-discovered", StringComparison.Ordinal)
+        || !state.Query.Contains("bulk-import", StringComparison.Ordinal);
 
     protected override async Task HandleAsync(
         IServiceProvider serviceProvider,

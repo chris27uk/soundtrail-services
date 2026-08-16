@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Soundtrail.Contracts.IntegrationMessaging.Commands;
+using Soundtrail.Adapters.EventSourcing.CompositionRoot;
 using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Adapters.Messaging;
 using Soundtrail.Adapters.Messaging.Asb;
@@ -13,6 +14,7 @@ using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Catalog.MusicBrainzDumpImport;
 using Soundtrail.Domain.Catalog.MusicBrainzDumpImport.Messages;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard;
+using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Adapters;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Model;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Ports;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Work;
@@ -41,7 +43,10 @@ public sealed class DownloadDumpAndShardFeature : IFeature
             services,
             new(
                 sp => sp.GetRequiredService<IDownloadDumpAndShardWorkQueue>(),
-                sp => ActivatorUtilities.CreateInstance<DownloadDumpAndShardJob>(sp)));
+                sp => ActivatorUtilities.CreateInstance<DownloadDumpAndShardJob>(sp),
+                sp => ActivatorUtilities.CreateInstance<LocalMusicBrainzDumpArchiveStore>(sp),
+                sp => ActivatorUtilities.CreateInstance<LocalMusicBrainzDumpShardStore>(sp),
+                _ => new ArtistShardPartitioner()));
     }
 
     public void ConfigureApplication(WebApplication app)

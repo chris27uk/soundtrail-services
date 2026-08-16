@@ -16,10 +16,13 @@ internal sealed class CatalogSearchCandidateChangedCdcService(
 
     protected override Expression<Func<RavenStoredEventRecord, bool>> Filter =>
         x => x.AggregateType == "catalog-stream"
+            && x.ProjectionHint != "bulk-import"
             && (x.EventType == "artist-discovered"
                 || x.EventType == "album-discovered"
                 || x.EventType == "track-discovered");
 
+    protected override bool IsSubscriptionDefinitionStale(Raven.Client.Documents.Subscriptions.SubscriptionState state) =>
+        !state.Query.Contains("bulk-import", StringComparison.Ordinal);
     protected override async Task HandleAsync(
         IServiceProvider serviceProvider,
         RavenStoredEventRecord storedEvent,

@@ -15,8 +15,12 @@ internal sealed class PlaylistTracksDiscoveredCdcService(
     protected override string SubscriptionName => "projector/playlist-tracks-discovered";
 
     protected override Expression<Func<RavenStoredEventRecord, bool>> Filter =>
-        x => x.AggregateType == "catalog-stream" && x.EventType == "playlist-tracks-discovered";
+        x => x.AggregateType == "catalog-stream"
+            && x.ProjectionHint != "bulk-import"
+            && x.EventType == "playlist-tracks-discovered";
 
+    protected override bool IsSubscriptionDefinitionStale(Raven.Client.Documents.Subscriptions.SubscriptionState state) =>
+        !state.Query.Contains("bulk-import", StringComparison.Ordinal);
     protected override async Task HandleAsync(
         IServiceProvider serviceProvider,
         RavenStoredEventRecord storedEvent,

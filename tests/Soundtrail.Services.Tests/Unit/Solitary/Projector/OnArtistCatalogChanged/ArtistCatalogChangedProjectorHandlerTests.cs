@@ -134,7 +134,8 @@ public sealed class ArtistCatalogChangedProjectorHandlerTests
             LoadedEventStream<ArtistId> stream,
             IReadOnlyList<IDomainEvent> events,
             OperationId? operationId,
-            CancellationToken cancellationToken) =>
+            CancellationToken cancellationToken,
+            ProjectionHint? projectionHint = null) =>
             throw new NotSupportedException();
     }
 

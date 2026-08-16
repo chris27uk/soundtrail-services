@@ -41,7 +41,8 @@ internal sealed class RavenEventStore<TStreamId>(
         OperationId? operationId,
         CancellationToken cancellationToken,
         bool saveChanges = false,
-        Func<IAsyncDocumentSession, LoadedEventStream<TStreamId>, IReadOnlyList<IDomainEvent>, OperationId?, CancellationToken, Task>? beforeSave = null)
+        Func<IAsyncDocumentSession, LoadedEventStream<TStreamId>, IReadOnlyList<IDomainEvent>, OperationId?, CancellationToken, Task>? beforeSave = null,
+        ProjectionHint? projectionHint = null)
     {
         session.Advanced.OptimisticConcurrencyMode = OptimisticConcurrencyMode.Writes;
 
@@ -60,13 +61,15 @@ internal sealed class RavenEventStore<TStreamId>(
             return new AppendResult(false, metadata.Version, [], AppendOutcome.VersionMismatch);
         }
 
+        var hint = projectionHint ?? ProjectionHint.Live;
         var storedEvents = events
             .Select((@event, index) =>
                 ToStoredEvent(
                     stream.StreamId,
                     stream.Version + index + 1,
                     operationId,
-                    @event))
+                    @event,
+                    hint))
             .ToArray();
 
         if (operationId is { } newOperationId)
@@ -103,7 +106,8 @@ internal sealed class RavenEventStore<TStreamId>(
         TStreamId streamId,
         int version,
         OperationId? operationId,
-        IDomainEvent @event)
+        IDomainEvent @event,
+        ProjectionHint projectionHint)
     {
         ArgumentNullException.ThrowIfNull(@event);
 
@@ -123,7 +127,8 @@ internal sealed class RavenEventStore<TStreamId>(
             Body = body,
             OccurredAtUtc = registration.OccurredAtUtc(@event!),
             CorrelationId = registration.CorrelationId(@event!),
-            CausationId = operationId?.StableValue
+            CausationId = operationId?.StableValue,
+            ProjectionHint = projectionHint.Value
         };
     }
 

@@ -105,7 +105,8 @@ public sealed class CatalogItemChangedProjectorHandlerTests
             LoadedEventStream<ArtistId> stream,
             IReadOnlyList<IDomainEvent> newEvents,
             OperationId? operationId,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            ProjectionHint? projectionHint = null)
         {
             this.events.AddRange(newEvents);
             return Task.FromResult(new AppendResult(

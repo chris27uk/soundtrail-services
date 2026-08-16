@@ -23,4 +23,9 @@ public sealed class RavenStoredEventRecord
     public string? CorrelationId { get; set; }
 
     public string? CausationId { get; set; }
+
+    /// <summary>
+    /// <c>live</c> (default) or <c>bulk-import</c>. Live CDC subscriptions exclude bulk-import.
+    /// </summary>
+    public string ProjectionHint { get; set; } = "live";
 }

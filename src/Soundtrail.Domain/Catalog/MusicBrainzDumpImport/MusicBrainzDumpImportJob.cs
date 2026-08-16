@@ -207,6 +207,34 @@ public sealed class MusicBrainzDumpImportJob
         return true;
     }
 
+    public void RegisterPhaseShards(MusicBrainzDumpImportPhase phase, int shardCount)
+    {
+        if (shardCount <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(shardCount), shardCount, "Shard count must be positive.");
+        }
+
+        for (var shardId = 0; shardId < shardCount; shardId++)
+        {
+            GetOrAddShard(phase, shardId);
+        }
+    }
+
+    public bool TryCompleteArtistsPhaseAsFinal(DateTimeOffset finishedAt)
+    {
+        if (CurrentPhase != MusicBrainzDumpImportPhase.Artists ||
+            !AreAllShardsCompleted(MusicBrainzDumpImportPhase.Artists))
+        {
+            return false;
+        }
+
+        Status = MusicBrainzDumpImportJobStatus.Completed;
+        FinishedAt = finishedAt;
+        ProducerLease = null;
+        ProgressPercent = 100;
+        return true;
+    }
+
     public bool AreAllShardsCompleted(MusicBrainzDumpImportPhase phase)
     {
         var phaseShards = shards.Values.Where(shard => shard.Phase == phase).ToArray();
