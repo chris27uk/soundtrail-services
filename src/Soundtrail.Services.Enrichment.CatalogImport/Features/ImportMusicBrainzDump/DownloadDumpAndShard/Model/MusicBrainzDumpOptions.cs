@@ -34,6 +34,12 @@ public sealed class MusicBrainzDumpOptions
     public string? ReleaseGroupsLocalPath { get; set; }
 
     /// <summary>
+    /// Path to official release JSONL. When unset, inferred as sibling <c>release.jsonl</c> beside <see cref="LocalPath"/>.
+    /// Used to materialize denormalized track JSONL when a prebuilt track source is absent.
+    /// </summary>
+    public string? ReleasesLocalPath { get; set; }
+
+    /// <summary>
     /// Path to denormalized track-graph JSONL. When unset, inferred as sibling <c>track.jsonl</c> beside <see cref="LocalPath"/>.
     /// </summary>
     public string? TracksLocalPath { get; set; }

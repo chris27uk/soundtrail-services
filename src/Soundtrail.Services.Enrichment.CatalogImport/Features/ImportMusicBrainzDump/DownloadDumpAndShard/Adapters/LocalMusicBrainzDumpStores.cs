@@ -14,6 +14,7 @@ public sealed class LocalMusicBrainzDumpArchiveStore(
 {
     public const string ArtistEntity = "artist";
     public const string ReleaseGroupEntity = "release-group";
+    public const string ReleaseEntity = "release";
     public const string TrackEntity = "track";
 
     public Task<string> EnsureArtistsJsonlAsync(
@@ -59,17 +60,43 @@ public sealed class LocalMusicBrainzDumpArchiveStore(
         return EnsureEntityJsonlAsync(ReleaseGroupEntity, dumpVersion, allowHttpDownload: true, cancellationToken);
     }
 
-    public Task<string> EnsureTracksJsonlAsync(
+    public Task<string> EnsureReleasesJsonlAsync(
         MusicBrainzDumpImportJobId jobId,
         string dumpVersion,
         CancellationToken cancellationToken = default)
     {
         _ = jobId;
 
+        var configured = options.Value.ReleasesLocalPath;
+        if (!string.IsNullOrWhiteSpace(configured))
+        {
+            return Task.FromResult(RequireExistingPath(configured, ReleaseEntity));
+        }
+
+        var artistsPath = options.Value.LocalPath;
+        if (!string.IsNullOrWhiteSpace(artistsPath))
+        {
+            var sibling = Path.Combine(
+                Path.GetDirectoryName(Path.GetFullPath(artistsPath))!,
+                "release.jsonl");
+            if (File.Exists(sibling))
+            {
+                return Task.FromResult(RequireExistingPath(sibling, ReleaseEntity));
+            }
+        }
+
+        return EnsureEntityJsonlAsync(ReleaseEntity, dumpVersion, allowHttpDownload: true, cancellationToken);
+    }
+
+    public async Task<string> EnsureTracksJsonlAsync(
+        MusicBrainzDumpImportJobId jobId,
+        string dumpVersion,
+        CancellationToken cancellationToken = default)
+    {
         var configured = options.Value.TracksLocalPath;
         if (!string.IsNullOrWhiteSpace(configured))
         {
-            return Task.FromResult(RequireExistingPath(configured, TrackEntity));
+            return RequireExistingPath(configured, TrackEntity);
         }
 
         var artistsPath = options.Value.LocalPath;
@@ -80,12 +107,35 @@ public sealed class LocalMusicBrainzDumpArchiveStore(
                 "track.jsonl");
             if (File.Exists(sibling))
             {
-                return Task.FromResult(RequireExistingPath(sibling, TrackEntity));
+                return RequireExistingPath(sibling, TrackEntity);
             }
         }
 
-        // Denormalized track-graph is Soundtrail-specific; never HTTP-download official recording dumps here.
-        return EnsureEntityJsonlAsync(TrackEntity, dumpVersion, allowHttpDownload: false, cancellationToken);
+        // Prebuilt denormalized track archive/fixture (Soundtrail-specific; never HTTP-download "track").
+        if (TryGetArchiveExtractedPath(TrackEntity, dumpVersion, out var trackExtractedPath) &&
+            File.Exists(trackExtractedPath))
+        {
+            return trackExtractedPath;
+        }
+
+        var trackArchivePath = TryGetArchivePath(TrackEntity, dumpVersion);
+        if (trackArchivePath is not null && File.Exists(trackArchivePath))
+        {
+            return await EnsureEntityJsonlAsync(
+                TrackEntity,
+                dumpVersion,
+                allowHttpDownload: false,
+                cancellationToken);
+        }
+
+        // Materialize denormalized track JSONL from the official release graph.
+        var releasesPath = await EnsureReleasesJsonlAsync(jobId, dumpVersion, cancellationToken);
+        var outputPath = RequireArchiveExtractedPath(TrackEntity, dumpVersion);
+        await MusicBrainzReleaseGraphTrackJoiner.WriteJoinedTracksAsync(
+            releasesPath,
+            outputPath,
+            cancellationToken);
+        return outputPath;
     }
 
     private async Task<string> EnsureEntityJsonlAsync(
@@ -94,23 +144,13 @@ public sealed class LocalMusicBrainzDumpArchiveStore(
         bool allowHttpDownload,
         CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(dumpVersion);
-
-        var archiveDirectory = options.Value.ArchiveDirectory;
-        if (string.IsNullOrWhiteSpace(archiveDirectory))
-        {
-            throw new InvalidOperationException(
-                $"MusicBrainzDump:ArchiveDirectory must be set when resolving '{entityName}' from archives.");
-        }
-
-        var versionRoot = Path.Combine(Path.GetFullPath(archiveDirectory), dumpVersion.Trim());
-        var extractedPath = Path.Combine(versionRoot, "extracted", $"{entityName}.jsonl");
+        var extractedPath = RequireArchiveExtractedPath(entityName, dumpVersion);
         if (File.Exists(extractedPath))
         {
             return extractedPath;
         }
 
-        var archivePath = Path.Combine(versionRoot, $"{entityName}.tar.xz");
+        var archivePath = RequireArchivePath(entityName, dumpVersion);
         if (!File.Exists(archivePath))
         {
             if (!allowHttpDownload || !IsHttpSource())
@@ -126,6 +166,60 @@ public sealed class LocalMusicBrainzDumpArchiveStore(
 
         extractor.EnsureExtracted(archivePath, entityName, extractedPath);
         return extractedPath;
+    }
+
+    private bool TryGetArchiveExtractedPath(string entityName, string dumpVersion, out string extractedPath)
+    {
+        extractedPath = string.Empty;
+        if (string.IsNullOrWhiteSpace(options.Value.ArchiveDirectory) ||
+            string.IsNullOrWhiteSpace(dumpVersion))
+        {
+            return false;
+        }
+
+        extractedPath = Path.Combine(
+            Path.GetFullPath(options.Value.ArchiveDirectory),
+            dumpVersion.Trim(),
+            "extracted",
+            $"{entityName}.jsonl");
+        return true;
+    }
+
+    private string? TryGetArchivePath(string entityName, string dumpVersion)
+    {
+        if (string.IsNullOrWhiteSpace(options.Value.ArchiveDirectory) ||
+            string.IsNullOrWhiteSpace(dumpVersion))
+        {
+            return null;
+        }
+
+        return Path.Combine(
+            Path.GetFullPath(options.Value.ArchiveDirectory),
+            dumpVersion.Trim(),
+            $"{entityName}.tar.xz");
+    }
+
+    private string RequireArchiveExtractedPath(string entityName, string dumpVersion)
+    {
+        if (!TryGetArchiveExtractedPath(entityName, dumpVersion, out var extractedPath))
+        {
+            throw new InvalidOperationException(
+                $"MusicBrainzDump:ArchiveDirectory must be set when resolving '{entityName}' from archives.");
+        }
+
+        return extractedPath;
+    }
+
+    private string RequireArchivePath(string entityName, string dumpVersion)
+    {
+        var archivePath = TryGetArchivePath(entityName, dumpVersion);
+        if (archivePath is null)
+        {
+            throw new InvalidOperationException(
+                $"MusicBrainzDump:ArchiveDirectory must be set when resolving '{entityName}' from archives.");
+        }
+
+        return archivePath;
     }
 
     private bool IsHttpSource() =>

@@ -3,9 +3,11 @@ using System.Net.Http;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Soundtrail.Domain.Catalog.MusicBrainzDumpImport;
+using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Adapters;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Model;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Ports;
+using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard;
 
 namespace Soundtrail.Services.Tests.Unit.Solitary.Catalog.MusicBrainzDumpImport;
 
@@ -177,6 +179,46 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
 
         downloader.RequestedUrls.Should().BeEmpty();
         File.Exists(path).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Given_Release_Archive_Without_Track_When_Ensuring_Tracks_Then_Joined_Jsonl_Is_Written()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var dumpVersion = "2026-08";
+        var versionRoot = Path.Combine(directory.Path, dumpVersion);
+        Directory.CreateDirectory(versionRoot);
+        MusicBrainzDumpArchiveFixtures.CopyTo(versionRoot, "release.tar.xz");
+        var store = CreateStore(directory.Path, source: "fixture");
+
+        var path = await store.EnsureTracksJsonlAsync(
+            MusicBrainzDumpImportJobId.ForDumpVersion(dumpVersion),
+            dumpVersion);
+
+        var line = (await File.ReadAllLinesAsync(path)).Should().ContainSingle().Subject;
+        line.Should().Contain("Solo Song");
+        var wrapped = MusicBrainzTrackJsonLine.WrapForCreditedArtist(
+            "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            line);
+        new MusicBrainzTrackDumpRowMapper().TryMap(wrapped)!.Title.Should().Be("Solo Song");
+    }
+
+    [Fact]
+    public async Task Given_Http_Source_And_Missing_Track_When_Ensuring_Tracks_Then_Release_May_Be_Downloaded()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var dumpVersion = "2026-08";
+        Directory.CreateDirectory(Path.Combine(directory.Path, dumpVersion));
+        var downloader = new RecordingDownloader(MusicBrainzDumpArchiveFixtures.ReadBytes("release.tar.xz"));
+        var store = CreateStore(directory.Path, source: "http", downloader);
+
+        var path = await store.EnsureTracksJsonlAsync(
+            MusicBrainzDumpImportJobId.ForDumpVersion(dumpVersion),
+            dumpVersion);
+
+        downloader.RequestedUrls.Should().ContainSingle()
+            .Which.Should().EndWith("/2026-08/release.tar.xz");
+        File.ReadAllText(path).Should().Contain("Solo Song");
     }
 
     private static LocalMusicBrainzDumpArchiveStore CreateStore(

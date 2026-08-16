@@ -7,11 +7,14 @@ internal sealed class MusicBrainzDumpArchiveStoreFake : IMusicBrainzDumpArchiveS
 {
     private readonly List<string> artistsJsonlLines = [];
     private readonly List<string> releaseGroupsJsonlLines = [];
+    private readonly List<string> releasesJsonlLines = [];
     private readonly List<string> tracksJsonlLines = [];
 
     public IReadOnlyList<string> ArtistsJsonlLines => artistsJsonlLines;
 
     public IReadOnlyList<string> ReleaseGroupsJsonlLines => releaseGroupsJsonlLines;
+
+    public IReadOnlyList<string> ReleasesJsonlLines => releasesJsonlLines;
 
     public IReadOnlyList<string> TracksJsonlLines => tracksJsonlLines;
 
@@ -26,6 +29,13 @@ internal sealed class MusicBrainzDumpArchiveStoreFake : IMusicBrainzDumpArchiveS
     {
         releaseGroupsJsonlLines.Clear();
         releaseGroupsJsonlLines.AddRange(lines);
+        return this;
+    }
+
+    public MusicBrainzDumpArchiveStoreFake WithReleasesJsonl(params string[] lines)
+    {
+        releasesJsonlLines.Clear();
+        releasesJsonlLines.AddRange(lines);
         return this;
     }
 
@@ -54,6 +64,16 @@ internal sealed class MusicBrainzDumpArchiveStoreFake : IMusicBrainzDumpArchiveS
         _ = jobId;
         _ = dumpVersion;
         return await WriteTempAsync(releaseGroupsJsonlLines, cancellationToken);
+    }
+
+    public async Task<string> EnsureReleasesJsonlAsync(
+        MusicBrainzDumpImportJobId jobId,
+        string dumpVersion,
+        CancellationToken cancellationToken = default)
+    {
+        _ = jobId;
+        _ = dumpVersion;
+        return await WriteTempAsync(releasesJsonlLines, cancellationToken);
     }
 
     public async Task<string> EnsureTracksJsonlAsync(

@@ -64,17 +64,49 @@ public sealed class BlobMusicBrainzDumpArchiveStore(
             cancellationToken);
     }
 
-    public Task<string> EnsureTracksJsonlAsync(
+    public Task<string> EnsureReleasesJsonlAsync(
         MusicBrainzDumpImportJobId jobId,
         string dumpVersion,
         CancellationToken cancellationToken = default)
     {
         _ = jobId;
 
+        var configured = options.Value.ReleasesLocalPath;
+        if (!string.IsNullOrWhiteSpace(configured))
+        {
+            return Task.FromResult(
+                RequireExistingPath(configured, LocalMusicBrainzDumpArchiveStore.ReleaseEntity));
+        }
+
+        var artistsPath = options.Value.LocalPath;
+        if (!string.IsNullOrWhiteSpace(artistsPath))
+        {
+            var sibling = Path.Combine(
+                Path.GetDirectoryName(Path.GetFullPath(artistsPath))!,
+                "release.jsonl");
+            if (File.Exists(sibling))
+            {
+                return Task.FromResult(
+                    RequireExistingPath(sibling, LocalMusicBrainzDumpArchiveStore.ReleaseEntity));
+            }
+        }
+
+        return EnsureEntityJsonlAsync(
+            LocalMusicBrainzDumpArchiveStore.ReleaseEntity,
+            dumpVersion,
+            allowHttpDownload: true,
+            cancellationToken);
+    }
+
+    public async Task<string> EnsureTracksJsonlAsync(
+        MusicBrainzDumpImportJobId jobId,
+        string dumpVersion,
+        CancellationToken cancellationToken = default)
+    {
         var configured = options.Value.TracksLocalPath;
         if (!string.IsNullOrWhiteSpace(configured))
         {
-            return Task.FromResult(RequireExistingPath(configured, LocalMusicBrainzDumpArchiveStore.TrackEntity));
+            return RequireExistingPath(configured, LocalMusicBrainzDumpArchiveStore.TrackEntity);
         }
 
         var artistsPath = options.Value.LocalPath;
@@ -85,16 +117,42 @@ public sealed class BlobMusicBrainzDumpArchiveStore(
                 "track.jsonl");
             if (File.Exists(sibling))
             {
-                return Task.FromResult(RequireExistingPath(sibling, LocalMusicBrainzDumpArchiveStore.TrackEntity));
+                return RequireExistingPath(sibling, LocalMusicBrainzDumpArchiveStore.TrackEntity);
             }
         }
 
-        // Denormalized track-graph is Soundtrail-specific; never HTTP-download official recording dumps here.
-        return EnsureEntityJsonlAsync(
-            LocalMusicBrainzDumpArchiveStore.TrackEntity,
-            dumpVersion,
-            allowHttpDownload: false,
+        ArgumentException.ThrowIfNullOrWhiteSpace(dumpVersion);
+        var archiveDirectory = options.Value.ArchiveDirectory;
+        if (string.IsNullOrWhiteSpace(archiveDirectory))
+        {
+            throw new InvalidOperationException(
+                $"MusicBrainzDump:ArchiveDirectory must be set when resolving '{LocalMusicBrainzDumpArchiveStore.TrackEntity}' from archives.");
+        }
+
+        var versionRoot = Path.Combine(Path.GetFullPath(archiveDirectory), dumpVersion.Trim());
+        var trackExtractedPath = Path.Combine(versionRoot, "extracted", $"{LocalMusicBrainzDumpArchiveStore.TrackEntity}.jsonl");
+        if (File.Exists(trackExtractedPath))
+        {
+            return trackExtractedPath;
+        }
+
+        var trackArchivePath = Path.Combine(versionRoot, $"{LocalMusicBrainzDumpArchiveStore.TrackEntity}.tar.xz");
+        var trackBlobName = MusicBrainzDumpBlobKeys.Archive(dumpVersion, LocalMusicBrainzDumpArchiveStore.TrackEntity);
+        if (File.Exists(trackArchivePath) || await blobs.ExistsAsync(trackBlobName, cancellationToken))
+        {
+            return await EnsureEntityJsonlAsync(
+                LocalMusicBrainzDumpArchiveStore.TrackEntity,
+                dumpVersion,
+                allowHttpDownload: false,
+                cancellationToken);
+        }
+
+        var releasesPath = await EnsureReleasesJsonlAsync(jobId, dumpVersion, cancellationToken);
+        await MusicBrainzReleaseGraphTrackJoiner.WriteJoinedTracksAsync(
+            releasesPath,
+            trackExtractedPath,
             cancellationToken);
+        return trackExtractedPath;
     }
 
     private async Task<string> EnsureEntityJsonlAsync(
