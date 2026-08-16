@@ -67,10 +67,10 @@ public sealed class MusicBrainzArtistDumpRowMapperTests
     }
 }
 
-public sealed class MusicBrainzDumpImportJobArtistsCompletionTests
+public sealed class MusicBrainzDumpImportJobPhaseTests
 {
     [Fact]
-    public void Given_All_Artists_Shards_Completed_When_Completing_Then_The_Job_Is_Completed()
+    public void Given_All_Artists_Shards_Completed_When_Advancing_Then_Current_Phase_Is_ReleaseGroups()
     {
         var job = MusicBrainzDumpImportJob.CreateNew(
             MusicBrainzDumpImportJobId.ForDumpVersion("2026-08"),
@@ -80,21 +80,42 @@ public sealed class MusicBrainzDumpImportJobArtistsCompletionTests
         job.GetOrAddShard(MusicBrainzDumpImportPhase.Artists, 0).MarkCompleted();
         job.GetOrAddShard(MusicBrainzDumpImportPhase.Artists, 1).MarkCompleted();
 
-        job.TryCompleteArtistsPhaseAsFinal(DateTimeOffset.Parse("2026-08-01T02:00:00Z")).Should().BeTrue();
-        job.Status.Should().Be(MusicBrainzDumpImportJobStatus.Completed);
+        job.TryAdvancePhase().Should().BeTrue();
+        job.CurrentPhase.Should().Be(MusicBrainzDumpImportPhase.ReleaseGroups);
     }
 
     [Fact]
-    public void Given_Incomplete_Artists_Shards_When_Completing_Then_It_Fails()
+    public void Given_All_ReleaseGroups_Shards_Completed_When_Completing_Then_The_Job_Is_Completed()
     {
         var job = MusicBrainzDumpImportJob.CreateNew(
             MusicBrainzDumpImportJobId.ForDumpVersion("2026-08"),
             "2026-08",
             DateTimeOffset.Parse("2026-08-01T00:00:00Z"));
-        job.RegisterPhaseShards(MusicBrainzDumpImportPhase.Artists, 2);
+        job.RegisterPhaseShards(MusicBrainzDumpImportPhase.Artists, 1);
         job.GetOrAddShard(MusicBrainzDumpImportPhase.Artists, 0).MarkCompleted();
+        job.TryAdvancePhase().Should().BeTrue();
+        job.RegisterPhaseShards(MusicBrainzDumpImportPhase.ReleaseGroups, 2);
+        job.GetOrAddShard(MusicBrainzDumpImportPhase.ReleaseGroups, 0).MarkCompleted();
+        job.GetOrAddShard(MusicBrainzDumpImportPhase.ReleaseGroups, 1).MarkCompleted();
 
-        job.TryCompleteArtistsPhaseAsFinal(DateTimeOffset.Parse("2026-08-01T02:00:00Z")).Should().BeFalse();
+        job.TryCompleteReleaseGroupsPhaseAsFinal(DateTimeOffset.Parse("2026-08-01T02:00:00Z")).Should().BeTrue();
+        job.Status.Should().Be(MusicBrainzDumpImportJobStatus.Completed);
+    }
+
+    [Fact]
+    public void Given_Incomplete_ReleaseGroups_Shards_When_Completing_Then_It_Fails()
+    {
+        var job = MusicBrainzDumpImportJob.CreateNew(
+            MusicBrainzDumpImportJobId.ForDumpVersion("2026-08"),
+            "2026-08",
+            DateTimeOffset.Parse("2026-08-01T00:00:00Z"));
+        job.RegisterPhaseShards(MusicBrainzDumpImportPhase.Artists, 1);
+        job.GetOrAddShard(MusicBrainzDumpImportPhase.Artists, 0).MarkCompleted();
+        job.TryAdvancePhase().Should().BeTrue();
+        job.RegisterPhaseShards(MusicBrainzDumpImportPhase.ReleaseGroups, 2);
+        job.GetOrAddShard(MusicBrainzDumpImportPhase.ReleaseGroups, 0).MarkCompleted();
+
+        job.TryCompleteReleaseGroupsPhaseAsFinal(DateTimeOffset.Parse("2026-08-01T02:00:00Z")).Should().BeFalse();
         job.Status.Should().Be(MusicBrainzDumpImportJobStatus.Pending);
     }
 }

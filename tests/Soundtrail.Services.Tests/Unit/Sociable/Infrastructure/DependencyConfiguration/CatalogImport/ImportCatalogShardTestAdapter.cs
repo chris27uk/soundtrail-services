@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Model;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Ports;
+using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Work;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.CompositionRoot;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Ports;
@@ -26,7 +27,10 @@ internal sealed class ImportCatalogShardTestAdapter(ImportCatalogShardPorts port
             sp => ActivatorUtilities.CreateInstance<ImportCatalogShardJob>(sp),
             _ => new MusicBrainzArtistDumpRowMapper(),
             sp => sp.GetRequiredService<ICatalogArtistImportWriter>(),
-            sp => sp.GetRequiredService<IMusicBrainzDumpShardStore>());
+            _ => new MusicBrainzReleaseGroupDumpRowMapper(),
+            sp => sp.GetRequiredService<ICatalogAlbumImportWriter>(),
+            sp => sp.GetRequiredService<IMusicBrainzDumpShardStore>(),
+            sp => sp.GetRequiredService<IDownloadDumpAndShardWorkQueue>());
 
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
@@ -37,12 +41,18 @@ internal sealed class ImportCatalogShardTestAdapter(ImportCatalogShardPorts port
         services.TryAddSingleton<ImportCatalogShardWorkQueueFake>();
         services.TryAddSingleton<IImportCatalogShardWorkQueue>(
             sp => sp.GetRequiredService<ImportCatalogShardWorkQueueFake>());
+        services.TryAddSingleton<DownloadDumpAndShardWorkQueueFake>();
+        services.TryAddSingleton<IDownloadDumpAndShardWorkQueue>(
+            sp => sp.GetRequiredService<DownloadDumpAndShardWorkQueueFake>());
         services.TryAddSingleton<MusicBrainzDumpShardStoreFake>();
         services.TryAddSingleton<IMusicBrainzDumpShardStore>(
             sp => sp.GetRequiredService<MusicBrainzDumpShardStoreFake>());
         services.TryAddSingleton<CatalogArtistImportWriterFake>();
         services.TryAddSingleton<ICatalogArtistImportWriter>(
             sp => sp.GetRequiredService<CatalogArtistImportWriterFake>());
+        services.TryAddSingleton<CatalogAlbumImportWriterFake>();
+        services.TryAddSingleton<ICatalogAlbumImportWriter>(
+            sp => sp.GetRequiredService<CatalogAlbumImportWriterFake>());
 
         ImportCatalogShardComposition.Configure(services, ports);
     }

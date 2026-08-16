@@ -25,6 +25,7 @@ internal sealed class ImportMusicBrainzDumpSociableTestEnvironment : IDisposable
         MusicBrainzDumpImportJobStoreFake jobStore,
         MusicBrainzDumpArchiveStoreFake archiveStore,
         CatalogArtistImportWriterFake artistWriter,
+        CatalogAlbumImportWriterFake albumWriter,
         DownloadDumpAndShardWorkQueueFake downloadWorkQueue,
         ImportCatalogShardWorkQueueFake shardWorkQueue,
         ICatalogImportLeaseOwner leaseOwner)
@@ -34,6 +35,7 @@ internal sealed class ImportMusicBrainzDumpSociableTestEnvironment : IDisposable
         JobStore = jobStore;
         ArchiveStore = archiveStore;
         ArtistWriter = artistWriter;
+        AlbumWriter = albumWriter;
         this.downloadWorkQueue = downloadWorkQueue;
         this.shardWorkQueue = shardWorkQueue;
         LeaseOwner = leaseOwner;
@@ -44,6 +46,8 @@ internal sealed class ImportMusicBrainzDumpSociableTestEnvironment : IDisposable
     public MusicBrainzDumpArchiveStoreFake ArchiveStore { get; }
 
     public CatalogArtistImportWriterFake ArtistWriter { get; }
+
+    public CatalogAlbumImportWriterFake AlbumWriter { get; }
 
     public ICatalogImportLeaseOwner LeaseOwner { get; }
 
@@ -65,6 +69,17 @@ internal sealed class ImportMusicBrainzDumpSociableTestEnvironment : IDisposable
     {
         var environment = Compose(utcNow);
         environment.ArchiveStore.WithArtistsJsonl(artistsJsonlLines);
+        return environment;
+    }
+
+    public static ImportMusicBrainzDumpSociableTestEnvironment ForArtistsAndReleaseGroupsFixture(
+        DateTimeOffset utcNow,
+        IReadOnlyList<string> artistsJsonlLines,
+        IReadOnlyList<string> releaseGroupsJsonlLines)
+    {
+        var environment = Compose(utcNow);
+        environment.ArchiveStore.WithArtistsJsonl(artistsJsonlLines.ToArray());
+        environment.ArchiveStore.WithReleaseGroupsJsonl(releaseGroupsJsonlLines.ToArray());
         return environment;
     }
 
@@ -137,6 +152,7 @@ internal sealed class ImportMusicBrainzDumpSociableTestEnvironment : IDisposable
             engine.RequireFake<IMusicBrainzDumpImportJobStore, MusicBrainzDumpImportJobStoreFake>(),
             engine.RequireFake<IMusicBrainzDumpArchiveStore, MusicBrainzDumpArchiveStoreFake>(),
             engine.RequireFake<ICatalogArtistImportWriter, CatalogArtistImportWriterFake>(),
+            engine.RequireFake<ICatalogAlbumImportWriter, CatalogAlbumImportWriterFake>(),
             engine.RequireFake<IDownloadDumpAndShardWorkQueue, DownloadDumpAndShardWorkQueueFake>(),
             engine.RequireFake<IImportCatalogShardWorkQueue, ImportCatalogShardWorkQueueFake>(),
             engine.Resolve<ICatalogImportLeaseOwner>());

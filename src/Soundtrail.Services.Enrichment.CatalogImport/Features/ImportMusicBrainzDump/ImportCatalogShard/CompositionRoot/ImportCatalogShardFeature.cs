@@ -16,6 +16,7 @@ using Soundtrail.Domain.Catalog.MusicBrainzDumpImport.Messages;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Adapters;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Model;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Ports;
+using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Work;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Adapters;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Ports;
@@ -40,6 +41,7 @@ public sealed class ImportCatalogShardFeature : IFeature
         services.Configure<MusicBrainzDumpOptions>(configuration.GetSection(MusicBrainzDumpOptions.SectionName));
         services.TryAddSingleton<ICatalogImportLeaseOwner, CatalogImportLeaseOwner>();
         services.TryAddSingleton<IImportCatalogShardWorkQueue, ChannelImportCatalogShardWorkQueue>();
+        services.TryAddSingleton<IDownloadDumpAndShardWorkQueue, ChannelDownloadDumpAndShardWorkQueue>();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, ImportCatalogShardWorkPump>());
 
         ImportCatalogShardComposition.Configure(
@@ -49,7 +51,10 @@ public sealed class ImportCatalogShardFeature : IFeature
                 sp => ActivatorUtilities.CreateInstance<ImportCatalogShardJob>(sp),
                 _ => new MusicBrainzArtistDumpRowMapper(),
                 sp => ActivatorUtilities.CreateInstance<CatalogArtistImportWriter>(sp),
-                sp => ActivatorUtilities.CreateInstance<LocalMusicBrainzDumpShardStore>(sp)));
+                _ => new MusicBrainzReleaseGroupDumpRowMapper(),
+                sp => ActivatorUtilities.CreateInstance<CatalogAlbumImportWriter>(sp),
+                sp => ActivatorUtilities.CreateInstance<LocalMusicBrainzDumpShardStore>(sp),
+                sp => sp.GetRequiredService<IDownloadDumpAndShardWorkQueue>()));
     }
 
     public void ConfigureApplication(WebApplication app)
