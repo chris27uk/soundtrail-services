@@ -1,3 +1,7 @@
+using Soundtrail.Domain.Common;
+using Soundtrail.Domain.Discovery;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.GetTrack;
+
 namespace Soundtrail.Services.Tests.Unit.Sociable.Features.GetTrack.Scenarios.DataAvailable.Api;
 
 public sealed class DataAvailableTests
@@ -137,5 +141,21 @@ public sealed class DataAvailableTests
         await environment.ProjectOnChange(sut => sut.Handle(environment.CreateRequest()));
 
         environment.SentMessages.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task When_Requesting_Track_Without_Streaming_Locations_Then_High_Priority_Odesli_Is_Scheduled()
+    {
+        var trackId = TestTrackIds.Create("track-odesli-missing");
+        var environment = GetTrackSociableTestEnvironment.ForDataAvailable(
+            trackId: trackId,
+            response: GetTrackScenarioData.CreateResponse(trackId: trackId, streamingLocations: []));
+
+        await environment.HandleWithoutPumpAsync();
+
+        var request = environment.SentMessages.OfType<RequestKnownMusicDataMessage>().Should().ContainSingle().Subject;
+        request.Priority.Should().Be(LookupPriorityBand.High);
+        request.Operation.Should().BeOfType<CatalogItemOperation.StreamingLocationForTrack>()
+            .Which.Id.Should().Be(trackId);
     }
 }

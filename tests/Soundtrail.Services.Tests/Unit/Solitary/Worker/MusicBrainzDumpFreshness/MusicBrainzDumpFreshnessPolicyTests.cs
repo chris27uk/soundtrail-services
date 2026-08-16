@@ -157,6 +157,7 @@ public sealed class MusicBrainzDumpFreshnessPolicyTests
             new DateOnly(2023, 11, 10),
             "album",
             null,
-            UtcNow.AddDays(-2));
+            UtcNow.AddDays(-2),
+            []);
     }
 }

@@ -1,3 +1,4 @@
+using Soundtrail.Adapters.CatalogProjection;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Artists;
@@ -121,12 +122,12 @@ public sealed class CatalogItemChangedProjectorHandlerTests
     {
         public int StoreCount { get; private set; }
 
-        public ArtistCatalogReadModel? LastStored { get; private set; }
+        public ArtistCatalogProjection? LastStored { get; private set; }
 
-        public Task StoreAsync(ArtistCatalogReadModel readModel, CancellationToken cancellationToken)
+        public Task StoreAsync(ArtistCatalogProjection projection, CancellationToken cancellationToken)
         {
             this.StoreCount++;
-            this.LastStored = readModel;
+            this.LastStored = projection;
             return Task.CompletedTask;
         }
     }
