@@ -13,6 +13,7 @@ using Soundtrail.Services.Enrichment.Worker.Infrastructure.MusicMetadata;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;
 using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
 using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
+using Soundtrail.Services.Enrichment.Worker.Shared.MusicBrainzDumpFreshness;
 using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
 using StackExchange.Redis;
 using WebApplication = Microsoft.AspNetCore.Builder.WebApplication;
@@ -43,8 +44,10 @@ public sealed class LookupMusicbrainzAlbumTracksFeature : IFeature
         services.TryAddSingleton<IConnectionMultiplexer>(sp =>
             ConnectionMultiplexer.Connect(configuration.GetConnectionString("Redis") ?? throw new InvalidOperationException("Redis connection string is required.")));
         services.TryAddSingleton<IClockPort, SystemClockPort>();
+        services.AddMusicBrainzDumpFreshness(configuration);
         services.AddLookupHandlerPipeline<LookupMusicbrainzAlbumTracksMessage, LookupMusicbrainzAlbumTracksDecoratorMetadata>(
             sp => new LookupMusicbrainzAlbumTracksHandler(
+                sp.GetRequiredService<IMusicBrainzDumpFreshnessEvaluator>(),
                 sp.GetRequiredService<IReadTracksByAlbumIdPort>(),
                 sp.GetRequiredService<IClockPort>(),
                 sp.GetRequiredService<DomainCommandBus>()));

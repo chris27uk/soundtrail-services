@@ -11,10 +11,10 @@ using Soundtrail.Services.Enrichment.Worker.Features.LookupMusicbrainzArtistAlbu
 using Soundtrail.Services.Enrichment.Worker.Features.LookupMusicbrainzArtistTracks;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.MusicMetadata;
 using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
+using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;
-using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
 namespace Soundtrail.Services.Tests.Integration.Shared.Worker.LookupMusicbrainzBrowse;
 
@@ -27,7 +27,11 @@ public sealed class LookupMusicbrainzBrowseHandlerIntegrationTests
             """{"releases":[{"id":"release-mb-1","title":"Rare Release","date":"2026-01-02"}]}""",
             """{"recordings":[]}""",
             """{"title":"Rare Release","media":[]}""");
-        var subject = new LookupMusicbrainzArtistAlbumsHandler(environment.Port, environment.Clock, environment.CommandBus);
+        var subject = new LookupMusicbrainzArtistAlbumsHandler(
+            new MusicBrainzDumpFreshnessEvaluatorFake(),
+            environment.Port,
+            environment.Clock,
+            environment.CommandBus);
 
         await subject.Handle(
             new LookupMusicbrainzArtistAlbumsMessage(
@@ -48,7 +52,11 @@ public sealed class LookupMusicbrainzBrowseHandlerIntegrationTests
             """{"releases":[]}""",
             """{"recordings":[{"id":"mbid-rare-1","title":"Rare Unknown Song","length":123000,"first-release-date":"2026-01-02","isrcs":["isrc-rare-1"],"artist-credit":[{"name":"Test Artist"}]}]}""",
             """{"title":"Rare Release","media":[]}""");
-        var subject = new LookupMusicbrainzArtistTracksHandler(environment.Port, environment.Clock, environment.CommandBus);
+        var subject = new LookupMusicbrainzArtistTracksHandler(
+            new MusicBrainzDumpFreshnessEvaluatorFake(),
+            environment.Port,
+            environment.Clock,
+            environment.CommandBus);
 
         await subject.Handle(
             new LookupMusicbrainzArtistTracksMessage(
@@ -69,7 +77,11 @@ public sealed class LookupMusicbrainzBrowseHandlerIntegrationTests
             """{"releases":[]}""",
             """{"recordings":[]}""",
             """{"title":"Rare Release","date":"2026-01-02","artist-credit":[{"name":"Test Artist"}],"media":[{"tracks":[{"title":"Album Track 1","length":123000,"artist-credit":[{"name":"Test Artist"}],"recording":{"id":"recording-mb-1","isrcs":["isrc-album-1"]}}]}]}""");
-        var subject = new LookupMusicbrainzAlbumTracksHandler(environment.Port, environment.Clock, environment.CommandBus);
+        var subject = new LookupMusicbrainzAlbumTracksHandler(
+            new MusicBrainzDumpFreshnessEvaluatorFake(),
+            environment.Port,
+            environment.Clock,
+            environment.CommandBus);
 
         await subject.Handle(
             new LookupMusicbrainzAlbumTracksMessage(

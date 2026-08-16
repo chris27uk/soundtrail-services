@@ -82,6 +82,7 @@ public sealed class CatalogTrackImportWriter(
                 Title = track.Title,
                 ArtistName = track.ArtistName,
                 AlbumTitle = track.AlbumTitle,
+                AlbumId = track.AlbumId,
                 DurationMs = track.DurationMs,
                 Isrc = track.Isrc,
                 ReleaseDate = track.ReleaseDate,
