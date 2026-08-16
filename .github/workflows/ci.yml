@@ -327,6 +327,23 @@ jobs:
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: bash scripts/ci-wait-publish.sh
 
+      # BUILD_VERSION is already known (set earlier in this job by the
+      # version-meta wait) and the job has already succeeded to reach this
+      # point (no always(), so a prior failure skips this). No separate
+      # job/checkout needed to turn a known SemVer + commit SHA into a tag.
+      - name: Tag release version
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="v${BUILD_VERSION:?BUILD_VERSION not set}"
+          if gh api "repos/${GITHUB_REPOSITORY}/git/refs/tags/${tag}" >/dev/null 2>&1; then
+            echo "Tag ${tag} already exists; skipping."
+            exit 0
+          fi
+          gh api "repos/${GITHUB_REPOSITORY}/git/refs" -f "ref=refs/tags/${tag}" -f "sha=${GITHUB_SHA}" >/dev/null
+          echo "Created ${tag} -> ${GITHUB_SHA}"
+
       - name: Save BuildKit export marker
         # Publish success is enough; flaky tests should not force another cache export.
         if: always() && steps.bk-export.outputs.cache-hit != 'true' && steps.wait-publish.outcome == 'success'
@@ -456,7 +473,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      # Only dorny/test-reporter needs a working tree (it shells out to
+      # `git ls-files` to map failures to source); it only runs on PRs.
       - name: Checkout
+        if: github.event_name == 'pull_request'
         uses: actions/checkout@v7
         with:
           fetch-depth: 1
@@ -476,22 +496,6 @@ jobs:
           reporter: dotnet-trx
           fail-on-error: true
           fail-on-empty: false
-
-      - name: Tag release version
-        if: needs.ci.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          TAG: v${{ needs.version.outputs.semVer }}
-        run: |
-          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
-            echo "Tag $TAG already exists on origin; skipping."
-            exit 0
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "$TAG" -m "Release $TAG"
-          git push origin "refs/tags/$TAG"
-          echo "Created and pushed $TAG"
 
       - name: Require build success
         if: needs.ci.result != 'success'
