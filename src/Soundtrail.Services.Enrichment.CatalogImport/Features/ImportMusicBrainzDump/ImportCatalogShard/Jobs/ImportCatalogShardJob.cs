@@ -6,6 +6,7 @@ using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDum
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Work;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Ports;
 using Soundtrail.Services.Enrichment.CatalogImport.Infrastructure.Lease;
+using Soundtrail.Services.Enrichment.CatalogImport.Infrastructure.Telemetry;
 
 namespace Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard;
 
@@ -47,6 +48,8 @@ public sealed class ImportCatalogShardJob(
         {
             return;
         }
+
+        using var activity = MusicBrainzDumpImportTelemetry.StartShardImportActivity(job, phase, shardId);
 
         var leaseDuration = options.Value.LeaseDuration;
         var shard = job.GetOrAddShard(phase, shardId);
@@ -96,6 +99,15 @@ public sealed class ImportCatalogShardJob(
 
         shard.UpdateLineOffset(processed);
         shard.MarkCompleted();
+        MusicBrainzDumpImportTelemetry.RecordRows(job.Id.Value, imported, skipped);
+
+        var (completedShards, totalShards) = MusicBrainzDumpImportProgress.CountPhaseShards(job, phase);
+        if (totalShards > 0)
+        {
+            MusicBrainzDumpImportTelemetry.RecordProgress(
+                job,
+                MusicBrainzDumpImportProgress.AfterShardCompleted(phase, completedShards, totalShards));
+        }
 
         if ((phase is MusicBrainzDumpImportPhase.Artists or MusicBrainzDumpImportPhase.ReleaseGroups) &&
             job.AreAllShardsCompleted(phase) &&
@@ -106,7 +118,11 @@ public sealed class ImportCatalogShardJob(
         }
         else if (phase == MusicBrainzDumpImportPhase.Recordings)
         {
-            job.TryCompleteRecordingsPhaseAsFinal(DateTimeOffset.UtcNow);
+            if (job.TryCompleteRecordingsPhaseAsFinal(DateTimeOffset.UtcNow))
+            {
+                MusicBrainzDumpImportTelemetry.MarkJobTerminal(job);
+            }
+
             await jobStore.SaveAsync(job, cancellationToken);
         }
         else

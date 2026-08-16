@@ -7,6 +7,7 @@ using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDum
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Model;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Ports;
 using Soundtrail.Services.Enrichment.CatalogImport.Infrastructure.Lease;
+using Soundtrail.Services.Enrichment.CatalogImport.Infrastructure.Telemetry;
 
 namespace Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard;
 
@@ -62,6 +63,10 @@ public sealed class DownloadDumpAndShardJob(
         TimeSpan leaseDuration,
         CancellationToken cancellationToken)
     {
+        using var activity = MusicBrainzDumpImportTelemetry.StartProducerPhaseActivity(
+            job,
+            MusicBrainzDumpImportPhase.Artists);
+
         Heartbeat(job, leaseDuration);
 
         var artistsPath = await archiveStore.EnsureArtistsJsonlAsync(job.Id, job.DumpVersion, cancellationToken);
@@ -114,6 +119,10 @@ public sealed class DownloadDumpAndShardJob(
         TimeSpan leaseDuration,
         CancellationToken cancellationToken)
     {
+        using var activity = MusicBrainzDumpImportTelemetry.StartProducerPhaseActivity(
+            job,
+            MusicBrainzDumpImportPhase.ReleaseGroups);
+
         Heartbeat(job, leaseDuration);
 
         var releaseGroupsPath = await archiveStore.EnsureReleaseGroupsJsonlAsync(
@@ -169,6 +178,10 @@ public sealed class DownloadDumpAndShardJob(
         TimeSpan leaseDuration,
         CancellationToken cancellationToken)
     {
+        using var activity = MusicBrainzDumpImportTelemetry.StartProducerPhaseActivity(
+            job,
+            MusicBrainzDumpImportPhase.Recordings);
+
         Heartbeat(job, leaseDuration);
 
         var tracksPath = await archiveStore.EnsureTracksJsonlAsync(
@@ -239,6 +252,9 @@ public sealed class DownloadDumpAndShardJob(
 
         job.RegisterPhaseShards(phase, shardCount);
         job.SetStatus(MusicBrainzDumpImportJobStatus.Importing);
+        MusicBrainzDumpImportTelemetry.RecordProgress(
+            job,
+            MusicBrainzDumpImportProgress.AfterProducerPublished(phase));
         Heartbeat(job, leaseDuration);
         await jobStore.SaveAsync(job, cancellationToken);
 

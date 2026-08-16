@@ -73,8 +73,9 @@ public sealed class ImportMusicBrainzDumpRecordingsFixtureTests
 
         await environment.TriggerAndProcessAsync(DateTimeOffset.Parse("2026-08-01T00:00:00Z"));
 
-        environment.RequireJob(MusicBrainzDumpImportJobId.ForDumpVersion("2026-08"))
-            .Status.Should().Be(MusicBrainzDumpImportJobStatus.Completed);
+        var job = environment.RequireJob(MusicBrainzDumpImportJobId.ForDumpVersion("2026-08"));
+        job.Status.Should().Be(MusicBrainzDumpImportJobStatus.Completed);
+        job.ProgressPercent.Should().Be(100);
     }
 
     [Fact]
