@@ -16,11 +16,17 @@ public sealed class RavenEventStreamRepository<TStreamId>(
 
     public Task<LoadedEventStream<TStreamId>> LoadAsync(TStreamId streamId, CancellationToken cancellationToken) => this.eventStore.LoadAsync(streamId, cancellationToken);
 
-    public Task<AppendResult> AppendAsync(LoadedEventStream<TStreamId> stream, IReadOnlyList<IDomainEvent> events,
-        OperationId? operationId, CancellationToken cancellationToken) => this.eventStore.AppendAsync(
+    public Task<AppendResult> AppendAsync(
+        LoadedEventStream<TStreamId> stream,
+        IReadOnlyList<IDomainEvent> events,
+        OperationId? operationId,
+        CancellationToken cancellationToken,
+        ProjectionHint? projectionHint = null) => this.eventStore.AppendAsync(
         stream,
         events,
         operationId,
         cancellationToken,
-        saveChanges: true);
+        saveChanges: true,
+        beforeSave: null,
+        projectionHint: projectionHint);
 }

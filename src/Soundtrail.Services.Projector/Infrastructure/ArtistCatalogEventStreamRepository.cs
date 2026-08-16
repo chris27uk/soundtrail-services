@@ -21,10 +21,11 @@ public sealed class ArtistCatalogEventStreamRepository(
         LoadedEventStream<ArtistId> stream,
         IReadOnlyList<IDomainEvent> events,
         OperationId? operationId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        ProjectionHint? projectionHint = null)
     {
         using var session = documentStore.OpenAsyncSession();
         var repository = new RavenEventStreamRepository<ArtistId>(session, typeRegistry, "artist-catalog-stream");
-        return await repository.AppendAsync(stream, events, operationId, cancellationToken);
+        return await repository.AppendAsync(stream, events, operationId, cancellationToken, projectionHint);
     }
 }

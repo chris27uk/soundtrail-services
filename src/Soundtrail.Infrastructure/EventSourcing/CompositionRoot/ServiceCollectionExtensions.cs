@@ -38,8 +38,9 @@ internal sealed class CatalogSearchEventStreamRepository(
         LoadedEventStream<CatalogWorkId> stream,
         IReadOnlyList<IDomainEvent> events,
         OperationId? operationId,
-        CancellationToken cancellationToken) =>
-        this.inner.AppendAsync(stream, events, operationId, cancellationToken);
+        CancellationToken cancellationToken,
+        ProjectionHint? projectionHint = null) =>
+        this.inner.AppendAsync(stream, events, operationId, cancellationToken, projectionHint);
 }
 
 internal sealed class ArtistCatalogEventStreamRepository(
@@ -55,6 +56,7 @@ internal sealed class ArtistCatalogEventStreamRepository(
         LoadedEventStream<ArtistId> stream,
         IReadOnlyList<IDomainEvent> events,
         OperationId? operationId,
-        CancellationToken cancellationToken) =>
-        this.inner.AppendAsync(stream, events, operationId, cancellationToken);
+        CancellationToken cancellationToken,
+        ProjectionHint? projectionHint = null) =>
+        this.inner.AppendAsync(stream, events, operationId, cancellationToken, projectionHint);
 }

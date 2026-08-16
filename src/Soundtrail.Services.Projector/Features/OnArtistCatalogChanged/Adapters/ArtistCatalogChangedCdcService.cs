@@ -14,7 +14,11 @@ internal sealed class ArtistCatalogChangedCdcService(
     protected override string SubscriptionName => "projector/artist-catalog-changed";
 
     protected override Expression<Func<RavenStoredEventRecord, bool>> Filter =>
-        x => x.AggregateType == "artist-catalog-stream";
+        x => x.AggregateType == "artist-catalog-stream"
+            && x.ProjectionHint != "bulk-import";
+
+    protected override bool IsSubscriptionDefinitionStale(Raven.Client.Documents.Subscriptions.SubscriptionState state) =>
+        !state.Query.Contains("bulk-import", StringComparison.Ordinal);
 
     protected override async Task HandleAsync(
         IServiceProvider serviceProvider,
