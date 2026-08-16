@@ -238,28 +238,20 @@ jobs:
           restore-keys: |
             nuget-v1-${{ runner.os }}-${{ runner.arch }}-
 
-      - name: Publish testhost
-        id: publish-testhost
-        if: steps.testhost.outputs.hit != 'true'
-        run: pwsh -File ./build.ps1 -Restore -CiTesthost -OutputDir .
-
-      - name: Stamp testhost source hash
-        if: steps.testhost.outputs.hit == 'true' || steps.publish-testhost.outcome == 'success'
+      # Publish (if needed), stamp the source hash, join the version-meta
+      # wait, and start tests in the background — one step. Publish is the
+      # only real cost; the rest is instant or already overlapped/deferred.
+      - name: Publish testhost and start tests
+        id: testhost-publish
         env:
+          TESTHOST_HIT: ${{ steps.testhost.outputs.hit }}
           SOURCE_TREE_HASH: ${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
-        run: printf '%s\n' "$SOURCE_TREE_HASH" > testhost/source-hash
-
-      - name: Apply version metadata
-        env:
           GH_TOKEN: ${{ github.token }}
-        run: bash scripts/ci-await-version-meta-wait.sh
-
-      - name: Run tests (background)
-        run: bash scripts/ci-run-tests-bg.sh
+        run: bash scripts/ci-publish-testhost-and-start.sh
 
       # Uploads are independent of test execution and fit inside the MTP window.
       - name: Save testhost output
-        if: steps.testhost-cache.outputs.cache-hit != 'true' && (steps.publish-testhost.outcome == 'success' || steps.testhost.outputs.hit == 'true')
+        if: steps.testhost-cache.outputs.cache-hit != 'true' && (steps.testhost-publish.outputs.published == 'true' || steps.testhost.outputs.hit == 'true')
         continue-on-error: true
         uses: actions/cache/save@v6
         with:
@@ -267,7 +259,7 @@ jobs:
           key: testhost-out-v3-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
 
       - name: Upload testhost for main
-        if: github.event_name == 'pull_request' && steps.publish-testhost.outcome == 'success'
+        if: github.event_name == 'pull_request' && steps.testhost-publish.outputs.published == 'true'
         continue-on-error: true
         uses: actions/upload-artifact@v7
         with:
@@ -277,7 +269,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Save NuGet packages
-        if: steps.nuget.outputs.cache-hit != 'true' && steps.publish-testhost.outcome == 'success'
+        if: steps.nuget.outputs.cache-hit != 'true' && steps.testhost-publish.outputs.published == 'true'
         continue-on-error: true
         uses: actions/cache/save@v6
         with:
