@@ -18,6 +18,16 @@ public sealed class MusicBrainzDumpOptions
     /// </summary>
     public string? TracksLocalPath { get; set; }
 
+    /// <summary>
+    /// Root directory for per-version archives (<c>{ArchiveDirectory}/{dumpVersion}/{entity}.tar.xz</c>) and extracted JSONL.
+    /// </summary>
+    public string? ArchiveDirectory { get; set; }
+
+    /// <summary>
+    /// Metabrainz JSON dump root URL used when <see cref="Source"/> is <c>http</c>.
+    /// </summary>
+    public string BaseUrl { get; set; } = "https://data.metabrainz.org/pub/musicbrainz/data/json-dumps";
+
     public string? ShardDirectory { get; set; }
 
     public int ShardCount { get; set; } = 4;

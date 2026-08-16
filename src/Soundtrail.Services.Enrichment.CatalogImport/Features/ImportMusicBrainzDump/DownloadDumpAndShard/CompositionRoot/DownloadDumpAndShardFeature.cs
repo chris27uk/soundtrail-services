@@ -38,6 +38,8 @@ public sealed class DownloadDumpAndShardFeature : IFeature
         services.TryAddSingleton<ICatalogImportLeaseOwner, CatalogImportLeaseOwner>();
         services.TryAddSingleton<IDownloadDumpAndShardWorkQueue, ChannelDownloadDumpAndShardWorkQueue>();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, DownloadDumpAndShardWorkPump>());
+        services.AddHttpClient<IMusicBrainzDumpDownloader, HttpMusicBrainzDumpDownloader>();
+        services.TryAddSingleton<IMusicBrainzDumpTarXzExtractor, MusicBrainzDumpTarXzExtractor>();
 
         DownloadDumpAndShardComposition.Configure(
             services,
