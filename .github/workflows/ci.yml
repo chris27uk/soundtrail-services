@@ -190,6 +190,23 @@ jobs:
           SOURCE_TREE_HASH: ${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
         run: bash scripts/ci-decide-testhost.sh
 
+      # Testhost hit: start tests before Buildx so setup+publish overlap sidecar wait / MTP.
+      - name: Stamp testhost source hash
+        if: steps.testhost.outputs.hit == 'true'
+        env:
+          SOURCE_TREE_HASH: ${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
+        run: printf '%s\n' "$SOURCE_TREE_HASH" > testhost/source-hash
+
+      - name: Apply version metadata
+        if: steps.testhost.outputs.hit == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ci-await-version-meta-wait.sh
+
+      - name: Run tests (background)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.testhost.outputs.hit == 'true'
+        run: bash scripts/ci-run-tests-bg.sh
+
       # Skip cache-to when this exact source tree already exported (warm no-op builds).
       - name: Check BuildKit export marker
         id: bk-export
@@ -236,12 +253,13 @@ jobs:
           cache-to: ${{ steps.bk-export.outputs.cache-hit != 'true' && 'type=gha,mode=max,scope=soundtrail-testhost' || '' }}
 
       - name: Stamp testhost source hash
-        if: steps.testhost.outputs.hit == 'true' || steps.build-testhost.outcome == 'success'
+        if: steps.testhost.outputs.hit != 'true' && steps.build-testhost.outcome == 'success'
         env:
           SOURCE_TREE_HASH: ${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
         run: printf '%s\n' "$SOURCE_TREE_HASH" > testhost/source-hash
 
       - name: Apply version metadata
+        if: steps.testhost.outputs.hit != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/ci-await-version-meta-wait.sh
@@ -250,9 +268,8 @@ jobs:
         if: github.event_name != 'push' || github.ref != 'refs/heads/main'
         run: bash scripts/ci-run-tests.sh
 
-      # Main: testhost does not need Buildx. Publish while tests wait on sidecars / run MTP.
       - name: Run tests (background)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.testhost.outputs.hit != 'true'
         run: bash scripts/ci-run-tests-bg.sh
 
       - name: Publish apps
