@@ -110,6 +110,48 @@ jobs:
             echo "- MajorMinorPatch: \`${{ steps.gitversion.outputs.majorMinorPatch }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
+  # Seed dependency packages on the default branch so every PR can restore them.
+  # This runs alongside Build and is not a release dependency.
+  nuget-cache:
+    name: NuGet Cache
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+      DOTNET_NOLOGO: "true"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Restore NuGet packages
+        id: nuget
+        uses: actions/cache/restore@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Directory.Build.props', 'global.json', '**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json') }}
+          restore-keys: |
+            nuget-v1-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Resolve NuGet packages
+        if: steps.nuget.outputs.cache-hit != 'true'
+        run: >
+          dotnet restore tests/Soundtrail.Services.Tests/Soundtrail.Services.Tests.csproj
+          --locked-mode --verbosity minimal
+          /p:Configuration=Release /p:UseEmbeddedRaven=false
+
+      - name: Save NuGet packages
+        if: steps.nuget.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Directory.Build.props', 'global.json', '**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json') }}
+
   # Parallel with Version. SemVer arrives via version-meta (await overlaps testhost build).
   ci:
     name: Build
@@ -128,13 +170,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          fetch-depth: 1
-
-      # Start before caches/build so Version (≈8s) finishes during Build setup.
-      - name: Await version metadata (background)
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: bash scripts/ci-await-version-meta-bg.sh
+          fetch-depth: 2
 
       # Sidecars first so Raven/OSB/Redis come up while testhost cache restores.
       - name: Restore sidecar image cache
@@ -149,11 +185,13 @@ jobs:
             docker-sidecars-v10-
             docker-sidecars-v9-
 
-      - name: Start sidecars (background)
-        run: bash scripts/ci-start-sidecars-bg.sh
-
-      - name: Load runtime image (background)
-        run: bash scripts/ci-load-runtime-bg.sh
+      # Version poll, sidecar load+up, and runtime image load are independent
+      # background jobs; kick all three from one step so they run concurrently
+      # while the foreground steps below (testhost decide/publish) proceed.
+      - name: Start background jobs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ci-start-background-jobs.sh
 
       # Published testhost bits for this exact source tree (skips Buildx on PR warms).
       # GHA cache is branch-scoped: PRs can read main, main cannot read PR caches.
@@ -163,7 +201,7 @@ jobs:
         uses: actions/cache/restore@v6
         with:
           path: testhost
-          key: testhost-out-v1-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
+          key: testhost-out-v3-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
 
       - name: Find merged PR testhost artifact
         id: pr-testhost
@@ -190,31 +228,63 @@ jobs:
           SOURCE_TREE_HASH: ${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
         run: bash scripts/ci-decide-testhost.sh
 
-      # Testhost hit: start tests before Buildx so setup+publish overlap sidecar wait / MTP.
-      - name: Stamp testhost source hash
-        if: steps.testhost.outputs.hit == 'true'
+      - name: Restore NuGet packages
+        id: nuget
+        if: steps.testhost.outputs.hit != 'true'
+        uses: actions/cache/restore@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Directory.Build.props', 'global.json', '**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json') }}
+          restore-keys: |
+            nuget-v1-${{ runner.os }}-${{ runner.arch }}-
+
+      # Publish (if needed), stamp the source hash, join the version-meta
+      # wait, and start tests in the background — one step. Publish is the
+      # only real cost; the rest is instant or already overlapped/deferred.
+      - name: Publish testhost and start tests
+        id: testhost-publish
         env:
+          TESTHOST_HIT: ${{ steps.testhost.outputs.hit }}
           SOURCE_TREE_HASH: ${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
-        run: printf '%s\n' "$SOURCE_TREE_HASH" > testhost/source-hash
-
-      - name: Apply version metadata
-        if: steps.testhost.outputs.hit == 'true'
-        env:
           GH_TOKEN: ${{ github.token }}
-        run: bash scripts/ci-await-version-meta-wait.sh
+        run: bash scripts/ci-publish-testhost-and-start.sh
 
-      - name: Run tests (background)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.testhost.outputs.hit == 'true'
-        run: bash scripts/ci-run-tests-bg.sh
+      # Uploads are independent of test execution and fit inside the MTP window.
+      - name: Save testhost output
+        if: steps.testhost-cache.outputs.cache-hit != 'true' && (steps.testhost-publish.outputs.published == 'true' || steps.testhost.outputs.hit == 'true')
+        continue-on-error: true
+        uses: actions/cache/save@v6
+        with:
+          path: testhost
+          key: testhost-out-v3-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
 
-      # Skip cache-to when this exact source tree already exported (warm no-op builds).
+      - name: Upload testhost for main
+        if: github.event_name == 'pull_request' && steps.testhost-publish.outputs.published == 'true'
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: testhost-out
+          path: testhost/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Save NuGet packages
+        if: steps.nuget.outputs.cache-hit != 'true' && steps.testhost-publish.outputs.published == 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Directory.Build.props', 'global.json', '**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json') }}
+
+      # Export BuildKit only once per dependency/Dockerfile graph. Source edits do
+      # not make reusable layers and previously added 20-42s of cache upload.
       - name: Check BuildKit export marker
         id: bk-export
         if: steps.testhost.outputs.need_buildx == 'true'
         uses: actions/cache/restore@v6
         with:
           path: /tmp/buildkit-export-marker
-          key: buildkit-export-v1-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
+          key: buildkit-deps-v1-${{ hashFiles('Dockerfile.ci', '.dockerignore', 'Directory.Build.props', 'global.json', '**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json') }}
           lookup-only: true
 
       - name: Restore BuildKit image cache
@@ -237,41 +307,6 @@ jobs:
         if: steps.testhost.outputs.need_buildx == 'true'
         run: bash scripts/ci-setup-buildx.sh
 
-      - name: Build testhost
-        id: build-testhost
-        if: steps.testhost.outputs.hit != 'true'
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: Dockerfile.ci
-          builder: soundtrail-ci
-          target: publish-testhost-out
-          outputs: type=local,dest=testhost
-          provenance: false
-          sbom: false
-          cache-from: type=gha,scope=soundtrail-testhost
-          cache-to: ${{ steps.bk-export.outputs.cache-hit != 'true' && 'type=gha,mode=max,scope=soundtrail-testhost' || '' }}
-
-      - name: Stamp testhost source hash
-        if: steps.testhost.outputs.hit != 'true' && steps.build-testhost.outcome == 'success'
-        env:
-          SOURCE_TREE_HASH: ${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
-        run: printf '%s\n' "$SOURCE_TREE_HASH" > testhost/source-hash
-
-      - name: Apply version metadata
-        if: steps.testhost.outputs.hit != 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: bash scripts/ci-await-version-meta-wait.sh
-
-      - name: Run tests
-        if: github.event_name != 'push' || github.ref != 'refs/heads/main'
-        run: bash scripts/ci-run-tests.sh
-
-      - name: Run tests (background)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.testhost.outputs.hit != 'true'
-        run: bash scripts/ci-run-tests-bg.sh
-
       - name: Expose GitHub runtime
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: crazy-max/ghaction-github-runtime@v4
@@ -284,47 +319,45 @@ jobs:
         run: bash scripts/ci-publish-apps-bg.sh
 
       - name: Wait for tests
-        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: always()
         run: bash scripts/ci-wait-tests.sh
 
       - name: Wait for publish
+        id: wait-publish
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: bash scripts/ci-wait-publish.sh
 
+      # BUILD_VERSION is already known (set earlier in this job by the
+      # version-meta wait) and the job has already succeeded to reach this
+      # point (no always(), so a prior failure skips this). No separate
+      # job/checkout needed to turn a known SemVer + commit SHA into a tag.
+      - name: Tag release version
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="v${BUILD_VERSION:?BUILD_VERSION not set}"
+          if gh api "repos/${GITHUB_REPOSITORY}/git/refs/tags/${tag}" >/dev/null 2>&1; then
+            echo "Tag ${tag} already exists; skipping."
+            exit 0
+          fi
+          gh api "repos/${GITHUB_REPOSITORY}/git/refs" -f "ref=refs/tags/${tag}" -f "sha=${GITHUB_SHA}" >/dev/null
+          echo "Created ${tag} -> ${GITHUB_SHA}"
+
       - name: Save BuildKit export marker
-        # Stamp when we exported; do not require tests so flaky tests do not force re-export.
-        if: always() && steps.bk-export.outputs.cache-hit != 'true' && steps.build-testhost.outcome == 'success'
+        # Publish success is enough; flaky tests should not force another cache export.
+        if: always() && steps.bk-export.outputs.cache-hit != 'true' && steps.wait-publish.outcome == 'success'
         run: |
           mkdir -p /tmp/buildkit-export-marker
           date -u > /tmp/buildkit-export-marker/stamp
 
       - name: Upload BuildKit export marker
-        if: always() && steps.bk-export.outputs.cache-hit != 'true' && steps.build-testhost.outcome == 'success'
+        if: always() && steps.bk-export.outputs.cache-hit != 'true' && steps.wait-publish.outcome == 'success'
         continue-on-error: true
         uses: actions/cache/save@v6
         with:
           path: /tmp/buildkit-export-marker
-          key: buildkit-export-v1-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
-
-      - name: Save testhost output
-        # Seed this branch's GHA cache after a build or after promoting a PR artifact onto main.
-        if: always() && steps.testhost-cache.outputs.cache-hit != 'true' && (steps.build-testhost.outcome == 'success' || steps.testhost.outputs.hit == 'true')
-        continue-on-error: true
-        uses: actions/cache/save@v6
-        with:
-          path: testhost
-          key: testhost-out-v1-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
-
-      - name: Upload testhost for main
-        # Only when this PR built testhost. A GHA hit means main already has these bits.
-        if: github.event_name == 'pull_request' && success() && steps.build-testhost.outcome == 'success'
-        continue-on-error: true
-        uses: actions/upload-artifact@v7
-        with:
-          name: testhost-out
-          path: testhost/
-          retention-days: 7
-          if-no-files-found: ignore
+          key: buildkit-deps-v1-${{ hashFiles('Dockerfile.ci', '.dockerignore', 'Directory.Build.props', 'global.json', '**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json') }}
 
       - name: Stop test dependencies
         id: stop-sidecars
@@ -440,17 +473,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 1
-
       - name: Download build package
         uses: actions/download-artifact@v8
         with:
           name: build
           path: package
 
+      # max-annotations: 0 skips dorny/test-reporter's internal `git
+      # ls-files` (used to map failures to tracked source for inline
+      # annotations) — no working tree needed, so no checkout in this job.
       - name: Publish test results
         if: github.event_name == 'pull_request'
         uses: dorny/test-reporter@v3
@@ -460,22 +491,7 @@ jobs:
           reporter: dotnet-trx
           fail-on-error: true
           fail-on-empty: false
-
-      - name: Tag release version
-        if: needs.ci.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          TAG: v${{ needs.version.outputs.semVer }}
-        run: |
-          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
-            echo "Tag $TAG already exists on origin; skipping."
-            exit 0
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "$TAG" -m "Release $TAG"
-          git push origin "refs/tags/$TAG"
-          echo "Created and pushed $TAG"
+          max-annotations: 0
 
       - name: Require build success
         if: needs.ci.result != 'success'
