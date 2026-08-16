@@ -17,12 +17,8 @@ public sealed class MusicBrainzDumpTarXzExtractorTests
     public void Given_An_Archive_When_Extracted_Then_The_Jsonl_Is_Written()
     {
         using var directory = TemporaryDirectory.Create();
-        var archivePath = Path.Combine(directory.Path, "artist.tar.xz");
+        var archivePath = MusicBrainzDumpArchiveFixtures.CopyTo(directory.Path, "artist.tar.xz");
         var outputPath = Path.Combine(directory.Path, "extracted", "artist.jsonl");
-        MusicBrainzDumpTarXzExtractor.CreateFixtureArchive(
-            archivePath,
-            "artist",
-            ["""{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","name":"Artist A"}"""]);
 
         extractor.EnsureExtracted(archivePath, "artist", outputPath);
 
@@ -33,12 +29,8 @@ public sealed class MusicBrainzDumpTarXzExtractorTests
     public void Given_Extracted_Output_Already_Exists_When_Extracting_Then_It_Is_A_No_Op()
     {
         using var directory = TemporaryDirectory.Create();
-        var archivePath = Path.Combine(directory.Path, "artist.tar.xz");
+        var archivePath = MusicBrainzDumpArchiveFixtures.CopyTo(directory.Path, "artist.tar.xz");
         var outputPath = Path.Combine(directory.Path, "extracted", "artist.jsonl");
-        MusicBrainzDumpTarXzExtractor.CreateFixtureArchive(
-            archivePath,
-            "artist",
-            ["""{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","name":"Artist A"}"""]);
         Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
         File.WriteAllText(outputPath, "existing");
 
@@ -51,12 +43,8 @@ public sealed class MusicBrainzDumpTarXzExtractorTests
     public void Given_A_Missing_Member_When_Extracting_Then_It_Fails()
     {
         using var directory = TemporaryDirectory.Create();
-        var archivePath = Path.Combine(directory.Path, "artist.tar.xz");
+        var archivePath = MusicBrainzDumpArchiveFixtures.CopyTo(directory.Path, "artist.tar.xz");
         var outputPath = Path.Combine(directory.Path, "extracted", "artist.jsonl");
-        MusicBrainzDumpTarXzExtractor.CreateFixtureArchive(
-            archivePath,
-            "artist",
-            ["""{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","name":"Artist A"}"""]);
 
         var act = () => extractor.EnsureExtracted(archivePath, "release-group", outputPath);
 
@@ -124,10 +112,7 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
         var dumpVersion = "2026-08";
         var versionRoot = Path.Combine(directory.Path, dumpVersion);
         Directory.CreateDirectory(versionRoot);
-        MusicBrainzDumpTarXzExtractor.CreateFixtureArchive(
-            Path.Combine(versionRoot, "artist.tar.xz"),
-            "artist",
-            ["""{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","name":"Artist A"}"""]);
+        MusicBrainzDumpArchiveFixtures.CopyTo(versionRoot, "artist.tar.xz");
 
         var store = CreateStore(directory.Path, source: "fixture");
         var path = await store.EnsureArtistsJsonlAsync(
@@ -142,11 +127,8 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
     {
         using var directory = TemporaryDirectory.Create();
         var dumpVersion = "2026-08";
-        var versionRoot = Path.Combine(directory.Path, dumpVersion);
-        Directory.CreateDirectory(versionRoot);
-        var archiveBytes = CreateArchiveBytes(
-            "artist",
-            ["""{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","name":"Artist A"}"""]);
+        Directory.CreateDirectory(Path.Combine(directory.Path, dumpVersion));
+        var archiveBytes = MusicBrainzDumpArchiveFixtures.ReadBytes("artist.tar.xz");
         var downloader = new RecordingDownloader(archiveBytes);
         var store = CreateStore(directory.Path, source: "http", downloader);
 
@@ -166,10 +148,7 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
         var dumpVersion = "2026-08";
         var versionRoot = Path.Combine(directory.Path, dumpVersion);
         Directory.CreateDirectory(versionRoot);
-        MusicBrainzDumpTarXzExtractor.CreateFixtureArchive(
-            Path.Combine(versionRoot, "artist.tar.xz"),
-            "artist",
-            ["""{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","name":"Artist A"}"""]);
+        MusicBrainzDumpArchiveFixtures.CopyTo(versionRoot, "artist.tar.xz");
         var downloader = new RecordingDownloader([]);
         var store = CreateStore(directory.Path, source: "http", downloader);
 
@@ -188,10 +167,7 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
         var dumpVersion = "2026-08";
         var versionRoot = Path.Combine(directory.Path, dumpVersion);
         Directory.CreateDirectory(versionRoot);
-        MusicBrainzDumpTarXzExtractor.CreateFixtureArchive(
-            Path.Combine(versionRoot, "track.tar.xz"),
-            "track",
-            ["""{"id":"rec","title":"Song","artist-credit":[{"artist":{"id":"a","name":"A"}}],"release-group":{"id":"rg","title":"Album"}}"""]);
+        MusicBrainzDumpArchiveFixtures.CopyTo(versionRoot, "track.tar.xz");
         var downloader = new RecordingDownloader([]);
         var store = CreateStore(directory.Path, source: "http", downloader);
 
@@ -218,23 +194,6 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
             downloader ?? new RecordingDownloader([]),
             new MusicBrainzDumpTarXzExtractor());
 
-    private static byte[] CreateArchiveBytes(string entityName, IEnumerable<string> lines)
-    {
-        var path = Path.Combine(Path.GetTempPath(), $"mb-archive-{Guid.NewGuid():N}.tar.xz");
-        try
-        {
-            MusicBrainzDumpTarXzExtractor.CreateFixtureArchive(path, entityName, lines);
-            return File.ReadAllBytes(path);
-        }
-        finally
-        {
-            if (File.Exists(path))
-            {
-                File.Delete(path);
-            }
-        }
-    }
-
     private sealed class RecordingDownloader(byte[] payload) : IMusicBrainzDumpDownloader
     {
         private readonly List<string> requestedUrls = [];
@@ -255,6 +214,30 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(destinationPath))!);
             await File.WriteAllBytesAsync(destinationPath, payload, cancellationToken);
         }
+    }
+}
+
+internal static class MusicBrainzDumpArchiveFixtures
+{
+    public static string CopyTo(string destinationDirectory, string fileName)
+    {
+        Directory.CreateDirectory(destinationDirectory);
+        var destination = Path.Combine(destinationDirectory, fileName);
+        File.Copy(Resolve(fileName), destination, overwrite: true);
+        return destination;
+    }
+
+    public static byte[] ReadBytes(string fileName) => File.ReadAllBytes(Resolve(fileName));
+
+    private static string Resolve(string fileName)
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "Unit", "Solitary", "Catalog", "MusicBrainzDumpImport", "Fixtures", fileName);
+        if (!File.Exists(path))
+        {
+            throw new FileNotFoundException($"MusicBrainz dump fixture '{fileName}' was not found at '{path}'.", path);
+        }
+
+        return path;
     }
 }
 

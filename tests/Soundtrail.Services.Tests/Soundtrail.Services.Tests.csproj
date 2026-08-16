@@ -20,6 +20,7 @@
     <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="testconfig.json" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Integration/**/*.html" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Unit/Solitary/Catalog/MusicBrainzDumpImport/Fixtures/**/*.tar.xz" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
