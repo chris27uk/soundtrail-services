@@ -15,11 +15,9 @@ public sealed class ImportCatalogShardJob(
     ICatalogImportLeaseOwner leaseOwner,
     IMusicBrainzDumpShardStore shardStore,
     IMusicBrainzArtistDumpRowMapper artistRowMapper,
-    ICatalogArtistImportWriter artistWriter,
     IMusicBrainzReleaseGroupDumpRowMapper releaseGroupRowMapper,
-    ICatalogAlbumImportWriter albumWriter,
     IMusicBrainzTrackDumpRowMapper trackRowMapper,
-    ICatalogTrackImportWriter trackWriter,
+    ICatalogDumpBatchWriter batchWriter,
     IDownloadDumpAndShardWorkQueue downloadWorkQueue,
     IOptions<MusicBrainzDumpOptions> options,
     ILogger<ImportCatalogShardJob> logger) : IImportCatalogShardJob
@@ -57,9 +55,11 @@ public sealed class ImportCatalogShardJob(
 
         var dumpObservedAt = options.Value.DumpObservedAt
             ?? job.RequestedAt;
+        var batchSize = Math.Max(1, options.Value.BulkInsertBatchSize);
         var processed = shard.LineOffset;
         var imported = 0;
         var skipped = 0;
+        var buffer = new List<CatalogDumpBatchItem>(batchSize);
 
         await foreach (var line in shardStore.ReadShardLinesAsync(
                            jobId,
@@ -69,32 +69,40 @@ public sealed class ImportCatalogShardJob(
                            cancellationToken))
         {
             processed++;
-            var wrote = phase switch
-            {
-                MusicBrainzDumpImportPhase.Artists =>
-                    await TryImportArtistAsync(line, dumpObservedAt, cancellationToken),
-                MusicBrainzDumpImportPhase.ReleaseGroups =>
-                    await TryImportAlbumAsync(line, dumpObservedAt, cancellationToken),
-                MusicBrainzDumpImportPhase.Recordings =>
-                    await TryImportTrackAsync(line, dumpObservedAt, cancellationToken),
-                _ => false
-            };
-
-            if (wrote)
-            {
-                imported++;
-            }
-            else
+            var item = TryMap(phase, line);
+            if (item is null)
             {
                 skipped++;
             }
-
-            if (processed % 100 == 0)
+            else
             {
-                shard.UpdateLineOffset(processed);
-                shard.Heartbeat(leaseOwner.Value, DateTimeOffset.UtcNow, leaseDuration);
-                await jobStore.SaveAsync(job, cancellationToken);
+                buffer.Add(item);
+                imported++;
             }
+
+            if (buffer.Count >= batchSize)
+            {
+                await FlushBufferAsync(
+                    job,
+                    shard,
+                    buffer,
+                    dumpObservedAt,
+                    processed,
+                    leaseDuration,
+                    cancellationToken);
+            }
+        }
+
+        if (buffer.Count > 0)
+        {
+            await FlushBufferAsync(
+                job,
+                shard,
+                buffer,
+                dumpObservedAt,
+                processed,
+                leaseDuration,
+                cancellationToken);
         }
 
         shard.UpdateLineOffset(processed);
@@ -140,48 +148,37 @@ public sealed class ImportCatalogShardJob(
             processed);
     }
 
-    private async Task<bool> TryImportArtistAsync(
-        string line,
+    private async Task FlushBufferAsync(
+        MusicBrainzDumpImportJob job,
+        MusicBrainzDumpImportShardState shard,
+        List<CatalogDumpBatchItem> buffer,
         DateTimeOffset dumpObservedAt,
+        long processed,
+        TimeSpan leaseDuration,
         CancellationToken cancellationToken)
     {
-        var artist = artistRowMapper.TryMap(line);
-        if (artist is null)
-        {
-            return false;
-        }
-
-        await artistWriter.WriteAsync(artist, dumpObservedAt, cancellationToken);
-        return true;
+        await batchWriter.FlushAsync(buffer, dumpObservedAt, cancellationToken);
+        buffer.Clear();
+        shard.UpdateLineOffset(processed);
+        shard.Heartbeat(leaseOwner.Value, DateTimeOffset.UtcNow, leaseDuration);
+        await jobStore.SaveAsync(job, cancellationToken);
     }
 
-    private async Task<bool> TryImportAlbumAsync(
-        string line,
-        DateTimeOffset dumpObservedAt,
-        CancellationToken cancellationToken)
-    {
-        var album = releaseGroupRowMapper.TryMap(line);
-        if (album is null)
+    private CatalogDumpBatchItem? TryMap(MusicBrainzDumpImportPhase phase, string line) =>
+        phase switch
         {
-            return false;
-        }
-
-        await albumWriter.WriteAsync(album, dumpObservedAt, cancellationToken);
-        return true;
-    }
-
-    private async Task<bool> TryImportTrackAsync(
-        string line,
-        DateTimeOffset dumpObservedAt,
-        CancellationToken cancellationToken)
-    {
-        var track = trackRowMapper.TryMap(line);
-        if (track is null)
-        {
-            return false;
-        }
-
-        await trackWriter.WriteAsync(track, dumpObservedAt, cancellationToken);
-        return true;
-    }
+            MusicBrainzDumpImportPhase.Artists =>
+                artistRowMapper.TryMap(line) is { } artist
+                    ? new ArtistDumpBatchItem(artist)
+                    : null,
+            MusicBrainzDumpImportPhase.ReleaseGroups =>
+                releaseGroupRowMapper.TryMap(line) is { } album
+                    ? new AlbumDumpBatchItem(album)
+                    : null,
+            MusicBrainzDumpImportPhase.Recordings =>
+                trackRowMapper.TryMap(line) is { } track
+                    ? new TrackDumpBatchItem(track)
+                    : null,
+            _ => null
+        };
 }
