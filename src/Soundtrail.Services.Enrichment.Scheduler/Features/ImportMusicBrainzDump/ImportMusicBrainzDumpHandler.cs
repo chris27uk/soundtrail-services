@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog.MusicBrainzDumpImport;
 using Soundtrail.Domain.Catalog.MusicBrainzDumpImport.Messages;
@@ -7,7 +8,8 @@ namespace Soundtrail.Services.Enrichment.Scheduler.Features.ImportMusicBrainzDum
 
 public sealed class ImportMusicBrainzDumpHandler(
     IMusicBrainzDumpImportJobStore jobStore,
-    ICommandBus commandBus) : IScheduledMessageHandler<ImportMusicBrainzDumpCommand>
+    ICommandBus commandBus,
+    IOptions<MusicBrainzDumpOptions> options) : IScheduledMessageHandler<ImportMusicBrainzDumpCommand>
 {
     public async Task HandleAsync(
         ImportMusicBrainzDumpCommand request,
@@ -15,7 +17,7 @@ public sealed class ImportMusicBrainzDumpHandler(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var dumpVersion = FormatDumpVersion(request.TriggeredAt);
+        var dumpVersion = ResolveDumpVersion(request.TriggeredAt, options.Value.DumpVersion);
         var jobId = MusicBrainzDumpImportJobId.ForDumpVersion(dumpVersion);
         var job = await jobStore.EnsureAsync(jobId, dumpVersion, request.TriggeredAt, cancellationToken);
 
@@ -24,8 +26,13 @@ public sealed class ImportMusicBrainzDumpHandler(
             cancellationToken);
     }
 
-    private static string FormatDumpVersion(DateTimeOffset triggeredAt)
+    public static string ResolveDumpVersion(DateTimeOffset triggeredAt, string? configuredDumpVersion)
     {
+        if (!string.IsNullOrWhiteSpace(configuredDumpVersion))
+        {
+            return configuredDumpVersion.Trim();
+        }
+
         var utc = triggeredAt.ToUniversalTime();
         return $"{utc.Year:D4}-{utc.Month:D2}";
     }

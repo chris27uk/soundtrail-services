@@ -1,7 +1,7 @@
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard;
-using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard;
 using DomainSourceSystemId = Soundtrail.Domain.Catalog.SourceSystemId;
+using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Mapping;
+using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Mapping;
 
 namespace Soundtrail.Services.Tests.Unit.Solitary.Catalog.MusicBrainzDumpImport;
 

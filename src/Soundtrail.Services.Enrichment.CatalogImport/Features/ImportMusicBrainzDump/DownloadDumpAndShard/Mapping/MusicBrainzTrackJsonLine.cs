@@ -1,9 +1,9 @@
 using System.Text;
 using System.Text.Json;
 
-namespace Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard;
+namespace Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Mapping;
 
-public static class MusicBrainzReleaseGroupJsonLine
+public static class MusicBrainzTrackJsonLine
 {
     public static bool TryReadCreditedArtistIds(string line, out IReadOnlyList<string> artistIds)
     {
@@ -49,16 +49,16 @@ public static class MusicBrainzReleaseGroupJsonLine
         }
     }
 
-    public static string WrapForCreditedArtist(string creditedArtistId, string releaseGroupJsonLine)
+    public static string WrapForCreditedArtist(string creditedArtistId, string trackJsonLine)
     {
-        using var releaseGroup = JsonDocument.Parse(releaseGroupJsonLine);
+        using var track = JsonDocument.Parse(trackJsonLine);
         using var stream = new MemoryStream();
         using (var writer = new Utf8JsonWriter(stream))
         {
             writer.WriteStartObject();
             writer.WriteString("creditedArtistId", creditedArtistId);
-            writer.WritePropertyName("releaseGroup");
-            releaseGroup.RootElement.WriteTo(writer);
+            writer.WritePropertyName("track");
+            track.RootElement.WriteTo(writer);
             writer.WriteEndObject();
         }
 

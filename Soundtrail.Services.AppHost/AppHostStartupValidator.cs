@@ -10,6 +10,7 @@ public static class AppHostStartupValidator
         ValidateRavenDbLicense(configuration);
         ValidateServiceBusEmulator(configuration, contentRootPath);
         ValidateBlobStorage(configuration);
+        ValidateMusicBrainzDumpFixture(configuration, contentRootPath);
         ValidateWireMockMappings(configuration, contentRootPath);
     }
 
@@ -98,6 +99,36 @@ public static class AppHostStartupValidator
         {
             throw new InvalidOperationException(
                 "MusicBrainzDump:Storage=Blob without LocalDevelopment:UseBlobStorageEmulator requires MusicBrainzDump:BlobConnectionString or ConnectionStrings:musicbrainz-dumps.");
+        }
+    }
+
+    private static void ValidateMusicBrainzDumpFixture(IConfiguration configuration, string contentRootPath)
+    {
+        var archiveDirectory = configuration["MusicBrainzDump:ArchiveDirectory"]
+            ?? Path.Combine(contentRootPath, "testdata", "musicbrainz-dump");
+        var dumpVersion = configuration["MusicBrainzDump:DumpVersion"]
+            ?? MusicBrainzDumpFixture.DumpVersion;
+
+        var versionRoot = Path.Combine(Path.GetFullPath(archiveDirectory), dumpVersion.Trim());
+        RequireArchive(versionRoot, "artist.tar.xz");
+        RequireArchive(versionRoot, "release-group.tar.xz");
+
+        var releaseArchive = Path.Combine(versionRoot, "release.tar.xz");
+        var trackArchive = Path.Combine(versionRoot, "track.tar.xz");
+        if (!File.Exists(releaseArchive) && !File.Exists(trackArchive))
+        {
+            throw new InvalidOperationException(
+                $"MusicBrainz dump fixture requires '{releaseArchive}' or '{trackArchive}'.");
+        }
+    }
+
+    private static void RequireArchive(string versionRoot, string fileName)
+    {
+        var path = Path.Combine(versionRoot, fileName);
+        if (!File.Exists(path))
+        {
+            throw new InvalidOperationException(
+                $"MusicBrainz dump fixture archive was not found at '{path}'.");
         }
     }
 

@@ -223,7 +223,13 @@ Minimum sociable scenarios: happy path one phase; resume from shard checkpoint; 
 
 ### Local demo
 
-Fixture dump under AppHost testdata (small JSONL or tiny `.tar.xz`). Config points producer at fixture. Run CatalogImport + Raven + ASB emulator. Trigger via TickerQ. Observe OTel progress, job status, and Raven catalog output.
+Prerequisites: run AppHost with RavenDB, the Service Bus emulator, and (optionally) Azurite for blob dump storage.
+
+Fixture archives live under `Soundtrail.Services.AppHost/testdata/musicbrainz-dump/2026-08/` (`artist`, `release-group`, `release`, and/or `track` `.tar.xz`). AppHost pins `MusicBrainzDump:DumpVersion=2026-08` on Scheduler and CatalogImport so a manual/cron trigger does not look for the current calendar month. Startup validation fails fast if those archives are missing.
+
+Trigger: open the Scheduler TickerQ dashboard and run function `ImportMusicBrainzDump` (manual). The monthly cron uses the same handler.
+
+Observe: CatalogImport logs and OTel progress/status, Raven job document status/`ProgressPercent`, and catalog read models (artists / albums / tracks) written by the import.
 
 ## Non-Goals Recap
 
