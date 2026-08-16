@@ -1,7 +1,7 @@
-using Soundtrail.Adapters.CatalogProjection;
 using Soundtrail.Adapters.Timing;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Playlists;
+using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Contract;

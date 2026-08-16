@@ -1,7 +1,7 @@
-using Soundtrail.Adapters.CatalogProjection;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
+using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
 using Soundtrail.Services.Api.Features.Catalog.GetAlbumsForArtist.Contract;

@@ -3,6 +3,7 @@ using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Domain.Catalog.Tracks;
 
 namespace Soundtrail.Adapters.CatalogProjection;

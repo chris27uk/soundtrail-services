@@ -1,5 +1,5 @@
-using Soundtrail.Adapters.CatalogProjection;
 using Soundtrail.Domain.Catalog.Artists;
+using Soundtrail.Domain.Catalog.Projection;
 
 namespace Soundtrail.Services.Internal.Projector.Features.OnArtistCatalogChanged.Adapters;
 

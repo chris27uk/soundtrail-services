@@ -1,4 +1,5 @@
 using Soundtrail.Adapters.CatalogProjection;
+using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Artists;

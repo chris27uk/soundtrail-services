@@ -3,7 +3,7 @@ using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
 
-namespace Soundtrail.Adapters.CatalogProjection;
+namespace Soundtrail.Domain.Catalog.Projection;
 
 public sealed record ArtistCatalogProjection(
     ArtistId ArtistId,

@@ -1,6 +1,6 @@
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
-using Soundtrail.Domain.Catalog.Artists;
+using Soundtrail.Domain.Catalog.Projection;
 
 namespace Soundtrail.Adapters.CatalogProjection;
 
