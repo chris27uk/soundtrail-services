@@ -1,7 +1,7 @@
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Tracks;
-using Soundtrail.Services.Enrichment.Worker.Shared.MusicBrainzDumpFreshness;
+using Soundtrail.Adapters.MusicBrainzDumpFreshness;
 using Soundtrail.Services.Tests;
 
 namespace Soundtrail.Services.Tests.Unit.Solitary.Worker.MusicBrainzDumpFreshness;

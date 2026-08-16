@@ -1,6 +1,6 @@
 using Soundtrail.Domain.Discovery;
 
-namespace Soundtrail.Services.Enrichment.Worker.Shared.MusicBrainzDumpFreshness;
+namespace Soundtrail.Adapters.MusicBrainzDumpFreshness;
 
 public sealed record MusicBrainzDumpFreshnessDecision(
     bool UseCatalog,

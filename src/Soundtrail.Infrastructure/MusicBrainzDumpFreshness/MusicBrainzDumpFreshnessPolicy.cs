@@ -4,7 +4,7 @@ using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Discovery;
 
-namespace Soundtrail.Services.Enrichment.Worker.Shared.MusicBrainzDumpFreshness;
+namespace Soundtrail.Adapters.MusicBrainzDumpFreshness;
 
 public sealed record DumpCatalogArtistSnapshot(
     string ArtistId,

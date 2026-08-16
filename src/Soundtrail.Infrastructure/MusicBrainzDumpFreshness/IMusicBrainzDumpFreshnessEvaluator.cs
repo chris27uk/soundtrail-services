@@ -1,7 +1,7 @@
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 
-namespace Soundtrail.Services.Enrichment.Worker.Shared.MusicBrainzDumpFreshness;
+namespace Soundtrail.Adapters.MusicBrainzDumpFreshness;
 
 public interface IMusicBrainzDumpFreshnessEvaluator
 {
