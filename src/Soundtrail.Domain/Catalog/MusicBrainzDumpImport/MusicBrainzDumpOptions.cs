@@ -12,8 +12,6 @@ public sealed class MusicBrainzDumpOptions
 
     public const string DefaultBlobConnectionName = "musicbrainz-dumps";
 
-    public string Source { get; set; } = "local";
-
     /// <summary>
     /// <see cref="LocalStorage"/> (default) or <see cref="BlobStorage"/> (Azurite or Azure).
     /// </summary>
@@ -50,7 +48,7 @@ public sealed class MusicBrainzDumpOptions
     public string? ArchiveDirectory { get; set; }
 
     /// <summary>
-    /// Metabrainz JSON dump root URL used when <see cref="Source"/> is <c>http</c>.
+    /// HTTPS origin for official (or simulator) JSON dump archives when a versioned archive is not already cached.
     /// </summary>
     public string BaseUrl { get; set; } = "https://data.metabrainz.org/pub/musicbrainz/data/json-dumps";
 
@@ -69,7 +67,7 @@ public sealed class MusicBrainzDumpOptions
 
     /// <summary>
     /// When set, Scheduler uses this dump version for job identity instead of <c>YYYY-MM</c> from trigger time.
-    /// AppHost fixture demos pin this to the committed testdata folder (e.g. <c>2026-08</c>).
+    /// Local demos may pin this to a known dump folder version (e.g. <c>2026-08</c>).
     /// </summary>
     public string? DumpVersion { get; set; }
 }

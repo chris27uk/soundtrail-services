@@ -61,12 +61,12 @@ public sealed class HttpMusicBrainzDumpDownloaderTests
         using var directory = TemporaryDirectory.Create();
         var destination = Path.Combine(directory.Path, "artist.tar.xz");
         File.WriteAllText(destination, "cached");
-        var handler = new CountingHandler();
+        var handler = new ResumableHandler("payload");
         var downloader = new HttpMusicBrainzDumpDownloader(new HttpClient(handler));
 
         await downloader.DownloadAsync("https://example.test/artist.tar.xz", destination);
 
-        handler.CallCount.Should().Be(0);
+        handler.RangeFromValues.Should().BeEmpty();
         File.ReadAllText(destination).Should().Be("cached");
     }
 
@@ -75,32 +75,180 @@ public sealed class HttpMusicBrainzDumpDownloaderTests
     {
         using var directory = TemporaryDirectory.Create();
         var destination = Path.Combine(directory.Path, "artist.tar.xz");
-        var handler = new CountingHandler { ResponseBody = "payload" };
+        var handler = new ResumableHandler("payload");
         var downloader = new HttpMusicBrainzDumpDownloader(new HttpClient(handler));
 
         await downloader.DownloadAsync("https://example.test/artist.tar.xz", destination);
 
-        handler.CallCount.Should().Be(1);
+        handler.RangeFromValues.Should().ContainSingle().Which.Should().BeNull();
         File.ReadAllText(destination).Should().Be("payload");
+        File.Exists(destination + ".partial").Should().BeFalse();
     }
 
-    private sealed class CountingHandler : HttpMessageHandler
+    [Fact]
+    public async Task Given_Partial_Exists_When_Downloading_Then_Range_Resume_Completes_The_File()
     {
-        public int CallCount { get; private set; }
+        using var directory = TemporaryDirectory.Create();
+        var destination = Path.Combine(directory.Path, "artist.tar.xz");
+        var payload = "0123456789abcdef";
+        await File.WriteAllTextAsync(destination + ".partial", payload[..6]);
+        var handler = new ResumableHandler(payload);
+        var downloader = new HttpMusicBrainzDumpDownloader(new HttpClient(handler));
 
-        public string ResponseBody { get; init; } = string.Empty;
+        await downloader.DownloadAsync("https://example.test/artist.tar.xz", destination);
+
+        handler.RangeFromValues.Should().ContainSingle().Which.Should().Be(6);
+        File.ReadAllText(destination).Should().Be(payload);
+        File.Exists(destination + ".partial").Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Given_Interrupt_Mid_Download_When_Retrying_Then_Partial_Is_Kept_And_Resumed()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var destination = Path.Combine(directory.Path, "artist.tar.xz");
+        var payload = Encoding.UTF8.GetBytes("0123456789abcdef");
+        var handler = new InterruptThenResumeHandler(payload, failAfterBytes: 7);
+        var downloader = new HttpMusicBrainzDumpDownloader(new HttpClient(handler));
+
+        var firstAttempt = () => downloader.DownloadAsync("https://example.test/artist.tar.xz", destination);
+        await firstAttempt.Should().ThrowAsync<IOException>();
+        File.Exists(destination).Should().BeFalse();
+        File.Exists(destination + ".partial").Should().BeTrue();
+        new FileInfo(destination + ".partial").Length.Should().Be(7);
+
+        await downloader.DownloadAsync("https://example.test/artist.tar.xz", destination);
+
+        handler.RangeFromValues.Should().Equal(null, 7L);
+        File.ReadAllBytes(destination).Should().Equal(payload);
+        File.Exists(destination + ".partial").Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Given_Server_Ignores_Range_When_Downloading_Then_Partial_Is_Replaced()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var destination = Path.Combine(directory.Path, "artist.tar.xz");
+        await File.WriteAllTextAsync(destination + ".partial", "stale");
+        var handler = new ResumableHandler("fresh-payload", honorRange: false);
+        var downloader = new HttpMusicBrainzDumpDownloader(new HttpClient(handler));
+
+        await downloader.DownloadAsync("https://example.test/artist.tar.xz", destination);
+
+        File.ReadAllText(destination).Should().Be("fresh-payload");
+    }
+
+    private sealed class ResumableHandler(string payload, bool honorRange = true) : HttpMessageHandler
+    {
+        public List<long?> RangeFromValues { get; } = [];
 
         protected override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            CallCount++;
-            return Task.FromResult(
-                new HttpResponseMessage(HttpStatusCode.OK)
+            var from = request.Headers.Range?.Ranges.FirstOrDefault()?.From;
+            RangeFromValues.Add(from);
+            if (honorRange && from is { } start)
+            {
+                var remainder = payload[(int)start..];
+                var response = new HttpResponseMessage(HttpStatusCode.PartialContent)
                 {
-                    Content = new StringContent(ResponseBody, Encoding.UTF8)
-                });
+                    Content = new StringContent(remainder, Encoding.UTF8)
+                };
+                response.Content.Headers.ContentRange = new System.Net.Http.Headers.ContentRangeHeaderValue(
+                    start,
+                    payload.Length - 1,
+                    payload.Length);
+                response.Headers.ETag = new System.Net.Http.Headers.EntityTagHeaderValue("\"dump\"");
+                return Task.FromResult(response);
+            }
+
+            var full = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(payload, Encoding.UTF8)
+            };
+            full.Headers.ETag = new System.Net.Http.Headers.EntityTagHeaderValue("\"dump\"");
+            return Task.FromResult(full);
         }
+    }
+
+    private sealed class InterruptThenResumeHandler(byte[] payload, int failAfterBytes) : HttpMessageHandler
+    {
+        private int callCount;
+
+        public List<long?> RangeFromValues { get; } = [];
+
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            callCount++;
+            var from = request.Headers.Range?.Ranges.FirstOrDefault()?.From;
+            RangeFromValues.Add(from);
+
+            if (callCount == 1)
+            {
+                var failing = new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StreamContent(new ThrowAfterBytesStream(payload, failAfterBytes))
+                };
+                return Task.FromResult(failing);
+            }
+
+            var start = (int)(from ?? 0);
+            var remainder = payload.AsMemory(start).ToArray();
+            var response = new HttpResponseMessage(HttpStatusCode.PartialContent)
+            {
+                Content = new ByteArrayContent(remainder)
+            };
+            response.Content.Headers.ContentRange = new System.Net.Http.Headers.ContentRangeHeaderValue(
+                start,
+                payload.Length - 1,
+                payload.Length);
+            return Task.FromResult(response);
+        }
+    }
+
+    private sealed class ThrowAfterBytesStream(byte[] bytes, int failAfterBytes) : Stream
+    {
+        private int position;
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => position;
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            if (position >= failAfterBytes)
+            {
+                throw new IOException("Simulated download interrupt.");
+            }
+
+            var available = Math.Min(count, failAfterBytes - position);
+            Buffer.BlockCopy(bytes, position, buffer, offset, available);
+            position += available;
+            return available;
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 }
 
@@ -115,7 +263,7 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
         Directory.CreateDirectory(versionRoot);
         MusicBrainzDumpArchiveFixtures.CopyTo(versionRoot, "artist.tar.xz");
 
-        var store = CreateStore(directory.Path, source: "fixture");
+        var store = CreateStore(directory.Path);
         var path = await store.EnsureArtistsJsonlAsync(
             MusicBrainzDumpImportJobId.ForDumpVersion(dumpVersion),
             dumpVersion);
@@ -124,14 +272,14 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
     }
 
     [Fact]
-    public async Task Given_Http_Source_And_Missing_Archive_When_Ensuring_Artists_Then_Download_Is_Used()
+    public async Task Given_Missing_Archive_When_Ensuring_Artists_Then_Download_Is_Used()
     {
         using var directory = TemporaryDirectory.Create();
         var dumpVersion = "2026-08";
         Directory.CreateDirectory(Path.Combine(directory.Path, dumpVersion));
         var archiveBytes = MusicBrainzDumpArchiveFixtures.ReadBytes("artist.tar.xz");
         var downloader = new RecordingDownloader(archiveBytes);
-        var store = CreateStore(directory.Path, source: "http", downloader);
+        var store = CreateStore(directory.Path, downloader);
 
         var path = await store.EnsureArtistsJsonlAsync(
             MusicBrainzDumpImportJobId.ForDumpVersion(dumpVersion),
@@ -143,7 +291,7 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
     }
 
     [Fact]
-    public async Task Given_Http_Source_And_Existing_Archive_When_Ensuring_Artists_Then_Download_Is_Skipped()
+    public async Task Given_Existing_Archive_When_Ensuring_Artists_Then_Download_Is_Skipped()
     {
         using var directory = TemporaryDirectory.Create();
         var dumpVersion = "2026-08";
@@ -151,7 +299,7 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
         Directory.CreateDirectory(versionRoot);
         MusicBrainzDumpArchiveFixtures.CopyTo(versionRoot, "artist.tar.xz");
         var downloader = new RecordingDownloader([]);
-        var store = CreateStore(directory.Path, source: "http", downloader);
+        var store = CreateStore(directory.Path, downloader);
 
         var path = await store.EnsureArtistsJsonlAsync(
             MusicBrainzDumpImportJobId.ForDumpVersion(dumpVersion),
@@ -162,7 +310,7 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
     }
 
     [Fact]
-    public async Task Given_Http_Source_When_Ensuring_Tracks_Then_Http_Is_Not_Used()
+    public async Task Given_Track_Archive_When_Ensuring_Tracks_Then_Http_Is_Not_Used()
     {
         using var directory = TemporaryDirectory.Create();
         var dumpVersion = "2026-08";
@@ -170,7 +318,7 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
         Directory.CreateDirectory(versionRoot);
         MusicBrainzDumpArchiveFixtures.CopyTo(versionRoot, "track.tar.xz");
         var downloader = new RecordingDownloader([]);
-        var store = CreateStore(directory.Path, source: "http", downloader);
+        var store = CreateStore(directory.Path, downloader);
 
         var path = await store.EnsureTracksJsonlAsync(
             MusicBrainzDumpImportJobId.ForDumpVersion(dumpVersion),
@@ -188,7 +336,7 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
         var versionRoot = Path.Combine(directory.Path, dumpVersion);
         Directory.CreateDirectory(versionRoot);
         MusicBrainzDumpArchiveFixtures.CopyTo(versionRoot, "release.tar.xz");
-        var store = CreateStore(directory.Path, source: "fixture");
+        var store = CreateStore(directory.Path);
 
         var path = await store.EnsureTracksJsonlAsync(
             MusicBrainzDumpImportJobId.ForDumpVersion(dumpVersion),
@@ -203,13 +351,13 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
     }
 
     [Fact]
-    public async Task Given_Http_Source_And_Missing_Track_When_Ensuring_Tracks_Then_Release_May_Be_Downloaded()
+    public async Task Given_Missing_Track_When_Ensuring_Tracks_Then_Release_May_Be_Downloaded()
     {
         using var directory = TemporaryDirectory.Create();
         var dumpVersion = "2026-08";
         Directory.CreateDirectory(Path.Combine(directory.Path, dumpVersion));
         var downloader = new RecordingDownloader(MusicBrainzDumpArchiveFixtures.ReadBytes("release.tar.xz"));
-        var store = CreateStore(directory.Path, source: "http", downloader);
+        var store = CreateStore(directory.Path, downloader);
 
         var path = await store.EnsureTracksJsonlAsync(
             MusicBrainzDumpImportJobId.ForDumpVersion(dumpVersion),
@@ -222,13 +370,11 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
 
     private static LocalMusicBrainzDumpArchiveStore CreateStore(
         string archiveDirectory,
-        string source,
         IMusicBrainzDumpDownloader? downloader = null) =>
         new(
             Options.Create(
                 new MusicBrainzDumpOptions
                 {
-                    Source = source,
                     ArchiveDirectory = archiveDirectory,
                     BaseUrl = "https://example.test/json-dumps"
                 }),

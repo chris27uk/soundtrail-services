@@ -23,10 +23,9 @@ public sealed class BlobMusicBrainzDumpArchiveStore(
             return Task.FromResult(RequireExistingPath(configured, LocalMusicBrainzDumpArchiveStore.ArtistEntity));
         }
 
-        return EnsureEntityJsonlAsync(
+        return EnsureOfficialEntityJsonlAsync(
             LocalMusicBrainzDumpArchiveStore.ArtistEntity,
             dumpVersion,
-            allowHttpDownload: true,
             cancellationToken);
     }
 
@@ -57,10 +56,9 @@ public sealed class BlobMusicBrainzDumpArchiveStore(
             }
         }
 
-        return EnsureEntityJsonlAsync(
+        return EnsureOfficialEntityJsonlAsync(
             LocalMusicBrainzDumpArchiveStore.ReleaseGroupEntity,
             dumpVersion,
-            allowHttpDownload: true,
             cancellationToken);
     }
 
@@ -91,10 +89,9 @@ public sealed class BlobMusicBrainzDumpArchiveStore(
             }
         }
 
-        return EnsureEntityJsonlAsync(
+        return EnsureOfficialEntityJsonlAsync(
             LocalMusicBrainzDumpArchiveStore.ReleaseEntity,
             dumpVersion,
-            allowHttpDownload: true,
             cancellationToken);
     }
 
@@ -136,15 +133,25 @@ public sealed class BlobMusicBrainzDumpArchiveStore(
             return trackExtractedPath;
         }
 
+        // Denormalized track is Soundtrail-specific — use a cached archive if present, otherwise join releases.
         var trackArchivePath = Path.Combine(versionRoot, $"{LocalMusicBrainzDumpArchiveStore.TrackEntity}.tar.xz");
         var trackBlobName = MusicBrainzDumpBlobKeys.Archive(dumpVersion, LocalMusicBrainzDumpArchiveStore.TrackEntity);
         if (File.Exists(trackArchivePath) || await blobs.ExistsAsync(trackBlobName, cancellationToken))
         {
-            return await EnsureEntityJsonlAsync(
+            if (!File.Exists(trackArchivePath))
+            {
+                await blobs.DownloadToFileAsync(trackBlobName, trackArchivePath, cancellationToken);
+            }
+            else if (!await blobs.ExistsAsync(trackBlobName, cancellationToken))
+            {
+                await blobs.UploadFromFileAsync(trackBlobName, trackArchivePath, cancellationToken);
+            }
+
+            extractor.EnsureExtracted(
+                trackArchivePath,
                 LocalMusicBrainzDumpArchiveStore.TrackEntity,
-                dumpVersion,
-                allowHttpDownload: false,
-                cancellationToken);
+                trackExtractedPath);
+            return trackExtractedPath;
         }
 
         var releasesPath = await EnsureReleasesJsonlAsync(jobId, dumpVersion, cancellationToken);
@@ -155,10 +162,9 @@ public sealed class BlobMusicBrainzDumpArchiveStore(
         return trackExtractedPath;
     }
 
-    private async Task<string> EnsureEntityJsonlAsync(
+    private async Task<string> EnsureOfficialEntityJsonlAsync(
         string entityName,
         string dumpVersion,
-        bool allowHttpDownload,
         CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(dumpVersion);
@@ -191,25 +197,16 @@ public sealed class BlobMusicBrainzDumpArchiveStore(
         {
             await blobs.UploadFromFileAsync(blobName, archivePath, cancellationToken);
         }
-        else if (allowHttpDownload && IsHttpSource())
+        else
         {
             var url = BuildDownloadUrl(dumpVersion, entityName);
             await downloader.DownloadAsync(url, archivePath, cancellationToken);
             await blobs.UploadFromFileAsync(blobName, archivePath, cancellationToken);
         }
-        else
-        {
-            throw new FileNotFoundException(
-                $"MusicBrainz {entityName} archive was not found in blob '{blobName}' or at '{archivePath}'.",
-                archivePath);
-        }
 
         extractor.EnsureExtracted(archivePath, entityName, extractedPath);
         return extractedPath;
     }
-
-    private bool IsHttpSource() =>
-        string.Equals(options.Value.Source, "http", StringComparison.OrdinalIgnoreCase);
 
     private string BuildDownloadUrl(string dumpVersion, string entityName)
     {
@@ -224,14 +221,14 @@ public sealed class BlobMusicBrainzDumpArchiveStore(
         if (string.IsNullOrWhiteSpace(path))
         {
             throw new InvalidOperationException(
-                $"MusicBrainzDump path for {label} must be set when Source=local.");
+                $"MusicBrainzDump path for {label} must be set when using an explicit JSONL path.");
         }
 
         var fullPath = Path.GetFullPath(path);
         if (!File.Exists(fullPath))
         {
             throw new FileNotFoundException(
-                $"MusicBrainz {label} JSONL fixture was not found at '{fullPath}'.",
+                $"MusicBrainz {label} JSONL was not found at '{fullPath}'.",
                 fullPath);
         }
 

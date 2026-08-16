@@ -23,7 +23,7 @@ Related specs:
 - `SourceSystemId` provenance on catalog items
 - Freshness rules between dump import and live Worker lookups
 - OpenTelemetry progress and final job status
-- Sociable-first testing and a local fixture demo
+- Sociable-first testing and a local HTTP dump-source demo
 
 ### Out of scope (v1)
 
@@ -207,14 +207,15 @@ Skip the row; record failed data for diagnosis; emit a metric. Do not fail the e
 
 ## Storage
 
-- Dev: local disk (and/or fixture path) for archives and shards.
+- Dev: local disk and/or Azurite blob for **cache** (archives and shards) after HTTPS download.
 - Prod: blob storage for compressed archive and uncompressed shard JSONL.
+- Origin is always HTTPS (`MusicBrainzDump:BaseUrl`). Missing versioned archives are downloaded into the local/blob cache; there is no separate source-mode switch.
 
 ## Testing
 
 - Keep Domain / Contracts / adapter boundaries.
 - **Sociable-first** (`Unit/Sociable/Features/Scheduled/ImportMusicBrainzDump/`), mirroring ImportKworbChart style.
-- **Solitary** for `SourceSystemId`, shard hash stability, row→domain mapping, checkpoint math.
+- **Solitary** for `SourceSystemId`, shard hash stability, row→domain mapping, checkpoint math, resumable HTTPS download.
 - **Fake+Real** integration contracts for dump reader / job store ports.
 - Domain↔DTO translation round-trips for Start/Shard messages.
 - Do not solitary-test ASB listeners or hosted services.
@@ -225,7 +226,7 @@ Minimum sociable scenarios: happy path one phase; resume from shard checkpoint; 
 
 Prerequisites: run AppHost with RavenDB, the Service Bus emulator, and (optionally) Azurite for blob dump storage.
 
-Fixture archives live under `Soundtrail.Services.AppHost/testdata/musicbrainz-dump/2026-08/` (`artist`, `release-group`, `release`, and/or `track` `.tar.xz`). AppHost pins `MusicBrainzDump:DumpVersion=2026-08` on Scheduler and CatalogImport so a manual/cron trigger does not look for the current calendar month. Startup validation fails fast if those archives are missing.
+AppHost starts a dedicated **HTTP dump-source** container (Caddy) that bind-mounts `Soundtrail.Services.AppHost/testdata/musicbrainz-dump-source/` and serves MetaBrainz-layout paths (`/{DumpVersion}/{entity}.tar.xz`). Smoke archives for `2026-08` are committed; replace or add multi-GB official dumps in that mount for a realistic E2E (do not commit multi-GB files). CatalogImport is wired with `BaseUrl` → dump-source, `DumpVersion=2026-08`, and `ArchiveDirectory` → a local cache under `testdata/musicbrainz-dump-cache/`. Downloads resume via HTTP Range when interrupted. Startup validation fails fast if required smoke archives are missing from the dump-source mount.
 
 Trigger: open the Scheduler TickerQ dashboard and run function `ImportMusicBrainzDump` (manual). The monthly cron uses the same handler.
 
