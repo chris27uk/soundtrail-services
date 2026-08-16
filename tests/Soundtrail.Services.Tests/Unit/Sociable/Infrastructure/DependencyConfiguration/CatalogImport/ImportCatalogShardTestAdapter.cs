@@ -29,6 +29,8 @@ internal sealed class ImportCatalogShardTestAdapter(ImportCatalogShardPorts port
             sp => sp.GetRequiredService<ICatalogArtistImportWriter>(),
             _ => new MusicBrainzReleaseGroupDumpRowMapper(),
             sp => sp.GetRequiredService<ICatalogAlbumImportWriter>(),
+            _ => new MusicBrainzTrackDumpRowMapper(),
+            sp => sp.GetRequiredService<ICatalogTrackImportWriter>(),
             sp => sp.GetRequiredService<IMusicBrainzDumpShardStore>(),
             sp => sp.GetRequiredService<IDownloadDumpAndShardWorkQueue>());
 
@@ -53,6 +55,9 @@ internal sealed class ImportCatalogShardTestAdapter(ImportCatalogShardPorts port
         services.TryAddSingleton<CatalogAlbumImportWriterFake>();
         services.TryAddSingleton<ICatalogAlbumImportWriter>(
             sp => sp.GetRequiredService<CatalogAlbumImportWriterFake>());
+        services.TryAddSingleton<CatalogTrackImportWriterFake>();
+        services.TryAddSingleton<ICatalogTrackImportWriter>(
+            sp => sp.GetRequiredService<CatalogTrackImportWriterFake>());
 
         ImportCatalogShardComposition.Configure(services, ports);
     }

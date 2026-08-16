@@ -53,6 +53,8 @@ public sealed class ImportCatalogShardFeature : IFeature
                 sp => ActivatorUtilities.CreateInstance<CatalogArtistImportWriter>(sp),
                 _ => new MusicBrainzReleaseGroupDumpRowMapper(),
                 sp => ActivatorUtilities.CreateInstance<CatalogAlbumImportWriter>(sp),
+                _ => new MusicBrainzTrackDumpRowMapper(),
+                sp => ActivatorUtilities.CreateInstance<CatalogTrackImportWriter>(sp),
                 sp => ActivatorUtilities.CreateInstance<LocalMusicBrainzDumpShardStore>(sp),
                 sp => sp.GetRequiredService<IDownloadDumpAndShardWorkQueue>()));
     }

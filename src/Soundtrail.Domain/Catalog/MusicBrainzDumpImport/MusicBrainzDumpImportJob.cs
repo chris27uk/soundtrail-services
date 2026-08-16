@@ -223,10 +223,10 @@ public sealed class MusicBrainzDumpImportJob
     public bool HasRegisteredShards(MusicBrainzDumpImportPhase phase) =>
         shards.Values.Any(shard => shard.Phase == phase);
 
-    public bool TryCompleteReleaseGroupsPhaseAsFinal(DateTimeOffset finishedAt)
+    public bool TryCompleteRecordingsPhaseAsFinal(DateTimeOffset finishedAt)
     {
-        if (CurrentPhase != MusicBrainzDumpImportPhase.ReleaseGroups ||
-            !AreAllShardsCompleted(MusicBrainzDumpImportPhase.ReleaseGroups))
+        if (CurrentPhase != MusicBrainzDumpImportPhase.Recordings ||
+            !AreAllShardsCompleted(MusicBrainzDumpImportPhase.Recordings))
         {
             return false;
         }
@@ -254,11 +254,7 @@ public sealed class MusicBrainzDumpImportJob
 
         if (CurrentPhase == MusicBrainzDumpImportPhase.Recordings)
         {
-            Status = MusicBrainzDumpImportJobStatus.Completed;
-            FinishedAt = DateTimeOffset.UtcNow;
-            ProducerLease = null;
-            ProgressPercent = 100;
-            return true;
+            return false;
         }
 
         CurrentPhase = CurrentPhase switch

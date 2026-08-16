@@ -49,6 +49,34 @@ public sealed class LocalMusicBrainzDumpArchiveStore(IOptions<MusicBrainzDumpOpt
         return Task.FromResult(RequireExistingPath(sibling, "release-groups"));
     }
 
+    public Task<string> EnsureTracksJsonlAsync(
+        MusicBrainzDumpImportJobId jobId,
+        string dumpVersion,
+        CancellationToken cancellationToken = default)
+    {
+        _ = jobId;
+        _ = dumpVersion;
+        _ = cancellationToken;
+
+        var configured = options.Value.TracksLocalPath;
+        if (!string.IsNullOrWhiteSpace(configured))
+        {
+            return Task.FromResult(RequireExistingPath(configured, "tracks"));
+        }
+
+        var artistsPath = options.Value.LocalPath;
+        if (string.IsNullOrWhiteSpace(artistsPath))
+        {
+            throw new InvalidOperationException(
+                "MusicBrainzDump:LocalPath or TracksLocalPath must be set when Source=local.");
+        }
+
+        var sibling = Path.Combine(
+            Path.GetDirectoryName(Path.GetFullPath(artistsPath))!,
+            "track.jsonl");
+        return Task.FromResult(RequireExistingPath(sibling, "tracks"));
+    }
+
     private static string RequireExistingPath(string? path, string label)
     {
         if (string.IsNullOrWhiteSpace(path))
