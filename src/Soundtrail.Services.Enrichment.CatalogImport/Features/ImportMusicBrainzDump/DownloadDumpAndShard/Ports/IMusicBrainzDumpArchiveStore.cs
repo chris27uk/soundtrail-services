@@ -22,7 +22,16 @@ public interface IMusicBrainzDumpArchiveStore
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Ensures the denormalized track-graph JSONL source exists. Returns the path/key to the file.
+    /// Ensures the official release JSONL source exists. Returns the path/key to the file.
+    /// </summary>
+    Task<string> EnsureReleasesJsonlAsync(
+        MusicBrainzDumpImportJobId jobId,
+        string dumpVersion,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Ensures the denormalized track-graph JSONL source exists (prebuilt track archive/fixture,
+    /// or materialized from the release graph). Returns the path/key to the file.
     /// </summary>
     Task<string> EnsureTracksJsonlAsync(
         MusicBrainzDumpImportJobId jobId,

@@ -121,7 +121,7 @@ MusicBrainz → Soundtrail:
 | Recording / track data via release graph | Track |
 | Medium (CD/DVD/digital) | Ignored in v1 |
 
-Do not rely on the standalone-recording dump alone for catalogue tracks; use the release / release-group graph as needed.
+Do not rely on the standalone-recording dump alone for catalogue tracks; use the release / release-group graph as needed. CatalogImport **materializes** denormalized track JSONL from official `release` dumps (media → tracks → recording + nested release-group + date) when a prebuilt track source is absent; it does not HTTP-download a Soundtrail-only `track` archive or the standalone `recording` dump.
 
 ## Messaging
 
