@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # After testhost GHA restore and optional PR artifact: reuse published bits or rebuild.
-# need_buildx is true on miss, or on main (publish-apps still uses Buildx).
+# Testhost misses publish with the runner SDK; Buildx is only for apps on main.
 set -euo pipefail
 
 source_hash="${SOURCE_TREE_HASH:-}"
@@ -24,12 +24,12 @@ else
   rm -rf testhost
 fi
 
-need_buildx=true
-if [[ "$hit" == "true" && "${GITHUB_EVENT_NAME:-}" == "push" && "${GITHUB_REF:-}" == "refs/heads/main" ]]; then
-  echo "Testhost reused; Buildx still required to publish apps."
-elif [[ "$hit" == "true" ]]; then
-  need_buildx=false
-  echo "Testhost reused; skipping Buildx."
+need_buildx=false
+if [[ "${GITHUB_EVENT_NAME:-}" == "push" && "${GITHUB_REF:-}" == "refs/heads/main" ]]; then
+  need_buildx=true
+  echo "Buildx required to publish apps on main."
+else
+  echo "PR testhost uses runner-native dotnet publish; skipping Buildx."
 fi
 
 {

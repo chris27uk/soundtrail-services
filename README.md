@@ -133,7 +133,7 @@ dotnet test tests/Soundtrail.Services.Tests/Soundtrail.Services.Tests.csproj \
 
 ### CI parity (optional)
 
-CI does **not** use Embedded Raven or Testcontainers. It builds a published testhost ([`Dockerfile.ci`](Dockerfile.ci)) and runs it next to Redis, OpenServiceBus, and RavenDB 7.2.5:
+CI does **not** use Embedded Raven or Testcontainers. It publishes the testhost with the pinned runner SDK and runs those bits in the ASP.NET container next to Redis, OpenServiceBus, and RavenDB 7.2.5. The Dockerfile target remains useful for local parity:
 
 ```bash
 docker build -t soundtrail-testhost:ci --target testhost -f Dockerfile.ci .
@@ -147,7 +147,7 @@ Point a host-run testhost at the same sidecars with `SOUNDTRAIL_TEST_NO_TESTCONT
 
 ### CI
 
-GitHub Actions uses Buildx + `type=gha` layer cache to build the testhost image from [`Dockerfile.ci`](Dockerfile.ci) (restore → build → publish, no RavenDB.Embedded in the restore graph). Sidecars come from [`docker-compose.ci.yml`](docker-compose.ci.yml). See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+GitHub Actions restores a default-branch NuGet cache and publishes changed testhost bits directly with the SDK pinned by [`global.json`](global.json). Buildx + `type=gha` remains for application packages on `main`; it exports cache only when Docker/dependency inputs change. Sidecars come from [`docker-compose.ci.yml`](docker-compose.ci.yml). See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 The PR check is the workflow job **Build \<SemVer\>** (plus a **Test Results** annotation on pull requests). To block merges until it passes, in GitHub go to **Settings → Rules → Rulesets** (or **Branches → Branch protection**) for `main` and require that Build status check.
 
