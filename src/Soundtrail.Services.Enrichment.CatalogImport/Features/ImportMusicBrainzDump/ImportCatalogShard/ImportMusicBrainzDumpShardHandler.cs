@@ -1,6 +1,7 @@
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog.MusicBrainzDumpImport;
 using Soundtrail.Domain.Catalog.MusicBrainzDumpImport.Messages;
+using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Work;
 using Soundtrail.Services.Enrichment.CatalogImport.Infrastructure.Lease;
 
@@ -20,25 +21,39 @@ public sealed class ImportMusicBrainzDumpShardHandler(
         ArgumentNullException.ThrowIfNull(context);
 
         var message = context.Message;
-        var job = await jobStore.GetAsync(message.JobId, cancellationToken);
-        if (job is null)
+        for (var attempt = 0; attempt < MusicBrainzDumpImportJobConcurrency.SaveAttempts; attempt++)
         {
+            var job = await jobStore.GetAsync(message.JobId, cancellationToken);
+            if (job is null)
+            {
+                return;
+            }
+
+            if (!job.TryClaimShard(
+                    message.Phase,
+                    message.ShardId,
+                    leaseOwner.Value,
+                    DateTimeOffset.UtcNow,
+                    ShardLeaseDuration))
+            {
+                return;
+            }
+
+            try
+            {
+                await jobStore.SaveAsync(job, cancellationToken);
+            }
+            catch (InvalidOperationException exception) when (
+                attempt < MusicBrainzDumpImportJobConcurrency.SaveAttempts - 1 &&
+                MusicBrainzDumpImportJobConcurrency.IsConflict(exception))
+            {
+                continue;
+            }
+
+            await workQueue.EnqueueAsync(
+                new ImportCatalogShardWork(job.Id, message.Phase, message.ShardId),
+                cancellationToken);
             return;
         }
-
-        if (!job.TryClaimShard(
-                message.Phase,
-                message.ShardId,
-                leaseOwner.Value,
-                DateTimeOffset.UtcNow,
-                ShardLeaseDuration))
-        {
-            return;
-        }
-
-        await jobStore.SaveAsync(job, cancellationToken);
-        await workQueue.EnqueueAsync(
-            new ImportCatalogShardWork(job.Id, message.Phase, message.ShardId),
-            cancellationToken);
     }
 }
