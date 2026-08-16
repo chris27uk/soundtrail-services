@@ -272,24 +272,24 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.testhost.outputs.hit != 'true'
         run: bash scripts/ci-run-tests-bg.sh
 
-      - name: Publish apps
+      - name: Expose GitHub runtime
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: crazy-max/ghaction-github-runtime@v4
+
+      - name: Publish apps (background)
         id: publish-apps
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: Dockerfile.ci
-          builder: soundtrail-ci
-          target: publish-apps-out
-          outputs: type=local,dest=package/publish
-          provenance: false
-          sbom: false
-          cache-from: type=gha,scope=soundtrail-testhost
-          cache-to: ${{ steps.bk-export.outputs.cache-hit != 'true' && 'type=gha,mode=max,scope=soundtrail-testhost' || '' }}
+        env:
+          PUBLISH_CACHE_TO: ${{ steps.bk-export.outputs.cache-hit != 'true' && 'true' || 'false' }}
+        run: bash scripts/ci-publish-apps-bg.sh
 
       - name: Wait for tests
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: bash scripts/ci-wait-tests.sh
+
+      - name: Wait for publish
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: bash scripts/ci-wait-publish.sh
 
       - name: Save BuildKit export marker
         # Stamp when we exported; do not require tests so flaky tests do not force re-export.
