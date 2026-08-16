@@ -64,10 +64,4 @@ public sealed class MusicBrainzDumpOptions
     public TimeSpan LeaseDuration { get; set; } = TimeSpan.FromMinutes(5);
 
     public DateTimeOffset? DumpObservedAt { get; set; }
-
-    /// <summary>
-    /// When set, Scheduler uses this dump version for job identity instead of <c>YYYY-MM</c> from trigger time.
-    /// Local demos may pin this to a known dump folder version (e.g. <c>2026-08</c>).
-    /// </summary>
-    public string? DumpVersion { get; set; }
 }

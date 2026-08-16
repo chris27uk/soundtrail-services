@@ -7,6 +7,7 @@ using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDum
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Ports;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Work;
 using Soundtrail.Services.Enrichment.CatalogImport.Infrastructure.Lease;
+using Soundtrail.Services.Enrichment.Scheduler.Features.ImportMusicBrainzDump.Ports;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
@@ -23,6 +24,7 @@ internal sealed class ImportMusicBrainzDumpSociableTestEnvironment : IDisposable
         SociableDiscoveryEngine engine,
         IScheduledMessageHandler<ImportMusicBrainzDumpCommand> scheduledHandler,
         MusicBrainzDumpImportJobStoreFake jobStore,
+        MusicBrainzDumpSnapshotCatalogFake snapshotCatalog,
         MusicBrainzDumpArchiveStoreFake archiveStore,
         CatalogArtistImportWriterFake artistWriter,
         CatalogAlbumImportWriterFake albumWriter,
@@ -34,6 +36,7 @@ internal sealed class ImportMusicBrainzDumpSociableTestEnvironment : IDisposable
         this.engine = engine;
         this.scheduledHandler = scheduledHandler;
         JobStore = jobStore;
+        SnapshotCatalog = snapshotCatalog;
         ArchiveStore = archiveStore;
         ArtistWriter = artistWriter;
         AlbumWriter = albumWriter;
@@ -44,6 +47,8 @@ internal sealed class ImportMusicBrainzDumpSociableTestEnvironment : IDisposable
     }
 
     public MusicBrainzDumpImportJobStoreFake JobStore { get; }
+
+    public MusicBrainzDumpSnapshotCatalogFake SnapshotCatalog { get; }
 
     public MusicBrainzDumpArchiveStoreFake ArchiveStore { get; }
 
@@ -101,14 +106,20 @@ internal sealed class ImportMusicBrainzDumpSociableTestEnvironment : IDisposable
     }
 
     public Task TriggerAsync(DateTimeOffset triggeredAt) =>
-        scheduledHandler.HandleAsync(new ImportMusicBrainzDumpCommand(triggeredAt));
+        scheduledHandler.HandleAsync(ImportMusicBrainzDumpCommand.ForScheduled(triggeredAt));
+
+    public Task TriggerManualAsync(DateTimeOffset triggeredAt, string snapshotId) =>
+        scheduledHandler.HandleAsync(
+            ImportMusicBrainzDumpCommand.ForManual(
+                triggeredAt,
+                MusicBrainzDumpSnapshotId.Parse(snapshotId)));
 
     public async Task TriggerStartOnlyAsync(DateTimeOffset triggeredAt)
     {
         await engine.MessagePump.ProjectOnChange(
             async handler =>
             {
-                await handler.HandleAsync(new ImportMusicBrainzDumpCommand(triggeredAt));
+                await handler.HandleAsync(ImportMusicBrainzDumpCommand.ForScheduled(triggeredAt));
                 return true;
             },
             scheduledHandler);
@@ -158,6 +169,9 @@ internal sealed class ImportMusicBrainzDumpSociableTestEnvironment : IDisposable
     public MusicBrainzDumpImportJob RequireJob(MusicBrainzDumpImportJobId jobId) =>
         JobStore.Jobs.Single(job => job.Id == jobId);
 
+    public IScheduledMessageHandler<ImportMusicBrainzDumpCommand> ResolveScheduledHandler() =>
+        scheduledHandler;
+
     public void Dispose() => engine.Dispose();
 
     private static ImportMusicBrainzDumpSociableTestEnvironment Compose(DateTimeOffset utcNow)
@@ -167,6 +181,7 @@ internal sealed class ImportMusicBrainzDumpSociableTestEnvironment : IDisposable
             engine,
             engine.Resolve<IScheduledMessageHandler<ImportMusicBrainzDumpCommand>>(),
             engine.RequireFake<IMusicBrainzDumpImportJobStore, MusicBrainzDumpImportJobStoreFake>(),
+            engine.RequireFake<IMusicBrainzDumpSnapshotCatalog, MusicBrainzDumpSnapshotCatalogFake>(),
             engine.RequireFake<IMusicBrainzDumpArchiveStore, MusicBrainzDumpArchiveStoreFake>(),
             engine.RequireFake<ICatalogArtistImportWriter, CatalogArtistImportWriterFake>(),
             engine.RequireFake<ICatalogAlbumImportWriter, CatalogAlbumImportWriterFake>(),

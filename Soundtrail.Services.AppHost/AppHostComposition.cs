@@ -129,7 +129,6 @@ public static class AppHostComposition
             projector = projector.WaitFor(serviceBus);
         }
 
-        var dumpVersion = MusicBrainzDumpDemo.DumpVersion;
         var musicBrainzDumpSourceDirectory = Path.Combine(
             resolvedContentRootPath,
             "testdata",
@@ -155,11 +154,12 @@ public static class AppHostComposition
             .WithHttpEndpoint(name: "http")
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
+            .WaitFor(musicBrainzDumpSource)
             .WithEnvironment("OTEL_SERVICE_VERSION", otelServiceVersion)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
             .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail")
-            .WithEnvironment("MusicBrainzDump__DumpVersion", dumpVersion);
+            .WithEnvironment("MusicBrainzDump__BaseUrl", musicBrainzDumpSource.GetEndpoint("http"));
 
         if (useServiceBusEmulator)
         {
@@ -176,7 +176,6 @@ public static class AppHostComposition
             .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail")
             .WithEnvironment("MusicBrainzDump__BaseUrl", musicBrainzDumpSource.GetEndpoint("http"))
-            .WithEnvironment("MusicBrainzDump__DumpVersion", dumpVersion)
             .WithEnvironment("MusicBrainzDump__ArchiveDirectory", musicBrainzDumpCacheDirectory);
 
         if (useBlobStorageEmulator && musicBrainzDumpBlobs is not null)

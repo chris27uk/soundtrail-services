@@ -209,7 +209,7 @@ Skip the row; record failed data for diagnosis; emit a metric. Do not fail the e
 
 - Dev: local disk and/or Azurite blob for **cache** (archives and shards) after HTTPS download.
 - Prod: blob storage for compressed archive and uncompressed shard JSONL.
-- Origin is always HTTPS (`MusicBrainzDump:BaseUrl`). Missing versioned archives are downloaded into the local/blob cache; there is no separate source-mode switch.
+- Origin is always HTTPS (`MusicBrainzDump:BaseUrl`). Scheduled runs resolve the latest concrete snapshot id at the origin; manual runs require an explicit snapshot id. Missing versioned archives are downloaded into the local/blob cache under that concrete id.
 
 ## Testing
 
@@ -226,9 +226,14 @@ Minimum sociable scenarios: happy path one phase; resume from shard checkpoint; 
 
 Prerequisites: run AppHost with RavenDB, the Service Bus emulator, and (optionally) Azurite for blob dump storage.
 
-AppHost starts a dedicated **HTTP dump-source** container (Caddy) that bind-mounts `Soundtrail.Services.AppHost/testdata/musicbrainz-dump-source/` and serves MetaBrainz-layout paths (`/{DumpVersion}/{entity}.tar.xz`). Smoke archives for `2026-08` are committed; replace or add multi-GB official dumps in that mount for a realistic E2E (do not commit multi-GB files). CatalogImport is wired with `BaseUrl` → dump-source, `DumpVersion=2026-08`, and `ArchiveDirectory` → a local cache under `testdata/musicbrainz-dump-cache/`. Downloads resume via HTTP Range when interrupted. Startup validation fails fast if required smoke archives are missing from the dump-source mount.
+AppHost starts a dedicated **HTTP dump-source** container (Caddy) that bind-mounts `Soundtrail.Services.AppHost/testdata/musicbrainz-dump-source/` and serves MetaBrainz-layout paths (`/{SnapshotId}/{entity}.tar.xz`) plus a `LATEST` pointer file whose body is the concrete smoke snapshot directory (e.g. `2026-08`). Scheduler and CatalogImport share `BaseUrl` → dump-source; CatalogImport caches under `testdata/musicbrainz-dump-cache/{SnapshotId}/`. Downloads resume via HTTP Range when interrupted.
 
-Trigger: open the Scheduler TickerQ dashboard and run function `ImportMusicBrainzDump` (manual). The monthly cron uses the same handler.
+- **Scheduled:** TickerQ function `ImportMusicBrainzDump` resolves latest → concrete snapshot id → ensure job → Start.
+- **Manual:** TickerQ function `ImportMusicBrainzDumpSnapshot` with request `{ "dumpVersion": "<SnapshotId>" }` (required; must exist at origin; never pass `LATEST` as the version).
+
+Startup validation fails fast if `LATEST`/snapshot dirs or required smoke archives are missing.
+
+Trigger scheduled: open the Scheduler TickerQ dashboard and run `ImportMusicBrainzDump`. Trigger a specific snapshot: run `ImportMusicBrainzDumpSnapshot` with `dumpVersion`.
 
 Observe: CatalogImport logs and OTel progress/status, Raven job document status/`ProgressPercent`, and catalog read models (artists / albums / tracks) written by the import.
 

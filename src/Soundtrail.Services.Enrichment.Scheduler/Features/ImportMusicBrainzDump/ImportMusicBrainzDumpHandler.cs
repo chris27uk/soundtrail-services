@@ -1,15 +1,15 @@
-using Microsoft.Extensions.Options;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog.MusicBrainzDumpImport;
 using Soundtrail.Domain.Catalog.MusicBrainzDumpImport.Messages;
 using Soundtrail.Domain.Operations;
+using Soundtrail.Services.Enrichment.Scheduler.Features.ImportMusicBrainzDump.Ports;
 
 namespace Soundtrail.Services.Enrichment.Scheduler.Features.ImportMusicBrainzDump;
 
 public sealed class ImportMusicBrainzDumpHandler(
     IMusicBrainzDumpImportJobStore jobStore,
     ICommandBus commandBus,
-    IOptions<MusicBrainzDumpOptions> options) : IScheduledMessageHandler<ImportMusicBrainzDumpCommand>
+    IMusicBrainzDumpSnapshotCatalog snapshotCatalog) : IScheduledMessageHandler<ImportMusicBrainzDumpCommand>
 {
     public async Task HandleAsync(
         ImportMusicBrainzDumpCommand request,
@@ -17,23 +17,32 @@ public sealed class ImportMusicBrainzDumpHandler(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var dumpVersion = ResolveDumpVersion(request.TriggeredAt, options.Value.DumpVersion);
-        var jobId = MusicBrainzDumpImportJobId.ForDumpVersion(dumpVersion);
-        var job = await jobStore.EnsureAsync(jobId, dumpVersion, request.TriggeredAt, cancellationToken);
+        MusicBrainzDumpSnapshotId snapshotId;
+        if (request.Manual)
+        {
+            if (request.SnapshotId is null)
+            {
+                throw new InvalidOperationException(
+                    "Manual MusicBrainz dump import requires a concrete DumpVersion snapshot id.");
+            }
+
+            snapshotId = request.SnapshotId.Value;
+            if (!await snapshotCatalog.SnapshotExistsAsync(snapshotId, cancellationToken))
+            {
+                throw new InvalidOperationException(
+                    $"MusicBrainz dump snapshot '{snapshotId.Value}' was not found at the configured BaseUrl.");
+            }
+        }
+        else
+        {
+            snapshotId = await snapshotCatalog.GetLatestSnapshotIdAsync(cancellationToken);
+        }
+
+        var jobId = MusicBrainzDumpImportJobId.ForSnapshot(snapshotId);
+        var job = await jobStore.EnsureAsync(jobId, snapshotId.Value, request.TriggeredAt, cancellationToken);
 
         await commandBus.SendAsync(
             StartMusicBrainzDumpImport.Create(job.Id, job.DumpVersion, request.TriggeredAt),
             cancellationToken);
-    }
-
-    public static string ResolveDumpVersion(DateTimeOffset triggeredAt, string? configuredDumpVersion)
-    {
-        if (!string.IsNullOrWhiteSpace(configuredDumpVersion))
-        {
-            return configuredDumpVersion.Trim();
-        }
-
-        var utc = triggeredAt.ToUniversalTime();
-        return $"{utc.Year:D4}-{utc.Month:D2}";
     }
 }

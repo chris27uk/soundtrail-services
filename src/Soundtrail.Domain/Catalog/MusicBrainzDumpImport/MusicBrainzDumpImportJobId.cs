@@ -6,20 +6,13 @@ public readonly record struct MusicBrainzDumpImportJobId(string Value) : IValueT
 {
     public string StableValue => Value;
 
+    public static MusicBrainzDumpImportJobId ForSnapshot(MusicBrainzDumpSnapshotId snapshotId) =>
+        new($"musicbrainz-dump:{snapshotId.Value}");
+
     public static MusicBrainzDumpImportJobId ForDumpVersion(string dumpVersion)
     {
-        if (string.IsNullOrWhiteSpace(dumpVersion))
-        {
-            throw new ArgumentException("Dump version is required.", nameof(dumpVersion));
-        }
-
-        return new($"musicbrainz-dump:{dumpVersion.Trim()}");
-    }
-
-    public static MusicBrainzDumpImportJobId ForMonth(DateTimeOffset triggeredAt)
-    {
-        var utc = triggeredAt.ToUniversalTime();
-        return ForDumpVersion($"{utc.Year:D4}-{utc.Month:D2}");
+        var snapshotId = MusicBrainzDumpSnapshotId.Parse(dumpVersion);
+        return ForSnapshot(snapshotId);
     }
 
     public static MusicBrainzDumpImportJobId From(string value)

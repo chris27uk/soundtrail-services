@@ -3,12 +3,14 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog.MusicBrainzDumpImport;
 using Soundtrail.Domain.Operations;
+using Soundtrail.Services.Enrichment.Scheduler.Features.ImportMusicBrainzDump.Ports;
 
 namespace Soundtrail.Services.Enrichment.Scheduler.Features.ImportMusicBrainzDump.CompositionRoot;
 
 public sealed record ImportMusicBrainzDumpPorts(
     Func<IServiceProvider, ICommandBus> CommandBus,
-    Func<IServiceProvider, IMusicBrainzDumpImportJobStore> JobStore);
+    Func<IServiceProvider, IMusicBrainzDumpImportJobStore> JobStore,
+    Func<IServiceProvider, IMusicBrainzDumpSnapshotCatalog> SnapshotCatalog);
 
 public static class ImportMusicBrainzDumpComposition
 {
@@ -16,6 +18,7 @@ public static class ImportMusicBrainzDumpComposition
     {
         services.TryAddScoped(ports.CommandBus);
         services.TryAddScoped(ports.JobStore);
+        services.TryAddScoped(ports.SnapshotCatalog);
         services.TryAddScoped<IScheduledMessageHandler<ImportMusicBrainzDumpCommand>, ImportMusicBrainzDumpHandler>();
     }
 }

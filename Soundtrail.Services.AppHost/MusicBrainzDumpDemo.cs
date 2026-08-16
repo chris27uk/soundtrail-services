@@ -3,7 +3,7 @@ namespace Soundtrail.Services.AppHost;
 internal static class MusicBrainzDumpDemo
 {
     /// <summary>
-    /// Pinned dump version served from testdata/musicbrainz-dump-source/{DumpVersion}/.
+    /// Smoke snapshot directory under testdata/musicbrainz-dump-source/. Referenced by the LATEST pointer file.
     /// </summary>
-    public const string DumpVersion = "2026-08";
+    public const string SmokeSnapshotId = "2026-08";
 }
