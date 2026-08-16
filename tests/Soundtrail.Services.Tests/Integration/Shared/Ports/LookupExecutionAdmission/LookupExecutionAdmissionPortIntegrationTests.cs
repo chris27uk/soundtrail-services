@@ -38,6 +38,51 @@ public sealed class LookupExecutionAdmissionPortIntegrationTests
     }
 
     [Fact]
+    public async Task Given_Concurrent_MusicBrainz_Attempts_When_Budget_Is_One_Then_Only_One_Attempt_Is_Admitted()
+    {
+        await using var environment = await LookupExecutionAdmissionPortIntegrationTestEnvironment
+            .CreateForMusicBrainzAsync(maxRequests: 1, minimumSpacingSeconds: 0);
+
+        var attempts = Enumerable.Range(0, 20)
+            .Select(index => environment.Subject.TryAcquireAsync(
+                environment.CreateMusicBrainzRequest($"msg-musicbrainz-budget-{index}"),
+                CancellationToken.None));
+
+        var results = await Task.WhenAll(attempts);
+
+        results.Count(x => x.Status == LookupExecutionAdmissionStatus.Acquired).Should().Be(1);
+        results.Count(x => x.Status == LookupExecutionAdmissionStatus.Deferred).Should().Be(19);
+        results.Should().NotContain(x => x.Status == LookupExecutionAdmissionStatus.Duplicate);
+    }
+
+    [Fact]
+    public async Task Given_Concurrent_MusicBrainz_Attempts_When_Production_Budget_Is_Exhausted_Then_Further_Attempts_Are_Deferred()
+    {
+        // Matches Worker SourceBudgets:MusicBrainz (MaxRequests 60, SafetyMarginPercent 10 → safe max 54).
+        const int maxRequests = 60;
+        const int safetyMarginPercent = 10;
+        var safeMax = Math.Max(1, maxRequests - (int)Math.Floor(maxRequests * (safetyMarginPercent / 100d)));
+        var attemptCount = safeMax + 20;
+
+        await using var environment = await LookupExecutionAdmissionPortIntegrationTestEnvironment
+            .CreateForMusicBrainzAsync(
+                maxRequests: maxRequests,
+                minimumSpacingSeconds: 0,
+                safetyMarginPercent: safetyMarginPercent);
+
+        var attempts = Enumerable.Range(0, attemptCount)
+            .Select(index => environment.Subject.TryAcquireAsync(
+                environment.CreateMusicBrainzRequest($"msg-musicbrainz-prod-budget-{index}"),
+                CancellationToken.None));
+
+        var results = await Task.WhenAll(attempts);
+
+        results.Count(x => x.Status == LookupExecutionAdmissionStatus.Acquired).Should().Be(safeMax);
+        results.Count(x => x.Status == LookupExecutionAdmissionStatus.Deferred).Should().Be(attemptCount - safeMax);
+        results.Should().NotContain(x => x.Status == LookupExecutionAdmissionStatus.Duplicate);
+    }
+
+    [Fact]
     public async Task Given_An_Acquired_Attempt_When_It_Is_Committed_Then_Redelivery_Is_Treated_As_A_Duplicate()
     {
         await using var environment = await LookupExecutionAdmissionPortIntegrationTestEnvironment.CreateAsync();
