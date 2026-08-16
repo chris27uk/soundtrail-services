@@ -473,20 +473,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      # Only dorny/test-reporter needs a working tree (it shells out to
-      # `git ls-files` to map failures to source); it only runs on PRs.
-      - name: Checkout
-        if: github.event_name == 'pull_request'
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 1
-
       - name: Download build package
         uses: actions/download-artifact@v8
         with:
           name: build
           path: package
 
+      # max-annotations: 0 skips dorny/test-reporter's internal `git
+      # ls-files` (used to map failures to tracked source for inline
+      # annotations) — no working tree needed, so no checkout in this job.
       - name: Publish test results
         if: github.event_name == 'pull_request'
         uses: dorny/test-reporter@v3
@@ -496,6 +491,7 @@ jobs:
           reporter: dotnet-trx
           fail-on-error: true
           fail-on-empty: false
+          max-annotations: 0
 
       - name: Require build success
         if: needs.ci.result != 'success'
