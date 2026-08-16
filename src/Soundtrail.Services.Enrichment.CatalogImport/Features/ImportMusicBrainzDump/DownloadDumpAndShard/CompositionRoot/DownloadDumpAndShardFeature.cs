@@ -41,13 +41,18 @@ public sealed class DownloadDumpAndShardFeature : IFeature
         services.AddHttpClient<IMusicBrainzDumpDownloader, HttpMusicBrainzDumpDownloader>();
         services.TryAddSingleton<IMusicBrainzDumpTarXzExtractor, MusicBrainzDumpTarXzExtractor>();
 
+        if (MusicBrainzDumpStorageRegistration.UsesBlobStorage(configuration))
+        {
+            MusicBrainzDumpStorageRegistration.AddMusicBrainzDumpBlobInfrastructure(services, configuration);
+        }
+
         DownloadDumpAndShardComposition.Configure(
             services,
             new(
                 sp => sp.GetRequiredService<IDownloadDumpAndShardWorkQueue>(),
                 sp => ActivatorUtilities.CreateInstance<DownloadDumpAndShardJob>(sp),
-                sp => ActivatorUtilities.CreateInstance<LocalMusicBrainzDumpArchiveStore>(sp),
-                sp => ActivatorUtilities.CreateInstance<LocalMusicBrainzDumpShardStore>(sp),
+                MusicBrainzDumpStorageRegistration.CreateArchiveStoreFactory(configuration),
+                MusicBrainzDumpStorageRegistration.CreateShardStoreFactory(configuration),
                 _ => new ArtistShardPartitioner()));
     }
 

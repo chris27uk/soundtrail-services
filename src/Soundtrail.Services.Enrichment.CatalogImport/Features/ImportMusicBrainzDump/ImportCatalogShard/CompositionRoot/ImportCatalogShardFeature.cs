@@ -14,6 +14,7 @@ using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Catalog.MusicBrainzDumpImport;
 using Soundtrail.Domain.Catalog.MusicBrainzDumpImport.Messages;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Adapters;
+using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.CompositionRoot;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Model;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Ports;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Work;
@@ -44,6 +45,11 @@ public sealed class ImportCatalogShardFeature : IFeature
         services.TryAddSingleton<IDownloadDumpAndShardWorkQueue, ChannelDownloadDumpAndShardWorkQueue>();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, ImportCatalogShardWorkPump>());
 
+        if (MusicBrainzDumpStorageRegistration.UsesBlobStorage(configuration))
+        {
+            MusicBrainzDumpStorageRegistration.AddMusicBrainzDumpBlobInfrastructure(services, configuration);
+        }
+
         ImportCatalogShardComposition.Configure(
             services,
             new(
@@ -55,7 +61,7 @@ public sealed class ImportCatalogShardFeature : IFeature
                 sp => ActivatorUtilities.CreateInstance<CatalogAlbumImportWriter>(sp),
                 _ => new MusicBrainzTrackDumpRowMapper(),
                 sp => ActivatorUtilities.CreateInstance<CatalogTrackImportWriter>(sp),
-                sp => ActivatorUtilities.CreateInstance<LocalMusicBrainzDumpShardStore>(sp),
+                MusicBrainzDumpStorageRegistration.CreateShardStoreFactory(configuration),
                 sp => sp.GetRequiredService<IDownloadDumpAndShardWorkQueue>()));
     }
 
