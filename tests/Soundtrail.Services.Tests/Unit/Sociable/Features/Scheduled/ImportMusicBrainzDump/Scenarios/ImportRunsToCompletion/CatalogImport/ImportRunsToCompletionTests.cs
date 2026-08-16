@@ -2,9 +2,9 @@ using Soundtrail.Domain.Catalog.MusicBrainzDumpImport;
 using Soundtrail.Services.Tests.Unit.Sociable.Features.ImportMusicBrainzDump;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
-namespace Soundtrail.Services.Tests.Unit.Sociable.Features.Scheduled.ImportMusicBrainzDump.Scenarios.CatalogImportPipeline;
+namespace Soundtrail.Services.Tests.Unit.Sociable.Features.Scheduled.ImportMusicBrainzDump.Scenarios.ImportRunsToCompletion.CatalogImport;
 
-public sealed class ImportMusicBrainzDumpCatalogImportPipelineTests
+public sealed class ImportRunsToCompletionTests
 {
     [Fact]
     public async Task Given_A_Trigger_When_Start_Is_Processed_Then_The_Job_Is_Downloading()
@@ -69,7 +69,6 @@ public sealed class ImportMusicBrainzDumpCatalogImportPipelineTests
 
         await environment.TriggerAndProcessAsync(DateTimeOffset.Parse("2026-08-01T00:00:00Z"));
 
-        environment.SentShards.Should().Contain(shard => shard.Phase == MusicBrainzDumpImportPhase.Artists);
         environment.SentShards.Count(shard => shard.Phase == MusicBrainzDumpImportPhase.Artists).Should().Be(2);
     }
 

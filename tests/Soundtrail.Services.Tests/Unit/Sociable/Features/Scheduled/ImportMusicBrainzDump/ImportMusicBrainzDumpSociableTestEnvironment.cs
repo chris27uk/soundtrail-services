@@ -72,7 +72,7 @@ internal sealed class ImportMusicBrainzDumpSociableTestEnvironment : IDisposable
     public static ImportMusicBrainzDumpSociableTestEnvironment Create(DateTimeOffset utcNow = default) =>
         Compose(utcNow);
 
-    public static ImportMusicBrainzDumpSociableTestEnvironment ForDumpContainingArtists(
+    public static ImportMusicBrainzDumpSociableTestEnvironment ForArtistsAvailableInDump(
         DateTimeOffset utcNow,
         params string[] artistsJsonlLines)
     {
@@ -81,7 +81,7 @@ internal sealed class ImportMusicBrainzDumpSociableTestEnvironment : IDisposable
         return environment;
     }
 
-    public static ImportMusicBrainzDumpSociableTestEnvironment ForDumpContainingArtistsAndAlbums(
+    public static ImportMusicBrainzDumpSociableTestEnvironment ForAlbumsAvailableInDump(
         DateTimeOffset utcNow,
         IReadOnlyList<string> artistsJsonlLines,
         IReadOnlyList<string> releaseGroupsJsonlLines)
@@ -92,7 +92,7 @@ internal sealed class ImportMusicBrainzDumpSociableTestEnvironment : IDisposable
         return environment;
     }
 
-    public static ImportMusicBrainzDumpSociableTestEnvironment ForDumpContainingArtistsAlbumsAndTracks(
+    public static ImportMusicBrainzDumpSociableTestEnvironment ForTracksAvailableInDump(
         DateTimeOffset utcNow,
         IReadOnlyList<string> artistsJsonlLines,
         IReadOnlyList<string> releaseGroupsJsonlLines,

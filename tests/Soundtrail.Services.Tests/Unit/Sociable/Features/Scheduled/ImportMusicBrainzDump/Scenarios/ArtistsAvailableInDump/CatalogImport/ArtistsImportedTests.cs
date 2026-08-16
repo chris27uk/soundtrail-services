@@ -1,22 +1,19 @@
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.MusicBrainzDumpImport;
 using Soundtrail.Services.Tests.Unit.Sociable.Features.ImportMusicBrainzDump;
+using Soundtrail.Services.Tests.Unit.Sociable.Features.ImportMusicBrainzDump.Support;
 
-namespace Soundtrail.Services.Tests.Unit.Sociable.Features.Scheduled.ImportMusicBrainzDump.Scenarios.ArtistsFixture;
+namespace Soundtrail.Services.Tests.Unit.Sociable.Features.Scheduled.ImportMusicBrainzDump.Scenarios.ArtistsAvailableInDump.CatalogImport;
 
-public sealed class ImportMusicBrainzDumpArtistsFixtureTests
+public sealed class ArtistsImportedTests
 {
-    private const string ArtistA = """{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","name":"Artist A"}""";
-    private const string ArtistB = """{"id":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb","name":"Artist B"}""";
-    private const string BadRow = """{"name":"Missing Id"}""";
-
     [Fact]
-    public async Task Given_Fixture_Artists_When_Processed_Then_Artists_Are_Imported()
+    public async Task When_Processed_Then_Artists_Are_Imported()
     {
-        using var environment = ImportMusicBrainzDumpSociableTestEnvironment.ForDumpContainingArtists(
+        using var environment = ImportMusicBrainzDumpSociableTestEnvironment.ForArtistsAvailableInDump(
             DateTimeOffset.Parse("2026-08-01T00:00:00Z"),
-            ArtistA,
-            ArtistB);
+            DumpCatalogRows.ArtistA,
+            DumpCatalogRows.ArtistB);
 
         await environment.TriggerAndProcessAsync(DateTimeOffset.Parse("2026-08-01T00:00:00Z"));
 
@@ -24,11 +21,11 @@ public sealed class ImportMusicBrainzDumpArtistsFixtureTests
     }
 
     [Fact]
-    public async Task Given_Fixture_Artists_When_Processed_Then_Imported_Artist_Has_MusicBrainz_Source_Id()
+    public async Task When_Processed_Then_Imported_Artist_Has_MusicBrainz_Source_Id()
     {
-        using var environment = ImportMusicBrainzDumpSociableTestEnvironment.ForDumpContainingArtists(
+        using var environment = ImportMusicBrainzDumpSociableTestEnvironment.ForArtistsAvailableInDump(
             DateTimeOffset.Parse("2026-08-01T00:00:00Z"),
-            ArtistA);
+            DumpCatalogRows.ArtistA);
 
         await environment.TriggerAndProcessAsync(DateTimeOffset.Parse("2026-08-01T00:00:00Z"));
 
@@ -37,11 +34,11 @@ public sealed class ImportMusicBrainzDumpArtistsFixtureTests
     }
 
     [Fact]
-    public async Task Given_Fixture_Artists_When_Processed_Then_Imported_Artist_Name_Comes_From_The_Dump()
+    public async Task When_Processed_Then_Imported_Artist_Name_Comes_From_The_Dump()
     {
-        using var environment = ImportMusicBrainzDumpSociableTestEnvironment.ForDumpContainingArtists(
+        using var environment = ImportMusicBrainzDumpSociableTestEnvironment.ForArtistsAvailableInDump(
             DateTimeOffset.Parse("2026-08-01T00:00:00Z"),
-            ArtistA);
+            DumpCatalogRows.ArtistA);
 
         await environment.TriggerAndProcessAsync(DateTimeOffset.Parse("2026-08-01T00:00:00Z"));
 
@@ -49,12 +46,12 @@ public sealed class ImportMusicBrainzDumpArtistsFixtureTests
     }
 
     [Fact]
-    public async Task Given_Fixture_Artists_When_Processed_Then_All_Artists_Shards_Are_Completed()
+    public async Task When_Processed_Then_All_Artists_Shards_Are_Completed()
     {
-        using var environment = ImportMusicBrainzDumpSociableTestEnvironment.ForDumpContainingArtists(
+        using var environment = ImportMusicBrainzDumpSociableTestEnvironment.ForArtistsAvailableInDump(
             DateTimeOffset.Parse("2026-08-01T00:00:00Z"),
-            ArtistA,
-            ArtistB);
+            DumpCatalogRows.ArtistA,
+            DumpCatalogRows.ArtistB);
 
         await environment.TriggerAndProcessAsync(DateTimeOffset.Parse("2026-08-01T00:00:00Z"));
 
@@ -65,10 +62,10 @@ public sealed class ImportMusicBrainzDumpArtistsFixtureTests
     [Fact]
     public async Task Given_A_Bad_Row_When_Processed_Then_The_Job_Still_Completes()
     {
-        using var environment = ImportMusicBrainzDumpSociableTestEnvironment.ForDumpContainingArtists(
+        using var environment = ImportMusicBrainzDumpSociableTestEnvironment.ForArtistsAvailableInDump(
             DateTimeOffset.Parse("2026-08-01T00:00:00Z"),
-            ArtistA,
-            BadRow);
+            DumpCatalogRows.ArtistA,
+            DumpCatalogRows.BadArtist);
 
         await environment.TriggerAndProcessAsync(DateTimeOffset.Parse("2026-08-01T00:00:00Z"));
 
@@ -79,10 +76,10 @@ public sealed class ImportMusicBrainzDumpArtistsFixtureTests
     [Fact]
     public async Task Given_A_Bad_Row_When_Processed_Then_Only_Valid_Artists_Are_Imported()
     {
-        using var environment = ImportMusicBrainzDumpSociableTestEnvironment.ForDumpContainingArtists(
+        using var environment = ImportMusicBrainzDumpSociableTestEnvironment.ForArtistsAvailableInDump(
             DateTimeOffset.Parse("2026-08-01T00:00:00Z"),
-            ArtistA,
-            BadRow);
+            DumpCatalogRows.ArtistA,
+            DumpCatalogRows.BadArtist);
 
         await environment.TriggerAndProcessAsync(DateTimeOffset.Parse("2026-08-01T00:00:00Z"));
 
