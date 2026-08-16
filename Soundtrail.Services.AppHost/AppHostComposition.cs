@@ -142,7 +142,10 @@ public static class AppHostComposition
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
             .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail")
-            .WithEnvironment("MusicBrainzDump__Source", "fixture");
+            .WithEnvironment("MusicBrainzDump__Source", "fixture")
+            .WithEnvironment(
+                "MusicBrainzDump__ArchiveDirectory",
+                Path.Combine(resolvedContentRootPath, "testdata", "musicbrainz-dump"));
 
         if (useServiceBusEmulator)
         {

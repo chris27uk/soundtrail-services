@@ -1271,6 +1271,11 @@
           "Microsoft.Extensions.DependencyModel": "10.0.0"
         }
       },
+      "SharpCompress": {
+        "type": "Transitive",
+        "resolved": "0.50.4",
+        "contentHash": "/hxjUR7DEX6mky8/LQXyrnrKioOL6D6veAID1EZpro+q4s02x5dHEYBV3qjEN6lDYYilDoQQ76BcmQj+lRx51w=="
+      },
       "SharpYaml": {
         "type": "Transitive",
         "resolved": "2.1.4",
@@ -1623,6 +1628,7 @@
         "type": "Project",
         "dependencies": {
           "RavenDB.Client": "[7.2.5, )",
+          "SharpCompress": "[0.50.4, )",
           "Soundtrail.Contracts": "[1.0.0, )",
           "Soundtrail.Domain": "[1.0.0, )",
           "Soundtrail.Infrastructure": "[1.0.0, )",
