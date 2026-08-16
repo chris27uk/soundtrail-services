@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Soundtrail.Adapters.MusicBrainzDumpFreshness;
 using Soundtrail.Adapters.Timing;
 using Soundtrail.Domain.Abstractions;
+using Soundtrail.Domain.Catalog.MusicBrainzDumpFreshness;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Aggregates;

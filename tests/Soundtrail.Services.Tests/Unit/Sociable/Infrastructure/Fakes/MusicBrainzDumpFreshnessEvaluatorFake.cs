@@ -1,7 +1,8 @@
+using Soundtrail.Adapters.MusicBrainzDumpFreshness;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
+using Soundtrail.Domain.Catalog.MusicBrainzDumpFreshness;
 using Soundtrail.Domain.Discovery;
-using Soundtrail.Adapters.MusicBrainzDumpFreshness;
 
 namespace Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 

@@ -1,5 +1,6 @@
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
+using Soundtrail.Domain.Catalog.MusicBrainzDumpFreshness;
 
 namespace Soundtrail.Adapters.MusicBrainzDumpFreshness;
 
