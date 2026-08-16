@@ -5,4 +5,10 @@ set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 bash "$root/ci-wait-sidecars.sh"
 bash "$root/ci-wait-runtime.sh"
-docker compose -f docker-compose.ci.yml run --rm --no-deps testhost
+docker compose -f docker-compose.ci.yml run --rm --no-deps testhost \
+  --progress off \
+  --show-stderr Failed \
+  --show-stdout Failed \
+  --report-xunit-trx \
+  --report-xunit-trx-filename tests.trx \
+  --results-directory /reports

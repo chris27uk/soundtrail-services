@@ -6,6 +6,7 @@ using Soundtrail.Adapters.Messaging;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.ExecutionAdmission;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Startup;
 using Soundtrail.Services.ServiceDefaults;
+using Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
 
 namespace Soundtrail.Services.Tests.Unit.Solitary.Infrastructure;
 
@@ -90,7 +91,7 @@ public class StartupValidationTests
             new HostApplicationBuilderSettings
             {
                 EnvironmentName = Environments.Development
-            });
+            }).Quiet();
 
         // Avoid AddServiceDefaults: OTEL + StandardResilienceHandler (10s/attempt, 30s total) on every HttpClient.
         builder.Services.AddStartupValidationInfrastructure();
