@@ -5,7 +5,7 @@ using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Ports;
 
-namespace Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard;
+namespace Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Mapping;
 
 public sealed class MusicBrainzTrackDumpRowMapper : IMusicBrainzTrackDumpRowMapper
 {

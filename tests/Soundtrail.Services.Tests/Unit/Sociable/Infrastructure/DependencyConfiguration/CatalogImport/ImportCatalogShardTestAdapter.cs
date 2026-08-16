@@ -11,6 +11,7 @@ using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDum
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Work;
 using Soundtrail.Services.Enrichment.CatalogImport.Infrastructure.Lease;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
+using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Mapping;
 
 namespace Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.DependencyConfiguration.CatalogImport;
 

@@ -23,6 +23,7 @@ using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDum
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Work;
 using Soundtrail.Services.Enrichment.CatalogImport.Infrastructure.Lease;
 using Soundtrail.Services.Enrichment.CatalogImport.Infrastructure.Messaging;
+using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Mapping;
 
 namespace Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.CompositionRoot;
 

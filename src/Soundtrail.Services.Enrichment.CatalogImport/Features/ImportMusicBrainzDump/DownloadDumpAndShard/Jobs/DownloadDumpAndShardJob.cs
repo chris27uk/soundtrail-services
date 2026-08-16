@@ -7,6 +7,7 @@ using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDum
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Ports;
 using Soundtrail.Services.Enrichment.CatalogImport.Infrastructure.Lease;
 using Soundtrail.Services.Enrichment.CatalogImport.Infrastructure.Telemetry;
+using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Mapping;
 
 namespace Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard;
 
