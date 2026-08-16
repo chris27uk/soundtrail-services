@@ -191,6 +191,9 @@ Invoke-Stage "Run Tests" {
         "--no-restore"
     ) + @(
         "--",
+        "--progress", "off",
+        "--show-stderr", "Failed",
+        "--show-stdout", "Failed",
         "--report-xunit-trx",
         "--report-xunit-trx-filename", "tests.trx",
         "--results-directory", $OutReporting
