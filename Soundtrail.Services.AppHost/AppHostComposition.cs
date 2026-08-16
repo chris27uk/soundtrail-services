@@ -129,11 +129,27 @@ public static class AppHostComposition
             projector = projector.WaitFor(serviceBus);
         }
 
-        var fixtureDumpVersion = MusicBrainzDumpFixture.DumpVersion;
-        var musicBrainzDumpArchiveDirectory = Path.Combine(
+        var dumpVersion = MusicBrainzDumpDemo.DumpVersion;
+        var musicBrainzDumpSourceDirectory = Path.Combine(
             resolvedContentRootPath,
             "testdata",
-            "musicbrainz-dump");
+            "musicbrainz-dump-source");
+        var musicBrainzDumpCacheDirectory = Path.Combine(
+            resolvedContentRootPath,
+            "testdata",
+            "musicbrainz-dump-cache");
+        Directory.CreateDirectory(musicBrainzDumpCacheDirectory);
+
+        var musicBrainzDumpSource = builder.AddContainer("musicbrainz-dump-source", "caddy", "2.9-alpine")
+            .WithHttpEndpoint(targetPort: 80, name: "http")
+            .WithBindMount(
+                musicBrainzDumpSourceDirectory,
+                "/srv",
+                isReadOnly: true)
+            .WithBindMount(
+                Path.Combine(resolvedContentRootPath, "caddy", "MusicBrainzDumpSource.Caddyfile"),
+                "/etc/caddy/Caddyfile",
+                isReadOnly: true);
 
         var scheduler = builder.AddProject<Soundtrail_Services_Enrichment_Scheduler>("soundtrail-scheduler")
             .WithHttpEndpoint(name: "http")
@@ -143,7 +159,7 @@ public static class AppHostComposition
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
             .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail")
-            .WithEnvironment("MusicBrainzDump__DumpVersion", fixtureDumpVersion);
+            .WithEnvironment("MusicBrainzDump__DumpVersion", dumpVersion);
 
         if (useServiceBusEmulator)
         {
@@ -154,13 +170,15 @@ public static class AppHostComposition
             .WithHttpEndpoint(name: "http")
             .WithReference(serviceBus)
             .WaitFor(ravenDb)
+            .WaitFor(musicBrainzDumpSource)
             .WithEnvironment("OTEL_SERVICE_VERSION", otelServiceVersion)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
             .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail")
-            .WithEnvironment("MusicBrainzDump__Source", "fixture")
-            .WithEnvironment("MusicBrainzDump__DumpVersion", fixtureDumpVersion)
-            .WithEnvironment("MusicBrainzDump__ArchiveDirectory", musicBrainzDumpArchiveDirectory);
+            .WithEnvironment("MusicBrainzDump__Source", "http")
+            .WithEnvironment("MusicBrainzDump__BaseUrl", musicBrainzDumpSource.GetEndpoint("http"))
+            .WithEnvironment("MusicBrainzDump__DumpVersion", dumpVersion)
+            .WithEnvironment("MusicBrainzDump__ArchiveDirectory", musicBrainzDumpCacheDirectory);
 
         if (useBlobStorageEmulator && musicBrainzDumpBlobs is not null)
         {

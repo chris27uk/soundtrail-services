@@ -60,7 +60,7 @@ public sealed class BlobMusicBrainzDumpArchiveStoreTests
 
         var blobs = new InMemoryMusicBrainzDumpBlobContainer();
         var downloader = new RecordingDownloader([]);
-        var store = CreateStore(directory.Path, blobs, downloader, source: "fixture");
+        var store = CreateStore(directory.Path, blobs, downloader, source: "local");
 
         var path = await store.EnsureArtistsJsonlAsync(
             MusicBrainzDumpImportJobId.ForDumpVersion(dumpVersion),

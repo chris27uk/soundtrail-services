@@ -10,7 +10,7 @@ public static class AppHostStartupValidator
         ValidateRavenDbLicense(configuration);
         ValidateServiceBusEmulator(configuration, contentRootPath);
         ValidateBlobStorage(configuration);
-        ValidateMusicBrainzDumpFixture(configuration, contentRootPath);
+        ValidateMusicBrainzDumpSource(configuration, contentRootPath);
         ValidateWireMockMappings(configuration, contentRootPath);
     }
 
@@ -102,14 +102,14 @@ public static class AppHostStartupValidator
         }
     }
 
-    private static void ValidateMusicBrainzDumpFixture(IConfiguration configuration, string contentRootPath)
+    private static void ValidateMusicBrainzDumpSource(IConfiguration configuration, string contentRootPath)
     {
-        var archiveDirectory = configuration["MusicBrainzDump:ArchiveDirectory"]
-            ?? Path.Combine(contentRootPath, "testdata", "musicbrainz-dump");
+        var sourceDirectory = configuration["MusicBrainzDump:DumpSourceDirectory"]
+            ?? Path.Combine(contentRootPath, "testdata", "musicbrainz-dump-source");
         var dumpVersion = configuration["MusicBrainzDump:DumpVersion"]
-            ?? MusicBrainzDumpFixture.DumpVersion;
+            ?? MusicBrainzDumpDemo.DumpVersion;
 
-        var versionRoot = Path.Combine(Path.GetFullPath(archiveDirectory), dumpVersion.Trim());
+        var versionRoot = Path.Combine(Path.GetFullPath(sourceDirectory), dumpVersion.Trim());
         RequireArchive(versionRoot, "artist.tar.xz");
         RequireArchive(versionRoot, "release-group.tar.xz");
 
@@ -118,7 +118,7 @@ public static class AppHostStartupValidator
         if (!File.Exists(releaseArchive) && !File.Exists(trackArchive))
         {
             throw new InvalidOperationException(
-                $"MusicBrainz dump fixture requires '{releaseArchive}' or '{trackArchive}'.");
+                $"MusicBrainz dump source requires '{releaseArchive}' or '{trackArchive}'. Place MetaBrainz-layout archives under the dump-source mount (smoke files are committed; multi-GB dumps are operator-supplied).");
         }
     }
 
@@ -128,7 +128,7 @@ public static class AppHostStartupValidator
         if (!File.Exists(path))
         {
             throw new InvalidOperationException(
-                $"MusicBrainz dump fixture archive was not found at '{path}'.");
+                $"MusicBrainz dump source archive was not found at '{path}'.");
         }
     }
 

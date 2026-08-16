@@ -4,7 +4,7 @@ public interface IMusicBrainzDumpDownloader
 {
     /// <summary>
     /// Downloads <paramref name="url"/> to <paramref name="destinationPath"/>.
-    /// Skips the download when the destination file already exists.
+    /// Skips when the destination already exists. Resumes from a sibling <c>.partial</c> file via HTTP Range when present.
     /// </summary>
     Task DownloadAsync(
         string url,

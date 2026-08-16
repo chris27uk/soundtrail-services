@@ -111,7 +111,7 @@ public sealed class LocalMusicBrainzDumpArchiveStore(
             }
         }
 
-        // Prebuilt denormalized track archive/fixture (Soundtrail-specific; never HTTP-download "track").
+        // Prebuilt denormalized track archive (Soundtrail-specific; never HTTP-download "track").
         if (TryGetArchiveExtractedPath(TrackEntity, dumpVersion, out var trackExtractedPath) &&
             File.Exists(trackExtractedPath))
         {
@@ -245,7 +245,7 @@ public sealed class LocalMusicBrainzDumpArchiveStore(
         if (!File.Exists(fullPath))
         {
             throw new FileNotFoundException(
-                $"MusicBrainz {label} JSONL fixture was not found at '{fullPath}'.",
+                $"MusicBrainz {label} JSONL was not found at '{fullPath}'.",
                 fullPath);
         }
 

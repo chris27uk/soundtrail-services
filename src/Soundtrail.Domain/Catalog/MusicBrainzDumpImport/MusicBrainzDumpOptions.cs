@@ -69,7 +69,7 @@ public sealed class MusicBrainzDumpOptions
 
     /// <summary>
     /// When set, Scheduler uses this dump version for job identity instead of <c>YYYY-MM</c> from trigger time.
-    /// AppHost fixture demos pin this to the committed testdata folder (e.g. <c>2026-08</c>).
+    /// Local demos may pin this to a known dump folder version (e.g. <c>2026-08</c>).
     /// </summary>
     public string? DumpVersion { get; set; }
 }

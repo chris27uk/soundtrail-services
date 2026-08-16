@@ -5,7 +5,7 @@ namespace Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrain
 public interface IMusicBrainzDumpArchiveStore
 {
     /// <summary>
-    /// Ensures the artists JSONL source for the dump exists (local fixture or previously downloaded).
+    /// Ensures the artists JSONL source for the dump exists (configured path, cache, or HTTP download).
     /// Returns the path/key to the artists JSONL file.
     /// </summary>
     Task<string> EnsureArtistsJsonlAsync(
@@ -30,7 +30,7 @@ public interface IMusicBrainzDumpArchiveStore
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Ensures the denormalized track-graph JSONL source exists (prebuilt track archive/fixture,
+    /// Ensures the denormalized track-graph JSONL source exists (prebuilt track archive,
     /// or materialized from the release graph). Returns the path/key to the file.
     /// </summary>
     Task<string> EnsureTracksJsonlAsync(

@@ -231,7 +231,7 @@ public sealed class BlobMusicBrainzDumpArchiveStore(
         if (!File.Exists(fullPath))
         {
             throw new FileNotFoundException(
-                $"MusicBrainz {label} JSONL fixture was not found at '{fullPath}'.",
+                $"MusicBrainz {label} JSONL was not found at '{fullPath}'.",
                 fullPath);
         }
 
