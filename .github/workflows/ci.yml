@@ -172,12 +172,6 @@ jobs:
         with:
           fetch-depth: 2
 
-      # Start before caches/build so Version (≈8s) finishes during Build setup.
-      - name: Await version metadata (background)
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: bash scripts/ci-await-version-meta-bg.sh
-
       # Sidecars first so Raven/OSB/Redis come up while testhost cache restores.
       - name: Restore sidecar image cache
         id: sidecar-cache
@@ -191,11 +185,13 @@ jobs:
             docker-sidecars-v10-
             docker-sidecars-v9-
 
-      - name: Start sidecars (background)
-        run: bash scripts/ci-start-sidecars-bg.sh
-
-      - name: Load runtime image (background)
-        run: bash scripts/ci-load-runtime-bg.sh
+      # Version poll, sidecar load+up, and runtime image load are independent
+      # background jobs; kick all three from one step so they run concurrently
+      # while the foreground steps below (testhost decide/publish) proceed.
+      - name: Start background jobs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ci-start-background-jobs.sh
 
       # Published testhost bits for this exact source tree (skips Buildx on PR warms).
       # GHA cache is branch-scoped: PRs can read main, main cannot read PR caches.
