@@ -245,7 +245,7 @@ jobs:
       - name: Publish testhost
         id: publish-testhost
         if: steps.testhost.outputs.hit != 'true'
-        run: bash scripts/ci-publish-testhost.sh
+        run: pwsh -File ./build.ps1 -Restore -CiTesthost -OutputDir .
 
       - name: Stamp testhost source hash
         if: steps.testhost.outputs.hit == 'true' || steps.publish-testhost.outcome == 'success'

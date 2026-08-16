@@ -147,7 +147,7 @@ Point a host-run testhost at the same sidecars with `SOUNDTRAIL_TEST_NO_TESTCONT
 
 ### CI
 
-GitHub Actions restores a default-branch NuGet cache and publishes changed testhost bits directly with the SDK pinned by [`global.json`](global.json). Buildx + `type=gha` remains for application packages on `main`; it exports cache only when Docker/dependency inputs change. Sidecars come from [`docker-compose.ci.yml`](docker-compose.ci.yml). See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+GitHub Actions restores a default-branch NuGet cache and runs `./build.ps1 -Restore -CiTesthost` to publish changed testhost bits with the SDK selected by [`global.json`](global.json). Buildx + `type=gha` remains for application packages on `main`; it exports cache only when Docker/dependency inputs change. Sidecars come from [`docker-compose.ci.yml`](docker-compose.ci.yml). See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 The PR check is the workflow job **Build \<SemVer\>** (plus a **Test Results** annotation on pull requests). To block merges until it passes, in GitHub go to **Settings → Rules → Rulesets** (or **Branches → Branch protection**) for `main` and require that Build status check.
 

@@ -7,6 +7,7 @@ param(
     [switch]$Restore,
     [switch]$Clean,
     [switch]$Publish,
+    [switch]$CiTesthost,
     [int]$MaxCpuCount = 0,  # 0 = use all available cores
     [string]$TestFilter = ""
 )
@@ -31,8 +32,8 @@ Write-Host "NuGet packages path: $nugetPath"
 # Project paths
 $SolutionPath = Join-Path $PSScriptRoot "Soundtrail.Services.slnx"
 $TestsPath = Join-Path $PSScriptRoot "tests/Soundtrail.Services.Tests/Soundtrail.Services.Tests.csproj"
-# CI never runs AppHost; build the test project graph only (services + tests).
-$BuildPath = if ($env:GITHUB_ACTIONS) { $TestsPath } else { $SolutionPath }
+# CI testhost mode never builds AppHost; it builds services + tests for Docker execution.
+$BuildPath = if ($CiTesthost -or $env:GITHUB_ACTIONS) { $TestsPath } else { $SolutionPath }
 
 # Shippable apps (exclude AppHost / libraries / tests). Assembly versions stay pinned;
 # deploy sets OTEL_SERVICE_VERSION from GitVersion / package manifest.
@@ -49,9 +50,10 @@ $PublishProjects = @(
 $OutReporting = Join-Path $OutputDir "reports"
 $OutPublish = Join-Path $OutputDir "artifacts/publish"
 $OutPackage = Join-Path $OutputDir "package"
+$OutTesthost = Join-Path $OutputDir "testhost"
 
 function Get-CiFastBuildProperties {
-    if (-not $env:GITHUB_ACTIONS) {
+    if (-not $env:GITHUB_ACTIONS -and -not $CiTesthost) {
         return @()
     }
 
@@ -64,6 +66,14 @@ function Get-CiFastBuildProperties {
         "/p:IsTransformWebConfigInHostBuild=false",
         "/p:UseSharedCompilation=true"
     )
+}
+
+function Get-CiTesthostProperties {
+    if (-not $CiTesthost) {
+        return @()
+    }
+
+    return @("/p:UseEmbeddedRaven=false")
 }
 
 # === Ensure output directories exist ===
@@ -117,12 +127,12 @@ if ($Restore) {
             $BuildPath,
             "/p:Configuration=$Configuration",
             "--verbosity", "minimal"
-        ) + (Get-CiFastBuildProperties)
+        ) + (Get-CiFastBuildProperties) + (Get-CiTesthostProperties)
 
         # CI must use committed lock files; local restore may update locks when packages change.
         # Do not pass /p:RestorePackagesWithLockFile=true here — Directory.Build.props enables it,
         # and AppHost opts out (Aspire injects host-RID packages that break cross-OS locked restore).
-        if ($env:GITHUB_ACTIONS) {
+        if ($env:GITHUB_ACTIONS -or $CiTesthost) {
             $restoreArgs += "--locked-mode"
         }
 
@@ -134,7 +144,7 @@ function Get-CompileBuildProperties {
     # Version metadata is pinned in Directory.Build.props. Runtime SemVer is OTEL_SERVICE_VERSION.
     return @(
         "/p:RestoreDuringBuild=false"
-    ) + (Get-CiFastBuildProperties)
+    ) + (Get-CiFastBuildProperties) + (Get-CiTesthostProperties)
 }
 
 # === Build ===
@@ -182,43 +192,72 @@ function ConvertTo-MtpTestFilterArgs {
     throw "Unsupported -TestFilter '$Filter'. Use FullyQualifiedName~EndToEnd|Integration|Unit or a class/method fragment."
 }
 
-# One test run via Microsoft Testing Platform (xUnit v3 executable).
-Invoke-Stage "Run Tests" {
-    $testArgs = @(
-        "run", "--project", $TestsPath,
-        "/p:Configuration=$Configuration",
-        "--no-build",
-        "--no-restore"
-    ) + @(
-        "--",
-        "--progress", "off",
-        "--show-stderr", "Failed",
-        "--show-stdout", "Failed",
-        "--report-xunit-trx",
-        "--report-xunit-trx-filename", "tests.trx",
-        "--results-directory", $OutReporting
-    )
+# Publish the exact bits CI bind-mounts into the ASP.NET runtime container.
+if ($CiTesthost) {
+    Invoke-Stage "Publish CI Testhost" {
+        Remove-Item $OutTesthost -Force -Recurse -ErrorAction SilentlyContinue
+        New-Item -ItemType Directory -Force -Path $OutTesthost | Out-Null
 
-    if (-not [string]::IsNullOrWhiteSpace($TestFilter)) {
-        $testArgs += ConvertTo-MtpTestFilterArgs -Filter $TestFilter
+        Exec "dotnet" (@(
+            "publish",
+            $TestsPath,
+            "/p:Configuration=$Configuration",
+            "--output", $OutTesthost,
+            "/p:ErrorOnDuplicatePublishOutputFiles=false",
+            "/p:BuildProjectReferences=false"
+        ) + (Get-CompileBuildProperties) + @(
+            "--verbosity", "q",
+            "--no-build",
+            "--no-restore"
+        ))
+
+        $testhostDll = Join-Path $OutTesthost "Soundtrail.Services.Tests.dll"
+        if (-not (Test-Path -LiteralPath $testhostDll)) {
+            throw "Expected testhost assembly not found at $testhostDll"
+        }
+        Write-Host "Published CI testhost: $OutTesthost"
     }
+}
 
-    $env:TESTINGPLATFORM_TELEMETRY_OPTOUT = "1"
-    # Keep host/framework chatter out of CI so the MTP summary stays visible.
-    # Dotted category names must use SetEnvironmentVariable (PowerShell $env: breaks on '.').
-    $env:Logging__LogLevel__Default = "Warning"
-    $env:Logging__LogLevel__Microsoft = "Warning"
-    $env:Logging__LogLevel__System = "Warning"
-    [Environment]::SetEnvironmentVariable("Logging__LogLevel__Microsoft.AspNetCore", "Warning", "Process")
-    [Environment]::SetEnvironmentVariable("Logging__LogLevel__Microsoft.Hosting.Lifetime", "Warning", "Process")
+# One local test run via Microsoft Testing Platform (xUnit v3 executable).
+if (-not $CiTesthost) {
+    Invoke-Stage "Run Tests" {
+        $testArgs = @(
+            "run", "--project", $TestsPath,
+            "/p:Configuration=$Configuration",
+            "--no-build",
+            "--no-restore"
+        ) + @(
+            "--",
+            "--progress", "off",
+            "--show-stderr", "Failed",
+            "--show-stdout", "Failed",
+            "--report-xunit-trx",
+            "--report-xunit-trx-filename", "tests.trx",
+            "--results-directory", $OutReporting
+        )
 
-    # Stream live (Exec buffers until exit and buries the summary under megabytes of host logs).
-    Write-Host "> dotnet $($testArgs -join ' ')" -ForegroundColor Cyan
-    & dotnet @testArgs
-    $testExitCode = $LASTEXITCODE
-    Write-TestRunSummary -TrxPath (Join-Path $OutReporting "tests.trx")
-    if ($testExitCode -ne 0) {
-        throw "Command failed with exit code ${testExitCode}: dotnet $($testArgs -join ' ')"
+        if (-not [string]::IsNullOrWhiteSpace($TestFilter)) {
+            $testArgs += ConvertTo-MtpTestFilterArgs -Filter $TestFilter
+        }
+
+        $env:TESTINGPLATFORM_TELEMETRY_OPTOUT = "1"
+        # Keep host/framework chatter out of CI so the MTP summary stays visible.
+        # Dotted category names must use SetEnvironmentVariable (PowerShell $env: breaks on '.').
+        $env:Logging__LogLevel__Default = "Warning"
+        $env:Logging__LogLevel__Microsoft = "Warning"
+        $env:Logging__LogLevel__System = "Warning"
+        [Environment]::SetEnvironmentVariable("Logging__LogLevel__Microsoft.AspNetCore", "Warning", "Process")
+        [Environment]::SetEnvironmentVariable("Logging__LogLevel__Microsoft.Hosting.Lifetime", "Warning", "Process")
+
+        # Stream live (Exec buffers until exit and buries the summary under megabytes of host logs).
+        Write-Host "> dotnet $($testArgs -join ' ')" -ForegroundColor Cyan
+        & dotnet @testArgs
+        $testExitCode = $LASTEXITCODE
+        Write-TestRunSummary -TrxPath (Join-Path $OutReporting "tests.trx")
+        if ($testExitCode -ne 0) {
+            throw "Command failed with exit code ${testExitCode}: dotnet $($testArgs -join ' ')"
+        }
     }
 }
 
@@ -295,5 +334,10 @@ Invoke-Stage "Build Complete" {
     if ($Publish) {
         Write-Host "Published Apps: $OutPublish"
     }
-    Write-TestRunSummary -TrxPath (Join-Path $OutReporting "tests.trx")
+    if ($CiTesthost) {
+        Write-Host "Published Testhost: $OutTesthost"
+    }
+    else {
+        Write-TestRunSummary -TrxPath (Join-Path $OutReporting "tests.trx")
+    }
 }
