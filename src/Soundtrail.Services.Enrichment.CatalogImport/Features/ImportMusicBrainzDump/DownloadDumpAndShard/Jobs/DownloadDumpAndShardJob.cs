@@ -3,11 +3,12 @@ using Microsoft.Extensions.Options;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog.MusicBrainzDumpImport;
 using Soundtrail.Domain.Catalog.MusicBrainzDumpImport.Messages;
+using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Adapters;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Ports;
+using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Mapping;
 using Soundtrail.Services.Enrichment.CatalogImport.Infrastructure.Lease;
 using Soundtrail.Services.Enrichment.CatalogImport.Infrastructure.Telemetry;
-using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Mapping;
 
 namespace Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard;
 
@@ -23,19 +24,13 @@ public sealed class DownloadDumpAndShardJob(
 {
     public async Task RunAsync(MusicBrainzDumpImportJobId jobId, CancellationToken cancellationToken = default)
     {
-        var job = await jobStore.GetAsync(jobId, cancellationToken);
+        var job = await TryClaimProducerAsync(jobId, cancellationToken);
         if (job is null)
         {
             return;
         }
 
         var leaseDuration = options.Value.LeaseDuration;
-        if (!job.TryClaimProducer(leaseOwner.Value, DateTimeOffset.UtcNow, leaseDuration))
-        {
-            return;
-        }
-
-        await jobStore.SaveAsync(job, cancellationToken);
 
         if (job.CurrentPhase == MusicBrainzDumpImportPhase.Artists &&
             !job.HasRegisteredShards(MusicBrainzDumpImportPhase.Artists))
@@ -58,6 +53,39 @@ public sealed class DownloadDumpAndShardJob(
         }
     }
 
+    private async Task<MusicBrainzDumpImportJob?> TryClaimProducerAsync(
+        MusicBrainzDumpImportJobId jobId,
+        CancellationToken cancellationToken)
+    {
+        var leaseDuration = options.Value.LeaseDuration;
+        for (var attempt = 0; attempt < MusicBrainzDumpImportJobConcurrency.SaveAttempts; attempt++)
+        {
+            var job = await jobStore.GetAsync(jobId, cancellationToken);
+            if (job is null)
+            {
+                return null;
+            }
+
+            if (!job.TryClaimProducer(leaseOwner.Value, DateTimeOffset.UtcNow, leaseDuration))
+            {
+                return null;
+            }
+
+            try
+            {
+                await jobStore.SaveAsync(job, cancellationToken);
+                return job;
+            }
+            catch (InvalidOperationException exception) when (
+                attempt < MusicBrainzDumpImportJobConcurrency.SaveAttempts - 1 &&
+                MusicBrainzDumpImportJobConcurrency.IsConflict(exception))
+            {
+            }
+        }
+
+        return null;
+    }
+
     private async Task RunArtistsPhaseAsync(
         MusicBrainzDumpImportJob job,
         TimeSpan leaseDuration,
@@ -67,15 +95,26 @@ public sealed class DownloadDumpAndShardJob(
             job,
             MusicBrainzDumpImportPhase.Artists);
 
-        Heartbeat(job, leaseDuration);
+        job = await HeartbeatAndSaveAsync(job, leaseDuration, cancellationToken);
 
         var artistsPath = await archiveStore.EnsureArtistsJsonlAsync(job.Id, job.DumpVersion, cancellationToken);
-        Heartbeat(job, leaseDuration);
+        job = await HeartbeatAndSaveAsync(job, leaseDuration, cancellationToken);
 
         if (job.Status == MusicBrainzDumpImportJobStatus.Downloading)
         {
-            job.SetStatus(MusicBrainzDumpImportJobStatus.Extracting);
-            await jobStore.SaveAsync(job, cancellationToken);
+            job = await PersistProducerAsync(
+                job,
+                leaseDuration,
+                static candidate =>
+                {
+                    if (candidate.Status == MusicBrainzDumpImportJobStatus.Downloading)
+                    {
+                        candidate.SetStatus(MusicBrainzDumpImportJobStatus.Extracting);
+                    }
+
+                    return true;
+                },
+                cancellationToken);
         }
 
         var shardCount = Math.Max(1, options.Value.ShardCount);
@@ -95,8 +134,7 @@ public sealed class DownloadDumpAndShardJob(
 
             if (lineCount % 10_000 == 0)
             {
-                Heartbeat(job, leaseDuration);
-                await jobStore.SaveAsync(job, cancellationToken);
+                job = await HeartbeatAndSaveAsync(job, leaseDuration, cancellationToken);
             }
         }
 
@@ -123,13 +161,13 @@ public sealed class DownloadDumpAndShardJob(
             job,
             MusicBrainzDumpImportPhase.ReleaseGroups);
 
-        Heartbeat(job, leaseDuration);
+        job = await HeartbeatAndSaveAsync(job, leaseDuration, cancellationToken);
 
         var releaseGroupsPath = await archiveStore.EnsureReleaseGroupsJsonlAsync(
             job.Id,
             job.DumpVersion,
             cancellationToken);
-        Heartbeat(job, leaseDuration);
+        job = await HeartbeatAndSaveAsync(job, leaseDuration, cancellationToken);
 
         var shardCount = Math.Max(1, options.Value.ShardCount);
         var buckets = Enumerable.Range(0, shardCount).Select(_ => new List<string>()).ToArray();
@@ -153,8 +191,7 @@ public sealed class DownloadDumpAndShardJob(
 
             if (lineCount % 10_000 == 0)
             {
-                Heartbeat(job, leaseDuration);
-                await jobStore.SaveAsync(job, cancellationToken);
+                job = await HeartbeatAndSaveAsync(job, leaseDuration, cancellationToken);
             }
         }
 
@@ -182,13 +219,13 @@ public sealed class DownloadDumpAndShardJob(
             job,
             MusicBrainzDumpImportPhase.Recordings);
 
-        Heartbeat(job, leaseDuration);
+        job = await HeartbeatAndSaveAsync(job, leaseDuration, cancellationToken);
 
         var tracksPath = await archiveStore.EnsureTracksJsonlAsync(
             job.Id,
             job.DumpVersion,
             cancellationToken);
-        Heartbeat(job, leaseDuration);
+        job = await HeartbeatAndSaveAsync(job, leaseDuration, cancellationToken);
 
         var shardCount = Math.Max(1, options.Value.ShardCount);
         var buckets = Enumerable.Range(0, shardCount).Select(_ => new List<string>()).ToArray();
@@ -212,8 +249,7 @@ public sealed class DownloadDumpAndShardJob(
 
             if (lineCount % 10_000 == 0)
             {
-                Heartbeat(job, leaseDuration);
-                await jobStore.SaveAsync(job, cancellationToken);
+                job = await HeartbeatAndSaveAsync(job, leaseDuration, cancellationToken);
             }
         }
 
@@ -250,13 +286,24 @@ public sealed class DownloadDumpAndShardJob(
                 cancellationToken);
         }
 
-        job.RegisterPhaseShards(phase, shardCount);
-        job.SetStatus(MusicBrainzDumpImportJobStatus.Importing);
-        MusicBrainzDumpImportTelemetry.RecordProgress(
+        job = await PersistProducerAsync(
             job,
-            MusicBrainzDumpImportProgress.AfterProducerPublished(phase));
-        Heartbeat(job, leaseDuration);
-        await jobStore.SaveAsync(job, cancellationToken);
+            leaseDuration,
+            candidate =>
+            {
+                if (candidate.HasRegisteredShards(phase))
+                {
+                    return true;
+                }
+
+                candidate.RegisterPhaseShards(phase, shardCount);
+                candidate.SetStatus(MusicBrainzDumpImportJobStatus.Importing);
+                MusicBrainzDumpImportTelemetry.RecordProgress(
+                    candidate,
+                    MusicBrainzDumpImportProgress.AfterProducerPublished(phase));
+                return true;
+            },
+            cancellationToken);
 
         var requestedAt = DateTimeOffset.UtcNow;
         for (var shardId = 0; shardId < shardCount; shardId++)
@@ -266,6 +313,56 @@ public sealed class DownloadDumpAndShardJob(
                 cancellationToken);
         }
     }
+
+    private async Task<MusicBrainzDumpImportJob> HeartbeatAndSaveAsync(
+        MusicBrainzDumpImportJob job,
+        TimeSpan leaseDuration,
+        CancellationToken cancellationToken) =>
+        await PersistProducerAsync(job, leaseDuration, _ => true, cancellationToken);
+
+    private async Task<MusicBrainzDumpImportJob> PersistProducerAsync(
+        MusicBrainzDumpImportJob job,
+        TimeSpan leaseDuration,
+        Func<MusicBrainzDumpImportJob, bool> apply,
+        CancellationToken cancellationToken)
+    {
+        for (var attempt = 0; attempt < MusicBrainzDumpImportJobConcurrency.SaveAttempts; attempt++)
+        {
+            if (!job.TryClaimProducer(leaseOwner.Value, DateTimeOffset.UtcNow, leaseDuration) &&
+                !OwnsProducerLease(job))
+            {
+                throw new InvalidOperationException(
+                    $"Producer lease for MusicBrainz dump job '{job.Id.Value}' is not held by '{leaseOwner.Value}'.");
+            }
+
+            Heartbeat(job, leaseDuration);
+            if (!apply(job))
+            {
+                return job;
+            }
+
+            try
+            {
+                await jobStore.SaveAsync(job, cancellationToken);
+                return job;
+            }
+            catch (InvalidOperationException exception) when (
+                attempt < MusicBrainzDumpImportJobConcurrency.SaveAttempts - 1 &&
+                MusicBrainzDumpImportJobConcurrency.IsConflict(exception))
+            {
+                job = await jobStore.GetAsync(job.Id, cancellationToken)
+                      ?? throw new InvalidOperationException(
+                          $"MusicBrainz dump job '{job.Id.Value}' disappeared during producer save.");
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"Unable to save MusicBrainz dump producer state for job '{job.Id.Value}' after concurrent save conflicts.");
+    }
+
+    private bool OwnsProducerLease(MusicBrainzDumpImportJob job) =>
+        job.ProducerLease is { } lease &&
+        string.Equals(lease.Owner, leaseOwner.Value, StringComparison.Ordinal);
 
     private void Heartbeat(MusicBrainzDumpImportJob job, TimeSpan leaseDuration) =>
         job.HeartbeatProducer(leaseOwner.Value, DateTimeOffset.UtcNow, leaseDuration);

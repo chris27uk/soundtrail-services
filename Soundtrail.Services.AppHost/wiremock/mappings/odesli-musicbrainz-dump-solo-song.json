@@ -1,0 +1,34 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/v1-user/links",
+    "queryParameters": {
+      "artistName": {
+        "equalTo": "Artist A"
+      },
+      "songName": {
+        "equalTo": "Solo Song"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "linksByPlatform": {
+        "spotify": {
+          "url": "https://open.spotify.com/track/dump-solo-song"
+        },
+        "appleMusic": {
+          "url": "https://music.apple.com/track/dump-solo-song?i=dump-solo-song"
+        },
+        "youtubeMusic": {
+          "url": "https://music.youtube.com/watch?v=dump-solo-song"
+        }
+      }
+    }
+  }
+}
