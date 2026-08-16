@@ -13,11 +13,9 @@ public sealed record ImportCatalogShardPorts(
     Func<IServiceProvider, IImportCatalogShardWorkQueue> WorkQueue,
     Func<IServiceProvider, IImportCatalogShardJob> ImportCatalogShardJob,
     Func<IServiceProvider, IMusicBrainzArtistDumpRowMapper> ArtistRowMapper,
-    Func<IServiceProvider, ICatalogArtistImportWriter> ArtistWriter,
     Func<IServiceProvider, IMusicBrainzReleaseGroupDumpRowMapper> ReleaseGroupRowMapper,
-    Func<IServiceProvider, ICatalogAlbumImportWriter> AlbumWriter,
     Func<IServiceProvider, IMusicBrainzTrackDumpRowMapper> TrackRowMapper,
-    Func<IServiceProvider, ICatalogTrackImportWriter> TrackWriter,
+    Func<IServiceProvider, ICatalogDumpBatchWriter> BatchWriter,
     Func<IServiceProvider, IMusicBrainzDumpShardStore> ShardStore,
     Func<IServiceProvider, IDownloadDumpAndShardWorkQueue> DownloadWorkQueue);
 
@@ -28,11 +26,9 @@ public static class ImportCatalogShardComposition
         services.TryAddScoped(ports.WorkQueue);
         services.TryAddScoped(ports.ImportCatalogShardJob);
         services.TryAddSingleton(ports.ArtistRowMapper);
-        services.TryAddSingleton(ports.ArtistWriter);
         services.TryAddSingleton(ports.ReleaseGroupRowMapper);
-        services.TryAddSingleton(ports.AlbumWriter);
         services.TryAddSingleton(ports.TrackRowMapper);
-        services.TryAddSingleton(ports.TrackWriter);
+        services.TryAddSingleton(ports.BatchWriter);
         services.TryAddSingleton(ports.ShardStore);
         services.TryAddSingleton(ports.DownloadWorkQueue);
         services.TryAddScoped<IHandler<ImportMusicBrainzDumpShard>, ImportMusicBrainzDumpShardHandler>();

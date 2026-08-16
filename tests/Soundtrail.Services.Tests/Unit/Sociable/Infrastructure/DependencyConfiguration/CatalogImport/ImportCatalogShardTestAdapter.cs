@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Model;
@@ -26,11 +27,9 @@ internal sealed class ImportCatalogShardTestAdapter(ImportCatalogShardPorts port
             sp => sp.GetRequiredService<IImportCatalogShardWorkQueue>(),
             sp => ActivatorUtilities.CreateInstance<ImportCatalogShardJob>(sp),
             _ => new MusicBrainzArtistDumpRowMapper(),
-            sp => sp.GetRequiredService<ICatalogArtistImportWriter>(),
             _ => new MusicBrainzReleaseGroupDumpRowMapper(),
-            sp => sp.GetRequiredService<ICatalogAlbumImportWriter>(),
             _ => new MusicBrainzTrackDumpRowMapper(),
-            sp => sp.GetRequiredService<ICatalogTrackImportWriter>(),
+            sp => sp.GetRequiredService<ICatalogDumpBatchWriter>(),
             sp => sp.GetRequiredService<IMusicBrainzDumpShardStore>(),
             sp => sp.GetRequiredService<IDownloadDumpAndShardWorkQueue>());
 
@@ -38,7 +37,13 @@ internal sealed class ImportCatalogShardTestAdapter(ImportCatalogShardPorts port
     {
         services.AddLogging();
         services.TryAddSingleton<IOptions<MusicBrainzDumpOptions>>(_ =>
-            Options.Create(new MusicBrainzDumpOptions { ShardCount = 2, LeaseDuration = TimeSpan.FromMinutes(5) }));
+            Options.Create(
+                new MusicBrainzDumpOptions
+                {
+                    ShardCount = 2,
+                    BulkInsertBatchSize = 2,
+                    LeaseDuration = TimeSpan.FromMinutes(5)
+                }));
         services.TryAddSingleton<ICatalogImportLeaseOwner>(_ => CatalogImportLeaseOwnerFake.Default);
         services.TryAddSingleton<ImportCatalogShardWorkQueueFake>();
         services.TryAddSingleton<IImportCatalogShardWorkQueue>(
@@ -58,6 +63,11 @@ internal sealed class ImportCatalogShardTestAdapter(ImportCatalogShardPorts port
         services.TryAddSingleton<CatalogTrackImportWriterFake>();
         services.TryAddSingleton<ICatalogTrackImportWriter>(
             sp => sp.GetRequiredService<CatalogTrackImportWriterFake>());
+        services.TryAddSingleton<ICatalogDumpBatchWriter>(sp =>
+            new CatalogDumpBatchWriterFake(
+                sp.GetRequiredService<ICatalogArtistImportWriter>(),
+                sp.GetRequiredService<ICatalogAlbumImportWriter>(),
+                sp.GetRequiredService<ICatalogTrackImportWriter>()));
 
         ImportCatalogShardComposition.Configure(services, ports);
     }

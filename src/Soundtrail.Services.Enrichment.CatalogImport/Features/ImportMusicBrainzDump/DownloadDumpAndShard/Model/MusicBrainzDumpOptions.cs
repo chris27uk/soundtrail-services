@@ -52,6 +52,11 @@ public sealed class MusicBrainzDumpOptions
 
     public int ShardCount { get; set; } = 4;
 
+    /// <summary>
+    /// Mapped rows to buffer before flushing ArtistCatalog appends and read-model BulkInsert.
+    /// </summary>
+    public int BulkInsertBatchSize { get; set; } = 500;
+
     public TimeSpan LeaseDuration { get; set; } = TimeSpan.FromMinutes(5);
 
     public DateTimeOffset? DumpObservedAt { get; set; }
