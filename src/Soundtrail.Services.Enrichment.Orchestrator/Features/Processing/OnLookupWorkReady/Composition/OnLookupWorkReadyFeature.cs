@@ -5,6 +5,9 @@ using Soundtrail.Contracts.IntegrationMessaging.Commands;
 using Soundtrail.Adapters.FeatureOrchestration;
 using Soundtrail.Adapters.Messaging;
 using Soundtrail.Adapters.Messaging.Asb;
+using Soundtrail.Adapters.MusicBrainzDumpFreshness;
+using Soundtrail.Adapters.Persistence;
+using Soundtrail.Adapters.Timing;
 using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Discovery.Messages;
@@ -22,10 +25,15 @@ public sealed class OnLookupWorkReadyFeature : IOrchestratorFeature
     {
         services.AddAzureServiceBusCommandBus();
         services.AddAzureServiceBusListener<DispatchLookupWorkCommandDto, DispatchLookupWork>();
+        services.AddRavenDocumentStore(configuration);
+        services.AddMusicBrainzDumpFreshness(configuration);
         services.TryAddSingleton<ITypeRegistry>(_ => TypeTranslationRegistry.Default);
+        services.TryAddSingleton<IClockPort, SystemClockPort>();
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
 
         OnLookupWorkReadyComposition.Configure(services, new(
+            sp => sp.GetRequiredService<IMusicBrainzDumpFreshnessEvaluator>(),
+            sp => sp.GetRequiredService<IClockPort>(),
             sp => sp.GetRequiredService<ICommandBus>()));
     }
 

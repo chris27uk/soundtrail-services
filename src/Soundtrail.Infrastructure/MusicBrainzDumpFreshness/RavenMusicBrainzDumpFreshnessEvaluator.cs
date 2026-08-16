@@ -3,9 +3,9 @@ using Raven.Client.Documents;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
-using Soundtrail.Services.Enrichment.Worker.Shared.MusicBrainzDumpFreshness;
+using Soundtrail.Domain.Catalog.MusicBrainzDumpFreshness;
 
-namespace Soundtrail.Services.Enrichment.Worker.Infrastructure.MusicBrainzDumpFreshness;
+namespace Soundtrail.Adapters.MusicBrainzDumpFreshness;
 
 public sealed class RavenMusicBrainzDumpFreshnessEvaluator(
     IDocumentStore documentStore,

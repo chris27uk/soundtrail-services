@@ -11,7 +11,7 @@ using Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupPlaylistTracks.Ports;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupStreamingLocationByIsrc;
 using Soundtrail.Services.Enrichment.Worker.Features.LookupStreamingLocationByTrackMetadata;
-using Soundtrail.Services.Enrichment.Worker.Shared.MusicBrainzDumpFreshness;
+using Soundtrail.Adapters.MusicBrainzDumpFreshness;
 using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
 using Soundtrail.Services.Enrichment.Worker.Shared.StreamingLocations;
 using DomainCommandBus = Soundtrail.Domain.Abstractions.ICommandBus;

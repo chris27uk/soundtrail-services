@@ -16,7 +16,7 @@ using Soundtrail.Services.Enrichment.Worker.Infrastructure.MusicMetadata;
 using Soundtrail.Services.Enrichment.Worker.Infrastructure.Raven;
 using Soundtrail.Services.Enrichment.Worker.Shared.Execution;
 using Soundtrail.Services.Enrichment.Worker.Shared.ExecutionAdmission;
-using Soundtrail.Services.Enrichment.Worker.Shared.MusicBrainzDumpFreshness;
+using Soundtrail.Adapters.MusicBrainzDumpFreshness;
 using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
 using Soundtrail.Services.ServiceDefaults;
 using StackExchange.Redis;

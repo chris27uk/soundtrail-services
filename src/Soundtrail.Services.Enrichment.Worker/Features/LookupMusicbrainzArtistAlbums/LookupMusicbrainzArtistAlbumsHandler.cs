@@ -4,7 +4,7 @@ using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Discovery.Aggregates;
 using Soundtrail.Domain.Discovery.Messages;
-using Soundtrail.Services.Enrichment.Worker.Shared.MusicBrainzDumpFreshness;
+using Soundtrail.Adapters.MusicBrainzDumpFreshness;
 using Soundtrail.Services.Enrichment.Worker.Shared.MusicMetadata;
 
 namespace Soundtrail.Services.Enrichment.Worker.Features.LookupMusicbrainzArtistAlbums;

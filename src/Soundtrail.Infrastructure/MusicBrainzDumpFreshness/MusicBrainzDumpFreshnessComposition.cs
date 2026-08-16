@@ -2,9 +2,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Raven.Client.Documents;
-using Soundtrail.Services.Enrichment.Worker.Infrastructure.MusicBrainzDumpFreshness;
 
-namespace Soundtrail.Services.Enrichment.Worker.Shared.MusicBrainzDumpFreshness;
+namespace Soundtrail.Adapters.MusicBrainzDumpFreshness;
 
 public static class MusicBrainzDumpFreshnessComposition
 {
