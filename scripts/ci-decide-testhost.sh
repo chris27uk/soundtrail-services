@@ -1,13 +1,24 @@
 #!/usr/bin/env bash
-# After testhost GHA restore: reuse published bits or rebuild.
+# After testhost GHA restore and optional PR artifact: reuse published bits or rebuild.
 # need_buildx is true on miss, or on main (publish-apps still uses Buildx).
 set -euo pipefail
 
-cache_hit="${TESTHOST_CACHE_HIT:-false}"
+source_hash="${SOURCE_TREE_HASH:-}"
 hit=false
-if [[ "$cache_hit" == "true" && -f testhost/Soundtrail.Services.Tests.dll ]]; then
+
+testhost_usable() {
+  [[ -f testhost/Soundtrail.Services.Tests.dll ]] || return 1
+  if [[ -f testhost/source-hash ]]; then
+    [[ -n "$source_hash" && "$(tr -d '[:space:]' < testhost/source-hash)" == "$source_hash" ]]
+    return
+  fi
+  # Legacy GHA cache has no stamp; the restore key is the source hash.
+  [[ "${TESTHOST_CACHE_HIT:-false}" == "true" ]]
+}
+
+if testhost_usable; then
   hit=true
-  echo "Reusing cached testhost output."
+  echo "Reusing testhost output."
 else
   echo "Testhost cache miss; will build."
   rm -rf testhost
