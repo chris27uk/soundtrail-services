@@ -134,12 +134,8 @@ jobs:
         with:
           path: ~/.nuget/packages
           key: nuget-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Directory.Build.props', 'global.json', '**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json') }}
-
-      - name: Set up .NET
-        if: steps.nuget.outputs.cache-hit != 'true'
-        uses: actions/setup-dotnet@v6
-        with:
-          global-json-file: global.json
+          restore-keys: |
+            nuget-v1-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Resolve NuGet packages
         if: steps.nuget.outputs.cache-hit != 'true'
@@ -209,7 +205,7 @@ jobs:
         uses: actions/cache/restore@v6
         with:
           path: testhost
-          key: testhost-out-v2-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
+          key: testhost-out-v3-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
 
       - name: Find merged PR testhost artifact
         id: pr-testhost
@@ -243,12 +239,8 @@ jobs:
         with:
           path: ~/.nuget/packages
           key: nuget-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Directory.Build.props', 'global.json', '**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json') }}
-
-      - name: Set up .NET
-        if: steps.testhost.outputs.hit != 'true'
-        uses: actions/setup-dotnet@v6
-        with:
-          global-json-file: global.json
+          restore-keys: |
+            nuget-v1-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Publish testhost
         id: publish-testhost
@@ -266,13 +258,35 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/ci-await-version-meta-wait.sh
 
-      - name: Run tests
-        if: github.event_name != 'push' || github.ref != 'refs/heads/main'
-        run: bash scripts/ci-run-tests.sh
-
       - name: Run tests (background)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: bash scripts/ci-run-tests-bg.sh
+
+      # Uploads are independent of test execution and fit inside the MTP window.
+      - name: Save testhost output
+        if: steps.testhost-cache.outputs.cache-hit != 'true' && (steps.publish-testhost.outcome == 'success' || steps.testhost.outputs.hit == 'true')
+        continue-on-error: true
+        uses: actions/cache/save@v6
+        with:
+          path: testhost
+          key: testhost-out-v3-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
+
+      - name: Upload testhost for main
+        if: github.event_name == 'pull_request' && steps.publish-testhost.outcome == 'success'
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: testhost-out
+          path: testhost/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Save NuGet packages
+        if: steps.nuget.outputs.cache-hit != 'true' && steps.publish-testhost.outcome == 'success'
+        continue-on-error: true
+        uses: actions/cache/save@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Directory.Build.props', 'global.json', '**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json') }}
 
       # Export BuildKit only once per dependency/Dockerfile graph. Source edits do
       # not make reusable layers and previously added 20-42s of cache upload.
@@ -317,7 +331,7 @@ jobs:
         run: bash scripts/ci-publish-apps-bg.sh
 
       - name: Wait for tests
-        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: always()
         run: bash scripts/ci-wait-tests.sh
 
       - name: Wait for publish
@@ -339,34 +353,6 @@ jobs:
         with:
           path: /tmp/buildkit-export-marker
           key: buildkit-deps-v1-${{ hashFiles('Dockerfile.ci', '.dockerignore', 'Directory.Build.props', 'global.json', '**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json') }}
-
-      - name: Save testhost output
-        # Seed this branch's GHA cache after a build or after promoting a PR artifact onto main.
-        if: always() && steps.testhost-cache.outputs.cache-hit != 'true' && (steps.publish-testhost.outcome == 'success' || steps.testhost.outputs.hit == 'true')
-        continue-on-error: true
-        uses: actions/cache/save@v6
-        with:
-          path: testhost
-          key: testhost-out-v2-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
-
-      - name: Upload testhost for main
-        # Only when this PR built testhost. A GHA hit means main already has these bits.
-        if: github.event_name == 'pull_request' && success() && steps.publish-testhost.outcome == 'success'
-        continue-on-error: true
-        uses: actions/upload-artifact@v7
-        with:
-          name: testhost-out
-          path: testhost/
-          retention-days: 7
-          if-no-files-found: ignore
-
-      - name: Save NuGet packages
-        if: always() && steps.nuget.outputs.cache-hit != 'true' && steps.publish-testhost.outcome == 'success'
-        continue-on-error: true
-        uses: actions/cache/save@v6
-        with:
-          path: ~/.nuget/packages
-          key: nuget-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Directory.Build.props', 'global.json', '**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json') }}
 
       - name: Stop test dependencies
         id: stop-sidecars
