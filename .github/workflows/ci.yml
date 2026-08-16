@@ -247,7 +247,13 @@ jobs:
         run: bash scripts/ci-await-version-meta-wait.sh
 
       - name: Run tests
+        if: github.event_name != 'push' || github.ref != 'refs/heads/main'
         run: bash scripts/ci-run-tests.sh
+
+      # Main: testhost does not need Buildx. Publish while tests wait on sidecars / run MTP.
+      - name: Run tests (background)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: bash scripts/ci-run-tests-bg.sh
 
       - name: Publish apps
         id: publish-apps
@@ -263,6 +269,10 @@ jobs:
           sbom: false
           cache-from: type=gha,scope=soundtrail-testhost
           cache-to: ${{ steps.bk-export.outputs.cache-hit != 'true' && 'type=gha,mode=max,scope=soundtrail-testhost' || '' }}
+
+      - name: Wait for tests
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: bash scripts/ci-wait-tests.sh
 
       - name: Save BuildKit export marker
         # Stamp when we exported; do not require tests so flaky tests do not force re-export.
