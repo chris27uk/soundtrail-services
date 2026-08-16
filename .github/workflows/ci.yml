@@ -36,14 +36,14 @@ jobs:
       # Caches before checkout — no workspace needed.
       - name: Restore GitVersion binary
         id: gv-bin-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: /tmp/gitversion-bin
           key: gitversion-bin-linux-x64-6.7.0
 
       - name: Restore previous SemVer floor
         id: gv-semver-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: /tmp/gitversion-prev
           key: gitversion-semver-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref_name }}-${{ github.sha }}
@@ -69,14 +69,14 @@ jobs:
 
       - name: Save GitVersion binary
         if: always() && steps.gitversion.outputs.need_bin_cache == 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: /tmp/gitversion-bin
           key: gitversion-bin-linux-x64-6.7.0
 
       - name: Save SemVer floor
         if: always() && steps.gitversion.outcome == 'success'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: /tmp/gitversion-prev
           key: gitversion-semver-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref_name }}-${{ github.sha }}
@@ -139,7 +139,7 @@ jobs:
       # Sidecars first so Raven/OSB/Redis come up while testhost cache restores.
       - name: Restore sidecar image cache
         id: sidecar-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: |
             /tmp/sidecar-images/sidecars.tar
@@ -156,24 +156,45 @@ jobs:
         run: bash scripts/ci-load-runtime-bg.sh
 
       # Published testhost bits for this exact source tree (skips Buildx on PR warms).
+      # GHA cache is branch-scoped: PRs can read main, main cannot read PR caches.
+      # Main therefore falls back to the testhost-out artifact from the merged PR.
       - name: Restore testhost output
         id: testhost-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: testhost
           key: testhost-out-v1-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
+
+      - name: Find merged PR testhost artifact
+        id: pr-testhost
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.testhost-cache.outputs.cache-hit != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ci-find-pr-testhost-run.sh
+
+      - name: Restore testhost from PR
+        if: steps.pr-testhost.outputs.run_id != ''
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: testhost-out
+          path: testhost
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.pr-testhost.outputs.run_id }}
+          github-token: ${{ github.token }}
 
       - name: Decide testhost reuse
         id: testhost
         env:
           TESTHOST_CACHE_HIT: ${{ steps.testhost-cache.outputs.cache-hit }}
+          SOURCE_TREE_HASH: ${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
         run: bash scripts/ci-decide-testhost.sh
 
       # Skip cache-to when this exact source tree already exported (warm no-op builds).
       - name: Check BuildKit export marker
         id: bk-export
         if: steps.testhost.outputs.need_buildx == 'true'
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: /tmp/buildkit-export-marker
           key: buildkit-export-v1-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
@@ -182,7 +203,7 @@ jobs:
       - name: Restore BuildKit image cache
         id: tooling-cache
         if: steps.testhost.outputs.need_buildx == 'true'
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: /tmp/sidecar-images/tooling.tar
           key: docker-tooling-v1-buildx-stable-1
@@ -202,7 +223,7 @@ jobs:
       - name: Build testhost
         id: build-testhost
         if: steps.testhost.outputs.hit != 'true'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: Dockerfile.ci
@@ -213,6 +234,12 @@ jobs:
           sbom: false
           cache-from: type=gha,scope=soundtrail-testhost
           cache-to: ${{ steps.bk-export.outputs.cache-hit != 'true' && 'type=gha,mode=max,scope=soundtrail-testhost' || '' }}
+
+      - name: Stamp testhost source hash
+        if: steps.testhost.outputs.hit == 'true' || steps.build-testhost.outcome == 'success'
+        env:
+          SOURCE_TREE_HASH: ${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
+        run: printf '%s\n' "$SOURCE_TREE_HASH" > testhost/source-hash
 
       - name: Apply version metadata
         env:
@@ -225,7 +252,7 @@ jobs:
       - name: Publish apps
         id: publish-apps
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: Dockerfile.ci
@@ -247,18 +274,29 @@ jobs:
       - name: Upload BuildKit export marker
         if: always() && steps.bk-export.outputs.cache-hit != 'true' && steps.build-testhost.outcome == 'success'
         continue-on-error: true
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: /tmp/buildkit-export-marker
           key: buildkit-export-v1-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
 
       - name: Save testhost output
-        if: always() && steps.testhost-cache.outputs.cache-hit != 'true' && steps.build-testhost.outcome == 'success'
+        # Seed this branch's GHA cache after a build or after promoting a PR artifact onto main.
+        if: always() && steps.testhost-cache.outputs.cache-hit != 'true' && (steps.build-testhost.outcome == 'success' || steps.testhost.outputs.hit == 'true')
         continue-on-error: true
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: testhost
           key: testhost-out-v1-${{ hashFiles('Dockerfile.ci', 'Directory.Build.props', 'global.json', 'src/**/*.cs', 'src/**/*.csproj', 'tests/**/*.cs', 'tests/**/*.csproj', '**/packages.lock.json', '**/packages.ci.lock.json', 'Soundtrail.Services.ServiceDefaults/**/*.cs', 'Soundtrail.Services.ServiceDefaults/**/*.csproj', 'Soundtrail.Services.AppHost/servicebus-emulator/Config.json') }}
+
+      - name: Upload testhost for main
+        if: github.event_name == 'pull_request' && success()
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: testhost-out
+          path: testhost/
+          retention-days: 7
+          if-no-files-found: ignore
 
       - name: Stop test dependencies
         id: stop-sidecars
@@ -323,7 +361,7 @@ jobs:
       - name: Save BuildKit image cache
         if: always() && steps.tooling-cache.outputs.cache-hit != 'true' && steps.stop-sidecars.outputs.tooling_cache == 'true'
         continue-on-error: true
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: /tmp/sidecar-images/tooling.tar
           key: docker-tooling-v1-buildx-stable-1
@@ -331,7 +369,7 @@ jobs:
       - name: Save sidecar image cache
         if: always() && steps.sidecar-cache.outputs.cache-hit != 'true' && steps.stop-sidecars.outputs.sidecar_cache == 'true'
         continue-on-error: true
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: |
             /tmp/sidecar-images/sidecars.tar
@@ -380,7 +418,7 @@ jobs:
           fetch-depth: 1
 
       - name: Download build package
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: build
           path: package
