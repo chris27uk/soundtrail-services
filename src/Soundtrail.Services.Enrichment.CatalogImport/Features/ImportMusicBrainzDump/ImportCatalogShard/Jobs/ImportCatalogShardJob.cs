@@ -17,6 +17,8 @@ public sealed class ImportCatalogShardJob(
     ICatalogArtistImportWriter artistWriter,
     IMusicBrainzReleaseGroupDumpRowMapper releaseGroupRowMapper,
     ICatalogAlbumImportWriter albumWriter,
+    IMusicBrainzTrackDumpRowMapper trackRowMapper,
+    ICatalogTrackImportWriter trackWriter,
     IDownloadDumpAndShardWorkQueue downloadWorkQueue,
     IOptions<MusicBrainzDumpOptions> options,
     ILogger<ImportCatalogShardJob> logger) : IImportCatalogShardJob
@@ -27,7 +29,10 @@ public sealed class ImportCatalogShardJob(
         int shardId,
         CancellationToken cancellationToken = default)
     {
-        if (phase is not (MusicBrainzDumpImportPhase.Artists or MusicBrainzDumpImportPhase.ReleaseGroups))
+        if (phase is not (
+            MusicBrainzDumpImportPhase.Artists or
+            MusicBrainzDumpImportPhase.ReleaseGroups or
+            MusicBrainzDumpImportPhase.Recordings))
         {
             logger.LogWarning(
                 "Skipping unsupported dump phase {Phase} for job {JobId} shard {ShardId}.",
@@ -61,9 +66,16 @@ public sealed class ImportCatalogShardJob(
                            cancellationToken))
         {
             processed++;
-            var wrote = phase == MusicBrainzDumpImportPhase.Artists
-                ? await TryImportArtistAsync(line, dumpObservedAt, cancellationToken)
-                : await TryImportAlbumAsync(line, dumpObservedAt, cancellationToken);
+            var wrote = phase switch
+            {
+                MusicBrainzDumpImportPhase.Artists =>
+                    await TryImportArtistAsync(line, dumpObservedAt, cancellationToken),
+                MusicBrainzDumpImportPhase.ReleaseGroups =>
+                    await TryImportAlbumAsync(line, dumpObservedAt, cancellationToken),
+                MusicBrainzDumpImportPhase.Recordings =>
+                    await TryImportTrackAsync(line, dumpObservedAt, cancellationToken),
+                _ => false
+            };
 
             if (wrote)
             {
@@ -85,16 +97,16 @@ public sealed class ImportCatalogShardJob(
         shard.UpdateLineOffset(processed);
         shard.MarkCompleted();
 
-        if (phase == MusicBrainzDumpImportPhase.Artists &&
-            job.AreAllShardsCompleted(MusicBrainzDumpImportPhase.Artists) &&
+        if ((phase is MusicBrainzDumpImportPhase.Artists or MusicBrainzDumpImportPhase.ReleaseGroups) &&
+            job.AreAllShardsCompleted(phase) &&
             job.TryAdvancePhase())
         {
             await jobStore.SaveAsync(job, cancellationToken);
             await downloadWorkQueue.EnqueueAsync(new DownloadDumpAndShardWork(job.Id), cancellationToken);
         }
-        else if (phase == MusicBrainzDumpImportPhase.ReleaseGroups)
+        else if (phase == MusicBrainzDumpImportPhase.Recordings)
         {
-            job.TryCompleteReleaseGroupsPhaseAsFinal(DateTimeOffset.UtcNow);
+            job.TryCompleteRecordingsPhaseAsFinal(DateTimeOffset.UtcNow);
             await jobStore.SaveAsync(job, cancellationToken);
         }
         else
@@ -139,6 +151,21 @@ public sealed class ImportCatalogShardJob(
         }
 
         await albumWriter.WriteAsync(album, dumpObservedAt, cancellationToken);
+        return true;
+    }
+
+    private async Task<bool> TryImportTrackAsync(
+        string line,
+        DateTimeOffset dumpObservedAt,
+        CancellationToken cancellationToken)
+    {
+        var track = trackRowMapper.TryMap(line);
+        if (track is null)
+        {
+            return false;
+        }
+
+        await trackWriter.WriteAsync(track, dumpObservedAt, cancellationToken);
         return true;
     }
 }

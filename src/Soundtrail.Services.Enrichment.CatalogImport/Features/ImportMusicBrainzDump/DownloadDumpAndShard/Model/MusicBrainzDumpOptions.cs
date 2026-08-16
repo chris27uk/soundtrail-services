@@ -13,6 +13,11 @@ public sealed class MusicBrainzDumpOptions
     /// </summary>
     public string? ReleaseGroupsLocalPath { get; set; }
 
+    /// <summary>
+    /// Path to denormalized track-graph JSONL. When unset, inferred as sibling <c>track.jsonl</c> beside <see cref="LocalPath"/>.
+    /// </summary>
+    public string? TracksLocalPath { get; set; }
+
     public string? ShardDirectory { get; set; }
 
     public int ShardCount { get; set; } = 4;

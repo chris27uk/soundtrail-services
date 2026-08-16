@@ -47,6 +47,13 @@ public sealed class DownloadDumpAndShardJob(
             !job.HasRegisteredShards(MusicBrainzDumpImportPhase.ReleaseGroups))
         {
             await RunReleaseGroupsPhaseAsync(job, leaseDuration, cancellationToken);
+            return;
+        }
+
+        if (job.CurrentPhase == MusicBrainzDumpImportPhase.Recordings &&
+            !job.HasRegisteredShards(MusicBrainzDumpImportPhase.Recordings))
+        {
+            await RunRecordingsPhaseAsync(job, leaseDuration, cancellationToken);
         }
     }
 
@@ -151,6 +158,61 @@ public sealed class DownloadDumpAndShardJob(
 
         logger.LogInformation(
             "MusicBrainz dump producer published {ShardCount} ReleaseGroups shards for job {JobId} from {LineCount} lines ({CopiedRows} credited copies).",
+            shardCount,
+            job.Id.Value,
+            lineCount,
+            copiedRows);
+    }
+
+    private async Task RunRecordingsPhaseAsync(
+        MusicBrainzDumpImportJob job,
+        TimeSpan leaseDuration,
+        CancellationToken cancellationToken)
+    {
+        Heartbeat(job, leaseDuration);
+
+        var tracksPath = await archiveStore.EnsureTracksJsonlAsync(
+            job.Id,
+            job.DumpVersion,
+            cancellationToken);
+        Heartbeat(job, leaseDuration);
+
+        var shardCount = Math.Max(1, options.Value.ShardCount);
+        var buckets = Enumerable.Range(0, shardCount).Select(_ => new List<string>()).ToArray();
+        var lineCount = 0;
+        var copiedRows = 0;
+
+        await foreach (var line in File.ReadLinesAsync(tracksPath, cancellationToken))
+        {
+            lineCount++;
+            if (!MusicBrainzTrackJsonLine.TryReadCreditedArtistIds(line, out var artistIds))
+            {
+                continue;
+            }
+
+            foreach (var artistId in artistIds)
+            {
+                var shardId = partitioner.ShardIdFor(artistId, shardCount);
+                buckets[shardId].Add(MusicBrainzTrackJsonLine.WrapForCreditedArtist(artistId, line));
+                copiedRows++;
+            }
+
+            if (lineCount % 10_000 == 0)
+            {
+                Heartbeat(job, leaseDuration);
+                await jobStore.SaveAsync(job, cancellationToken);
+            }
+        }
+
+        await PublishPhaseShardsAsync(
+            job,
+            MusicBrainzDumpImportPhase.Recordings,
+            buckets,
+            leaseDuration,
+            cancellationToken);
+
+        logger.LogInformation(
+            "MusicBrainz dump producer published {ShardCount} Recordings shards for job {JobId} from {LineCount} lines ({CopiedRows} credited copies).",
             shardCount,
             job.Id.Value,
             lineCount,

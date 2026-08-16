@@ -26,6 +26,7 @@ internal sealed class ImportMusicBrainzDumpSociableTestEnvironment : IDisposable
         MusicBrainzDumpArchiveStoreFake archiveStore,
         CatalogArtistImportWriterFake artistWriter,
         CatalogAlbumImportWriterFake albumWriter,
+        CatalogTrackImportWriterFake trackWriter,
         DownloadDumpAndShardWorkQueueFake downloadWorkQueue,
         ImportCatalogShardWorkQueueFake shardWorkQueue,
         ICatalogImportLeaseOwner leaseOwner)
@@ -36,6 +37,7 @@ internal sealed class ImportMusicBrainzDumpSociableTestEnvironment : IDisposable
         ArchiveStore = archiveStore;
         ArtistWriter = artistWriter;
         AlbumWriter = albumWriter;
+        TrackWriter = trackWriter;
         this.downloadWorkQueue = downloadWorkQueue;
         this.shardWorkQueue = shardWorkQueue;
         LeaseOwner = leaseOwner;
@@ -48,6 +50,8 @@ internal sealed class ImportMusicBrainzDumpSociableTestEnvironment : IDisposable
     public CatalogArtistImportWriterFake ArtistWriter { get; }
 
     public CatalogAlbumImportWriterFake AlbumWriter { get; }
+
+    public CatalogTrackImportWriterFake TrackWriter { get; }
 
     public ICatalogImportLeaseOwner LeaseOwner { get; }
 
@@ -80,6 +84,19 @@ internal sealed class ImportMusicBrainzDumpSociableTestEnvironment : IDisposable
         var environment = Compose(utcNow);
         environment.ArchiveStore.WithArtistsJsonl(artistsJsonlLines.ToArray());
         environment.ArchiveStore.WithReleaseGroupsJsonl(releaseGroupsJsonlLines.ToArray());
+        return environment;
+    }
+
+    public static ImportMusicBrainzDumpSociableTestEnvironment ForArtistsReleaseGroupsAndTracksFixture(
+        DateTimeOffset utcNow,
+        IReadOnlyList<string> artistsJsonlLines,
+        IReadOnlyList<string> releaseGroupsJsonlLines,
+        IReadOnlyList<string> tracksJsonlLines)
+    {
+        var environment = Compose(utcNow);
+        environment.ArchiveStore.WithArtistsJsonl(artistsJsonlLines.ToArray());
+        environment.ArchiveStore.WithReleaseGroupsJsonl(releaseGroupsJsonlLines.ToArray());
+        environment.ArchiveStore.WithTracksJsonl(tracksJsonlLines.ToArray());
         return environment;
     }
 
@@ -153,6 +170,7 @@ internal sealed class ImportMusicBrainzDumpSociableTestEnvironment : IDisposable
             engine.RequireFake<IMusicBrainzDumpArchiveStore, MusicBrainzDumpArchiveStoreFake>(),
             engine.RequireFake<ICatalogArtistImportWriter, CatalogArtistImportWriterFake>(),
             engine.RequireFake<ICatalogAlbumImportWriter, CatalogAlbumImportWriterFake>(),
+            engine.RequireFake<ICatalogTrackImportWriter, CatalogTrackImportWriterFake>(),
             engine.RequireFake<IDownloadDumpAndShardWorkQueue, DownloadDumpAndShardWorkQueueFake>(),
             engine.RequireFake<IImportCatalogShardWorkQueue, ImportCatalogShardWorkQueueFake>(),
             engine.Resolve<ICatalogImportLeaseOwner>());
