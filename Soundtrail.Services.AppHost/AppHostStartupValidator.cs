@@ -9,6 +9,7 @@ public static class AppHostStartupValidator
         ValidateServiceBusConnectionString(configuration);
         ValidateRavenDbLicense(configuration);
         ValidateServiceBusEmulator(configuration, contentRootPath);
+        ValidateBlobStorage(configuration);
         ValidateWireMockMappings(configuration, contentRootPath);
     }
 
@@ -74,6 +75,29 @@ public static class AppHostStartupValidator
         {
             throw new InvalidOperationException(
                 "LocalDevelopment:UseServiceBusEmulator is enabled, but ServiceBusEmulator:SqlPassword is missing.");
+        }
+    }
+
+    private static void ValidateBlobStorage(IConfiguration configuration)
+    {
+        var useBlobStorageEmulator = configuration.GetValue("LocalDevelopment:UseBlobStorageEmulator", false);
+        if (useBlobStorageEmulator)
+        {
+            return;
+        }
+
+        var storage = configuration["MusicBrainzDump:Storage"];
+        if (!string.Equals(storage, "Blob", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var connectionString = configuration["MusicBrainzDump:BlobConnectionString"]
+            ?? configuration.GetConnectionString("musicbrainz-dumps");
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException(
+                "MusicBrainzDump:Storage=Blob without LocalDevelopment:UseBlobStorageEmulator requires MusicBrainzDump:BlobConnectionString or ConnectionStrings:musicbrainz-dumps.");
         }
     }
 

@@ -22,6 +22,7 @@ public static class AppHostComposition
 
         var useProviderStubs = builder.Configuration.GetValue("LocalDevelopment:UseProviderStubs", false);
         var useServiceBusEmulator = builder.Configuration.GetValue("LocalDevelopment:UseServiceBusEmulator", false);
+        var useBlobStorageEmulator = builder.Configuration.GetValue("LocalDevelopment:UseBlobStorageEmulator", false);
         var ravenDbLicensePath = builder.Configuration["RavenDb:LicensePath"];
         var otelServiceVersion = Environment.GetEnvironmentVariable("OTEL_SERVICE_VERSION");
         if (string.IsNullOrWhiteSpace(otelServiceVersion))
@@ -75,6 +76,14 @@ public static class AppHostComposition
         else
         {
             serviceBus = builder.AddConnectionString("servicebus");
+        }
+
+        IResourceBuilder<IResourceWithConnectionString>? musicBrainzDumpBlobs = null;
+        if (useBlobStorageEmulator)
+        {
+            musicBrainzDumpBlobs = builder.AddAzureStorage("storage")
+                .RunAsEmulator(azurite => azurite.WithLifetime(ContainerLifetime.Persistent))
+                .AddBlobs("musicbrainz-dumps");
         }
 
         var providerStubs = useProviderStubs
@@ -146,6 +155,18 @@ public static class AppHostComposition
             .WithEnvironment(
                 "MusicBrainzDump__ArchiveDirectory",
                 Path.Combine(resolvedContentRootPath, "testdata", "musicbrainz-dump"));
+
+        if (useBlobStorageEmulator && musicBrainzDumpBlobs is not null)
+        {
+            catalogImport = catalogImport
+                .WithReference(musicBrainzDumpBlobs)
+                .WaitFor(musicBrainzDumpBlobs)
+                .WithEnvironment("MusicBrainzDump__Storage", "Blob");
+        }
+        else
+        {
+            catalogImport = catalogImport.WithEnvironment("MusicBrainzDump__Storage", "Local");
+        }
 
         if (useServiceBusEmulator)
         {
