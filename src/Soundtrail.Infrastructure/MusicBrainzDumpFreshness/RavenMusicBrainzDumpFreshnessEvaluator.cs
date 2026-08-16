@@ -109,5 +109,11 @@ public sealed class RavenMusicBrainzDumpFreshnessEvaluator(
             track.ReleaseDate,
             track.ReleaseType,
             track.ArtworkUrl,
-            track.UpdatedAt);
+            track.UpdatedAt,
+            track.StreamingLocations
+                .Select(static location => new DumpCatalogStreamingLocationSnapshot(
+                    location.Provider,
+                    location.ExternalId,
+                    location.Url))
+                .ToArray());
 }

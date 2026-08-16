@@ -78,7 +78,7 @@ Live Projector CDC continues for **online** traffic. Dump-appended events are ta
 | Enrichment.Scheduler | Thin trigger (TickerQ → Start message) |
 | Enrichment.CatalogImport | Producer and shard consumers |
 | Enrichment.Worker | Unchanged online MB lookups; admission gated by freshness rules |
-| Enrichment.Orchestrator | Must not schedule Worker enrichment when dump-fresh and complete |
+| Enrichment.Orchestrator | Skip MusicBrainz Worker when dump-fresh and complete; accept Low Odesli need from dump and High elevate from demand |
 | Projector | Live CDC for non–bulk-import events; rebuild tools ignore bulk-import filter |
 
 ## Producer / Consumer Model
@@ -171,7 +171,9 @@ Each stored event carries `ProjectionHint`:
 
 ### Read models
 
-Bulk-project using the same builders/ports as `ArtistCatalogChangedProjectorHandler` (e.g. once per dirty artist), not once per event via live CDC. Defer playlist repair for dump seed (optional / later).
+Bulk-project via the shared `ArtistCatalogProjectionMaterializer` / `ArtistCatalogProjectionDocuments` (same browse documents as live `ArtistCatalogChangedProjectorHandler`: artist, artist-albums, artist-tracks, album, album-tracks, track), plus search-candidate docs for dirty keys. Dump does **not** run playlist repair.
+
+Any new artist-catalog browse/search projection must be added to this shared materializer (not only to a CDC handler).
 
 ### `SourceSystemId`
 
@@ -186,8 +188,9 @@ Stored as a **set** on Artist / Album / Track. Dump populates `musicbrainz:{mbid
 ## Freshness And Live Enrichment
 
 - If a Worker lookup completes with data **newer than the dump file timestamp**, Worker data wins (may overwrite import).
-- If import data is **older than** what is already stored for that entity, **skip** the import write.
-- Do **not** schedule new Worker MusicBrainz enrichment when the entity was dump-imported within the **last month** and there is **no missing critical data**.
+- If import data is **older than** what is already stored for that entity, **skip** the import write (`ObservedAt` / dump observation comparison).
+- **MusicBrainz Worker must not compete with dump** for catalog facts: do **not** schedule live MusicBrainz enrichment when the entity was dump-imported within the fresh window and catalog data is complete. Dump never enqueues MusicBrainz discover work.
+- **Odesli (streaming locations):** dump enqueues `StreamingLocationForTrack` at `LookupPriorityBand.Low` for tracks written without locations. Demand (`GetTrack`, list discovery fan-out) elevates to `High` when locations are still missing. Worker Odesli budgets remain an absolute hard cap; Orchestrator reserved high-priority planner slots protect High from Low backlog.
 
 ## Re-import
 

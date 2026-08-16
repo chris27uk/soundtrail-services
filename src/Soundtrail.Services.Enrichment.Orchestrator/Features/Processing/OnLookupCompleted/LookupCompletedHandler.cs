@@ -95,6 +95,11 @@ public sealed class LookupCompletedHandler(
                      .Select(static entry => entry.Item)
                      .OfType<CatalogItem.MusicTrack>())
         {
+            if (track.Track.ProviderReferences.Count > 0)
+            {
+                continue;
+            }
+
             await commandBus.SendAsync(
                 new RequestKnownMusicDataMessage(
                     new CatalogItemOperation.StreamingLocationForTrack(track.Track.TrackId),

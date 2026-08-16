@@ -1,11 +1,11 @@
 using Soundtrail.Adapters.Timing;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Playlists;
+using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Discovery.Events;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForPlaylist.Contract;
 using Soundtrail.Services.Api.Shared.Contract;
-using Soundtrail.Services.Internal.Projector.Features.OnArtistCatalogChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnPlaylistTracksDiscovered.Adapters;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
@@ -79,7 +79,7 @@ internal sealed class StorePlaylistTracksReadModelPortFake(
             ReadDiscovery(playlistId, tracks)));
     }
 
-    private (ArtistId ArtistId, ArtistCatalogTrackReadModel Track, DateTimeOffset UpdatedAt)? SelectPreferredTrack(TrackId requestedTrackId)
+    private (ArtistId ArtistId, ArtistCatalogTrackProjection Track, DateTimeOffset UpdatedAt)? SelectPreferredTrack(TrackId requestedTrackId)
     {
         var requested = TrackIdIndexProjection.From(requestedTrackId);
         return artistCatalog.Tracks
@@ -87,7 +87,7 @@ internal sealed class StorePlaylistTracksReadModelPortFake(
             .Where(track => track.Projection.SharesBaseWith(requested))
             .OrderBy(track => track.Projection.GetDistanceTo(requested))
             .ThenByDescending(static track => track.Stored.UpdatedAt)
-            .Select(static track => ((ArtistId, ArtistCatalogTrackReadModel, DateTimeOffset)?)track.Stored)
+            .Select(static track => ((ArtistId, ArtistCatalogTrackProjection, DateTimeOffset)?)track.Stored)
             .FirstOrDefault();
     }
 

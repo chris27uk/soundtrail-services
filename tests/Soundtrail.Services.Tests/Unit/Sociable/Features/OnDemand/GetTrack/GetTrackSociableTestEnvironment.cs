@@ -3,6 +3,7 @@ using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Services.Api.Features.Catalog.GetTrack;
 using Soundtrail.Services.Api.Features.Catalog.GetTrack.Adapters;
 using Soundtrail.Services.Api.Features.Catalog.GetTrack.Contract;
+using Soundtrail.Services.Api.Shared.Contract;
 using Soundtrail.Services.Tests.Integration.Features.GetTrack.Support;
 using Soundtrail.Services.Tests.Integration.Features.GetTrack;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure;
@@ -57,6 +58,9 @@ internal sealed class GetTrackSociableTestEnvironment : IDisposable
         return result;
     }
 
+    public Task<GetTrackResponse?> HandleWithoutPumpAsync() =>
+        this.sut.Handle(CreateRequest());
+
     public GetTrackRequest CreateRequest() => new(TrackId);
 
     public void Dispose() => this.engine.Dispose();
@@ -86,8 +90,18 @@ internal static class GetTrackScenarioData
         int? durationMs = 201000,
         string? isrc = "GBAYE2400301",
         DateOnly? releaseDate = null,
-        string? artworkUrl = "https://cdn.soundtrail.test/tracks/mc_track_201.jpg") =>
-        new(
+        string? artworkUrl = "https://cdn.soundtrail.test/tracks/mc_track_201.jpg",
+        StreamingLocationResponse[]? streamingLocations = null)
+    {
+        var locations = streamingLocations ??
+        [
+            new StreamingLocationResponse(
+                "spotify",
+                "spotify:track:available",
+                "https://open.spotify.com/track/available")
+        ];
+
+        return new(
             trackId ?? DefaultTrackId,
             title,
             artistName,
@@ -96,6 +110,7 @@ internal static class GetTrackScenarioData
             isrc,
             releaseDate ?? new DateOnly(2024, 1, 2),
             artworkUrl,
-            false,
-            []);
+            locations.Length > 0,
+            locations);
+    }
 }

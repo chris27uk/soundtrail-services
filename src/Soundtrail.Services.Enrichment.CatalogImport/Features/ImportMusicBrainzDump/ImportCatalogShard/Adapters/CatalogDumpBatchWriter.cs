@@ -1,7 +1,8 @@
 using System.Security.Cryptography;
 using System.Text;
 using Raven.Client.Documents;
-using Soundtrail.Contracts.Persistence;
+using Soundtrail.Adapters.CatalogProjection;
+using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Aggregates;
@@ -10,13 +11,15 @@ using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
+using Soundtrail.Domain.Discovery;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Ports;
 
 namespace Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Adapters;
 
 public sealed class CatalogDumpBatchWriter(
     IEventStreamRepository<ArtistId> artistRepository,
-    IDocumentStore documentStore) : ICatalogDumpBatchWriter
+    IDocumentStore documentStore,
+    ICommandBus commandBus) : ICatalogDumpBatchWriter
 {
     public async Task FlushAsync(
         IReadOnlyList<CatalogDumpBatchItem> items,
@@ -38,6 +41,7 @@ public sealed class CatalogDumpBatchWriter(
         }
 
         var readModels = new List<(string Id, object Document)>();
+        var streamingLocationRequests = new List<TrackId>();
 
         foreach (var group in flushItems.GroupBy(ArtistKeyFor, StringComparer.Ordinal))
         {
@@ -57,9 +61,6 @@ public sealed class CatalogDumpBatchWriter(
 
                         catalog.CatalogItemDiscovered(new CatalogItem.MusicArtist(artist));
                         pendingKeys.Add($"artist:{artist.Id.Value}");
-                        readModels.Add((
-                            CatalogArtistRecordDto.GetDocumentId(artist.Id.Value),
-                            CatalogDumpReadModels.Artist(artist, dumpObservedAt)));
                         break;
 
                     case AlbumDumpBatchItem(var album):
@@ -86,12 +87,9 @@ public sealed class CatalogDumpBatchWriter(
                             break;
                         }
 
-                        var trackToWrite = CatalogDumpReadModels.TrackForWrite(track, dumpObservedAt);
+                        var trackToWrite = TrackForWrite(track, dumpObservedAt);
                         catalog.CatalogItemDiscovered(new CatalogItem.MusicTrack(trackToWrite));
                         pendingKeys.Add($"track:{track.TrackId.Value}");
-                        readModels.Add((
-                            CatalogTrackRecordDto.GetDocumentId(track.TrackId.Value),
-                            CatalogDumpReadModels.Track(artistId, trackToWrite, dumpObservedAt)));
                         break;
                 }
             }
@@ -109,89 +107,71 @@ public sealed class CatalogDumpBatchWriter(
                 cancellationToken,
                 ProjectionHint.BulkImport);
 
-            foreach (var albumItem in group.OfType<AlbumDumpBatchItem>())
+            var (reloaded, _) = await ArtistCatalog.LoadAsync(artistRepository, artistId, cancellationToken);
+            var projection = ArtistCatalogProjectionMaterializer.Build(artistId, reloaded.Events);
+            readModels.AddRange(ArtistCatalogProjectionDocuments.CreateBrowseDocuments(projection));
+            readModels.AddRange(ArtistCatalogProjectionDocuments.CreateSearchCandidateDocuments(projection, pendingKeys));
+
+            foreach (var pendingKey in pendingKeys)
             {
-                if (!pendingKeys.Contains($"album:{albumItem.Album.AlbumId.StableValue}", StringComparer.Ordinal))
+                if (!pendingKey.StartsWith("track:", StringComparison.Ordinal))
                 {
                     continue;
                 }
 
-                var albumToWrite = new Album(
-                    albumItem.Album.AlbumId,
-                    albumItem.Album.AlbumTitle,
-                    albumItem.Album.SourceSystemIds,
-                    albumItem.Album.ReleaseDate,
-                    albumItem.Album.ArtworkUrl,
-                    dumpObservedAt);
-                await MergeArtistAlbumsReadModelAsync(
-                    artistId,
-                    albumToWrite,
-                    dumpObservedAt,
-                    readModels,
-                    cancellationToken);
+                var trackIdValue = pendingKey["track:".Length..];
+                var projectedTrack = projection.Tracks.FirstOrDefault(track =>
+                    string.Equals(track.TrackId.Value, trackIdValue, StringComparison.Ordinal));
+                if (projectedTrack is not null && projectedTrack.StreamingLocations.Length == 0)
+                {
+                    streamingLocationRequests.Add(projectedTrack.TrackId);
+                }
             }
         }
 
-        if (readModels.Count == 0)
+        if (readModels.Count > 0)
         {
-            return;
+            await using var bulk = documentStore.BulkInsert();
+            foreach (var (id, document) in DeduplicateById(readModels))
+            {
+                await bulk.StoreAsync(document, id);
+            }
         }
 
-        await using var bulk = documentStore.BulkInsert();
-        foreach (var (id, document) in readModels)
+        foreach (var trackId in streamingLocationRequests.Distinct())
         {
-            await bulk.StoreAsync(document, id);
+            await commandBus.SendAsync(
+                new RequestKnownMusicDataMessage(
+                    new CatalogItemOperation.StreamingLocationForTrack(trackId),
+                    LookupPriorityBand.Low,
+                    TrustLevel: 100,
+                    RiskScore: 0,
+                    dumpObservedAt)
+                {
+                    Id = MessageId.Deterministic(
+                        "RequestKnownMusicData",
+                        "bulk-import",
+                        "streaming",
+                        trackId.Value),
+                    CorrelationId = CorrelationId.From($"musicbrainz-dump:{dumpObservedAt:O}")
+                },
+                cancellationToken);
         }
     }
 
-    private async Task MergeArtistAlbumsReadModelAsync(
-        ArtistId artistId,
-        Album album,
-        DateTimeOffset updatedAt,
-        List<(string Id, object Document)> readModels,
-        CancellationToken cancellationToken)
+    private static IEnumerable<(string Id, object Document)> DeduplicateById(
+        IReadOnlyList<(string Id, object Document)> documents)
     {
-        var documentId = CatalogArtistAlbumsRecordDto.GetDocumentId(artistId.Value);
-        var existingInBatch = readModels
-            .Where(static pair => pair.Document is CatalogArtistAlbumsRecordDto)
-            .Select(static pair => (CatalogArtistAlbumsRecordDto)pair.Document)
-            .FirstOrDefault(doc => string.Equals(doc.Id, documentId, StringComparison.Ordinal));
-
-        CatalogArtistAlbumsRecordDto existing;
-        if (existingInBatch is not null)
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var pair in documents)
         {
-            existing = existingInBatch;
-            readModels.RemoveAll(pair => ReferenceEquals(pair.Document, existingInBatch));
-        }
-        else
-        {
-            using var session = documentStore.OpenAsyncSession();
-            existing = await session.LoadAsync<CatalogArtistAlbumsRecordDto>(documentId, cancellationToken)
-                ?? new CatalogArtistAlbumsRecordDto
-                {
-                    Id = documentId,
-                    ArtistId = artistId.Value,
-                    ArtistName = string.Empty,
-                    Albums = []
-                };
-        }
+            if (!seen.Add(pair.Id))
+            {
+                continue;
+            }
 
-        existing.Albums = existing.Albums
-            .Where(item => !string.Equals(item.AlbumId, album.AlbumId.StableValue, StringComparison.Ordinal))
-            .Append(
-                new CatalogArtistAlbumRecordDto
-                {
-                    AlbumId = album.AlbumId.StableValue,
-                    MusicCatalogId = album.AlbumId.StableValue,
-                    AlbumTitle = album.AlbumTitle ?? string.Empty,
-                    ReleaseDate = album.ReleaseDate,
-                    ArtworkUrl = album.ArtworkUrl
-                })
-            .OrderBy(static item => item.ReleaseDate)
-            .ThenBy(static item => item.AlbumTitle, StringComparer.Ordinal)
-            .ToArray();
-        existing.UpdatedAt = updatedAt;
-        readModels.Add((documentId, existing));
+            yield return pair;
+        }
     }
 
     private static bool ShouldWriteArtist(LoadedEventStream<ArtistId> stream, DateTimeOffset dumpObservedAt)
@@ -237,26 +217,8 @@ public sealed class CatalogDumpBatchWriter(
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(joined));
         return Convert.ToHexString(hash.AsSpan(0, 8));
     }
-}
 
-internal static class CatalogDumpReadModels
-{
-    public static CatalogArtistRecordDto Artist(Artist artist, DateTimeOffset updatedAt) =>
-        new()
-        {
-            Id = CatalogArtistRecordDto.GetDocumentId(artist.Id.Value),
-            ArtistId = artist.Id.Value,
-            Name = artist.Name.Value,
-            NormalizedName = MusicIdentityText.NormalizeFreeText(artist.Name.Value),
-            SearchText = artist.Name.Value,
-            MusicBrainzArtistId = SourceSystemIdSet.MusicBrainzIdOrNull(artist.SourceSystemIds),
-            AvailableProviders = [],
-            TerminallyUnavailableProviders = [],
-            ArtworkUrl = artist.ImageUrl,
-            UpdatedAt = updatedAt
-        };
-
-    public static Track TrackForWrite(Track track, DateTimeOffset dumpObservedAt)
+    private static Track TrackForWrite(Track track, DateTimeOffset dumpObservedAt)
     {
         var trackToWrite = new Track(track.TrackId)
         {
@@ -274,24 +236,4 @@ internal static class CatalogDumpReadModels
         SourceSystemIdSet.UnionWith(trackToWrite.SourceSystemIds, track.SourceSystemIds);
         return trackToWrite;
     }
-
-    public static CatalogTrackRecordDto Track(ArtistId artistId, Track track, DateTimeOffset updatedAt) =>
-        new()
-        {
-            Id = CatalogTrackRecordDto.GetDocumentId(track.TrackId.Value),
-            TrackId = track.TrackId.Value,
-            MusicCatalogId = track.TrackId.Value,
-            ArtistId = artistId.Value,
-            Title = track.Title,
-            ArtistName = track.ArtistName,
-            AlbumTitle = track.AlbumTitle,
-            AlbumId = track.AlbumId,
-            DurationMs = track.DurationMs,
-            Isrc = track.Isrc,
-            ReleaseDate = track.ReleaseDate,
-            ReleaseType = track.ReleaseType,
-            ArtworkUrl = track.ArtworkUrl,
-            StreamingLocations = [],
-            UpdatedAt = updatedAt
-        };
 }

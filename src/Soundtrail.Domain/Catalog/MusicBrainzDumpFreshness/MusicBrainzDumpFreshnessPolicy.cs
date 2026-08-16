@@ -2,6 +2,7 @@ using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Tracks;
+using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 
 namespace Soundtrail.Domain.Catalog.MusicBrainzDumpFreshness;
@@ -34,7 +35,14 @@ public sealed record DumpCatalogTrackSnapshot(
     DateOnly? ReleaseDate,
     string? ReleaseType,
     string? ArtworkUrl,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    IReadOnlyList<DumpCatalogStreamingLocationSnapshot> StreamingLocations);
+
+public sealed record DumpCatalogStreamingLocationSnapshot(
+    string Provider,
+    string? ExternalId,
+    string Url);
+
 
 public static class MusicBrainzDumpFreshnessPolicy
 {
@@ -168,6 +176,22 @@ public static class MusicBrainzDumpFreshnessPolicy
                 UpdatedAt = track.UpdatedAt
             };
 
+            foreach (var location in track.StreamingLocations)
+            {
+                if (!TryMapProvider(location.Provider, out var provider) ||
+                    !Uri.TryCreate(location.Url, UriKind.Absolute, out var url))
+                {
+                    continue;
+                }
+
+                domainTrack.ProviderReferences[provider.Value] = new StreamingLocation(
+                    provider,
+                    location.ExternalId,
+                    url,
+                    LookupSource.Odesli,
+                    track.UpdatedAt);
+            }
+
             entries.Add(
                 new CatalogDiscoveryEntry(
                     ArtistId.From(track.ArtistId),
@@ -177,6 +201,28 @@ public static class MusicBrainzDumpFreshnessPolicy
         return entries.Count == 0
             ? Array.Empty<CatalogDiscoveryEntry>()
             : entries;
+    }
+
+    private static bool TryMapProvider(string provider, out ProviderName mapped)
+    {
+        switch (provider)
+        {
+            case "spotify":
+            case "Spotify":
+                mapped = ProviderName.Spotify;
+                return true;
+            case "appleMusic":
+            case "AppleMusic":
+                mapped = ProviderName.AppleMusic;
+                return true;
+            case "youtubeMusic":
+            case "YoutubeMusic":
+                mapped = ProviderName.YoutubeMusic;
+                return true;
+            default:
+                mapped = default;
+                return false;
+        }
     }
 
     private static HashSet<SourceSystemId> SourceSystemIdSetFromAlbumId(string albumId)

@@ -1,6 +1,7 @@
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
+using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
 using Soundtrail.Services.Api.Features.Catalog.GetAlbumsForArtist.Contract;
@@ -8,7 +9,6 @@ using Soundtrail.Services.Api.Features.Catalog.GetTracksForAlbum.Contract;
 using Soundtrail.Services.Api.Features.Catalog.GetTracksForArtist.Contract;
 using Soundtrail.Services.Api.Shared.Contract;
 using Soundtrail.Services.Enrichment.Worker.Shared.StreamingLocations;
-using Soundtrail.Services.Internal.Projector.Features.OnArtistCatalogChanged;
 using Soundtrail.Services.Internal.Projector.Features.OnArtistCatalogChanged.Adapters;
 using Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes;
 
@@ -17,9 +17,9 @@ namespace Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes
     internal sealed class StoreArtistCatalogReadModelPortFake(
         ReadTrackForLookupPortFake readTrackForLookup) : IStoreArtistCatalogReadModelPort
     {
-        private readonly Dictionary<ArtistId, ArtistCatalogReadModel> artists = [];
+        private readonly Dictionary<ArtistId, ArtistCatalogProjection> artists = [];
 
-        public IReadOnlyCollection<(ArtistId ArtistId, ArtistCatalogTrackReadModel Track, DateTimeOffset UpdatedAt)> Tracks =>
+        public IReadOnlyCollection<(ArtistId ArtistId, ArtistCatalogTrackProjection Track, DateTimeOffset UpdatedAt)> Tracks =>
             artists.Values
                 .SelectMany(static readModel => readModel.Tracks.Select(track => (
                     readModel.ArtistId,
@@ -27,13 +27,13 @@ namespace Soundtrail.Services.Tests.Unit.Sociable.Infrastructure.Fakes
                     readModel.UpdatedAt)))
                 .ToArray();
 
-        public Task StoreAsync(ArtistCatalogReadModel readModel, CancellationToken cancellationToken)
+        public Task StoreAsync(ArtistCatalogProjection projection, CancellationToken cancellationToken)
         {
-            artists[readModel.ArtistId] = readModel;
-            foreach (var track in readModel.Tracks)
+            artists[projection.ArtistId] = projection;
+            foreach (var track in projection.Tracks)
             {
                 readTrackForLookup.WithTrack(new TrackLookupContext(
-                    readModel.ArtistId,
+                    projection.ArtistId,
                     track.TrackId,
                     track.Title,
                     track.ArtistName,
