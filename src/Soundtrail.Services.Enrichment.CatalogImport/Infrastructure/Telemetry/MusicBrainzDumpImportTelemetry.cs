@@ -7,10 +7,13 @@ namespace Soundtrail.Services.Enrichment.CatalogImport.Infrastructure.Telemetry;
 
 public static class MusicBrainzDumpImportTelemetry
 {
-    public const string SourceName = "Soundtrail.CatalogImport.MusicBrainzDump";
+    // Matches Host ApplicationName / ServiceDefaults AddSource for this executable.
+    private static readonly string ApplicationSourceName =
+        typeof(MusicBrainzDumpImportTelemetry).Assembly.GetName().Name
+        ?? "Soundtrail.Services.Enrichment.CatalogImport";
 
-    private static readonly ActivitySource ActivitySource = new(SourceName);
-    private static readonly Meter Meter = new(SourceName);
+    private static readonly ActivitySource ActivitySource = new(ApplicationSourceName);
+    private static readonly Meter Meter = new(ApplicationSourceName);
 
     private static readonly ConcurrentDictionary<string, double> ProgressByJobId = new(StringComparer.Ordinal);
     private static readonly Counter<long> RowsImported = Meter.CreateCounter<long>(

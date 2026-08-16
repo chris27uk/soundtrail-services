@@ -63,13 +63,12 @@ public static class Extensions
                 metrics.AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
                     .AddRuntimeInstrumentation()
-                    .AddMeter("Soundtrail.CatalogImport.MusicBrainzDump");
+                    .AddMeter(builder.Environment.ApplicationName);
             })
             .WithTracing(tracing =>
             {
                 tracing.AddSource(builder.Environment.ApplicationName)
                     .AddSource("Soundtrail.Messaging")
-                    .AddSource("Soundtrail.CatalogImport.MusicBrainzDump")
                     .AddAspNetCoreInstrumentation(tracing =>
                         // Exclude health check requests from tracing
                         tracing.Filter = context =>
