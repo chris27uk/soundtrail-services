@@ -69,8 +69,8 @@ public sealed class ImportMusicBrainzDumpCatalogImportPipelineTests
 
         await environment.TriggerAndProcessAsync(DateTimeOffset.Parse("2026-08-01T00:00:00Z"));
 
-        environment.SentShards.Should().OnlyContain(shard => shard.Phase == MusicBrainzDumpImportPhase.Artists);
-        environment.SentShards.Should().HaveCount(2);
+        environment.SentShards.Should().Contain(shard => shard.Phase == MusicBrainzDumpImportPhase.Artists);
+        environment.SentShards.Count(shard => shard.Phase == MusicBrainzDumpImportPhase.Artists).Should().Be(2);
     }
 
     [Fact]

@@ -220,10 +220,13 @@ public sealed class MusicBrainzDumpImportJob
         }
     }
 
-    public bool TryCompleteArtistsPhaseAsFinal(DateTimeOffset finishedAt)
+    public bool HasRegisteredShards(MusicBrainzDumpImportPhase phase) =>
+        shards.Values.Any(shard => shard.Phase == phase);
+
+    public bool TryCompleteReleaseGroupsPhaseAsFinal(DateTimeOffset finishedAt)
     {
-        if (CurrentPhase != MusicBrainzDumpImportPhase.Artists ||
-            !AreAllShardsCompleted(MusicBrainzDumpImportPhase.Artists))
+        if (CurrentPhase != MusicBrainzDumpImportPhase.ReleaseGroups ||
+            !AreAllShardsCompleted(MusicBrainzDumpImportPhase.ReleaseGroups))
         {
             return false;
         }

@@ -8,6 +8,11 @@ public sealed class MusicBrainzDumpOptions
 
     public string? LocalPath { get; set; }
 
+    /// <summary>
+    /// Path to release-group JSONL. When unset, inferred as sibling <c>release-group.jsonl</c> beside <see cref="LocalPath"/>.
+    /// </summary>
+    public string? ReleaseGroupsLocalPath { get; set; }
+
     public string? ShardDirectory { get; set; }
 
     public int ShardCount { get; set; } = 4;

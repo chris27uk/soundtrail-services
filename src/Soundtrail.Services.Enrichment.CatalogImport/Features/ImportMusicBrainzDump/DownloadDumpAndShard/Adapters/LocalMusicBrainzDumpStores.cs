@@ -18,23 +18,54 @@ public sealed class LocalMusicBrainzDumpArchiveStore(IOptions<MusicBrainzDumpOpt
         _ = jobId;
         _ = dumpVersion;
         _ = cancellationToken;
+        return Task.FromResult(RequireExistingPath(options.Value.LocalPath, "artists"));
+    }
 
-        var localPath = options.Value.LocalPath;
-        if (string.IsNullOrWhiteSpace(localPath))
+    public Task<string> EnsureReleaseGroupsJsonlAsync(
+        MusicBrainzDumpImportJobId jobId,
+        string dumpVersion,
+        CancellationToken cancellationToken = default)
+    {
+        _ = jobId;
+        _ = dumpVersion;
+        _ = cancellationToken;
+
+        var configured = options.Value.ReleaseGroupsLocalPath;
+        if (!string.IsNullOrWhiteSpace(configured))
         {
-            throw new InvalidOperationException(
-                "MusicBrainzDump:LocalPath must be set when Source=local.");
+            return Task.FromResult(RequireExistingPath(configured, "release-groups"));
         }
 
-        var fullPath = Path.GetFullPath(localPath);
+        var artistsPath = options.Value.LocalPath;
+        if (string.IsNullOrWhiteSpace(artistsPath))
+        {
+            throw new InvalidOperationException(
+                "MusicBrainzDump:LocalPath or ReleaseGroupsLocalPath must be set when Source=local.");
+        }
+
+        var sibling = Path.Combine(
+            Path.GetDirectoryName(Path.GetFullPath(artistsPath))!,
+            "release-group.jsonl");
+        return Task.FromResult(RequireExistingPath(sibling, "release-groups"));
+    }
+
+    private static string RequireExistingPath(string? path, string label)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            throw new InvalidOperationException(
+                $"MusicBrainzDump path for {label} must be set when Source=local.");
+        }
+
+        var fullPath = Path.GetFullPath(path);
         if (!File.Exists(fullPath))
         {
             throw new FileNotFoundException(
-                $"MusicBrainz artists JSONL fixture was not found at '{fullPath}'.",
+                $"MusicBrainz {label} JSONL fixture was not found at '{fullPath}'.",
                 fullPath);
         }
 
-        return Task.FromResult(fullPath);
+        return fullPath;
     }
 }
 
@@ -119,3 +150,4 @@ internal static class MusicBrainzArtistJsonLine
         }
     }
 }
+

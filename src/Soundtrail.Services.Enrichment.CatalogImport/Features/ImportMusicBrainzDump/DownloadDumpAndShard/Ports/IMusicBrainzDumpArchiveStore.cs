@@ -12,4 +12,12 @@ public interface IMusicBrainzDumpArchiveStore
         MusicBrainzDumpImportJobId jobId,
         string dumpVersion,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Ensures the release-group JSONL source exists. Returns the path/key to the file.
+    /// </summary>
+    Task<string> EnsureReleaseGroupsJsonlAsync(
+        MusicBrainzDumpImportJobId jobId,
+        string dumpVersion,
+        CancellationToken cancellationToken = default);
 }

@@ -29,9 +29,35 @@ public sealed class DownloadDumpAndShardJob(
         }
 
         var leaseDuration = options.Value.LeaseDuration;
+        if (!job.TryClaimProducer(leaseOwner.Value, DateTimeOffset.UtcNow, leaseDuration))
+        {
+            return;
+        }
+
+        await jobStore.SaveAsync(job, cancellationToken);
+
+        if (job.CurrentPhase == MusicBrainzDumpImportPhase.Artists &&
+            !job.HasRegisteredShards(MusicBrainzDumpImportPhase.Artists))
+        {
+            await RunArtistsPhaseAsync(job, leaseDuration, cancellationToken);
+            return;
+        }
+
+        if (job.CurrentPhase == MusicBrainzDumpImportPhase.ReleaseGroups &&
+            !job.HasRegisteredShards(MusicBrainzDumpImportPhase.ReleaseGroups))
+        {
+            await RunReleaseGroupsPhaseAsync(job, leaseDuration, cancellationToken);
+        }
+    }
+
+    private async Task RunArtistsPhaseAsync(
+        MusicBrainzDumpImportJob job,
+        TimeSpan leaseDuration,
+        CancellationToken cancellationToken)
+    {
         Heartbeat(job, leaseDuration);
 
-        var artistsPath = await archiveStore.EnsureArtistsJsonlAsync(jobId, job.DumpVersion, cancellationToken);
+        var artistsPath = await archiveStore.EnsureArtistsJsonlAsync(job.Id, job.DumpVersion, cancellationToken);
         Heartbeat(job, leaseDuration);
 
         if (job.Status == MusicBrainzDumpImportJobStatus.Downloading)
@@ -62,17 +88,94 @@ public sealed class DownloadDumpAndShardJob(
             }
         }
 
+        await PublishPhaseShardsAsync(
+            job,
+            MusicBrainzDumpImportPhase.Artists,
+            buckets,
+            leaseDuration,
+            cancellationToken);
+
+        logger.LogInformation(
+            "MusicBrainz dump producer published {ShardCount} Artists shards for job {JobId} from {LineCount} lines.",
+            shardCount,
+            job.Id.Value,
+            lineCount);
+    }
+
+    private async Task RunReleaseGroupsPhaseAsync(
+        MusicBrainzDumpImportJob job,
+        TimeSpan leaseDuration,
+        CancellationToken cancellationToken)
+    {
+        Heartbeat(job, leaseDuration);
+
+        var releaseGroupsPath = await archiveStore.EnsureReleaseGroupsJsonlAsync(
+            job.Id,
+            job.DumpVersion,
+            cancellationToken);
+        Heartbeat(job, leaseDuration);
+
+        var shardCount = Math.Max(1, options.Value.ShardCount);
+        var buckets = Enumerable.Range(0, shardCount).Select(_ => new List<string>()).ToArray();
+        var lineCount = 0;
+        var copiedRows = 0;
+
+        await foreach (var line in File.ReadLinesAsync(releaseGroupsPath, cancellationToken))
+        {
+            lineCount++;
+            if (!MusicBrainzReleaseGroupJsonLine.TryReadCreditedArtistIds(line, out var artistIds))
+            {
+                continue;
+            }
+
+            foreach (var artistId in artistIds)
+            {
+                var shardId = partitioner.ShardIdFor(artistId, shardCount);
+                buckets[shardId].Add(MusicBrainzReleaseGroupJsonLine.WrapForCreditedArtist(artistId, line));
+                copiedRows++;
+            }
+
+            if (lineCount % 10_000 == 0)
+            {
+                Heartbeat(job, leaseDuration);
+                await jobStore.SaveAsync(job, cancellationToken);
+            }
+        }
+
+        await PublishPhaseShardsAsync(
+            job,
+            MusicBrainzDumpImportPhase.ReleaseGroups,
+            buckets,
+            leaseDuration,
+            cancellationToken);
+
+        logger.LogInformation(
+            "MusicBrainz dump producer published {ShardCount} ReleaseGroups shards for job {JobId} from {LineCount} lines ({CopiedRows} credited copies).",
+            shardCount,
+            job.Id.Value,
+            lineCount,
+            copiedRows);
+    }
+
+    private async Task PublishPhaseShardsAsync(
+        MusicBrainzDumpImportJob job,
+        MusicBrainzDumpImportPhase phase,
+        IReadOnlyList<List<string>> buckets,
+        TimeSpan leaseDuration,
+        CancellationToken cancellationToken)
+    {
+        var shardCount = buckets.Count;
         for (var shardId = 0; shardId < shardCount; shardId++)
         {
             await shardStore.WriteShardAsync(
-                jobId,
-                MusicBrainzDumpImportPhase.Artists,
+                job.Id,
+                phase,
                 shardId,
                 buckets[shardId],
                 cancellationToken);
         }
 
-        job.RegisterPhaseShards(MusicBrainzDumpImportPhase.Artists, shardCount);
+        job.RegisterPhaseShards(phase, shardCount);
         job.SetStatus(MusicBrainzDumpImportJobStatus.Importing);
         Heartbeat(job, leaseDuration);
         await jobStore.SaveAsync(job, cancellationToken);
@@ -81,19 +184,9 @@ public sealed class DownloadDumpAndShardJob(
         for (var shardId = 0; shardId < shardCount; shardId++)
         {
             await commandBus.SendAsync(
-                ImportMusicBrainzDumpShard.Create(
-                    jobId,
-                    MusicBrainzDumpImportPhase.Artists,
-                    shardId,
-                    requestedAt),
+                ImportMusicBrainzDumpShard.Create(job.Id, phase, shardId, requestedAt),
                 cancellationToken);
         }
-
-        logger.LogInformation(
-            "MusicBrainz dump producer published {ShardCount} Artists shards for job {JobId} from {LineCount} lines.",
-            shardCount,
-            job.Id.Value,
-            lineCount);
     }
 
     private void Heartbeat(MusicBrainzDumpImportJob job, TimeSpan leaseDuration) =>
