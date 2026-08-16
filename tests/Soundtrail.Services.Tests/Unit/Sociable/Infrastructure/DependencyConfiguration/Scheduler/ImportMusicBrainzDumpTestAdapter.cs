@@ -1,4 +1,6 @@
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog.MusicBrainzDumpImport;
 using Soundtrail.Services.Enrichment.Scheduler.Features.ImportMusicBrainzDump.CompositionRoot;
@@ -18,6 +20,10 @@ internal sealed class ImportMusicBrainzDumpTestAdapter(ImportMusicBrainzDumpPort
             sp => sp.GetRequiredService<ICommandBus>(),
             sp => sp.GetRequiredService<IMusicBrainzDumpImportJobStore>());
 
-    public void ConfigureServices(IServiceCollection services, IConfiguration configuration) =>
+    public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
+    {
+        services.TryAddSingleton<IOptions<MusicBrainzDumpOptions>>(_ =>
+            Options.Create(new MusicBrainzDumpOptions()));
         ImportMusicBrainzDumpComposition.Configure(services, ports);
+    }
 }

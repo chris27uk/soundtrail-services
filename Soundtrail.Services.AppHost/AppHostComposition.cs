@@ -129,6 +129,12 @@ public static class AppHostComposition
             projector = projector.WaitFor(serviceBus);
         }
 
+        var fixtureDumpVersion = MusicBrainzDumpFixture.DumpVersion;
+        var musicBrainzDumpArchiveDirectory = Path.Combine(
+            resolvedContentRootPath,
+            "testdata",
+            "musicbrainz-dump");
+
         var scheduler = builder.AddProject<Soundtrail_Services_Enrichment_Scheduler>("soundtrail-scheduler")
             .WithHttpEndpoint(name: "http")
             .WithReference(serviceBus)
@@ -136,7 +142,8 @@ public static class AppHostComposition
             .WithEnvironment("OTEL_SERVICE_VERSION", otelServiceVersion)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
             .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
-            .WithEnvironment("RavenDb__Database", "soundtrail");
+            .WithEnvironment("RavenDb__Database", "soundtrail")
+            .WithEnvironment("MusicBrainzDump__DumpVersion", fixtureDumpVersion);
 
         if (useServiceBusEmulator)
         {
@@ -152,9 +159,8 @@ public static class AppHostComposition
             .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail")
             .WithEnvironment("MusicBrainzDump__Source", "fixture")
-            .WithEnvironment(
-                "MusicBrainzDump__ArchiveDirectory",
-                Path.Combine(resolvedContentRootPath, "testdata", "musicbrainz-dump"));
+            .WithEnvironment("MusicBrainzDump__DumpVersion", fixtureDumpVersion)
+            .WithEnvironment("MusicBrainzDump__ArchiveDirectory", musicBrainzDumpArchiveDirectory);
 
         if (useBlobStorageEmulator && musicBrainzDumpBlobs is not null)
         {

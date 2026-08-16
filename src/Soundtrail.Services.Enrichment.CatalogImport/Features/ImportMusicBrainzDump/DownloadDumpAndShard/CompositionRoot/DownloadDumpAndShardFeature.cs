@@ -15,7 +15,6 @@ using Soundtrail.Domain.Catalog.MusicBrainzDumpImport;
 using Soundtrail.Domain.Catalog.MusicBrainzDumpImport.Messages;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Adapters;
-using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Model;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Ports;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Work;
 using Soundtrail.Services.Enrichment.CatalogImport.Infrastructure.Lease;

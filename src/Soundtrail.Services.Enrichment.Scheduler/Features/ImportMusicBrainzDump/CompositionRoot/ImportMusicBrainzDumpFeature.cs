@@ -19,6 +19,7 @@ public sealed class ImportMusicBrainzDumpFeature : ISchedulerFeature
     {
         services.AddRavenDocumentStore(configuration);
         services.AddMusicBrainzDumpImportJobStore();
+        services.Configure<MusicBrainzDumpOptions>(configuration.GetSection(MusicBrainzDumpOptions.SectionName));
 
         ImportMusicBrainzDumpComposition.Configure(
             services,
