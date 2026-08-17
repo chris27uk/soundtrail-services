@@ -193,7 +193,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/ci-start-background-jobs.sh
 
-      # Published testhost bits for this exact source tree (skips Buildx on PR warms).
+      # Published testhost bits for this exact source tree (host SDK; Buildx is
+      # separate — PRs compile Dockerfile.ci, main also publishes apps).
       # GHA cache is branch-scoped: PRs can read main, main cannot read PR caches.
       # Main therefore falls back to the testhost-out artifact from the merged PR.
       - name: Restore testhost output
@@ -280,7 +281,7 @@ jobs:
       # not make reusable layers and previously added 20-42s of cache upload.
       - name: Check BuildKit export marker
         id: bk-export
-        if: steps.testhost.outputs.need_buildx == 'true'
+        if: always() && !cancelled() && steps.testhost.outputs.need_buildx == 'true'
         uses: actions/cache/restore@v6
         with:
           path: /tmp/buildkit-export-marker
@@ -289,33 +290,34 @@ jobs:
 
       - name: Restore BuildKit image cache
         id: tooling-cache
-        if: steps.testhost.outputs.need_buildx == 'true'
+        if: always() && !cancelled() && steps.testhost.outputs.need_buildx == 'true'
         uses: actions/cache/restore@v6
         with:
           path: /tmp/sidecar-images/tooling.tar
           key: docker-tooling-v1-buildx-stable-1
 
       - name: Load BuildKit image (background)
-        if: steps.testhost.outputs.need_buildx == 'true'
+        if: always() && !cancelled() && steps.testhost.outputs.need_buildx == 'true'
         run: bash scripts/ci-load-tooling-bg.sh
 
       - name: Wait for BuildKit image
-        if: steps.testhost.outputs.need_buildx == 'true'
+        if: always() && !cancelled() && steps.testhost.outputs.need_buildx == 'true'
         run: bash scripts/ci-wait-tooling.sh
 
       - name: Set up Docker Buildx
-        if: steps.testhost.outputs.need_buildx == 'true'
+        if: always() && !cancelled() && steps.testhost.outputs.need_buildx == 'true'
         run: bash scripts/ci-setup-buildx.sh
 
       - name: Expose GitHub runtime
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: always() && !cancelled() && steps.testhost.outputs.need_buildx == 'true'
         uses: crazy-max/ghaction-github-runtime@v4
 
       - name: Publish apps (background)
         id: publish-apps
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: always() && !cancelled() && steps.testhost.outputs.need_buildx == 'true'
         env:
-          PUBLISH_CACHE_TO: ${{ steps.bk-export.outputs.cache-hit != 'true' && 'true' || 'false' }}
+          PUBLISH_CACHE_TO: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.bk-export.outputs.cache-hit != 'true' && 'true' || 'false' }}
+          DOCKER_BUILD_TARGET: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'publish-apps-out' || 'build' }}
         run: bash scripts/ci-publish-apps-bg.sh
 
       - name: Wait for tests
@@ -324,7 +326,7 @@ jobs:
 
       - name: Wait for publish
         id: wait-publish
-        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: always() && !cancelled() && steps.publish-apps.outcome == 'success'
         run: bash scripts/ci-wait-publish.sh
 
       # BUILD_VERSION is already known (set earlier in this job by the
@@ -346,13 +348,14 @@ jobs:
 
       - name: Save BuildKit export marker
         # Publish success is enough; flaky tests should not force another cache export.
-        if: always() && steps.bk-export.outputs.cache-hit != 'true' && steps.wait-publish.outcome == 'success'
+        # PRs compile Dockerfile.ci with cacheonly and must not stamp the export marker.
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.bk-export.outputs.cache-hit != 'true' && steps.wait-publish.outcome == 'success'
         run: |
           mkdir -p /tmp/buildkit-export-marker
           date -u > /tmp/buildkit-export-marker/stamp
 
       - name: Upload BuildKit export marker
-        if: always() && steps.bk-export.outputs.cache-hit != 'true' && steps.wait-publish.outcome == 'success'
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.bk-export.outputs.cache-hit != 'true' && steps.wait-publish.outcome == 'success'
         continue-on-error: true
         uses: actions/cache/save@v6
         with:

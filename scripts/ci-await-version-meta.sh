@@ -24,7 +24,24 @@ if [[ -z "$artifact_id" ]]; then
   exit 1
 fi
 
-gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" > /tmp/version-meta.zip
+download_ok=false
+delay=2
+for attempt in 1 2 3 4 5 6; do
+  if gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" > /tmp/version-meta.zip \
+    && unzip -t /tmp/version-meta.zip >/dev/null 2>&1; then
+    download_ok=true
+    break
+  fi
+  echo "version-meta zip download failed (attempt ${attempt}/6); retrying in ${delay}s"
+  sleep "$delay"
+  delay=$((delay < 16 ? delay * 2 : 16))
+done
+
+if [[ "$download_ok" != "true" ]]; then
+  echo "::error::Failed to download version-meta artifact after retries"
+  exit 1
+fi
+
 unzip -qo /tmp/version-meta.zip -d "$dest"
 rm -f /tmp/version-meta.zip
 

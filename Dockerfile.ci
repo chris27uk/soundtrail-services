@@ -27,6 +27,7 @@ COPY src/Soundtrail.Services.Enrichment.Orchestrator/Soundtrail.Services.Enrichm
 COPY src/Soundtrail.Services.Enrichment.Scheduler/Soundtrail.Services.Enrichment.Scheduler.csproj src/Soundtrail.Services.Enrichment.Scheduler/packages.lock.json src/Soundtrail.Services.Enrichment.Scheduler/
 COPY src/Soundtrail.Services.Enrichment.Worker/Soundtrail.Services.Enrichment.Worker.csproj src/Soundtrail.Services.Enrichment.Worker/packages.lock.json src/Soundtrail.Services.Enrichment.Worker/
 COPY src/Soundtrail.Services.Projector/Soundtrail.Services.Projector.csproj src/Soundtrail.Services.Projector/packages.lock.json src/Soundtrail.Services.Projector/
+COPY src/Soundtrail.Services.StreamBrowser/Soundtrail.Services.StreamBrowser.csproj src/Soundtrail.Services.StreamBrowser/packages.lock.json src/Soundtrail.Services.StreamBrowser/
 COPY tests/Soundtrail.Services.Tests/Soundtrail.Services.Tests.csproj tests/Soundtrail.Services.Tests/packages.lock.json tests/Soundtrail.Services.Tests/packages.ci.lock.json tests/Soundtrail.Services.Tests/
 
 RUN --mount=type=cache,id=nuget,target=/cache/nuget \
@@ -60,6 +61,7 @@ COPY src/Soundtrail.Services.Enrichment.Orchestrator/ src/Soundtrail.Services.En
 COPY src/Soundtrail.Services.Enrichment.Scheduler/ src/Soundtrail.Services.Enrichment.Scheduler/
 COPY src/Soundtrail.Services.Enrichment.Worker/ src/Soundtrail.Services.Enrichment.Worker/
 COPY src/Soundtrail.Services.Projector/ src/Soundtrail.Services.Projector/
+COPY src/Soundtrail.Services.StreamBrowser/ src/Soundtrail.Services.StreamBrowser/
 COPY tests/Soundtrail.Services.Tests/ tests/Soundtrail.Services.Tests/
 COPY Soundtrail.Services.AppHost/servicebus-emulator/Config.json Soundtrail.Services.AppHost/servicebus-emulator/Config.json
 

@@ -27,7 +27,7 @@ while true; do
   fi
 
   if [[ -f /tmp/publish.failed ]]; then
-    echo "::error::Publish apps failed."
+    echo "::error::Docker build failed."
     dump_log
     exit 1
   fi
