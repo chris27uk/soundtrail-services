@@ -1,4 +1,4 @@
-using SharpCompress.Archives.Tar;
+using System.Formats.Tar;
 using SharpCompress.Compressors.Xz;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Ports;
 
@@ -6,6 +6,8 @@ namespace Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrain
 
 public sealed class MusicBrainzDumpTarXzExtractor : IMusicBrainzDumpTarXzExtractor
 {
+    private const int StreamBufferSize = 1024 * 64;
+
     public void EnsureExtracted(string archivePath, string entityName, string outputJsonlPath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(archivePath);
@@ -26,37 +28,50 @@ public sealed class MusicBrainzDumpTarXzExtractor : IMusicBrainzDumpTarXzExtract
 
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outputJsonlPath))!);
 
-        using var archiveStream = File.OpenRead(archivePath);
-        using var xzStream = new XZStream(archiveStream);
-        using var tarBuffer = new MemoryStream();
-        xzStream.CopyTo(tarBuffer);
-        tarBuffer.Position = 0;
-        using var archive = TarArchive.OpenArchive(tarBuffer);
-
-        var entry = archive.Entries
-            .Where(static e => !e.IsDirectory)
-            .FirstOrDefault(e => MatchesEntityEntry(e.Key, entityName));
-
-        if (entry is null)
-        {
-            throw new InvalidOperationException(
-                $"MusicBrainz dump archive '{archivePath}' does not contain a JSONL member for '{entityName}'.");
-        }
-
         var tempPath = outputJsonlPath + ".partial";
         try
         {
-            using (var entryStream = entry.OpenEntryStream())
-            using (var output = new FileStream(
-                       tempPath,
-                       FileMode.Create,
-                       FileAccess.Write,
-                       FileShare.None))
-            {
-                entryStream.CopyTo(output);
-            }
+            using var archiveStream = new FileStream(
+                archivePath,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read,
+                StreamBufferSize,
+                FileOptions.SequentialScan);
+            using var xzStream = new XZStream(archiveStream);
+            using var tarReader = new TarReader(xzStream, leaveOpen: true);
 
-            File.Move(tempPath, outputJsonlPath, overwrite: true);
+            while (TryGetNextEntry(tarReader) is { } entry)
+            {
+                if (entry.EntryType is TarEntryType.Directory
+                    or TarEntryType.GlobalExtendedAttributes
+                    or TarEntryType.ExtendedAttributes
+                    || !MatchesEntityEntry(entry.Name, entityName))
+                {
+                    entry.DataStream?.CopyTo(Stream.Null);
+                    continue;
+                }
+
+                using (var output = new FileStream(
+                           tempPath,
+                           FileMode.Create,
+                           FileAccess.Write,
+                           FileShare.None,
+                           StreamBufferSize,
+                           FileOptions.SequentialScan))
+                {
+                    if (entry.DataStream is null)
+                    {
+                        throw new InvalidOperationException(
+                            $"MusicBrainz dump archive '{archivePath}' entry '{entry.Name}' has no data stream.");
+                    }
+
+                    entry.DataStream.CopyTo(output);
+                }
+
+                File.Move(tempPath, outputJsonlPath, overwrite: true);
+                return;
+            }
         }
         catch
         {
@@ -66,6 +81,21 @@ public sealed class MusicBrainzDumpTarXzExtractor : IMusicBrainzDumpTarXzExtract
             }
 
             throw;
+        }
+
+        throw new InvalidOperationException(
+            $"MusicBrainz dump archive '{archivePath}' does not contain a JSONL member for '{entityName}'.");
+    }
+
+    private static TarEntry? TryGetNextEntry(TarReader tarReader)
+    {
+        try
+        {
+            return tarReader.GetNextEntry(copyData: false);
+        }
+        catch (EndOfStreamException)
+        {
+            return null;
         }
     }
 

@@ -51,6 +51,27 @@ public sealed class MusicBrainzDumpTarXzExtractorTests
 
         act.Should().Throw<InvalidOperationException>();
     }
+
+    [Fact]
+    public void Given_A_Multi_Megabyte_Archive_When_Extracted_Then_Allocations_Stay_Below_The_Payload_Size()
+    {
+        const int payloadBytes = 16 * 1024 * 1024;
+        const int maxAllocatedBytes = 4 * 1024 * 1024;
+
+        using var directory = TemporaryDirectory.Create();
+        var archivePath = MusicBrainzDumpArchiveFixtures.CopyTo(directory.Path, "artist-16mb.tar.xz");
+        var outputPath = Path.Combine(directory.Path, "extracted", "artist.jsonl");
+
+        extractor.EnsureExtracted(archivePath, "artist", outputPath);
+        File.Delete(outputPath);
+
+        var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+        extractor.EnsureExtracted(archivePath, "artist", outputPath);
+        var allocatedBytes = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+
+        new FileInfo(outputPath).Length.Should().Be(payloadBytes);
+        allocatedBytes.Should().BeLessThan(maxAllocatedBytes);
+    }
 }
 
 public sealed class HttpMusicBrainzDumpDownloaderTests

@@ -1,0 +1,3 @@
+# Real MetaBrainz snapshot directories (YYYYMMDD-HHMMSS, multi-GB). Smoke 2026-08/ stays tracked.
+20[0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]/
+.DS_Store
