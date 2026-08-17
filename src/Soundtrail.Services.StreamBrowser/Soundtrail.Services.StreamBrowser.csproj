@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Soundtrail.Services.StreamBrowser</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Soundtrail.Services.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="RavenDB.Client" Version="7.2.5" />
+    <ProjectReference Include="..\..\Soundtrail.Services.ServiceDefaults\Soundtrail.Services.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\Soundtrail.Contracts\Soundtrail.Contracts.csproj" />
+    <ProjectReference Include="..\Soundtrail.Domain\Soundtrail.Domain.csproj" />
+    <ProjectReference Include="..\Soundtrail.Infrastructure\Soundtrail.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

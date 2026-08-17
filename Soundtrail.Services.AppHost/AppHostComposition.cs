@@ -16,6 +16,7 @@ public static class AppHostComposition
         const string ravenDbListenTcpUrl = "tcp://0.0.0.0:38888";
         const string ravenDbPublicTcpUrl = "tcp://localhost:38888";
         const string apiPublicUrl = "http://api.localhost";
+        const string streamBrowserPublicUrl = "http://streams.localhost";
 
         var resolvedContentRootPath = contentRootPath ?? builder.Environment.ContentRootPath;
         AppHostStartupValidator.Validate(builder.Configuration, resolvedContentRootPath);
@@ -102,6 +103,14 @@ public static class AppHostComposition
             .WaitFor(ravenDb)
             .WithEnvironment("OTEL_SERVICE_VERSION", otelServiceVersion)
             .WithEnvironment("ServiceBus__ConnectionString", serviceBus)
+            .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
+            .WithEnvironment("RavenDb__Database", "soundtrail");
+
+        builder.AddProject<Soundtrail_Services_StreamBrowser>("soundtrail-stream-browser")
+            .WithHttpEndpoint(port: 8787, targetPort: 8787, name: "http", isProxied: false)
+            .WithUrlForEndpoint("http", url => url.Url = streamBrowserPublicUrl)
+            .WaitFor(ravenDb)
+            .WithEnvironment("OTEL_SERVICE_VERSION", otelServiceVersion)
             .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail");
 
