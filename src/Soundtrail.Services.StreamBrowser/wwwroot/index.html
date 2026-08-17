@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Soundtrail Stream Browser</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="top">
+    <div>
+      <p class="eyebrow">Local tooling</p>
+      <h1>Stream Browser</h1>
+    </div>
+    <p class="lede">Browse work and artist-catalog event streams without memorising Raven prefixes.</p>
+  </header>
+
+  <main class="layout">
+    <section class="panel" id="keying-panel">
+      <div class="panel-head">
+        <h2>Keying</h2>
+        <p>Pick a template, fill fields, open the stream.</p>
+      </div>
+      <label class="field">
+        <span>Template</span>
+        <select id="template-select"></select>
+      </label>
+      <p class="hint" id="template-description"></p>
+      <p class="pattern" id="template-pattern"></p>
+      <div id="template-fields" class="fields"></div>
+      <div class="actions">
+        <button type="button" id="build-key" class="primary">Build key</button>
+        <button type="button" id="open-keyed" class="secondary" disabled>Open stream</button>
+      </div>
+      <pre class="key-preview" id="key-preview" hidden></pre>
+    </section>
+
+    <section class="panel" id="browse-panel">
+      <div class="panel-head">
+        <h2>Browse</h2>
+        <p>List existing stream metadata documents.</p>
+      </div>
+      <div class="browse-controls">
+        <div class="segmented" role="tablist" aria-label="Stream kind">
+          <button type="button" class="seg active" data-kind="work">Work</button>
+          <button type="button" class="seg" data-kind="catalog">Catalog</button>
+        </div>
+        <label class="field grow">
+          <span>Filter stream id</span>
+          <input id="stream-filter" type="search" placeholder="child_tracks_for_playlist:…" autocomplete="off" />
+        </label>
+        <button type="button" id="refresh-streams" class="secondary">Refresh</button>
+      </div>
+      <p class="meta-line" id="browse-meta"></p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Stream id</th>
+              <th>Keying</th>
+              <th>Version</th>
+              <th>Updated</th>
+            </tr>
+          </thead>
+          <tbody id="stream-rows">
+            <tr><td colspan="4" class="empty">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel wide" id="events-panel">
+      <div class="panel-head row">
+        <div>
+          <h2>Events</h2>
+          <p id="events-subtitle">Select a stream to inspect its event history.</p>
+        </div>
+        <button type="button" id="copy-stream-id" class="ghost" hidden>Copy stream id</button>
+      </div>
+      <div id="events-empty" class="empty-state">No stream selected.</div>
+      <div id="events-content" hidden>
+        <dl class="facts" id="stream-facts"></dl>
+        <div class="event-list" id="event-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="/app.js" type="module"></script>
+</body>
+</html>

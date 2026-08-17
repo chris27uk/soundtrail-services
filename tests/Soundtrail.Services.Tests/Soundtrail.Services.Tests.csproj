@@ -46,6 +46,7 @@
     <ProjectReference Include="..\..\src\Soundtrail.Services.Enrichment.CatalogImport\Soundtrail.Services.Enrichment.CatalogImport.csproj" />
     <ProjectReference Include="..\..\src\Soundtrail.Services.Enrichment.Worker\Soundtrail.Services.Enrichment.Worker.csproj" />
     <ProjectReference Include="..\..\src\Soundtrail.Services.Projector\Soundtrail.Services.Projector.csproj" />
+    <ProjectReference Include="..\..\src\Soundtrail.Services.StreamBrowser\Soundtrail.Services.StreamBrowser.csproj" />
   </ItemGroup>
 
   <ItemGroup>

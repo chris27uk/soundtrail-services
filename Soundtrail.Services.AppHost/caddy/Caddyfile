@@ -2,6 +2,10 @@ http://api.localhost {
     reverse_proxy host.docker.internal:8081
 }
 
+http://streams.localhost {
+    reverse_proxy host.docker.internal:8787
+}
+
 http://ravendb.localhost {
     @studio_root path /
     redir @studio_root /studio/index.html 308
