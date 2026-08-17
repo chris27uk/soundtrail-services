@@ -281,7 +281,7 @@ jobs:
       # not make reusable layers and previously added 20-42s of cache upload.
       - name: Check BuildKit export marker
         id: bk-export
-        if: steps.testhost.outputs.need_buildx == 'true'
+        if: always() && !cancelled() && steps.testhost.outputs.need_buildx == 'true'
         uses: actions/cache/restore@v6
         with:
           path: /tmp/buildkit-export-marker
@@ -290,31 +290,31 @@ jobs:
 
       - name: Restore BuildKit image cache
         id: tooling-cache
-        if: steps.testhost.outputs.need_buildx == 'true'
+        if: always() && !cancelled() && steps.testhost.outputs.need_buildx == 'true'
         uses: actions/cache/restore@v6
         with:
           path: /tmp/sidecar-images/tooling.tar
           key: docker-tooling-v1-buildx-stable-1
 
       - name: Load BuildKit image (background)
-        if: steps.testhost.outputs.need_buildx == 'true'
+        if: always() && !cancelled() && steps.testhost.outputs.need_buildx == 'true'
         run: bash scripts/ci-load-tooling-bg.sh
 
       - name: Wait for BuildKit image
-        if: steps.testhost.outputs.need_buildx == 'true'
+        if: always() && !cancelled() && steps.testhost.outputs.need_buildx == 'true'
         run: bash scripts/ci-wait-tooling.sh
 
       - name: Set up Docker Buildx
-        if: steps.testhost.outputs.need_buildx == 'true'
+        if: always() && !cancelled() && steps.testhost.outputs.need_buildx == 'true'
         run: bash scripts/ci-setup-buildx.sh
 
       - name: Expose GitHub runtime
-        if: steps.testhost.outputs.need_buildx == 'true'
+        if: always() && !cancelled() && steps.testhost.outputs.need_buildx == 'true'
         uses: crazy-max/ghaction-github-runtime@v4
 
       - name: Publish apps (background)
         id: publish-apps
-        if: steps.testhost.outputs.need_buildx == 'true'
+        if: always() && !cancelled() && steps.testhost.outputs.need_buildx == 'true'
         env:
           PUBLISH_CACHE_TO: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.bk-export.outputs.cache-hit != 'true' && 'true' || 'false' }}
           DOCKER_BUILD_TARGET: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'publish-apps-out' || 'build' }}
@@ -326,7 +326,7 @@ jobs:
 
       - name: Wait for publish
         id: wait-publish
-        if: always() && steps.testhost.outputs.need_buildx == 'true'
+        if: always() && !cancelled() && steps.publish-apps.outcome == 'success'
         run: bash scripts/ci-wait-publish.sh
 
       # BUILD_VERSION is already known (set earlier in this job by the
