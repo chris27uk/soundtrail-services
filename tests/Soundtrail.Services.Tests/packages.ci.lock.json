@@ -1708,6 +1708,16 @@
           "OpenTelemetry.Instrumentation.Http": "[1.15.1, )",
           "OpenTelemetry.Instrumentation.Runtime": "[1.15.1, )"
         }
+      },
+      "soundtrail.services.streambrowser": {
+        "type": "Project",
+        "dependencies": {
+          "RavenDB.Client": "[7.2.5, )",
+          "Soundtrail.Contracts": "[1.0.0, )",
+          "Soundtrail.Domain": "[1.0.0, )",
+          "Soundtrail.Infrastructure": "[1.0.0, )",
+          "Soundtrail.Services.ServiceDefaults": "[1.0.0, )"
+        }
       }
     }
   }
