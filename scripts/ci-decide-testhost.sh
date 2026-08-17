@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # After testhost GHA restore and optional PR artifact: reuse published bits or rebuild.
-# Testhost misses publish with the runner SDK; Buildx is only for apps on main.
+# Testhost uses the runner SDK. Buildx verifies Dockerfile.ci (and publishes apps on main).
 set -euo pipefail
 
 source_hash="${SOURCE_TREE_HASH:-}"
@@ -24,12 +24,13 @@ else
   rm -rf testhost
 fi
 
-need_buildx=false
+# Testhost still uses runner-native dotnet publish. Buildx compiles Dockerfile.ci
+# on every CI run so PRs catch COPY-list drift before main publish.
+need_buildx=true
 if [[ "${GITHUB_EVENT_NAME:-}" == "push" && "${GITHUB_REF:-}" == "refs/heads/main" ]]; then
-  need_buildx=true
   echo "Buildx required to publish apps on main."
 else
-  echo "PR testhost uses runner-native dotnet publish; skipping Buildx."
+  echo "Buildx required to verify Dockerfile.ci compile."
 fi
 
 {
