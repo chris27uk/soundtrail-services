@@ -38,8 +38,8 @@ public sealed class MusicBrainzDumpTarXzExtractor : IMusicBrainzDumpTarXzExtract
                 FileShare.Read,
                 StreamBufferSize,
                 FileOptions.SequentialScan);
-            using var xzStream = new XZStream(archiveStream);
-            using var tarReader = new TarReader(xzStream, leaveOpen: true);
+            using var tarSource = OpenTarSource(archiveStream);
+            using var tarReader = new TarReader(tarSource, leaveOpen: true);
 
             while (TryGetNextEntry(tarReader) is { } entry)
             {
@@ -85,6 +85,21 @@ public sealed class MusicBrainzDumpTarXzExtractor : IMusicBrainzDumpTarXzExtract
 
         throw new InvalidOperationException(
             $"MusicBrainz dump archive '{archivePath}' does not contain a JSONL member for '{entityName}'.");
+    }
+
+    private static readonly byte[] XzMagic = [0xFD, 0x37, 0x7A, 0x58, 0x5A, 0x00];
+
+    private static Stream OpenTarSource(FileStream archiveStream)
+    {
+        Span<byte> magic = stackalloc byte[XzMagic.Length];
+        var bytesRead = archiveStream.Read(magic);
+        archiveStream.Position = 0;
+        if (bytesRead == XzMagic.Length && magic.SequenceEqual(XzMagic))
+        {
+            return new XZStream(archiveStream);
+        }
+
+        return archiveStream;
     }
 
     private static TarEntry? TryGetNextEntry(TarReader tarReader)
