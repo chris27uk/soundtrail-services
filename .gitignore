@@ -14,6 +14,12 @@ v17
 .aider*
 wwwroot/
 llm_env/
+.claude/
+.agents/
+*.db
+*.db-wal
+*.db-shm
+.mcp.json
 
 # llm metadata
 .continueignore

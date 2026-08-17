@@ -1,3 +1,4 @@
+using System.Formats.Tar;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -50,6 +51,28 @@ public sealed class MusicBrainzDumpTarXzExtractorTests
         var act = () => extractor.EnsureExtracted(archivePath, "release-group", outputPath);
 
         act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void Given_A_Multi_Megabyte_Archive_When_Extracted_Then_Allocations_Stay_Below_The_Payload_Size()
+    {
+        const int payloadBytes = 16 * 1024 * 1024;
+        const int maxAllocatedBytes = 4 * 1024 * 1024;
+
+        using var directory = TemporaryDirectory.Create();
+        var archivePath = Path.Combine(directory.Path, "artist.tar");
+        var outputPath = Path.Combine(directory.Path, "extracted", "artist.jsonl");
+        MusicBrainzDumpArchiveFixtures.WriteArtistTar(archivePath, payloadBytes);
+
+        extractor.EnsureExtracted(archivePath, "artist", outputPath);
+        File.Delete(outputPath);
+
+        var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+        extractor.EnsureExtracted(archivePath, "artist", outputPath);
+        var allocatedBytes = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+
+        new FileInfo(outputPath).Length.Should().Be(payloadBytes);
+        allocatedBytes.Should().BeLessThan(maxAllocatedBytes);
     }
 }
 
@@ -406,6 +429,23 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
 
 internal static class MusicBrainzDumpArchiveFixtures
 {
+    public static void WriteArtistTar(string archivePath, int payloadBytes)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(archivePath);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(payloadBytes);
+
+        var line = Encoding.UTF8.GetBytes(
+            """{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","name":"Artist A"}""" + "\n");
+        using var archive = File.Create(archivePath);
+        using var writer = new TarWriter(archive);
+        using var payload = new RepeatingLineStream(line, payloadBytes);
+        var entry = new UstarTarEntry(TarEntryType.RegularFile, "mbdump/artist")
+        {
+            DataStream = payload
+        };
+        writer.WriteEntry(entry);
+    }
+
     public static string CopyTo(string destinationDirectory, string fileName)
     {
         Directory.CreateDirectory(destinationDirectory);
@@ -426,6 +466,80 @@ internal static class MusicBrainzDumpArchiveFixtures
 
         return path;
     }
+}
+
+internal sealed class RepeatingLineStream : Stream
+{
+    private readonly byte[] line;
+    private readonly long length;
+    private long position;
+
+    public RepeatingLineStream(byte[] line, long length)
+    {
+        ArgumentNullException.ThrowIfNull(line);
+        ArgumentOutOfRangeException.ThrowIfLessThan(line.Length, 1);
+        ArgumentOutOfRangeException.ThrowIfNegative(length);
+        this.line = line;
+        this.length = length;
+    }
+
+    public override bool CanRead => true;
+
+    public override bool CanSeek => true;
+
+    public override bool CanWrite => false;
+
+    public override long Length => length;
+
+    public override long Position
+    {
+        get => position;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, length);
+            position = value;
+        }
+    }
+
+    public override int Read(byte[] buffer, int offset, int count)
+    {
+        ArgumentNullException.ThrowIfNull(buffer);
+        if (position >= length || count <= 0)
+        {
+            return 0;
+        }
+
+        var remaining = (int)Math.Min(count, length - position);
+        for (var index = 0; index < remaining; index++)
+        {
+            buffer[offset + index] = line[(position + index) % line.Length];
+        }
+
+        position += remaining;
+        return remaining;
+    }
+
+    public override long Seek(long offset, SeekOrigin origin)
+    {
+        var next = origin switch
+        {
+            SeekOrigin.Begin => offset,
+            SeekOrigin.Current => position + offset,
+            SeekOrigin.End => length + offset,
+            _ => throw new ArgumentOutOfRangeException(nameof(origin))
+        };
+        Position = next;
+        return position;
+    }
+
+    public override void Flush()
+    {
+    }
+
+    public override void SetLength(long value) => throw new NotSupportedException();
+
+    public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 }
 
 internal sealed class TemporaryDirectory : IDisposable
