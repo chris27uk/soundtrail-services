@@ -75,10 +75,4 @@ public sealed class MusicBrainzDumpOptions
     public int EventAppendArtistsPerSaveChanges { get; set; } = 64;
 
     public TimeSpan LeaseDuration { get; set; } = TimeSpan.FromMinutes(5);
-
-    /// <summary>
-    /// Optional override for catalog <c>ObservedAt</c> / freshness.
-    /// When unset, derived from <c>DumpVersion</c> (<c>YYYYMMDD-HHMMSS</c> snapshot id).
-    /// </summary>
-    public DateTimeOffset? DumpObservedAt { get; set; }
 }

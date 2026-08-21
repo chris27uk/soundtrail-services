@@ -347,13 +347,8 @@ public sealed class ImportCatalogShardJob(
             _ => null
         };
 
-    private DateTimeOffset ResolveDumpObservedAt(MusicBrainzDumpImportJob job)
+    private static DateTimeOffset ResolveDumpObservedAt(MusicBrainzDumpImportJob job)
     {
-        if (options.Value.DumpObservedAt is { } configured)
-        {
-            return configured;
-        }
-
         if (MusicBrainzDumpSnapshotId.TryGetObservedAtUtc(job.DumpVersion, out var fromVersion))
         {
             return fromVersion;
@@ -361,6 +356,6 @@ public sealed class ImportCatalogShardJob(
 
         throw new InvalidOperationException(
             $"MusicBrainz dump job '{job.Id.Value}' has DumpVersion '{job.DumpVersion}' that cannot provide ObservedAt. " +
-            "Set MusicBrainzDump:DumpObservedAt or use a YYYYMMDD-HHMMSS (or yyyy-MM) snapshot id.");
+            "Use a YYYYMMDD-HHMMSS (or yyyy-MM) snapshot id.");
     }
 }

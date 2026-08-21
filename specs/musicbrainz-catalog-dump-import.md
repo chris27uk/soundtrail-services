@@ -191,7 +191,7 @@ Stored as a **set** on Artist / Album / Track. Dump populates `musicbrainz:{mbid
 ## Freshness And Live Enrichment
 
 - If a Worker lookup completes with data **newer than the dump observation time**, Worker data wins (may overwrite import).
-- Dump observation time is derived from the concrete snapshot id (`YYYYMMDD-HHMMSS` UTC), unless `MusicBrainzDump:DumpObservedAt` overrides it. It is **not** the job request time.
+- Dump observation time is derived from the concrete snapshot id (`YYYYMMDD-HHMMSS` UTC). It is **not** the job request time.
 - If import data is **older than** what is already stored for that entity, **skip** the import write (`ObservedAt` / dump observation comparison).
 - **MusicBrainz Worker must not compete with dump** for catalog facts: do **not** schedule live MusicBrainz enrichment when the entity was dump-imported within the fresh window and catalog data is complete. Dump never enqueues MusicBrainz discover work.
 - **Odesli (streaming locations):** dump enqueues `StreamingLocationForTrack` at `LookupPriorityBand.Low` for tracks written without locations. Demand (`GetTrack`, list discovery fan-out) elevates to `High` when locations are still missing. Worker Odesli budgets remain an absolute hard cap; Orchestrator reserved high-priority planner slots protect High from Low backlog.
