@@ -14,5 +14,6 @@ public interface IEventStreamRepository<TStreamId>
         IReadOnlyList<IDomainEvent> events,
         OperationId? operationId,
         CancellationToken cancellationToken,
-        ProjectionHint? projectionHint = null);
+        ProjectionHint? projectionHint = null,
+        bool saveChanges = true);
 }

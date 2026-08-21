@@ -32,8 +32,10 @@ internal sealed class EventStreamRepositoryFake : IEventStreamRepository<Catalog
         IReadOnlyList<IDomainEvent> events,
         OperationId? operationId,
         CancellationToken cancellationToken,
-        ProjectionHint? projectionHint = null)
+        ProjectionHint? projectionHint = null,
+        bool saveChanges = true)
     {
+        _ = saveChanges;
         LastOperationId = operationId;
         AppendedEvents = events.ToArray();
         return Task.FromResult(new AppendResult(true, stream.Version + events.Count, events.ToArray(), AppendOutcome.Appended));

@@ -50,7 +50,13 @@ internal sealed class RavenEventStore<TStreamId>(
         var metadata = await session.LoadAsync<RavenEventStreamMetadataRecord>(metadataId, cancellationToken)
             ?? CreateMetadata(stream.StreamId, metadataId);
 
-        if (operationId is { } duplicateCheckOperationId &&
+        var hint = projectionHint ?? ProjectionHint.Live;
+        // Bulk import resumes via shard LineOffset + freshness guards; skip AppliedOperationIds
+        // so dump flushes do not unbounded-grow stream metadata documents.
+        var trackIdempotency = hint.Value != ProjectionHint.BulkImportValue;
+
+        if (trackIdempotency &&
+            operationId is { } duplicateCheckOperationId &&
             metadata.AppliedOperationIds.Contains(duplicateCheckOperationId.StableValue))
         {
             return new AppendResult(false, metadata.Version, [], AppendOutcome.DuplicateOperation);
@@ -61,7 +67,6 @@ internal sealed class RavenEventStore<TStreamId>(
             return new AppendResult(false, metadata.Version, [], AppendOutcome.VersionMismatch);
         }
 
-        var hint = projectionHint ?? ProjectionHint.Live;
         var storedEvents = events
             .Select((@event, index) =>
                 ToStoredEvent(
@@ -72,7 +77,7 @@ internal sealed class RavenEventStore<TStreamId>(
                     hint))
             .ToArray();
 
-        if (operationId is { } newOperationId)
+        if (trackIdempotency && operationId is { } newOperationId)
         {
             metadata.AppliedOperationIds.Add(newOperationId.StableValue);
         }

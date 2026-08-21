@@ -23,10 +23,11 @@ public sealed class CatalogSearchEventStreamRepository(
         IReadOnlyList<IDomainEvent> events,
         OperationId? operationId,
         CancellationToken cancellationToken,
-        ProjectionHint? projectionHint = null)
+        ProjectionHint? projectionHint = null,
+        bool saveChanges = true)
     {
         using var session = documentStore.OpenAsyncSession();
         var repository = new RavenEventStreamRepository<CatalogWorkId>(session, typeRegistry, "catalog-stream");
-        return await repository.AppendAsync(stream, events, operationId, cancellationToken, projectionHint);
+        return await repository.AppendAsync(stream, events, operationId, cancellationToken, projectionHint, saveChanges);
     }
 }

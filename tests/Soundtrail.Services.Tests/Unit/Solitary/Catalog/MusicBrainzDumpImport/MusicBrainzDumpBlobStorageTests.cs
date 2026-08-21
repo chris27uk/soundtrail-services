@@ -139,14 +139,25 @@ public sealed class BlobMusicBrainzDumpShardStoreTests
     public async Task Given_Written_Shard_When_Reading_With_Skip_Then_Remaining_Lines_Are_Returned()
     {
         var blobs = new InMemoryMusicBrainzDumpBlobContainer();
-        var store = new BlobMusicBrainzDumpShardStore(blobs);
+        var shardDirectory = Path.Combine(Path.GetTempPath(), "mb-shard-tests", Guid.NewGuid().ToString("N"));
+        var store = new BlobMusicBrainzDumpShardStore(
+            blobs,
+            Options.Create(new MusicBrainzDumpOptions
+            {
+                ShardDirectory = shardDirectory
+            }));
         var jobId = MusicBrainzDumpImportJobId.ForDumpVersion("2026-08");
 
-        await store.WriteShardAsync(
-            jobId,
-            MusicBrainzDumpImportPhase.Artists,
-            shardId: 0,
-            ["a", "b", "c"]);
+        await using (var writer = store.OpenWriter(jobId, MusicBrainzDumpImportPhase.Artists, shardCount: 1))
+        {
+            await writer.AppendAsync(0, "a");
+            await writer.AppendAsync(0, "b");
+            await writer.AppendAsync(0, "c");
+            await writer.CompleteAsync();
+        }
+
+        Directory.Exists(shardDirectory).Should().BeTrue();
+        Directory.EnumerateFiles(shardDirectory, "*.jsonl", SearchOption.AllDirectories).Should().NotBeEmpty();
 
         var lines = new List<string>();
         await foreach (var line in store.ReadShardLinesAsync(
@@ -159,5 +170,44 @@ public sealed class BlobMusicBrainzDumpShardStoreTests
         }
 
         lines.Should().Equal("b", "c");
+    }
+}
+
+public sealed class LocalMusicBrainzDumpShardStoreTests
+{
+    [Fact]
+    public async Task Given_A_Multi_Megabyte_Shard_When_Written_Then_Allocations_Stay_Below_The_Payload_Size()
+    {
+        const int payloadBytes = 8 * 1024 * 1024;
+        const int maxAllocatedBytes = 2 * 1024 * 1024;
+        var line = new string('a', 1024);
+
+        using var directory = TemporaryDirectory.Create();
+        var store = new LocalMusicBrainzDumpShardStore(Options.Create(new MusicBrainzDumpOptions
+        {
+            ShardDirectory = directory.Path
+        }));
+        var jobId = MusicBrainzDumpImportJobId.ForDumpVersion("2026-08");
+
+        await using (var warmup = store.OpenWriter(jobId, MusicBrainzDumpImportPhase.Artists, shardCount: 1))
+        {
+            await warmup.AppendAsync(0, line);
+            await warmup.CompleteAsync();
+        }
+
+        var lineCount = payloadBytes / (line.Length + 1);
+        var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+        await using (var writer = store.OpenWriter(jobId, MusicBrainzDumpImportPhase.ReleaseGroups, shardCount: 1))
+        {
+            for (var index = 0; index < lineCount; index++)
+            {
+                await writer.AppendAsync(0, line);
+            }
+
+            await writer.CompleteAsync();
+        }
+
+        var allocatedBytes = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+        allocatedBytes.Should().BeLessThan(maxAllocatedBytes);
     }
 }

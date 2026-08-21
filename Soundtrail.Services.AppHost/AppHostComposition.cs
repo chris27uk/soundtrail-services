@@ -185,7 +185,10 @@ public static class AppHostComposition
             .WithEnvironment("RavenDb__Urls__0", ravenDbInternalUrl)
             .WithEnvironment("RavenDb__Database", "soundtrail")
             .WithEnvironment("MusicBrainzDump__BaseUrl", musicBrainzDumpSource.GetEndpoint("http"))
-            .WithEnvironment("MusicBrainzDump__ArchiveDirectory", musicBrainzDumpCacheDirectory);
+            .WithEnvironment("MusicBrainzDump__ArchiveDirectory", musicBrainzDumpCacheDirectory)
+            .WithEnvironment(
+                "MusicBrainzDump__ShardDirectory",
+                Path.Combine(musicBrainzDumpCacheDirectory, "shards"));
 
         if (useBlobStorageEmulator && musicBrainzDumpBlobs is not null)
         {

@@ -64,5 +64,101 @@ public readonly record struct MusicBrainzDumpSnapshotId : IValueType
         string.Equals(value, "LATEST", StringComparison.OrdinalIgnoreCase) ||
         value.StartsWith("latest-is-", StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Observation time for catalog freshness, derived from the snapshot directory name.
+    /// Official dumps use <c>YYYYMMDD-HHMMSS</c> (UTC). Month-only ids (<c>yyyy-MM</c>) use day 1 at midnight UTC.
+    /// </summary>
+    public DateTimeOffset ToObservedAtUtc()
+    {
+        var value = Value;
+        if (value.Length >= 15 &&
+            value[8] == '-' &&
+            TryParseDigits(value.AsSpan(0, 4), out var year) &&
+            TryParseDigits(value.AsSpan(4, 2), out var month) &&
+            TryParseDigits(value.AsSpan(6, 2), out var day) &&
+            TryParseDigits(value.AsSpan(9, 2), out var hour) &&
+            TryParseDigits(value.AsSpan(11, 2), out var minute) &&
+            TryParseDigits(value.AsSpan(13, 2), out var second))
+        {
+            return CreateUtc(year, month, day, hour, minute, second, value);
+        }
+
+        if (value.Length >= 8 &&
+            (value.Length == 8 || value[8] == '-') &&
+            TryParseDigits(value.AsSpan(0, 4), out year) &&
+            TryParseDigits(value.AsSpan(4, 2), out month) &&
+            TryParseDigits(value.AsSpan(6, 2), out day))
+        {
+            return CreateUtc(year, month, day, 0, 0, 0, value);
+        }
+
+        if (value.Length == 7 &&
+            value[4] == '-' &&
+            TryParseDigits(value.AsSpan(0, 4), out year) &&
+            TryParseDigits(value.AsSpan(5, 2), out month))
+        {
+            return CreateUtc(year, month, 1, 0, 0, 0, value);
+        }
+
+        throw new ArgumentException(
+            $"MusicBrainz dump snapshot id '{value}' does not contain a parseable observation timestamp.",
+            nameof(Value));
+    }
+
+    public static bool TryGetObservedAtUtc(string? dumpVersion, out DateTimeOffset observedAt)
+    {
+        observedAt = default;
+        if (!TryParse(dumpVersion, out var snapshotId))
+        {
+            return false;
+        }
+
+        try
+        {
+            observedAt = snapshotId.ToObservedAtUtc();
+            return true;
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+    }
+
+    private static bool TryParseDigits(ReadOnlySpan<char> span, out int value)
+    {
+        value = 0;
+        foreach (var ch in span)
+        {
+            if (ch is < '0' or > '9')
+            {
+                return false;
+            }
+        }
+
+        return int.TryParse(span, out value);
+    }
+
+    private static DateTimeOffset CreateUtc(
+        int year,
+        int month,
+        int day,
+        int hour,
+        int minute,
+        int second,
+        string value)
+    {
+        try
+        {
+            return new DateTimeOffset(year, month, day, hour, minute, second, TimeSpan.Zero);
+        }
+        catch (ArgumentOutOfRangeException exception)
+        {
+            throw new ArgumentException(
+                $"MusicBrainz dump snapshot id '{value}' does not contain a valid observation timestamp.",
+                nameof(Value),
+                exception);
+        }
+    }
+
     public override string ToString() => Value;
 }

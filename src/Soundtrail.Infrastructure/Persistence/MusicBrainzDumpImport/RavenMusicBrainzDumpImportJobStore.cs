@@ -1,4 +1,5 @@
 using Raven.Client.Documents;
+using Raven.Client.Documents.Session;
 using Raven.Client.Exceptions;
 using Soundtrail.Domain.Catalog.MusicBrainzDumpImport;
 
@@ -41,7 +42,7 @@ public sealed class RavenMusicBrainzDumpImportJobStore(IDocumentStore documentSt
         CancellationToken cancellationToken)
     {
         using var session = documentStore.OpenAsyncSession();
-        session.Advanced.UseOptimisticConcurrency = true;
+        session.Advanced.OptimisticConcurrencyMode = OptimisticConcurrencyMode.Writes;
         var documentId = MusicBrainzDumpImportJobDocument.DocumentId(jobId);
         var existing = await session.LoadAsync<MusicBrainzDumpImportJobDocument>(documentId, cancellationToken);
         if (existing is null)
@@ -86,7 +87,7 @@ public sealed class RavenMusicBrainzDumpImportJobStore(IDocumentStore documentSt
         ArgumentNullException.ThrowIfNull(job);
 
         using var session = documentStore.OpenAsyncSession();
-        session.Advanced.UseOptimisticConcurrency = true;
+        session.Advanced.OptimisticConcurrencyMode = OptimisticConcurrencyMode.Writes;
         var documentId = MusicBrainzDumpImportJobDocument.DocumentId(job.Id);
         var existing = await session.LoadAsync<MusicBrainzDumpImportJobDocument>(documentId, cancellationToken);
         var document = MusicBrainzDumpImportJobDocument.FromDomain(job);

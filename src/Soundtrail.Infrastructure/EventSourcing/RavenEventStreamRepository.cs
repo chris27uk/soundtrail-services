@@ -21,12 +21,13 @@ public sealed class RavenEventStreamRepository<TStreamId>(
         IReadOnlyList<IDomainEvent> events,
         OperationId? operationId,
         CancellationToken cancellationToken,
-        ProjectionHint? projectionHint = null) => this.eventStore.AppendAsync(
+        ProjectionHint? projectionHint = null,
+        bool saveChanges = true) => this.eventStore.AppendAsync(
         stream,
         events,
         operationId,
         cancellationToken,
-        saveChanges: true,
+        saveChanges: saveChanges,
         beforeSave: null,
         projectionHint: projectionHint);
 }

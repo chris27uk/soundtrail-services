@@ -17,11 +17,6 @@ public interface IMusicBrainzDumpBlobContainer
         string localFilePath,
         CancellationToken cancellationToken = default);
 
-    Task UploadLinesAsync(
-        string blobName,
-        IReadOnlyList<string> lines,
-        CancellationToken cancellationToken = default);
-
     IAsyncEnumerable<string> ReadLinesAsync(
         string blobName,
         long skipLines,

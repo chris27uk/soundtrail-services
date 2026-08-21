@@ -4,7 +4,7 @@ namespace Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrain
 
 internal static class MusicBrainzDumpImportJobConcurrency
 {
-    public const int SaveAttempts = 5;
+    public const int SaveAttempts = 32;
 
     public static bool IsConflict(Exception exception) =>
         exception is ConcurrencyException ||

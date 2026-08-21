@@ -1,8 +1,13 @@
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
+using Soundtrail.Adapters.TypeRegistry;
+using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
+using Soundtrail.Domain.Catalog.MusicBrainzDumpImport;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Adapters;
@@ -16,7 +21,6 @@ internal sealed class CatalogDumpBatchWriterIntegrationTestEnvironment : IAsyncD
 {
     private CatalogDumpBatchWriterIntegrationTestEnvironment(
         IDocumentStore documentStore,
-        InMemoryEventStreamRepository<ArtistId> artistEvents,
         CommandBusFake commandBus,
         CatalogDumpBatchWriter subject,
         ArtistId artistId,
@@ -26,7 +30,6 @@ internal sealed class CatalogDumpBatchWriterIntegrationTestEnvironment : IAsyncD
         string displayAlbumTitle)
     {
         DocumentStore = documentStore;
-        ArtistEvents = artistEvents;
         CommandBus = commandBus;
         Subject = subject;
         ArtistId = artistId;
@@ -37,8 +40,6 @@ internal sealed class CatalogDumpBatchWriterIntegrationTestEnvironment : IAsyncD
     }
 
     public IDocumentStore DocumentStore { get; }
-
-    public InMemoryEventStreamRepository<ArtistId> ArtistEvents { get; }
 
     public CommandBusFake CommandBus { get; }
 
@@ -74,13 +75,16 @@ internal sealed class CatalogDumpBatchWriterIntegrationTestEnvironment : IAsyncD
         };
 
         var documentStore = EmbeddedRavenTestServer.CreateDocumentStore();
-        var artistEvents = new InMemoryEventStreamRepository<ArtistId>();
         var commandBus = new CommandBusFake();
-        var subject = new CatalogDumpBatchWriter(artistEvents, documentStore, commandBus);
+        var subject = new CatalogDumpBatchWriter(
+            documentStore,
+            TypeTranslationRegistry.Default,
+            commandBus,
+            Options.Create(new MusicBrainzDumpOptions()),
+            NullLogger<CatalogDumpBatchWriter>.Instance);
 
         return new CatalogDumpBatchWriterIntegrationTestEnvironment(
             documentStore,
-            artistEvents,
             commandBus,
             subject,
             artistId,
@@ -90,7 +94,7 @@ internal sealed class CatalogDumpBatchWriterIntegrationTestEnvironment : IAsyncD
             albumTitle);
     }
 
-    public Task FlushArtistAlbumAndTrackAsync(DateTimeOffset? dumpObservedAt = null)
+    public async Task FlushArtistAlbumAndTrackAsync(DateTimeOffset? dumpObservedAt = null)
     {
         var observedAt = dumpObservedAt ?? DateTimeOffset.Parse("2026-08-10T00:00:00Z");
         var artist = new Artist
@@ -118,7 +122,7 @@ internal sealed class CatalogDumpBatchWriterIntegrationTestEnvironment : IAsyncD
             track.SourceSystemIds,
             SourceSystemIdSet.FromLegacyMusicBrainz($"mbid-rec-{TrackId.Value}"));
 
-        return Subject.FlushAsync(
+        var touched = await Subject.AppendEventsAsync(
             [
                 new ArtistDumpBatchItem(artist),
                 new AlbumDumpBatchItem(album),
@@ -126,6 +130,7 @@ internal sealed class CatalogDumpBatchWriterIntegrationTestEnvironment : IAsyncD
             ],
             observedAt,
             CancellationToken.None);
+        await Subject.ProjectArtistsAsync(touched, observedAt, CancellationToken.None);
     }
 
     public async ValueTask DisposeAsync()

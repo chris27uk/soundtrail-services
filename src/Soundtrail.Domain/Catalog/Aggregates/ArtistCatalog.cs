@@ -73,14 +73,16 @@ public sealed class ArtistCatalog
         LoadedEventStream<ArtistId> stream,
         MessageId commandId,
         CancellationToken cancellationToken,
-        ProjectionHint? projectionHint = null)
+        ProjectionHint? projectionHint = null,
+        bool saveChanges = true)
     {
         var append = await repository.AppendAsync(
             stream,
             this.uncommittedEvents.AsReadOnly(),
             OperationId.From(commandId.Value),
             cancellationToken,
-            projectionHint);
+            projectionHint,
+            saveChanges);
 
         if (append.Outcome == AppendOutcome.VersionMismatch)
         {

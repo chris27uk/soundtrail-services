@@ -57,11 +57,28 @@ public sealed class MusicBrainzDumpOptions
     public int ShardCount { get; set; } = 4;
 
     /// <summary>
+    /// Concurrent shard import workers within one CatalogImport process.
+    /// Shards are artist-partitioned, so workers do not contend on the same streams.
+    /// Defaults to <see cref="ShardCount"/> when unset or less than 1.
+    /// </summary>
+    public int ShardImportMaxDegreeOfParallelism { get; set; }
+
+    /// <summary>
     /// Mapped rows to buffer before flushing ArtistCatalog appends and read-model BulkInsert.
     /// </summary>
-    public int BulkInsertBatchSize { get; set; } = 500;
+    public int BulkInsertBatchSize { get; set; } = 2_000;
+
+    /// <summary>
+    /// Distinct artists to append per Raven <c>SaveChangesAsync</c> during dump import.
+    /// Higher values cut round-trips; keep within session request budget (~2 loads/artist + 1 save).
+    /// </summary>
+    public int EventAppendArtistsPerSaveChanges { get; set; } = 64;
 
     public TimeSpan LeaseDuration { get; set; } = TimeSpan.FromMinutes(5);
 
+    /// <summary>
+    /// Optional override for catalog <c>ObservedAt</c> / freshness.
+    /// When unset, derived from <c>DumpVersion</c> (<c>YYYYMMDD-HHMMSS</c> snapshot id).
+    /// </summary>
     public DateTimeOffset? DumpObservedAt { get; set; }
 }

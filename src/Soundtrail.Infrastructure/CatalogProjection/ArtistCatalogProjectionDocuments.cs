@@ -155,6 +155,18 @@ public static class ArtistCatalogProjectionDocuments
     }
 
     /// <summary>
+    /// Search candidates for a full artist projection at shard-end (all artist/album/track keys).
+    /// </summary>
+    public static IReadOnlyList<(string Id, object Document)> CreateSearchCandidateDocumentsForFullProjection(
+        ArtistCatalogProjection projection)
+    {
+        var dirtyKeys = new List<string> { $"artist:{projection.ArtistId.Value}" };
+        dirtyKeys.AddRange(projection.Albums.Select(album => $"album:{album.AlbumId.StableValue}"));
+        dirtyKeys.AddRange(projection.Tracks.Select(track => $"track:{track.TrackId.Value}"));
+        return CreateSearchCandidateDocuments(projection, dirtyKeys);
+    }
+
+    /// <summary>
     /// Search candidates for dump flush dirty keys (<c>artist:</c>/<c>album:</c>/<c>track:</c>).
     /// </summary>
     public static IReadOnlyList<(string Id, object Document)> CreateSearchCandidateDocuments(
