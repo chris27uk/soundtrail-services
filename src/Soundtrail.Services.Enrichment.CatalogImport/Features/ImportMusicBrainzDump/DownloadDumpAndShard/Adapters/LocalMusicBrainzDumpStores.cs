@@ -242,17 +242,15 @@ public sealed class LocalMusicBrainzDumpArchiveStore(
 public sealed class LocalMusicBrainzDumpShardStore(IOptions<MusicBrainzDumpOptions> options)
     : IMusicBrainzDumpShardStore
 {
-    public async Task WriteShardAsync(
+    public IMusicBrainzDumpShardWriter OpenWriter(
         MusicBrainzDumpImportJobId jobId,
         MusicBrainzDumpImportPhase phase,
-        int shardId,
-        IReadOnlyList<string> lines,
-        CancellationToken cancellationToken = default)
-    {
-        var path = ShardPath(jobId, phase, shardId);
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        await File.WriteAllLinesAsync(path, lines, cancellationToken);
-    }
+        int shardCount) =>
+        FileMusicBrainzDumpShardWriter.Open(
+            jobId,
+            phase,
+            shardCount,
+            FileMusicBrainzDumpShardWriter.ResolveShardDirectory(options.Value.ShardDirectory));
 
     public async IAsyncEnumerable<string> ReadShardLinesAsync(
         MusicBrainzDumpImportJobId jobId,
@@ -261,7 +259,11 @@ public sealed class LocalMusicBrainzDumpShardStore(IOptions<MusicBrainzDumpOptio
         long skipLines,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var path = ShardPath(jobId, phase, shardId);
+        var path = FileMusicBrainzDumpShardWriter.ShardFilePath(
+            FileMusicBrainzDumpShardWriter.ResolveShardDirectory(options.Value.ShardDirectory),
+            jobId,
+            phase,
+            shardId);
         if (!File.Exists(path))
         {
             yield break;
@@ -277,19 +279,6 @@ public sealed class LocalMusicBrainzDumpShardStore(IOptions<MusicBrainzDumpOptio
 
             yield return line;
         }
-    }
-
-    private string ShardPath(
-        MusicBrainzDumpImportJobId jobId,
-        MusicBrainzDumpImportPhase phase,
-        int shardId)
-    {
-        var root = string.IsNullOrWhiteSpace(options.Value.ShardDirectory)
-            ? Path.Combine(Path.GetTempPath(), "soundtrail-mb-shards")
-            : options.Value.ShardDirectory!;
-
-        var safeJob = jobId.Value.Replace(':', '_');
-        return Path.Combine(root, safeJob, phase.ToString(), $"{shardId}.jsonl");
     }
 }
 

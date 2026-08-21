@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.MusicBrainzDumpImport;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Ports;
@@ -51,13 +52,13 @@ public sealed class ImportCatalogShardJob(
         using var activity = MusicBrainzDumpImportTelemetry.StartShardImportActivity(job, phase, shardId);
 
         var shard = job.GetOrAddShard(phase, shardId);
-        var dumpObservedAt = options.Value.DumpObservedAt
-            ?? job.RequestedAt;
+        var dumpObservedAt = ResolveDumpObservedAt(job);
         var batchSize = Math.Max(1, options.Value.BulkInsertBatchSize);
         var processed = shard.LineOffset;
         var imported = 0;
         var skipped = 0;
         var buffer = new List<CatalogDumpBatchItem>(batchSize);
+        var touchedArtists = new HashSet<ArtistId>();
 
         await foreach (var line in shardStore.ReadShardLinesAsync(
                            jobId,
@@ -88,6 +89,7 @@ public sealed class ImportCatalogShardJob(
                     dumpObservedAt,
                     processed,
                     leaseDuration,
+                    touchedArtists,
                     cancellationToken);
             }
         }
@@ -102,8 +104,11 @@ public sealed class ImportCatalogShardJob(
                 dumpObservedAt,
                 processed,
                 leaseDuration,
+                touchedArtists,
                 cancellationToken);
         }
+
+        await batchWriter.ProjectArtistsAsync(touchedArtists, dumpObservedAt, cancellationToken);
 
         job = await PersistOwnedShardAsync(
             job,
@@ -194,9 +199,15 @@ public sealed class ImportCatalogShardJob(
         DateTimeOffset dumpObservedAt,
         long processed,
         TimeSpan leaseDuration,
+        HashSet<ArtistId> touchedArtists,
         CancellationToken cancellationToken)
     {
-        await batchWriter.FlushAsync(buffer, dumpObservedAt, cancellationToken);
+        var appended = await batchWriter.AppendEventsAsync(buffer, dumpObservedAt, cancellationToken);
+        foreach (var artistId in appended)
+        {
+            touchedArtists.Add(artistId);
+        }
+
         buffer.Clear();
         return await PersistOwnedShardAsync(
             job,
@@ -219,6 +230,13 @@ public sealed class ImportCatalogShardJob(
     {
         for (var attempt = 0; attempt < MusicBrainzDumpImportJobConcurrency.SaveAttempts; attempt++)
         {
+            // Always reload before mutating: parallel shard workers share one job document.
+            // Saving a stale in-memory copy would pass optimistic concurrency (fresh change vector)
+            // while wiping other shards' LineOffset/lease progress.
+            job = await jobStore.GetAsync(job.Id, cancellationToken)
+                  ?? throw new InvalidOperationException(
+                      $"MusicBrainz dump job '{job.Id.Value}' disappeared during shard import.");
+
             var shard = job.GetOrAddShard(phase, shardId);
             if (!OwnsLease(shard) &&
                 !job.TryClaimShard(phase, shardId, leaseOwner.Value, DateTimeOffset.UtcNow, leaseDuration))
@@ -247,9 +265,6 @@ public sealed class ImportCatalogShardJob(
                 attempt < MusicBrainzDumpImportJobConcurrency.SaveAttempts - 1 &&
                 MusicBrainzDumpImportJobConcurrency.IsConflict(exception))
             {
-                job = await jobStore.GetAsync(job.Id, cancellationToken)
-                      ?? throw new InvalidOperationException(
-                          $"MusicBrainz dump job '{job.Id.Value}' disappeared during shard import.");
             }
         }
 
@@ -265,6 +280,10 @@ public sealed class ImportCatalogShardJob(
         var enqueueProducer = false;
         for (var attempt = 0; attempt < MusicBrainzDumpImportJobConcurrency.SaveAttempts; attempt++)
         {
+            job = await jobStore.GetAsync(job.Id, cancellationToken)
+                  ?? throw new InvalidOperationException(
+                      $"MusicBrainz dump job '{job.Id.Value}' disappeared during shard completion.");
+
             enqueueProducer = false;
             if ((phase is MusicBrainzDumpImportPhase.Artists or MusicBrainzDumpImportPhase.ReleaseGroups) &&
                 job.AreAllShardsCompleted(phase) &&
@@ -277,6 +296,11 @@ public sealed class ImportCatalogShardJob(
                      job.TryCompleteRecordingsPhaseAsFinal(DateTimeOffset.UtcNow))
             {
                 MusicBrainzDumpImportTelemetry.MarkJobTerminal(job);
+            }
+            else
+            {
+                // Nothing to persist — another worker may already have advanced the job.
+                return;
             }
 
             try
@@ -293,9 +317,6 @@ public sealed class ImportCatalogShardJob(
                 attempt < MusicBrainzDumpImportJobConcurrency.SaveAttempts - 1 &&
                 MusicBrainzDumpImportJobConcurrency.IsConflict(exception))
             {
-                job = await jobStore.GetAsync(job.Id, cancellationToken)
-                      ?? throw new InvalidOperationException(
-                          $"MusicBrainz dump job '{job.Id.Value}' disappeared during shard completion.");
             }
         }
 
@@ -325,4 +346,16 @@ public sealed class ImportCatalogShardJob(
                     : null,
             _ => null
         };
+
+    private static DateTimeOffset ResolveDumpObservedAt(MusicBrainzDumpImportJob job)
+    {
+        if (MusicBrainzDumpSnapshotId.TryGetObservedAtUtc(job.DumpVersion, out var fromVersion))
+        {
+            return fromVersion;
+        }
+
+        throw new InvalidOperationException(
+            $"MusicBrainz dump job '{job.Id.Value}' has DumpVersion '{job.DumpVersion}' that cannot provide ObservedAt. " +
+            "Use a YYYYMMDD-HHMMSS (or yyyy-MM) snapshot id.");
+    }
 }

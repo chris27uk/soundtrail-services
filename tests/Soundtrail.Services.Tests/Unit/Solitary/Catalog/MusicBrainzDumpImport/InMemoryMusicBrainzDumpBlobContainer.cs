@@ -42,22 +42,6 @@ internal sealed class InMemoryMusicBrainzDumpBlobContainer : IMusicBrainzDumpBlo
         await File.WriteAllBytesAsync(localFilePath, bytes, cancellationToken);
     }
 
-    public Task UploadLinesAsync(
-        string blobName,
-        IReadOnlyList<string> lines,
-        CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        var content = string.Join('\n', lines);
-        if (lines.Count > 0)
-        {
-            content += '\n';
-        }
-
-        blobs[blobName] = Encoding.UTF8.GetBytes(content);
-        return Task.CompletedTask;
-    }
-
     public async IAsyncEnumerable<string> ReadLinesAsync(
         string blobName,
         long skipLines,

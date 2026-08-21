@@ -6,8 +6,13 @@ namespace Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrain
 
 public interface ICatalogDumpBatchWriter
 {
-    Task FlushAsync(
+    Task<IReadOnlySet<ArtistId>> AppendEventsAsync(
         IReadOnlyList<CatalogDumpBatchItem> items,
+        DateTimeOffset dumpObservedAt,
+        CancellationToken cancellationToken = default);
+
+    Task ProjectArtistsAsync(
+        IReadOnlySet<ArtistId> artistIds,
         DateTimeOffset dumpObservedAt,
         CancellationToken cancellationToken = default);
 }

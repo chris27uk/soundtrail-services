@@ -118,30 +118,36 @@ public sealed class DownloadDumpAndShardJob(
         }
 
         var shardCount = Math.Max(1, options.Value.ShardCount);
-        var buckets = Enumerable.Range(0, shardCount).Select(_ => new List<string>()).ToArray();
         var lineCount = 0;
 
-        await foreach (var line in File.ReadLinesAsync(artistsPath, cancellationToken))
+        await using (var writer = shardStore.OpenWriter(job.Id, MusicBrainzDumpImportPhase.Artists, shardCount))
         {
-            lineCount++;
-            if (!MusicBrainzArtistJsonLine.TryReadArtistId(line, out var artistId))
+            await foreach (var line in File.ReadLinesAsync(artistsPath, cancellationToken))
             {
-                continue;
+                lineCount++;
+                if (!MusicBrainzArtistJsonLine.TryReadArtistId(line, out var artistId))
+                {
+                    continue;
+                }
+
+                await writer.AppendAsync(
+                    partitioner.ShardIdFor(artistId, shardCount),
+                    line,
+                    cancellationToken);
+
+                if (lineCount % 10_000 == 0)
+                {
+                    job = await HeartbeatAndSaveAsync(job, leaseDuration, cancellationToken);
+                }
             }
 
-            var shardId = partitioner.ShardIdFor(artistId, shardCount);
-            buckets[shardId].Add(line);
-
-            if (lineCount % 10_000 == 0)
-            {
-                job = await HeartbeatAndSaveAsync(job, leaseDuration, cancellationToken);
-            }
+            await writer.CompleteAsync(cancellationToken);
         }
 
         await PublishPhaseShardsAsync(
             job,
             MusicBrainzDumpImportPhase.Artists,
-            buckets,
+            shardCount,
             leaseDuration,
             cancellationToken);
 
@@ -170,35 +176,41 @@ public sealed class DownloadDumpAndShardJob(
         job = await HeartbeatAndSaveAsync(job, leaseDuration, cancellationToken);
 
         var shardCount = Math.Max(1, options.Value.ShardCount);
-        var buckets = Enumerable.Range(0, shardCount).Select(_ => new List<string>()).ToArray();
         var lineCount = 0;
         var copiedRows = 0;
 
-        await foreach (var line in File.ReadLinesAsync(releaseGroupsPath, cancellationToken))
+        await using (var writer = shardStore.OpenWriter(job.Id, MusicBrainzDumpImportPhase.ReleaseGroups, shardCount))
         {
-            lineCount++;
-            if (!MusicBrainzReleaseGroupJsonLine.TryReadCreditedArtistIds(line, out var artistIds))
+            await foreach (var line in File.ReadLinesAsync(releaseGroupsPath, cancellationToken))
             {
-                continue;
+                lineCount++;
+                if (!MusicBrainzReleaseGroupJsonLine.TryReadCreditedArtistIds(line, out var artistIds))
+                {
+                    continue;
+                }
+
+                foreach (var artistId in artistIds)
+                {
+                    await writer.AppendAsync(
+                        partitioner.ShardIdFor(artistId, shardCount),
+                        MusicBrainzReleaseGroupJsonLine.WrapForCreditedArtist(artistId, line),
+                        cancellationToken);
+                    copiedRows++;
+                }
+
+                if (lineCount % 10_000 == 0)
+                {
+                    job = await HeartbeatAndSaveAsync(job, leaseDuration, cancellationToken);
+                }
             }
 
-            foreach (var artistId in artistIds)
-            {
-                var shardId = partitioner.ShardIdFor(artistId, shardCount);
-                buckets[shardId].Add(MusicBrainzReleaseGroupJsonLine.WrapForCreditedArtist(artistId, line));
-                copiedRows++;
-            }
-
-            if (lineCount % 10_000 == 0)
-            {
-                job = await HeartbeatAndSaveAsync(job, leaseDuration, cancellationToken);
-            }
+            await writer.CompleteAsync(cancellationToken);
         }
 
         await PublishPhaseShardsAsync(
             job,
             MusicBrainzDumpImportPhase.ReleaseGroups,
-            buckets,
+            shardCount,
             leaseDuration,
             cancellationToken);
 
@@ -228,35 +240,41 @@ public sealed class DownloadDumpAndShardJob(
         job = await HeartbeatAndSaveAsync(job, leaseDuration, cancellationToken);
 
         var shardCount = Math.Max(1, options.Value.ShardCount);
-        var buckets = Enumerable.Range(0, shardCount).Select(_ => new List<string>()).ToArray();
         var lineCount = 0;
         var copiedRows = 0;
 
-        await foreach (var line in File.ReadLinesAsync(tracksPath, cancellationToken))
+        await using (var writer = shardStore.OpenWriter(job.Id, MusicBrainzDumpImportPhase.Recordings, shardCount))
         {
-            lineCount++;
-            if (!MusicBrainzTrackJsonLine.TryReadCreditedArtistIds(line, out var artistIds))
+            await foreach (var line in File.ReadLinesAsync(tracksPath, cancellationToken))
             {
-                continue;
+                lineCount++;
+                if (!MusicBrainzTrackJsonLine.TryReadCreditedArtistIds(line, out var artistIds))
+                {
+                    continue;
+                }
+
+                foreach (var artistId in artistIds)
+                {
+                    await writer.AppendAsync(
+                        partitioner.ShardIdFor(artistId, shardCount),
+                        MusicBrainzTrackJsonLine.WrapForCreditedArtist(artistId, line),
+                        cancellationToken);
+                    copiedRows++;
+                }
+
+                if (lineCount % 10_000 == 0)
+                {
+                    job = await HeartbeatAndSaveAsync(job, leaseDuration, cancellationToken);
+                }
             }
 
-            foreach (var artistId in artistIds)
-            {
-                var shardId = partitioner.ShardIdFor(artistId, shardCount);
-                buckets[shardId].Add(MusicBrainzTrackJsonLine.WrapForCreditedArtist(artistId, line));
-                copiedRows++;
-            }
-
-            if (lineCount % 10_000 == 0)
-            {
-                job = await HeartbeatAndSaveAsync(job, leaseDuration, cancellationToken);
-            }
+            await writer.CompleteAsync(cancellationToken);
         }
 
         await PublishPhaseShardsAsync(
             job,
             MusicBrainzDumpImportPhase.Recordings,
-            buckets,
+            shardCount,
             leaseDuration,
             cancellationToken);
 
@@ -271,21 +289,10 @@ public sealed class DownloadDumpAndShardJob(
     private async Task PublishPhaseShardsAsync(
         MusicBrainzDumpImportJob job,
         MusicBrainzDumpImportPhase phase,
-        IReadOnlyList<List<string>> buckets,
+        int shardCount,
         TimeSpan leaseDuration,
         CancellationToken cancellationToken)
     {
-        var shardCount = buckets.Count;
-        for (var shardId = 0; shardId < shardCount; shardId++)
-        {
-            await shardStore.WriteShardAsync(
-                job.Id,
-                phase,
-                shardId,
-                buckets[shardId],
-                cancellationToken);
-        }
-
         job = await PersistProducerAsync(
             job,
             leaseDuration,

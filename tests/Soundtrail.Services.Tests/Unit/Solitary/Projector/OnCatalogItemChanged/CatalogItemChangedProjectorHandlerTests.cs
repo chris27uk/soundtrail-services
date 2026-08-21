@@ -108,8 +108,10 @@ public sealed class CatalogItemChangedProjectorHandlerTests
             IReadOnlyList<IDomainEvent> newEvents,
             OperationId? operationId,
             CancellationToken cancellationToken,
-            ProjectionHint? projectionHint = null)
+            ProjectionHint? projectionHint = null,
+            bool saveChanges = true)
         {
+            _ = saveChanges;
             this.events.AddRange(newEvents);
             return Task.FromResult(new AppendResult(
                 Appended: true,

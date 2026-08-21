@@ -42,29 +42,6 @@ public sealed class AzureMusicBrainzDumpBlobContainer(BlobContainerClient contai
         await containerClient.GetBlobClient(blobName).DownloadToAsync(localFilePath, cancellationToken);
     }
 
-    public async Task UploadLinesAsync(
-        string blobName,
-        IReadOnlyList<string> lines,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(lines);
-        await EnsureContainerAsync(cancellationToken);
-
-        await using var stream = new MemoryStream();
-        await using (var writer = new StreamWriter(stream, Encoding.UTF8, leaveOpen: true))
-        {
-            foreach (var line in lines)
-            {
-                await writer.WriteLineAsync(line.AsMemory(), cancellationToken);
-            }
-
-            await writer.FlushAsync(cancellationToken);
-        }
-
-        stream.Position = 0;
-        await containerClient.GetBlobClient(blobName).UploadAsync(stream, overwrite: true, cancellationToken);
-    }
-
     public async IAsyncEnumerable<string> ReadLinesAsync(
         string blobName,
         long skipLines,

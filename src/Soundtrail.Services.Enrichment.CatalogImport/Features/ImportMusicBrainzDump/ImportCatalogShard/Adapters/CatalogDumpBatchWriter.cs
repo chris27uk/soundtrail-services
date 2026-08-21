@@ -1,7 +1,13 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
+using Raven.Client.Documents.Session;
 using Soundtrail.Adapters.CatalogProjection;
+using Soundtrail.Adapters.EventSourcing;
+using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
@@ -9,6 +15,7 @@ using Soundtrail.Domain.Catalog.Aggregates;
 using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Events;
+using Soundtrail.Domain.Catalog.MusicBrainzDumpImport;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
@@ -17,11 +24,18 @@ using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDum
 namespace Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Adapters;
 
 public sealed class CatalogDumpBatchWriter(
-    IEventStreamRepository<ArtistId> artistRepository,
     IDocumentStore documentStore,
-    ICommandBus commandBus) : ICatalogDumpBatchWriter
+    ITypeRegistry typeRegistry,
+    ICommandBus commandBus,
+    IOptions<MusicBrainzDumpOptions> options,
+    ILogger<CatalogDumpBatchWriter> logger) : ICatalogDumpBatchWriter
 {
-    public async Task FlushAsync(
+    private const string ArtistCatalogStreamName = "artist-catalog-stream";
+    private const int ProjectionChunkSize = 200;
+    private const int ProjectionLogInterval = 5_000;
+    private const int RequestsPerArtistBudget = 4;
+
+    public async Task<IReadOnlySet<ArtistId>> AppendEventsAsync(
         IReadOnlyList<CatalogDumpBatchItem> items,
         DateTimeOffset dumpObservedAt,
         CancellationToken cancellationToken = default)
@@ -29,7 +43,7 @@ public sealed class CatalogDumpBatchWriter(
         ArgumentNullException.ThrowIfNull(items);
         if (items.Count == 0)
         {
-            return;
+            return EmptyArtistSet();
         }
 
         var flushItems = items
@@ -37,104 +51,162 @@ public sealed class CatalogDumpBatchWriter(
             .ToArray();
         if (flushItems.Length == 0)
         {
-            return;
+            return EmptyArtistSet();
         }
 
-        var readModels = new List<(string Id, object Document)>();
-        var streamingLocationRequests = new List<TrackId>();
+        var touchedArtists = new HashSet<ArtistId>();
+        var artistsPerSave = Math.Max(1, options.Value.EventAppendArtistsPerSaveChanges);
+        var groups = flushItems
+            .GroupBy(ArtistKeyFor, StringComparer.Ordinal)
+            .ToArray();
 
-        foreach (var group in flushItems.GroupBy(ArtistKeyFor, StringComparer.Ordinal))
+        foreach (var chunk in groups.Chunk(artistsPerSave))
         {
-            var artistId = ArtistId.From(group.Key);
-            var (stream, catalog) = await ArtistCatalog.LoadAsync(artistRepository, artistId, cancellationToken);
-            var pendingKeys = new List<string>();
+            using var session = documentStore.OpenAsyncSession();
+            session.Advanced.MaxNumberOfRequestsPerSession = Math.Max(
+                session.Advanced.MaxNumberOfRequestsPerSession,
+                (chunk.Length * RequestsPerArtistBudget) + 8);
+            var artistRepository = CreateArtistRepository(session);
+            var pendingSaves = 0;
 
-            foreach (var item in group)
+            foreach (var group in chunk)
             {
-                switch (item)
+                var artistId = ArtistId.From(group.Key);
+                var (stream, catalog) = await ArtistCatalog.LoadAsync(artistRepository, artistId, cancellationToken);
+                var pendingKeys = new List<string>();
+                var emptyStream = stream.Events.Count == 0;
+
+                foreach (var item in group)
                 {
-                    case ArtistDumpBatchItem(var artist):
-                        if (!ShouldWriteArtist(stream, dumpObservedAt))
-                        {
+                    switch (item)
+                    {
+                        case ArtistDumpBatchItem(var artist):
+                            if (!emptyStream && !ShouldWriteArtist(stream, dumpObservedAt))
+                            {
+                                break;
+                            }
+
+                            catalog.CatalogItemDiscovered(new CatalogItem.MusicArtist(artist));
+                            pendingKeys.Add($"artist:{artist.Id.Value}");
                             break;
-                        }
 
-                        catalog.CatalogItemDiscovered(new CatalogItem.MusicArtist(artist));
-                        pendingKeys.Add($"artist:{artist.Id.Value}");
-                        break;
+                        case AlbumDumpBatchItem(var album):
+                            if (!emptyStream && !ShouldWriteAlbum(stream, album, dumpObservedAt))
+                            {
+                                break;
+                            }
 
-                    case AlbumDumpBatchItem(var album):
-                        if (!ShouldWriteAlbum(stream, album, dumpObservedAt))
-                        {
+                            var albumToWrite = new Album(
+                                album.AlbumId,
+                                album.AlbumTitle,
+                                album.SourceSystemIds,
+                                album.ReleaseDate,
+                                album.ArtworkUrl,
+                                dumpObservedAt);
+                            catalog.CatalogItemDiscovered(new CatalogItem.MusicAlbum(albumToWrite));
+                            pendingKeys.Add($"album:{album.AlbumId.StableValue}");
                             break;
-                        }
 
-                        var albumToWrite = new Album(
-                            album.AlbumId,
-                            album.AlbumTitle,
-                            album.SourceSystemIds,
-                            album.ReleaseDate,
-                            album.ArtworkUrl,
-                            dumpObservedAt);
-                        catalog.CatalogItemDiscovered(new CatalogItem.MusicAlbum(albumToWrite));
-                        pendingKeys.Add($"album:{album.AlbumId.StableValue}");
-                        break;
+                        case TrackDumpBatchItem(var track):
+                            if (string.IsNullOrWhiteSpace(track.AlbumId) ||
+                                (!emptyStream && !ShouldWriteTrack(stream, track, dumpObservedAt)))
+                            {
+                                break;
+                            }
 
-                    case TrackDumpBatchItem(var track):
-                        if (string.IsNullOrWhiteSpace(track.AlbumId) ||
-                            !ShouldWriteTrack(stream, track, dumpObservedAt))
-                        {
+                            var trackToWrite = TrackForWrite(track, dumpObservedAt);
+                            catalog.CatalogItemDiscovered(new CatalogItem.MusicTrack(trackToWrite));
+                            pendingKeys.Add($"track:{track.TrackId.Value}");
                             break;
-                        }
-
-                        var trackToWrite = TrackForWrite(track, dumpObservedAt);
-                        catalog.CatalogItemDiscovered(new CatalogItem.MusicTrack(trackToWrite));
-                        pendingKeys.Add($"track:{track.TrackId.Value}");
-                        break;
+                    }
                 }
-            }
 
-            if (pendingKeys.Count == 0)
-            {
-                continue;
-            }
-
-            var fingerprint = StableFingerprint(pendingKeys);
-            await catalog.SaveAsync(
-                artistRepository,
-                stream,
-                MessageId.For($"bulk-import:ArtistCatalog:{artistId.Value}:{dumpObservedAt:O}:{fingerprint}"),
-                cancellationToken,
-                ProjectionHint.BulkImport);
-
-            var (reloaded, _) = await ArtistCatalog.LoadAsync(artistRepository, artistId, cancellationToken);
-            var projection = ArtistCatalogProjectionMaterializer.Build(artistId, reloaded.Events);
-            readModels.AddRange(ArtistCatalogProjectionDocuments.CreateBrowseDocuments(projection));
-            readModels.AddRange(ArtistCatalogProjectionDocuments.CreateSearchCandidateDocuments(projection, pendingKeys));
-
-            foreach (var pendingKey in pendingKeys)
-            {
-                if (!pendingKey.StartsWith("track:", StringComparison.Ordinal))
+                if (pendingKeys.Count == 0)
                 {
                     continue;
                 }
 
-                var trackIdValue = pendingKey["track:".Length..];
-                var projectedTrack = projection.Tracks.FirstOrDefault(track =>
-                    string.Equals(track.TrackId.Value, trackIdValue, StringComparison.Ordinal));
-                if (projectedTrack is not null && projectedTrack.StreamingLocations.Length == 0)
-                {
-                    streamingLocationRequests.Add(projectedTrack.TrackId);
-                }
+                var fingerprint = StableFingerprint(pendingKeys);
+                await catalog.SaveAsync(
+                    artistRepository,
+                    stream,
+                    MessageId.For($"bulk-import:ArtistCatalog:{artistId.Value}:{dumpObservedAt:O}:{fingerprint}"),
+                    cancellationToken,
+                    ProjectionHint.BulkImport,
+                    saveChanges: false);
+
+                touchedArtists.Add(artistId);
+                pendingSaves++;
+            }
+
+            if (pendingSaves > 0)
+            {
+                await session.SaveChangesAsync(cancellationToken);
             }
         }
 
-        if (readModels.Count > 0)
+        return touchedArtists;
+    }
+
+    public async Task ProjectArtistsAsync(
+        IReadOnlySet<ArtistId> artistIds,
+        DateTimeOffset dumpObservedAt,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(artistIds);
+        if (artistIds.Count == 0)
         {
-            await using var bulk = documentStore.BulkInsert();
-            foreach (var (id, document) in DeduplicateById(readModels))
+            return;
+        }
+
+        var stopwatch = Stopwatch.StartNew();
+        var projected = 0;
+        var documentsWritten = 0;
+        var readModels = new List<(string Id, object Document)>();
+        var streamingLocationRequests = new List<TrackId>();
+
+        foreach (var chunk in artistIds.Chunk(ProjectionChunkSize))
+        {
+            foreach (var artistId in chunk)
             {
-                await bulk.StoreAsync(document, id);
+                using var session = documentStore.OpenAsyncSession();
+                var artistRepository = CreateArtistRepository(session);
+                var (stream, _) = await ArtistCatalog.LoadAsync(artistRepository, artistId, cancellationToken);
+                var projection = ArtistCatalogProjectionMaterializer.Build(artistId, stream.Events);
+                readModels.AddRange(ArtistCatalogProjectionDocuments.CreateBrowseDocuments(projection));
+                readModels.AddRange(
+                    ArtistCatalogProjectionDocuments.CreateSearchCandidateDocumentsForFullProjection(projection));
+
+                foreach (var track in projection.Tracks)
+                {
+                    if (track.StreamingLocations.Length == 0)
+                    {
+                        streamingLocationRequests.Add(track.TrackId);
+                    }
+                }
+
+                projected++;
+                if (projected % ProjectionLogInterval == 0)
+                {
+                    logger.LogInformation(
+                        "MusicBrainz dump catalog projection progress: {Projected}/{Total} artists, {Docs} docs buffered, elapsed={ElapsedMs}ms.",
+                        projected,
+                        artistIds.Count,
+                        readModels.Count,
+                        stopwatch.ElapsedMilliseconds);
+                }
+            }
+
+            if (readModels.Count > 0)
+            {
+                await using var bulk = documentStore.BulkInsert();
+                foreach (var (id, document) in DeduplicateById(readModels))
+                {
+                    await bulk.StoreAsync(document, id);
+                }
+
+                documentsWritten += readModels.Count;
+                readModels.Clear();
             }
         }
 
@@ -157,7 +229,19 @@ public sealed class CatalogDumpBatchWriter(
                 },
                 cancellationToken);
         }
+
+        logger.LogInformation(
+            "MusicBrainz dump catalog projection finished: {Projected} artists, {Docs} docs written, {StreamingRequests} streaming requests, elapsed={ElapsedMs}ms.",
+            projected,
+            documentsWritten,
+            streamingLocationRequests.Distinct().Count(),
+            stopwatch.ElapsedMilliseconds);
     }
+
+    private static HashSet<ArtistId> EmptyArtistSet() => [];
+
+    private IEventStreamRepository<ArtistId> CreateArtistRepository(IAsyncDocumentSession session) =>
+        new RavenEventStreamRepository<ArtistId>(session, typeRegistry, ArtistCatalogStreamName);
 
     private static IEnumerable<(string Id, object Document)> DeduplicateById(
         IReadOnlyList<(string Id, object Document)> documents)

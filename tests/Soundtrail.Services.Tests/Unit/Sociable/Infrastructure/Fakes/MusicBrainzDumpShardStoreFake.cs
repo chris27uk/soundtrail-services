@@ -13,15 +13,18 @@ internal sealed class MusicBrainzDumpShardStoreFake : IMusicBrainzDumpShardStore
             static pair => pair.Key,
             static pair => (IReadOnlyList<string>)pair.Value);
 
-    public Task WriteShardAsync(
+    public IMusicBrainzDumpShardWriter OpenWriter(
         MusicBrainzDumpImportJobId jobId,
         MusicBrainzDumpImportPhase phase,
-        int shardId,
-        IReadOnlyList<string> lines,
-        CancellationToken cancellationToken = default)
+        int shardCount)
     {
-        shards[(jobId.Value, phase, shardId)] = lines.ToList();
-        return Task.CompletedTask;
+        ArgumentOutOfRangeException.ThrowIfLessThan(shardCount, 1);
+        for (var shardId = 0; shardId < shardCount; shardId++)
+        {
+            shards[(jobId.Value, phase, shardId)] = [];
+        }
+
+        return new Writer(this, jobId.Value, phase);
     }
 
     public async IAsyncEnumerable<string> ReadShardLinesAsync(
@@ -47,5 +50,26 @@ internal sealed class MusicBrainzDumpShardStoreFake : IMusicBrainzDumpShardStore
 
             yield return lines[index];
         }
+    }
+
+    private sealed class Writer(
+        MusicBrainzDumpShardStoreFake store,
+        string jobId,
+        MusicBrainzDumpImportPhase phase) : IMusicBrainzDumpShardWriter
+    {
+        public Task AppendAsync(int shardId, string line, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            store.shards[(jobId, phase, shardId)].Add(line);
+            return Task.CompletedTask;
+        }
+
+        public Task CompleteAsync(CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.CompletedTask;
+        }
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 }

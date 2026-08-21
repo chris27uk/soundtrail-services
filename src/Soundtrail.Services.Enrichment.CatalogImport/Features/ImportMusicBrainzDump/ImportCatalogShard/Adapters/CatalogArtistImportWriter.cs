@@ -5,15 +5,16 @@ namespace Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrain
 
 public sealed class CatalogArtistImportWriter(ICatalogDumpBatchWriter batchWriter) : ICatalogArtistImportWriter
 {
-    public Task WriteAsync(
+    public async Task WriteAsync(
         Artist artist,
         DateTimeOffset dumpObservedAt,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(artist);
-        return batchWriter.FlushAsync(
+        var touched = await batchWriter.AppendEventsAsync(
             [new ArtistDumpBatchItem(artist)],
             dumpObservedAt,
             cancellationToken);
+        await batchWriter.ProjectArtistsAsync(touched, dumpObservedAt, cancellationToken);
     }
 }

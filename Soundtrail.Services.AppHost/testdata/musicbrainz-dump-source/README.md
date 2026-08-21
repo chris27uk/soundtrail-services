@@ -2,7 +2,7 @@
 
 Official MetaBrainz JSON dump archives are served from **your host filesystem** via a read-only Docker bind mount into the `musicbrainz-dump-source` Caddy container. Nothing multi-GB lives inside the container image or an anonymous Docker volume.
 
-CatalogImport downloads from this simulator over HTTP into `../musicbrainz-dump-cache/` (also on the host, fully gitignored).
+CatalogImport downloads from this simulator over HTTP into `../musicbrainz-dump-cache/` (also on the host, fully gitignored). Shard JSONL is staged under `musicbrainz-dump-cache/shards/` (streamed to disk, then uploaded; blob mode deletes the staging files after upload).
 
 ## Layout
 

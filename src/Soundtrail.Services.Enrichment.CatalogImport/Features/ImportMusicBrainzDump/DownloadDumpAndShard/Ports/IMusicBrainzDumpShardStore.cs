@@ -4,12 +4,10 @@ namespace Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrain
 
 public interface IMusicBrainzDumpShardStore
 {
-    Task WriteShardAsync(
+    IMusicBrainzDumpShardWriter OpenWriter(
         MusicBrainzDumpImportJobId jobId,
         MusicBrainzDumpImportPhase phase,
-        int shardId,
-        IReadOnlyList<string> lines,
-        CancellationToken cancellationToken = default);
+        int shardCount);
 
     IAsyncEnumerable<string> ReadShardLinesAsync(
         MusicBrainzDumpImportJobId jobId,
@@ -17,4 +15,11 @@ public interface IMusicBrainzDumpShardStore
         int shardId,
         long skipLines,
         CancellationToken cancellationToken = default);
+}
+
+public interface IMusicBrainzDumpShardWriter : IAsyncDisposable
+{
+    Task AppendAsync(int shardId, string line, CancellationToken cancellationToken = default);
+
+    Task CompleteAsync(CancellationToken cancellationToken = default);
 }

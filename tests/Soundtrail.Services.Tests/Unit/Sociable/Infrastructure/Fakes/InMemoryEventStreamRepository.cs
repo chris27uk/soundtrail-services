@@ -26,8 +26,10 @@ internal sealed class InMemoryEventStreamRepository<TStreamId>(
         IReadOnlyList<IDomainEvent> events,
         OperationId? operationId,
         CancellationToken cancellationToken,
-        ProjectionHint? projectionHint = null)
+        ProjectionHint? projectionHint = null,
+        bool saveChanges = true)
     {
+        _ = saveChanges;
         if (operationId is not null && !this.operationIds.Add(operationId.Value.StableValue))
         {
             return new AppendResult(false, stream.Version, [], AppendOutcome.DuplicateOperation);

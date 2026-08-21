@@ -97,6 +97,9 @@ Live Projector CDC continues for **online** traffic. Dump-appended events are ta
 - Compete for shard messages.
 - Claim shard lease → complete ASB message in seconds → ETL that shard out-of-band.
 - One Raven `BulkInsert` instance per consumer task (not shared across threads). Multiple concurrent BulkInsert instances across workers are supported.
+- Within one CatalogImport host, shard import runs with up to `MusicBrainzDump:ShardImportMaxDegreeOfParallelism` concurrent workers (defaults to `ShardCount`). Shards are artist-hash partitioned so workers do not share artist-catalog streams.
+- Dump appends batch multiple artists per Raven `SaveChangesAsync` (`MusicBrainzDump:EventAppendArtistsPerSaveChanges`, default 64) and use larger line flushes (`BulkInsertBatchSize`, default 2000). Bulk-import appends do not grow `AppliedOperationIds` on stream metadata (resume relies on shard `LineOffset` + freshness).
+- When `Storage=Blob`, shard JSONL is kept (or downloaded once) under `ShardDirectory` so import reads local files instead of streaming every line from blob HTTP.
 - Preserve **per-stream sequence/version numbers** when writing event store documents.
 
 ### Shard sizing
@@ -171,7 +174,7 @@ Each stored event carries `ProjectionHint`:
 
 ### Read models
 
-Bulk-project via the shared `ArtistCatalogProjectionMaterializer` / `ArtistCatalogProjectionDocuments` (same browse documents as live `ArtistCatalogChangedProjectorHandler`: artist, artist-albums, artist-tracks, album, album-tracks, track), plus search-candidate docs for dirty keys. Dump does **not** run playlist repair.
+Dump consumers **append events during shard import** and bulk-project read models **once per touched artist at shard completion** (not after every flush). Existing catalog read models remain served until new docs are written. Projection uses the shared `ArtistCatalogProjectionMaterializer` / `ArtistCatalogProjectionDocuments` (same browse documents as live `ArtistCatalogChangedProjectorHandler`: artist, artist-albums, artist-tracks, album, album-tracks, track), plus search-candidate docs for the full projected graph. Dump does **not** run playlist repair.
 
 Any new artist-catalog browse/search projection must be added to this shared materializer (not only to a CDC handler).
 
@@ -187,7 +190,8 @@ Stored as a **set** on Artist / Album / Track. Dump populates `musicbrainz:{mbid
 
 ## Freshness And Live Enrichment
 
-- If a Worker lookup completes with data **newer than the dump file timestamp**, Worker data wins (may overwrite import).
+- If a Worker lookup completes with data **newer than the dump observation time**, Worker data wins (may overwrite import).
+- Dump observation time is derived from the concrete snapshot id (`YYYYMMDD-HHMMSS` UTC). It is **not** the job request time.
 - If import data is **older than** what is already stored for that entity, **skip** the import write (`ObservedAt` / dump observation comparison).
 - **MusicBrainz Worker must not compete with dump** for catalog facts: do **not** schedule live MusicBrainz enrichment when the entity was dump-imported within the fresh window and catalog data is complete. Dump never enqueues MusicBrainz discover work.
 - **Odesli (streaming locations):** dump enqueues `StreamingLocationForTrack` at `LookupPriorityBand.Low` for tracks written without locations. Demand (`GetTrack`, list discovery fan-out) elevates to `High` when locations are still missing. Worker Odesli budgets remain an absolute hard cap; Orchestrator reserved high-priority planner slots protect High from Low backlog.
