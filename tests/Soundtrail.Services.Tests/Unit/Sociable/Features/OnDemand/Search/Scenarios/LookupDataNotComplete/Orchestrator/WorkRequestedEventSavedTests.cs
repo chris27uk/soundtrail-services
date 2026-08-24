@@ -87,6 +87,6 @@ public sealed class WorkRequestedEventSavedTests
         await environment.ProjectOnChange(sut => sut.Handle(environment.CreateRequest()));
 
         environment.SavedEvent<WorkRequested>().CorrelationId
-            .Should().Be(environment.SentMessage<RequestUnknownMusicDataMessage>().CorrelationId);
+            .Should().Be(environment.SentMessage<MusicNotSeenBefore>().CorrelationId);
     }
 }

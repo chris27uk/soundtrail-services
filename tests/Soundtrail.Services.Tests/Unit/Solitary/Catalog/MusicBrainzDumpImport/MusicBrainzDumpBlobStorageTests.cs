@@ -94,6 +94,32 @@ public sealed class BlobMusicBrainzDumpArchiveStoreTests
             .Should().BeTrue();
     }
 
+    [Fact]
+    public async Task Given_Release_Archive_When_Streaming_Tracks_Then_Release_Jsonl_Is_Not_Written()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var dumpVersion = "2026-08";
+        var versionRoot = Path.Combine(directory.Path, dumpVersion);
+        Directory.CreateDirectory(versionRoot);
+        MusicBrainzDumpArchiveFixtures.CopyTo(versionRoot, "release.tar.xz");
+
+        var blobs = new InMemoryMusicBrainzDumpBlobContainer();
+        var store = CreateStore(directory.Path, blobs, new RecordingDownloader([]));
+
+        var lines = new List<string>();
+        await foreach (var line in store.ReadDenormalizedTrackLinesAsync(
+                           MusicBrainzDumpImportJobId.ForDumpVersion(dumpVersion),
+                           dumpVersion))
+        {
+            lines.Add(line);
+        }
+
+        lines.Should().ContainSingle().Which.Should().Contain("Solo Song");
+        File.Exists(Path.Combine(versionRoot, "extracted", "release.jsonl")).Should().BeFalse();
+        (await blobs.ExistsAsync(MusicBrainzDumpBlobKeys.Archive(dumpVersion, "release")))
+            .Should().BeTrue();
+    }
+
     private static BlobMusicBrainzDumpArchiveStore CreateStore(
         string archiveDirectory,
         IMusicBrainzDumpBlobContainer blobs,

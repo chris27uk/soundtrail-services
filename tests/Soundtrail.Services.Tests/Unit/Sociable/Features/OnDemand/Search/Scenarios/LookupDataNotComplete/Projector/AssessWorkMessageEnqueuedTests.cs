@@ -108,6 +108,6 @@ public sealed class AssessWorkMessageEnqueuedTests
         await environment.ProjectOnChange(sut => sut.Handle(environment.CreateRequest()));
 
         environment.SentMessage<AssessWorkMessage>().CorrelationId
-            .Should().Be(environment.SentMessage<RequestUnknownMusicDataMessage>().CorrelationId);
+            .Should().Be(environment.SentMessage<MusicNotSeenBefore>().CorrelationId);
     }
 }

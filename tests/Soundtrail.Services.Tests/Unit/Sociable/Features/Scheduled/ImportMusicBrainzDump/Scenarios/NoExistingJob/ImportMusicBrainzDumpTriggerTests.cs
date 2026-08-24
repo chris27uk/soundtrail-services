@@ -73,6 +73,21 @@ public sealed class ImportMusicBrainzDumpTriggerTests
     }
 
     [Fact]
+    public async Task Given_A_Completed_Job_When_Retriggered_Then_Start_Is_Not_Published()
+    {
+        using var environment = ImportMusicBrainzDumpSociableTestEnvironment.Create();
+        environment.SnapshotCatalog.WithLatest("20260808-001002");
+
+        await environment.TriggerAsync(DateTimeOffset.Parse("2026-08-01T00:00:00Z"));
+        environment.JobStore.Jobs.Single().SetStatus(MusicBrainzDumpImportJobStatus.Completed);
+
+        await environment.TriggerAsync(DateTimeOffset.Parse("2026-08-02T00:00:00Z"));
+
+        environment.SentStarts.Should().ContainSingle();
+        environment.JobStore.Jobs.Single().Status.Should().Be(MusicBrainzDumpImportJobStatus.Completed);
+    }
+
+    [Fact]
     public async Task Given_An_Existing_Pending_Job_When_Retriggered_Then_Start_Is_Published_Again()
     {
         using var environment = ImportMusicBrainzDumpSociableTestEnvironment.Create();

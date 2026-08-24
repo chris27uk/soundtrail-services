@@ -75,8 +75,14 @@ public sealed class MusicBrainzDumpImportJob
 
     public void PrepareForRetrigger(DateTimeOffset requestedAt)
     {
-        if (Status is not (MusicBrainzDumpImportJobStatus.Completed
-            or MusicBrainzDumpImportJobStatus.Failed
+        if (Status == MusicBrainzDumpImportJobStatus.Completed)
+        {
+            // Same dump version already applied — do not reset shards or re-import.
+            RequestedAt = requestedAt;
+            return;
+        }
+
+        if (Status is not (MusicBrainzDumpImportJobStatus.Failed
             or MusicBrainzDumpImportJobStatus.Cancelled))
         {
             RequestedAt = requestedAt;

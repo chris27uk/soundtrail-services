@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Soundtrail.Domain.Catalog.Albums;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.MusicBrainzDumpImport;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump;
@@ -54,11 +55,12 @@ public sealed class ImportCatalogShardJob(
         var shard = job.GetOrAddShard(phase, shardId);
         var dumpObservedAt = ResolveDumpObservedAt(job);
         var batchSize = Math.Max(1, options.Value.BulkInsertBatchSize);
+        var projectionChunkSize = Math.Max(1, options.Value.ProjectionArtistsPerBulkInsert);
         var processed = shard.LineOffset;
+        var projectionCursor = shard.ProjectionLineOffset;
         var imported = 0;
         var skipped = 0;
         var buffer = new List<CatalogDumpBatchItem>(batchSize);
-        var touchedArtists = new HashSet<ArtistId>();
 
         await foreach (var line in shardStore.ReadShardLinesAsync(
                            jobId,
@@ -88,8 +90,8 @@ public sealed class ImportCatalogShardJob(
                     buffer,
                     dumpObservedAt,
                     processed,
+                    projectionCursor,
                     leaseDuration,
-                    touchedArtists,
                     cancellationToken);
             }
         }
@@ -103,18 +105,29 @@ public sealed class ImportCatalogShardJob(
                 buffer,
                 dumpObservedAt,
                 processed,
+                projectionCursor,
                 leaseDuration,
-                touchedArtists,
                 cancellationToken);
         }
 
-        await batchWriter.ProjectArtistsAsync(touchedArtists, dumpObservedAt, cancellationToken);
+        job = await ProjectFromShardFileAsync(
+            job,
+            jobId,
+            phase,
+            shardId,
+            dumpObservedAt,
+            processed,
+            projectionCursor,
+            projectionChunkSize,
+            leaseDuration,
+            cancellationToken);
 
         job = await PersistOwnedShardAsync(
             job,
             phase,
             shardId,
             processed,
+            projectionCursor: processed,
             leaseDuration,
             markCompleted: true,
             cancellationToken);
@@ -198,25 +211,85 @@ public sealed class ImportCatalogShardJob(
         List<CatalogDumpBatchItem> buffer,
         DateTimeOffset dumpObservedAt,
         long processed,
+        long projectionCursor,
         TimeSpan leaseDuration,
-        HashSet<ArtistId> touchedArtists,
         CancellationToken cancellationToken)
     {
-        var appended = await batchWriter.AppendEventsAsync(buffer, dumpObservedAt, cancellationToken);
-        foreach (var artistId in appended)
-        {
-            touchedArtists.Add(artistId);
-        }
-
+        _ = await batchWriter.AppendEventsAsync(buffer, dumpObservedAt, cancellationToken);
         buffer.Clear();
         return await PersistOwnedShardAsync(
             job,
             phase,
             shardId,
             processed,
+            projectionCursor,
             leaseDuration,
             markCompleted: false,
             cancellationToken);
+    }
+
+    private async Task<MusicBrainzDumpImportJob> ProjectFromShardFileAsync(
+        MusicBrainzDumpImportJob job,
+        MusicBrainzDumpImportJobId jobId,
+        MusicBrainzDumpImportPhase phase,
+        int shardId,
+        DateTimeOffset dumpObservedAt,
+        long processed,
+        long projectionCursor,
+        int projectionChunkSize,
+        TimeSpan leaseDuration,
+        CancellationToken cancellationToken)
+    {
+        var pending = new HashSet<ArtistId>();
+        var cursor = projectionCursor;
+
+        await foreach (var line in shardStore.ReadShardLinesAsync(
+                           jobId,
+                           phase,
+                           shardId,
+                           skipLines: projectionCursor,
+                           cancellationToken))
+        {
+            cursor++;
+            var item = TryMap(phase, line);
+            if (item is not null)
+            {
+                pending.Add(ArtistIdFor(item));
+            }
+
+            if (pending.Count < projectionChunkSize)
+            {
+                continue;
+            }
+
+            await batchWriter.ProjectArtistsAsync(pending, dumpObservedAt, cancellationToken);
+            pending.Clear();
+            job = await PersistOwnedShardAsync(
+                job,
+                phase,
+                shardId,
+                processed,
+                cursor,
+                leaseDuration,
+                markCompleted: false,
+                cancellationToken);
+        }
+
+        if (pending.Count > 0)
+        {
+            await batchWriter.ProjectArtistsAsync(pending, dumpObservedAt, cancellationToken);
+            job = await PersistOwnedShardAsync(
+                job,
+                phase,
+                shardId,
+                processed,
+                cursor,
+                leaseDuration,
+                markCompleted: false,
+                cancellationToken);
+        }
+
+        return job;
     }
 
     private async Task<MusicBrainzDumpImportJob> PersistOwnedShardAsync(
@@ -224,6 +297,7 @@ public sealed class ImportCatalogShardJob(
         MusicBrainzDumpImportPhase phase,
         int shardId,
         long processed,
+        long projectionCursor,
         TimeSpan leaseDuration,
         bool markCompleted,
         CancellationToken cancellationToken)
@@ -247,6 +321,7 @@ public sealed class ImportCatalogShardJob(
 
             shard = job.GetOrAddShard(phase, shardId);
             shard.UpdateLineOffset(processed);
+            shard.UpdateProjectionLineOffset(projectionCursor);
             if (markCompleted)
             {
                 shard.MarkCompleted();
@@ -345,6 +420,15 @@ public sealed class ImportCatalogShardJob(
                     ? new TrackDumpBatchItem(track)
                     : null,
             _ => null
+        };
+
+    private static ArtistId ArtistIdFor(CatalogDumpBatchItem item) =>
+        item switch
+        {
+            ArtistDumpBatchItem(var artist) => artist.Id,
+            AlbumDumpBatchItem(var album) => ArtistId.From(album.AlbumId.ArtistId),
+            TrackDumpBatchItem(var track) => ArtistId.From(AlbumId.From(track.AlbumId!).ArtistId),
+            _ => throw new InvalidOperationException($"Unsupported dump batch item '{item.GetType().Name}'.")
         };
 
     private static DateTimeOffset ResolveDumpObservedAt(MusicBrainzDumpImportJob job)

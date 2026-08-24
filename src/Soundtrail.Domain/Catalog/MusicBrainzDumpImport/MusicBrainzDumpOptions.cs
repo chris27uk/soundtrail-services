@@ -74,5 +74,17 @@ public sealed class MusicBrainzDumpOptions
     /// </summary>
     public int EventAppendArtistsPerSaveChanges { get; set; } = 64;
 
+    /// <summary>
+    /// Artists to load and buffer before one Raven BulkInsert during deferred projection.
+    /// Each artist writes several catalog docs (browse + search), so 2_000 artists is ~8k documents.
+    /// </summary>
+    public int ProjectionArtistsPerBulkInsert { get; set; } = 2_000;
+
+    /// <summary>
+    /// Concurrent artist loads during deferred projection within one shard worker.
+    /// When less than 1, uses <see cref="Environment.ProcessorCount"/>.
+    /// </summary>
+    public int ProjectionMaxDegreeOfParallelism { get; set; } = 8;
+
     public TimeSpan LeaseDuration { get; set; } = TimeSpan.FromMinutes(5);
 }

@@ -63,7 +63,7 @@ public sealed class LookupCompletedHandler(
                 SearchType.Track);
 
             await commandBus.SendAsync(
-                new RequestUnknownMusicDataMessage(
+                new MusicNotSeenBefore(
                     searchCriteria,
                     LookupPriorityBand.High,
                     100,

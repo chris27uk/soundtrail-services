@@ -4,9 +4,9 @@ using Soundtrail.Domain.Search;
 
 namespace Soundtrail.Domain.Discovery;
 
-public sealed record RequestUnknownMusicDataMessage : IPrioritisedMessage
+public sealed record MusicNotSeenBefore : IPrioritisedMessage
 {
-    public RequestUnknownMusicDataMessage(SearchCriteria SearchCriteria,
+    public MusicNotSeenBefore(SearchCriteria SearchCriteria,
         LookupPriorityBand Priority,
         int TrustLevel,
         int RiskScore,
@@ -22,7 +22,7 @@ public sealed record RequestUnknownMusicDataMessage : IPrioritisedMessage
         this.Id = CommandId ?? Soundtrail.Domain.Common.MessageId.New();
         this.CorrelationId = CorrelationId ?? Soundtrail.Domain.Common.CorrelationId.New();
     }
-
+    
     public SearchCriteria SearchCriteria { get; init; }
     public LookupPriorityBand Priority { get; init; }
     public int TrustLevel { get; init; }
@@ -34,4 +34,11 @@ public sealed record RequestUnknownMusicDataMessage : IPrioritisedMessage
     int? IPrioritisedMessage.TrustLevel => TrustLevel;
 
     int? IPrioritisedMessage.RiskScore => RiskScore;
+    
+    public static MusicNotSeenBefore Create(SearchCriteria searchCriteria, DateTimeOffset requestedAt) => new(
+        searchCriteria,
+        LookupPriorityBand.High,
+        100,
+        0,
+        requestedAt);
 }

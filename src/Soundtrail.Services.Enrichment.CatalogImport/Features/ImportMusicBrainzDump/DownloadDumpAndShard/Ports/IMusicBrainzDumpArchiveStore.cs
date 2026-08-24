@@ -37,4 +37,14 @@ public interface IMusicBrainzDumpArchiveStore
         MusicBrainzDumpImportJobId jobId,
         string dumpVersion,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Streams denormalized track JSONL lines without writing a full <c>release.jsonl</c> or
+    /// <c>track.jsonl</c> when those caches are absent. Prefers a cached track file; otherwise
+    /// streams the official release archive.
+    /// </summary>
+    IAsyncEnumerable<string> ReadDenormalizedTrackLinesAsync(
+        MusicBrainzDumpImportJobId jobId,
+        string dumpVersion,
+        CancellationToken cancellationToken = default);
 }

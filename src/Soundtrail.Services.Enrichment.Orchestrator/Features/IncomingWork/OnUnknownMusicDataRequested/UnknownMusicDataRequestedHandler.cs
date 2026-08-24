@@ -11,9 +11,9 @@ namespace Soundtrail.Services.Enrichment.Orchestrator.Features.IncomingWork.OnUn
 public sealed class OnUnknownMusicDataRequestedHandler(
     IWorkPlanner planner,
     ISearchForCandidates searchForCandidates,
-    IEventStreamRepository<CatalogWorkId> repository) : IHandler<RequestUnknownMusicDataMessage>
+    IEventStreamRepository<CatalogWorkId> repository) : IHandler<MusicNotSeenBefore>
 {
-    public async Task Handle(IncomingMessage<RequestUnknownMusicDataMessage> context, CancellationToken cancellationToken = default)
+    public async Task Handle(IncomingMessage<MusicNotSeenBefore> context, CancellationToken cancellationToken = default)
     {
         var request = context.Message;
         var aggregateContext = request.ToAggregateContext();
@@ -29,7 +29,8 @@ public sealed class OnUnknownMusicDataRequestedHandler(
             return;
         }
 
-        var work = ((CandidatesResult.Results)result).CandidateList
+        var work = ((CandidatesResult.Results)result)
+            .CandidateList
             .AsCandidateIds()
             .SelectMany(candidate => planner.Execute(candidate, WorkPlan()))
             .ToArray();

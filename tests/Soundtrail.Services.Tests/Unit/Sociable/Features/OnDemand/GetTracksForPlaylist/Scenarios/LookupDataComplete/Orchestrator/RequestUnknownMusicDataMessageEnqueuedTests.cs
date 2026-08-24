@@ -19,7 +19,7 @@ public sealed class RequestUnknownMusicDataMessageEnqueuedTests
         await environment.ProjectOnChange(
             sut => sut.Handle(new GetTracksForPlaylistRequest(environment.PlaylistId)));
 
-        environment.SentMessage<RequestUnknownMusicDataMessage>().SearchCriteria.Query.Should().Be("Midnight Signals Aurora Lane");
+        environment.SentMessage<MusicNotSeenBefore>().SearchCriteria.Query.Should().Be("Midnight Signals Aurora Lane");
     }
 
     [Fact]
@@ -31,7 +31,7 @@ public sealed class RequestUnknownMusicDataMessageEnqueuedTests
         await environment.ProjectOnChange(
             sut => sut.Handle(new GetTracksForPlaylistRequest(environment.PlaylistId)));
 
-        environment.SentMessage<RequestUnknownMusicDataMessage>().SearchCriteria.SearchTypes.Should().Be(SearchType.Track);
+        environment.SentMessage<MusicNotSeenBefore>().SearchCriteria.SearchTypes.Should().Be(SearchType.Track);
     }
 
     [Fact]
@@ -43,7 +43,7 @@ public sealed class RequestUnknownMusicDataMessageEnqueuedTests
         await environment.ProjectOnChange(
             sut => sut.Handle(new GetTracksForPlaylistRequest(environment.PlaylistId)));
 
-        environment.SentMessage<RequestUnknownMusicDataMessage>().SearchCriteria.NormalisedIdentifier.Should().Be("search:Midnight Signals Aurora Lane");
+        environment.SentMessage<MusicNotSeenBefore>().SearchCriteria.NormalisedIdentifier.Should().Be("search:Midnight Signals Aurora Lane");
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public sealed class RequestUnknownMusicDataMessageEnqueuedTests
         await environment.ProjectOnChange(
             sut => sut.Handle(new GetTracksForPlaylistRequest(environment.PlaylistId)));
 
-        environment.SentMessage<RequestUnknownMusicDataMessage>().Priority.Should().Be(LookupPriorityBand.High);
+        environment.SentMessage<MusicNotSeenBefore>().Priority.Should().Be(LookupPriorityBand.High);
     }
 
     [Fact]
@@ -67,7 +67,7 @@ public sealed class RequestUnknownMusicDataMessageEnqueuedTests
         await environment.ProjectOnChange(
             sut => sut.Handle(new GetTracksForPlaylistRequest(environment.PlaylistId)));
 
-        environment.SentMessage<RequestUnknownMusicDataMessage>().TrustLevel.Should().Be(100);
+        environment.SentMessage<MusicNotSeenBefore>().TrustLevel.Should().Be(100);
     }
 
     [Fact]
@@ -79,7 +79,7 @@ public sealed class RequestUnknownMusicDataMessageEnqueuedTests
         await environment.ProjectOnChange(
             sut => sut.Handle(new GetTracksForPlaylistRequest(environment.PlaylistId)));
 
-        environment.SentMessage<RequestUnknownMusicDataMessage>().RiskScore.Should().Be(0);
+        environment.SentMessage<MusicNotSeenBefore>().RiskScore.Should().Be(0);
     }
 
     [Fact]
@@ -93,7 +93,7 @@ public sealed class RequestUnknownMusicDataMessageEnqueuedTests
         await environment.ProjectOnChange(
             sut => sut.Handle(new GetTracksForPlaylistRequest(environment.PlaylistId)));
 
-        environment.SentMessage<RequestUnknownMusicDataMessage>().RequestedAt.Should().Be(requestTime);
+        environment.SentMessage<MusicNotSeenBefore>().RequestedAt.Should().Be(requestTime);
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public sealed class RequestUnknownMusicDataMessageEnqueuedTests
         await environment.ProjectOnChange(
             sut => sut.Handle(new GetTracksForPlaylistRequest(environment.PlaylistId)));
 
-        environment.SentMessage<RequestUnknownMusicDataMessage>().Id.Should().NotBe(default(MessageId));
+        environment.SentMessage<MusicNotSeenBefore>().Id.Should().NotBe(default(MessageId));
     }
 
     [Fact]
@@ -117,7 +117,7 @@ public sealed class RequestUnknownMusicDataMessageEnqueuedTests
         await environment.ProjectOnChange(
             sut => sut.Handle(new GetTracksForPlaylistRequest(environment.PlaylistId)));
 
-        environment.SentMessage<RequestUnknownMusicDataMessage>().CorrelationId.Should().Be(environment.SentMessages<DispatchLookupWork>().First().CorrelationId);
+        environment.SentMessage<MusicNotSeenBefore>().CorrelationId.Should().Be(environment.SentMessages<DispatchLookupWork>().First().CorrelationId);
     }
 
     private static LookupDataCompleteTrack MidnightSignals() =>

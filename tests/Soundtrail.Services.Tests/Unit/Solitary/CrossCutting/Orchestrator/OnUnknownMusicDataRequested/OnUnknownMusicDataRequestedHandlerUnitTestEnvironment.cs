@@ -28,7 +28,7 @@ internal sealed class OnUnknownMusicDataRequestedHandlerUnitTestEnvironment
 
     public OnUnknownMusicDataRequestedHandler CreateSubject() => new(new WorkPlanner(), SearchForCandidates, Repository);
 
-    public static RequestUnknownMusicDataMessage CreateUnknownRequest(
+    public static MusicNotSeenBefore CreateUnknownRequest(
         string query = "radiohead",
         SearchType searchType = SearchType.Artist,
         LookupPriorityBand priority = LookupPriorityBand.High,

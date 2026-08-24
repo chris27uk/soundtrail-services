@@ -32,7 +32,7 @@ public sealed class DiscoveryRequestTranslationRegistration : ITypeTranslationRe
                 CorrelationId = CorrelationId.From(dto.CorrelationId)
             });
 
-        registry.RegisterPair<RequestUnknownMusicDataMessage, UnknownMusicDataRequestedCommandDto>(
+        registry.RegisterPair<MusicNotSeenBefore, UnknownMusicDataRequestedCommandDto>(
             toDto: message => new UnknownMusicDataRequestedCommandDto(
                 message.Id.Value,
                 message.CorrelationId.Value,
@@ -43,7 +43,7 @@ public sealed class DiscoveryRequestTranslationRegistration : ITypeTranslationRe
                 message.TrustLevel,
                 message.RiskScore,
                 message.RequestedAt),
-            toDomainObject: dto => new RequestUnknownMusicDataMessage(
+            toDomainObject: dto => new MusicNotSeenBefore(
                 new SearchCriteria(dto.Query, (SearchType)dto.SearchTypes),
                 ParsePriority(dto.Priority),
                 dto.TrustLevel,

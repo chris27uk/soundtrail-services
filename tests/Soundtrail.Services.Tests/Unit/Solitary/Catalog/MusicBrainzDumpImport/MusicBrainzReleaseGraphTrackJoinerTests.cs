@@ -75,4 +75,12 @@ public sealed class MusicBrainzReleaseGraphTrackJoinerTests
         document.RootElement.GetProperty("artist-credit")[0].GetProperty("artist").GetProperty("id")
             .GetString().Should().Be("a1");
     }
+
+    [Fact]
+    public void Given_A_Release_When_Enumerating_Track_Lines_Then_The_Title_Is_Emitted()
+    {
+        MusicBrainzReleaseGraphTrackJoiner.EnumerateTrackJsonLines(SoloRelease)
+            .Should().ContainSingle()
+            .Which.Should().Contain("Solo Song");
+    }
 }

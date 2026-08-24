@@ -17,7 +17,7 @@ public static class MusicBrainzReleaseGraphTrackJoiner
         var bestByKey = new Dictionary<string, Candidate>(StringComparer.Ordinal);
         foreach (var line in releaseLines)
         {
-            foreach (var candidate in EnumerateCandidates(line))
+            foreach (var candidate in EnumerateTrackCandidates(line))
             {
                 if (!bestByKey.TryGetValue(candidate.Key, out var existing) ||
                     IsPreferable(candidate, existing))
@@ -41,18 +41,51 @@ public static class MusicBrainzReleaseGraphTrackJoiner
         ArgumentException.ThrowIfNullOrWhiteSpace(releaseJsonlPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(trackJsonlPath);
 
-        var lines = new List<string>();
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(trackJsonlPath))!);
+        await using var output = new StreamWriter(trackJsonlPath);
         await foreach (var line in File.ReadLinesAsync(releaseJsonlPath, cancellationToken))
         {
-            lines.Add(line);
+            foreach (var trackLine in EnumerateTrackJsonLines(line))
+            {
+                await output.WriteLineAsync(trackLine);
+            }
         }
-
-        var joined = JoinReleaseLines(lines);
-        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(trackJsonlPath))!);
-        await File.WriteAllLinesAsync(trackJsonlPath, joined, cancellationToken);
     }
 
-    private static IEnumerable<Candidate> EnumerateCandidates(string releaseLine)
+    /// <summary>
+    /// Yields denormalized track JSONL lines for official release dump lines.
+    /// Does not deduplicate across releases; callers that need earliest-date wins should use
+    /// <see cref="JoinReleaseLines"/>.
+    /// </summary>
+    public static async IAsyncEnumerable<string> EnumerateTrackJsonLinesAsync(
+        IAsyncEnumerable<string> releaseLines,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(releaseLines);
+
+        await foreach (var releaseLine in releaseLines.WithCancellation(cancellationToken))
+        {
+            foreach (var trackLine in EnumerateTrackJsonLines(releaseLine))
+            {
+                yield return trackLine;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Yields denormalized track JSONL lines for one official release dump line.
+    /// Does not deduplicate across releases; callers that need earliest-date wins should use
+    /// <see cref="JoinReleaseLines"/>.
+    /// </summary>
+    public static IEnumerable<string> EnumerateTrackJsonLines(string releaseLine)
+    {
+        foreach (var candidate in EnumerateTrackCandidates(releaseLine))
+        {
+            yield return candidate.JsonLine;
+        }
+    }
+
+    private static IEnumerable<Candidate> EnumerateTrackCandidates(string releaseLine)
     {
         if (string.IsNullOrWhiteSpace(releaseLine))
         {

@@ -171,6 +171,13 @@ Useful local URLs:
 - StreamBrowser: `http://streams.localhost`
 - RavenDB Studio: `http://ravendb.localhost/studio/index.html`
 
+RavenDB data uses Docker volume `soundtrail-ravendb-data` (mounted at `/var/lib/ravendb/data`) so catalog/import state survives AppHost restarts. To wipe the local `soundtrail` database:
+
+```bash
+./scripts/wipe-local-ravendb.sh           # hard-delete while Raven is running
+./scripts/wipe-local-ravendb.sh --purge   # also remove the Docker volume (stop AppHost first)
+```
+
 Emulator and provider-stub toggles live in [`Soundtrail.Services.AppHost/appsettings.Development.json`](Soundtrail.Services.AppHost/appsettings.Development.json). For MusicBrainz dump import during local runs, see [`Soundtrail.Services.AppHost/testdata/musicbrainz-dump-source/README.md`](Soundtrail.Services.AppHost/testdata/musicbrainz-dump-source/README.md).
 
 ### CI parity (optional)

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
@@ -8,6 +9,7 @@ using Raven.Client.Documents.Session;
 using Soundtrail.Adapters.CatalogProjection;
 using Soundtrail.Adapters.EventSourcing;
 using Soundtrail.Adapters.TypeRegistry;
+using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
 using Soundtrail.Domain.Catalog;
@@ -31,7 +33,6 @@ public sealed class CatalogDumpBatchWriter(
     ILogger<CatalogDumpBatchWriter> logger) : ICatalogDumpBatchWriter
 {
     private const string ArtistCatalogStreamName = "artist-catalog-stream";
-    private const int ProjectionChunkSize = 200;
     private const int ProjectionLogInterval = 5_000;
     private const int RequestsPerArtistBudget = 4;
 
@@ -161,52 +162,83 @@ public sealed class CatalogDumpBatchWriter(
 
         var stopwatch = Stopwatch.StartNew();
         var projected = 0;
+        var skippedUnchanged = 0;
         var documentsWritten = 0;
-        var readModels = new List<(string Id, object Document)>();
-        var streamingLocationRequests = new List<TrackId>();
-
-        foreach (var chunk in artistIds.Chunk(ProjectionChunkSize))
+        var streamingLocationRequests = new ConcurrentBag<TrackId>();
+        var parallelism = options.Value.ProjectionMaxDegreeOfParallelism;
+        if (parallelism < 1)
         {
-            foreach (var artistId in chunk)
+            parallelism = Environment.ProcessorCount;
+        }
+
+        var parallelOptions = new ParallelOptions
+        {
+            MaxDegreeOfParallelism = parallelism,
+            CancellationToken = cancellationToken
+        };
+
+        var projectionChunkSize = Math.Max(1, options.Value.ProjectionArtistsPerBulkInsert);
+        foreach (var chunk in artistIds.Chunk(projectionChunkSize))
+        {
+            var toProject = ArtistsNeedingProjection(chunk, dumpObservedAt);
+            skippedUnchanged += chunk.Length - toProject.Count;
+            if (toProject.Count == 0)
             {
-                using var session = documentStore.OpenAsyncSession();
-                var artistRepository = CreateArtistRepository(session);
-                var (stream, _) = await ArtistCatalog.LoadAsync(artistRepository, artistId, cancellationToken);
-                var projection = ArtistCatalogProjectionMaterializer.Build(artistId, stream.Events);
-                readModels.AddRange(ArtistCatalogProjectionDocuments.CreateBrowseDocuments(projection));
-                readModels.AddRange(
-                    ArtistCatalogProjectionDocuments.CreateSearchCandidateDocumentsForFullProjection(projection));
-
-                foreach (var track in projection.Tracks)
-                {
-                    if (track.StreamingLocations.Length == 0)
-                    {
-                        streamingLocationRequests.Add(track.TrackId);
-                    }
-                }
-
-                projected++;
-                if (projected % ProjectionLogInterval == 0)
-                {
-                    logger.LogInformation(
-                        "MusicBrainz dump catalog projection progress: {Projected}/{Total} artists, {Docs} docs buffered, elapsed={ElapsedMs}ms.",
-                        projected,
-                        artistIds.Count,
-                        readModels.Count,
-                        stopwatch.ElapsedMilliseconds);
-                }
+                continue;
             }
 
-            if (readModels.Count > 0)
+            var readModels = new ConcurrentBag<(string Id, object Document)>();
+            await Parallel.ForEachAsync(
+                toProject,
+                parallelOptions,
+                async (artistId, token) =>
+                {
+                    using var session = documentStore.OpenAsyncSession();
+                    var artistRepository = CreateArtistRepository(session);
+                    var (stream, _) = await ArtistCatalog.LoadAsync(artistRepository, artistId, token);
+                    var projection = ArtistCatalogProjectionMaterializer.Build(artistId, stream.Events);
+                    foreach (var document in ArtistCatalogProjectionDocuments.CreateBrowseDocuments(projection))
+                    {
+                        readModels.Add(document);
+                    }
+
+                    foreach (var document in ArtistCatalogProjectionDocuments
+                                 .CreateSearchCandidateDocumentsForFullProjection(projection))
+                    {
+                        readModels.Add(document);
+                    }
+
+                    foreach (var track in projection.Tracks)
+                    {
+                        if (track.StreamingLocations.Length == 0)
+                        {
+                            streamingLocationRequests.Add(track.TrackId);
+                        }
+                    }
+
+                    var done = Interlocked.Increment(ref projected);
+                    if (done % ProjectionLogInterval == 0)
+                    {
+                        logger.LogInformation(
+                            "MusicBrainz dump catalog projection progress: {Projected}/{Total} artists, {Skipped} unchanged, {Docs} docs buffered, elapsed={ElapsedMs}ms.",
+                            done,
+                            artistIds.Count,
+                            skippedUnchanged,
+                            readModels.Count,
+                            stopwatch.ElapsedMilliseconds);
+                    }
+                });
+
+            var buffered = readModels.ToArray();
+            if (buffered.Length > 0)
             {
                 await using var bulk = documentStore.BulkInsert();
-                foreach (var (id, document) in DeduplicateById(readModels))
+                foreach (var (id, document) in DeduplicateById(buffered))
                 {
                     await bulk.StoreAsync(document, id);
                 }
 
-                documentsWritten += readModels.Count;
-                readModels.Clear();
+                documentsWritten += buffered.Length;
             }
         }
 
@@ -231,11 +263,36 @@ public sealed class CatalogDumpBatchWriter(
         }
 
         logger.LogInformation(
-            "MusicBrainz dump catalog projection finished: {Projected} artists, {Docs} docs written, {StreamingRequests} streaming requests, elapsed={ElapsedMs}ms.",
+            "MusicBrainz dump catalog projection finished: {Projected} artists, {Skipped} unchanged, {Docs} docs written, {StreamingRequests} streaming requests, elapsed={ElapsedMs}ms.",
             projected,
+            skippedUnchanged,
             documentsWritten,
             streamingLocationRequests.Distinct().Count(),
             stopwatch.ElapsedMilliseconds);
+    }
+
+    private List<ArtistId> ArtistsNeedingProjection(
+        IReadOnlyList<ArtistId> artistIds,
+        DateTimeOffset dumpObservedAt)
+    {
+        using var session = documentStore.OpenSession();
+        var documentIds = artistIds.Select(id => CatalogArtistRecordDto.GetDocumentId(id.Value)).ToArray();
+        var existing = session.Load<CatalogArtistRecordDto>(documentIds);
+        var needed = new List<ArtistId>(artistIds.Count);
+        foreach (var artistId in artistIds)
+        {
+            var documentId = CatalogArtistRecordDto.GetDocumentId(artistId.Value);
+            if (existing.TryGetValue(documentId, out var dto) &&
+                dto is not null &&
+                dto.UpdatedAt >= dumpObservedAt)
+            {
+                continue;
+            }
+
+            needed.Add(artistId);
+        }
+
+        return needed;
     }
 
     private static HashSet<ArtistId> EmptyArtistSet() => [];

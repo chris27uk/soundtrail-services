@@ -87,6 +87,62 @@ public sealed class MusicBrainzDumpTarXzExtractor : IMusicBrainzDumpTarXzExtract
             $"MusicBrainz dump archive '{archivePath}' does not contain a JSONL member for '{entityName}'.");
     }
 
+    public async IAsyncEnumerable<string> ReadJsonlLinesAsync(
+        string archivePath,
+        string entityName,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(archivePath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(entityName);
+
+        if (!File.Exists(archivePath))
+        {
+            throw new FileNotFoundException(
+                $"MusicBrainz dump archive was not found at '{archivePath}'.",
+                archivePath);
+        }
+
+        await using var archiveStream = new FileStream(
+            archivePath,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.Read,
+            StreamBufferSize,
+            FileOptions.SequentialScan | FileOptions.Asynchronous);
+        using var tarSource = OpenTarSource(archiveStream);
+        using var tarReader = new TarReader(tarSource, leaveOpen: true);
+
+        while (TryGetNextEntry(tarReader) is { } entry)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (entry.EntryType is TarEntryType.Directory
+                or TarEntryType.GlobalExtendedAttributes
+                or TarEntryType.ExtendedAttributes
+                || !MatchesEntityEntry(entry.Name, entityName))
+            {
+                entry.DataStream?.CopyTo(Stream.Null);
+                continue;
+            }
+
+            if (entry.DataStream is null)
+            {
+                throw new InvalidOperationException(
+                    $"MusicBrainz dump archive '{archivePath}' entry '{entry.Name}' has no data stream.");
+            }
+
+            using var reader = new StreamReader(entry.DataStream, leaveOpen: true);
+            while (await reader.ReadLineAsync(cancellationToken) is { } line)
+            {
+                yield return line;
+            }
+
+            yield break;
+        }
+
+        throw new InvalidOperationException(
+            $"MusicBrainz dump archive '{archivePath}' does not contain a JSONL member for '{entityName}'.");
+    }
+
     private static readonly byte[] XzMagic = [0xFD, 0x37, 0x7A, 0x58, 0x5A, 0x00];
 
     private static Stream OpenTarSource(FileStream archiveStream)

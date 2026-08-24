@@ -93,10 +93,66 @@ public sealed class LocalMusicBrainzDumpArchiveStore(
         string dumpVersion,
         CancellationToken cancellationToken = default)
     {
+        if (TryGetCachedTrackJsonlPath(dumpVersion, out var cachedPath))
+        {
+            return cachedPath;
+        }
+
+        var outputPath = RequireArchiveExtractedPath(TrackEntity, dumpVersion);
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outputPath))!);
+        await using (var output = new StreamWriter(outputPath))
+        {
+            await foreach (var line in ReadTracksFromReleaseGraphAsync(jobId, dumpVersion, cancellationToken))
+            {
+                await output.WriteLineAsync(line);
+            }
+        }
+
+        return outputPath;
+    }
+
+    public async IAsyncEnumerable<string> ReadDenormalizedTrackLinesAsync(
+        MusicBrainzDumpImportJobId jobId,
+        string dumpVersion,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        if (TryGetCachedTrackJsonlPath(dumpVersion, out var cachedPath))
+        {
+            await foreach (var line in File.ReadLinesAsync(cachedPath, cancellationToken))
+            {
+                yield return line;
+            }
+
+            yield break;
+        }
+
+        var trackArchivePath = TryGetArchivePath(TrackEntity, dumpVersion);
+        if (trackArchivePath is not null && File.Exists(trackArchivePath))
+        {
+            await foreach (var line in extractor.ReadJsonlLinesAsync(
+                               trackArchivePath,
+                               TrackEntity,
+                               cancellationToken))
+            {
+                yield return line;
+            }
+
+            yield break;
+        }
+
+        await foreach (var line in ReadTracksFromReleaseGraphAsync(jobId, dumpVersion, cancellationToken))
+        {
+            yield return line;
+        }
+    }
+
+    private bool TryGetCachedTrackJsonlPath(string dumpVersion, out string path)
+    {
         var configured = options.Value.TracksLocalPath;
         if (!string.IsNullOrWhiteSpace(configured))
         {
-            return RequireExistingPath(configured, TrackEntity);
+            path = RequireExistingPath(configured, TrackEntity);
+            return true;
         }
 
         var artistsPath = options.Value.LocalPath;
@@ -107,32 +163,104 @@ public sealed class LocalMusicBrainzDumpArchiveStore(
                 "track.jsonl");
             if (File.Exists(sibling))
             {
-                return RequireExistingPath(sibling, TrackEntity);
+                path = RequireExistingPath(sibling, TrackEntity);
+                return true;
             }
         }
 
-        // Denormalized track JSONL is Soundtrail-specific (not an official MetaBrainz dump entity).
         if (TryGetArchiveExtractedPath(TrackEntity, dumpVersion, out var trackExtractedPath) &&
             File.Exists(trackExtractedPath))
         {
-            return trackExtractedPath;
+            path = trackExtractedPath;
+            return true;
         }
 
         var trackArchivePath = TryGetArchivePath(TrackEntity, dumpVersion);
         if (trackArchivePath is not null && File.Exists(trackArchivePath))
         {
-            var extractedPath = RequireArchiveExtractedPath(TrackEntity, dumpVersion);
-            extractor.EnsureExtracted(trackArchivePath, TrackEntity, extractedPath);
-            return extractedPath;
+            path = RequireArchiveExtractedPath(TrackEntity, dumpVersion);
+            extractor.EnsureExtracted(trackArchivePath, TrackEntity, path);
+            return true;
         }
 
-        var releasesPath = await EnsureReleasesJsonlAsync(jobId, dumpVersion, cancellationToken);
-        var outputPath = RequireArchiveExtractedPath(TrackEntity, dumpVersion);
-        await MusicBrainzReleaseGraphTrackJoiner.WriteJoinedTracksAsync(
-            releasesPath,
-            outputPath,
-            cancellationToken);
-        return outputPath;
+        path = string.Empty;
+        return false;
+    }
+
+    private async IAsyncEnumerable<string> ReadTracksFromReleaseGraphAsync(
+        MusicBrainzDumpImportJobId jobId,
+        string dumpVersion,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        _ = jobId;
+
+        var configured = options.Value.ReleasesLocalPath;
+        if (!string.IsNullOrWhiteSpace(configured))
+        {
+            await foreach (var line in MusicBrainzReleaseGraphTrackJoiner.EnumerateTrackJsonLinesAsync(
+                               File.ReadLinesAsync(RequireExistingPath(configured, ReleaseEntity), cancellationToken),
+                               cancellationToken))
+            {
+                yield return line;
+            }
+
+            yield break;
+        }
+
+        var artistsPath = options.Value.LocalPath;
+        if (!string.IsNullOrWhiteSpace(artistsPath))
+        {
+            var sibling = Path.Combine(
+                Path.GetDirectoryName(Path.GetFullPath(artistsPath))!,
+                "release.jsonl");
+            if (File.Exists(sibling))
+            {
+                await foreach (var line in MusicBrainzReleaseGraphTrackJoiner.EnumerateTrackJsonLinesAsync(
+                                   File.ReadLinesAsync(sibling, cancellationToken),
+                                   cancellationToken))
+                {
+                    yield return line;
+                }
+
+                yield break;
+            }
+        }
+
+        if (TryGetArchiveExtractedPath(ReleaseEntity, dumpVersion, out var extractedRelease) &&
+            File.Exists(extractedRelease))
+        {
+            await foreach (var line in MusicBrainzReleaseGraphTrackJoiner.EnumerateTrackJsonLinesAsync(
+                               File.ReadLinesAsync(extractedRelease, cancellationToken),
+                               cancellationToken))
+            {
+                yield return line;
+            }
+
+            yield break;
+        }
+
+        var archivePath = await EnsureOfficialArchiveOnDiskAsync(ReleaseEntity, dumpVersion, cancellationToken);
+        await foreach (var line in MusicBrainzReleaseGraphTrackJoiner.EnumerateTrackJsonLinesAsync(
+                           extractor.ReadJsonlLinesAsync(archivePath, ReleaseEntity, cancellationToken),
+                           cancellationToken))
+        {
+            yield return line;
+        }
+    }
+
+    private async Task<string> EnsureOfficialArchiveOnDiskAsync(
+        string entityName,
+        string dumpVersion,
+        CancellationToken cancellationToken)
+    {
+        var archivePath = RequireArchivePath(entityName, dumpVersion);
+        if (!File.Exists(archivePath))
+        {
+            var url = BuildDownloadUrl(dumpVersion, entityName);
+            await downloader.DownloadAsync(url, archivePath, cancellationToken);
+        }
+
+        return archivePath;
     }
 
     private async Task<string> EnsureOfficialEntityJsonlAsync(

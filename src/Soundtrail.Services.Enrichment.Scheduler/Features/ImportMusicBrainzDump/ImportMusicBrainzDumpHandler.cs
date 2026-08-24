@@ -40,6 +40,10 @@ public sealed class ImportMusicBrainzDumpHandler(
 
         var jobId = MusicBrainzDumpImportJobId.ForSnapshot(snapshotId);
         var job = await jobStore.EnsureAsync(jobId, snapshotId.Value, request.TriggeredAt, cancellationToken);
+        if (job.Status == MusicBrainzDumpImportJobStatus.Completed)
+        {
+            return;
+        }
 
         await commandBus.SendAsync(
             StartMusicBrainzDumpImport.Create(job.Id, job.DumpVersion, request.TriggeredAt),

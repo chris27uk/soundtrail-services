@@ -43,6 +43,10 @@ public static class AppHostComposition
             .WithHttpEndpoint(port: 8080, targetPort: 8080, name: "http")
             .WithUrlForEndpoint("http", url => url.Url = ravenDbDashboardUrl)
             .WithEndpoint(port: 38888, targetPort: 38888, name: "tcp")
+            // Named volume on the image's data path. Do not bind-mount /opt/RavenDB/Server/RavenData:
+            // the Raven entrypoint treats that as a legacy layout and writes broken System/Databases
+            // symlinks on Docker Desktop, which then fail lock/CreateDirectory on startup.
+            .WithVolume("soundtrail-ravendb-data", "/var/lib/ravendb/data")
             .WithEnvironment("RAVEN_Setup_Mode", "None")
             .WithEnvironment("RAVEN_ServerUrl", ravenDbListenUrl)
             .WithEnvironment("RAVEN_ServerUrl_Tcp", ravenDbListenTcpUrl)

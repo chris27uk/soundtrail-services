@@ -85,13 +85,34 @@ public sealed class MusicBrainzDumpImportJobTests
     }
 
     [Fact]
-    public void Given_A_Terminal_Job_When_Preparing_For_Retrigger_Then_It_Resets_To_Pending()
+    public void Given_A_Completed_Job_When_Preparing_For_Retrigger_Then_It_Keeps_Shards_And_Status()
     {
         var job = MusicBrainzDumpImportJob.CreateNew(
             MusicBrainzDumpImportJobId.ForDumpVersion("2026-08"),
             "2026-08",
             DateTimeOffset.Parse("2026-08-01T00:00:00Z"));
+        var now = DateTimeOffset.Parse("2026-08-01T01:00:00Z");
+        job.TryClaimShard(MusicBrainzDumpImportPhase.Artists, 0, "host-a", now, LeaseDuration);
+        job.GetOrAddShard(MusicBrainzDumpImportPhase.Artists, 0).MarkCompleted();
         job.SetStatus(MusicBrainzDumpImportJobStatus.Completed);
+
+        var retriggeredAt = DateTimeOffset.Parse("2026-08-15T12:00:00Z");
+        job.PrepareForRetrigger(retriggeredAt);
+
+        job.Status.Should().Be(MusicBrainzDumpImportJobStatus.Completed);
+        job.RequestedAt.Should().Be(retriggeredAt);
+        job.Shards.Should().ContainSingle();
+        job.Shards.Single().Status.Should().Be(MusicBrainzDumpImportShardStatus.Completed);
+    }
+
+    [Fact]
+    public void Given_A_Failed_Job_When_Preparing_For_Retrigger_Then_It_Resets_To_Pending()
+    {
+        var job = MusicBrainzDumpImportJob.CreateNew(
+            MusicBrainzDumpImportJobId.ForDumpVersion("2026-08"),
+            "2026-08",
+            DateTimeOffset.Parse("2026-08-01T00:00:00Z"));
+        job.SetStatus(MusicBrainzDumpImportJobStatus.Failed);
 
         var retriggeredAt = DateTimeOffset.Parse("2026-08-15T12:00:00Z");
         job.PrepareForRetrigger(retriggeredAt);

@@ -98,7 +98,7 @@ Live Projector CDC continues for **online** traffic. Dump-appended events are ta
 - Claim shard lease → complete ASB message in seconds → ETL that shard out-of-band.
 - One Raven `BulkInsert` instance per consumer task (not shared across threads). Multiple concurrent BulkInsert instances across workers are supported.
 - Within one CatalogImport host, shard import runs with up to `MusicBrainzDump:ShardImportMaxDegreeOfParallelism` concurrent workers (defaults to `ShardCount`). Shards are artist-hash partitioned so workers do not share artist-catalog streams.
-- Dump appends batch multiple artists per Raven `SaveChangesAsync` (`MusicBrainzDump:EventAppendArtistsPerSaveChanges`, default 64) and use larger line flushes (`BulkInsertBatchSize`, default 2000). Bulk-import appends do not grow `AppliedOperationIds` on stream metadata (resume relies on shard `LineOffset` + freshness).
+- Dump appends batch multiple artists per Raven `SaveChangesAsync` (`MusicBrainzDump:EventAppendArtistsPerSaveChanges`, default 64) and use larger line flushes (`BulkInsertBatchSize`, default 2000). Deferred projection BulkInserts every `MusicBrainzDump:ProjectionArtistsPerBulkInsert` artists (default 2000, ~8k catalog docs). Bulk-import appends do not grow `AppliedOperationIds` on stream metadata (resume relies on shard `LineOffset` + freshness).
 - When `Storage=Blob`, shard JSONL is kept (or downloaded once) under `ShardDirectory` so import reads local files instead of streaming every line from blob HTTP.
 - Preserve **per-stream sequence/version numbers** when writing event store documents.
 
@@ -148,15 +148,16 @@ Source of truth: Raven **job document**:
 
 - Job status: `Pending` → `Downloading` → `Extracting` → `Importing` → `Completed` / `Failed` / `Cancelled`
 - Dump version, timestamps, cancellation flag, producer lease
-- Per-shard: `{ phase, shardId, lineOffset, status, lease }`
+- Per-shard: `{ phase, shardId, lineOffset, projectionLineOffset, status, lease }`
 
 Rules:
 
 - Shard order within a phase is irrelevant.
 - Phase N+1 shards are published only when all phase-N shards are `Completed`.
 - Duplicate shard delivery: `TryClaimShard` no-ops if leased or completed.
-- Crash after ASB ack: lease expiry → republish or reclaim; resume from `lineOffset`.
+- Crash after ASB ack: lease expiry → republish or reclaim; resume event append from `lineOffset` and catalog projection from `projectionLineOffset` (second pass over the same shard JSONL).
 - Load is at-least-once; writes must be idempotent under re-play.
+- A completed job for a dump version is not reset or re-started. A later dump version is a distinct job. Failed / cancelled jobs may be retriggered.
 
 ## ETL Output Contract
 
@@ -174,7 +175,7 @@ Each stored event carries `ProjectionHint`:
 
 ### Read models
 
-Dump consumers **append events during shard import** and bulk-project read models **once per touched artist at shard completion** (not after every flush). Existing catalog read models remain served until new docs are written. Projection uses the shared `ArtistCatalogProjectionMaterializer` / `ArtistCatalogProjectionDocuments` (same browse documents as live `ArtistCatalogChangedProjectorHandler`: artist, artist-albums, artist-tracks, album, album-tracks, track), plus search-candidate docs for the full projected graph. Dump does **not** run playlist repair.
+Dump consumers **append events during shard import** and bulk-project read models in a second pass over the shard file from `projectionLineOffset`. Existing catalog read models remain served until new docs are written. Artists whose browse `UpdatedAt` is already at or after dump observation time are skipped. Projection uses the shared `ArtistCatalogProjectionMaterializer` / `ArtistCatalogProjectionDocuments` (same browse documents as live `ArtistCatalogChangedProjectorHandler`: artist, artist-albums, artist-tracks, album, album-tracks, track), plus search-candidate docs for the full projected graph. Dump does **not** run playlist repair.
 
 Any new artist-catalog browse/search projection must be added to this shared materializer (not only to a CDC handler).
 

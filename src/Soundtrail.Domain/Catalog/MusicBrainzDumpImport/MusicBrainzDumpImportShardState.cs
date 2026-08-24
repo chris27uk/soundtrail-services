@@ -6,6 +6,7 @@ public sealed class MusicBrainzDumpImportShardState
         MusicBrainzDumpImportPhase phase,
         int shardId,
         long lineOffset = 0,
+        long projectionLineOffset = 0,
         MusicBrainzDumpImportShardStatus status = MusicBrainzDumpImportShardStatus.Pending,
         MusicBrainzDumpImportLease? lease = null,
         string? lastError = null)
@@ -20,9 +21,18 @@ public sealed class MusicBrainzDumpImportShardState
             throw new ArgumentOutOfRangeException(nameof(lineOffset), lineOffset, "Line offset must be non-negative.");
         }
 
+        if (projectionLineOffset < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(projectionLineOffset),
+                projectionLineOffset,
+                "Projection line offset must be non-negative.");
+        }
+
         Phase = phase;
         ShardId = shardId;
         LineOffset = lineOffset;
+        ProjectionLineOffset = projectionLineOffset;
         Status = status;
         Lease = lease;
         LastError = lastError;
@@ -33,6 +43,12 @@ public sealed class MusicBrainzDumpImportShardState
     public int ShardId { get; }
 
     public long LineOffset { get; private set; }
+
+    /// <summary>
+    /// Shard JSONL lines whose catalog projection has been flushed.
+    /// Independent of <see cref="LineOffset"/> (event append). Resume walks the same file from this cursor.
+    /// </summary>
+    public long ProjectionLineOffset { get; private set; }
 
     public MusicBrainzDumpImportShardStatus Status { get; private set; }
 
@@ -91,6 +107,19 @@ public sealed class MusicBrainzDumpImportShardState
         }
 
         LineOffset = lineOffset;
+    }
+
+    public void UpdateProjectionLineOffset(long projectionLineOffset)
+    {
+        if (projectionLineOffset < ProjectionLineOffset)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(projectionLineOffset),
+                projectionLineOffset,
+                $"Projection line offset cannot move backwards from {ProjectionLineOffset}.");
+        }
+
+        ProjectionLineOffset = projectionLineOffset;
     }
 
     public void MarkCompleted()

@@ -30,6 +30,11 @@ public sealed class StartMusicBrainzDumpImportHandler(
                     message.RequestedAt,
                     cancellationToken);
 
+            if (job.Status == MusicBrainzDumpImportJobStatus.Completed)
+            {
+                return;
+            }
+
             if (!job.TryClaimProducer(leaseOwner.Value, DateTimeOffset.UtcNow, ProducerLeaseDuration))
             {
                 return;

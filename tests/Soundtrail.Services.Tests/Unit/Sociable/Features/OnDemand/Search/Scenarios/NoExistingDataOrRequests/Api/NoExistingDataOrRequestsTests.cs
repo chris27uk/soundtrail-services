@@ -26,7 +26,7 @@ public sealed class RequestUnknownMusicDataMessageEnqueuedTests
 
         await environment.ProjectOnChange(sut => sut.Handle(environment.CreateRequest()));
 
-        environment.SentMessage<RequestUnknownMusicDataMessage>().SearchCriteria.Query
+        environment.SentMessage<MusicNotSeenBefore>().SearchCriteria.Query
             .Should().Be(environment.SearchCriteria.Query);
     }
 
@@ -37,7 +37,7 @@ public sealed class RequestUnknownMusicDataMessageEnqueuedTests
 
         await environment.ProjectOnChange(sut => sut.Handle(environment.CreateRequest()));
 
-        environment.SentMessage<RequestUnknownMusicDataMessage>().SearchCriteria.SearchTypes
+        environment.SentMessage<MusicNotSeenBefore>().SearchCriteria.SearchTypes
             .Should().Be(environment.SearchCriteria.SearchTypes);
     }
 
@@ -48,7 +48,7 @@ public sealed class RequestUnknownMusicDataMessageEnqueuedTests
 
         await environment.ProjectOnChange(sut => sut.Handle(environment.CreateRequest()));
 
-        environment.SentMessage<RequestUnknownMusicDataMessage>().SearchCriteria.NormalisedIdentifier
+        environment.SentMessage<MusicNotSeenBefore>().SearchCriteria.NormalisedIdentifier
             .Should().Be(environment.SearchCriteria.NormalisedIdentifier);
     }
 
@@ -59,7 +59,7 @@ public sealed class RequestUnknownMusicDataMessageEnqueuedTests
 
         await environment.ProjectOnChange(sut => sut.Handle(environment.CreateRequest()));
 
-        environment.SentMessage<RequestUnknownMusicDataMessage>().Priority.Should().Be(LookupPriorityBand.High);
+        environment.SentMessage<MusicNotSeenBefore>().Priority.Should().Be(LookupPriorityBand.High);
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public sealed class RequestUnknownMusicDataMessageEnqueuedTests
 
         await environment.ProjectOnChange(sut => sut.Handle(environment.CreateRequest()));
 
-        environment.SentMessage<RequestUnknownMusicDataMessage>().TrustLevel.Should().Be(100);
+        environment.SentMessage<MusicNotSeenBefore>().TrustLevel.Should().Be(100);
     }
 
     [Fact]
@@ -79,7 +79,7 @@ public sealed class RequestUnknownMusicDataMessageEnqueuedTests
 
         await environment.ProjectOnChange(sut => sut.Handle(environment.CreateRequest()));
 
-        environment.SentMessage<RequestUnknownMusicDataMessage>().RiskScore.Should().Be(0);
+        environment.SentMessage<MusicNotSeenBefore>().RiskScore.Should().Be(0);
     }
 
     [Fact]
@@ -90,7 +90,7 @@ public sealed class RequestUnknownMusicDataMessageEnqueuedTests
 
         await environment.ProjectOnChange(sut => sut.Handle(environment.CreateRequest()));
 
-        environment.SentMessage<RequestUnknownMusicDataMessage>().RequestedAt.Should().Be(requestTime);
+        environment.SentMessage<MusicNotSeenBefore>().RequestedAt.Should().Be(requestTime);
     }
 
     [Fact]
@@ -100,7 +100,7 @@ public sealed class RequestUnknownMusicDataMessageEnqueuedTests
 
         await environment.ProjectOnChange(sut => sut.Handle(environment.CreateRequest()));
 
-        environment.SentMessage<RequestUnknownMusicDataMessage>().Id.Should().NotBe(default(MessageId));
+        environment.SentMessage<MusicNotSeenBefore>().Id.Should().NotBe(default(MessageId));
     }
 
     [Fact]
@@ -110,6 +110,6 @@ public sealed class RequestUnknownMusicDataMessageEnqueuedTests
 
         await environment.ProjectOnChange(sut => sut.Handle(environment.CreateRequest()));
 
-        environment.SentMessage<RequestUnknownMusicDataMessage>().CorrelationId.Should().NotBe(default(CorrelationId));
+        environment.SentMessage<MusicNotSeenBefore>().CorrelationId.Should().NotBe(default(CorrelationId));
     }
 }

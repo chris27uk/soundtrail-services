@@ -86,6 +86,22 @@ internal sealed class MusicBrainzDumpArchiveStoreFake : IMusicBrainzDumpArchiveS
         return await WriteTempAsync(tracksJsonlLines, cancellationToken);
     }
 
+    public async IAsyncEnumerable<string> ReadDenormalizedTrackLinesAsync(
+        MusicBrainzDumpImportJobId jobId,
+        string dumpVersion,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        _ = jobId;
+        _ = dumpVersion;
+        foreach (var line in tracksJsonlLines)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            yield return line;
+        }
+
+        await Task.CompletedTask;
+    }
+
     private static async Task<string> WriteTempAsync(
         IReadOnlyList<string> lines,
         CancellationToken cancellationToken)

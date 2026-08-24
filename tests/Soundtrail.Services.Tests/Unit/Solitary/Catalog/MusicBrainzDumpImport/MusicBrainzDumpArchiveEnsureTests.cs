@@ -367,10 +367,34 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
 
         var line = (await File.ReadAllLinesAsync(path)).Should().ContainSingle().Subject;
         line.Should().Contain("Solo Song");
+        File.Exists(Path.Combine(versionRoot, "extracted", "release.jsonl")).Should().BeFalse();
         var wrapped = MusicBrainzTrackJsonLine.WrapForCreditedArtist(
             "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
             line);
         new MusicBrainzTrackDumpRowMapper().TryMap(wrapped)!.Title.Should().Be("Solo Song");
+    }
+
+    [Fact]
+    public async Task Given_Release_Archive_When_Streaming_Tracks_Then_Release_Jsonl_Is_Not_Written()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var dumpVersion = "2026-08";
+        var versionRoot = Path.Combine(directory.Path, dumpVersion);
+        Directory.CreateDirectory(versionRoot);
+        MusicBrainzDumpArchiveFixtures.CopyTo(versionRoot, "release.tar.xz");
+        var store = CreateStore(directory.Path);
+
+        var lines = new List<string>();
+        await foreach (var line in store.ReadDenormalizedTrackLinesAsync(
+                           MusicBrainzDumpImportJobId.ForDumpVersion(dumpVersion),
+                           dumpVersion))
+        {
+            lines.Add(line);
+        }
+
+        lines.Should().ContainSingle().Which.Should().Contain("Solo Song");
+        File.Exists(Path.Combine(versionRoot, "extracted", "release.jsonl")).Should().BeFalse();
+        File.Exists(Path.Combine(versionRoot, "extracted", "track.jsonl")).Should().BeFalse();
     }
 
     [Fact]
@@ -389,6 +413,8 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
         downloader.RequestedUrls.Should().ContainSingle()
             .Which.Should().EndWith("/2026-08/release.tar.xz");
         File.ReadAllText(path).Should().Contain("Solo Song");
+        File.Exists(Path.Combine(directory.Path, dumpVersion, "extracted", "release.jsonl"))
+            .Should().BeFalse();
     }
 
     private static LocalMusicBrainzDumpArchiveStore CreateStore(

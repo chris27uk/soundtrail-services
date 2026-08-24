@@ -76,6 +76,8 @@ internal sealed class MusicBrainzDumpImportShardDocument
 
     public long LineOffset { get; init; }
 
+    public long ProjectionLineOffset { get; init; }
+
     public required string Status { get; init; }
 
     public string? LeaseOwner { get; init; }
@@ -90,6 +92,7 @@ internal sealed class MusicBrainzDumpImportShardDocument
             Phase = shard.Phase.ToString(),
             ShardId = shard.ShardId,
             LineOffset = shard.LineOffset,
+            ProjectionLineOffset = shard.ProjectionLineOffset,
             Status = shard.Status.ToString(),
             LeaseOwner = shard.Lease?.Owner,
             LeaseExpiresAt = shard.Lease?.ExpiresAt,
@@ -101,6 +104,7 @@ internal sealed class MusicBrainzDumpImportShardDocument
             Enum.Parse<MusicBrainzDumpImportPhase>(Phase),
             ShardId,
             LineOffset,
+            ProjectionLineOffset,
             Enum.Parse<MusicBrainzDumpImportShardStatus>(Status),
             LeaseOwner is null || LeaseExpiresAt is null
                 ? null

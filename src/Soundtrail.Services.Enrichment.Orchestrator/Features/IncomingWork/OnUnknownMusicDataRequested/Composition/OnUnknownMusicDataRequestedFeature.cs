@@ -22,7 +22,7 @@ public sealed class OnUnknownMusicDataRequestedFeature : IOrchestratorFeature
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddRavenDocumentStore(configuration);
-        services.AddAzureServiceBusListener<UnknownMusicDataRequestedCommandDto, RequestUnknownMusicDataMessage>();
+        services.AddAzureServiceBusListener<UnknownMusicDataRequestedCommandDto, MusicNotSeenBefore>();
         services.TryAddSingleton<ITypeRegistry>(_ => TypeTranslationRegistry.Default);
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
 

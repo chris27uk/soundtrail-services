@@ -21,6 +21,6 @@ public static class OnUnknownMusicDataRequestedComposition
         services.TryAddScoped(ports.WorkPlanner);
         services.TryAddScoped(ports.SearchForCandidates);
         services.TryAddScoped(ports.DiscoveryRepository);
-        services.TryAddScoped<IHandler<RequestUnknownMusicDataMessage>, OnUnknownMusicDataRequestedHandler>();
+        services.TryAddScoped<IHandler<MusicNotSeenBefore>, OnUnknownMusicDataRequestedHandler>();
     }
 }

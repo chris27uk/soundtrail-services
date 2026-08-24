@@ -1,6 +1,5 @@
 using Soundtrail.Adapters.Timing;
 using Soundtrail.Domain.Abstractions;
-using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
 using Soundtrail.Domain.Search;
 using Soundtrail.Services.Api.Features.Catalog.Search.Adapters;
@@ -19,14 +18,7 @@ public sealed class SearchHandler(
         var searchCriteria = new SearchCriteria(request.QueryText, request.Filter);
         var requestedAt = clock.UtcNow;
 
-        await commandBus.SendAsync(
-            new RequestUnknownMusicDataMessage(
-                searchCriteria,
-                LookupPriorityBand.High,
-                100,
-                0,
-                requestedAt),
-            cancellationToken);
+        await commandBus.SendAsync(MusicNotSeenBefore.Create(searchCriteria, requestedAt), cancellationToken);
 
         var response = await searchPort.SearchAsync(searchCriteria, cancellationToken);
         if (response is null)
@@ -34,10 +26,7 @@ public sealed class SearchHandler(
             return null;
         }
 
-        var discovery = await discoveryFeedbackPort.GetAsync(
-            new EnrichmentTarget.SearchForUnknownCatalogItem(searchCriteria),
-            cancellationToken);
-
+        var discovery = await discoveryFeedbackPort.GetAsync(new EnrichmentTarget.SearchForUnknownCatalogItem(searchCriteria), cancellationToken);
         return response with { Discovery = discovery };
     }
 }

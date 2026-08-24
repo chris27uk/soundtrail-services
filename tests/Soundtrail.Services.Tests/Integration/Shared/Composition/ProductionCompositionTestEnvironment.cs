@@ -207,7 +207,7 @@ internal static class ProductionCompositionTestEnvironment
         await using var app = BuildOrchestratorApplication("Testing");
         await app.StartAsync();
 
-        AssertAzureServiceBusListenerRegistered<UnknownMusicDataRequestedCommandDto, RequestUnknownMusicDataMessage>(app.Services);
+        AssertAzureServiceBusListenerRegistered<UnknownMusicDataRequestedCommandDto, MusicNotSeenBefore>(app.Services);
 
         await app.StopAsync();
     }
