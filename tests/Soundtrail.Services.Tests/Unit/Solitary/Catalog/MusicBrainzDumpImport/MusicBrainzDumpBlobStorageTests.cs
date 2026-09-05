@@ -120,6 +120,38 @@ public sealed class BlobMusicBrainzDumpArchiveStoreTests
             .Should().BeTrue();
     }
 
+    [Fact]
+    public async Task Given_Archive_Only_On_Blob_When_Streaming_Artists_Then_Local_Archive_Is_Not_Written()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var dumpVersion = "2026-08";
+        Directory.CreateDirectory(Path.Combine(directory.Path, dumpVersion));
+        var blobs = new InMemoryMusicBrainzDumpBlobContainer();
+        var archiveKey = MusicBrainzDumpBlobKeys.Archive(dumpVersion, "artist");
+        await blobs.UploadFromFileAsync(
+            archiveKey,
+            MusicBrainzDumpArchiveFixtures.CopyTo(directory.Path, "artist.tar.xz"));
+
+        var store = CreateStore(
+            Path.Combine(directory.Path, "archives"),
+            blobs,
+            new RecordingDownloader([]));
+
+        var lines = new List<string>();
+        await foreach (var line in store.ReadArtistLinesAsync(
+                           MusicBrainzDumpImportJobId.ForDumpVersion(dumpVersion),
+                           dumpVersion))
+        {
+            lines.Add(line);
+        }
+
+        lines.Should().Contain(line => line.Contains("Artist A"));
+        File.Exists(Path.Combine(directory.Path, "archives", dumpVersion, "artist.tar.xz")).Should().BeFalse();
+        File.Exists(Path.Combine(directory.Path, "archives", dumpVersion, "extracted", "artist.jsonl"))
+            .Should().BeFalse();
+        blobs.DownloadToFileCount.Should().Be(0);
+    }
+
     private static BlobMusicBrainzDumpArchiveStore CreateStore(
         string archiveDirectory,
         IMusicBrainzDumpBlobContainer blobs,
@@ -156,6 +188,15 @@ public sealed class BlobMusicBrainzDumpArchiveStoreTests
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(destinationPath))!);
             await File.WriteAllBytesAsync(destinationPath, payload, cancellationToken);
         }
+
+        public Task<Stream> OpenReadAsync(
+            string url,
+            CancellationToken cancellationToken = default)
+        {
+            requestedUrls.Add(url);
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult<Stream>(new MemoryStream(payload, writable: false));
+        }
     }
 }
 
@@ -186,16 +227,57 @@ public sealed class BlobMusicBrainzDumpShardStoreTests
         Directory.EnumerateFiles(shardDirectory, "*.jsonl", SearchOption.AllDirectories).Should().NotBeEmpty();
 
         var lines = new List<string>();
-        await foreach (var line in store.ReadShardLinesAsync(
+        await foreach (var row in store.ReadShardLinesAsync(
                            jobId,
                            MusicBrainzDumpImportPhase.Artists,
                            shardId: 0,
                            skipLines: 1))
         {
-            lines.Add(line);
+            lines.Add(row.Text);
         }
 
         lines.Should().Equal("b", "c");
+    }
+
+    [Fact]
+    public async Task Given_Azure_Streaming_When_Local_Shard_Is_Missing_Then_Blob_Lines_Are_Read_Without_Download()
+    {
+        var blobs = new InMemoryMusicBrainzDumpBlobContainer();
+        var shardDirectory = Path.Combine(Path.GetTempPath(), "mb-shard-tests", Guid.NewGuid().ToString("N"));
+        var store = new BlobMusicBrainzDumpShardStore(
+            blobs,
+            Options.Create(new MusicBrainzDumpOptions
+            {
+                ShardDirectory = shardDirectory,
+                StreamShardLinesFromBlob = true
+            }));
+        var jobId = MusicBrainzDumpImportJobId.ForDumpVersion("2026-08");
+
+        await using (var writer = store.OpenWriter(jobId, MusicBrainzDumpImportPhase.Artists, shardCount: 1))
+        {
+            await writer.AppendAsync(0, "a");
+            await writer.AppendAsync(0, "b");
+            await writer.CompleteAsync();
+        }
+
+        foreach (var path in Directory.EnumerateFiles(shardDirectory, "*.jsonl", SearchOption.AllDirectories))
+        {
+            File.Delete(path);
+        }
+
+        var lines = new List<string>();
+        await foreach (var row in store.ReadShardLinesAsync(
+                           jobId,
+                           MusicBrainzDumpImportPhase.Artists,
+                           shardId: 0,
+                           skipLines: 1))
+        {
+            lines.Add(row.Text);
+        }
+
+        lines.Should().Equal("b");
+        blobs.DownloadToFileCount.Should().Be(0);
+        Directory.EnumerateFiles(shardDirectory, "*.jsonl", SearchOption.AllDirectories).Should().BeEmpty();
     }
 }
 

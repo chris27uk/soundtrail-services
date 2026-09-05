@@ -2,7 +2,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
 using Soundtrail.Adapters.TypeRegistry;
-using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
@@ -10,6 +9,7 @@ using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.MusicBrainzDumpImport;
 using Soundtrail.Domain.Catalog.Tracks;
 using Soundtrail.Domain.Common;
+using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Adapters;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Adapters;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Ports;
 using Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
@@ -55,7 +55,8 @@ internal sealed class CatalogDumpBatchWriterIntegrationTestEnvironment : IAsyncD
 
     public string DisplayAlbumTitle { get; }
 
-    public static CatalogDumpBatchWriterIntegrationTestEnvironment Create()
+    public static CatalogDumpBatchWriterIntegrationTestEnvironment Create(
+        bool writeIndividualTrackAndSearchDocsOnProjection = true)
     {
         var isolation = EmbeddedRavenTestServer.NewIsolationKey();
         var artistName = $"Neon Harbour {isolation}";
@@ -80,7 +81,11 @@ internal sealed class CatalogDumpBatchWriterIntegrationTestEnvironment : IAsyncD
             documentStore,
             TypeTranslationRegistry.Default,
             commandBus,
-            Options.Create(new MusicBrainzDumpOptions()),
+            Options.Create(new MusicBrainzDumpOptions
+            {
+                WriteIndividualTrackAndSearchDocsOnProjection = writeIndividualTrackAndSearchDocsOnProjection
+            }),
+            new ArtistShardPartitioner(),
             NullLogger<CatalogDumpBatchWriter>.Instance);
 
         return new CatalogDumpBatchWriterIntegrationTestEnvironment(

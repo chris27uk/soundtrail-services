@@ -152,6 +152,160 @@ public sealed class BlobMusicBrainzDumpArchiveStore(
         }
     }
 
+    public IAsyncEnumerable<string> ReadArtistLinesAsync(
+        MusicBrainzDumpImportJobId jobId,
+        string dumpVersion,
+        CancellationToken cancellationToken = default) =>
+        ReadOfficialEntityLinesAsync(
+            dumpVersion,
+            LocalMusicBrainzDumpArchiveStore.ArtistEntity,
+            options.Value.LocalPath,
+            siblingJsonlPath: null,
+            cancellationToken);
+
+    public IAsyncEnumerable<string> ReadReleaseGroupLinesAsync(
+        MusicBrainzDumpImportJobId jobId,
+        string dumpVersion,
+        CancellationToken cancellationToken = default)
+    {
+        _ = jobId;
+        var sibling = string.IsNullOrWhiteSpace(options.Value.LocalPath)
+            ? null
+            : Path.Combine(
+                Path.GetDirectoryName(Path.GetFullPath(options.Value.LocalPath))!,
+                "release-group.jsonl");
+        return ReadOfficialEntityLinesAsync(
+            dumpVersion,
+            LocalMusicBrainzDumpArchiveStore.ReleaseGroupEntity,
+            options.Value.ReleaseGroupsLocalPath,
+            sibling,
+            cancellationToken);
+    }
+
+    public IAsyncEnumerable<string> ReadReleaseLinesAsync(
+        MusicBrainzDumpImportJobId jobId,
+        string dumpVersion,
+        CancellationToken cancellationToken = default)
+    {
+        _ = jobId;
+        var sibling = string.IsNullOrWhiteSpace(options.Value.LocalPath)
+            ? null
+            : Path.Combine(
+                Path.GetDirectoryName(Path.GetFullPath(options.Value.LocalPath))!,
+                "release.jsonl");
+        return ReadOfficialEntityLinesAsync(
+            dumpVersion,
+            LocalMusicBrainzDumpArchiveStore.ReleaseEntity,
+            options.Value.ReleasesLocalPath,
+            sibling,
+            cancellationToken);
+    }
+
+    public bool HasCachedDenormalizedTrackSource(string dumpVersion)
+    {
+        if (!string.IsNullOrWhiteSpace(options.Value.TracksLocalPath) &&
+            File.Exists(Path.GetFullPath(options.Value.TracksLocalPath)))
+        {
+            return true;
+        }
+
+        var artistsPath = options.Value.LocalPath;
+        if (!string.IsNullOrWhiteSpace(artistsPath))
+        {
+            var sibling = Path.Combine(
+                Path.GetDirectoryName(Path.GetFullPath(artistsPath))!,
+                "track.jsonl");
+            if (File.Exists(sibling))
+            {
+                return true;
+            }
+        }
+
+        var archiveDirectory = options.Value.ArchiveDirectory;
+        if (string.IsNullOrWhiteSpace(archiveDirectory) || string.IsNullOrWhiteSpace(dumpVersion))
+        {
+            return false;
+        }
+
+        var versionRoot = Path.Combine(Path.GetFullPath(archiveDirectory), dumpVersion.Trim());
+        var trackExtractedPath = Path.Combine(
+            versionRoot,
+            "extracted",
+            $"{LocalMusicBrainzDumpArchiveStore.TrackEntity}.jsonl");
+        if (File.Exists(trackExtractedPath))
+        {
+            return true;
+        }
+
+        var trackArchivePath = Path.Combine(
+            versionRoot,
+            $"{LocalMusicBrainzDumpArchiveStore.TrackEntity}.tar.xz");
+        return File.Exists(trackArchivePath);
+    }
+
+    private async IAsyncEnumerable<string> ReadOfficialEntityLinesAsync(
+        string dumpVersion,
+        string entityName,
+        string? configuredJsonlPath,
+        string? siblingJsonlPath,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrWhiteSpace(configuredJsonlPath))
+        {
+            await foreach (var line in File.ReadLinesAsync(
+                               RequireExistingPath(configuredJsonlPath, entityName),
+                               cancellationToken))
+            {
+                yield return line;
+            }
+
+            yield break;
+        }
+
+        if (!string.IsNullOrWhiteSpace(siblingJsonlPath) && File.Exists(siblingJsonlPath))
+        {
+            await foreach (var line in File.ReadLinesAsync(siblingJsonlPath, cancellationToken))
+            {
+                yield return line;
+            }
+
+            yield break;
+        }
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(dumpVersion);
+        var archiveDirectory = options.Value.ArchiveDirectory;
+        if (!string.IsNullOrWhiteSpace(archiveDirectory))
+        {
+            var extractedPath = Path.Combine(
+                Path.GetFullPath(archiveDirectory),
+                dumpVersion.Trim(),
+                "extracted",
+                $"{entityName}.jsonl");
+            if (File.Exists(extractedPath))
+            {
+                await foreach (var line in File.ReadLinesAsync(extractedPath, cancellationToken))
+                {
+                    yield return line;
+                }
+
+                yield break;
+            }
+        }
+
+        await using var archiveStream = await OpenOfficialArchiveStreamAsync(
+            entityName,
+            dumpVersion,
+            cancellationToken);
+        await foreach (var line in extractor.ReadJsonlLinesAsync(
+                           archiveStream,
+                           entityName,
+                           entityName,
+                           cancellationToken))
+        {
+            yield return line;
+        }
+    }
+
     private async Task<string?> TryGetCachedTrackJsonlPathAsync(
         string dumpVersion,
         CancellationToken cancellationToken)
@@ -284,19 +438,63 @@ public sealed class BlobMusicBrainzDumpArchiveStore(
             yield break;
         }
 
-        var archivePath = await EnsureOfficialArchiveOnDiskAsync(
+        await using var archiveStream = await OpenOfficialArchiveStreamAsync(
             LocalMusicBrainzDumpArchiveStore.ReleaseEntity,
             dumpVersion,
             cancellationToken);
         await foreach (var line in MusicBrainzReleaseGraphTrackJoiner.EnumerateTrackJsonLinesAsync(
                            extractor.ReadJsonlLinesAsync(
-                               archivePath,
+                               archiveStream,
+                               LocalMusicBrainzDumpArchiveStore.ReleaseEntity,
                                LocalMusicBrainzDumpArchiveStore.ReleaseEntity,
                                cancellationToken),
                            cancellationToken))
         {
             yield return line;
         }
+    }
+
+    private async Task<Stream> OpenOfficialArchiveStreamAsync(
+        string entityName,
+        string dumpVersion,
+        CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(dumpVersion);
+
+        var archiveDirectory = options.Value.ArchiveDirectory;
+        if (string.IsNullOrWhiteSpace(archiveDirectory))
+        {
+            throw new InvalidOperationException(
+                $"MusicBrainzDump:ArchiveDirectory must be set when resolving '{entityName}' from archives.");
+        }
+
+        var versionRoot = Path.Combine(Path.GetFullPath(archiveDirectory), dumpVersion.Trim());
+        var archivePath = Path.Combine(versionRoot, $"{entityName}.tar.xz");
+        if (File.Exists(archivePath))
+        {
+            var blobName = MusicBrainzDumpBlobKeys.Archive(dumpVersion, entityName);
+            if (!await blobs.ExistsAsync(blobName, cancellationToken))
+            {
+                await blobs.UploadFromFileAsync(blobName, archivePath, cancellationToken);
+            }
+
+            return new FileStream(
+                archivePath,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read,
+                64 * 1024,
+                FileOptions.SequentialScan | FileOptions.Asynchronous);
+        }
+
+        var existingBlobName = MusicBrainzDumpBlobKeys.Archive(dumpVersion, entityName);
+        if (await blobs.ExistsAsync(existingBlobName, cancellationToken))
+        {
+            return await blobs.OpenReadAsync(existingBlobName, cancellationToken);
+        }
+
+        var url = BuildDownloadUrl(dumpVersion, entityName);
+        return await downloader.OpenReadAsync(url, cancellationToken);
     }
 
     private async Task<string> EnsureOfficialArchiveOnDiskAsync(

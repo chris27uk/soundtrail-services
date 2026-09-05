@@ -30,6 +30,16 @@ public sealed class MusicBrainzArtistDumpRowMapperTests
     private readonly MusicBrainzArtistDumpRowMapper mapper = new();
 
     [Fact]
+    public void Given_A_Valid_Artist_Row_When_Peeking_Then_The_Artist_Id_Is_Returned()
+    {
+        mapper.TryPeekArtistId(
+                """{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","name":"Artist A"}""",
+                out var artistId)
+            .Should().BeTrue();
+        artistId.Value.Should().Be("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+    }
+
+    [Fact]
     public void Given_A_Valid_Artist_Row_When_Mapped_Then_The_Artist_Id_Is_The_Mbid()
     {
         var artist = mapper.TryMap("""{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","name":"Artist A"}""");

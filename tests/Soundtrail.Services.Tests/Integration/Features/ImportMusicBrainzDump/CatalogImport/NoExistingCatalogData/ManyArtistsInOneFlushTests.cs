@@ -4,6 +4,7 @@ using Soundtrail.Adapters.TypeRegistry;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.MusicBrainzDumpImport;
+using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Adapters;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Adapters;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Ports;
 using Soundtrail.Services.Tests.Integration.Shared.Infrastructure;
@@ -23,6 +24,7 @@ public sealed class ManyArtistsInOneFlushTests
             TypeTranslationRegistry.Default,
             new CommandBusFake(),
             Options.Create(new MusicBrainzDumpOptions { EventAppendArtistsPerSaveChanges = 8 }),
+            new ArtistShardPartitioner(),
             NullLogger<CatalogDumpBatchWriter>.Instance);
         var observedAt = DateTimeOffset.Parse("2026-08-10T00:00:00Z");
         var items = new List<CatalogDumpBatchItem>(capacity: 20);

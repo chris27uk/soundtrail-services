@@ -12,6 +12,8 @@ internal sealed class RavenEventStore<TStreamId>(
     string streamName)
     where TStreamId : IValueType
 {
+    private const int EventPageSize = 1_024;
+
     public async Task<LoadedEventStream<TStreamId>> LoadAsync(
         TStreamId streamId,
         CancellationToken cancellationToken)
@@ -23,9 +25,7 @@ internal sealed class RavenEventStore<TStreamId>(
             return LoadedEventStream<TStreamId>.Empty(streamId);
         }
 
-        var storedEvents = (await session.Advanced.LoadStartingWithAsync<RavenStoredEventRecord>(GetEventPrefix(streamId), token: cancellationToken))
-            .OrderBy(x => x.Version)
-            .ToList();
+        var storedEvents = await LoadAllEventsAsync(GetEventPrefix(streamId), cancellationToken);
 
         return storedEvents.Count == 0
             ? new LoadedEventStream<TStreamId>(streamId, metadata.Version, [])
@@ -33,6 +33,38 @@ internal sealed class RavenEventStore<TStreamId>(
                 streamId,
                 metadata.Version,
                 storedEvents.Select(ToDomainEvent).ToArray());
+    }
+
+    private async Task<List<RavenStoredEventRecord>> LoadAllEventsAsync(
+        string eventPrefix,
+        CancellationToken cancellationToken)
+    {
+        var storedEvents = new List<RavenStoredEventRecord>();
+        string? lastId = null;
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var page = (await session.Advanced.LoadStartingWithAsync<RavenStoredEventRecord>(
+                eventPrefix,
+                start: 0,
+                pageSize: EventPageSize,
+                startAfter: lastId,
+                token: cancellationToken)).ToArray();
+            if (page.Length == 0)
+            {
+                break;
+            }
+
+            storedEvents.AddRange(page);
+            lastId = page[^1].Id;
+            if (page.Length < EventPageSize)
+            {
+                break;
+            }
+        }
+
+        storedEvents.Sort(static (left, right) => left.Version.CompareTo(right.Version));
+        return storedEvents;
     }
 
     public async Task<AppendResult> AppendAsync(

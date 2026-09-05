@@ -84,7 +84,39 @@ public sealed class MusicBrainzDumpOptions
     /// Concurrent artist loads during deferred projection within one shard worker.
     /// When less than 1, uses <see cref="Environment.ProcessorCount"/>.
     /// </summary>
-    public int ProjectionMaxDegreeOfParallelism { get; set; } = 8;
+    public int ProjectionMaxDegreeOfParallelism { get; set; } = 16;
+
+    /// <summary>
+    /// When true, deferred projection also writes per-track browse docs and search candidates.
+    /// Disable for large dump imports; artist/album aggregate browse docs remain.
+    /// </summary>
+    public bool WriteIndividualTrackAndSearchDocsOnProjection { get; set; } = false;
+
+    /// <summary>
+    /// When true, deferred projection enqueues low-priority streaming-location lookups for tracks
+    /// that still have none. Disable for large dump imports to avoid flooding the lookup queue.
+    /// </summary>
+    public bool EnqueueStreamingLocationLookupsOnProjection { get; set; } = true;
 
     public TimeSpan LeaseDuration { get; set; } = TimeSpan.FromMinutes(5);
+
+    /// <summary>
+    /// Parallel workers that parse/join release lines during the Recordings producer.
+    /// Decode remains single-threaded. When less than 1, uses <see cref="Environment.ProcessorCount"/>.
+    /// </summary>
+    public int RecordingsJoinMaxDegreeOfParallelism { get; set; }
+
+    /// <summary>
+    /// When true, Recordings projection-only membership prefers Raven stream-metadata
+    /// enumeration over Artists <c>.ids</c> / JSONL. Default false: Raven full-prefix
+    /// scans thrash large databases and stall heartbeats when most artists are already projected.
+    /// </summary>
+    public bool PreferRavenArtistMembershipEnumeration { get; set; }
+
+    /// <summary>
+    /// When true, shard import streams JSONL from blob without downloading the shard file.
+    /// When null, Azure connection strings stream; Azurite / development storage downloads to disk.
+    /// </summary>
+    public bool? StreamShardLinesFromBlob { get; set; }
 }
+

@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
@@ -73,6 +74,24 @@ public static class MusicBrainzReleaseGraphTrackJoiner
     }
 
     /// <summary>
+    /// Yields denormalized track emissions (JSON + credited artist ids) for official release dump lines.
+    /// </summary>
+    public static async IAsyncEnumerable<MusicBrainzDenormalizedTrackEmission> EnumerateTrackEmissionsAsync(
+        IAsyncEnumerable<string> releaseLines,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(releaseLines);
+
+        await foreach (var releaseLine in releaseLines.WithCancellation(cancellationToken))
+        {
+            foreach (var emission in EnumerateTrackEmissions(releaseLine))
+            {
+                yield return emission;
+            }
+        }
+    }
+
+    /// <summary>
     /// Yields denormalized track JSONL lines for one official release dump line.
     /// Does not deduplicate across releases; callers that need earliest-date wins should use
     /// <see cref="JoinReleaseLines"/>.
@@ -82,6 +101,14 @@ public static class MusicBrainzReleaseGraphTrackJoiner
         foreach (var candidate in EnumerateTrackCandidates(releaseLine))
         {
             yield return candidate.JsonLine;
+        }
+    }
+
+    public static IEnumerable<MusicBrainzDenormalizedTrackEmission> EnumerateTrackEmissions(string releaseLine)
+    {
+        foreach (var candidate in EnumerateTrackCandidates(releaseLine))
+        {
+            yield return new MusicBrainzDenormalizedTrackEmission(candidate.JsonLine, candidate.ArtistIds);
         }
     }
 
@@ -170,6 +197,12 @@ public static class MusicBrainzReleaseGraphTrackJoiner
                         continue;
                     }
 
+                    var artistIds = ReadArtistIds(artistCredit);
+                    if (artistIds.Count == 0)
+                    {
+                        continue;
+                    }
+
                     var length = TryGetLength(recording) ?? TryGetLength(track);
                     var jsonLine = BuildTrackLine(
                         recordingId,
@@ -182,10 +215,37 @@ public static class MusicBrainzReleaseGraphTrackJoiner
                     yield return new Candidate(
                         $"{recordingId}\n{releaseGroupId}",
                         releaseDate,
-                        jsonLine);
+                        jsonLine,
+                        artistIds);
                 }
             }
         }
+    }
+
+    private static IReadOnlyList<string> ReadArtistIds(JsonElement artistCredit)
+    {
+        if (artistCredit.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var ids = new List<string>();
+        foreach (var credit in artistCredit.EnumerateArray())
+        {
+            if (credit.TryGetProperty("artist", out var artist) &&
+                artist.TryGetProperty("id", out var idProperty))
+            {
+                var id = idProperty.GetString();
+                if (!string.IsNullOrWhiteSpace(id))
+                {
+                    ids.Add(id);
+                }
+            }
+        }
+
+        return ids.Count == 0
+            ? []
+            : ids.Distinct(StringComparer.Ordinal).ToArray();
     }
 
     private static bool IsPreferable(Candidate candidate, Candidate existing)
@@ -294,8 +354,8 @@ public static class MusicBrainzReleaseGraphTrackJoiner
         string releaseGroupTitle,
         DateOnly? releaseDate)
     {
-        using var stream = new MemoryStream();
-        using (var writer = new Utf8JsonWriter(stream))
+        var buffer = new ArrayBufferWriter<byte>(512);
+        using (var writer = new Utf8JsonWriter(buffer))
         {
             writer.WriteStartObject();
             writer.WriteString("id", recordingId);
@@ -324,7 +384,7 @@ public static class MusicBrainzReleaseGraphTrackJoiner
             writer.WriteEndObject();
         }
 
-        return Encoding.UTF8.GetString(stream.ToArray());
+        return Encoding.UTF8.GetString(buffer.WrittenSpan);
     }
 
     private static string? GetString(JsonElement element, string propertyName) =>
@@ -335,5 +395,13 @@ public static class MusicBrainzReleaseGraphTrackJoiner
     private static string? FirstNonEmpty(params string?[] values) =>
         values.FirstOrDefault(static value => !string.IsNullOrWhiteSpace(value));
 
-    private sealed record Candidate(string Key, DateOnly? ReleaseDate, string JsonLine);
+    private sealed record Candidate(
+        string Key,
+        DateOnly? ReleaseDate,
+        string JsonLine,
+        IReadOnlyList<string> ArtistIds);
 }
+
+public readonly record struct MusicBrainzDenormalizedTrackEmission(
+    string JsonLine,
+    IReadOnlyList<string> CreditedArtistIds);

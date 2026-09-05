@@ -728,6 +728,19 @@
         "resolved": "1.1.0",
         "contentHash": "NLTE/dPy8lMcZO6E7SL5Jw3fay8Vesll7+hkeRVSRaVNg1RRyPBV3/u6CM7QNgtnzhvyFPDyxUHUuRdh0vzCSg=="
       },
+      "Joveler.Compression.XZ": {
+        "type": "Transitive",
+        "resolved": "5.0.2",
+        "contentHash": "V4HqfKYt3LNtvRKRtW4elEOQ3abwUjs6VZO7ElBa5m8A2UQnxS/lsQ7uUKbk2C/H3D+WCJOgbhoe20/vQQdR+A==",
+        "dependencies": {
+          "Joveler.DynLoader": "2.3.1"
+        }
+      },
+      "Joveler.DynLoader": {
+        "type": "Transitive",
+        "resolved": "2.3.1",
+        "contentHash": "lG4uwAo2UCygLXxeTVk2mZQcqmZhMFsn+4bKBvr7x66uu0xdqtUO8/g8fMOT5fyjVWvrn9ljjQF4vWCrTny4ZQ=="
+      },
       "Json.More.Net": {
         "type": "Transitive",
         "resolved": "3.0.1",
@@ -1651,6 +1664,7 @@
         "type": "Project",
         "dependencies": {
           "Azure.Storage.Blobs": "[12.26.0, )",
+          "Joveler.Compression.XZ": "[5.0.2, )",
           "RavenDB.Client": "[7.2.5, )",
           "SharpCompress": "[0.50.4, )",
           "Soundtrail.Contracts": "[1.0.0, )",

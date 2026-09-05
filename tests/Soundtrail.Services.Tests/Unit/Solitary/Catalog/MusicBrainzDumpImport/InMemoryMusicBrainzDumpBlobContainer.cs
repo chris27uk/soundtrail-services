@@ -13,6 +13,8 @@ internal sealed class InMemoryMusicBrainzDumpBlobContainer : IMusicBrainzDumpBlo
 
     public IReadOnlyCollection<string> BlobNames => blobs.Keys;
 
+    public int DownloadToFileCount { get; private set; }
+
     public Task<bool> ExistsAsync(string blobName, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -39,7 +41,21 @@ internal sealed class InMemoryMusicBrainzDumpBlobContainer : IMusicBrainzDumpBlo
         }
 
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(localFilePath))!);
+        DownloadToFileCount++;
         await File.WriteAllBytesAsync(localFilePath, bytes, cancellationToken);
+    }
+
+    public Task<Stream> OpenReadAsync(
+        string blobName,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!blobs.TryGetValue(blobName, out var bytes))
+        {
+            throw new FileNotFoundException($"Blob '{blobName}' was not found.", blobName);
+        }
+
+        return Task.FromResult<Stream>(new MemoryStream(bytes, writable: false));
     }
 
     public async IAsyncEnumerable<string> ReadLinesAsync(

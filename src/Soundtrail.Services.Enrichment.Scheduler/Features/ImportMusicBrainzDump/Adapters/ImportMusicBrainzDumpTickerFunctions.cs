@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Catalog.MusicBrainzDumpImport;
 using Soundtrail.Domain.Operations;
@@ -8,6 +9,10 @@ namespace Soundtrail.Services.Enrichment.Scheduler.Features.ImportMusicBrainzDum
 
 public sealed class ImportMusicBrainzDumpTickerRequest
 {
+    /// <summary>
+    /// Concrete MetaBrainz snapshot id (never <c>LATEST</c>). Dashboard JSON uses camelCase.
+    /// </summary>
+    [JsonPropertyName("dumpVersion")]
     public string? DumpVersion { get; init; }
 }
 
@@ -31,7 +36,7 @@ public sealed class ImportMusicBrainzDumpTickerFunctions(
         if (string.IsNullOrWhiteSpace(dumpVersion))
         {
             throw new InvalidOperationException(
-                "Manual ImportMusicBrainzDumpSnapshot requires request.DumpVersion (concrete snapshot id).");
+                "Manual ImportMusicBrainzDumpSnapshot requires request dumpVersion (concrete snapshot id), e.g. {\"dumpVersion\":\"20260815-001001\"}.");
         }
 
         var snapshotId = MusicBrainzDumpSnapshotId.Parse(dumpVersion);

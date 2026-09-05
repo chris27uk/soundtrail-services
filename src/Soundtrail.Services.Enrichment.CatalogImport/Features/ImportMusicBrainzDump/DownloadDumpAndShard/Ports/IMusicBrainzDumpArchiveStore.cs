@@ -47,4 +47,35 @@ public interface IMusicBrainzDumpArchiveStore
         MusicBrainzDumpImportJobId jobId,
         string dumpVersion,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Streams official artist JSONL without requiring a materialized <c>artist.jsonl</c> extract.
+    /// </summary>
+    IAsyncEnumerable<string> ReadArtistLinesAsync(
+        MusicBrainzDumpImportJobId jobId,
+        string dumpVersion,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Streams official release-group JSONL without requiring a materialized extract.
+    /// </summary>
+    IAsyncEnumerable<string> ReadReleaseGroupLinesAsync(
+        MusicBrainzDumpImportJobId jobId,
+        string dumpVersion,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Streams official release JSONL without requiring a materialized <c>release.jsonl</c> extract.
+    /// Used by the Recordings producer so join/skip can happen on release lines.
+    /// </summary>
+    IAsyncEnumerable<string> ReadReleaseLinesAsync(
+        MusicBrainzDumpImportJobId jobId,
+        string dumpVersion,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// True when denormalized track JSONL is available without joining the release graph
+    /// (cached track file or track archive).
+    /// </summary>
+    bool HasCachedDenormalizedTrackSource(string dumpVersion);
 }

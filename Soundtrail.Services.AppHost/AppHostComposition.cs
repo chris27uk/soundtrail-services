@@ -192,7 +192,10 @@ public static class AppHostComposition
             .WithEnvironment("MusicBrainzDump__ArchiveDirectory", musicBrainzDumpCacheDirectory)
             .WithEnvironment(
                 "MusicBrainzDump__ShardDirectory",
-                Path.Combine(musicBrainzDumpCacheDirectory, "shards"));
+                Path.Combine(musicBrainzDumpCacheDirectory, "shards"))
+            .WithEnvironment("MusicBrainzDump__EnqueueStreamingLocationLookupsOnProjection", "false")
+            .WithEnvironment("MusicBrainzDump__WriteIndividualTrackAndSearchDocsOnProjection", "false")
+            .WithEnvironment("MusicBrainzDump__ProjectionMaxDegreeOfParallelism", "24");
 
         if (useBlobStorageEmulator && musicBrainzDumpBlobs is not null)
         {
@@ -262,7 +265,7 @@ public static class AppHostComposition
 
         builder.AddContainer("local-proxy", "caddy", "2.9-alpine")
             .WithEndpointProxySupport(false)
-            .WithHttpEndpoint(targetPort: 80, name: "http", isProxied: false)
+            .WithHttpEndpoint(port: 80, targetPort: 80, name: "http", isProxied: false)
             .WithBindMount(
                 Path.Combine(resolvedContentRootPath, "caddy", "Caddyfile"),
                 "/etc/caddy/Caddyfile",

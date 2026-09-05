@@ -22,5 +22,11 @@ public sealed class CatalogArtistRecordDto
 
     public DateTimeOffset UpdatedAt { get; set; }
 
+    /// <summary>
+    /// Artist-catalog stream version last fully projected into browse/search docs.
+    /// Used to re-project after later dump phases append albums/tracks for the same observation.
+    /// </summary>
+    public int? ProjectedStreamVersion { get; set; }
+
     public static string GetDocumentId(string artistId) => $"catalog/artists/{artistId}";
 }

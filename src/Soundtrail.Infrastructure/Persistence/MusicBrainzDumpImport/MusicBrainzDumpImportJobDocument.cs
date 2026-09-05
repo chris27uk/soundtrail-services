@@ -28,6 +28,8 @@ internal sealed class MusicBrainzDumpImportJobDocument
 
     public DateTimeOffset? FinishedAt { get; init; }
 
+    public long RecordingsProducerInputLinesCompleted { get; init; }
+
     public List<MusicBrainzDumpImportShardDocument> Shards { get; init; } = [];
 
     public static string DocumentId(MusicBrainzDumpImportJobId jobId) => jobId.Value;
@@ -47,6 +49,7 @@ internal sealed class MusicBrainzDumpImportJobDocument
             CancellationRequested = job.CancellationRequested,
             StartedAt = job.StartedAt,
             FinishedAt = job.FinishedAt,
+            RecordingsProducerInputLinesCompleted = job.RecordingsProducerInputLinesCompleted,
             Shards = job.Shards.Select(MusicBrainzDumpImportShardDocument.FromDomain).ToList()
         };
 
@@ -65,6 +68,7 @@ internal sealed class MusicBrainzDumpImportJobDocument
             CancellationRequested,
             StartedAt,
             FinishedAt,
+            RecordingsProducerInputLinesCompleted,
             Shards.Select(static shard => shard.ToDomain()));
 }
 
@@ -77,6 +81,10 @@ internal sealed class MusicBrainzDumpImportShardDocument
     public long LineOffset { get; init; }
 
     public long ProjectionLineOffset { get; init; }
+
+    public long LineByteOffset { get; init; }
+
+    public long ProjectionByteOffset { get; init; }
 
     public required string Status { get; init; }
 
@@ -93,6 +101,8 @@ internal sealed class MusicBrainzDumpImportShardDocument
             ShardId = shard.ShardId,
             LineOffset = shard.LineOffset,
             ProjectionLineOffset = shard.ProjectionLineOffset,
+            LineByteOffset = shard.LineByteOffset,
+            ProjectionByteOffset = shard.ProjectionByteOffset,
             Status = shard.Status.ToString(),
             LeaseOwner = shard.Lease?.Owner,
             LeaseExpiresAt = shard.Lease?.ExpiresAt,
@@ -109,5 +119,7 @@ internal sealed class MusicBrainzDumpImportShardDocument
             LeaseOwner is null || LeaseExpiresAt is null
                 ? null
                 : new MusicBrainzDumpImportLease(LeaseOwner, LeaseExpiresAt.Value),
-            LastError);
+            LastError,
+            LineByteOffset,
+            ProjectionByteOffset);
 }

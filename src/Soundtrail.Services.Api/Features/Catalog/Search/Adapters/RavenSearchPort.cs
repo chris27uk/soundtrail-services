@@ -1,4 +1,5 @@
 using Raven.Client.Documents;
+using Raven.Client.Documents.Queries;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Albums;
@@ -14,9 +15,15 @@ public sealed class RavenSearchPort(IDocumentStore documentStore) : ISearchPort
     public async Task<SearchResponse?> SearchAsync(SearchCriteria searchCriteria, CancellationToken cancellationToken)
     {
         var activeSession = documentStore.OpenAsyncSession();
+        var normalizedQuery = MusicIdentityText.NormalizeFreeText(searchCriteria.Query);
+        if (string.IsNullOrWhiteSpace(normalizedQuery))
+        {
+            return null;
+        }
+
         IQueryable<CatalogSearchCandidateRecordDto> query = activeSession.Query<CatalogSearchCandidateRecordDto>()
             .Customize(x => x.WaitForNonStaleResults(TimeSpan.FromSeconds(5)))
-            .Search(x => x.SearchText, searchCriteria.Query);
+            .Search(x => x.SearchText, normalizedQuery, @operator: SearchOperator.And);
 
         if (searchCriteria.SearchTypes != SearchType.All)
         {

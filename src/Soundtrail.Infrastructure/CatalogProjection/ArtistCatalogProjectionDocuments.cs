@@ -6,7 +6,9 @@ namespace Soundtrail.Adapters.CatalogProjection;
 
 public static class ArtistCatalogProjectionDocuments
 {
-    public static IReadOnlyList<(string Id, object Document)> CreateBrowseDocuments(ArtistCatalogProjection projection)
+    public static IReadOnlyList<(string Id, object Document)> CreateBrowseDocuments(
+        ArtistCatalogProjection projection,
+        bool includeIndividualTrackDocuments = true)
     {
         var documents = new List<(string Id, object Document)>();
 
@@ -127,28 +129,31 @@ public static class ArtistCatalogProjectionDocuments
                 }));
         }
 
-        foreach (var track in projection.Tracks)
+        if (includeIndividualTrackDocuments)
         {
-            documents.Add((
-                CatalogTrackRecordDto.GetDocumentId(track.TrackId.Value),
-                new CatalogTrackRecordDto
-                {
-                    Id = CatalogTrackRecordDto.GetDocumentId(track.TrackId.Value),
-                    TrackId = track.TrackId.Value,
-                    MusicCatalogId = track.TrackId.Value,
-                    ArtistId = projection.ArtistId.Value,
-                    Title = track.Title,
-                    ArtistName = track.ArtistName,
-                    AlbumTitle = track.AlbumTitle,
-                    AlbumId = track.AlbumId,
-                    DurationMs = track.DurationMs,
-                    Isrc = track.Isrc,
-                    ReleaseDate = track.ReleaseDate,
-                    ReleaseType = track.ReleaseType,
-                    ArtworkUrl = track.ArtworkUrl,
-                    StreamingLocations = ToStreamingLocationRecords(track.StreamingLocations),
-                    UpdatedAt = projection.UpdatedAt
-                }));
+            foreach (var track in projection.Tracks)
+            {
+                documents.Add((
+                    CatalogTrackRecordDto.GetDocumentId(track.TrackId.Value),
+                    new CatalogTrackRecordDto
+                    {
+                        Id = CatalogTrackRecordDto.GetDocumentId(track.TrackId.Value),
+                        TrackId = track.TrackId.Value,
+                        MusicCatalogId = track.TrackId.Value,
+                        ArtistId = projection.ArtistId.Value,
+                        Title = track.Title,
+                        ArtistName = track.ArtistName,
+                        AlbumTitle = track.AlbumTitle,
+                        AlbumId = track.AlbumId,
+                        DurationMs = track.DurationMs,
+                        Isrc = track.Isrc,
+                        ReleaseDate = track.ReleaseDate,
+                        ReleaseType = track.ReleaseType,
+                        ArtworkUrl = track.ArtworkUrl,
+                        StreamingLocations = ToStreamingLocationRecords(track.StreamingLocations),
+                        UpdatedAt = projection.UpdatedAt
+                    }));
+            }
         }
 
         return documents;
@@ -246,7 +251,8 @@ public static class ArtistCatalogProjectionDocuments
                 Id = id,
                 CatalogItemId = catalogItemId,
                 CandidateKind = candidateKind,
-                SearchText = searchText,
+                // Normalize so curly/straight apostrophes and punctuation match typed queries.
+                SearchText = MusicIdentityText.NormalizeFreeText(searchText),
                 Title = title,
                 ArtistName = artistName,
                 AlbumTitle = albumTitle,

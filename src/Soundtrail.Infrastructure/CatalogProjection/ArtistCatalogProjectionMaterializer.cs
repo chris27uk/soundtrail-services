@@ -5,15 +5,27 @@ using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Domain.Catalog.Tracks;
+using Soundtrail.Domain.Common;
 
 namespace Soundtrail.Adapters.CatalogProjection;
 
 public static class ArtistCatalogProjectionMaterializer
 {
-    public static ArtistCatalogProjection Build(ArtistId artistId, IReadOnlyList<IDomainEvent> events)
+    public static ArtistCatalogProjection Build(ArtistId artistId, IReadOnlyList<IDomainEvent> events) =>
+        Build(artistId, prior: null, events);
+
+    public static ArtistCatalogProjection Build(
+        ArtistId artistId,
+        ArtistCatalogProjection? prior,
+        IReadOnlyList<IDomainEvent> events)
     {
-        var snapshot = SnapshotBuilder.Build(events);
-        return new ArtistCatalogProjection(
+        var snapshot = prior is null ? new Snapshot() : SnapshotFromProjection(prior);
+        SnapshotBuilder.Apply(snapshot, events);
+        return ToProjection(artistId, snapshot);
+    }
+
+    private static ArtistCatalogProjection ToProjection(ArtistId artistId, Snapshot snapshot) =>
+        new(
             artistId,
             snapshot.ArtistName ?? string.Empty,
             snapshot.ArtworkUrl,
@@ -47,6 +59,67 @@ public static class ArtistCatalogProjectionMaterializer
                             location.Url.ToString()))
                         .ToArray()))
                 .ToArray());
+
+    private static Snapshot SnapshotFromProjection(ArtistCatalogProjection projection)
+    {
+        var snapshot = new Snapshot
+        {
+            ArtistName = projection.ArtistName,
+            ArtworkUrl = projection.ArtworkUrl,
+            UpdatedAt = projection.UpdatedAt
+        };
+
+        if (!string.IsNullOrWhiteSpace(projection.MusicBrainzArtistId))
+        {
+            SourceSystemIdSet.UnionWith(
+                snapshot.ArtistSourceSystemIds,
+                SourceSystemIdSet.FromLegacyMusicBrainz(projection.MusicBrainzArtistId));
+        }
+
+        foreach (var album in projection.Albums)
+        {
+            var domainAlbum = new Album(
+                album.AlbumId,
+                album.AlbumTitle,
+                album.SourceAlbumId is null
+                    ? []
+                    : SourceSystemIdSet.FromLegacyMusicBrainz(album.SourceAlbumId),
+                album.ReleaseDate,
+                album.ArtworkUrl,
+                projection.UpdatedAt);
+            snapshot.Albums[album.AlbumId.StableValue] = domainAlbum;
+        }
+
+        foreach (var track in projection.Tracks)
+        {
+            var domainTrack = new Track(track.TrackId)
+            {
+                Title = track.Title,
+                ArtistName = track.ArtistName,
+                AlbumId = track.AlbumId,
+                AlbumTitle = track.AlbumTitle,
+                DurationMs = track.DurationMs,
+                Isrc = track.Isrc,
+                ReleaseDate = track.ReleaseDate,
+                ReleaseType = track.ReleaseType,
+                ArtworkUrl = track.ArtworkUrl,
+                UpdatedAt = projection.UpdatedAt
+            };
+
+            foreach (var location in track.StreamingLocations)
+            {
+                domainTrack.ProviderReferences[location.Provider.Value] = new StreamingLocation(
+                    location.Provider,
+                    location.ExternalId,
+                    new Uri(location.Url),
+                    LookupSource.MusicBrainz,
+                    projection.UpdatedAt);
+            }
+
+            snapshot.Tracks[track.TrackId.Value] = domainTrack;
+        }
+
+        return snapshot;
     }
 
     private sealed class Snapshot
@@ -69,7 +142,12 @@ public static class ArtistCatalogProjectionMaterializer
         public static Snapshot Build(IReadOnlyList<IDomainEvent> events)
         {
             var snapshot = new Snapshot();
+            Apply(snapshot, events);
+            return snapshot;
+        }
 
+        public static void Apply(Snapshot snapshot, IReadOnlyList<IDomainEvent> events)
+        {
             foreach (var @event in events)
             {
                 switch (@event)
@@ -110,8 +188,6 @@ public static class ArtistCatalogProjectionMaterializer
                         break;
                 }
             }
-
-            return snapshot;
         }
 
         private static void ApplyTrackDiscovered(Snapshot snapshot, TrackDiscovered trackDiscovered)

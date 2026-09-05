@@ -9,7 +9,9 @@ public sealed class MusicBrainzDumpImportShardState
         long projectionLineOffset = 0,
         MusicBrainzDumpImportShardStatus status = MusicBrainzDumpImportShardStatus.Pending,
         MusicBrainzDumpImportLease? lease = null,
-        string? lastError = null)
+        string? lastError = null,
+        long lineByteOffset = 0,
+        long projectionByteOffset = 0)
     {
         if (shardId < 0)
         {
@@ -29,10 +31,25 @@ public sealed class MusicBrainzDumpImportShardState
                 "Projection line offset must be non-negative.");
         }
 
+        if (lineByteOffset < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(lineByteOffset), lineByteOffset, "Line byte offset must be non-negative.");
+        }
+
+        if (projectionByteOffset < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(projectionByteOffset),
+                projectionByteOffset,
+                "Projection byte offset must be non-negative.");
+        }
+
         Phase = phase;
         ShardId = shardId;
         LineOffset = lineOffset;
         ProjectionLineOffset = projectionLineOffset;
+        LineByteOffset = lineByteOffset;
+        ProjectionByteOffset = projectionByteOffset;
         Status = status;
         Lease = lease;
         LastError = lastError;
@@ -49,6 +66,16 @@ public sealed class MusicBrainzDumpImportShardState
     /// Independent of <see cref="LineOffset"/> (event append). Resume walks the same file from this cursor.
     /// </summary>
     public long ProjectionLineOffset { get; private set; }
+
+    /// <summary>
+    /// File byte position after <see cref="LineOffset"/> lines (for seek-based append resume).
+    /// </summary>
+    public long LineByteOffset { get; private set; }
+
+    /// <summary>
+    /// File byte position after <see cref="ProjectionLineOffset"/> lines (for seek-based projection resume).
+    /// </summary>
+    public long ProjectionByteOffset { get; private set; }
 
     public MusicBrainzDumpImportShardStatus Status { get; private set; }
 
@@ -96,7 +123,7 @@ public sealed class MusicBrainzDumpImportShardState
         Lease = new MusicBrainzDumpImportLease(owner, now.Add(leaseDuration));
     }
 
-    public void UpdateLineOffset(long lineOffset)
+    public void UpdateLineOffset(long lineOffset, long? lineByteOffset = null)
     {
         if (lineOffset < LineOffset)
         {
@@ -107,9 +134,14 @@ public sealed class MusicBrainzDumpImportShardState
         }
 
         LineOffset = lineOffset;
+        if (lineByteOffset is { } bytes)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(bytes);
+            LineByteOffset = bytes;
+        }
     }
 
-    public void UpdateProjectionLineOffset(long projectionLineOffset)
+    public void UpdateProjectionLineOffset(long projectionLineOffset, long? projectionByteOffset = null)
     {
         if (projectionLineOffset < ProjectionLineOffset)
         {
@@ -120,6 +152,11 @@ public sealed class MusicBrainzDumpImportShardState
         }
 
         ProjectionLineOffset = projectionLineOffset;
+        if (projectionByteOffset is { } bytes)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(bytes);
+            ProjectionByteOffset = bytes;
+        }
     }
 
     public void MarkCompleted()
@@ -135,5 +172,18 @@ public sealed class MusicBrainzDumpImportShardState
         Status = MusicBrainzDumpImportShardStatus.Failed;
         Lease = null;
         LastError = error;
+    }
+
+    /// <summary>
+    /// Clears projection progress so deferred browse/search materialization can run again
+    /// without re-appending events (<see cref="LineOffset"/> is preserved).
+    /// </summary>
+    public void ResetProjectionForRerun()
+    {
+        ProjectionLineOffset = 0;
+        ProjectionByteOffset = 0;
+        Status = MusicBrainzDumpImportShardStatus.Pending;
+        Lease = null;
+        LastError = null;
     }
 }

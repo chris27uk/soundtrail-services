@@ -97,9 +97,6 @@ public sealed class DownloadDumpAndShardJob(
 
         job = await HeartbeatAndSaveAsync(job, leaseDuration, cancellationToken);
 
-        var artistsPath = await archiveStore.EnsureArtistsJsonlAsync(job.Id, job.DumpVersion, cancellationToken);
-        job = await HeartbeatAndSaveAsync(job, leaseDuration, cancellationToken);
-
         if (job.Status == MusicBrainzDumpImportJobStatus.Downloading)
         {
             job = await PersistProducerAsync(
@@ -119,30 +116,69 @@ public sealed class DownloadDumpAndShardJob(
 
         var shardCount = Math.Max(1, options.Value.ShardCount);
         var lineCount = 0;
+        var jobHolder = job;
+        using var heartbeatCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        using var heartbeatGate = new SemaphoreSlim(1, 1);
+        var heartbeatTask = HeartbeatProducerUntilCancelledAsync(
+            () => jobHolder,
+            updated => jobHolder = updated,
+            heartbeatGate,
+            leaseDuration,
+            heartbeatCts.Token);
 
-        await using (var writer = shardStore.OpenWriter(job.Id, MusicBrainzDumpImportPhase.Artists, shardCount))
+        try
         {
-            await foreach (var line in File.ReadLinesAsync(artistsPath, cancellationToken))
+            await using (var writer = shardStore.OpenWriter(job.Id, MusicBrainzDumpImportPhase.Artists, shardCount))
+            await using (var idSidecar = shardStore.OpenArtistIdSidecarWriter(job.Id, shardCount))
             {
-                lineCount++;
-                if (!MusicBrainzArtistJsonLine.TryReadArtistId(line, out var artistId))
+                await foreach (var line in archiveStore.ReadArtistLinesAsync(
+                                   job.Id,
+                                   job.DumpVersion,
+                                   cancellationToken))
                 {
-                    continue;
+                    lineCount++;
+                    if (!MusicBrainzArtistJsonLine.TryReadArtistId(line, out var artistId))
+                    {
+                        continue;
+                    }
+
+                    var shardId = partitioner.ShardIdFor(artistId, shardCount);
+                    await writer.AppendAsync(shardId, line, cancellationToken);
+                    await idSidecar.AppendAsync(shardId, artistId, cancellationToken);
+
+                    if (lineCount % 10_000 == 0)
+                    {
+                        await heartbeatGate.WaitAsync(cancellationToken);
+                        try
+                        {
+                            jobHolder = await HeartbeatAndSaveAsync(
+                                jobHolder,
+                                leaseDuration,
+                                cancellationToken);
+                        }
+                        finally
+                        {
+                            heartbeatGate.Release();
+                        }
+                    }
                 }
 
-                await writer.AppendAsync(
-                    partitioner.ShardIdFor(artistId, shardCount),
-                    line,
-                    cancellationToken);
-
-                if (lineCount % 10_000 == 0)
-                {
-                    job = await HeartbeatAndSaveAsync(job, leaseDuration, cancellationToken);
-                }
+                await writer.CompleteAsync(cancellationToken);
             }
-
-            await writer.CompleteAsync(cancellationToken);
         }
+        finally
+        {
+            await heartbeatCts.CancelAsync();
+            try
+            {
+                await heartbeatTask;
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }
+
+        job = jobHolder;
 
         await PublishPhaseShardsAsync(
             job,
@@ -169,70 +205,6 @@ public sealed class DownloadDumpAndShardJob(
 
         job = await HeartbeatAndSaveAsync(job, leaseDuration, cancellationToken);
 
-        var releaseGroupsPath = await archiveStore.EnsureReleaseGroupsJsonlAsync(
-            job.Id,
-            job.DumpVersion,
-            cancellationToken);
-        job = await HeartbeatAndSaveAsync(job, leaseDuration, cancellationToken);
-
-        var shardCount = Math.Max(1, options.Value.ShardCount);
-        var lineCount = 0;
-        var copiedRows = 0;
-
-        await using (var writer = shardStore.OpenWriter(job.Id, MusicBrainzDumpImportPhase.ReleaseGroups, shardCount))
-        {
-            await foreach (var line in File.ReadLinesAsync(releaseGroupsPath, cancellationToken))
-            {
-                lineCount++;
-                if (!MusicBrainzReleaseGroupJsonLine.TryReadCreditedArtistIds(line, out var artistIds))
-                {
-                    continue;
-                }
-
-                foreach (var artistId in artistIds)
-                {
-                    await writer.AppendAsync(
-                        partitioner.ShardIdFor(artistId, shardCount),
-                        MusicBrainzReleaseGroupJsonLine.WrapForCreditedArtist(artistId, line),
-                        cancellationToken);
-                    copiedRows++;
-                }
-
-                if (lineCount % 10_000 == 0)
-                {
-                    job = await HeartbeatAndSaveAsync(job, leaseDuration, cancellationToken);
-                }
-            }
-
-            await writer.CompleteAsync(cancellationToken);
-        }
-
-        await PublishPhaseShardsAsync(
-            job,
-            MusicBrainzDumpImportPhase.ReleaseGroups,
-            shardCount,
-            leaseDuration,
-            cancellationToken);
-
-        logger.LogInformation(
-            "MusicBrainz dump producer published {ShardCount} ReleaseGroups shards for job {JobId} from {LineCount} lines ({CopiedRows} credited copies).",
-            shardCount,
-            job.Id.Value,
-            lineCount,
-            copiedRows);
-    }
-
-    private async Task RunRecordingsPhaseAsync(
-        MusicBrainzDumpImportJob job,
-        TimeSpan leaseDuration,
-        CancellationToken cancellationToken)
-    {
-        using var activity = MusicBrainzDumpImportTelemetry.StartProducerPhaseActivity(
-            job,
-            MusicBrainzDumpImportPhase.Recordings);
-
-        job = await HeartbeatAndSaveAsync(job, leaseDuration, cancellationToken);
-
         var shardCount = Math.Max(1, options.Value.ShardCount);
         var lineCount = 0;
         var copiedRows = 0;
@@ -250,16 +222,16 @@ public sealed class DownloadDumpAndShardJob(
         {
             await using (var writer = shardStore.OpenWriter(
                              job.Id,
-                             MusicBrainzDumpImportPhase.Recordings,
+                             MusicBrainzDumpImportPhase.ReleaseGroups,
                              shardCount))
             {
-                await foreach (var line in archiveStore.ReadDenormalizedTrackLinesAsync(
+                await foreach (var line in archiveStore.ReadReleaseGroupLinesAsync(
                                    job.Id,
                                    job.DumpVersion,
                                    cancellationToken))
                 {
                     lineCount++;
-                    if (!MusicBrainzTrackJsonLine.TryReadCreditedArtistIds(line, out var artistIds))
+                    if (!MusicBrainzReleaseGroupJsonLine.TryReadCreditedArtistIds(line, out var artistIds))
                     {
                         continue;
                     }
@@ -268,7 +240,7 @@ public sealed class DownloadDumpAndShardJob(
                     {
                         await writer.AppendAsync(
                             partitioner.ShardIdFor(artistId, shardCount),
-                            MusicBrainzTrackJsonLine.WrapForCreditedArtist(artistId, line),
+                            MusicBrainzReleaseGroupJsonLine.WrapForCreditedArtist(artistId, line),
                             cancellationToken);
                         copiedRows++;
                     }
@@ -309,17 +281,158 @@ public sealed class DownloadDumpAndShardJob(
 
         await PublishPhaseShardsAsync(
             job,
+            MusicBrainzDumpImportPhase.ReleaseGroups,
+            shardCount,
+            leaseDuration,
+            cancellationToken);
+
+        logger.LogInformation(
+            "MusicBrainz dump producer published {ShardCount} ReleaseGroups shards for job {JobId} from {LineCount} lines ({CopiedRows} credited copies).",
+            shardCount,
+            job.Id.Value,
+            lineCount,
+            copiedRows);
+    }
+
+    private async Task RunRecordingsPhaseAsync(
+        MusicBrainzDumpImportJob job,
+        TimeSpan leaseDuration,
+        CancellationToken cancellationToken)
+    {
+        using var activity = MusicBrainzDumpImportTelemetry.StartProducerPhaseActivity(
+            job,
+            MusicBrainzDumpImportPhase.Recordings);
+
+        job = await HeartbeatAndSaveAsync(job, leaseDuration, cancellationToken);
+
+        var shardCount = Math.Max(1, options.Value.ShardCount);
+        var joinDop = options.Value.RecordingsJoinMaxDegreeOfParallelism > 0
+            ? options.Value.RecordingsJoinMaxDegreeOfParallelism
+            : Math.Max(1, Environment.ProcessorCount);
+        var skipLines = job.RecordingsProducerInputLinesCompleted;
+        var append = skipLines > 0;
+        var startedAt = DateTimeOffset.UtcNow;
+        var jobHolder = job;
+        long latestInputLines = skipLines;
+        long latestTrackRows = 0;
+        long latestCopiedRows = 0;
+        using var heartbeatCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        using var heartbeatGate = new SemaphoreSlim(1, 1);
+        var heartbeatTask = HeartbeatProducerUntilCancelledAsync(
+            () => jobHolder,
+            updated => jobHolder = updated,
+            heartbeatGate,
+            leaseDuration,
+            () => latestInputLines,
+            heartbeatCts.Token);
+
+        logger.LogInformation(
+            "MusicBrainz dump Recordings producer starting for job {JobId} (skipInputLines={SkipLines}, append={Append}, joinDop={JoinDop}).",
+            job.Id.Value,
+            skipLines,
+            append,
+            joinDop);
+
+        try
+        {
+            await using (var writer = shardStore.OpenWriter(
+                             job.Id,
+                             MusicBrainzDumpImportPhase.Recordings,
+                             shardCount,
+                             append))
+            {
+                ValueTask OnProgressAsync(
+                    MusicBrainzRecordingsShardPipeline.Progress progress,
+                    CancellationToken ct)
+                {
+                    latestInputLines = progress.InputLinesCompleted;
+                    latestTrackRows = progress.TrackRows;
+                    latestCopiedRows = progress.CopiedRows;
+                    logger.LogInformation(
+                        "MusicBrainz dump Recordings producer progress job {JobId}: inputLines={InputLines} trackRows={TrackRows} copiedRows={CopiedRows} elapsed={Elapsed}.",
+                        job.Id.Value,
+                        progress.InputLinesCompleted,
+                        progress.TrackRows,
+                        progress.CopiedRows,
+                        DateTimeOffset.UtcNow - startedAt);
+                    return ValueTask.CompletedTask;
+                }
+
+                MusicBrainzRecordingsShardPipeline.Progress progress;
+                if (archiveStore.HasCachedDenormalizedTrackSource(job.DumpVersion))
+                {
+                    progress = await MusicBrainzRecordingsShardPipeline.ProcessTrackLinesAsync(
+                        archiveStore.ReadDenormalizedTrackLinesAsync(
+                            job.Id,
+                            job.DumpVersion,
+                            cancellationToken),
+                        skipLines,
+                        shardCount,
+                        partitioner,
+                        writer,
+                        OnProgressAsync,
+                        cancellationToken);
+                }
+                else
+                {
+                    progress = await MusicBrainzRecordingsShardPipeline.ProcessReleaseGraphAsync(
+                        archiveStore.ReadReleaseLinesAsync(
+                            job.Id,
+                            job.DumpVersion,
+                            cancellationToken),
+                        skipLines,
+                        joinDop,
+                        shardCount,
+                        partitioner,
+                        writer,
+                        OnProgressAsync,
+                        cancellationToken);
+                }
+
+                latestInputLines = progress.InputLinesCompleted;
+                latestTrackRows = progress.TrackRows;
+                latestCopiedRows = progress.CopiedRows;
+                await writer.CompleteAsync(cancellationToken);
+            }
+        }
+        finally
+        {
+            await heartbeatCts.CancelAsync();
+            try
+            {
+                await heartbeatTask;
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }
+
+        job = jobHolder;
+        job = await PersistProducerAsync(
+            job,
+            leaseDuration,
+            static candidate =>
+            {
+                candidate.ClearRecordingsProducerCheckpoint();
+                return true;
+            },
+            cancellationToken);
+
+        await PublishPhaseShardsAsync(
+            job,
             MusicBrainzDumpImportPhase.Recordings,
             shardCount,
             leaseDuration,
             cancellationToken);
 
         logger.LogInformation(
-            "MusicBrainz dump producer published {ShardCount} Recordings shards for job {JobId} from {LineCount} lines ({CopiedRows} credited copies).",
+            "MusicBrainz dump producer published {ShardCount} Recordings shards for job {JobId} from {LineCount} input lines ({TrackRows} tracks, {CopiedRows} credited copies) in {Elapsed}.",
             shardCount,
             job.Id.Value,
-            lineCount,
-            copiedRows);
+            latestInputLines,
+            latestTrackRows,
+            latestCopiedRows,
+            DateTimeOffset.UtcNow - startedAt);
     }
 
     private async Task PublishPhaseShardsAsync(
@@ -362,6 +475,21 @@ public sealed class DownloadDumpAndShardJob(
         Action<MusicBrainzDumpImportJob> setJob,
         SemaphoreSlim gate,
         TimeSpan leaseDuration,
+        CancellationToken cancellationToken) =>
+        await HeartbeatProducerUntilCancelledAsync(
+            getJob,
+            setJob,
+            gate,
+            leaseDuration,
+            checkpointLines: null,
+            cancellationToken);
+
+    private async Task HeartbeatProducerUntilCancelledAsync(
+        Func<MusicBrainzDumpImportJob> getJob,
+        Action<MusicBrainzDumpImportJob> setJob,
+        SemaphoreSlim gate,
+        TimeSpan leaseDuration,
+        Func<long>? checkpointLines,
         CancellationToken cancellationToken)
     {
         var intervalTicks = Math.Max(TimeSpan.FromSeconds(15).Ticks, leaseDuration.Ticks / 3);
@@ -373,7 +501,20 @@ public sealed class DownloadDumpAndShardJob(
                 await gate.WaitAsync(cancellationToken);
                 try
                 {
-                    setJob(await HeartbeatAndSaveAsync(getJob(), leaseDuration, cancellationToken));
+                    setJob(
+                        await PersistProducerAsync(
+                            getJob(),
+                            leaseDuration,
+                            candidate =>
+                            {
+                                if (checkpointLines is not null)
+                                {
+                                    candidate.SetRecordingsProducerInputLinesCompleted(checkpointLines());
+                                }
+
+                                return true;
+                            },
+                            cancellationToken));
                 }
                 finally
                 {

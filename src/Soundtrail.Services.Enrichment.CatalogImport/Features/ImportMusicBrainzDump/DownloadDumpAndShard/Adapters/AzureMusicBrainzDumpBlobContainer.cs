@@ -42,6 +42,15 @@ public sealed class AzureMusicBrainzDumpBlobContainer(BlobContainerClient contai
         await containerClient.GetBlobClient(blobName).DownloadToAsync(localFilePath, cancellationToken);
     }
 
+    public async Task<Stream> OpenReadAsync(
+        string blobName,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(blobName);
+        await EnsureContainerAsync(cancellationToken);
+        return await containerClient.GetBlobClient(blobName).OpenReadAsync(cancellationToken: cancellationToken);
+    }
+
     public async IAsyncEnumerable<string> ReadLinesAsync(
         string blobName,
         long skipLines,

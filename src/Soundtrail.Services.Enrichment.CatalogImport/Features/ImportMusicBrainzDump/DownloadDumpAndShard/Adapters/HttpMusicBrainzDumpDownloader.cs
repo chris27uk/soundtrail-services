@@ -92,6 +92,74 @@ public sealed class HttpMusicBrainzDumpDownloader(HttpClient httpClient) : Ports
         DeleteIfExists(metaPath);
     }
 
+    public async Task<Stream> OpenReadAsync(
+        string url,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(url);
+
+        var response = await httpClient.GetAsync(
+            url,
+            HttpCompletionOption.ResponseHeadersRead,
+            cancellationToken);
+        try
+        {
+            response.EnsureSuccessStatusCode();
+            var content = await response.Content.ReadAsStreamAsync(cancellationToken);
+            return new HttpContentStream(response, content);
+        }
+        catch
+        {
+            response.Dispose();
+            throw;
+        }
+    }
+
+    private sealed class HttpContentStream(HttpResponseMessage response, Stream content) : Stream
+    {
+        public override bool CanRead => content.CanRead;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) =>
+            content.Read(buffer, offset, count);
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+            content.ReadAsync(buffer, offset, count, cancellationToken);
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
+            content.ReadAsync(buffer, cancellationToken);
+
+        public override void Flush() => content.Flush();
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                content.Dispose();
+                response.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+    }
+
     private static long? TryGetTotalLength(HttpResponseMessage response)
     {
         var contentRange = response.Content.Headers.ContentRange;

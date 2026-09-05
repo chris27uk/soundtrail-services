@@ -27,4 +27,23 @@ public sealed class MusicBrainzDumpImportShardStateTests
         act.Should().Throw<ArgumentOutOfRangeException>();
         shard.ProjectionLineOffset.Should().Be(50);
     }
+
+    [Fact]
+    public void Given_Projection_Byte_Offset_When_Resetting_Projection_Then_Bytes_Clear()
+    {
+        var shard = new MusicBrainzDumpImportShardState(
+            MusicBrainzDumpImportPhase.Recordings,
+            0,
+            lineOffset: 1_000,
+            projectionLineOffset: 400,
+            lineByteOffset: 50_000,
+            projectionByteOffset: 20_000);
+
+        shard.ResetProjectionForRerun();
+
+        shard.LineOffset.Should().Be(1_000);
+        shard.LineByteOffset.Should().Be(50_000);
+        shard.ProjectionLineOffset.Should().Be(0);
+        shard.ProjectionByteOffset.Should().Be(0);
+    }
 }

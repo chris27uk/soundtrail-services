@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -31,6 +32,13 @@ public sealed class TickerQFeature : ISchedulerFeature
         services.AddTickerQ(
             tickerConfiguration =>
             {
+                // Dashboard posts camelCase request JSON; TickerQ's default STJ options are case-sensitive.
+                tickerConfiguration.ConfigureRequestJsonOptions(json =>
+                {
+                    json.PropertyNameCaseInsensitive = true;
+                    json.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                });
+
                 tickerConfiguration
                     .AddOperationalStore(
                         efConfiguration => efConfiguration.UseTickerQDbContext<TickerQDbContext>(

@@ -1,5 +1,4 @@
 using System.Runtime.CompilerServices;
-using System.Text.Json;
 using Microsoft.Extensions.Options;
 using Soundtrail.Domain.Catalog.MusicBrainzDumpImport;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Ports;
@@ -141,6 +140,110 @@ public sealed class LocalMusicBrainzDumpArchiveStore(
         }
 
         await foreach (var line in ReadTracksFromReleaseGraphAsync(jobId, dumpVersion, cancellationToken))
+        {
+            yield return line;
+        }
+    }
+
+    public IAsyncEnumerable<string> ReadArtistLinesAsync(
+        MusicBrainzDumpImportJobId jobId,
+        string dumpVersion,
+        CancellationToken cancellationToken = default) =>
+        ReadOfficialEntityLinesAsync(
+            jobId,
+            dumpVersion,
+            ArtistEntity,
+            options.Value.LocalPath,
+            siblingJsonlPath: null,
+            cancellationToken);
+
+    public IAsyncEnumerable<string> ReadReleaseGroupLinesAsync(
+        MusicBrainzDumpImportJobId jobId,
+        string dumpVersion,
+        CancellationToken cancellationToken = default)
+    {
+        var sibling = string.IsNullOrWhiteSpace(options.Value.LocalPath)
+            ? null
+            : Path.Combine(
+                Path.GetDirectoryName(Path.GetFullPath(options.Value.LocalPath))!,
+                "release-group.jsonl");
+        return ReadOfficialEntityLinesAsync(
+            jobId,
+            dumpVersion,
+            ReleaseGroupEntity,
+            options.Value.ReleaseGroupsLocalPath,
+            sibling,
+            cancellationToken);
+    }
+
+    public IAsyncEnumerable<string> ReadReleaseLinesAsync(
+        MusicBrainzDumpImportJobId jobId,
+        string dumpVersion,
+        CancellationToken cancellationToken = default)
+    {
+        var sibling = string.IsNullOrWhiteSpace(options.Value.LocalPath)
+            ? null
+            : Path.Combine(
+                Path.GetDirectoryName(Path.GetFullPath(options.Value.LocalPath))!,
+                "release.jsonl");
+        return ReadOfficialEntityLinesAsync(
+            jobId,
+            dumpVersion,
+            ReleaseEntity,
+            options.Value.ReleasesLocalPath,
+            sibling,
+            cancellationToken);
+    }
+
+    public bool HasCachedDenormalizedTrackSource(string dumpVersion) =>
+        TryGetCachedTrackJsonlPath(dumpVersion, out _) ||
+        (TryGetArchivePath(TrackEntity, dumpVersion) is { } trackArchive && File.Exists(trackArchive));
+
+    private async IAsyncEnumerable<string> ReadOfficialEntityLinesAsync(
+        MusicBrainzDumpImportJobId jobId,
+        string dumpVersion,
+        string entityName,
+        string? configuredJsonlPath,
+        string? siblingJsonlPath,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        _ = jobId;
+
+        if (!string.IsNullOrWhiteSpace(configuredJsonlPath))
+        {
+            await foreach (var line in File.ReadLinesAsync(
+                               RequireExistingPath(configuredJsonlPath, entityName),
+                               cancellationToken))
+            {
+                yield return line;
+            }
+
+            yield break;
+        }
+
+        if (!string.IsNullOrWhiteSpace(siblingJsonlPath) && File.Exists(siblingJsonlPath))
+        {
+            await foreach (var line in File.ReadLinesAsync(siblingJsonlPath, cancellationToken))
+            {
+                yield return line;
+            }
+
+            yield break;
+        }
+
+        if (TryGetArchiveExtractedPath(entityName, dumpVersion, out var extractedPath) &&
+            File.Exists(extractedPath))
+        {
+            await foreach (var line in File.ReadLinesAsync(extractedPath, cancellationToken))
+            {
+                yield return line;
+            }
+
+            yield break;
+        }
+
+        var archivePath = await EnsureOfficialArchiveOnDiskAsync(entityName, dumpVersion, cancellationToken);
+        await foreach (var line in extractor.ReadJsonlLinesAsync(archivePath, entityName, cancellationToken))
         {
             yield return line;
         }
@@ -373,18 +476,22 @@ public sealed class LocalMusicBrainzDumpShardStore(IOptions<MusicBrainzDumpOptio
     public IMusicBrainzDumpShardWriter OpenWriter(
         MusicBrainzDumpImportJobId jobId,
         MusicBrainzDumpImportPhase phase,
-        int shardCount) =>
+        int shardCount,
+        bool append = false) =>
         FileMusicBrainzDumpShardWriter.Open(
             jobId,
             phase,
             shardCount,
-            FileMusicBrainzDumpShardWriter.ResolveShardDirectory(options.Value.ShardDirectory));
+            FileMusicBrainzDumpShardWriter.ResolveShardDirectory(options.Value.ShardDirectory),
+            completeAsync: null,
+            append);
 
-    public async IAsyncEnumerable<string> ReadShardLinesAsync(
+    public async IAsyncEnumerable<MusicBrainzDumpShardLine> ReadShardLinesAsync(
         MusicBrainzDumpImportJobId jobId,
         MusicBrainzDumpImportPhase phase,
         int shardId,
         long skipLines,
+        long skipBytes = 0,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var path = FileMusicBrainzDumpShardWriter.ShardFilePath(
@@ -397,43 +504,63 @@ public sealed class LocalMusicBrainzDumpShardStore(IOptions<MusicBrainzDumpOptio
             yield break;
         }
 
-        long lineNumber = 0;
-        await foreach (var line in File.ReadLinesAsync(path, cancellationToken))
+        await foreach (var line in MusicBrainzDumpShardFileReader.ReadLinesAsync(
+                           path,
+                           skipLines,
+                           skipBytes,
+                           cancellationToken))
         {
-            if (lineNumber++ < skipLines)
-            {
-                continue;
-            }
-
             yield return line;
         }
     }
-}
 
-internal static class MusicBrainzArtistJsonLine
-{
-    public static bool TryReadArtistId(string line, out string artistId)
+    public IMusicBrainzDumpArtistIdSidecarWriter OpenArtistIdSidecarWriter(
+        MusicBrainzDumpImportJobId jobId,
+        int shardCount,
+        bool append = false) =>
+        FileMusicBrainzDumpArtistIdSidecarWriter.Open(
+            jobId,
+            shardCount,
+            FileMusicBrainzDumpShardWriter.ResolveShardDirectory(options.Value.ShardDirectory),
+            append);
+
+    public IMusicBrainzDumpArtistIdSidecarWriter OpenSingleArtistIdSidecarWriter(
+        MusicBrainzDumpImportJobId jobId,
+        int shardId) =>
+        FileMusicBrainzDumpArtistIdSidecarWriter.OpenSingle(
+            jobId,
+            shardId,
+            FileMusicBrainzDumpShardWriter.ResolveShardDirectory(options.Value.ShardDirectory));
+
+    public async IAsyncEnumerable<string> ReadArtistIdSidecarAsync(
+        MusicBrainzDumpImportJobId jobId,
+        int shardId,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        artistId = string.Empty;
-        if (string.IsNullOrWhiteSpace(line))
+        var path = FileMusicBrainzDumpShardWriter.ArtistIdSidecarPath(
+            FileMusicBrainzDumpShardWriter.ResolveShardDirectory(options.Value.ShardDirectory),
+            jobId,
+            shardId);
+        if (!File.Exists(path))
         {
-            return false;
+            yield break;
         }
 
-        try
+        await foreach (var line in File.ReadLinesAsync(path, cancellationToken))
         {
-            using var document = JsonDocument.Parse(line);
-            if (!document.RootElement.TryGetProperty("id", out var idProperty))
+            if (!string.IsNullOrWhiteSpace(line))
             {
-                return false;
+                yield return line.Trim();
             }
-
-            artistId = idProperty.GetString() ?? string.Empty;
-            return !string.IsNullOrWhiteSpace(artistId);
-        }
-        catch (JsonException)
-        {
-            return false;
         }
     }
+
+    public bool ArtistIdSidecarExists(MusicBrainzDumpImportJobId jobId, int shardId) =>
+        File.Exists(
+            FileMusicBrainzDumpShardWriter.ArtistIdSidecarPath(
+                FileMusicBrainzDumpShardWriter.ResolveShardDirectory(options.Value.ShardDirectory),
+                jobId,
+                shardId));
 }
+
+// MusicBrainzArtistJsonLine moved to Mapping/MusicBrainzArtistJsonLine.cs

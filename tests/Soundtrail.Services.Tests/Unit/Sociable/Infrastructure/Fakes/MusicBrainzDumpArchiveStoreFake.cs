@@ -102,6 +102,60 @@ internal sealed class MusicBrainzDumpArchiveStoreFake : IMusicBrainzDumpArchiveS
         await Task.CompletedTask;
     }
 
+    public async IAsyncEnumerable<string> ReadArtistLinesAsync(
+        MusicBrainzDumpImportJobId jobId,
+        string dumpVersion,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        _ = jobId;
+        _ = dumpVersion;
+        foreach (var line in artistsJsonlLines)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            yield return line;
+        }
+
+        await Task.CompletedTask;
+    }
+
+    public async IAsyncEnumerable<string> ReadReleaseGroupLinesAsync(
+        MusicBrainzDumpImportJobId jobId,
+        string dumpVersion,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        _ = jobId;
+        _ = dumpVersion;
+        foreach (var line in releaseGroupsJsonlLines)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            yield return line;
+        }
+
+        await Task.CompletedTask;
+    }
+
+    public async IAsyncEnumerable<string> ReadReleaseLinesAsync(
+        MusicBrainzDumpImportJobId jobId,
+        string dumpVersion,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        _ = jobId;
+        _ = dumpVersion;
+        foreach (var line in releasesJsonlLines)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            yield return line;
+        }
+
+        await Task.CompletedTask;
+    }
+
+    public bool HasCachedDenormalizedTrackSource(string dumpVersion)
+    {
+        _ = dumpVersion;
+        return tracksJsonlLines.Count > 0;
+    }
+
     private static async Task<string> WriteTempAsync(
         IReadOnlyList<string> lines,
         CancellationToken cancellationToken)

@@ -15,6 +15,21 @@ public interface ICatalogDumpBatchWriter
         IReadOnlySet<ArtistId> artistIds,
         DateTimeOffset dumpObservedAt,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Streams artist ids in <paramref name="shardId"/> whose catalog stream is ahead of
+    /// the last projected version (or never projected).
+    /// </summary>
+    IAsyncEnumerable<ArtistId> EnumerateArtistsNeedingProjectionForShardAsync(
+        int shardId,
+        int shardCount,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Clears <c>ProjectedStreamVersion</c> and projection snapshots so artists are
+    /// re-materialized after a truncated or stale projection (for example Raven event page limits).
+    /// </summary>
+    Task<int> ClearProjectedStreamVersionsAsync(CancellationToken cancellationToken = default);
 }
 
 public abstract record CatalogDumpBatchItem;

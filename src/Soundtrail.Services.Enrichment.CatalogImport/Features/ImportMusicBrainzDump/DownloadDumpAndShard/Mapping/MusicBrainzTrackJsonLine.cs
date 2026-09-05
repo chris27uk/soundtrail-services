@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Text;
 using System.Text.Json;
 
@@ -5,6 +6,31 @@ namespace Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrain
 
 public static class MusicBrainzTrackJsonLine
 {
+    public static bool TryPeekCreditedArtistId(string line, out string artistId)
+    {
+        artistId = string.Empty;
+        if (string.IsNullOrWhiteSpace(line))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(line);
+            if (!document.RootElement.TryGetProperty("creditedArtistId", out var creditedArtistProperty))
+            {
+                return false;
+            }
+
+            artistId = creditedArtistProperty.GetString() ?? string.Empty;
+            return !string.IsNullOrWhiteSpace(artistId);
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
     public static bool TryReadCreditedArtistIds(string line, out IReadOnlyList<string> artistIds)
     {
         artistIds = [];
@@ -51,17 +77,19 @@ public static class MusicBrainzTrackJsonLine
 
     public static string WrapForCreditedArtist(string creditedArtistId, string trackJsonLine)
     {
-        using var track = JsonDocument.Parse(trackJsonLine);
-        using var stream = new MemoryStream();
-        using (var writer = new Utf8JsonWriter(stream))
+        ArgumentException.ThrowIfNullOrWhiteSpace(creditedArtistId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(trackJsonLine);
+
+        var buffer = new ArrayBufferWriter<byte>(trackJsonLine.Length + 64);
+        using (var writer = new Utf8JsonWriter(buffer))
         {
             writer.WriteStartObject();
             writer.WriteString("creditedArtistId", creditedArtistId);
             writer.WritePropertyName("track");
-            track.RootElement.WriteTo(writer);
+            writer.WriteRawValue(trackJsonLine);
             writer.WriteEndObject();
         }
 
-        return Encoding.UTF8.GetString(stream.ToArray());
+        return Encoding.UTF8.GetString(buffer.WrittenSpan);
     }
 }

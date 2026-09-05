@@ -16,6 +16,7 @@ public sealed class MusicBrainzDumpImportJob
         bool cancellationRequested = false,
         DateTimeOffset? startedAt = null,
         DateTimeOffset? finishedAt = null,
+        long recordingsProducerInputLinesCompleted = 0,
         IEnumerable<MusicBrainzDumpImportShardState>? shardStates = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(dumpVersion);
@@ -31,6 +32,7 @@ public sealed class MusicBrainzDumpImportJob
         CancellationRequested = cancellationRequested;
         StartedAt = startedAt;
         FinishedAt = finishedAt;
+        RecordingsProducerInputLinesCompleted = recordingsProducerInputLinesCompleted;
 
         if (shardStates is null)
         {
@@ -65,6 +67,12 @@ public sealed class MusicBrainzDumpImportJob
 
     public DateTimeOffset? FinishedAt { get; private set; }
 
+    /// <summary>
+    /// Contiguous input lines fully processed for the Recordings producer (release lines when joining
+    /// the release graph, otherwise denormalized track lines). Used to resume after restart.
+    /// </summary>
+    public long RecordingsProducerInputLinesCompleted { get; private set; }
+
     public IReadOnlyCollection<MusicBrainzDumpImportShardState> Shards => shards.Values;
 
     public static MusicBrainzDumpImportJob CreateNew(
@@ -98,6 +106,7 @@ public sealed class MusicBrainzDumpImportJob
         StartedAt = null;
         FinishedAt = null;
         RequestedAt = requestedAt;
+        RecordingsProducerInputLinesCompleted = 0;
         shards.Clear();
     }
 
@@ -166,6 +175,14 @@ public sealed class MusicBrainzDumpImportJob
     public void RequestCancellation() => CancellationRequested = true;
 
     public void SetLastError(string? error) => LastError = error;
+
+    public void SetRecordingsProducerInputLinesCompleted(long linesCompleted)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(linesCompleted);
+        RecordingsProducerInputLinesCompleted = linesCompleted;
+    }
+
+    public void ClearRecordingsProducerCheckpoint() => RecordingsProducerInputLinesCompleted = 0;
 
     public MusicBrainzDumpImportShardState GetOrAddShard(MusicBrainzDumpImportPhase phase, int shardId)
     {
@@ -244,6 +261,38 @@ public sealed class MusicBrainzDumpImportJob
         return true;
     }
 
+    /// <summary>
+    /// Re-opens a completed Recordings import so deferred projection can rebuild browse docs
+    /// after event append (for example when an earlier projection skip left empty track lists).
+    /// Callers must also run <c>ICatalogDumpBatchWriter.ClearProjectedStreamVersionsAsync</c>
+    /// so artists stamped with a truncated projection are not skipped as already up to date.
+    /// </summary>
+    public void ReopenRecordingsProjection()
+    {
+        if (CurrentPhase != MusicBrainzDumpImportPhase.Recordings)
+        {
+            throw new InvalidOperationException(
+                $"Cannot reopen recordings projection while current phase is '{CurrentPhase}'.");
+        }
+
+        var recordingsShards = shards.Values
+            .Where(static shard => shard.Phase == MusicBrainzDumpImportPhase.Recordings)
+            .ToArray();
+        if (recordingsShards.Length == 0)
+        {
+            throw new InvalidOperationException("No Recordings shards are registered on this job.");
+        }
+
+        foreach (var shard in recordingsShards)
+        {
+            shard.ResetProjectionForRerun();
+        }
+
+        Status = MusicBrainzDumpImportJobStatus.Importing;
+        FinishedAt = null;
+        ProgressPercent = MusicBrainzDumpImportProgress.AfterProducerPublished(MusicBrainzDumpImportPhase.Recordings);
+    }
+
     public bool AreAllShardsCompleted(MusicBrainzDumpImportPhase phase)
     {
         var phaseShards = shards.Values.Where(shard => shard.Phase == phase).ToArray();
@@ -269,6 +318,11 @@ public sealed class MusicBrainzDumpImportJob
             MusicBrainzDumpImportPhase.ReleaseGroups => MusicBrainzDumpImportPhase.Recordings,
             _ => CurrentPhase
         };
+
+        if (CurrentPhase == MusicBrainzDumpImportPhase.Recordings)
+        {
+            RecordingsProducerInputLinesCompleted = 0;
+        }
 
         return true;
     }

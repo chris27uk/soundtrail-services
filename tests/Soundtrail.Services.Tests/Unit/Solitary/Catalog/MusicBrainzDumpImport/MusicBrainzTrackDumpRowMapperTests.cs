@@ -54,6 +54,23 @@ public sealed class MusicBrainzTrackDumpRowMapperTests
     }
 
     [Fact]
+    public void Given_A_Wrapped_Track_When_Peeking_Artist_Id_Then_Credited_Artist_Is_Returned()
+    {
+        var line = MusicBrainzTrackJsonLine.WrapForCreditedArtist(
+            "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            SoloTrack);
+
+        mapper.TryPeekArtistId(line, out var artistId).Should().BeTrue();
+        artistId.Value.Should().Be("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+    }
+
+    [Fact]
+    public void Given_A_Bad_Row_When_Peeking_Artist_Id_Then_False_Is_Returned()
+    {
+        mapper.TryPeekArtistId("""{"track":{}}""", out _).Should().BeFalse();
+    }
+
+    [Fact]
     public void Given_A_Bad_Row_When_Mapped_Then_Null_Is_Returned()
     {
         mapper.TryMap("""{"creditedArtistId":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}""").Should().BeNull();

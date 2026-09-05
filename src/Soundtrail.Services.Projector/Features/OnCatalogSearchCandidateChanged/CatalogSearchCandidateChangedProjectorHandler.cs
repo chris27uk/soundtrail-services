@@ -1,4 +1,5 @@
 using Soundtrail.Adapters.Projection;
+using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Services.Internal.Projector.Features.OnCatalogSearchCandidateChanged.Adapters;
 
@@ -23,7 +24,7 @@ public sealed class CatalogSearchCandidateChangedProjectorHandler(IStoreCatalogS
             new CatalogSearchCandidateProjection(
                 @event.Artist.Id.Value,
                 "artist",
-                @event.Artist.Name.Value,
+                MusicIdentityText.NormalizeFreeText(@event.Artist.Name.Value),
                 @event.Artist.Name.Value,
                 null,
                 null,
@@ -36,7 +37,7 @@ public sealed class CatalogSearchCandidateChangedProjectorHandler(IStoreCatalogS
             new CatalogSearchCandidateProjection(
                 @event.Album.AlbumId.StableValue,
                 "album",
-                @event.Album.AlbumTitle ?? string.Empty,
+                MusicIdentityText.NormalizeFreeText(@event.Album.AlbumTitle),
                 @event.Album.AlbumTitle ?? string.Empty,
                 null,
                 @event.Album.AlbumTitle,
@@ -49,7 +50,7 @@ public sealed class CatalogSearchCandidateChangedProjectorHandler(IStoreCatalogS
             new CatalogSearchCandidateProjection(
                 @event.Track.TrackId.Value,
                 "track",
-                $"{@event.Track.Title} {@event.Track.ArtistName}".Trim(),
+                MusicIdentityText.NormalizeFreeText($"{@event.Track.Title} {@event.Track.ArtistName}".Trim()),
                 @event.Track.Title,
                 @event.Track.ArtistName,
                 @event.Track.AlbumTitle,

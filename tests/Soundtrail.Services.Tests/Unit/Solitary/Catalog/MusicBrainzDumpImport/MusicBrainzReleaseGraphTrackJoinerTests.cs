@@ -83,4 +83,24 @@ public sealed class MusicBrainzReleaseGraphTrackJoinerTests
             .Should().ContainSingle()
             .Which.Should().Contain("Solo Song");
     }
+
+    [Fact]
+    public void Given_A_Release_When_Enumerating_Track_Emissions_Then_Artist_Ids_Are_Carried()
+    {
+        var emission = MusicBrainzReleaseGraphTrackJoiner.EnumerateTrackEmissions(SoloRelease).Single();
+
+        emission.JsonLine.Should().Contain("Solo Song");
+        emission.CreditedArtistIds.Should().Equal("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+    }
+
+    [Fact]
+    public void Given_A_Track_Line_When_Wrapped_With_Raw_Value_Then_The_Mapper_Accepts_It()
+    {
+        var joined = MusicBrainzReleaseGraphTrackJoiner.JoinReleaseLines([SoloRelease]).Single();
+        var wrapped = MusicBrainzTrackJsonLine.WrapForCreditedArtist(
+            "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            joined);
+
+        new MusicBrainzTrackDumpRowMapper().TryMap(wrapped)!.Title.Should().Be("Solo Song");
+    }
 }

@@ -12,6 +12,15 @@
           "Azure.Storage.Common": "12.25.0"
         }
       },
+      "Joveler.Compression.XZ": {
+        "type": "Direct",
+        "requested": "[5.0.2, )",
+        "resolved": "5.0.2",
+        "contentHash": "V4HqfKYt3LNtvRKRtW4elEOQ3abwUjs6VZO7ElBa5m8A2UQnxS/lsQ7uUKbk2C/H3D+WCJOgbhoe20/vQQdR+A==",
+        "dependencies": {
+          "Joveler.DynLoader": "2.3.1"
+        }
+      },
       "Microsoft.Extensions.Hosting": {
         "type": "Direct",
         "requested": "[10.0.8, )",
@@ -68,12 +77,6 @@
           "Nito.AsyncEx.Coordination": "5.1.2"
         }
       },
-      "SharpCompress": {
-        "type": "Direct",
-        "requested": "[0.50.4, )",
-        "resolved": "0.50.4",
-        "contentHash": "/hxjUR7DEX6mky8/LQXyrnrKioOL6D6veAID1EZpro+q4s02x5dHEYBV3qjEN6lDYYilDoQQ76BcmQj+lRx51w=="
-      },
       "Azure.Core": {
         "type": "Transitive",
         "resolved": "1.47.3",
@@ -116,6 +119,11 @@
         "type": "Transitive",
         "resolved": "1.16.2",
         "contentHash": "R4PEZo50RK76wRW1kq4xiQqX/hnrx8Gn+8T1XIEYuigyjVh3Guhtt3+b4GG2j3h+E3VadLINtbV+Id79nsFy/Q=="
+      },
+      "Joveler.DynLoader": {
+        "type": "Transitive",
+        "resolved": "2.3.1",
+        "contentHash": "lG4uwAo2UCygLXxeTVk2mZQcqmZhMFsn+4bKBvr7x66uu0xdqtUO8/g8fMOT5fyjVWvrn9ljjQF4vWCrTny4ZQ=="
       },
       "Lambda2Js.Signed": {
         "type": "Transitive",

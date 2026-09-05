@@ -398,6 +398,28 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
     }
 
     [Fact]
+    public async Task Given_Artist_Archive_When_Streaming_Artists_Then_Jsonl_Is_Not_Extracted()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var dumpVersion = "2026-08";
+        var versionRoot = Path.Combine(directory.Path, dumpVersion);
+        Directory.CreateDirectory(versionRoot);
+        MusicBrainzDumpArchiveFixtures.CopyTo(versionRoot, "artist.tar.xz");
+        var store = CreateStore(directory.Path);
+
+        var lines = new List<string>();
+        await foreach (var line in store.ReadArtistLinesAsync(
+                           MusicBrainzDumpImportJobId.ForDumpVersion(dumpVersion),
+                           dumpVersion))
+        {
+            lines.Add(line);
+        }
+
+        lines.Should().Contain(line => line.Contains("Artist A"));
+        File.Exists(Path.Combine(versionRoot, "extracted", "artist.jsonl")).Should().BeFalse();
+    }
+
+    [Fact]
     public async Task Given_Missing_Track_When_Ensuring_Tracks_Then_Release_May_Be_Downloaded()
     {
         using var directory = TemporaryDirectory.Create();
@@ -449,6 +471,15 @@ public sealed class LocalMusicBrainzDumpArchiveStoreEnsureTests
 
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(destinationPath))!);
             await File.WriteAllBytesAsync(destinationPath, payload, cancellationToken);
+        }
+
+        public Task<Stream> OpenReadAsync(
+            string url,
+            CancellationToken cancellationToken = default)
+        {
+            requestedUrls.Add(url);
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult<Stream>(new MemoryStream(payload, writable: false));
         }
     }
 }

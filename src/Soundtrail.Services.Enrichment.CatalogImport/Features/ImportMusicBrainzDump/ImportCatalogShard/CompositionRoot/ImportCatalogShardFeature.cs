@@ -41,6 +41,7 @@ public sealed class ImportCatalogShardFeature : IFeature
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.SectionName));
         services.Configure<MusicBrainzDumpOptions>(configuration.GetSection(MusicBrainzDumpOptions.SectionName));
         services.TryAddSingleton<ICatalogImportLeaseOwner, CatalogImportLeaseOwner>();
+        services.TryAddSingleton<IArtistShardPartitioner, ArtistShardPartitioner>();
         services.TryAddSingleton<IImportCatalogShardWorkQueue, ChannelImportCatalogShardWorkQueue>();
         services.TryAddSingleton<IDownloadDumpAndShardWorkQueue, ChannelDownloadDumpAndShardWorkQueue>();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, ImportCatalogShardWorkPump>());

@@ -1,4 +1,5 @@
 using Raven.Client.Documents;
+using Raven.Client.Documents.Queries;
 using Raven.Client.Documents.Session;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Catalog;
@@ -26,8 +27,14 @@ public sealed class RavenSearchForCandidates(IDocumentStore documentStore) : ISe
         }
 
         using var session = documentStore.OpenSession();
+        var normalizedQuery = MusicIdentityText.NormalizeFreeText(searchCriteria.Query);
+        if (string.IsNullOrWhiteSpace(normalizedQuery))
+        {
+            return new CandidatesResult.None();
+        }
+
         IQueryable<CatalogSearchCandidateRecordDto> query = session.Query<CatalogSearchCandidateRecordDto>()
-            .Search(x => x.SearchText, searchCriteria.Query);
+            .Search(x => x.SearchText, normalizedQuery, @operator: SearchOperator.And);
 
         if (searchCriteria.SearchTypes != SearchType.All)
         {

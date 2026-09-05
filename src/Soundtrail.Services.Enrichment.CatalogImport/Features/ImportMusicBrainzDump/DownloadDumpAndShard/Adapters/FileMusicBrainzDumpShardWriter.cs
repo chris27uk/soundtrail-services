@@ -4,7 +4,7 @@ using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDum
 
 namespace Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Adapters;
 
-internal sealed class FileMusicBrainzDumpShardWriter : IMusicBrainzDumpShardWriter
+public sealed class FileMusicBrainzDumpShardWriter : IMusicBrainzDumpShardWriter
 {
     private const int StreamBufferSize = 1024 * 64;
 
@@ -31,7 +31,8 @@ internal sealed class FileMusicBrainzDumpShardWriter : IMusicBrainzDumpShardWrit
         MusicBrainzDumpImportPhase phase,
         int shardCount,
         string shardDirectory,
-        Func<IReadOnlyList<string>, CancellationToken, Task>? completeAsync = null)
+        Func<IReadOnlyList<string>, CancellationToken, Task>? completeAsync = null,
+        bool append = false)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(shardCount, 1);
 
@@ -45,9 +46,14 @@ internal sealed class FileMusicBrainzDumpShardWriter : IMusicBrainzDumpShardWrit
                 var path = ShardFilePath(shardDirectory, jobId, phase, shardId);
                 paths[shardId] = path;
                 Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                if (append)
+                {
+                    TruncateTrailingPartialLine(path);
+                }
+
                 var stream = new FileStream(
                     path,
-                    FileMode.Create,
+                    append ? FileMode.Append : FileMode.Create,
                     FileAccess.Write,
                     FileShare.Read,
                     StreamBufferSize,
@@ -66,6 +72,47 @@ internal sealed class FileMusicBrainzDumpShardWriter : IMusicBrainzDumpShardWrit
         }
 
         return new FileMusicBrainzDumpShardWriter(writers, paths, completeAsync);
+    }
+
+    public static void TruncateTrailingPartialLine(string path)
+    {
+        if (!File.Exists(path))
+        {
+            return;
+        }
+
+        using var stream = new FileStream(
+            path,
+            FileMode.Open,
+            FileAccess.ReadWrite,
+            FileShare.None,
+            StreamBufferSize,
+            FileOptions.None);
+        if (stream.Length == 0)
+        {
+            return;
+        }
+
+        stream.Seek(-1, SeekOrigin.End);
+        if (stream.ReadByte() == '\n')
+        {
+            return;
+        }
+
+        long position = stream.Length - 1;
+        while (position > 0)
+        {
+            stream.Seek(position - 1, SeekOrigin.Begin);
+            if (stream.ReadByte() == '\n')
+            {
+                stream.SetLength(position);
+                return;
+            }
+
+            position--;
+        }
+
+        stream.SetLength(0);
     }
 
     public async Task AppendAsync(int shardId, string line, CancellationToken cancellationToken = default)
@@ -129,6 +176,22 @@ internal sealed class FileMusicBrainzDumpShardWriter : IMusicBrainzDumpShardWrit
     {
         var safeJob = jobId.Value.Replace(':', '_');
         return Path.Combine(shardDirectory, safeJob, phase.ToString(), $"{shardId}.jsonl");
+    }
+
+    /// <summary>
+    /// Compact one-id-per-line sidecar beside the Artists JSONL (avoids re-reading multi-GB dumps).
+    /// </summary>
+    public static string ArtistIdSidecarPath(
+        string shardDirectory,
+        MusicBrainzDumpImportJobId jobId,
+        int shardId)
+    {
+        var safeJob = jobId.Value.Replace(':', '_');
+        return Path.Combine(
+            shardDirectory,
+            safeJob,
+            MusicBrainzDumpImportPhase.Artists.ToString(),
+            $"{shardId}.ids");
     }
 
     public static string ResolveShardDirectory(string? configured) =>

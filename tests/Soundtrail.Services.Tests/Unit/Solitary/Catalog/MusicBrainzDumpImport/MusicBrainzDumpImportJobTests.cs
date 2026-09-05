@@ -123,6 +123,51 @@ public sealed class MusicBrainzDumpImportJobTests
     }
 
     [Fact]
+    public void Given_Completed_Recordings_When_Reopening_Projection_Then_Shards_Are_Pending_At_Offset_Zero()
+    {
+        var job = MusicBrainzDumpImportJob.CreateNew(
+            MusicBrainzDumpImportJobId.ForDumpVersion("2026-08"),
+            "2026-08",
+            DateTimeOffset.Parse("2026-08-01T00:00:00Z"));
+        var now = DateTimeOffset.Parse("2026-08-01T01:00:00Z");
+
+        job.RegisterPhaseShards(MusicBrainzDumpImportPhase.Artists, 1);
+        job.TryClaimShard(MusicBrainzDumpImportPhase.Artists, 0, "host-a", now, LeaseDuration);
+        job.GetOrAddShard(MusicBrainzDumpImportPhase.Artists, 0).MarkCompleted();
+        job.TryAdvancePhase().Should().BeTrue();
+
+        job.RegisterPhaseShards(MusicBrainzDumpImportPhase.ReleaseGroups, 1);
+        job.TryClaimShard(MusicBrainzDumpImportPhase.ReleaseGroups, 0, "host-a", now, LeaseDuration);
+        job.GetOrAddShard(MusicBrainzDumpImportPhase.ReleaseGroups, 0).MarkCompleted();
+        job.TryAdvancePhase().Should().BeTrue();
+
+        job.RegisterPhaseShards(MusicBrainzDumpImportPhase.Recordings, 2);
+        foreach (var shardId in new[] { 0, 1 })
+        {
+            job.TryClaimShard(MusicBrainzDumpImportPhase.Recordings, shardId, "host-a", now, LeaseDuration)
+                .Should().BeTrue();
+            var shard = job.GetOrAddShard(MusicBrainzDumpImportPhase.Recordings, shardId);
+            shard.UpdateLineOffset(1_000);
+            shard.UpdateProjectionLineOffset(1_000);
+            shard.MarkCompleted();
+        }
+
+        job.TryCompleteRecordingsPhaseAsFinal(now.AddHours(1)).Should().BeTrue();
+        job.Status.Should().Be(MusicBrainzDumpImportJobStatus.Completed);
+
+        job.ReopenRecordingsProjection();
+
+        job.Status.Should().Be(MusicBrainzDumpImportJobStatus.Importing);
+        job.FinishedAt.Should().BeNull();
+        job.Shards.Where(s => s.Phase == MusicBrainzDumpImportPhase.Recordings).Should().AllSatisfy(shard =>
+        {
+            shard.Status.Should().Be(MusicBrainzDumpImportShardStatus.Pending);
+            shard.LineOffset.Should().Be(1_000);
+            shard.ProjectionLineOffset.Should().Be(0);
+        });
+    }
+
+    [Fact]
     public void Given_Start_And_Shard_Messages_When_Creating_Then_Ids_Are_Deterministic()
     {
         var jobId = MusicBrainzDumpImportJobId.ForDumpVersion("2026-08");

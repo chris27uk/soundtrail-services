@@ -88,7 +88,7 @@ internal sealed class SearchPortContractTestEnvironment : IAsyncDisposable
                 Id = CatalogSearchCandidateRecordDto.GetDocumentId(uniqueMusicCatalogId),
                 CatalogItemId = uniqueMusicCatalogId,
                 CandidateKind = resultType.ToString().ToLowerInvariant(),
-                SearchText = uniqueQueryText,
+                SearchText = MusicIdentityText.NormalizeFreeText(uniqueQueryText),
                 Title = title,
                 ArtistName = artistName,
                 AlbumTitle = albumTitle,

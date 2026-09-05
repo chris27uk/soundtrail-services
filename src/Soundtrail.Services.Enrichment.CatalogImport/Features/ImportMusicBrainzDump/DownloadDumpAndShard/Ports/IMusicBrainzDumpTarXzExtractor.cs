@@ -15,4 +15,14 @@ public interface IMusicBrainzDumpTarXzExtractor
         string archivePath,
         string entityName,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Streams JSONL lines from an already-open archive stream (file, blob, or HTTP).
+    /// Does not dispose <paramref name="archiveStream"/>.
+    /// </summary>
+    IAsyncEnumerable<string> ReadJsonlLinesAsync(
+        Stream archiveStream,
+        string entityName,
+        string sourceName,
+        CancellationToken cancellationToken = default);
 }

@@ -10,4 +10,11 @@ public interface IMusicBrainzDumpDownloader
         string url,
         string destinationPath,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Opens <paramref name="url"/> as a readable stream without buffering the whole payload on disk.
+    /// </summary>
+    Task<Stream> OpenReadAsync(
+        string url,
+        CancellationToken cancellationToken = default);
 }

@@ -1,12 +1,25 @@
 using System.Text.Json;
 using Soundtrail.Domain.Catalog;
 using Soundtrail.Domain.Catalog.Artists;
+using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Mapping;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Ports;
 
 namespace Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Mapping;
 
 public sealed class MusicBrainzArtistDumpRowMapper : IMusicBrainzArtistDumpRowMapper
 {
+    public bool TryPeekArtistId(string jsonLine, out ArtistId artistId)
+    {
+        artistId = default;
+        if (!MusicBrainzArtistJsonLine.TryReadArtistId(jsonLine, out var mbid))
+        {
+            return false;
+        }
+
+        artistId = ArtistId.From(mbid);
+        return true;
+    }
+
     public Artist? TryMap(string jsonLine)
     {
         if (string.IsNullOrWhiteSpace(jsonLine))

@@ -53,4 +53,16 @@ internal sealed class CatalogDumpBatchWriterFake(
         DateTimeOffset dumpObservedAt,
         CancellationToken cancellationToken = default) =>
         Task.CompletedTask;
+
+    public async IAsyncEnumerable<ArtistId> EnumerateArtistsNeedingProjectionForShardAsync(
+        int shardId,
+        int shardCount,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        await Task.CompletedTask;
+        yield break;
+    }
+
+    public Task<int> ClearProjectedStreamVersionsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(0);
 }

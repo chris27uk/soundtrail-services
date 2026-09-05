@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Logging;
@@ -9,6 +10,7 @@ using Raven.Client.Documents.Session;
 using Soundtrail.Adapters.CatalogProjection;
 using Soundtrail.Adapters.EventSourcing;
 using Soundtrail.Adapters.TypeRegistry;
+using Soundtrail.Contracts.EventSourcing;
 using Soundtrail.Contracts.Persistence;
 using Soundtrail.Domain.Abstractions;
 using Soundtrail.Domain.Abstractions.EventSourcing;
@@ -19,8 +21,10 @@ using Soundtrail.Domain.Catalog.Artists;
 using Soundtrail.Domain.Catalog.Events;
 using Soundtrail.Domain.Catalog.MusicBrainzDumpImport;
 using Soundtrail.Domain.Catalog.Tracks;
+using Soundtrail.Domain.Catalog.Projection;
 using Soundtrail.Domain.Common;
 using Soundtrail.Domain.Discovery;
+using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.DownloadDumpAndShard.Ports;
 using Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Ports;
 
 namespace Soundtrail.Services.Enrichment.CatalogImport.Features.ImportMusicBrainzDump.ImportCatalogShard.Adapters;
@@ -30,11 +34,17 @@ public sealed class CatalogDumpBatchWriter(
     ITypeRegistry typeRegistry,
     ICommandBus commandBus,
     IOptions<MusicBrainzDumpOptions> options,
+    IArtistShardPartitioner partitioner,
     ILogger<CatalogDumpBatchWriter> logger) : ICatalogDumpBatchWriter
 {
     private const string ArtistCatalogStreamName = "artist-catalog-stream";
     private const int ProjectionLogInterval = 5_000;
     private const int RequestsPerArtistBudget = 4;
+
+    /// <summary>
+    /// Process-local cache of last projected stream versions (shards are artist-partitioned).
+    /// </summary>
+    private static readonly ConcurrentDictionary<string, int> ProjectedVersionCache = new(StringComparer.Ordinal);
 
     public async Task<IReadOnlySet<ArtistId>> AppendEventsAsync(
         IReadOnlyList<CatalogDumpBatchItem> items,
@@ -177,10 +187,11 @@ public sealed class CatalogDumpBatchWriter(
             CancellationToken = cancellationToken
         };
 
+        var writeIndividualTrackAndSearchDocs = options.Value.WriteIndividualTrackAndSearchDocsOnProjection;
         var projectionChunkSize = Math.Max(1, options.Value.ProjectionArtistsPerBulkInsert);
         foreach (var chunk in artistIds.Chunk(projectionChunkSize))
         {
-            var toProject = ArtistsNeedingProjection(chunk, dumpObservedAt);
+            var toProject = await ArtistsNeedingProjectionAsync(chunk, cancellationToken);
             skippedUnchanged += chunk.Length - toProject.Count;
             if (toProject.Count == 0)
             {
@@ -194,25 +205,40 @@ public sealed class CatalogDumpBatchWriter(
                 async (artistId, token) =>
                 {
                     using var session = documentStore.OpenAsyncSession();
-                    var artistRepository = CreateArtistRepository(session);
-                    var (stream, _) = await ArtistCatalog.LoadAsync(artistRepository, artistId, token);
-                    var projection = ArtistCatalogProjectionMaterializer.Build(artistId, stream.Events);
-                    foreach (var document in ArtistCatalogProjectionDocuments.CreateBrowseDocuments(projection))
+                    var (streamVersion, projection) = await LoadProjectionAsync(session, artistId, token);
+
+                    foreach (var document in ArtistCatalogProjectionDocuments.CreateBrowseDocuments(
+                                 projection,
+                                 includeIndividualTrackDocuments: writeIndividualTrackAndSearchDocs))
                     {
+                        if (document.Document is CatalogArtistRecordDto artistDto)
+                        {
+                            artistDto.ProjectedStreamVersion = streamVersion;
+                            ProjectedVersionCache[artistId.Value] = streamVersion;
+                        }
+
                         readModels.Add(document);
                     }
 
+                    // Search candidates are required for API search; projector CDC skips bulk-import.
+                    // Per-track CatalogTrackRecordDto docs remain gated by the flag for Raven size.
                     foreach (var document in ArtistCatalogProjectionDocuments
                                  .CreateSearchCandidateDocumentsForFullProjection(projection))
                     {
                         readModels.Add(document);
                     }
 
-                    foreach (var track in projection.Tracks)
+                    var snapshot = ArtistCatalogProjectionSnapshotMapper.ToDto(projection, streamVersion);
+                    readModels.Add((snapshot.Id, snapshot));
+
+                    if (options.Value.EnqueueStreamingLocationLookupsOnProjection)
                     {
-                        if (track.StreamingLocations.Length == 0)
+                        foreach (var track in projection.Tracks)
                         {
-                            streamingLocationRequests.Add(track.TrackId);
+                            if (track.StreamingLocations.Length == 0)
+                            {
+                                streamingLocationRequests.Add(track.TrackId);
+                            }
                         }
                     }
 
@@ -271,21 +297,288 @@ public sealed class CatalogDumpBatchWriter(
             stopwatch.ElapsedMilliseconds);
     }
 
-    private List<ArtistId> ArtistsNeedingProjection(
-        IReadOnlyList<ArtistId> artistIds,
-        DateTimeOffset dumpObservedAt)
+    private async Task<(int StreamVersion, ArtistCatalogProjection Projection)> LoadProjectionAsync(
+        IAsyncDocumentSession session,
+        ArtistId artistId,
+        CancellationToken cancellationToken)
     {
-        using var session = documentStore.OpenSession();
+        var metadataId = $"{ArtistCatalogStreamName}-streams/{artistId.Value}";
+        var snapshotId = ArtistCatalogProjectionSnapshotDto.GetDocumentId(artistId.Value);
+        var metadata = await session.LoadAsync<RavenEventStreamMetadataRecord>(metadataId, cancellationToken);
+        var snapshotDto = await session.LoadAsync<ArtistCatalogProjectionSnapshotDto>(snapshotId, cancellationToken);
+        var streamVersion = metadata?.Version ?? 0;
+
+        if (snapshotDto is not null && snapshotDto.StreamVersion == streamVersion && streamVersion > 0)
+        {
+            return (streamVersion, ArtistCatalogProjectionSnapshotMapper.ToProjection(snapshotDto));
+        }
+
+        if (snapshotDto is not null && snapshotDto.StreamVersion > 0 && snapshotDto.StreamVersion < streamVersion)
+        {
+            var prior = ArtistCatalogProjectionSnapshotMapper.ToProjection(snapshotDto);
+            var newEvents = await LoadEventsAfterAsync(session, artistId, snapshotDto.StreamVersion, cancellationToken);
+            return (streamVersion, ArtistCatalogProjectionMaterializer.Build(artistId, prior, newEvents));
+        }
+
+        var artistRepository = CreateArtistRepository(session);
+        var (stream, _) = await ArtistCatalog.LoadAsync(artistRepository, artistId, cancellationToken);
+        return (stream.Version, ArtistCatalogProjectionMaterializer.Build(artistId, stream.Events));
+    }
+
+    private async Task<IReadOnlyList<IDomainEvent>> LoadEventsAfterAsync(
+        IAsyncDocumentSession session,
+        ArtistId artistId,
+        int afterVersion,
+        CancellationToken cancellationToken)
+    {
+        var prefix = $"{ArtistCatalogStreamName}-events/{artistId.Value}/";
+        const int pageSize = 1_024;
+        var storedEvents = new List<RavenStoredEventRecord>();
+        string? lastId = null;
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var page = (await session.Advanced.LoadStartingWithAsync<RavenStoredEventRecord>(
+                prefix,
+                start: 0,
+                pageSize: pageSize,
+                startAfter: lastId,
+                token: cancellationToken)).ToArray();
+            if (page.Length == 0)
+            {
+                break;
+            }
+
+            storedEvents.AddRange(page);
+            lastId = page[^1].Id;
+            if (page.Length < pageSize)
+            {
+                break;
+            }
+        }
+
+        return storedEvents
+            .Where(stored => stored.Version > afterVersion)
+            .OrderBy(stored => stored.Version)
+            .Select(ToDomainEvent)
+            .ToArray();
+    }
+
+    private IDomainEvent ToDomainEvent(RavenStoredEventRecord storedEvent)
+    {
+        if (storedEvent.Body is null)
+        {
+            throw new InvalidOperationException($"Stored event '{storedEvent.Id}' is missing a body.");
+        }
+
+        return (IDomainEvent)typeRegistry.ToDomainObject(storedEvent.Body);
+    }
+
+    private async Task<List<ArtistId>> ArtistsNeedingProjectionAsync(
+        IReadOnlyList<ArtistId> artistIds,
+        CancellationToken cancellationToken)
+    {
+        if (artistIds.Count == 0)
+        {
+            return [];
+        }
+
+        using var session = documentStore.OpenAsyncSession();
         var documentIds = artistIds.Select(id => CatalogArtistRecordDto.GetDocumentId(id.Value)).ToArray();
-        var existing = session.Load<CatalogArtistRecordDto>(documentIds);
+        var metadataIds = artistIds
+            .Select(id => $"{ArtistCatalogStreamName}-streams/{id.Value}")
+            .ToArray();
+        var existing = await session.LoadAsync<CatalogArtistRecordDto>(documentIds, cancellationToken);
+        var metadata = await session.LoadAsync<RavenEventStreamMetadataRecord>(metadataIds, cancellationToken);
+
         var needed = new List<ArtistId>(artistIds.Count);
         foreach (var artistId in artistIds)
         {
             var documentId = CatalogArtistRecordDto.GetDocumentId(artistId.Value);
-            if (existing.TryGetValue(documentId, out var dto) &&
-                dto is not null &&
-                dto.UpdatedAt >= dumpObservedAt)
+            var metadataId = $"{ArtistCatalogStreamName}-streams/{artistId.Value}";
+            existing.TryGetValue(documentId, out var dto);
+            metadata.TryGetValue(metadataId, out var streamMetadata);
+
+            var projectedVersion = dto?.ProjectedStreamVersion;
+            if (projectedVersion is null &&
+                ProjectedVersionCache.TryGetValue(artistId.Value, out var cachedVersion))
             {
+                projectedVersion = cachedVersion;
+            }
+
+            if (streamMetadata is not null &&
+                projectedVersion is int version &&
+                version >= streamMetadata.Version)
+            {
+                ProjectedVersionCache[artistId.Value] = streamMetadata.Version;
+                continue;
+            }
+
+            needed.Add(artistId);
+        }
+
+        return needed;
+    }
+
+    public async IAsyncEnumerable<ArtistId> EnumerateArtistsNeedingProjectionForShardAsync(
+        int shardId,
+        int shardCount,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(shardId);
+        ArgumentOutOfRangeException.ThrowIfLessThan(shardCount, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(shardId, shardCount);
+
+        const int pageSize = 1_024;
+        const int filterBatchSize = 2_000;
+        var prefix = $"{ArtistCatalogStreamName}-streams/";
+        string? lastId = null;
+        var batch = new List<(ArtistId ArtistId, int StreamVersion)>(filterBatchSize);
+
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            using var session = documentStore.OpenAsyncSession();
+            // Prefer startAfter (O(page)) over numeric start skips — those get slower as the
+            // cursor advances through multi-million stream-metadata collections.
+            var page = (await session.Advanced.LoadStartingWithAsync<RavenEventStreamMetadataRecord>(
+                prefix,
+                start: 0,
+                pageSize: pageSize,
+                startAfter: lastId,
+                token: cancellationToken)).ToArray();
+            if (page.Length == 0)
+            {
+                break;
+            }
+
+            foreach (var metadata in page)
+            {
+                lastId = metadata.Id;
+                var artistKey = metadata.StreamId;
+                if (string.IsNullOrWhiteSpace(artistKey) ||
+                    partitioner.ShardIdFor(artistKey, shardCount) != shardId ||
+                    metadata.Version <= 0)
+                {
+                    continue;
+                }
+
+                batch.Add((ArtistId.From(artistKey), metadata.Version));
+                if (batch.Count < filterBatchSize)
+                {
+                    continue;
+                }
+
+                foreach (var artistId in await FilterNeedingFromVersionsAsync(batch, cancellationToken))
+                {
+                    yield return artistId;
+                }
+
+                batch.Clear();
+            }
+
+            if (page.Length < pageSize)
+            {
+                break;
+            }
+        }
+
+        if (batch.Count > 0)
+        {
+            foreach (var artistId in await FilterNeedingFromVersionsAsync(batch, cancellationToken))
+            {
+                yield return artistId;
+            }
+        }
+    }
+
+    public async Task<int> ClearProjectedStreamVersionsAsync(CancellationToken cancellationToken = default)
+    {
+        const int pageSize = 1_024;
+        const string artistPrefix = "catalog/artists/";
+        var cleared = 0;
+        string? lastId = null;
+        ProjectedVersionCache.Clear();
+
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            using var session = documentStore.OpenAsyncSession();
+            var page = (await session.Advanced.LoadStartingWithAsync<CatalogArtistRecordDto>(
+                artistPrefix,
+                start: 0,
+                pageSize: pageSize,
+                startAfter: lastId,
+                token: cancellationToken)).ToArray();
+            if (page.Length == 0)
+            {
+                break;
+            }
+
+            foreach (var artist in page)
+            {
+                lastId = artist.Id;
+                if (artist.ProjectedStreamVersion is null)
+                {
+                    continue;
+                }
+
+                artist.ProjectedStreamVersion = null;
+                cleared++;
+
+                session.Delete(ArtistCatalogProjectionSnapshotDto.GetDocumentId(artist.ArtistId));
+            }
+
+            await session.SaveChangesAsync(cancellationToken);
+
+            if (page.Length < pageSize)
+            {
+                break;
+            }
+        }
+
+        logger.LogInformation(
+            "Cleared ProjectedStreamVersion on {Cleared} catalog artist documents for projection repair.",
+            cleared);
+        return cleared;
+    }
+
+    private async Task<List<ArtistId>> FilterNeedingFromVersionsAsync(
+        IReadOnlyList<(ArtistId ArtistId, int StreamVersion)> batch,
+        CancellationToken cancellationToken)
+    {
+        var needed = new List<ArtistId>(batch.Count);
+        var requiresRaven = new List<(ArtistId ArtistId, int StreamVersion)>(batch.Count);
+        foreach (var (artistId, streamVersion) in batch)
+        {
+            if (ProjectedVersionCache.TryGetValue(artistId.Value, out var cached) &&
+                cached >= streamVersion)
+            {
+                continue;
+            }
+
+            requiresRaven.Add((artistId, streamVersion));
+        }
+
+        if (requiresRaven.Count == 0)
+        {
+            return needed;
+        }
+
+        using var session = documentStore.OpenAsyncSession();
+        var documentIds = requiresRaven
+            .Select(pair => CatalogArtistRecordDto.GetDocumentId(pair.ArtistId.Value))
+            .ToArray();
+        var existing = await session.LoadAsync<CatalogArtistRecordDto>(documentIds, cancellationToken);
+        foreach (var (artistId, streamVersion) in requiresRaven)
+        {
+            existing.TryGetValue(
+                CatalogArtistRecordDto.GetDocumentId(artistId.Value),
+                out var dto);
+            var projectedVersion = dto?.ProjectedStreamVersion;
+            if (projectedVersion is int version && version >= streamVersion)
+            {
+                ProjectedVersionCache[artistId.Value] = streamVersion;
                 continue;
             }
 
